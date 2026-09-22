@@ -5534,19 +5534,23 @@ const enUS: Record<string, string> = {
   "settings.computerUse.title": "Computer Use",
   "settings.mobileRelay.title": "Mobile Remote",
   "settings.mobileRelay.enable": "Enable mobile remote",
-  "settings.mobileRelay.enableDescription": "Connect to your self-deployed relay server to control this workspace from a phone browser.",
-  "settings.mobileRelay.statusUnsupported": "Mobile remote is not supported on this platform (desktop required).",
+  "settings.mobileRelay.enableDescription":
+    "Connect to your self-deployed relay server to control this workspace from a phone browser.",
+  "settings.mobileRelay.statusUnsupported":
+    "Mobile remote is not supported on this platform (desktop required).",
   "settings.mobileRelay.statusDisabled": "Disabled",
   "settings.mobileRelay.statusConnected": "Connected",
   "settings.mobileRelay.statusConnecting": "Connecting…",
   "settings.mobileRelay.statusError": "Connection failed: {error}",
   "settings.mobileRelay.serverUrl": "Relay server",
-  "settings.mobileRelay.serverUrlDescription": "Address of your self-deployed relay, e.g. https://relay.example.com; deploy packages/relay first.",
+  "settings.mobileRelay.serverUrlDescription":
+    "Address of your self-deployed relay, e.g. https://relay.example.com; deploy packages/relay first.",
   "settings.mobileRelay.tokenPlaceholder": "Deployment token (optional)",
   "settings.mobileRelay.save": "Save",
   "settings.mobileRelay.saveFailed": "Failed to save mobile relay settings",
   "settings.mobileRelay.grant": "Generate phone authorization link",
-  "settings.mobileRelay.grantDescription": "Generate a one-time authorization link for the current workspace (valid for 10 minutes, single use); scan or open it on your phone to connect.",
+  "settings.mobileRelay.grantDescription":
+    "Generate a one-time authorization link for the current workspace (valid for 10 minutes, single use); scan or open it on your phone to connect.",
   "settings.mobileRelay.generate": "Generate link",
   "settings.mobileRelay.regenerate": "Regenerate",
   "settings.mobileRelay.grantCountdown": "Expires in {seconds}s",

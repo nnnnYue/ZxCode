@@ -1,6 +1,6 @@
 /* oxlint-disable eslint(max-lines) -- re-home 产物：task realtime 运行时 schema 集中迁移，类型与校验就近。 */
 // re-home 迁移产物（为删除旧协议树铺路）。
-// 本文件承载 task realtime 传输面中仍被存活栈（validation.ts 外部 relay payload 校验）
+// 本文件承载 task realtime 传输面中仍被存活栈（validation.ts 的 server/自部署 relay payload 校验）
 // 消费的运行时 zod schema 与 resolveWorkspaceKey。
 // task-realtime.ts 保留旧协议兼容接口；本文件集中定义对应的运行时 schema。
 

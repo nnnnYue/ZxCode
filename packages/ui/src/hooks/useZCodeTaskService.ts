@@ -235,7 +235,7 @@ function createZCodeTaskServiceProxy(service: IZCodeTaskService): IZCodeTaskServ
         }
 
         // 远控首屏恢复时，多个 hook 会并发请求同一 task snapshot，
-        // 导致 host 连续执行多次 getTaskSnapshot，并把超大快照重复回传到 relay。
+        // 导致 host 连续执行多次 getTaskSnapshot，并把超大快照重复回传到手机 relay 链路。
         // 这里按“同一 service + 同一参数”做并发去重，命中时复用同一个 Promise，
         // 保证同一时刻只发起一次 RPC；同时携带 if-none-match，未变化时复用本地缓存快照，
         // 避免重复下发大 JSON。

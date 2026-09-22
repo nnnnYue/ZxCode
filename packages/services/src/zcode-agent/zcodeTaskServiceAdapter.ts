@@ -3033,7 +3033,7 @@ export function createZCodeTaskServiceAdapter(
         // 这里仍是 services/ 内旧 session/subscribe 词表的
         // 最后消费点（replayable 的 stream 投影源）。写路径（send/stop/交互回执）
         // 已收敛 v4 命令；读路径消费方是
-        // host 镜像 taskRealtimePort（词表同为 ZCodeStreamEvent），镜像换 v4 帧 = relay
+        // host 镜像 taskRealtimePort（词表同为 ZCodeStreamEvent），镜像换 v4 帧 = 手机 relay 链路
         // 协议与手机 store 整链重做。
         // 过渡归宿 = replayable 读路径 v4 store，与 host/index.ts 镜像、
         // mapStateUpdated/mapServiceEvent、agentService.onDynamicSessionEvent 同批摘除。

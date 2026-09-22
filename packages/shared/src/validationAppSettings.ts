@@ -68,14 +68,13 @@ const mobileRelayServerUrlSchema = z.preprocess((value) => {
 }, z.string().url());
 
 /** 自部署手机远控 relay 桌面侧配置；schema 与 MobileRelaySettings 保持同构。 */
-export const mobileRelaySettingsSchema = z
+const mobileRelaySettingsSchema = z
   .object({
     enabled: z.boolean().default(false),
     serverUrl: mobileRelayServerUrlSchema.optional(),
     token: z.string().optional(),
   })
   .strict();
-export type MobileRelaySettingsInput = z.infer<typeof mobileRelaySettingsSchema>;
 
 const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,

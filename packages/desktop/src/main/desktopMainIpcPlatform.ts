@@ -319,10 +319,7 @@ export function registerPlatformIpcHandlers(options: {
   ipcMain.on(PlatformChannels.SyncWindowWorkspace, (event, payload: unknown) => {
     const result = windowWorkspaceSyncPayloadSchema.safeParse(payload);
     if (!result.success) {
-      options.logger.warn(
-        "[sync-window-workspace] invalid payload:",
-        formatZodError(result.error),
-      );
+      options.logger.warn("[sync-window-workspace] invalid payload:", formatZodError(result.error));
       return;
     }
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -344,10 +341,12 @@ export function registerPlatformIpcHandlers(options: {
         error: `invalid mobile relay grant request: ${formatZodError(result.error)}`,
       };
     }
-    return options.requestMobileRelayGrant?.(result.data) ?? {
-      success: false,
-      error: "mobile relay is not available",
-    };
+    return (
+      options.requestMobileRelayGrant?.(result.data) ?? {
+        success: false,
+        error: "mobile relay is not available",
+      }
+    );
   });
 
   // 快捷键录制态：renderer 设置页进入/退出录制时通知。macOS 系统菜单会先于 renderer
