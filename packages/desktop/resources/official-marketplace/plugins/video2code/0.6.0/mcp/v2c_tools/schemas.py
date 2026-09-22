@@ -2,7 +2,7 @@
 
 runtime 只注册 deploy_website/get_asset，video server 只注册视频分析工具。
 历史导航/截图 schema 仅作为旧配置兼容数据且不会注册；旧录制 schema 已移除，
-浏览器录制统一走 ZCode Browser Use SDK。
+浏览器录制统一走 ZxCode Browser Use SDK。
 """
 
 import json
@@ -306,7 +306,7 @@ TOOL_SCHEMAS = json.loads(r"""
     }
   },
   "deploy_website": {
-    "description": "Deploy or update a static website on a stable local URL. If dist is older than src, the tool runs npm run build first. This tool no longer owns an external browser: after deployment, use ZCode Browser Use on the existing IAB tab to navigate/reload and capture screenshots or recordings.",
+    "description": "Deploy or update a static website on a stable local URL. If dist is older than src, the tool runs npm run build first. This tool no longer owns an external browser: after deployment, use ZxCode Browser Use on the existing IAB tab to navigate/reload and capture screenshots or recordings.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -487,7 +487,7 @@ TOOL_SCHEMAS = json.loads(r"""
     }
   },
   "composite_view": {
-    "description": "Build the standard Parity evidence artifact — a same-scale SRC|REP composite — and get it BACK INLINE in this same tool result (also saved to disk, default under out/cmp/). It is the default instrument for judging [S#] ids AND for closing [D#] ids with a matched-beat strip.\n\nBoth `source` and `replica` accept an IMAGE or a VIDEO path. Video sides need a timestamp: pass `source_time`/`replica_time` (seconds) for a single-moment composite, or `beats` = [[t_src, t_rep], ...] (1-6 pairs) to build a multi-row matched-beat SRC|REP strip in ONE call — e.g. source = the Phase-2 clip, replica = your ZCode Browser Use recording WebM, beats = the matching moments on each timeline. This is the one-step way to produce the [D] closing evidence; no separate still_crops on each side needed.\n\nThe receipt prints both sides' measured post-crop dimensions and width/height ratios — read the Parity tolerances (±20% etc.) off those numbers directly.\n\nUse crop+scale for a zoomed regional composite when thin lines / small text / 1-2px features can't be judged on the full-frame composite — do NOT write per-pixel measurement scripts instead: a bad crop fails visibly, a bad probe produces plausible-looking wrong numbers.\n\n### Notes\n- crop is in the SOURCE frame's pixel coordinates: [x, y, w, h]; the replica is mapped to the same region proportionally when sizes differ. With beats, crop/replica_crop apply to every row.\n- TALL FULL-PAGE replica: when the replica is a full-page screenshot much taller than the source frame, proportional mapping is WRONG (aspect ratios differ). Pass `replica_crop` = [x, y, w, h] in the REPLICA's own pixel coordinates to slice the matching band directly — one call, no offline PIL slicing. (crop still applies to the source.)\n- ROTATION of a near-symmetric ring/disc: pass `angle_ring: true` to overlay a semi-transparent protractor (0° up, clockwise) on BOTH panels — read the tick each panel's feature aligns to; the difference IS the rotation. Do not chase absolute degrees by re-extracting frames.\n- The saved path is the verify.jsonl `evidence` value for the ids judged from it — name it after the id (e.g. out/cmp/D3_hover.png).\n- One call per composite; for several regions issue several calls in the same message (they are independent).",
+    "description": "Build the standard Parity evidence artifact — a same-scale SRC|REP composite — and get it BACK INLINE in this same tool result (also saved to disk, default under out/cmp/). It is the default instrument for judging [S#] ids AND for closing [D#] ids with a matched-beat strip.\n\nBoth `source` and `replica` accept an IMAGE or a VIDEO path. Video sides need a timestamp: pass `source_time`/`replica_time` (seconds) for a single-moment composite, or `beats` = [[t_src, t_rep], ...] (1-6 pairs) to build a multi-row matched-beat SRC|REP strip in ONE call — e.g. source = the Phase-2 clip, replica = your ZxCode Browser Use recording WebM, beats = the matching moments on each timeline. This is the one-step way to produce the [D] closing evidence; no separate still_crops on each side needed.\n\nThe receipt prints both sides' measured post-crop dimensions and width/height ratios — read the Parity tolerances (±20% etc.) off those numbers directly.\n\nUse crop+scale for a zoomed regional composite when thin lines / small text / 1-2px features can't be judged on the full-frame composite — do NOT write per-pixel measurement scripts instead: a bad crop fails visibly, a bad probe produces plausible-looking wrong numbers.\n\n### Notes\n- crop is in the SOURCE frame's pixel coordinates: [x, y, w, h]; the replica is mapped to the same region proportionally when sizes differ. With beats, crop/replica_crop apply to every row.\n- TALL FULL-PAGE replica: when the replica is a full-page screenshot much taller than the source frame, proportional mapping is WRONG (aspect ratios differ). Pass `replica_crop` = [x, y, w, h] in the REPLICA's own pixel coordinates to slice the matching band directly — one call, no offline PIL slicing. (crop still applies to the source.)\n- ROTATION of a near-symmetric ring/disc: pass `angle_ring: true` to overlay a semi-transparent protractor (0° up, clockwise) on BOTH panels — read the tick each panel's feature aligns to; the difference IS the rotation. Do not chase absolute degrees by re-extracting frames.\n- The saved path is the verify.jsonl `evidence` value for the ids judged from it — name it after the id (e.g. out/cmp/D3_hover.png).\n- One call per composite; for several regions issue several calls in the same message (they are independent).",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -497,7 +497,7 @@ TOOL_SCHEMAS = json.loads(r"""
         },
         "replica": {
           "type": "string",
-          "description": "Path to the replica evidence: a deployed-site screenshot, or a VIDEO (your ZCode Browser Use recording WebM) — then give replica_time or beats."
+          "description": "Path to the replica evidence: a deployed-site screenshot, or a VIDEO (your ZxCode Browser Use recording WebM) — then give replica_time or beats."
         },
         "source_time": {
           "type": "number",

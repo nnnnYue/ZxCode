@@ -4,9 +4,9 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "${ZCODE_PLUGIN_ROOT}/payload/dist/mcp/server.js"
+        "${ZXCODE_PLUGIN_ROOT}/payload/dist/mcp/server.js"
       ],
-      "cwd": "${ZCODE_PROJECT_DIR}",
+      "cwd": "${ZXCODE_PROJECT_DIR}",
       "env": {
         "MIMOSA_ENGINE": "${user_config.engine}"
       },

@@ -1,6 +1,6 @@
-# Mimosa for ZCode
+# Mimosa for ZxCode
 
-把 Mimosa 的实时代码安全检测接进 ZCode（及 Cursor / Claude Code 等支持 MCP + hooks 的对话流工具）。
+把 Mimosa 的实时代码安全检测接进 ZxCode（及 Cursor / Claude Code 等支持 MCP + hooks 的对话流工具）。
 
 ## 分级响应（核心理念：不是所有东西都强制改）
 
@@ -42,29 +42,29 @@ MCP 仅用于用户明确发起的密封深扫；日常写入保护与普通审�
    ```
    产物在 `mimosa-zcode/`，已自包含 `dist/cli.js` 与 `dist/mcp/server.js`。
 
-2. 安装进 ZCode：设置 → 插件管理 → 添加本地路径 `…/mimosa-zcode`，启用后重启会话。
+2. 安装进 ZxCode：设置 → 插件管理 → 添加本地路径 `…/mimosa-zxcode`，启用后重启会话。
 
 3. 前置依赖：
    - `node`（hook 与 MCP server 运行时，需在 PATH 上）
-   - `semgrep`（检测层）：可运行 `node ~/.zcode/mimosa-zcode/dist/cli.js semgrep install --accept-license` 将未修改的固定版本 Semgrep CE 安装到 `~/.zcode/mimosa-runtime/`，或继续使用已有的 Semgrep 路径
+   - `semgrep`（检测层）：可运行 `node ~/.zxcode/mimosa-zcode/dist/cli.js semgrep install --accept-license` 将未修改的固定版本 Semgrep CE 安装到 `~/.zxcode/mimosa-runtime/`，或继续使用已有的 Semgrep 路径
 
 一键安装只在用户显式触发时联网，不修改系统 Python，不使用 `sudo`。当前固定下载
 `semgrep==1.136.0`（LGPL-2.1-only）及其运行依赖；引擎本身保持未修改，Mimosa
 不下载或分发 Semgrep 官方规则集，只加载插件内的第一方离线规则。可用
-`node ~/.zcode/mimosa-zcode/dist/cli.js semgrep status --json` 查看安装状态。
+`node ~/.zxcode/mimosa-zcode/dist/cli.js semgrep status --json` 查看安装状态。
 
 默认安装不会向每轮编码对话注册 Mimosa MCP 工具。普通项目静态审计可直接用本机 CLI；仅在需要密封深扫时显式启用 MCP。写入前 Hook、Stop 增量复查和 Git 门不受影响。
 
-需要语义深审时可显式切换，命令只改变 ZCode 的 Mimosa MCP 开关，不影响静态 Hook：
+需要语义深审时可显式切换，命令只改变 ZxCode 的 Mimosa MCP 开关，不影响静态 Hook：
 
 ```bash
-node ~/.zcode/mimosa-zcode/dist/cli.js mcp status
-node ~/.zcode/mimosa-zcode/dist/cli.js mcp enable   # 启用后重启 ZCode
-node ~/.zcode/mimosa-zcode/dist/cli.js mcp disable  # 深审结束后关闭并重启 ZCode
+node ~/.zxcode/mimosa-zcode/dist/cli.js mcp status
+node ~/.zxcode/mimosa-zcode/dist/cli.js mcp enable   # 启用后重启 ZxCode
+node ~/.zxcode/mimosa-zcode/dist/cli.js mcp disable  # 深审结束后关闭并重启 ZxCode
 ```
 
 若 `mimosa` CLI 已在 `PATH` 中，上述命令可简写为 `mimosa mcp ...`。
-开关会按 ZCode 当前用户配置契约写入 `mcp.servers.mimosa.enable`；旧版 Mimosa
+开关会按 ZxCode 当前用户配置契约写入 `mcp.servers.mimosa.enable`；旧版 Mimosa
 误写的 `enabled` 会在下一次显式切换或重装时迁移，避免界面显示关闭但宿主仍加载 MCP。
 
 ## 配置
@@ -78,7 +78,7 @@ node ~/.zcode/mimosa-zcode/dist/cli.js mcp disable  # 深审结束后关闭并�
 - `MIMOSA_HOOK_BLOCK=graded|ask|deny|warn`：写入前门禁模式。默认 `graded`，当前 blocking 级别的 high 必须 `deny`；`ask` 仅用于显式兼容/演示，允许用户确认后落盘，不是安全默认值。
 - `MIMOSA_HOOK_FAILURE_MODE=open|strict`：扫描基础设施异常或覆盖不完整时的处理。默认 `open` 会显示 `INCONCLUSIVE` 并由 Stop 复核；高保障项目用 `strict`，使候选缺失、扫描失败、坏输出或 partial coverage 在写入前直接 `deny`。也可用 `MIMOSA_HOOK_STRICT=1`。
 - `MIMOSA_GIT_GATE_FAILURE_MODE=open|strict`：单独控制 commit/push 前项目扫描不完整时是否阻断；未设置时继承 `MIMOSA_HOOK_FAILURE_MODE`。
-- `MIMOSA_HOOK_STATUS=quiet|important|all`：ZCode 状态反馈。默认 `important` 只显示风险和不完整；`all` 还显示安全放行及“Hook 已完成，正在等待 ZCode 工具授权/执行”，适合演示和排障。
+- `MIMOSA_HOOK_STATUS=quiet|important|all`：ZxCode 状态反馈。默认 `important` 只显示风险和不完整；`all` 还显示安全放行及“Hook 已完成，正在等待 ZxCode 工具授权/执行”，适合演示和排障。
 - `MIMOSA_HOOK_PROJECT=1`：编辑 hook 附带跨文件告警（"用了既有危险代码"提示，非阻断）。
 - `MIMOSA_NO_PROMPT_GUARD=1`：关闭生成前安全约束；默认开启，尽量让模型首稿直接采用安全实现，减少 deny 后重试。
 - `MIMOSA_SESSION_WELCOME=1`：恢复旧版 SessionStart 项目扫描菜单；默认不注入该长菜单，避免它占用每轮模型上下文。
@@ -123,7 +123,7 @@ mimosa backlog triage --project <dir> --file findings.json --kind findings
 `mimosa status` 不读取源码或修改状态，并将未结 finding 明细限制在至多 100 条；
 空证据是 `not_evaluated`，partial、损坏、history/ledger 失配或仍等待宿主工具
 决策是 `inconclusive`。`no_open_findings` 仅表示完整读取的 ledger
-当前无未结 finding，不代表全项目无漏洞。ZCode 后续若增加专用安全面板，可直接消费
+当前无未结 finding，不代表全项目无漏洞。ZxCode 后续若增加专用安全面板，可直接消费
 `mimosa-project-security-status/v1` JSON，而无需读取 Hook 私有目录中的原始文件。
 
 退出码：`0`=完整扫描且无拦截级风险，`2`=命中高危，`1`=运行错误，或在显式 `--fail-on` 门禁下扫描覆盖不完整。`--fail-on none` 保持非门禁审计语义。**跨文件/预测属告警，永不单独进入风险退出码。**
@@ -136,11 +136,11 @@ mimosa backlog triage --project <dir> --file findings.json --kind findings
 - 单文件 `scan --project` 把 direct scan 与 `mimosa-project-context-coverage/v1` 分开报告；项目图不完整时 Hook/MCP/SARIF 都不能把本文件零发现解释成完整跨文件安全。
 - SessionStart 用快速静态扫描（跳过慢 semgrep），不卡会话启动。
 - PreToolUse 的完整 `Write` 候选会运行 finding 级 Security IR enforce；`Edit` 若能在本轮 UserPromptSubmit 基线中唯一定位 `old_string`，会先合并出完整候选再执行相同门禁。Edit 候选结果会和同一基线复扫做增量归因，存量未触碰 finding 不会因无关 Edit 被重复阻断。基线缺失、不可读或匹配歧义时只扫描工具片段，并显式提示覆盖不完整。
-- `MultiEdit` matcher 仅保留宿主兼容入口：当前已验证的 ZCode 工具 schema、安装包与本机日志没有提供其 `toolInput` payload 契约，Mimosa 不猜测 `edits/files` 等字段。收到该事件时，`failureMode=strict` 会在写入前 deny；默认 `open` 会显式返回 `INCONCLUSIVE`，并说明 Stop 也无法保证覆盖未枚举文件。取得真实版本化契约前不宣称逐文件门禁已实现。
+- `MultiEdit` matcher 仅保留宿主兼容入口：当前已验证的 ZxCode 工具 schema、安装包与本机日志没有提供其 `toolInput` payload 契约，Mimosa 不猜测 `edits/files` 等字段。收到该事件时，`failureMode=strict` 会在写入前 deny；默认 `open` 会显式返回 `INCONCLUSIVE`，并说明 Stop 也无法保证覆盖未枚举文件。取得真实版本化契约前不宣称逐文件门禁已实现。
 - Node `execFile/spawn` 会区分固定程序与用户可控程序、固定 argv 与整段外部 argv、解释器代码参数及 `--` 之前的 option injection；不会把所有参数数组一概误报。
-- 每次源码 Hook 都会原子更新 `.mimosa/hook-status/<session>.json`，只保存事件、文件、结果、覆盖、耗时和 `hook_complete_waiting_host_tool_decision` 等元数据，不保存候选源码。ZCode 若提供专用面板可直接消费该状态。
+- 每次源码 Hook 都会原子更新 `.mimosa/hook-status/<session>.json`，只保存事件、文件、结果、覆盖、耗时和 `hook_complete_waiting_host_tool_decision` 等元数据，不保存候选源码。ZxCode 若提供专用面板可直接消费该状态。
 - Stop 不再整文件复查：UserPromptSubmit 会在任务开始时保存基线，Stop 用 `git diff --no-index` 计算当前文件相对基线的新增/修改行，只保留落在这些行上的发现。
-- Stop 高危通过 ZCode 支持的 `continue: true + additionalContext` 进入修复回合；同一 UserPrompt 最多自动续写一次。之后即使仍有新增高危，也只显示短提示并保存报告，避免形成模型重试环；用户提交下一条任务后预算才重置。
+- Stop 高危通过 ZxCode 支持的 `continue: true + additionalContext` 进入修复回合；同一 UserPrompt 最多自动续写一次。之后即使仍有新增高危，也只显示短提示并保存报告，避免形成模型重试环；用户提交下一条任务后预算才重置。
 - 基线、变更候选或扫描器一旦截断/跳过/失败，报告的 `coverage.status` 会变为 `partial`，`run_status` 必须是 `inconclusive`；只向 UI 显示一条短提示，不以 additionalContext 触发额外模型重试，也绝不会把空结果写成“安全”。
 - Hook 状态使用每会话短锁和唯一代次基线；Stop 先认领为 `processing`，仅在报告与历史成功落盘后清理。进程崩溃或报告写入失败会恢复同一 review 供下次重试，并发 PostToolUse 不会互相覆盖。
 - `.mimosa/hook-state/` 与基线目录固定为 `0700`，状态及源码快照为 `0600`。调试日志只记录事件、长度和短哈希等元数据，不再保存 Hook stdin 或候选源码。

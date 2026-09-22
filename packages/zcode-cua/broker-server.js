@@ -1,7 +1,7 @@
 import { CuaHelperError } from "./broker.js";
 
-export const HELPER_ADDON_ENV = "ZCODE_CUA_HELPER_ADDON";
-export const WINDOWS_DEV_CONTROL_PROTOCOL = "zcode-cua-windows-dev/v1";
+export const HELPER_ADDON_ENV = "ZXCODE_CUA_HELPER_ADDON";
+export const WINDOWS_DEV_CONTROL_PROTOCOL = "zxcode-cua-windows-dev/v1";
 
 const UNAVAILABLE = "Computer Use is not available in this build.";
 

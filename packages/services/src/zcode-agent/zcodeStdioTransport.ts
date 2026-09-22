@@ -30,7 +30,7 @@ const E2E_COVERAGE_STDIO_EOF_EXIT_WAIT_MS = 5_000;
 const PROCESS_TREE_FORCE_AFTER_MS = 2_000;
 const PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS = 1_000;
 const PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS = 250;
-const processTreeLogger = createServiceLogger("zcode-agent-process-tree");
+const processTreeLogger = createServiceLogger("zxcode-agent-process-tree");
 
 export class ZCodeStdioTransport implements ZCodeProtocolTransport {
   readonly kind = "stdio" as const;
@@ -58,7 +58,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
   ) {
     this.stderrCollector = new AgentStderrCollector(child.stderr, options?.onStderrLine);
 
-    // ZCode Protocol stdio 帧边界只认 LF。Node readline 会把 U+2028/U+2029
+    // ZxCode Protocol stdio 帧边界只认 LF。Node readline 会把 U+2028/U+2029
     // 当作换行，模型文本包含这类字符时会把合法 JSON 字符串切成半帧。
     child.stdout.on("data", this.handleStdoutData);
     child.stdout.once("end", this.handleStdoutEnd);
@@ -80,7 +80,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
 
   async send(message: ZCodeProtocolMessage): Promise<void> {
     if (this.disposed || this.closed || this.child.killed || !this.child.stdin.writable) {
-      throw new Error("ZCode agent stdio transport is closed");
+      throw new Error("ZxCode agent stdio transport is closed");
     }
     const frame = `${JSON.stringify(message)}\n`;
     await new Promise<void>((resolve, reject) => {
@@ -157,7 +157,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
       // coverage CLI bundle 未压缩且带完整 source map，启动/收尾明显慢于发布包。
       // coverage 下继续保留额外写盘宽限；普通窗口覆盖 CLI 的 1500ms 退出 deadline。
       const configuredEofWaitMs =
-        process.env.ZCODE_E2E_COVERAGE === "1"
+        process.env.ZXCODE_E2E_COVERAGE === "1"
           ? E2E_COVERAGE_STDIO_EOF_EXIT_WAIT_MS
           : STDIO_EOF_EXIT_WAIT_MS;
       const remainingCleanupMs =
@@ -261,7 +261,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
   private handleStreamError(stream: "stdin" | "stdout", error: Error): void {
     // 远端 WSL/SSH agent 秒退后，host 仍可能正在写入尚未完成的协议请求。
     // Node 的 stdin write 回调会 reject，但底层 Socket 还会额外触发 error 事件；若没有长期监听，
-    // zcode-server 会因未处理的 EPIPE 直接崩溃，UI 只能看到远端连接断开而不是协议请求失败。
+    // zxcode-server 会因未处理的 EPIPE 直接崩溃，UI 只能看到远端连接断开而不是协议请求失败。
     // 这里把 stream error 视为 transport 已关闭，阻止后续继续向失效 agent 写入。
     this.fireClose({ reason: `${stream}_error: ${error.message}` });
   }

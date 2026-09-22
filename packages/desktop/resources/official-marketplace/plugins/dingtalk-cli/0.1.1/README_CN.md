@@ -12,7 +12,7 @@
 
 macOS/Linux 默认使用官方 shell 安装器的 `DWS_NO_SKILLS=1` 模式。npm 安装器及 CLI 升级可能安装或恢复全局上游 Skills，安装前需说明。必须检查 `authenticated: true`，不能仅凭退出码 0 或 `success: true` 判断已登录。
 
-本封装的两个 Skill 不依赖上游 Skills。仅用户单独要求时查看 `dws skill setup --help`，选择实际宿主（含 ZCode）、模式和目录后确认安装。企业管理员可能需要开启 CLI 访问或批准应用权限。
+本封装的两个 Skill 不依赖上游 Skills。仅用户单独要求时查看 `dws skill setup --help`，选择实际宿主（含 ZxCode）、模式和目录后确认安装。企业管理员可能需要开启 CLI 访问或批准应用权限。
 
 ## Skills
 
@@ -34,4 +34,4 @@ macOS/Linux 默认使用官方 shell 安装器的 `DWS_NO_SKILLS=1` 模式。npm
 - [DingTalk Workspace CLI](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli)
 - [安装与 Skill setup](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli#installation)
 
-启用或更新插件后请新建 ZCode session，确保 Skill 清单刷新。
+启用或更新插件后请新建 ZxCode session，确保 Skill 清单刷新。

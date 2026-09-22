@@ -74,7 +74,7 @@ export function createGenerateTextOptions(input: {
       input.resolved.headers,
       createModelRequestAttributionHeaders(input.statusContext),
     ),
-    // ZCode owns system-message construction in core/context. Keep AI SDK from
+    // ZxCode owns system-message construction in core/context. Keep AI SDK from
     // printing its generic system-message warning to process stderr.
     allowSystemInMessages: true,
     maxRetries: 0,
@@ -132,7 +132,7 @@ export function createStreamTextOptions(input: {
       input.resolved.headers,
       createModelRequestAttributionHeaders(input.statusContext),
     ),
-    // ZCode owns system-message construction in core/context. Keep AI SDK from
+    // ZxCode owns system-message construction in core/context. Keep AI SDK from
     // printing its generic system-message warning to process stderr.
     allowSystemInMessages: true,
     maxRetries: 0,

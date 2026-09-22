@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const repoRoot = resolve(import.meta.dirname, "..");
-const defaultEntryPath = join(repoRoot, "apps/zcode-cli/packages/cli/dist/zcode.cjs");
+const defaultEntryPath = join(repoRoot, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
 const runtimeSourcePath = join(import.meta.dirname, "desktop-agent-bytecode-runtime.cjs");
 const compilerPath = join(import.meta.dirname, "compile-desktop-agent-bytecode.cjs");
 
@@ -28,10 +28,10 @@ export async function buildDesktopAgentBytecode({
   electronPath = createRequire(import.meta.url)("electron"),
   env = process.env,
 } = {}) {
-  if (env.ZCODE_E2E_COVERAGE === "1") throw new Error("coverage 构建不能启用字节码试验");
+  if (env.ZXCODE_E2E_COVERAGE === "1") throw new Error("coverage 构建不能启用字节码试验");
   const directory = dirname(entryPath);
   const temporary = join(directory, `.bytecode-${randomUUID()}`);
-  const loaderPath = join(directory, "zcode.bytecode.cjs");
+  const loaderPath = join(directory, "zxcode.bytecode.cjs");
   try {
     const { stdout } = await execFileAsync(electronPath, [compilerPath, entryPath, temporary], {
       env: { ...env, ELECTRON_RUN_AS_NODE: "1", NODE_OPTIONS: "" },

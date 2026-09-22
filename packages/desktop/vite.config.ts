@@ -72,7 +72,7 @@ function createE2EUIRendererCoveragePlugin(repoRoot: string): Plugin {
   );
 
   return {
-    name: "zcode:e2e-ui-source-coverage",
+    name: "zxcode:e2e-ui-source-coverage",
     enforce: "pre",
     transform(sourceCode, id, options) {
       if (options?.ssr || id.startsWith("\0")) {
@@ -141,23 +141,23 @@ function stripViteRequestQuery(id: string) {
 }
 
 export default defineConfig(({ mode }) => {
-  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 ZCODE_ENV。
+  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 ZXCODE_ENV。
   const env = { ...loadEnv(mode, "../..", ""), ...process.env };
   const repoRoot = resolve(__dirname, "../..");
-  const zcodeEnv = resolveZCodeEnv(env.ZCODE_ENV);
+  const zcodeEnv = resolveZCodeEnv(env.ZXCODE_ENV);
   // 安装包身份与后端环境分轴；renderer 用它决定是否展示更新入口。
   const zcodeProductFlavor = resolveDesktopProductFlavor({
     ...process.env,
     ...env,
-    ZCODE_ENV: zcodeEnv,
+    ZXCODE_ENV: zcodeEnv,
   });
   const e2eCoverageEnabled =
-    env.ZCODE_E2E_COVERAGE === "1" || process.env.ZCODE_E2E_COVERAGE === "1";
+    env.ZXCODE_E2E_COVERAGE === "1" || process.env.ZXCODE_E2E_COVERAGE === "1";
   const e2eStoreBridgeEnabled =
-    env.VITE_ZCODE_E2E_STORE_BRIDGE === "1" || process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1";
+    env.VITE_ZXCODE_E2E_STORE_BRIDGE === "1" || process.env.VITE_ZXCODE_E2E_STORE_BRIDGE === "1";
   const zcodeEndpointOrigin = resolveZCodeEndpointOrigin({
     env: zcodeEnv,
-    envBaseOrigin: env.ZCODE_BASE_URL ?? env.ZCODE_ENDPOINT_ORIGIN,
+    envBaseOrigin: env.ZXCODE_BASE_URL ?? env.ZXCODE_ENDPOINT_ORIGIN,
   });
   const codingPlanWebviewOrigin =
     env.VITE_CODING_PLAN_WEBVIEW_ORIGIN ?? process.env.VITE_CODING_PLAN_WEBVIEW_ORIGIN ?? "";
@@ -188,22 +188,22 @@ export default defineConfig(({ mode }) => {
     },
     server: { port: 5174, strictPort: true },
     define: {
-      __ZCODE_ENDPOINT_ENV__: JSON.stringify(pickProductEndpointEnv(env)),
-      __ZCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
-      __ZCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
-      __ZCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
-      __ZCODE_ENV__: JSON.stringify(zcodeEnv),
-      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify(zcodeProductFlavor),
-      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(mode !== "production"),
-      "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
-      // 兼容旧 renderer 读取名；新代码统一读 VITE_ZCODE_BASE_URL。
-      "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
+      __ZXCODE_ENDPOINT_ENV__: JSON.stringify(pickProductEndpointEnv(env)),
+      __ZXCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
+      __ZXCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
+      __ZXCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
+      __ZXCODE_ENV__: JSON.stringify(zcodeEnv),
+      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify(zcodeProductFlavor),
+      __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(mode !== "production"),
+      "import.meta.env.VITE_ZXCODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
+      // 兼容旧 renderer 读取名；新代码统一读 VITE_ZXCODE_BASE_URL。
+      "import.meta.env.VITE_ZXCODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
       "import.meta.env.VITE_CODING_PLAN_WEBVIEW_ORIGIN": JSON.stringify(codingPlanWebviewOrigin),
       "import.meta.env.VITE_REWARDS_WEBVIEW_ORIGIN": JSON.stringify(
         env.VITE_REWARDS_WEBVIEW_ORIGIN ?? process.env.VITE_REWARDS_WEBVIEW_ORIGIN ?? "",
       ),
-      // E2E store bridge 只能由 WDIO 专用变量打开，避免把 ZCODE_ENV=test 产品环境误当成测试运行态。
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify(
+      // E2E store bridge 只能由 WDIO 专用变量打开，避免把 ZXCODE_ENV=test 产品环境误当成测试运行态。
+      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify(
         e2eStoreBridgeEnabled ? "1" : "",
       ),
     },

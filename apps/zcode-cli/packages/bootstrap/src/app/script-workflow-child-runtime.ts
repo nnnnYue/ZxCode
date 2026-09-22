@@ -114,7 +114,7 @@ export function createScriptWorkflowAgentRuntime(input: {
     {
       ...inheritedConfig,
       ...(systemPrompt === undefined ? {} : { systemPrompt }),
-      agentName: input.request.opts?.agentType ?? "zcode-workflow",
+      agentName: input.request.opts?.agentType ?? "zxcode-workflow",
       maxTurns: input.request.opts?.maxTurns ?? input.deps.runtimeConfig.maxTurns,
       mode: "yolo",
       modelSelection,
@@ -132,7 +132,7 @@ export function createScriptWorkflowAgentRuntime(input: {
         // `deps.permissionBroker`，于是 actor 带着 `sess_dwf-…` 去问桌面，桌面
         // `requireSession` 抛错、response 永不发出，子代理在首个模型请求前挂死。
         agentId: input.childSessionId,
-        agentType: input.request.opts?.agentType ?? "zcode-workflow",
+        agentType: input.request.opts?.agentType ?? "zxcode-workflow",
         childSessionId: input.childSessionId,
         description: input.request.opts?.label ?? input.request.opts?.agentType ?? "workflow agent",
         ...(input.traceContext.turnId === undefined

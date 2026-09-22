@@ -1,27 +1,27 @@
 ---
 name: url2video
-description: Record a live website with ZCode's built-in Browser Use WebView (native WebM), then transcode it to MP4 with ffmpeg. Use when a task starts from a URL and asks to record, capture, replicate, clone, 录制, 录屏, 复刻, 复现, or 还原 the site. Produces a recordings/name.mp4 deliverable (intermediate .webm kept) without Playwright or a separate Chromium.
+description: Record a live website with ZxCode's built-in Browser Use WebView (native WebM), then transcode it to MP4 with ffmpeg. Use when a task starts from a URL and asks to record, capture, replicate, clone, 录制, 录屏, 复刻, 复现, or 还原 the site. Produces a recordings/name.mp4 deliverable (intermediate .webm kept) without Playwright or a separate Chromium.
 ---
 
-# URL2Video（ZCode 内置浏览器录 WebM → ffmpeg 转 MP4）
+# URL2Video（ZxCode 内置浏览器录 WebM → ffmpeg 转 MP4）
 
 把 URL 变成可交付、可继续作为 `video2code` 输入的 **MP4**。浏览、截图、交互和录像都在同一个
-ZCode 内置 WebView 中完成；不要安装/启动 Playwright、Chrome 或其它外部浏览器。
+ZxCode 内置 WebView 中完成；不要安装/启动 Playwright、Chrome 或其它外部浏览器。
 
-录制环节只能产出 WebM（ZCode 录制链路的原生格式），所以本 skill 分两段：
+录制环节只能产出 WebM（ZxCode 录制链路的原生格式），所以本 skill 分两段：
 **内置浏览器录 `.webm` → ffmpeg 转 `.mp4`**。最终交付物和下游 `video2code` 流程都走 MP4。
 
 ## 前提与边界
 
-- 必须同时使用 ZCode 官方 `control-browser` skill，并完整遵守其 bootstrap、backend 选择、
+- 必须同时使用 ZxCode 官方 `control-browser` skill，并完整遵守其 bootstrap、backend 选择、
   tab 恢复和页面安全规则。若 `iab` descriptor 或 `BrowserRecordingAPI` 不可用，明确报告版本
   不匹配，不要回退到 shell browser。
 - 每个 `node_repl` JavaScript 调用都是新 kernel；每次都按 `control-browser` 重新 bootstrap，
   再用 `await agent.browsers.get("iab")`。
 - 录像只接受 Browser Use SDK 的受限 action DSL，不执行任意页面脚本。
 - `recording.status` 的 `outputPath` 必须是工作区内相对路径且以 `.webm` 结尾，例如
-  `recordings/source-home.webm`；ZCode 只落 WebM，传 `.mp4` 会被拒绝 —— 转 MP4 是**录制之后**
-  由 ffmpeg 单独做的一步，不要试图让 ZCode 直接输出 MP4。
+  `recordings/source-home.webm`；ZxCode 只落 WebM，传 `.mp4` 会被拒绝 —— 转 MP4 是**录制之后**
+  由 ffmpeg 单独做的一步，不要试图让 ZxCode 直接输出 MP4。
 - 转码必须真的调 ffmpeg 重编码成 H.264 MP4。禁止只把 `.webm` 改名成 `.mp4` 伪装格式 ——
   容器和编码不匹配，下游 `ingest_video` / `clip_video` 会解码失败或抽出错帧。
 - 原始 `.webm` 转码后**保留**，作为原始录制证据；`.mp4` 是交付物。两个文件同名不同扩展。

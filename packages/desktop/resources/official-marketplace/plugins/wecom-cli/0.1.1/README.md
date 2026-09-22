@@ -30,4 +30,4 @@ Reuse an existing authorization before initializing again. Match the status line
 - [WeCom CLI](https://github.com/WecomTeam/wecom-cli)
 - [CLI reference](https://github.com/WecomTeam/wecom-cli/blob/main/docs/cli-reference.md)
 
-Open a new ZCode session after enabling or updating the plugin so the Skill catalog is refreshed.
+Open a new ZxCode session after enabling or updating the plugin so the Skill catalog is refreshed.

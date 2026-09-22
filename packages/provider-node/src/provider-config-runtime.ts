@@ -21,7 +21,7 @@ export interface NodeProviderConfigRuntimeOptions {
 }
 
 /**
- * 组装一个 Node.js 进程内共享的 ZCode Built-in/Personal Config 运行边界。
+ * 组装一个 Node.js 进程内共享的 ZxCode Built-in/Personal Config 运行边界。
  * 内置目录为纯打包文件：这里只保留账号恢复等周期监听，不再有远端下载刷新。
  */
 export class NodeProviderConfigRuntime {

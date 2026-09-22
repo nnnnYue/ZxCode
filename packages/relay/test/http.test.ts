@@ -4,7 +4,7 @@ import { once } from "node:events";
 import WebSocket from "ws";
 import { createRelayHttpServer, type RelayHttpServer } from "../src/http.js";
 import {
-  ZCODE_RELAY_PROTOCOL_VERSION,
+  ZXCODE_RELAY_PROTOCOL_VERSION,
   type RelayAttachRequest,
   type RelayControlServerMessage,
   type RelayIssueGrantResponse,
@@ -54,7 +54,7 @@ async function openControl(relay: RelayHttpServer, token?: string): Promise<Cont
     type: "relay-control-hello",
     deviceId: "device-test",
     relayToken: DEVICE_TOKEN,
-    version: ZCODE_RELAY_PROTOCOL_VERSION,
+    version: ZXCODE_RELAY_PROTOCOL_VERSION,
   });
   await next((m) => (m as { type?: string }).type === "relay-control-ack");
   const requestGrant = (requestId: string): Promise<RelayIssueGrantResponse> => {
@@ -197,7 +197,7 @@ test("静态托管：未配置 webRoot 返回引导页", async () => {
     const response = await fetch(`http://127.0.0.1:${relay.port}/`);
     assert.equal(response.status, 200);
     const body = await response.text();
-    assert.match(body, /ZCode Relay/);
+    assert.match(body, /ZxCode Relay/);
   } finally {
     await relay.close();
   }

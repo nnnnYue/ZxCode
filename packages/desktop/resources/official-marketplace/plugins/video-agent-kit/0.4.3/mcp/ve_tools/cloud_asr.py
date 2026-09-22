@@ -1,7 +1,7 @@
 """cloud_asr: 直连 HTTP 语音识别的兼容 provider（legacy escape hatch）。
 
 **这不是默认通道。** 默认走 ``zcode_speech``（宿主注入身份、无需任何 key）；配置了
-``VE_SPEECH_MCP_URL`` 时走远端 Speech MCP。本模块只服务于既不在 ZCode 宿主里、也没有
+``VE_SPEECH_MCP_URL`` 时走远端 Speech MCP。本模块只服务于既不在 ZxCode 宿主里、也没有
 远端 MCP 可用，却已自备一套直连 HTTP 识别服务的部署。
 
 因此本模块**没有内置服务地址、也没有内置资源标识**：端点、资源 ID、鉴权全部由部署方
@@ -87,7 +87,7 @@ def cloud_asr_status() -> dict[str, Any]:
     """Availability probe for the direct-HTTP compatibility backend, shaped like
     {available, reasons, ...} so provider selection can treat every channel alike.
 
-    Not being configured is the normal case, not a defect: under ZCode the
+    Not being configured is the normal case, not a defect: under ZxCode the
     official channel needs no local configuration at all.
     """
     cfg = cloud_asr_config()

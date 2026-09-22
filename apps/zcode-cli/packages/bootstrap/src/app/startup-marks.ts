@@ -31,12 +31,12 @@ export function resolveStartupPlugins(input: {
     // defaultEnabled 的 official plugin (如 skill-creator) 只有在这里
     // 把名单传给 discoverNodePluginsSync 才会真正默认开启。CLI 子命令路径
     // (resolveZCodePlugins) 和应用启动路径都要传，否则 `/skill skill-creator` 在会话里
-    // 报 "Skill not found: skill-creator"，但 `zcode plugins list` 却显示它是 enabled。
+    // 报 "Skill not found: skill-creator"，但 `zxcode plugins list` 却显示它是 enabled。
     officialPluginsEnabledByDefault: DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS,
     storageRoot: pluginStorageRoot,
     workingDirectory: input.workingDirectory,
   });
-  input.startupTimer.mark("ZCode plugins resolved", {
+  input.startupTimer.mark("ZxCode plugins resolved", {
     context: {
       commandRootCount: pluginOutcome.commandRoots.length,
       diagnosticCount: pluginOutcome.diagnostics.length,
@@ -62,7 +62,7 @@ export function startAppStartup(input: {
   resume: boolean;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.start("ZCode app startup started", {
+  input.startupTimer.start("ZxCode app startup started", {
     context: {
       hasInjectedModelAdapter: input.hasInjectedModelAdapter,
       resume: input.resume,
@@ -76,7 +76,7 @@ export function markConfigurationLoaded(input: {
   configResult: ConfigResult;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.mark("ZCode app configuration loaded", {
+  input.startupTimer.mark("ZxCode app configuration loaded", {
     context: {
       configSourceEnv: input.configResult.sources.env,
       configSourceProject: input.configResult.sources.project.loaded,
@@ -94,7 +94,7 @@ export function markStorageAdaptersInitialized(input: {
   startupTimer: StartupTimer;
   storageRoot: string;
 }): void {
-  input.startupTimer.mark("ZCode storage adapters initialized", {
+  input.startupTimer.mark("ZxCode storage adapters initialized", {
     context: {
       hasInjectedArtifactStore: input.hasInjectedArtifactStore,
       hasInjectedSessionStore: input.hasInjectedSessionStore,
@@ -113,7 +113,7 @@ export function markMcpAdapterInitialized(input: {
   startupTimer: StartupTimer;
   trustedMcpServerCount: number;
 }): void {
-  input.startupTimer.mark("ZCode MCP adapter initialized", {
+  input.startupTimer.mark("ZxCode MCP adapter initialized", {
     context: {
       hasInjectedMcpPort: input.hasInjectedMcpPort,
       mcpEnabled: input.mcpEnabled,
@@ -130,7 +130,7 @@ export function markRuntimeConstructed(input: {
   sessionId: string;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.mark("ZCode runtime constructed", {
+  input.startupTimer.mark("ZxCode runtime constructed", {
     context: {
       hasInjectedModelAdapter: input.hasInjectedModelAdapter,
       sessionId: input.sessionId,
@@ -145,7 +145,7 @@ export function completeAppStartup(input: {
   startupTimer: StartupTimer;
   workingDirectory: string;
 }): void {
-  input.startupTimer.complete("ZCode app startup completed", {
+  input.startupTimer.complete("ZxCode app startup completed", {
     context: {
       sessionId: input.sessionId,
       workingDirectory: input.workingDirectory,

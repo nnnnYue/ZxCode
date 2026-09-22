@@ -38,4 +38,4 @@ Imported content and adaptation deltas:
 
 ## Local additions (no upstream counterpart)
 
-The ZCode adaptation adds the ZCode plugin manifests (`.zcode-plugin/`, `.claude-plugin/`), bilingual plugin documentation (`README.md`, `README_CN.md`), marketplace registration in `marketplace.json`, and a `setup` skill (`skills/setup/`) that verifies and installs the Obsidian CLI, defuddle, and knap.
+The ZxCode adaptation adds the ZxCode plugin manifests (`.zcode-plugin/`, `.claude-plugin/`), bilingual plugin documentation (`README.md`, `README_CN.md`), marketplace registration in `marketplace.json`, and a `setup` skill (`skills/setup/`) that verifies and installs the Obsidian CLI, defuddle, and knap.

@@ -74,7 +74,7 @@ function verifyProtectedPackage() {
   try {
     // 共享载荷多平台布局:清单在 mimosa-zcode/manifest.json,只覆盖共享载荷子树。
     // 旧单树布局:清单在包根 <root>/manifest.json。二者按 manifest.json 存在与否择一。
-    const sharedRoot = path.dirname(__dirname);          // mimosa-zcode
+    const sharedRoot = path.dirname(__dirname);          // mimosa-zxcode
     const legacyRoot = path.dirname(sharedRoot);         // <root>
     const protectedRoot = fs.existsSync(path.join(sharedRoot, "manifest.json")) ? sharedRoot : legacyRoot;
     const manifest = JSON.parse(fs.readFileSync(path.join(protectedRoot, "manifest.json"), "utf8"));
@@ -139,10 +139,10 @@ function protectionKey() {
       encoded = Buffer.from(keyB64, "base64");
       const decoded = decodeKey(encoded);
       inheritedProtectionKey = Buffer.from(decoded);
-      // 拓扑 B:密钥本就随包交付给运营方（ZCode），加密只是抬高成本、无保密性。
+      // 拓扑 B:密钥本就随包交付给运营方（ZxCode），加密只是抬高成本、无保密性。
       // 一次性 FD 只喂到首个 Node 进程（hook loader 壳），它随后 spawn 的内层
       // cli 是独立进程、读不到已删除的 FD。把密钥透传到 env，让 hook→cli、
-      // stop-hook→cli 等子进程直接解密，mcp+hook+skill 对 ZCode 即插即用。
+      // stop-hook→cli 等子进程直接解密，mcp+hook+skill 对 ZxCode 即插即用。
       // 不落任何 key 文件，也不损失我们本就没有的保密性。
       if (!process.env.MIMOSA_PROTECT_KEY_B64) {
         process.env.MIMOSA_PROTECT_KEY_B64 = keyB64;
@@ -494,7 +494,7 @@ function loadProtected(parentModule, payloadFile, artifactId) {
 /**
  * Execute an encrypted CommonJS script from an ESM bootstrap hook.
  *
- * The protected ZCode hooks remain ESM at their public entrypoint so the host
+ * The protected ZxCode hooks remain ESM at their public entrypoint so the host
  * keeps its existing `node hooks/*.mjs` contract. Their bundled implementation
  * is CJS and is compiled with a stable virtual filename inside the hook
  * directory. This deliberately preserves `__dirname`/module lookup semantics

@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   // 存储模式也可运行在 Host Worker 中，不能修改整个 Host 的进程名称。
   if (!argv.includes("--prepare-storage")) setCliProcessTitle();
-  // 真实 zcode CLI 进程里仍可能有少量路径直接读取 process.env。
+  // 真实 zxcode CLI 进程里仍可能有少量路径直接读取 process.env。
   // 入口先清洗用户 shell 注入的 NODE_ENV、代理和证书变量；网络变量只封存给后续 Bash/tool 子进程恢复。
   applyCliRuntimeEnvSanitization(process.env);
   const isProtocol = isProtocolServerInvocation(argv);
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
     isProtocol && !argv.includes("--prepare-storage")
       ? createProtocolProcessLifecycle()
       : undefined;
-  // app-server/agent-server 的 stdout 是严格的 ZCode Protocol 帧通道，三方 SDK 的
+  // app-server/agent-server 的 stdout 是严格的 ZxCode Protocol 帧通道，三方 SDK 的
   // console.debug 等普通输出不能直接写入 stdout。必须在加载 run/bootstrap 之前将
   // 进程级 console 统一引导到 stderr，否则任意依赖的一行普通日志都会触发传输层 JSON 解析崩溃。
   // TUI 同样独占 stdout；AI SDK 的首条提示使用 console.info，不能绕过 stderr 捕获。

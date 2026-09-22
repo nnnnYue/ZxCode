@@ -115,7 +115,7 @@ function readRawToolNameCandidates(raw: unknown) {
       readNestedString(raw, ["toolName"]) ??
       readNestedString(raw, ["tool_name"]) ??
       readNestedString(raw, ["name"]),
-    zcode: readNestedString(raw, ["_meta", "zcode", "toolName"]),
+    zxcode: readNestedString(raw, ["_meta", "zxcode", "toolName"]),
     rawKind: readNestedString(raw, ["kind"]),
     rawTitle: readNestedString(raw, ["title"]),
   };
@@ -128,7 +128,7 @@ function isLegacyAgentTool(
   const kind = normalizeLegacyToken(toolCall.kind);
   const title = normalizeLegacyToken(toolCall.title);
   const rawDirect = normalizeLegacyToken(rawNames.direct);
-  const rawZCode = normalizeLegacyToken(rawNames.zcode);
+  const rawZCode = normalizeLegacyToken(rawNames.zxcode);
 
   return (
     rawZCode === "agent" ||
@@ -210,7 +210,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
     { value: toolCall.toolName, source: "toolName" as const },
     { value: toolCall.kind, source: "kind" as const },
     { value: rawNames.direct, source: "raw" as const },
-    { value: rawNames.zcode, source: "raw-zcode-meta" as const },
+    { value: rawNames.zxcode, source: "raw-zcode-meta" as const },
   ]) {
     const identity = identityFromKnownToolName(candidate.value, candidate.source);
     if (identity) {
@@ -220,13 +220,13 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
 
   if (isLegacyAgentTool(toolCall, rawNames)) {
     return identityFromLegacyFamily(
-      rawNames.direct ?? rawNames.zcode ?? "Agent",
+      rawNames.direct ?? rawNames.zxcode ?? "Agent",
       "agent",
       "legacy-payload",
     );
   }
 
-  // `Task` 现在是现役 Claude 兼容工具名，但历史 ZCode Agent 投影会用
+  // `Task` 现在是现役 Claude 兼容工具名，但历史 ZxCode Agent 投影会用
   // kind="think" + title="Task" 表示子 agent 活动。title 只是展示名，必须放在
   // legacy payload 判断之后，避免把旧会话误升级成非 legacy 工具身份。
   const titleIdentity = identityFromKnownToolName(toolCall.title, "title");
@@ -276,14 +276,14 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
   }
 
   if (
-    // 当前 ZCode Agent 传给 app 的 plan mode 退出工具是 ExitPlanMode，
+    // 当前 ZxCode Agent 传给 app 的 plan mode 退出工具是 ExitPlanMode，
     // normalize 后没有下划线；旧兼容只认 switch_mode / Exited Plan Mode，导致计划卡片走 fallback。
     [
       toolCall.toolName,
       toolCall.kind,
       toolCall.title,
       rawNames.direct,
-      rawNames.zcode,
+      rawNames.zxcode,
       rawNames.rawKind,
       rawNames.rawTitle,
     ]

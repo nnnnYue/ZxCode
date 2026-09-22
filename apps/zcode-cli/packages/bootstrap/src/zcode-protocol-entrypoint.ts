@@ -38,7 +38,7 @@ import {
 import {
   createOfficialMcpTrustedOriginRegistry,
   OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV,
-  ZCODE_WORKSPACE_IDENTITY_ENV,
+  ZXCODE_WORKSPACE_IDENTITY_ENV,
   resolveRuntimeZCodeEndpointOrigin,
 } from "@zcode/shared";
 import { ZCodeProtocolAgentServer } from "./zcode-protocol/server.js";
@@ -100,21 +100,21 @@ export async function runZCodeProtocolAgent(
       entrypoint: "zcode_protocol",
     },
   });
-  const logger = loggerFactory.createLogger("zcode").child({
+  const logger = loggerFactory.createLogger("zxcode").child({
     ...traceContextToLogContext(traceContext),
-    module: "bootstrap.zcode_protocol",
+    module: "bootstrap.zxcode_protocol",
   });
   installZCodeProtocolAiSdkWarningLogger(logger);
   const startupTimer = new StartupTimer(
     logger,
     {
       ...traceContextToLogContext(traceContext),
-      module: "bootstrap.zcode_protocol",
+      module: "bootstrap.zxcode_protocol",
       startupKind: "zcode_protocol_agent",
     },
     startupStartedAt,
   );
-  startupTimer.start("ZCode Protocol agent startup started", {
+  startupTimer.start("ZxCode Protocol agent startup started", {
     context: { version: options.version },
     event: "zcode_protocol.startup.started",
     stage: "start",
@@ -163,7 +163,7 @@ export async function runZCodeProtocolAgent(
       accountRevision: providerRegistryRuntime.snapshot.sourceRevisions.account,
       configRevision: providerRegistryRuntime.snapshot.sourceRevisions.config,
       event: "zcode_protocol.provider_registry.ready",
-      module: "bootstrap.zcode_protocol",
+      module: "bootstrap.zxcode_protocol",
       providerCount: providerRegistryRuntime.snapshot.registry.providers.length,
     });
     mcpTelemetryTracker =
@@ -182,7 +182,7 @@ export async function runZCodeProtocolAgent(
     // 与下面 trustedOrigins 的 resolveZCodeApiOrigin 必须是同一个表达式，否则两侧判定分叉。
     const resolveZCodeApiOrigin = (): string =>
       resolveRuntimeZCodeEndpointOrigin(options.env ?? process.env);
-    const workspaceIdentity = (options.env ?? process.env)[ZCODE_WORKSPACE_IDENTITY_ENV]?.trim();
+    const workspaceIdentity = (options.env ?? process.env)[ZXCODE_WORKSPACE_IDENTITY_ENV]?.trim();
     const officialMcpAuth = {
       authHeadersPort: createOfficialMcpAuthHeadersPort({
         resolveContext: () => officialMcpAuthContext,
@@ -203,7 +203,7 @@ export async function runZCodeProtocolAgent(
       }),
       resolveZCodeApiOrigin,
       ...(workspaceIdentity ? { workspaceIdentity } : {}),
-      // 信任判定只看一条：目标 origin 等于当前 ZCode API origin（https）。pluginId 不参与。
+      // 信任判定只看一条：目标 origin 等于当前 ZxCode API origin（https）。pluginId 不参与。
       // origin 运行时解析（跟随 production/test 与自建环境），不硬编码域名。
       trustedOrigins: createOfficialMcpTrustedOriginRegistry({
         devTrustedOriginsRaw: (options.env ?? process.env)[OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV],
@@ -319,7 +319,7 @@ export async function runZCodeProtocolAgent(
       (message) => connection.send(message),
       logger,
     );
-    startupTimer.complete("ZCode Protocol agent startup completed", {
+    startupTimer.complete("ZxCode Protocol agent startup completed", {
       event: "zcode_protocol.startup.completed",
       stage: "total",
     });
@@ -329,7 +329,7 @@ export async function runZCodeProtocolAgent(
     options.lifecycle?.requestShutdown(
       error instanceof Error ? error : new Error("Protocol runtime failed", { cause: error }),
     );
-    startupTimer.fail("ZCode Protocol agent startup failed", error, {
+    startupTimer.fail("ZxCode Protocol agent startup failed", error, {
       event: "zcode_protocol.startup.failed",
       stage: "total",
     });
@@ -348,10 +348,10 @@ export async function runZCodeProtocolAgent(
       sessionStore,
       providerRegistryRuntime,
     });
-    logger.info("ZCode Protocol agent shutdown completed", {
+    logger.info("ZxCode Protocol agent shutdown completed", {
       ...traceContextToLogContext(traceContext),
       event: "zcode_protocol.shutdown.completed",
-      module: "bootstrap.zcode_protocol",
+      module: "bootstrap.zxcode_protocol",
       status: "completed",
     });
   }

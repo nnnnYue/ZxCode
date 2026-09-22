@@ -21,8 +21,8 @@ export interface ServerLayout {
 }
 
 function getDefaultServerDataRoot(): string {
-  const configured = process.env.ZCODE_DATA_BASE_DIR?.trim();
-  return join(configured || homedir(), ".zcode", "server");
+  const configured = process.env.ZXCODE_DATA_BASE_DIR?.trim();
+  return join(configured || homedir(), ".zxcode", "server");
 }
 
 export function resolveServerLayout(serverRoot = getDefaultServerDataRoot()): ServerLayout {
@@ -42,7 +42,7 @@ export function resolveServerLayout(serverRoot = getDefaultServerDataRoot()): Se
     lockFile: join(runDir, "server.lock"),
     controlEndpoint:
       process.platform === "win32"
-        ? `\\\\.\\pipe\\zcode-server-${stablePathId(root)}`
+        ? `\\\\.\\pipe\\zxcode-server-${stablePathId(root)}`
         : join(runDir, "control.sock"),
     serviceDir: join(root, "service"),
     uninstalledFile: join(root, "uninstalled.json"),
@@ -79,7 +79,7 @@ export async function resolveCanonicalServerLayout(
 
 function inferDataBaseDir(serverRoot: string): string {
   const parent = dirname(serverRoot);
-  if (basename(serverRoot) === "server" && basename(parent) === ".zcode") {
+  if (basename(serverRoot) === "server" && basename(parent) === ".zxcode") {
     return dirname(parent);
   }
   // 非标准的显式 server root 仍保持隔离，不向其父目录扩散 Agent/SQLite 数据。

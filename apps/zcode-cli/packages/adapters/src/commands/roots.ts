@@ -7,7 +7,7 @@ const COMMANDS_DIR = "commands";
 const GIT_MARKER = ".git";
 const HOME_PREFIX = "~/";
 const PRIORITY_STEP = 10;
-const ZCODE_DIR = ".zcode";
+const ZXCODE_DIR = ".zxcode";
 const AGENTS_DIR = ".agents";
 
 export interface CustomCommandRootResolutionOptions {
@@ -36,7 +36,7 @@ export async function resolveDefaultCustomCommandRoots(
       root(
         resolveConfiguredRoot(extraRoot, resolvedWorkingDirectory, home),
         "project",
-        "zcode",
+        "zxcode",
         nextPriority(),
       ),
     );
@@ -96,10 +96,10 @@ function commandRootsForBase(
   scope: CustomCommandRoot["scope"],
   nextPriority: () => number,
 ): CustomCommandRoot[] {
-  // 合并而不是 fallback：兼容 `.agents` 命令和原生 `.zcode` 命令需要同时可见。
-  // 同一级别 `.zcode` 先扫描，命令同名时仍按“先到先赢”处理。
+  // 合并而不是 fallback：兼容 `.agents` 命令和原生 `.zxcode` 命令需要同时可见。
+  // 同一级别 `.zxcode` 先扫描，命令同名时仍按“先到先赢”处理。
   return [
-    root(join(baseDirectory, ZCODE_DIR, COMMANDS_DIR), scope, "zcode", nextPriority()),
+    root(join(baseDirectory, ZXCODE_DIR, COMMANDS_DIR), scope, "zxcode", nextPriority()),
     root(join(baseDirectory, AGENTS_DIR, COMMANDS_DIR), scope, "agents", nextPriority()),
   ];
 }

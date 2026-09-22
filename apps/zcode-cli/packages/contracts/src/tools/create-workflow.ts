@@ -14,7 +14,7 @@ export const CREATE_WORKFLOW_SOURCE_ERROR =
 
 /** `args` 只属于 `path` 来源的违规说明（`saved` 有自己的 `saved.args`，内联脚本没有声明）。 */
 export const CREATE_WORKFLOW_ARGS_WITHOUT_PATH_ERROR =
-  "`args` belongs to the `path` source: it carries values for the arguments a script file declares in its `/* zcode-workflow` block. For a saved workflow pass `saved.args`; an inline `script` declares no arguments, so it takes none.";
+  "`args` belongs to the `path` source: it carries values for the arguments a script file declares in its `/* zxcode-workflow` block. For a saved workflow pass `saved.args`; an inline `script` declares no arguments, so it takes none.";
 
 /**
  * `saved` 来源。模型填 `name`，可选 `args` 与 `scope`（消歧用）；`path` 是 `resolveInput`
@@ -82,7 +82,7 @@ const CreateWorkflowModelInputSchema = z
       .min(1)
       .optional()
       .describe(
-        "Short display label for this run, in the user's language (\"PR review\", \"代码评审\"). Always pass it for an inline script: it labels the run everywhere and names its draft file under .zcode/workflow-drafts/. Defaults to the saved workflow's name when running a saved workflow.",
+        "Short display label for this run, in the user's language (\"PR review\", \"代码评审\"). Always pass it for an inline script: it labels the run everywhere and names its draft file under .zxcode/workflow-drafts/. Defaults to the saved workflow's name when running a saved workflow.",
       ),
     script: z
       .string()
@@ -96,7 +96,7 @@ const CreateWorkflowModelInputSchema = z
     /**
      * 第三条来源：
      * 盘上的一个脚本文件。它是内联提交的**回程**——工具写下草稿、结果点名那个文件，模型下一次
-     * 只改一行再把同一个路径交回来。带 `/* zcode-workflow` 块的文件按保存定义解析（块剥掉、
+     * 只改一行再把同一个路径交回来。带 `/* zxcode-workflow` 块的文件按保存定义解析（块剥掉、
      * 正文当脚本、`args` 按块里的声明校验）。
      */
     path: z
@@ -114,7 +114,7 @@ const CreateWorkflowModelInputSchema = z
       .record(z.unknown())
       .optional()
       .describe(
-        "Values for the arguments a `path` file declares in its `/* zcode-workflow` block. Only with `path`; with `saved` use `saved.args`. Unknown keys, missing required values and type mismatches are rejected before anything runs.",
+        "Values for the arguments a `path` file declares in its `/* zxcode-workflow` block. Only with `path`; with `saved` use `saved.args`. Unknown keys, missing required values and type mismatches are rejected before anything runs.",
       ),
     /**
      * run 自己的并发上界。只压低、不抬高：

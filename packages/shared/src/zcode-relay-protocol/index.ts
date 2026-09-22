@@ -20,7 +20,7 @@ export const RELAY_CONTROL_HEARTBEAT_REAP_AFTER_MS = 60_000;
 /** 手机接入后等待桌面回连 /ws/host-attach 的超时。 */
 export const RELAY_ATTACH_WAIT_DESKTOP_TIMEOUT_MS = 15_000;
 /** relay 协议版本；不匹配时控制连接拒绝建立。 */
-export const ZCODE_RELAY_PROTOCOL_VERSION = "1";
+export const ZXCODE_RELAY_PROTOCOL_VERSION = "1";
 
 export const relayPresenceWindowSchema = z
   .object({

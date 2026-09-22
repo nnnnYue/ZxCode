@@ -1,8 +1,8 @@
-# Obsidian for ZCode
+# Obsidian for ZxCode
 
 [中文文档](./README_CN.md)
 
-This ZCode plugin packages the six agent skills from [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) plus visualization skills from [axtonliu/axton-obsidian-visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills) — Mermaid and Excalidraw diagram generation, and text-to-canvas layout algorithms folded into `json-canvas` — together with a local `setup` skill, so they can be installed through the ZCode plugin marketplace. The skills teach the agent Obsidian's file formats and companion CLIs — no MCP servers or hooks are bundled.
+This ZxCode plugin packages the six agent skills from [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) plus visualization skills from [axtonliu/axton-obsidian-visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills) — Mermaid and Excalidraw diagram generation, and text-to-canvas layout algorithms folded into `json-canvas` — together with a local `setup` skill, so they can be installed through the ZxCode plugin marketplace. The skills teach the agent Obsidian's file formats and companion CLIs — no MCP servers or hooks are bundled.
 
 ## Prerequisites
 
@@ -55,4 +55,4 @@ Create a Mermaid flowchart of the CI/CD pipeline and save it into my vault
 
 ## Attribution
 
-The six core skills are authored by [Steph Ango](https://github.com/kepano); the `mermaid-visualizer` and `excalidraw-diagram` skills, plus the layout algorithms folded into `json-canvas`, are by [Axton Liu](https://github.com/axtonliu). Both sets are imported from their upstream repositories — see [UPSTREAM.md](./UPSTREAM.md) for the imported commits, licenses, and adaptation deltas. This adaptation adds the ZCode plugin manifests, marketplace registration, this documentation, and a local `setup` skill; all other skills are upstream-derived.
+The six core skills are authored by [Steph Ango](https://github.com/kepano); the `mermaid-visualizer` and `excalidraw-diagram` skills, plus the layout algorithms folded into `json-canvas`, are by [Axton Liu](https://github.com/axtonliu). Both sets are imported from their upstream repositories — see [UPSTREAM.md](./UPSTREAM.md) for the imported commits, licenses, and adaptation deltas. This adaptation adds the ZxCode plugin manifests, marketplace registration, this documentation, and a local `setup` skill; all other skills are upstream-derived.

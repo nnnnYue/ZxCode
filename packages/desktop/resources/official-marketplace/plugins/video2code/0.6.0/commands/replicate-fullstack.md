@@ -21,8 +21,8 @@ skills: video2fullstack, web-replicate, url2video
 - 严格四阶段: 观察(含**行为观察**: 实体/操作/状态迁移+时间戳)→ `clip_video` 切片消歧 →
   写 `out/plan.md`(含 **Backend design** 节: 表/API/种子, 以及 [S#]/[D#]/[B#] 逐条带实测)
   → 构建 + `npm run build && npm run seed && npm start`(后台起 `:3000`) + 逐条验证
-  (**[B] 双叉**: `curl` 直接打 API + ZCode `control-browser` IAB 重演操作并跨整页刷新断言)
+  (**[B] 双叉**: `curl` 直接打 API + ZxCode `control-browser` IAB 重演操作并跨整页刷新断言)
   → `out/report.md` 收尾。
-- 浏览、截图、录像一律走 ZCode 内置 Browser Use (IAB), 不装 Playwright/外部浏览器;
+- 浏览、截图、录像一律走 ZxCode 内置 Browser Use (IAB), 不装 Playwright/外部浏览器;
   **useState/localStorage/打包进前端的数据永远不能通过 [B] 验证** —— 后端行为必须由
   真实 HTTP API + 持久化提供。

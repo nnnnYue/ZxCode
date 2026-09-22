@@ -31,4 +31,4 @@ Cloud calls retain the selected profile/region and disable automatic plugin inst
 - [Configure credentials](https://www.alibabacloud.com/help/en/cli/configure-credentials)
 - [Get started](https://www.alibabacloud.com/help/en/cli/quickly-start-using-alibaba-cloud-cli)
 
-Open a new ZCode session after enabling or updating the plugin so the Skill catalog is refreshed.
+Open a new ZxCode session after enabling or updating the plugin so the Skill catalog is refreshed.

@@ -11,7 +11,7 @@ export const MCP_DELETED_PRELOAD_KEY = "zcode-mcp-deleted-preload";
 
 export const DEFAULT_MCP_CONFIG: McpConfig = {
   mcp: { mcpServers: {} },
-  zcodeagentmcp: { mcpServers: {}, projects: {} },
+  zxcodeagentmcp: { mcpServers: {}, projects: {} },
 };
 
 export function safeReadJson<T>(key: string, fallback: T): T {
@@ -90,7 +90,7 @@ export function makeServerId(
   directorySource?: NonNullable<NativeMcpServerRecord["location"]>["source"],
 ): string {
   const sourceKey =
-    source === "zcodeagentmcp" && directorySource && directorySource !== "zcode"
+    source === "zxcodeagentmcp" && directorySource && directorySource !== "zxcode"
       ? `${source}-${directorySource}`
       : source;
   return `${sourceKey}-${toIdKey(toScopeKey(projectPath))}-${toIdKey(name)}`;

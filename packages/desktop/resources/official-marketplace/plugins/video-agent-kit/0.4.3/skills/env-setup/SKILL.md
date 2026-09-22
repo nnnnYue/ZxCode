@@ -1,6 +1,6 @@
 ---
 name: env-setup
-description: Checking and provisioning the machine's environment for the video-agent-kit plugin — probing for ffmpeg/ffprobe that actually carry the encoders and filters we render with (libx264/aac/libmp3lame, libass, libfreetype), python packages (mcp, cv2, numpy, PIL, jieba, fontTools, scenedetect) in the interpreter Claude Code really uses, a CJK font whose cmap truly covers Chinese, and which speech channel is in play (under ZCode the official channel needs no local key) — then installing what is missing (China mirrors by default) or telling the user exactly what to install. Works on macOS, Windows and Linux. Use BEFORE the first edit run on a new machine, when the session-start hook reports 缺失依赖, or whenever a tool fails in an environment-shaped way — ModuleNotFoundError, `ffmpeg not found`, `Unknown encoder 'libx264'`, `No such filter: 'subtitles'`, `no font file found for family`, 字幕烧成豆腐块/方块, speech_transcribe 超时或 401. Also use when asked to 检查环境 / 装依赖 / 配国内源 / setup / doctor.
+description: Checking and provisioning the machine's environment for the video-agent-kit plugin — probing for ffmpeg/ffprobe that actually carry the encoders and filters we render with (libx264/aac/libmp3lame, libass, libfreetype), python packages (mcp, cv2, numpy, PIL, jieba, fontTools, scenedetect) in the interpreter Claude Code really uses, a CJK font whose cmap truly covers Chinese, and which speech channel is in play (under ZxCode the official channel needs no local key) — then installing what is missing (China mirrors by default) or telling the user exactly what to install. Works on macOS, Windows and Linux. Use BEFORE the first edit run on a new machine, when the session-start hook reports 缺失依赖, or whenever a tool fails in an environment-shaped way — ModuleNotFoundError, `ffmpeg not found`, `Unknown encoder 'libx264'`, `No such filter: 'subtitles'`, `no font file found for family`, 字幕烧成豆腐块/方块, speech_transcribe 超时或 401. Also use when asked to 检查环境 / 装依赖 / 配国内源 / setup / doctor.
 ---
 
 # Env Setup
@@ -37,18 +37,18 @@ for **the current OS**. This table is only for judging *impact*:
 | `ffmpeg` + `ffprobe` on PATH, **with libx264 / aac / libmp3lame** | ingestion and probing (Phase 1 can't start); missing encoder = the render dies at the last step, after everything upstream was paid for |
 | that ffmpeg **built with libass + libfreetype** (`subtitles`/`ass`/`drawtext` filters) | subtitle burn-in, title cards, score bugs — the recap deliverable |
 | a **CJK font whose cmap really covers Chinese** | Chinese subtitles/titles. This one fails *silently* — see the tofu warning above |
-| cloud ASR credentials or Speech MCP access | `speech_transcribe`; without it there is no transcript, so every speech-driven decision is guesswork. **Under ZCode this is never a gap** — see below |
+| cloud ASR credentials or Speech MCP access | `speech_transcribe`; without it there is no transcript, so every speech-driven decision is guesswork. **Under ZxCode this is never a gap** — see below |
 | cloud TTS credentials or Speech MCP access | narration/dubbing (`speech_synthesize`, `tts_generate`, `*_tts`). Edit-only and subtitle-only tasks survive without it |
 
-### Speech needs no local key under ZCode
+### Speech needs no local key under ZxCode
 
 Transcription and synthesis default to the **official channel**, which authenticates
-with identity the ZCode host injects into each `tools/call`. There is nothing to
+with identity the ZxCode host injects into each `tools/call`. There is nothing to
 configure, nothing to install, and no key to obtain. Two consequences:
 
 - **Never tell the user to set an ASR/TTS key to get transcription working**, and
   never treat a "credentials not set" line as a blocker. The doctor reports these
-  two rows as `官方通道` whenever `ZCODE_BASE_URL` is present, and both rows are
+  two rows as `官方通道` whenever `ZXCODE_BASE_URL` is present, and both rows are
   soft (`只降级不致命`) in every case.
 - The doctor runs as its **own process**, so it cannot see the per-call identity
   headers — only whether the official channel exists at all. A *specific* call
@@ -56,7 +56,7 @@ configure, nothing to install, and no key to obtain. Two consequences:
   itself, with a message saying which of the two it is. That is the signal to act
   on; the doctor's row is not.
 
-Only non-ZCode hosts need configuration, in this order of preference: remote
+Only non-ZxCode hosts need configuration, in this order of preference: remote
 Speech MCP (`VE_SPEECH_MCP_URL` / `VE_SPEECH_MCP_TOKEN`), or — as a legacy escape
 hatch for deployments bringing their own speech service — a direct HTTP backend,
 which needs its endpoint and resource/model identifiers in the **process
@@ -193,7 +193,7 @@ code change, and not `sudo cp` into `/usr/share/fonts`.
   holds the last verdict.
 - Proceeding into a render or a recap with ffmpeg missing libass, letting it
   surface as a mysterious tool error twenty rounds later.
-- **Asking the user for an ASR/TTS key.** Under ZCode there is no key to give;
+- **Asking the user for an ASR/TTS key.** Under ZxCode there is no key to give;
   the doctor's speech rows say `官方通道` and a failing call reports whether it is
   a login or a plan problem. Chasing a key wastes the user's turn and fixes nothing.
 - Blaming the plugin for `speech_transcribe` timeouts before checking which

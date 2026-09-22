@@ -356,7 +356,7 @@ export class ZCodeProtocolAgentServer {
   shutdown(): Promise<void> {
     if (this.shutdownPromise) return this.shutdownPromise;
     this.shutdownPromise = this.runtimeResources.close();
-    const error = new Error("ZCode Protocol runtime stopping");
+    const error = new Error("ZxCode Protocol runtime stopping");
     this.disconnectClient(error);
     this.messageSink = undefined;
     this.clearPostResponseMessages();
@@ -420,10 +420,10 @@ export class ZCodeProtocolAgentServer {
       return await this.handleRequest(message);
     }
     if (isNotification(message)) {
-      this.logger?.debug("ZCode Protocol notification ignored", {
+      this.logger?.debug("ZxCode Protocol notification ignored", {
         event: "zcode_protocol.notification.ignored",
         method: message.method,
-        module: "bootstrap.zcode_protocol",
+        module: "bootstrap.zxcode_protocol",
       });
     }
     return undefined;
@@ -808,7 +808,7 @@ export class ZCodeProtocolAgentServer {
       throw this.clientDisconnectError;
     }
     if (!this.messageSink) {
-      throw new ProtocolRequestError(-32020, `No ZCode Protocol client is attached for ${method}`);
+      throw new ProtocolRequestError(-32020, `No ZxCode Protocol client is attached for ${method}`);
     }
 
     return new Promise<T>((resolve, reject) => {

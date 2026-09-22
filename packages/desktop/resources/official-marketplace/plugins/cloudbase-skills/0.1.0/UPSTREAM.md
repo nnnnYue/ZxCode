@@ -6,9 +6,9 @@
 - Upstream skill version: `2.23.11`
 - License: MIT
 
-## ZCode packaging changes
+## ZxCode packaging changes
 
-- Added ZCode and Claude-compatible plugin manifests.
-- Added a ZCode plugin MCP declaration pinned to `@cloudbase/cloudbase-mcp@2.23.11`.
+- Added ZxCode and Claude-compatible plugin manifests.
+- Added a ZxCode plugin MCP declaration pinned to `@cloudbase/cloudbase-mcp@2.23.11`.
 - Added bilingual plugin usage documentation.
 - Kept the upstream `skills/cloudbase` content unchanged.

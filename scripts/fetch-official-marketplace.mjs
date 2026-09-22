@@ -13,14 +13,14 @@
 //   apps/zcode-cli/packages/bootstrap/src/app/official-marketplace-offline-entries.ts
 //     （合并进 OFFICIAL_PLUGIN_DEFINITIONS 的 bundled seed 条目，cachePath 语义与内置 seed 一致）
 //   packages/ui/src/lib/officialPluginIcons.generated.ts
-//     （插件 id -> 随包图标映射；UI 不再引用 cdn-zcode 资源 URL）
+//     （插件 id -> 随包图标映射；UI 不再引用 cdn-zxcode 资源 URL）
 //
 // 用法：
 //   node scripts/fetch-official-marketplace.mjs            # 增量下载 + 生成（幂等）
 //   node scripts/fetch-official-marketplace.mjs --help
 //
 // 环境变量：
-//   ZCODE_MARKETPLACE_CDN_BASE_URL  CDN 基址覆盖（默认 https://cdn-zcode.z.ai）
+//   ZXCODE_MARKETPLACE_CDN_BASE_URL  CDN 基址覆盖（默认 https://cdn-zcode.z.ai）
 //
 // 网络失败 / 离线：无法取得目录 manifest 时打印警告并以 0 退出——仓库里已提交的
 // 快照继续兜底；目录已取得但单个资源下载失败属数据完整性问题，直接报错退出。
@@ -90,12 +90,12 @@ function printHelp() {
 bundled seed 条目与 UI 图标映射两个数据文件。内容未变化时跳过写盘（幂等）。
 
 Environment:
-  ZCODE_MARKETPLACE_CDN_BASE_URL  CDN 基址（默认 ${defaultCdnBaseUrl}）
+  ZXCODE_MARKETPLACE_CDN_BASE_URL  CDN 基址（默认 ${defaultCdnBaseUrl}）
 `);
 }
 
 function cdnBaseUrl(env = process.env) {
-  return (env.ZCODE_MARKETPLACE_CDN_BASE_URL?.trim() || defaultCdnBaseUrl).replace(/\/+$/u, "");
+  return (env.ZXCODE_MARKETPLACE_CDN_BASE_URL?.trim() || defaultCdnBaseUrl).replace(/\/+$/u, "");
 }
 
 async function fetchBufferWithRetry(

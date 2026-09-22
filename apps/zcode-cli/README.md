@@ -6,7 +6,7 @@ TypeScript + Node.js 24.14.0 CLI starter. The default artifact is a normal Node 
 
 - Runtime code has zero production dependencies.
 - The CLI uses Node built-ins for argument parsing and terminal control.
-- `npm run build` produces `dist/zcode.cjs`, which works anywhere Node.js 24.14.0 is installed.
+- `npm run build` produces `dist/zxcode.cjs`, which works anywhere Node.js 24.14.0 is installed.
 - `npm run sea` attempts to turn that same bundle into a single executable.
 - If SEA breaks on a platform, the normal CLI artifact is still the fallback.
 
@@ -40,22 +40,22 @@ Run `npm run bootstrap` after cloning the repository. It checks the local Node.j
 
 ## Plugin Development
 
-zcode plugins are local bundles that can contribute skills, custom commands, and MCP servers.
+zxcode plugins are local bundles that can contribute skills, custom commands, and MCP servers.
 
-Plugin state lives under `~/.zcode/cli/plugins`:
+Plugin state lives under `~/.zxcode/cli/plugins`:
 
 - `cache/`: installed marketplace plugin code and static files.
 - `data/<plugin-id>/`: persistent plugin data. MCP servers should write runtime output here, not into the plugin source directory.
 - `marketplaces/zcode-plugins-official/`: bundled and CDN partitions plus the merged metadata for the single official marketplace.
 
-This repository also ships built-in official plugins as workspace packages. The bundled Browser Use, Document Skills, Skill Creator, and ZCode Guide content plugins are default-enabled and appear as `browser-use@zcode-plugins-official`, `document-skills@zcode-plugins-official`, `skill-creator@zcode-plugins-official`, and `zcode-guide@zcode-plugins-official`. Runtime-heavy official plugins, and local-data migration plugins such as `ios-simulator@zcode-plugins-official`, `android-emulator@zcode-plugins-official`, and `restore-legacy-sessions@zcode-plugins-official`, are discovered by zcode but stay disabled until the user enables them.
+This repository also ships built-in official plugins as workspace packages. The bundled Browser Use, Document Skills, Skill Creator, and ZxCode Guide content plugins are default-enabled and appear as `browser-use@zcode-plugins-official`, `document-skills@zcode-plugins-official`, `skill-creator@zcode-plugins-official`, and `zcode-guide@zcode-plugins-official`. Runtime-heavy official plugins, and local-data migration plugins such as `ios-simulator@zcode-plugins-official`, `android-emulator@zcode-plugins-official`, and `restore-legacy-sessions@zcode-plugins-official`, are discovered by zxcode but stay disabled until the user enables them.
 
 ```sh
-zcode plugins list
-zcode plugins enable ios-simulator
-zcode plugins disable browser-use
-zcode plugins enable restore-legacy-sessions
-zcode plugins disable ios-simulator
+zxcode plugins list
+zxcode plugins enable ios-simulator
+zxcode plugins disable browser-use
+zxcode plugins enable restore-legacy-sessions
+zxcode plugins disable ios-simulator
 ```
 
 For local plugin development, put the plugin in any directory, then add it to the user config. Local plugin dirs default to enabled for that config.
@@ -73,7 +73,7 @@ For local plugin development, put the plugin in any directory, then add it to th
 
 MCP config can live directly in `.zcode-plugin/plugin.json` through `mcpServers`. A plugin may provide both `.mcp.json` and manifest `mcpServers`; when the same server name appears in both places, `mcpServers` from the selected manifest wins.
 
-Supported fields in the current zcode plugin surface:
+Supported fields in the current zxcode plugin surface:
 
 - `name`, `version`, `description`, `author`, `license`
 - `skills`: relative folder or folders containing `SKILL.md` files
@@ -92,10 +92,10 @@ Example `.zcode-plugin/plugin.json` with inline MCP config:
   "mcpServers": {
     "ios-simulator": {
       "command": "node",
-      "args": ["${ZCODE_PLUGIN_ROOT}/dist/mcp/server.js"],
-      "cwd": "${ZCODE_PROJECT_DIR}",
+      "args": ["${ZXCODE_PLUGIN_ROOT}/dist/mcp/server.js"],
+      "cwd": "${ZXCODE_PROJECT_DIR}",
       "env": {
-        "PLUGIN_DATA": "${ZCODE_PLUGIN_DATA}",
+        "PLUGIN_DATA": "${ZXCODE_PLUGIN_DATA}",
         "DEFAULT_DEVICE": "${user_config.default_device}"
       }
     }
@@ -113,13 +113,13 @@ Example `.zcode-plugin/plugin.json` with inline MCP config:
 
 Plugin MCP config can use these variable names:
 
-- `${ZCODE_PLUGIN_ROOT}`
-- `${ZCODE_PLUGIN_DATA}`
-- `${ZCODE_PROJECT_DIR}`
+- `${ZXCODE_PLUGIN_ROOT}`
+- `${ZXCODE_PLUGIN_DATA}`
+- `${ZXCODE_PROJECT_DIR}`
 - `${user_config.key}`
-- `${ZCODE_SOME_ENV}`
+- `${ZXCODE_SOME_ENV}`
 
-Only environment variables with the `ZCODE_` prefix are expanded. Missing variables disable the affected MCP server and produce a plugin diagnostic.
+Only environment variables with the `ZXCODE_` prefix are expanded. Missing variables disable the affected MCP server and produce a plugin diagnostic.
 
 ### Recommended Layout
 
@@ -138,7 +138,7 @@ For MCP servers, prefer Node's normal package build and `bin` output when target
 
 ## MCP Configuration
 
-zcode reads MCP servers from the main JSON config. The default user config path is `~/.zcode/cli/config.json`; MCP entries live under `mcp.servers`. MCP is enabled by default, so `features.mcp` only needs to be set when you want an explicit on/off switch. The current CLI does not auto-discover standalone `mcp.json` or `.mcp.json` files outside enabled plugins.
+zxcode reads MCP servers from the main JSON config. The default user config path is `~/.zxcode/cli/config.json`; MCP entries live under `mcp.servers`. MCP is enabled by default, so `features.mcp` only needs to be set when you want an explicit on/off switch. The current CLI does not auto-discover standalone `mcp.json` or `.mcp.json` files outside enabled plugins.
 
 ```json
 {
@@ -173,7 +173,7 @@ zcode reads MCP servers from the main JSON config. The default user config path 
 
 Supported server types:
 
-- `stdio`: requires `command`; accepts `args`, `cwd`, `env`, `enabled`, and `timeoutMs`. `cwd` is resolved from the active working directory, and the server process inherits zcode's environment plus any `env` overrides.
+- `stdio`: requires `command`; accepts `args`, `cwd`, `env`, `enabled`, and `timeoutMs`. `cwd` is resolved from the active working directory, and the server process inherits zxcode's environment plus any `env` overrides.
 - `http`: requires `url`; accepts `headers`, `enabled`, and `timeoutMs`.
 - `sse`: requires `url`; accepts `headers`, `enabled`, and `timeoutMs`.
 
@@ -181,7 +181,7 @@ MCP tools are registered before the first model request and exposed as `mcp__<se
 
 ## Hooks Configuration
 
-zcode reads hooks from the same main JSON config file as MCP, usually `~/.zcode/cli/config.json`. Hooks are disabled by default; set `hooks.enabled` to `true` and add process hooks under `hooks.events`.
+zxcode reads hooks from the same main JSON config file as MCP, usually `~/.zxcode/cli/config.json`. Hooks are disabled by default; set `hooks.enabled` to `true` and add process hooks under `hooks.events`.
 
 Supported hook events:
 

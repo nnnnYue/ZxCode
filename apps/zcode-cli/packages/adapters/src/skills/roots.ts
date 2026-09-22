@@ -7,7 +7,7 @@ const GIT_MARKER = ".git";
 const HOME_PREFIX = "~/";
 const PRIORITY_STEP = 10;
 const SKILLS_DIR = "skills";
-const ZCODE_DIR = ".zcode";
+const ZXCODE_DIR = ".zxcode";
 const AGENTS_DIR = ".agents";
 
 export interface SkillRootResolutionOptions {
@@ -36,7 +36,7 @@ export async function resolveDefaultSkillRoots(
       root(
         resolveConfiguredRoot(extraRoot, resolvedWorkingDirectory),
         "project",
-        "zcode",
+        "zxcode",
         nextPriority(),
       ),
     );
@@ -96,10 +96,10 @@ function skillRootsForBase(
   scope: SkillRoot["scope"],
   nextPriority: () => number,
 ): SkillRoot[] {
-  // 合并而不是 fallback：用户可能同时安装原生 `.zcode` skill 和兼容 `.agents` skill。
-  // 同一级别仍保持 `.zcode` 优先，后续同名按 root 顺序解析。
+  // 合并而不是 fallback：用户可能同时安装原生 `.zxcode` skill 和兼容 `.agents` skill。
+  // 同一级别仍保持 `.zxcode` 优先，后续同名按 root 顺序解析。
   return [
-    root(join(baseDirectory, ZCODE_DIR, SKILLS_DIR), scope, "zcode", nextPriority()),
+    root(join(baseDirectory, ZXCODE_DIR, SKILLS_DIR), scope, "zxcode", nextPriority()),
     root(join(baseDirectory, AGENTS_DIR, SKILLS_DIR), scope, "agents", nextPriority()),
   ];
 }

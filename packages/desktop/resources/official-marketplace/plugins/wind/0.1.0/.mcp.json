@@ -2,7 +2,7 @@
   "mcpServers": {
     "wind-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -10,7 +10,7 @@
     },
     "wind-index": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_index",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_index",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -18,7 +18,7 @@
     },
     "wind-fund": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_fund",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_fund",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -26,7 +26,7 @@
     },
     "wind-bond": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_bond",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_bond",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -34,7 +34,7 @@
     },
     "wind-economic": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_economic",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_economic",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -42,7 +42,7 @@
     },
     "wind-docs": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_docs",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_docs",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -50,7 +50,7 @@
     },
     "wind-global-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_global_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_global_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"

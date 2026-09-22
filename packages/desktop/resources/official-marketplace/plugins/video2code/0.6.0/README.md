@@ -4,11 +4,11 @@
 
 `video2code` replicates a webpage from a screen recording. Give it an `.mp4`/`.webm` of a site — or just the site's URL — and it observes the recording frame by frame, writes an explicit replication contract, scaffolds a React + TypeScript + Tailwind project, builds it, deploys it locally, records the result, and compares the two recordings before declaring the job done.
 
-Recording is done by ZCode's built-in Browser Use WebView, which produces WebM natively; `ffmpeg` transcodes it to MP4. **Playwright and a separate Chromium are intentionally not used and not installed.**
+Recording is done by ZxCode's built-in Browser Use WebView, which produces WebM natively; `ffmpeg` transcodes it to MP4. **Playwright and a separate Chromium are intentionally not used and not installed.**
 
 ## Quick start
 
-1. Install the plugin from the ZCode plugin manager.
+1. Install the plugin from the ZxCode plugin manager.
 2. Check the machine before the first run:
 
    ```text
@@ -85,7 +85,7 @@ All four are `command` hooks running `python3` against scripts in [`hooks/`](./h
 - `ffmpeg` and `ffprobe` on `PATH` — required for ingest, frame extraction, duration probing, and the WebM → MP4 transcode. Any 4.x or newer build works.
 - Node.js 20 or newer (Vite 7 needs 20.19+/22.12+) plus npm, for building the webapp template.
 - A reachable npm registry.
-- Browser interaction and recording need no extra install: they run on ZCode's built-in Browser Use WebView.
+- Browser interaction and recording need no extra install: they run on ZxCode's built-in Browser Use WebView.
 
 Run the doctor rather than checking by hand:
 

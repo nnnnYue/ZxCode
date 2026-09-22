@@ -40,13 +40,13 @@ import type {
 } from "@zcode/shared";
 
 /**
- * window.zcode 类型定义 —— 仅包含需要 main 进程参与的平台操作
+ * window.zxcode 类型定义 —— 仅包含需要 main 进程参与的平台操作
  *
  * 凭据管理已迁移到 ICredentialService（通过 RPC），不再经过此接口。
  */
 declare global {
   interface Window {
-    zcode: {
+    zxcode: {
       connectRemote(
         options: RemoteTarget,
         requestId?: string,
@@ -176,7 +176,7 @@ declare global {
       openInFileManager(path: string): Promise<{ success: boolean; error?: string }>;
       /** 使用系统默认应用打开本地文件 */
       openExternalFile(path: string): Promise<{ success: boolean; error?: string }>;
-      /** 打开 ZCode Computer Use 完整权限引导 */
+      /** 打开 ZxCode Computer Use 完整权限引导 */
       openCuaPermissionOnboarding?(
         options?: OpenCuaPermissionOnboardingOptions,
       ): Promise<CuaAccessibilitySettingsResult>;
@@ -194,7 +194,7 @@ declare global {
       reportRendererHeapSample?(sample: RendererHeapSample): void;
       /** 触发任务状态对应的系统通知 */
       showTaskNotification(payload: TaskNotificationPayload): void;
-      /** 导出日志：打包 ~/.zcode/v2 及外部 agent 日志为 zip 并在 Finder 中显示 */
+      /** 导出日志：打包 ~/.zxcode/v2 及外部 agent 日志为 zip 并在 Finder 中显示 */
       exportLogs(): Promise<{
         success: boolean;
         path?: string;

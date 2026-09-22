@@ -1055,7 +1055,7 @@ function ConversationTurnGroupImpl({
     () =>
       codeCommentCardsEnabled &&
       assistantRawCopyText !== undefined &&
-      // 卡片与 zcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
+      // 卡片与 zxcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
       // 只有终态 row 才生成卡片，避免运行中卡片先出现又因模型续写而回滚。
       (latestAssistantTextRow?.state === "complete" ||
         latestAssistantTextRow?.state === "interrupted")

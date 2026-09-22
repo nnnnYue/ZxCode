@@ -16,13 +16,13 @@ edit is invisible to that check and is overwritten on the next sync.
 
 ## Owned by this repository
 
-The ZCode adaptation layer is maintained here rather than upstream, and has to
+The ZxCode adaptation layer is maintained here rather than upstream, and has to
 survive the next sync:
 
-- `.zcode-plugin/plugin.json` — the ZCode-first manifest, including the
+- `.zcode-plugin/plugin.json` — the ZxCode-first manifest, including the
   `mcpServers` block and its `auth: zcode_official` declarations
 - `.claude-plugin/plugin.json` — the compatibility manifest, with `mcpServers`
-  deliberately absent, because those servers only resolve inside ZCode
+  deliberately absent, because those servers only resolve inside ZxCode
 - `README.md` and `README_CN.md`
 - the matching entry in the repository-root `marketplace.json`
 

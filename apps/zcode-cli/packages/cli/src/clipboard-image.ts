@@ -30,7 +30,7 @@ type NodeClipboardImageReaderOptions = {
 };
 
 function resolveDefaultClipboardDirectory(processEnv: NodeJS.ProcessEnv = process.env): string {
-  const storageRoot = processEnv.ZCODE_STORAGE_DIR?.trim() || join(homedir(), ".zcode");
+  const storageRoot = processEnv.ZXCODE_STORAGE_DIR?.trim() || join(homedir(), ".zxcode");
   return join(storageRoot, "clipboard");
 }
 
@@ -78,7 +78,7 @@ async function readMacClipboardImage(options: {
   tempDirectory: string;
 }): Promise<TuiClipboardImage | null> {
   await mkdir(options.tempDirectory, { recursive: true });
-  const directory = await mkdtemp(join(options.tempDirectory, "zcode-clipboard-"));
+  const directory = await mkdtemp(join(options.tempDirectory, "zxcode-clipboard-"));
   const imagePath = join(directory, "clipboard.png");
 
   try {
@@ -154,7 +154,7 @@ async function readWindowsClipboardImage(options: {
   tempDirectory: string;
 }): Promise<TuiClipboardImage | null> {
   await mkdir(options.tempDirectory, { recursive: true });
-  const directory = await mkdtemp(join(options.tempDirectory, "zcode-clipboard-"));
+  const directory = await mkdtemp(join(options.tempDirectory, "zxcode-clipboard-"));
   const imagePath = join(directory, "clipboard.png");
   const script = [
     "Add-Type -AssemblyName System.Windows.Forms;",

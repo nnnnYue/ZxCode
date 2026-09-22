@@ -1,14 +1,14 @@
-# ZCode GitHub CLI 工作流插件
+# ZxCode GitHub CLI 工作流插件
 
 [English](./README.md)
 
-本插件将一组聚焦的 GitHub CLI 工作流适配到 ZCode 插件市场，使用本机安装的 [GitHub CLI](https://cli.github.com/)（`gh`）执行 GitHub 操作。
+本插件将一组聚焦的 GitHub CLI 工作流适配到 ZxCode 插件市场，使用本机安装的 [GitHub CLI](https://cli.github.com/)（`gh`）执行 GitHub 操作。
 
 ## 安装与认证
 
 - 运行 `/github:setup`，让 Agent 检查 GitHub CLI；如果缺少二进制，会引导安装；如果尚未登录，会引导完成浏览器认证。
 - 执行仓库级操作时，当前目录应是带 GitHub remote 的 Git 仓库
-- 安装或更新插件后，请新建 ZCode session
+- 安装或更新插件后，请新建 ZxCode session
 
 所有依赖 GitHub 的 Skill 都会在执行业务流程前检查 `gh` 二进制、认证主机和当前账号。用户完成 `gh auth login` 后，Agent 必须再次现场验证；验证仍失败时停止执行。Agent 不得要求用户在对话中粘贴 Token 或设备码。
 
@@ -16,7 +16,7 @@
 
 ## Skills
 
-| Skill | ZCode 命令 | 说明 |
+| Skill | ZxCode 命令 | 说明 |
 |-------|------------|------|
 | setup | `/github:setup` | 检查 `gh`、引导浏览器登录并确认当前账号 |
 | commit | `/github:commit` | 根据暂存区变更创建 Conventional Commit |
@@ -42,7 +42,7 @@
 /github:repo clone owner/repo feature/new
 ```
 
-## ZCode 打包
+## ZxCode 打包
 
 可安装的主清单是 `.zcode-plugin/plugin.json`。市场注册信息维护在仓库根目录 [`marketplace.json`](../../marketplace.json)。
 

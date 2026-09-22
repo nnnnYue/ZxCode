@@ -98,7 +98,7 @@ Equivalent CLI scripts (`still.py`, `composite.py` under `<plugin_root>/skills/v
 
 Replication runs through four phases in this exact order. Complete each before the next — no merging, no reordering, no skipping.
 
-`〈ingest the video〉 → 〈observation + ambiguities〉 → clip_video the ambiguities and [D] candidates → write out/plan.md → init webapp → build (assets → components) → npm run build → deploy_website → ZCode Browser Use IAB → verify sweep (append out/verify.jsonl) → batch-fix + re-verify → out/report.md`
+`〈ingest the video〉 → 〈observation + ambiguities〉 → clip_video the ambiguities and [D] candidates → write out/plan.md → init webapp → build (assets → components) → npm run build → deploy_website → ZxCode Browser Use IAB → verify sweep (append out/verify.jsonl) → batch-fix + re-verify → out/report.md`
 
 ---
 
@@ -239,7 +239,7 @@ Grading treats a report still carrying the `V2C_REPORT_SKELETON` marker as **unf
 2. **Assemble before polishing:** first put up **every section as a placeholder component** wired into a page that builds and deploys — coverage first — then flesh out one component/effect system at a time. Never leave a section unstubbed while polishing another. **Cap pre-verify polish:** before the first `out/verify.jsonl` line lands, do not iterate the *same* visual detail more than **twice** — get coverage and run the first sweep, then fix against evidence. Polishing a detail you have not yet judged against the source burns rounds blind; this is a separate, earlier failure from the post-sweep **tiered fix-round regime** (§4.3), which only starts once verification is underway. **Batch the writes:** independent new files (components, hooks, SVG assets) go as parallel `Write` calls, 3–4 per turn; collect every planned change to one file into a single `Edit` per turn — one hunk per round doubles the build's round count (the build is the sync point, not each file).
 3. Ship image assets and real copy as you build each component (see **Image assets** below) — wire real `/assets/...` paths before writing the JSX that references them, and read the real **text** (headings, body copy, captions, button labels) off the frames; never lorem ipsum.
 4. While implementing interactive/animated elements, add stable `data-testid` attributes — they are the selectors verification will need. Give every **text-less interactive control** (icon buttons, arrow buttons, dot navs) an `aria-label` too: the browser element list shows only tag+text, so unlabeled buttons all read as `button: ''` and cannot be told apart when you need to click them during your own verification.
-5. `npm run build` → `deploy_website(local_dir="app/dist", type="static")` → **first deploy only：**按 ZCode 官方 `control-browser` skill 用 IAB 打开 URL，等待 `domcontentloaded`，再用 `domSnapshot()`/`tab.screenshot()` 确认可达与视觉状态。
+5. `npm run build` → `deploy_website(local_dir="app/dist", type="static")` → **first deploy only：**按 ZxCode 官方 `control-browser` skill 用 IAB 打开 URL，等待 `domcontentloaded`，再用 `domSnapshot()`/`tab.screenshot()` 确认可达与视觉状态。
 6. **Any `src/` edit invalidates the current build:** edit(s) 和 `deploy_website` 可在同一轮完成；部署保留相同 URL。随后恢复同一个 IAB tab 并 `reload()`，等待具体页面状态或 `tab.playwright.waitForTimeout(settleMs)`，再截图/录像。部署工具不再持有浏览器，也不返回截图。Never capture, record, or judge a build older than your latest edit. 长加载动画可放进 `tab.recording.start({settleMs,...})`，其最终 WebM 再由 `still_crops(recording,[t_end])` 取稳定帧。
 
 #### 4.2 Verify — sweep first, fix in batches
@@ -340,7 +340,7 @@ A single end-state screenshot does NOT verify motion or coupling.
 
 > **Land inside the target region before you judge it.** Never scroll a large fixed pixel amount in one jump. Use selector-based `scrollTo` or steps of ≤ one viewport, confirm the region is on screen, then capture. Two identical captures = your scroll had no effect; diagnose, don't pass.
 
-#### 4.5 ZCode `tab.recording` constraints
+#### 4.5 ZxCode `tab.recording` constraints
 
 | Constraint | Limit |
 |---|---|

@@ -220,8 +220,8 @@ function formatAgentName(agent: string, intl: ReturnType<typeof useZCodeIntl>["i
       return intl.formatMessage({ id: "settingsSync.agent.codeBuddy" });
     case "agents":
       return intl.formatMessage({ id: "settingsSync.agent.agents" });
-    case "zcode":
-      return intl.formatMessage({ id: "settingsSync.agent.zcode" });
+    case "zxcode":
+      return intl.formatMessage({ id: "settingsSync.agent.zxcode" });
     default:
       return agent;
   }

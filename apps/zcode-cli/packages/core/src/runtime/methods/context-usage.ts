@@ -234,7 +234,7 @@ export function buildContextUsageSnapshot(
   return {
     tokenMethod: "estimated",
     confidence: "low",
-    tokenizer: "zcode.estimateTokens.v1",
+    tokenizer: "zxcode.estimateTokens.v1",
     totalChars,
     totalTokens,
     model: `${options.model.providerId}/${options.model.modelId}`,
@@ -402,7 +402,7 @@ export function estimatedMetricFromKnown(
     tokens,
     tokenMethod: "estimated",
     confidence,
-    tokenizer: "zcode.estimateTokens.v1",
+    tokenizer: "zxcode.estimateTokens.v1",
   };
 }
 
@@ -416,6 +416,6 @@ export function sumMetrics(
     tokens: values.reduce((sum, value) => sum + value.tokens, 0),
     tokenMethod: "estimated",
     confidence,
-    tokenizer: "zcode.estimateTokens.v1",
+    tokenizer: "zxcode.estimateTokens.v1",
   };
 }

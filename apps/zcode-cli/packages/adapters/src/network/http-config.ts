@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import {
-  ZCODE_AGENT_CA_CERT_ENV_KEY,
-  ZCODE_HTTP_PROXY_ENV_KEY,
-  ZCODE_NO_PROXY_ENV_KEY,
-  ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
+  ZXCODE_AGENT_CA_CERT_ENV_KEY,
+  ZXCODE_HTTP_PROXY_ENV_KEY,
+  ZXCODE_NO_PROXY_ENV_KEY,
+  ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
   readZCodeToolEnvPassthroughEnv,
 } from "@zcode/shared";
 
@@ -78,7 +78,7 @@ function resolveProxyForRequestInternal(
   }
 
   const env = options.env ?? {};
-  const candidates = [[`env:${ZCODE_HTTP_PROXY_ENV_KEY}`, env[ZCODE_HTTP_PROXY_ENV_KEY]]];
+  const candidates = [[`env:${ZXCODE_HTTP_PROXY_ENV_KEY}`, env[ZXCODE_HTTP_PROXY_ENV_KEY]]];
 
   for (const [source, candidate] of candidates) {
     const proxyUrl = normalizeProxyUrl(candidate);
@@ -104,7 +104,7 @@ function resolveProxyForRequestInternal(
   if (capturedProxy) {
     return {
       noProxyMatched: false,
-      proxySource: `env:${ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY}.${capturedProxy.key}`,
+      proxySource: `env:${ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY}.${capturedProxy.key}`,
       proxyUrl: capturedProxy.proxyUrl,
     };
   }
@@ -114,7 +114,7 @@ function resolveProxyForRequestInternal(
 export function resolveTlsCaCertFile(options: NetworkTlsOptions): string | undefined {
   const candidates = [
     options.caCertFile,
-    options.env?.[ZCODE_AGENT_CA_CERT_ENV_KEY],
+    options.env?.[ZXCODE_AGENT_CA_CERT_ENV_KEY],
   ];
 
   for (const candidate of candidates) {
@@ -137,7 +137,7 @@ export function loadTlsCaCertificates(options: NetworkTlsOptions): Buffer | unde
 function readExplicitNoProxyValue(options: NetworkProxyOptions): string | undefined {
   return (
     normalizePathLike(options.noProxy) ??
-    normalizePathLike(options.env?.[ZCODE_NO_PROXY_ENV_KEY])
+    normalizePathLike(options.env?.[ZXCODE_NO_PROXY_ENV_KEY])
   );
 }
 

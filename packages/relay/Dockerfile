@@ -15,9 +15,9 @@ RUN pnpm --filter @zcode/relay run build
 
 FROM node:22-alpine
 WORKDIR /relay
-ENV ZCODE_RELAY_HOST=0.0.0.0 \
-    ZCODE_RELAY_PORT=8787 \
-    ZCODE_RELAY_WEB_ROOT=/web-root
+ENV ZXCODE_RELAY_HOST=0.0.0.0 \
+    ZXCODE_RELAY_PORT=8787 \
+    ZXCODE_RELAY_WEB_ROOT=/web-root
 COPY --from=build /repo/packages/relay/dist/main.js ./main.js
 # 未注入 web-root 时显示内置引导页，容器仍可健康启动。
 VOLUME ["/web-root"]

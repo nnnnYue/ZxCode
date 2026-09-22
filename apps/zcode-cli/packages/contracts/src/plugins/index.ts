@@ -4,23 +4,23 @@ import type { McpServerConfig } from "../interfaces/mcp.port.js";
 import type { SkillRoot } from "../skills/index.js";
 import type { ExecutionContext, TraceContext } from "../tracing/tracer.js";
 
-export const ZCODE_OFFICIAL_PLUGIN_MARKETPLACE = "zcode-plugins-official";
-export const ZCODE_INLINE_PLUGIN_MARKETPLACE = "inline";
-export const ZCODE_PLUGIN_HOST_COMMAND = "__zcode-plugin-host";
+export const ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE = "zcode-plugins-official";
+export const ZXCODE_INLINE_PLUGIN_MARKETPLACE = "inline";
+export const ZXCODE_PLUGIN_HOST_COMMAND = "__zxcode-plugin-host";
 /**
  * 隐藏子命令：dynamic workflow 的沙箱子进程入口（`__zcode-dwf-child <entry path>`；argv 末位是
  * harness 写好的入口文件路径，payload 不过命令行）。
  *
- * 与 {@link ZCODE_PLUGIN_HOST_COMMAND} 同族、同机制：SEA 单文件二进制不解释 Node CLI 旗标，
+ * 与 {@link ZXCODE_PLUGIN_HOST_COMMAND} 同族、同机制：SEA 单文件二进制不解释 Node CLI 旗标，
  * 于是 harness 默认的 `node --max-old-space-size=… <entry>` spawn 在 SEA 下会把旗标交给严格
  * parseArgs 而必然失败。SEA 下改为自 re-exec 本二进制并由 `run.ts` 在 parseArgs **之前**分派。
  * 常量放在 contracts 而非 dynamic-workflow-runtime：后者刻意不依赖 contracts（app-free 证明），
  * 由 bootstrap 在 SEA 判定后把它作为 argsPrefix 递给 harness。
  */
-export const ZCODE_DWF_CHILD_COMMAND = "__zcode-dwf-child";
+export const ZXCODE_DWF_CHILD_COMMAND = "__zcode-dwf-child";
 
 export function isOfficialMarketplaceId(id: string): boolean {
-  return id === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE;
+  return id === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE;
 }
 
 export type PluginSource = "official" | "inline" | "cache";
@@ -260,7 +260,7 @@ export interface PluginDiscoverRequest {
   config: PluginConfig;
   env?: Record<string, string | undefined>;
   // bootstrap 可以把"安全到默认就开"的 official plugin id 列表传进来,
-  // 让用户不必先 `zcode plugins enable` 就能用 (例如纯内容型的 skill-creator)。
+  // 让用户不必先 `zxcode plugins enable` 就能用 (例如纯内容型的 skill-creator)。
   // 默认空集合, 现有 plugin (含 ios-simulator/android-emulator 这种重负载) 行为不变。
   officialPluginsEnabledByDefault?: ReadonlySet<string>;
   officialPluginRoots?: string[];

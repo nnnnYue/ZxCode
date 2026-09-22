@@ -31,13 +31,13 @@ description: Check or install the latest DingTalk Workspace CLI (dws), reuse or 
 
    Windows 按[官方安装说明](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli#installation)核对当前 PowerShell 参数和 Skill 写入行为；中国大陆网络问题按官方 README 的镜像方式处理。升级先运行 `dws upgrade --check`；实际升级也可能重装上游 Skills，先说明影响并取得授权。
 
-2. 本插件的两个 Skill 已足够调用 CLI。只有用户单独要求上游 Skills 时才安装；先查看帮助，选择实际使用的 Agent（ZCode 或 Claude Code）和目标目录，不固定选择 Claude Code：
+2. 本插件的两个 Skill 已足够调用 CLI。只有用户单独要求上游 Skills 时才安装；先查看帮助，选择实际使用的 Agent（ZxCode 或 Claude Code）和目标目录，不固定选择 Claude Code：
 
    ```bash
    dws skill setup --help
    ```
 
-   按当前帮助确认 `--target`（ZCode 对应 `zcode`）及 `--mode` 后再执行。该可选步骤会写入全局 Skills 或 Agent 兼容目录，先预览路径并确认，保留用户已选的子集；跳过不影响 CLI 就绪。
+   按当前帮助确认 `--target`（ZxCode 对应 `zxcode`）及 `--mode` 后再执行。该可选步骤会写入全局 Skills 或 Agent 兼容目录，先预览路径并确认，保留用户已选的子集；跳过不影响 CLI 就绪。
 
 3. 先检查 `dws auth status --format json`，已有有效 profile 时直接复用。只有缺少认证或用户要求重登时，才在本机完成 OAuth 登录：
 

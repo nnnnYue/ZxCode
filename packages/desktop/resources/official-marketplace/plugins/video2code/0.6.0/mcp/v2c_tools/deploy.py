@@ -4,7 +4,7 @@
   只原地替换服务目录内容 —— 每次换端口都会迫使内置浏览器重新导航，
   一次修复迭代平白多 1-2 轮, 且旧 URL 上的浏览器状态全部作废
   (实测两条轨迹: 6 次 deploy 6 次输出完全相同的 visit)
-- 重部署后返回稳定 URL；由 ZCode Browser Use 的现有 tab 执行 reload
+- 重部署后返回稳定 URL；由 ZxCode Browser Use 的现有 tab 执行 reload
 - 服务的根目录就是 deploy 的 dist, 这样 HTML 里写的 `/assets/...` 等绝对路径不再 404
 - 进程登记在 RunContext 上, 生命周期挂 MCP server 进程 (进程退出统一被清理)
 
@@ -252,7 +252,7 @@ def deploy_website(args: dict, ctx: RunContext) -> str:
                  + (f" (+{len(tids) - 40} more)" if len(tids) > 40 else "")
                  + " — 录像/hover/click 选择器直接从这里取, 不要凭记忆猜")
     if args.get("need_screenshot"):
-        body += ("\n[note] deploy_website 不再持有浏览器。请在同一轮用 ZCode Browser Use "
+        body += ("\n[note] deploy_website 不再持有浏览器。请在同一轮用 ZxCode Browser Use "
                  "reload，再调用 tab.screenshot()；settle 用 tab.playwright.waitForTimeout()。")
     body += stale_note
 

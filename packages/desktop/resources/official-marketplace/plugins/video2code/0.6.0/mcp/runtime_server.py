@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """runtime MCP server：仅保留部署与素材工具。
 
-浏览器导航、截图和录制统一使用 ZCode 内置 Browser Use SDK。插件不再启动
+浏览器导航、截图和录制统一使用 ZxCode 内置 Browser Use SDK。插件不再启动
 Playwright/Chromium，也不会维护第二份浏览器状态。
 """
 from __future__ import annotations

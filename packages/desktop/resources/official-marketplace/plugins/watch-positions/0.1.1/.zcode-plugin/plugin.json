@@ -26,7 +26,7 @@
   "mcpServers": {
     "hexin-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -34,7 +34,7 @@
     },
     "hexin-index": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_index",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_index",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -42,7 +42,7 @@
     },
     "finance-search": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_search",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_search",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -50,7 +50,7 @@
     },
     "wind-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -58,7 +58,7 @@
     },
     "wind-docs": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_wind_docs",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_wind_docs",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"

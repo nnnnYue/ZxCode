@@ -24,7 +24,7 @@ export const SAVE_WORKFLOW_SOURCE_ERROR =
 
 /** 模型把自带 frontmatter 的脚本传进来时的业务失败说明。 */
 export const SAVE_WORKFLOW_SENTINEL_IN_SCRIPT_ERROR =
-  "The `script` must be the workflow body only — it already starts with a `/* zcode-workflow` metadata block. Pass the metadata through the `description` / `whenToUse` / `args` fields instead; the block is written for you.";
+  "The `script` must be the workflow body only — it already starts with a `/* zxcode-workflow` metadata block. Pass the metadata through the `description` / `whenToUse` / `args` fields instead; the block is written for you.";
 
 export const SaveWorkflowInputSchema = z
   .object({
@@ -63,12 +63,12 @@ export const SaveWorkflowInputSchema = z
       .min(1)
       .optional()
       .describe(
-        "The file holding the script body, relative to the working directory or absolute — usually a draft a CreateWorkflow/AmendWorkflow result named. Provide this OR `script`, never both; it saves a working draft without re-emitting it. A `/* zcode-workflow` block in that file is dropped: the metadata comes from this call's `description` / `whenToUse` / `args`.",
+        "The file holding the script body, relative to the working directory or absolute — usually a draft a CreateWorkflow/AmendWorkflow result named. Provide this OR `script`, never both; it saves a working draft without re-emitting it. A `/* zxcode-workflow` block in that file is dropped: the metadata comes from this call's `description` / `whenToUse` / `args`.",
       ),
     // 作用域由**模型**说出，不由系统猜——没有默认值，每次都要判断。判据中性：脚本是否
     // 引用本仓库的东西？是 → project，否 → global。
     scope: SavedWorkflowScopeSchema.describe(
-      'Where the workflow is saved. "project" when the script references this repository\'s files, commands, conventions or directory layout; "global" when it depends on nothing in this project and should be available from every project (saved under ~/.zcode/workflows). Decide every time; there is no default.',
+      'Where the workflow is saved. "project" when the script references this repository\'s files, commands, conventions or directory layout; "global" when it depends on nothing in this project and should be available from every project (saved under ~/.zxcode/workflows). Decide every time; there is no default.',
     ),
     // ——以下三个字段由 `resolveInput` 解析回填，模型不填——
     // 它们是**确认窗要展示的事实**：这次保存落到哪个文件、是不是一次覆盖、是否遮蔽了另一档。

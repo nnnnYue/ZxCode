@@ -112,7 +112,7 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
             >
               <span className="min-w-0 flex-1 overflow-hidden text-left">
                 <span className="block min-w-0 truncate text-ui-base font-semibold text-foreground">
-                  ZCode
+                  ZxCode
                 </span>
               </span>
             </Button>

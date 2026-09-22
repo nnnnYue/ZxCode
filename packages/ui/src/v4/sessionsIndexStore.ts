@@ -9,7 +9,7 @@ import {
   type TopicFrameDeliveryKind,
 } from "@zcode/shared/zcode-protocol-v4";
 import { isZCodeFileLockTimeoutError } from "@zcode/shared";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "@zcode/services";
+import { ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "@zcode/services";
 import { logger } from "@/logger.js";
 import type { SessionsIndexTransport } from "@/v4/agentSessionsIndexTransport.js";
 
@@ -61,7 +61,7 @@ function isRuntimeUnavailableError(error: unknown): boolean {
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE
+    (error as { code?: unknown }).code === ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE
   );
 }
 

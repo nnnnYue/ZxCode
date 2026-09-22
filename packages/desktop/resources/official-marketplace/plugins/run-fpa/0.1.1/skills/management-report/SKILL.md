@@ -7,7 +7,7 @@ description: The 管理口径 management report off a closed period — a multi-
 
 **先载入 `xlsx-author` 技能，再动手建表。** 出处载体（Class A 的 `Source:` 批注 /
 Class B 的 `来源` 表加 `来源编号` 列）、四色含义、「填机构不填接口名」、URL 的两种诚实
-写法、交付时的 `::zcode-file-citation`，都在那份 SKILL.md 里。只照路径调它的
+写法、交付时的 `::zxcode-file-citation`，都在那份 SKILL.md 里。只照路径调它的
 `recalc.py` 不等于读过它——2026-08-24 那批里有一份工作簿正是这样，五项全漏。
 
 Two deliverables, in this order, and the second is worth nothing without the first: **the 管理报表 itself** — a multi-dimensional report built on metric definitions someone can challenge — and **the narrative that reads it**, opening with what the CFO must decide rather than with what the ledger contains.

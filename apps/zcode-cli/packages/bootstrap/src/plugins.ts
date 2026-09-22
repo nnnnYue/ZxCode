@@ -48,8 +48,8 @@ import type {
   PluginMetadata,
   PluginStoreListing,
 } from "@zcode/contracts";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE, isOfficialMarketplaceId } from "@zcode/contracts";
-import { ZCODE_CUA_OFFICIAL_PLUGIN_ID, isZCodeCuaInternalFeatureEnabled } from "@zcode/shared";
+import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE, isOfficialMarketplaceId } from "@zcode/contracts";
+import { ZXCODE_CUA_OFFICIAL_PLUGIN_ID, isZCodeCuaInternalFeatureEnabled } from "@zcode/shared";
 import { resolveOfficialPluginRoots } from "./app/bundled-plugins.js";
 import {
   DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS,
@@ -176,7 +176,7 @@ export interface UninstallZCodeMarketplacePluginOptions extends ResolveZCodePlug
   pluginName?: string;
   marketplace?: string;
   removeCache?: boolean;
-  /** 保留 data/<plugin-id> 用户数据目录（`zcode plugins uninstall --keep-data`）。 */
+  /** 保留 data/<plugin-id> 用户数据目录（`zxcode plugins uninstall --keep-data`）。 */
   keepData?: boolean;
 }
 
@@ -243,7 +243,7 @@ function countVisibleMarketplacePlugins(
   plugins: readonly { name: string }[] | undefined,
 ): number | undefined {
   if (!plugins) return undefined;
-  if (marketplaceId !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE) return plugins.length;
+  if (marketplaceId !== ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE) return plugins.length;
   return plugins.filter((entry) => entry.name !== OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME).length;
 }
 
@@ -341,7 +341,7 @@ export function getZCodePluginsOverview(
   const suppressed = new Set(configResult.config.plugins.suppressedBuiltins);
   const restorableBuiltins: ZCodeAvailablePluginData[] = OFFICIAL_PLUGIN_DEFINITIONS.filter(
     (def) =>
-      suppressed.has(`${def.name}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`) &&
+      suppressed.has(`${def.name}@${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE}`) &&
       // computer-use 的恢复入口需要 internal 特性开启（与 restoreBuiltinPluginCore 同口径）。
       (def.name !== "computer-use" || isZCodeCuaInternalFeatureEnabled(options.env ?? process.env)),
   ).map((def) => {
@@ -349,9 +349,9 @@ export function getZCodePluginsOverview(
       ? parseEntryStoreListing({ name: def.name, ...def.listing })
       : undefined;
     return {
-      id: `${def.name}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
+      id: `${def.name}@${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
       name: def.name,
-      marketplace: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+      marketplace: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
       version: def.version,
       installed: false,
       ...(listing ? { listing } : {}),
@@ -421,7 +421,7 @@ function loadPluginListingsById(storageRoot: string): Record<string, PluginStore
     if (!definition.listing) continue;
     const listing = parseEntryStoreListing({ name: definition.name, ...definition.listing });
     if (listing) {
-      listings.set(`${definition.name}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`, listing);
+      listings.set(`${definition.name}@${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE}`, listing);
     }
   }
 
@@ -642,7 +642,7 @@ export async function installZCodeMarketplacePlugin(
     options.marketplace,
   )?.plugins.find((entry) => entry.name === options.pluginName);
   const isSuppressedBundledOfficial =
-    options.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
+    options.marketplace === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
     configResult.config.plugins.suppressedBuiltins.includes(pluginId) &&
     (bundledEntry?.source === "filesystem" || bundledEntry?.source === "sea");
   if (isSuppressedBundledOfficial) {
@@ -723,7 +723,7 @@ export async function installZCodeMarketplacePlugin(
       ],
     };
   }
-  if (options.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE) {
+  if (options.marketplace === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE) {
     // 官方 marketplace 复用内置插件的 id 空间。若同名 CDN 插件重新安装，
     // 清掉历史内置 suppression，否则 Runtime 仍会把已拥有的安装误判为 suppressed。
     for (const record of installed.installed) {
@@ -822,7 +822,7 @@ export async function uninstallZCodeMarketplacePlugin(
 }
 
 /**
- * `zcode plugins update <plugin>`：先刷新所属 marketplace 目录，再按同一条目重装。
+ * `zxcode plugins update <plugin>`：先刷新所属 marketplace 目录，再按同一条目重装。
  * cacheMarketplacePlugin 对已存在的安装记录做原地覆盖并保留 installedAt；启用态只会给
  * 用户配置里尚未显式声明的 id 补默认值，因此更新不会改变用户已经做过的开关选择。
  */
@@ -856,7 +856,7 @@ export async function updateZCodeMarketplacePlugin(
   return { ...installed, previousVersion: record.version };
 }
 
-/** `zcode plugins validate <path>`：只读校验本地插件目录或 marketplace 目录。 */
+/** `zxcode plugins validate <path>`：只读校验本地插件目录或 marketplace 目录。 */
 export async function validateZCodePluginPath(
   options: ValidateZCodePluginPathOptions,
 ): Promise<PluginLoadOutcome["diagnostics"]> {
@@ -889,14 +889,14 @@ function applySparsePaths(
  * 因此核心不能再次获取 promise-chain lock；公开入口再负责提供锁保护。
  */
 async function restoreBuiltinPluginCore(options: RestoreBuiltinPluginOptions): Promise<void> {
-  const zcodeCuaPluginId = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
+  const zcodeCuaPluginId = ZXCODE_CUA_OFFICIAL_PLUGIN_ID;
   if (
     options.pluginId === zcodeCuaPluginId &&
     !isZCodeCuaInternalFeatureEnabled(options.env ?? process.env)
   ) {
     // overview 虽然隐藏了恢复入口，但协议调用仍可绕过 UI 写用户配置。
     // 功能开关关闭时在写盘前失败，确保用户配置与插件缓存都保持零痕迹。
-    throw new Error("computer-use built-in plugin requires ZCODE_CUA_PRODUCT_HELPER to be enabled");
+    throw new Error("computer-use built-in plugin requires ZXCODE_CUA_PRODUCT_HELPER to be enabled");
   }
   const { configResult } = resolvePluginContext(options);
   await removeSuppressedBuiltinInFileConfig(configResult.sources.user.path, options.pluginId);
@@ -1104,9 +1104,9 @@ function resolveEffectiveMarketplaceRecords(input: {
   if (!input.known.some((record) => isOfficialMarketplaceId(record.id))) {
     records.unshift({
       record: {
-        id: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        id: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
         source: { source: "bundled" },
-        name: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        name: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
         addedAt: "",
         pluginCount: 0,
       },
@@ -1308,10 +1308,10 @@ function resolvePluginConfigPath(
     return configResult.sources.user.path;
   }
 
-  // Workspace Plugin 配置固定落在当前 `<workspace>/.zcode/config.json`。嵌套 workspace
+  // Workspace Plugin 配置固定落在当前 `<workspace>/.zxcode/config.json`。嵌套 workspace
   // 可能同时发现仓库根与自身的配置，读取端 innermost 优先；写入端也必须锁定当前
   // workspace，不能用 project discovery 的第一个 outermost 文件。
-  const workspaceConfigPath = join(workingDirectory, ".zcode", "config.json");
+  const workspaceConfigPath = join(workingDirectory, ".zxcode", "config.json");
   const projectConfigPaths = [
     ...(options.projectConfigPath ? [options.projectConfigPath] : []),
     ...configResult.sources.project.paths,

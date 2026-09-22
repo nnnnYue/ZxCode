@@ -6,7 +6,7 @@ import type { ExecutionContext, TraceContext } from "../tracing/tracer.js";
 
 export type SkillScope = "project" | "user" | "system" | "admin";
 
-export type SkillSource = "agents" | "zcode" | "bundled" | "plugin" | "remote";
+export type SkillSource = "agents" | "zxcode" | "bundled" | "plugin" | "remote";
 
 export type SkillDiagnosticSeverity = "warning" | "error";
 

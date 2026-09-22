@@ -15,12 +15,12 @@ interface NormalizeZCodeUiErrorOptions {
   taskId?: string;
 }
 
-const GENERIC_ZCODE_UI_ERROR_MESSAGES = new Set([
+const GENERIC_ZXCODE_UI_ERROR_MESSAGES = new Set([
   "Internal error",
   "Turn execution failed",
   "Compact failed",
   "Rewind failed",
-  "ZCode session failed",
+  "ZxCode session failed",
 ]);
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -74,18 +74,18 @@ function collectMessageCandidatesFromRecord(record: Record<string, unknown>): st
     ["detail"],
     ["data", "message"],
     ["data", "detail"],
-    // ZCode Agent 常把可读原因放在 data.details（复数）里；之前只识别 detail，
+    // ZxCode Agent 常把可读原因放在 data.details（复数）里；之前只识别 detail，
     // 会导致 UI 只能看到 “Internal error” 而丢掉关键可执行提示。
     ["data", "details"],
     ["data", "reason"],
     ["data", "error", "message"],
     ["data", "error", "detail"],
     ["data", "error", "details"],
-    // zcode-cli 会把模型/网络错误摘要放在 data.zcode.error 下。
+    // zcode-cli 会把模型/网络错误摘要放在 data.zxcode.error 下。
     // 之前 UI 只读 data.error，导致已经结构化好的 provider 根因仍被 “Internal error” 盖住。
-    ["data", "zcode", "error", "message"],
-    ["data", "zcode", "error", "detail"],
-    ["data", "zcode", "error", "details"],
+    ["data", "zxcode", "error", "message"],
+    ["data", "zxcode", "error", "detail"],
+    ["data", "zxcode", "error", "details"],
   ];
   for (const path of messagePaths) {
     push(readValueByPath(record, path));
@@ -177,7 +177,7 @@ function readFirstAttributionFromPaths(error: unknown): ErrorAttribution | undef
     ["attribution"],
     ["data", "attribution"],
     ["data", "error", "attribution"],
-    ["data", "zcode", "error", "attribution"],
+    ["data", "zxcode", "error", "attribution"],
   ];
   for (const path of paths) {
     const parsed = errorAttributionSchema.safeParse(readValueByPath(record, path));
@@ -193,24 +193,24 @@ export function normalizeZCodeUiError(
   options: NormalizeZCodeUiErrorOptions = {},
 ): ZCodeUiError {
   const candidates = collectMessageCandidates(error);
-  // zcode-cli 已经把 provider/network 根因放进 detail 或 data.zcode.error，
+  // zcode-cli 已经把 provider/network 根因放进 detail 或 data.zxcode.error，
   // 外层仍可能保留 "Internal error" 这类包装文案。主提示优先选非泛化候选，避免根因被盖住。
   const primaryMessage =
-    candidates.find((candidate) => !GENERIC_ZCODE_UI_ERROR_MESSAGES.has(candidate)) ??
+    candidates.find((candidate) => !GENERIC_ZXCODE_UI_ERROR_MESSAGES.has(candidate)) ??
     candidates[0] ??
     options.fallbackMessage ??
     "Internal error";
   const detailMessage = candidates.find(
-    (candidate) => candidate !== primaryMessage && !GENERIC_ZCODE_UI_ERROR_MESSAGES.has(candidate),
+    (candidate) => candidate !== primaryMessage && !GENERIC_ZXCODE_UI_ERROR_MESSAGES.has(candidate),
   );
   const codeFromError = readFirstStringFromPaths(error, [
     ["code"],
     ["providerCode"],
     ["data", "code"],
     ["data", "error", "code"],
-    ["data", "zcode", "error", "code"],
+    ["data", "zxcode", "error", "code"],
     // turn-errors 会把 provider 业务码写入 summary.code；部分链路仍只落在 context.providerCode。
-    ["data", "zcode", "error", "context", "providerCode"],
+    ["data", "zxcode", "error", "context", "providerCode"],
     ["data", "error", "context", "providerCode"],
     ["context", "providerCode"],
   ]);
@@ -218,32 +218,32 @@ export function normalizeZCodeUiError(
     ["detail"],
     ["data", "detail"],
     ["data", "error", "detail"],
-    ["data", "zcode", "error", "detail"],
+    ["data", "zxcode", "error", "detail"],
   ]);
   const underlyingErrorMessage = readFirstStringFromPaths(error, [
     ["underlyingErrorMessage"],
     ["data", "underlyingErrorMessage"],
     ["data", "error", "underlyingErrorMessage"],
-    ["data", "zcode", "error", "underlyingErrorMessage"],
+    ["data", "zxcode", "error", "underlyingErrorMessage"],
   ]);
   const underlyingErrorDetail = readFirstStringFromPaths(error, [
     ["underlyingErrorDetail"],
     ["data", "underlyingErrorDetail"],
     ["data", "error", "underlyingErrorDetail"],
-    ["data", "zcode", "error", "underlyingErrorDetail"],
+    ["data", "zxcode", "error", "underlyingErrorDetail"],
   ]);
   const providerCodeFromDetail = detailFromError?.match(/provider_code=([0-9]+)/)?.[1];
   const traceIdFromError = readFirstStringFromPaths(error, [
     ["traceId"],
     ["data", "traceId"],
     ["data", "error", "traceId"],
-    ["data", "zcode", "error", "traceId"],
+    ["data", "zxcode", "error", "traceId"],
   ]) as TraceId | undefined;
   const taskIdFromError = readFirstStringFromPaths(error, [
     ["taskId"],
     ["data", "taskId"],
     ["data", "error", "taskId"],
-    ["data", "zcode", "error", "taskId"],
+    ["data", "zxcode", "error", "taskId"],
   ]);
   const attribution = readFirstAttributionFromPaths(error);
 

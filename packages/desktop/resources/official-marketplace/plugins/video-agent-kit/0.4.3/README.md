@@ -12,11 +12,11 @@
 ## MCP 工具
 
 - `inspect_media`：ffprobe 媒体探查；总体时长优先读 format duration，缺失时回退到 stream duration；`NaN` / `Infinity` 不会被当成有效时长。
-- `speech_transcribe`：标准语音转录工具。配置 `VE_SPEECH_MCP_URL` 时调用远端 HTTP MCP；未配置时，在 ZCode 中优先使用宿主随 `tools/call` 注入身份的官方通道，其他宿主回退到本地兼容后端。对外统一为 `cloud_asr`，不会暴露内部服务商名称。并发限制、限流、网络和服务端瞬时错误默认额外重试 3 次，可用 `retries` / `retry_count` 和 `retry_backoff_seconds` 覆盖；缺凭据、provider 不可用、输入/参数错误不会重试。长媒体会自动拆成最多 `chunk_seconds` 秒的重叠块（默认不超过 1700s）分别转写并合并，块级结果缓存可断点续跑；分块说话人标签带 `p{chunk}_` 前缀，跨块同一人物可能有不同标签。毫秒时间戳会归一成秒；静音音频返回带 `silent_audio` 标注的有效空转录。`transcribe` 保留为兼容 alias。
+- `speech_transcribe`：标准语音转录工具。配置 `VE_SPEECH_MCP_URL` 时调用远端 HTTP MCP；未配置时，在 ZxCode 中优先使用宿主随 `tools/call` 注入身份的官方通道，其他宿主回退到本地兼容后端。对外统一为 `cloud_asr`，不会暴露内部服务商名称。并发限制、限流、网络和服务端瞬时错误默认额外重试 3 次，可用 `retries` / `retry_count` 和 `retry_backoff_seconds` 覆盖；缺凭据、provider 不可用、输入/参数错误不会重试。长媒体会自动拆成最多 `chunk_seconds` 秒的重叠块（默认不超过 1700s）分别转写并合并，块级结果缓存可断点续跑；分块说话人标签带 `p{chunk}_` 前缀，跨块同一人物可能有不同标签。毫秒时间戳会归一成秒；静音音频返回带 `silent_audio` 标注的有效空转录。`transcribe` 保留为兼容 alias。
 - `video_ingest`：完整视频抽帧并返回 contact sheet，必须先跑；Claude Code 主 Agent 自己看图并形成理解。显式传入的 `transcript_path` 必须存在；不传 transcript 才表示允许无转录观察；在同一个 MCP 会话里，如果重新观察此前已绑定过 transcript 的同一视频指纹，会复用该视频对应的 transcript。同一路径的视频文件如果被覆盖或替换，必须重新调用 `video_ingest`。只有成功产出 observation package 后，工具才会把该视频记为已 full-ingest；抽帧失败不会推进会话状态。
 - `video_watch_segment`：局部高 fps 复看；单窗口用 `start_time/end_time/fps`，多窗口用 `segments=[{start,end}, ...]` + `fps`，返回片段 contact sheet 和匹配转录。显式传 `video_path` 可直接复看任意存在的视频，不要求先跑完整 `video_ingest`。不带 `video_path` 时默认使用会话里的 active video；如果 active 文件被覆盖或替换，隐式复看会报错并要求显式传当前 `video_path` 或重新 `video_ingest`。显式传入的 `transcript_path` 必须存在；在同一个 MCP 会话里，如果显式传入此前已绑定过 transcript 的同一视频指纹且未传 transcript 参数，会复用该视频对应的 transcript。非数字时间参数会返回结构化错误；明显超过视频时长的窗口会报错，不会静默截断成较短观察。窗口台账按 `(start, end, fps)` 判重：只有时间和 fps 都相同的窗口才会被跳过，换一个 fps 重看同一窗口是新的观察；确有需要时可传 `force=true` 跳过判重。只有成功产出新 contact sheet 后，局部复看才会更新 active-video 会话状态；抽帧失败或 `skipped_duplicate` 不算新的视觉证据，多窗口部分失败时整体结果会带 `[ERROR]` 前缀汇总。
 - `video_basic_operation`：OpenChatCut 风格的确定性基础操作封装，支持 `trim`、`splice`、`speed`、`crop`、`scale`、`rotate`、`flip`、`freeze_frame`。它适合源素材预处理或单步变换；timeline 成片仍应走 `validate_timeline` / `render_preview`。
-- `speech_synthesize`：标准语音合成工具。配置 `VE_SPEECH_MCP_URL` 时调用远端 HTTP MCP；未配置时，在 ZCode 中优先使用宿主注入身份的官方通道，其他宿主回退到本地兼容后端。对外统一为 `cloud_tts`；`allowed_providers` 提供时是硬白名单。并发限制、限流、网络和服务端瞬时错误默认额外重试 3 次，可用 `retries` / `retry_count` 和 `retry_backoff_seconds` 覆盖；参数错误、缺凭据、格式不支持不会重试。`speed` 会映射为 `speech_rate`，也可显式传 `speech_rate` / `pitch_rate` / `loudness_rate` / `sample_rate` / `output_format`，本工具只暴露可被 ffprobe 稳定校验的 `wav` / `mp3` / `ogg_opus` 输出，并拒绝 `output_path` 后缀与 `output_format` 不一致。`tts_generate` 保留为兼容 alias。
+- `speech_synthesize`：标准语音合成工具。配置 `VE_SPEECH_MCP_URL` 时调用远端 HTTP MCP；未配置时，在 ZxCode 中优先使用宿主注入身份的官方通道，其他宿主回退到本地兼容后端。对外统一为 `cloud_tts`；`allowed_providers` 提供时是硬白名单。并发限制、限流、网络和服务端瞬时错误默认额外重试 3 次，可用 `retries` / `retry_count` 和 `retry_backoff_seconds` 覆盖；参数错误、缺凭据、格式不支持不会重试。`speed` 会映射为 `speech_rate`，也可显式传 `speech_rate` / `pitch_rate` / `loudness_rate` / `sample_rate` / `output_format`，本工具只暴露可被 ffprobe 稳定校验的 `wav` / `mp3` / `ogg_opus` 输出，并拒绝 `output_path` 后缀与 `output_format` 不一致。`tts_generate` 保留为兼容 alias。
 - `validate_timeline`：校验 timeline 项目 JSON；依赖 ffprobe 检查源素材时长边界，时长优先读 format duration，缺失时回退到 stream duration，且同一源文件的时长探测会缓存。除了旧版线性 `clips[]`，也支持更接近剪辑软件项目文件的 `project` / `sequence` / `output_canvas` / `assets` / `tracks` / `markers` / `transitions` / clip effects 元数据校验。`tracks[]` timeline 中非视频轨的 clip（字幕 / overlay / callout 计划）可以用非空 `text` 代替媒体 `source`；视频 / main 轨 clip 和顶层 `clips[]` 仍必须有 `source`。
 - `render_preview`：用 FFmpeg / ffprobe 渲染预览；render report 会记录 timeline hash 和 output hash。顶层 `clips[]` 仍按 legacy/debug 线性拼接渲染；项目式 `tracks[]` 会按 sequence 画布和 `timeline_start` 编译成基础多轨预览：主视频铺到画布并在片尾补少量末帧降低边界闪帧，源视频音频与 `audio/music/voiceover` 轨先烘焙成全片长度、已按时间线定位的 wav bed，再非归一化混音，`subtitle/text` 轨用 `drawtext` 烧录，`overlay/image` 轨按启用窗口叠加。父轨道没有 `type/name/track_type` 时不会被默认当作主视频轨；未知 track 类型会记录到 render plan 的 unsupported tracks 中，而不是声称完整渲染。
 - `qc_preview`：硬性质量检查，包括容器、黑帧、短编辑边界黑帧、静音、冻结帧、音量、音频覆盖时长和空文件；媒体探测失败或显式传入的 `timeline_path` 不存在时直接报错，黑帧 / 静音 / 冻结 / 音量扫描失败会作为 QC error 写入报告。静音和音量扫描只在存在音轨时运行；完全没有音轨的成片会记一条 warning（整片无声），不会静默通过。
@@ -66,7 +66,7 @@ python3 video-agent-kit/skills/env-setup/scripts/env_doctor.py --fix
 它查的不止"包在不在"：ffmpeg 有没有带 `libx264` / `aac` / `libmp3lame` 与
 `libass`（缺了字幕烧录必挂，但只在渲染最后一步才炸）、本机中文字体的 cmap 是不是
 真覆盖中文（`fc-match` 对着没装的中文族会返回 DejaVu，烧出来是豆腐块而 ffmpeg
-退出码 0）、以及语音走的是哪条通道（在 ZCode 里就是"官方通道，本地无需 key"，不会催你配凭据）。
+退出码 0）、以及语音走的是哪条通道（在 ZxCode 里就是"官方通道，本地无需 key"，不会催你配凭据）。
 
 也可以手工只装 Python 依赖（注意 `scenedetect` 必须 `--no-deps`，否则会把 GUI 版
 opencv 盖到 `opencv-python-headless` 的 `cv2` 上，两个包一起坏）：
@@ -83,7 +83,7 @@ python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-deps "sc
 
 MCP 工具调用的 `arguments` 顶层必须是 JSON object；如果入口传入数组、字符串等非对象参数，server 会直接返回结构化错误，不把异常泄漏成工具 traceback。
 
-插件启动时会通过 `hooks/env_check.py` 做一次非阻塞环境检查（只跑毫秒级项，清单直接从 `skills/env-setup/scripts/env_doctor.py` 的 cheap 检查项取，不在 hook 里另写一份），提示缺失的 `ffmpeg`、`ffprobe`、MCP SDK、抽帧依赖，并报出语音走哪条通道（ZCode 下即"官方通道，本地无需 key"）；要做全量体检（ffmpeg 编码器与 libass 滤镜、中文字体真覆盖、直连兼容端点连通性）走 `/env-check`。TTS 调用依赖按需懒加载；缺 TTS 依赖只应影响 `speech_synthesize` / `tts_generate`，不应影响媒体探测、抽帧、timeline、渲染和 QC。用户 prompt 出现本地视频路径时，`hooks/check_video_input.py` 会提示标准流程：先 `speech_transcribe` 产出 `out/transcript.json`，再带 `transcript_path` 调 `video_ingest`；只有当剪辑流水线产物（`out/timeline.json`、`out/timeline_validation.json`、`out/preview.mp4` 或 `out/preview_qc_report.json`）出现后，`hooks/check_closeout.py` 才会在停止前检查 `out/media.json`（或任一 `*media.json` sidecar）、`out/transcript.json`（仅当 cloud ASR 可用时要求）、源素材 `video_ingest` 观察包（单素材 `out/video_ingest.json`，多素材 `out/ingest/*.json` 或 `out/video_ingest_<source>.json`）、`out/timeline.json`、`out/timeline_validation.json`、`out/preview.mp4`、`out/preview_qc_report.json` 和非空 `out/report.md` 是否闭环；当 recap 后期产物（如 `out/reel.json`、`out/edl.json`、`out/final.mp4`、`out/qc.json`）出现后，同一个 hook 会改查 recap 合同：最终视频、绑定/QC 报告、TTS 忠实度失败、句画抽查和 `out/report.md`。单步任务（如只做 `inspect_media` 或 `speech_transcribe`）不会触发契约。闭环 strike 计数按会话隔离，最多拦 3 次后放行并记录 violation。QC 报告必须由 `qc_preview(video_path="out/preview.mp4", timeline_path="out/timeline.json")` 生成，否则缺少 timeline hash 会被视为未闭环。
+插件启动时会通过 `hooks/env_check.py` 做一次非阻塞环境检查（只跑毫秒级项，清单直接从 `skills/env-setup/scripts/env_doctor.py` 的 cheap 检查项取，不在 hook 里另写一份），提示缺失的 `ffmpeg`、`ffprobe`、MCP SDK、抽帧依赖，并报出语音走哪条通道（ZxCode 下即"官方通道，本地无需 key"）；要做全量体检（ffmpeg 编码器与 libass 滤镜、中文字体真覆盖、直连兼容端点连通性）走 `/env-check`。TTS 调用依赖按需懒加载；缺 TTS 依赖只应影响 `speech_synthesize` / `tts_generate`，不应影响媒体探测、抽帧、timeline、渲染和 QC。用户 prompt 出现本地视频路径时，`hooks/check_video_input.py` 会提示标准流程：先 `speech_transcribe` 产出 `out/transcript.json`，再带 `transcript_path` 调 `video_ingest`；只有当剪辑流水线产物（`out/timeline.json`、`out/timeline_validation.json`、`out/preview.mp4` 或 `out/preview_qc_report.json`）出现后，`hooks/check_closeout.py` 才会在停止前检查 `out/media.json`（或任一 `*media.json` sidecar）、`out/transcript.json`（仅当 cloud ASR 可用时要求）、源素材 `video_ingest` 观察包（单素材 `out/video_ingest.json`，多素材 `out/ingest/*.json` 或 `out/video_ingest_<source>.json`）、`out/timeline.json`、`out/timeline_validation.json`、`out/preview.mp4`、`out/preview_qc_report.json` 和非空 `out/report.md` 是否闭环；当 recap 后期产物（如 `out/reel.json`、`out/edl.json`、`out/final.mp4`、`out/qc.json`）出现后，同一个 hook 会改查 recap 合同：最终视频、绑定/QC 报告、TTS 忠实度失败、句画抽查和 `out/report.md`。单步任务（如只做 `inspect_media` 或 `speech_transcribe`）不会触发契约。闭环 strike 计数按会话隔离，最多拦 3 次后放行并记录 violation。QC 报告必须由 `qc_preview(video_path="out/preview.mp4", timeline_path="out/timeline.json")` 生成，否则缺少 timeline hash 会被视为未闭环。
 
 推荐工作流：
 
@@ -116,13 +116,13 @@ video-edit-agent classify
 
 完整可配置项参考 `.env.example`。SessionStart 环境检查会打印实际加载了哪些 `.env` 文件。
 
-**语音在 ZCode 里不需要任何配置。** `speech_transcribe` / `speech_synthesize` 默认走官方通道，
-身份由宿主随每次 `tools/call` 注入，没有 key 可配、也没有端点要指。下面这些只对非 ZCode 宿主有意义，
+**语音在 ZxCode 里不需要任何配置。** `speech_transcribe` / `speech_synthesize` 默认走官方通道，
+身份由宿主随每次 `tools/call` 注入，没有 key 可配、也没有端点要指。下面这些只对非 ZxCode 宿主有意义，
 `/env-check` 里这两项也永远是 soft，不是硬缺口。
 
 必须或高价值配置：
 
-- `VE_SPEECH_MCP_URL` / `VE_SPEECH_MCP_TOKEN`：Claude Code 等非 ZCode 宿主可配置的远端 HTTP MCP 语音服务，也是这类宿主的推荐做法（付费能力与凭据都留在服务端）。ZCode 清单不暴露这两个用户配置。显式设置 URL 时远端 MCP 优先级最高；`VE_SPEECH_MCP_ASR_TRANSFER=auto|path|base64` 控制 ASR 媒体传输，默认对 localhost/shared-storage 走路径，对非本机远端抽取压缩音频后 base64 上传。
+- `VE_SPEECH_MCP_URL` / `VE_SPEECH_MCP_TOKEN`：Claude Code 等非 ZxCode 宿主可配置的远端 HTTP MCP 语音服务，也是这类宿主的推荐做法（付费能力与凭据都留在服务端）。ZxCode 清单不暴露这两个用户配置。显式设置 URL 时远端 MCP 优先级最高；`VE_SPEECH_MCP_ASR_TRANSFER=auto|path|base64` 控制 ASR 媒体传输，默认对 localhost/shared-storage 走路径，对非本机远端抽取压缩音频后 base64 上传。
 - `VE_ASR_PROVIDER`：`speech_transcribe` / `transcribe` 的 provider 选择，`auto`（默认）/ `cloud_asr`。
 - 直连 HTTP 兼容后端（legacy escape hatch，自带语音服务时才用）：插件不内置任何服务地址、模型名或资源标识，全部由部署方提供。
   - `VE_SPEECH_ASR_ENDPOINT` / `VE_SPEECH_TTS_ENDPOINT` **只从进程环境读，不吃 `.env`**：项目级 `.env` 是不可信输入，若它能指定端点，仓库里的一个 `.env` 就能把带着 API key 的请求导向攻击者主机。请在启动 server 的地方 export。

@@ -34,7 +34,7 @@ import {
 } from "./project-config.adapter.js";
 
 export interface ConfigFactoryOptions {
-  /** Path to user config file (default: ~/.zcode/cli/config.json) */
+  /** Path to user config file (default: ~/.zxcode/cli/config.json) */
   userConfigPath?: string;
   /** Path to project config file */
   projectConfigPath?: string;
@@ -121,9 +121,9 @@ export interface PluginConfigSources {
  *
  * Priority (lowest to highest):
  * 1. System defaults
- * 2. User config file (~/.zcode/cli/config.json)
+ * 2. User config file (~/.zxcode/cli/config.json)
  * 3. Project config files (root to cwd, then explicit projectConfigPath)
- * 4. Environment variables (ZCODE_*)
+ * 4. Environment variables (ZXCODE_*)
  * 5. CLI overrides
  */
 export function createConfig(options: ConfigFactoryOptions = {}): ConfigResult {
@@ -410,7 +410,7 @@ function logConfigDiagnostics(input: {
   if (diagnostics.length === 0) return;
 
   const loggerFactory = input.loggerFactory ?? createNodeLoggerFactory({ env: input.env });
-  const logger = loggerFactory.createLogger("zcode").child({
+  const logger = loggerFactory.createLogger("zxcode").child({
     module: "adapters.config",
   });
 

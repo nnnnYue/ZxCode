@@ -1,26 +1,26 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { ZCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts/plugins";
+import { ZXCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts/plugins";
 import {
   getCapturedZCodeCuaBrokerCredentials,
-  ZCODE_CUA_BROKER_SOCKET_ENV_KEY,
-  ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+  ZXCODE_CUA_BROKER_SOCKET_ENV_KEY,
+  ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
 } from "@zcode/shared/runtime-env";
-import { ZCODE_CUA_OFFICIAL_PLUGIN_ID, ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared/mcp";
+import { ZXCODE_CUA_OFFICIAL_PLUGIN_ID, ZXCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared/mcp";
 import type { RunContext } from "@zcode/shared-types";
 
-const HOST_USAGE = `${ZCODE_PLUGIN_HOST_COMMAND} <server-path> [-- <server-arg>...]`;
+const HOST_USAGE = `${ZXCODE_PLUGIN_HOST_COMMAND} <server-path> [-- <server-arg>...]`;
 
 type HostedPluginModule = {
   main?: unknown;
 };
 
 export function isPluginHostInvocation(argv: readonly string[]): boolean {
-  return argv[0] === ZCODE_PLUGIN_HOST_COMMAND;
+  return argv[0] === ZXCODE_PLUGIN_HOST_COMMAND;
 }
 
-// __zcode-plugin-host 在 agent 子进程里运行 official plugin 的 MCP server（server.js）。
+// __zxcode-plugin-host 在 agent 子进程里运行 official plugin 的 MCP server（server.js）。
 // CLI 入口 main.ts 的 applyCliRuntimeEnvSanitization 会先把 broker token 从 process.env 剔除进
 // 进程内 capture；因此这里是恢复 bearer token 的最后一道宿主边界。capture 本身只证明某个
 // Agent 进程曾收到过 Helper 凭据，不能证明当前传入的 server 就是官方 zcode-cua：
@@ -52,21 +52,21 @@ export async function runPluginHostCommand(ctx: RunContext, argv: string[]): Pro
     }
 
     const originalArgv = process.argv;
-    const originalBrokerSocket = process.env[ZCODE_CUA_BROKER_SOCKET_ENV_KEY];
+    const originalBrokerSocket = process.env[ZXCODE_CUA_BROKER_SOCKET_ENV_KEY];
     // shared node_repl 把同一凭据组恢复到环境，由 broker bridge 读取；旧的独立 CUA
     // MCP 不再拥有执行入口。
     process.argv = [process.execPath, serverPath, ...serverArgs];
-    if (capturedBrokerCredentials.socket && process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] === "1") {
-      process.env[ZCODE_CUA_BROKER_SOCKET_ENV_KEY] = capturedBrokerCredentials.socket;
+    if (capturedBrokerCredentials.socket && process.env[ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY] === "1") {
+      process.env[ZXCODE_CUA_BROKER_SOCKET_ENV_KEY] = capturedBrokerCredentials.socket;
     }
     try {
       await module.main();
     } finally {
       process.argv = originalArgv;
       if (originalBrokerSocket === undefined) {
-        delete process.env[ZCODE_CUA_BROKER_SOCKET_ENV_KEY];
+        delete process.env[ZXCODE_CUA_BROKER_SOCKET_ENV_KEY];
       } else {
-        process.env[ZCODE_CUA_BROKER_SOCKET_ENV_KEY] = originalBrokerSocket;
+        process.env[ZXCODE_CUA_BROKER_SOCKET_ENV_KEY] = originalBrokerSocket;
       }
     }
 
@@ -84,7 +84,7 @@ function assertCapturedBrokerLaunchIsAuthorized(credentials: CapturedBrokerCrede
   const hasCapturedCredentials = Boolean(credentials.socket || credentials.pluginAuthority);
   if (!hasCapturedCredentials) return;
 
-  const pluginId = process.env[ZCODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase();
+  const pluginId = process.env[ZXCODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase();
   // 凭据组里已经没有 token 了：broker 全平台改为身份模式（Helper 按对端代码签名裁决连接），
   // shared/runtimeEnv.ts 的 CapturedCuaBrokerCredentials 只有 socket + pluginAuthority
   // (+ refreshMarker)。这里不能再读 `credentials.token`；token 已从凭据组移除，
@@ -96,11 +96,11 @@ function assertCapturedBrokerLaunchIsAuthorized(credentials: CapturedBrokerCrede
   if (
     credentials.socket === undefined ||
     credentials.pluginAuthority === undefined ||
-    pluginId !== ZCODE_CUA_OFFICIAL_PLUGIN_ID ||
-    process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] !== "1"
+    pluginId !== ZXCODE_CUA_OFFICIAL_PLUGIN_ID ||
+    process.env[ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY] !== "1"
   ) {
     throw new Error(
-      "Captured ZCode CUA broker credentials may only launch the trusted shared node_repl host",
+      "Captured ZxCode CUA broker credentials may only launch the trusted shared node_repl host",
     );
   }
 }

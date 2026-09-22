@@ -19,7 +19,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
+import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { cn } from "@/components/lib/utils.js";
 import { toast } from "@/components/ui/toast.js";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
@@ -368,7 +368,7 @@ export function ConversationDraftSuggestedPromptsContainer({
         requestVersion !== requestVersionRef.current ||
         (kind === "install" &&
           (!flow.result?.pluginName ||
-            flow.result.marketplace !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
+            flow.result.marketplace !== ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
             flow.result.sourceTrust !== "official"))
       ) {
         return;

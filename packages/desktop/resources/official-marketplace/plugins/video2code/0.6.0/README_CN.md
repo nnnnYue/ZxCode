@@ -4,11 +4,11 @@
 
 `video2code` 把一段网页录屏复刻成可运行的网页。给它一个网站的 `.mp4` / `.webm`，或者直接给网站 URL，它会逐帧观察录屏、写出显式的复刻契约、脚手架出一个 React + TypeScript + Tailwind 项目、构建、本地部署、给自己的成果录像，再把两段录像对照验证之后才算收尾。
 
-录制由 ZCode 内置的 Browser Use WebView 完成（原生产出 WebM），再用 `ffmpeg` 转成 MP4。**不使用也不安装 Playwright 或独立的 Chromium。**
+录制由 ZxCode 内置的 Browser Use WebView 完成（原生产出 WebM），再用 `ffmpeg` 转成 MP4。**不使用也不安装 Playwright 或独立的 Chromium。**
 
 ## 快速开始
 
-1. 从 ZCode 插件管理器安装本插件。
+1. 从 ZxCode 插件管理器安装本插件。
 2. 首次运行前检查机器环境：
 
    ```text
@@ -85,7 +85,7 @@
 - `PATH` 上要有 `ffmpeg` 和 `ffprobe` —— 摄入、抽帧、时长探测、WebM → MP4 转码都依赖它。版本不挑，4.x 起都行。
 - Node.js 20 或更高版本（Vite 7 要 20.19+/22.12+）和自带的 npm，用于构建 webapp 模板。
 - npm registry 可达。
-- 浏览器交互和录制不需要额外安装：跑在 ZCode 内置的 Browser Use WebView 上。
+- 浏览器交互和录制不需要额外安装：跑在 ZxCode 内置的 Browser Use WebView 上。
 
 不要手工逐项确认，直接跑体检脚本：
 

@@ -19,7 +19,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   TID_V4_MODEL_CONFIG,
   TID_V4_COMPOSER_INPUT,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
   type ZCodeConfigOption,
   type ZCodeProvider,
 } from "@zcode/shared";
@@ -133,7 +133,7 @@ function V4ComposerModelControlsImpl({
   onRecoverCustomModelSelection,
 }: V4ComposerToolbarProps) {
   const { intl, locale } = useZCodeIntl();
-  const displayProvider = provider ?? ZCODE_AGENT_PROVIDER;
+  const displayProvider = provider ?? ZXCODE_AGENT_PROVIDER;
   // 配置面读取：workspace 缺省目录（taskId=null），不读旧会话态。
   const { error: configOptionsError } = useToolbarConfigOptions(
     workspacePath,

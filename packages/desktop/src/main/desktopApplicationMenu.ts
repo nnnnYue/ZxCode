@@ -4,7 +4,7 @@ import {
   desktopMenuMessageIds,
   getDesktopMenuMessage,
   isValidShortcutBinding,
-  ZCODE_ENV,
+  ZXCODE_ENV,
   type DesktopCommandId,
   type Locale,
 } from "@zcode/shared";
@@ -15,11 +15,11 @@ import {
   clampDesktopZoomLevel,
 } from "./desktopZoom.js";
 import {
-  HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID,
+  HELP_TOGGLE_ZXCODE_STDIO_TAP_MENU_ID,
   HELP_TOGGLE_DEV_TOOLS_MENU_ID,
 } from "./desktopCommandHandlers.js";
 
-const HELP_ZCODE_ENDPOINT_PRODUCTION_MENU_ID = "help.zcode-endpoint.production";
+const HELP_ZXCODE_ENDPOINT_PRODUCTION_MENU_ID = "help.zxcode-endpoint.production";
 
 export function getDesktopMenuLabel(
   locale: Locale,
@@ -37,7 +37,7 @@ export function resolveSystemApplicationLocale(): Locale {
 
 export function updateZCodeStdioTapDevMenuState() {
   const menu = Menu.getApplicationMenu();
-  const item = menu?.getMenuItemById(HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID);
+  const item = menu?.getMenuItemById(HELP_TOGGLE_ZXCODE_STDIO_TAP_MENU_ID);
   if (!item) {
     return;
   }
@@ -257,7 +257,7 @@ function buildApplicationMenuTemplate(options: {
         ...(isLocalDevelopmentRuntime && stdioTapState.visible
           ? [
               {
-                id: HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID,
+                id: HELP_TOGGLE_ZXCODE_STDIO_TAP_MENU_ID,
                 label: getLabel(desktopMenuMessageIds.helpToggleZCodeStdioTap),
                 type: "checkbox" as const,
                 checked: stdioTapState.enabled,
@@ -267,13 +267,13 @@ function buildApplicationMenuTemplate(options: {
               { type: "separator" as const },
             ]
           : []),
-        ...(ZCODE_ENV === "test"
+        ...(ZXCODE_ENV === "test"
           ? [
               {
                 label: getLabel(desktopMenuMessageIds.helpZCodeEndpoint),
                 submenu: [
                   {
-                    id: HELP_ZCODE_ENDPOINT_PRODUCTION_MENU_ID,
+                    id: HELP_ZXCODE_ENDPOINT_PRODUCTION_MENU_ID,
                     label: getLabel(desktopMenuMessageIds.helpZCodeEndpointProduction),
                     type: "radio" as const,
                     checked: (options.zcodeEndpointSelection ?? "production") === "production",

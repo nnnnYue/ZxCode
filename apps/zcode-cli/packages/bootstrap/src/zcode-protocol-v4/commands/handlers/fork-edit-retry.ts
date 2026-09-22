@@ -29,7 +29,7 @@ import {
 import { applyGoalCommand } from "./goal-compact.js";
 import type { ConversationEditTarget } from "../../product-projection.js";
 
-const CONVERSATION_COMMAND_LOG_MODULE = "bootstrap.zcode_protocol_v4.commands";
+const CONVERSATION_COMMAND_LOG_MODULE = "bootstrap.zxcode_protocol_v4.commands";
 const EDIT_USER_QUERY_COMPLETED_EVENT = "conversation.command.edit_user_query.completed";
 const FORK_ASSISTANT_COMPLETED_EVENT = "conversation.command.fork_assistant.completed";
 

@@ -1,6 +1,6 @@
 /* oxlint-disable eslint(max-lines) -- re-home 产物：旧协议消息/会话承重类型集中迁移，保持单文件契约面。 */
 // re-home 迁移产物（为删除旧协议树铺路）。
-// 本文件承载旧 ZCode Protocol 中仍被存活栈（validation/background-task-notifications/
+// 本文件承载旧 ZxCode Protocol 中仍被存活栈（validation/background-task-notifications/
 // v4 投影等）消费的承重类型与 schema：ZCodeSessionInfo / ZCodeMessageWithParts /
 // ZCodePermissionResponse / ZCodeInteractionRequestOrigin 及其依赖闭包。
 // 旧协议死亡（zcode-protocol/index.ts 删除）后，这是该协议面的唯一幸存面。
@@ -42,7 +42,7 @@ export const zcodeWorkspaceRefSchema = z
 export const zcodePermissionDecisionSchema = z.enum(["allow", "deny", "escalate", "modify"]);
 export const zcodePermissionRuleBehaviorSchema = z.enum(["allow", "deny", "ask"]);
 /** Backward-compatible wire/storage key interpreted only for trusted official CUA tools. */
-export const OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME = "zcode:permission-capability:official_cua";
+export const OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME = "zxcode:permission-capability:official_cua";
 /**
  * workflow 运行确认窗第三选项「Refine」（拒绝并附修改意见）的稳定 optionId。
  * CLI 侧 v4 投影合成选项、broker 应答映射与 GUI 特判共用同一常量；

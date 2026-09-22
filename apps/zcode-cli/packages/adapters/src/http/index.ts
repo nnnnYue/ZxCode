@@ -28,7 +28,7 @@ import {
 } from "./public-egress-policy.js";
 import { readResponseBody } from "./response-body.js";
 
-const TRACE_HEADER = "x-zcode-trace-id";
+const TRACE_HEADER = "x-zxcode-trace-id";
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
 

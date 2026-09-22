@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import type { ServerLayout } from "./paths.js";
 
-const SERVER_INSTALL_OWNERSHIP_PRODUCT = "zcode-server";
+const SERVER_INSTALL_OWNERSHIP_PRODUCT = "zxcode-server";
 const SERVER_INSTALL_OWNERSHIP_SCHEMA_VERSION = 1;
 
 const serverInstallOwnershipSchema = z
@@ -22,14 +22,14 @@ type ServerInstallOwnership = z.infer<typeof serverInstallOwnershipSchema>;
 async function readOwnership(layout: ServerLayout): Promise<ServerInstallOwnership> {
   const markerStat = await lstat(layout.installFile).catch(() => null);
   if (!markerStat?.isFile()) {
-    throw new Error(`ZCode Server ownership marker is missing or invalid: ${layout.installFile}`);
+    throw new Error(`ZxCode Server ownership marker is missing or invalid: ${layout.installFile}`);
   }
   try {
     return serverInstallOwnershipSchema.parse(
       JSON.parse(await readFile(layout.installFile, "utf8")),
     );
   } catch (error) {
-    throw new Error(`ZCode Server ownership marker is invalid: ${layout.installFile}`, {
+    throw new Error(`ZxCode Server ownership marker is invalid: ${layout.installFile}`, {
       cause: error,
     });
   }
@@ -75,14 +75,14 @@ export async function validateServerInstallOwnership(
   const [ownership, canonicalServerRoot] = await Promise.all([
     readOwnership(layout),
     realpath(layout.serverRoot).catch((error: unknown) => {
-      throw new Error(`ZCode Server ownership root cannot be resolved: ${layout.serverRoot}`, {
+      throw new Error(`ZxCode Server ownership root cannot be resolved: ${layout.serverRoot}`, {
         cause: error,
       });
     }),
   ]);
   if (ownership.canonicalServerRoot !== canonicalServerRoot) {
     throw new Error(
-      `ZCode Server ownership root mismatch: expected ${ownership.canonicalServerRoot}, received ${canonicalServerRoot}`,
+      `ZxCode Server ownership root mismatch: expected ${ownership.canonicalServerRoot}, received ${canonicalServerRoot}`,
     );
   }
   return ownership;

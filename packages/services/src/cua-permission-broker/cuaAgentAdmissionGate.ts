@@ -37,7 +37,9 @@ export class CuaAgentAdmissionGate {
   waitForSpawnAdmission(context: CuaAgentSpawnAdmissionContext): Promise<void> {
     const signal = context.signal;
     if (signal?.aborted) {
-      return Promise.reject(signal.reason ?? new Error("ZCode agent process start was cancelled."));
+      return Promise.reject(
+        signal.reason ?? new Error("ZxCode agent process start was cancelled."),
+      );
     }
     if (this.activeEpoch === undefined) {
       return Promise.resolve();
@@ -46,7 +48,7 @@ export class CuaAgentAdmissionGate {
       let waiter!: AdmissionWaiter;
       const onAbort = (): void => {
         this.waiters.delete(waiter);
-        reject(signal?.reason ?? new Error("ZCode agent process start was cancelled."));
+        reject(signal?.reason ?? new Error("ZxCode agent process start was cancelled."));
       };
       waiter = {
         resolve: () => {

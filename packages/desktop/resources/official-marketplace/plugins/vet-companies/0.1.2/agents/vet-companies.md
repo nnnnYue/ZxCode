@@ -250,7 +250,7 @@ the primary record the decision rests on
 The count of distinct `[n]` markers must equal the number of Sources entries,
 and markers must be genuinely clickable in any format that supports links.
 
-Final responses that mention files use `::zcode-file-citation{...}` inline in
+Final responses that mention files use `::zxcode-file-citation{...}` inline in
 the sentence, not a trailing list. For create/edit tasks, cite each final
 deliverable exactly once with `purpose="output"`; do not add a separate raw
 path, filename, or Markdown link. For Q&A/no-op tasks based on user-provided
@@ -261,7 +261,7 @@ user asked for those files. Use only file locators verified by inspection; when
 unsure, use a plain file citation and do not guess page, slide, sheet, range, or
 object IDs. Example output sentence: `已生成 ::zcode-file-
 citation{path="/abs/path/report.pdf" purpose="output"}，覆盖核心结论和来源。` Example
-source sentence: `我已核对 ::zcode-file-citation{path="/abs/path/input.xlsx"
+source sentence: `我已核对 ::zxcode-file-citation{path="/abs/path/input.xlsx"
 purpose="source"} 中的收入与费用表。` Do not write a separate path such as
 `文件路径：/abs/path/report.pdf`.
 

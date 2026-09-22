@@ -1,6 +1,6 @@
 import {
-  ZCODE_AGENT_RUNTIME,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_RUNTIME,
+  ZXCODE_AGENT_PROVIDER,
   type RemoteResourcePackageId,
 } from "@zcode/shared";
 import type { IRemoteBackend, RemoteEnvironment } from "@zcode/server/remote/backend.js";
@@ -110,7 +110,7 @@ async function shouldSkipZCodeAgentDeploy(params: {
     }
   }
 
-  // wrapper 在、但 zcode.cjs 缺失（被清理 / 旧原生二进制部署残留）时也要重新部署。
+  // wrapper 在、但 zxcode.cjs 缺失（被清理 / 旧原生二进制部署残留）时也要重新部署。
   if (!(await params.backend.exists(params.remoteBundlePath))) {
     params.loggers.logWarn(
       `[remote-assets] ${params.installer.mode === "remote-download" ? "download required" : "upload required"}: component=${params.componentId} reason=remote bundle missing path=${params.remoteBundlePath}`,
@@ -126,7 +126,7 @@ async function shouldSkipZCodeAgentDeploy(params: {
   }
 
   params.loggers.log(
-    `[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 制品 SHA ${params.expectedArtifactSha256} 已部署，跳过`,
+    `[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 制品 SHA ${params.expectedArtifactSha256} 已部署，跳过`,
   );
   return true;
 }
@@ -145,7 +145,7 @@ async function findMissingRemoteOfficialPluginAssetPaths(
 }
 
 /**
- * 部署 ZCode Agent runtime 到远程机器。
+ * 部署 ZxCode Agent runtime 到远程机器。
  *
  * 生产态只用 manifest SHA 判断制品是否变化；语义版本不参与跳过决策。
  */
@@ -155,19 +155,19 @@ export async function deployZCodeAgentRuntime(
   options: DeployZCodeAgentRuntimeOptions,
   loggers: DeployLoggers,
 ): Promise<void> {
-  const provider = ZCODE_AGENT_PROVIDER;
-  const runtime = ZCODE_AGENT_RUNTIME;
+  const provider = ZXCODE_AGENT_PROVIDER;
+  const runtime = ZXCODE_AGENT_RUNTIME;
   const componentId = provider;
   if (!isSelectedZCodeAgentComponent(componentId, options.selectedResourcePackageIds)) {
-    loggers.log(`[zcode-agent-deploy] ${provider}: 未选择资源包 ${componentId}，跳过检查和部署`);
+    loggers.log(`[zxcode-agent-deploy] ${provider}: 未选择资源包 ${componentId}，跳过检查和部署`);
     return;
   }
 
-  // binaryName 指 wrapper 可执行文件名（如 zcode-agent / zcode-agent.exe）——
-  // 一个调用远端 node 执行 zcode.cjs 的壳脚本。
+  // binaryName 指 wrapper 可执行文件名（如 zxcode-agent / zxcode-agent.exe）——
+  // 一个调用远端 node 执行 zxcode.cjs 的壳脚本。
   const binaryName = runtime.resolveEntrySegments(env.platform).at(-1);
   if (!binaryName) {
-    loggers.logWarn(`[zcode-agent-deploy] ${provider}: 无法解析 agent 入口名称，跳过部署`);
+    loggers.logWarn(`[zxcode-agent-deploy] ${provider}: 无法解析 agent 入口名称，跳过部署`);
     return;
   }
 
@@ -204,7 +204,7 @@ export async function deployZCodeAgentRuntime(
       (await options.installer.resolveComponentSha256?.(componentId)) ?? null;
   } catch (error) {
     loggers.logWarn(
-      `[zcode-agent-deploy] ${provider}: 读取 manifest SHA 失败，将重新部署: ${String(error)}`,
+      `[zxcode-agent-deploy] ${provider}: 读取 manifest SHA 失败，将重新部署: ${String(error)}`,
     );
   }
 
@@ -226,7 +226,7 @@ export async function deployZCodeAgentRuntime(
     return;
   }
 
-  loggers.log(`[zcode-agent-deploy] ${provider}: 开始部署 v${runtime.version}...`);
+  loggers.log(`[zxcode-agent-deploy] ${provider}: 开始部署 v${runtime.version}...`);
   // 缺少远端 plugin 只表示安装不完整，不等于 App 版本变化。
   // 同 App 版本修复 plugin 时应复用已校验的组件 cache；只有强制部署边界才重新下载制品。
   const forceRefreshRuntimeAsset = Boolean(options.force);
@@ -263,10 +263,10 @@ export async function deployZCodeAgentRuntime(
   } else {
     // 1) chmod 失败时先验证 packages 可替换，避免 bundle 已更新但旧 packages 删除失败。
     await installOfficialPluginPackages();
-    // 2) packages 替换成功后再安装编译产物 zcode.cjs（跨平台同一份，glm 组件里就是它）。
+    // 2) packages 替换成功后再安装编译产物 zxcode.cjs（跨平台同一份，glm 组件里就是它）。
     await installBundle();
   }
-  // 3) 写入 wrapper（即 resolver 期望的 zcode-agent），用远端已部署的 node 执行 zcode.cjs。
+  // 3) 写入 wrapper（即 resolver 期望的 zxcode-agent），用远端已部署的 node 执行 zxcode.cjs。
   await deployRemoteAgentWrapper({
     backend,
     content: buildRemoteAgentBundleWrapper(runtime.bundledResourceDir),
@@ -287,5 +287,5 @@ export async function deployZCodeAgentRuntime(
       platformArch: options.platformArch,
     });
   }
-  loggers.log(`[zcode-agent-deploy] ${provider}: 部署完成 v${runtime.version}`);
+  loggers.log(`[zxcode-agent-deploy] ${provider}: 部署完成 v${runtime.version}`);
 }

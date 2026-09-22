@@ -39,7 +39,7 @@ Schema:
 
 ### Step 4: Confirm back — and hand over the file
 
-Show the resulting list as a short table (windcode, label, weight if any) and cite the JSON deliverable exactly once with `::zcode-file-citation{path="..." purpose="output"}` inline in prose. Do not add a separate raw path, Markdown link, or trailing citation list. If the list exceeds ~30 names, warn that recap and event scans will be slower and suggest splitting.
+Show the resulting list as a short table (windcode, label, weight if any) and cite the JSON deliverable exactly once with `::zxcode-file-citation{path="..." purpose="output"}` inline in prose. Do not add a separate raw path, Markdown link, or trailing citation list. If the list exceeds ~30 names, warn that recap and event scans will be slower and suggest splitting.
 
 **The written JSON is the deliverable, so deliver it.** This skill's product is a
 saved file, not a message about one: put `watchlists/<list-name>.json` where the

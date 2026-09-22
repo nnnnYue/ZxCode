@@ -921,13 +921,13 @@ body {
   }
 }
 
-.zcode-draft-prompt-waterfall {
+.zxcode-draft-prompt-waterfall {
   animation: zcode-draft-prompt-waterfall 260ms cubic-bezier(0.22, 1, 0.36, 1)
     var(--zcode-draft-prompt-waterfall-delay, 0ms) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zcode-draft-prompt-waterfall {
+  .zxcode-draft-prompt-waterfall {
     animation: none;
   }
 }
@@ -1031,16 +1031,16 @@ body {
 
 /* 点赞/点踩选中时的反馈动画：参考微信/X 的做法，只做图标回弹 + 细小粒子飞散两段，
    粒子用 box-shadow 画在 ::after 上且跟随 currentColor，零额外 DOM、不引入新颜色。 */
-.zcode-reaction-burst {
+.zxcode-reaction-burst {
   position: relative;
   display: inline-flex;
 }
 
-.zcode-reaction-burst > svg {
+.zxcode-reaction-burst > svg {
   animation: zcode-reaction-pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.zcode-reaction-burst::after {
+.zxcode-reaction-burst::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -1117,8 +1117,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zcode-reaction-burst > svg,
-  .zcode-reaction-burst::after {
+  .zxcode-reaction-burst > svg,
+  .zxcode-reaction-burst::after {
     animation: none;
   }
 }
@@ -1145,13 +1145,13 @@ body {
   }
 }
 
-.zcode-task-interaction-countdown-fill {
+.zxcode-task-interaction-countdown-fill {
   animation: zcode-task-interaction-countdown var(--zcode-interaction-remaining-ms, 240000ms) linear
     forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zcode-task-interaction-countdown-fill {
+  .zxcode-task-interaction-countdown-fill {
     animation: none;
     transform: scaleX(var(--zcode-interaction-progress, 1));
   }
@@ -1161,12 +1161,12 @@ body {
   animation: workspace-remote-connecting-breathe 1.8s ease-in-out infinite;
 }
 
-.zcode-update-charge-progress [data-slot="progress-indicator"] {
+.zxcode-update-charge-progress [data-slot="progress-indicator"] {
   position: relative;
   overflow: hidden;
 }
 
-.zcode-update-charge-progress [data-slot="progress-indicator"]::after {
+.zxcode-update-charge-progress [data-slot="progress-indicator"]::after {
   content: "";
   position: absolute;
   bottom: 0;
@@ -1200,7 +1200,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zcode-update-charge-progress [data-slot="progress-indicator"]::after {
+  .zxcode-update-charge-progress [data-slot="progress-indicator"]::after {
     animation: none;
     opacity: 0.2;
     transform: none;

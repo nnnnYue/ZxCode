@@ -2,7 +2,7 @@
   "mcpServers": {
     "hexin-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -10,7 +10,7 @@
     },
     "hexin-global-stock": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_global_stock",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_global_stock",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -18,7 +18,7 @@
     },
     "hexin-index": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_index",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_index",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -26,7 +26,7 @@
     },
     "hexin-fund": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_fund",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_fund",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"
@@ -34,7 +34,7 @@
     },
     "hexin-bond": {
       "type": "http",
-      "url": "${ZCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_bond",
+      "url": "${ZXCODE_BASE_URL}/api/v1/mcp/server/finance_hexin_bond",
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"

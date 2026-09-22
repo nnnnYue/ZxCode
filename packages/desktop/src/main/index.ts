@@ -53,9 +53,9 @@ import {
   type Locale,
   type AppSettings,
   PlatformChannels,
-  ZCODE_ENV,
-  ZCODE_PRODUCT_FLAVOR,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  ZXCODE_ENV,
+  ZXCODE_PRODUCT_FLAVOR,
+  DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   DEFAULT_LOCALE,
   resolveZCodeEndpointOrigin,
   HostMessageTypes,
@@ -164,13 +164,16 @@ registerLocalMediaPreviewScheme(protocol);
 const localMediaPreviewPathRegistry = createLocalMediaPreviewPathRegistry();
 
 // e2e 由 Chromedriver 管理远程调试端口；如果这里继续固定到 9229，
-// 会和开发态已打开的 ZCode Dev 抢端口，导致 WebDriver session 创建前白屏超时。
+// 会和开发态已打开的 ZxCode Dev 抢端口，导致 WebDriver session 创建前白屏超时。
 // 仅本地开发运行默认开启远程调试端口，并允许 e2e 通过环境变量交给 Chromedriver 接管。
-if (!app.isPackaged && process.env.ZCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1") {
+if (!app.isPackaged && process.env.ZXCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1") {
   app.commandLine.appendSwitch("remote-debugging-port", "9229");
 }
 
 app.setName(runtimeApplicationName);
+// rebrand：UA 中的产品标识显式锁定为 ZxCode/<版本>，不依赖 Electron 从 package.json 派生，
+// 避免开发态/打包态产物残留旧产品名 token。
+app.userAgentFallback = `ZxCode/${app.getVersion()} ${app.userAgentFallback.replace(/^(?:ZxCode|zxcode|ZxCode)(?: [^/]+)?\/[\d.]+\s+/, "")}`;
 if (runtimeHomePath) {
   app.setPath("home", runtimeHomePath);
 }
@@ -441,7 +444,7 @@ async function runBrowserCommandOnView(params: {
 let currentDesktopZoomLevel = 0;
 let currentDesktopWindowSize: DesktopWindowSize | undefined;
 const preloadPath = join(import.meta.dirname, "../preload/index.cjs");
-const settingsFile = join(homedir(), ".zcode", "v2", "setting.json");
+const settingsFile = join(homedir(), ".zxcode", "v2", "setting.json");
 let activeAppShutdownPolicy = resolveAppShutdownPolicy("normal", process.platform);
 let activeAppShutdownKind: AppShutdownKind | null = null;
 const broadcastHub = new BroadcastHub();
@@ -565,14 +568,14 @@ const disposingHostProcessTimers = new WeakMap<
 const mainSettingService = createSettingService();
 async function resolveCurrentZCodeEndpointOrigin() {
   return resolveZCodeEndpointOrigin({
-    env: ZCODE_ENV,
+    env: ZXCODE_ENV,
     envBaseOrigin: resolveZCodeEndpointEnvBaseOrigin(hostProcessLocalEnv),
     overrideOrigin: (await mainSettingService.get()).zcodeEndpointOrigin,
   });
 }
 app.on("browser-window-focus", (_event, win) => {
   rebuildMenu();
-  // 设置/更新等无 Host 的 ZCode 窗口也算前台：router 会先把旧 workspace Host 清成 null，
+  // 设置/更新等无 Host 的 ZxCode 窗口也算前台：router 会先把旧 workspace Host 清成 null，
   // 再把无 Host 的新窗口事实静默丢弃，避免旧会话 PiP 继续显示。
   cuaPipFocusRouter.focusWindow(resolveCuaPipWindowKey(win));
 });
@@ -831,7 +834,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
 
 function exitPreparedApp(reason: string): never | void {
   logger.info(`[app-quit] exiting prepared app (${reason})`);
-  if (process.env.ZCODE_E2E_RUN_ID?.trim()) {
+  if (process.env.ZXCODE_E2E_RUN_ID?.trim()) {
     flushMainE2ECoverage((error) => {
       logger.warn("[e2e-coverage] main coverage flush failed", error);
     });
@@ -886,12 +889,12 @@ function logWindowsBundledRuntimeIntegrityDiagnostic() {
 
 function shouldConfirmAppQuit() {
   // 开发环境里的普通会话经常需要重启 Electron，只在 production 下拦截，避免打断调试。
-  return ZCODE_ENV === "production" && getRunningAgentSessionCount() > 0;
+  return ZXCODE_ENV === "production" && getRunningAgentSessionCount() > 0;
 }
 
 function confirmAppQuit(originWindow?: BrowserWindow | null) {
   if (!shouldConfirmAppQuit()) {
-    logger.info(`[app-quit] quit confirmation skipped in ${ZCODE_ENV}`);
+    logger.info(`[app-quit] quit confirmation skipped in ${ZXCODE_ENV}`);
     return true;
   }
 
@@ -916,7 +919,7 @@ function confirmAppQuit(originWindow?: BrowserWindow | null) {
     defaultId: 1,
     cancelId: 1,
     title: isZh ? "退出确认" : "Confirm Quit",
-    message: isZh ? "确认退出 Z Code?" : "Quit Z Code?",
+    message: isZh ? "确认退出 ZxCode?" : "Quit ZxCode?",
     detail: detailLines.join("\n"),
     icon: nativeImage.createFromPath(iconPath),
   };
@@ -954,11 +957,11 @@ async function executeDesktopCommandForApp(
 }
 
 async function resolveZCodeEndpointSelection(): Promise<"production" | "test" | "custom"> {
-  if (ZCODE_ENV === "production") {
+  if (ZXCODE_ENV === "production") {
     return "production";
   }
   const origin = await resolveCurrentZCodeEndpointOrigin();
-  if (origin === DEFAULT_ZCODE_ENDPOINT_ORIGIN) {
+  if (origin === DEFAULT_ZXCODE_ENDPOINT_ORIGIN) {
     return "production";
   }
   return "custom";
@@ -1251,7 +1254,7 @@ app.whenReady().then(async () => {
     // 打包态必须与 NSIS 快捷方式使用同一 AUMID，否则 Shell 把它们当成不同应用。
     // 使用构建期产品身份，不依赖用户机器环境；开发态继续保持独立身份。
     app.setAppUserModelId(
-      resolveWindowsAppUserModelIdForFlavor(ZCODE_PRODUCT_FLAVOR, { isPackaged: app.isPackaged }),
+      resolveWindowsAppUserModelIdForFlavor(ZXCODE_PRODUCT_FLAVOR, { isPackaged: app.isPackaged }),
     );
   }
 

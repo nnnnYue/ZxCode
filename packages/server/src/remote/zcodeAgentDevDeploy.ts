@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- 开发态 agent 部署包含本地打包、远端 owner staging 与 wrapper 安装，后续独立拆分上传事务。 */
-import { ZCODE_AGENT_PROVIDER, resolveZCodeRuntimeEnv } from "@zcode/shared";
+import { ZXCODE_AGENT_PROVIDER, resolveZCodeRuntimeEnv } from "@zcode/shared";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm } from "node:fs/promises";
@@ -36,8 +36,8 @@ import {
 } from "@zcode/server/remote/zcodeAgentOfficialPluginAssets.js";
 import { repairLegacyRemoteOfficialPluginDirectoryPermissions } from "@zcode/server/remote/zcodeAgentOfficialPluginPermissionRepair.js";
 
-const DEV_AGENT_BUNDLE_RELATIVE_PATH = "apps/zcode-cli/packages/cli/dist/zcode.cjs";
-const DEV_AGENT_BUNDLE_ENV = "ZCODE_REMOTE_DEV_AGENT_BUNDLE";
+const DEV_AGENT_BUNDLE_RELATIVE_PATH = "apps/zcode-cli/packages/cli/dist/zxcode.cjs";
+const DEV_AGENT_BUNDLE_ENV = "ZXCODE_REMOTE_DEV_AGENT_BUNDLE";
 const REMOTE_DEV_AGENT_BUNDLE_NAME = REMOTE_AGENT_BUNDLE_NAME;
 const REMOTE_DEV_AGENT_VERSION_FILE_NAME = ".dev-version";
 
@@ -98,7 +98,7 @@ async function computeDevelopmentAgentAssetsSha256(params: {
   repoRoot: string;
 }): Promise<string> {
   const hash = createHash("sha256");
-  hash.update("bundle:zcode.cjs\n");
+  hash.update("bundle:zxcode.cjs\n");
   hash.update(await readFile(params.localBundlePath));
   for (const packageName of REMOTE_AGENT_OFFICIAL_PLUGIN_PACKAGE_NAMES) {
     const packageRoot = join(params.repoRoot, "apps", "zcode-cli", "packages", packageName);
@@ -115,7 +115,7 @@ async function hashDevelopmentOfficialPluginPackage(
 ): Promise<void> {
   const manifestPath = join(packageRoot, ".zcode-plugin", "plugin.json");
   if (!existsSync(manifestPath)) {
-    throw new Error(`[zcode-agent-deploy] missing official plugin manifest: ${manifestPath}`);
+    throw new Error(`[zxcode-agent-deploy] missing official plugin manifest: ${manifestPath}`);
   }
   assertDevelopmentOfficialPluginRequiredAssets(packageRoot, packageName);
 
@@ -168,7 +168,7 @@ function assertDevelopmentOfficialPluginRequiredAssets(
     const requiredPath = join(packageRoot, ...localRelativePath.split("/"));
     if (!existsSync(requiredPath)) {
       throw new Error(
-        `[zcode-agent-deploy] missing official plugin required asset: ${requiredPath}`,
+        `[zxcode-agent-deploy] missing official plugin required asset: ${requiredPath}`,
       );
     }
   }
@@ -240,7 +240,9 @@ async function shouldSkipDevelopmentZCodeAgentDeploy(params: {
     return false;
   }
 
-  params.loggers.log(`[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 开发态 zcode.cjs 未变化，跳过`);
+  params.loggers.log(
+    `[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 开发态 zxcode.cjs 未变化，跳过`,
+  );
   return true;
 }
 
@@ -253,7 +255,7 @@ async function stageDevelopmentOfficialPluginPackages(params: {
     const sourceRoot = join(params.repoRoot, "apps", "zcode-cli", "packages", packageName);
     const manifestPath = join(sourceRoot, ".zcode-plugin", "plugin.json");
     if (!existsSync(manifestPath)) {
-      throw new Error(`[zcode-agent-deploy] missing official plugin manifest: ${manifestPath}`);
+      throw new Error(`[zxcode-agent-deploy] missing official plugin manifest: ${manifestPath}`);
     }
     assertDevelopmentOfficialPluginRequiredAssets(sourceRoot, packageName);
 
@@ -276,7 +278,7 @@ async function uploadDevelopmentOfficialPluginPackages(params: {
   remoteProviderDir: string;
   loggers: DeployLoggers;
 }): Promise<void> {
-  const tempDir = await mkdtemp(join(tmpdir(), "zcode-remote-agent-packages-"));
+  const tempDir = await mkdtemp(join(tmpdir(), "zxcode-remote-agent-packages-"));
   const packagesDir = join(tempDir, REMOTE_AGENT_OFFICIAL_PLUGIN_DIR_NAME);
   const archivePath = join(tempDir, `${REMOTE_AGENT_OFFICIAL_PLUGIN_DIR_NAME}.tar.gz`);
   try {
@@ -305,11 +307,11 @@ async function uploadDevelopmentOfficialPluginPackages(params: {
         await waitForClose(cleanupStream);
       } catch (error) {
         params.loggers.logWarn(
-          `[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 清理 owner staging 失败 (${ownerSuffix}): ${String(error)}`,
+          `[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 清理 owner staging 失败 (${ownerSuffix}): ${String(error)}`,
         );
       }
     };
-    params.loggers.log(`[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 开发态上传官方插件资源`);
+    params.loggers.log(`[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 开发态上传官方插件资源`);
     try {
       await params.backend.upload(archivePath, remoteArchivePath);
       await repairLegacyRemoteOfficialPluginDirectoryPermissions({
@@ -384,12 +386,12 @@ export async function deployDevelopmentZCodeAgentRuntime(
     return true;
   }
 
-  // 开发态 SSH 远端过去只会部署本地 zcode.cjs，不会携带 packages/*-plugin。
+  // 开发态 SSH 远端过去只会部署本地 zxcode.cjs，不会携带 packages/*-plugin。
   // builtin plugin seed 依赖 agent 包旁边的官方插件源资源，所以 dev 部署需要同步 bundle 与插件资源。
   // 本地修改 apps/zcode-cli 后，远端测试仍运行滞后的发布包。这里改为上传 dev 启动时刚构建的
-  // dist/zcode.cjs，并用远端已部署的 node 包一层 wrapper 启动，保证 agent 仍运行在目标机器内。
+  // dist/zxcode.cjs，并用远端已部署的 node 包一层 wrapper 启动，保证 agent 仍运行在目标机器内。
   loggers.log(
-    `[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 开发态上传本地 zcode.cjs ${devVersion.slice(0, 12)}`,
+    `[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 开发态上传本地 zxcode.cjs ${devVersion.slice(0, 12)}`,
   );
   const mkdirStream = await backend.exec(`mkdir -p ${quotePosixPathArg(params.remoteProviderDir)}`);
   await waitForClose(mkdirStream);
@@ -432,7 +434,7 @@ export async function deployDevelopmentZCodeAgentRuntime(
   }
   await waitForClose(markerStream);
   loggers.log(
-    `[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 开发态部署完成 ${devVersion.slice(0, 12)}`,
+    `[zxcode-agent-deploy] ${ZXCODE_AGENT_PROVIDER}: 开发态部署完成 ${devVersion.slice(0, 12)}`,
   );
   return true;
 }

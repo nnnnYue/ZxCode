@@ -13,7 +13,7 @@ const INTRO = [
  * 提示策略。这段是本工具描述里**最重要**的部分，所以写在最前、用最直白的祈使句。
  *
  * 理由：保存会在用户的仓库里留下一个文件，而模型对「这个 workflow 看起来挺通用」的判断
- * 远比用户宽松。一个会自作主张保存的 agent 会在几轮对话里往 `.zcode/workflows` 里堆满
+ * 远比用户宽松。一个会自作主张保存的 agent 会在几轮对话里往 `.zxcode/workflows` 里堆满
  * 半成品，而那些文件此后会出现在每一次 ListSavedWorkflows 里。所以门槛不是"别乱存"这种
  * 程度副词，而是一条硬规则：先用散文建议，等用户点头，再调用。
  */
@@ -27,10 +27,10 @@ const HINT_POLICY = [
 
 const FILE_FORMAT = [
   "File format:",
-  "- The saved file is valid TypeScript: a `/* zcode-workflow` block comment carrying YAML metadata, followed by the script verbatim.",
+  "- The saved file is valid TypeScript: a `/* zxcode-workflow` block comment carrying YAML metadata, followed by the script verbatim.",
   "- `description` is required and shows up wherever the workflow is listed. `whenToUse` is optional guidance for whoever picks a workflow later — write it for a reader who has not seen this conversation.",
   // 保存一份刚跑过的草稿是最常见的场景，而重新吐一遍脚本是这里唯一一笔可以省掉的大代价。
-  "- `script_path` saves a working draft without re-emitting it: pass the file a CreateWorkflow or AmendWorkflow result named instead of `script`, and its body is what gets saved (a `/* zcode-workflow` block in that file is dropped — the metadata comes from the fields here).",
+  "- `script_path` saves a working draft without re-emitting it: pass the file a CreateWorkflow or AmendWorkflow result named instead of `script`, and its body is what gets saved (a `/* zxcode-workflow` block in that file is dropped — the metadata comes from the fields here).",
   "- Saving over an existing name REPLACES that workflow. The confirmation window tells the user whether this is a new file or an overwrite, so pick the name deliberately: reuse it to update a workflow, choose a new one to add a variant.",
 ].join("\n");
 

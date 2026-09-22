@@ -175,7 +175,7 @@ export function fromProjectSnapshot(input: {
       source,
       id: entry.reviewItemId,
       location: {
-        source: "zcode",
+        source: "zxcode",
         scope: "project",
         directoryPath: dirname(source.canonicalPath),
         projectPath: input.workspacePath,
@@ -207,7 +207,7 @@ export function fromUserZCodeSource(input: {
     toHook({
       entry,
       source: input.source!,
-      id: `hook-zcode-user-${index}`,
+      id: `hook-zxcode-user-${index}`,
       location: input.location,
     }),
   );

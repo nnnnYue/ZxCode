@@ -41,7 +41,7 @@ const rootDir = resolve(scriptDir, "..");
 const desktopDir = join(rootDir, "packages/desktop");
 const mockCdnDir = join(desktopDir, "mock-cdn");
 const version = require(join(rootDir, "package.json")).version;
-const ZCODE_AGENT_RUNTIME = {
+const ZXCODE_AGENT_RUNTIME = {
   glm: {
     version: readZCodeAgentRuntimeVersion(),
   },
@@ -51,10 +51,10 @@ const nodeVersion = "v22.16.0";
 const componentSchemaVersion = 1;
 const remotePlatforms = ["linux-arm64", "linux-x64", "darwin-arm64", "darwin-x64"];
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const isBootstrapWithRemote = process.env.ZCODE_BOOTSTRAP_WITH_REMOTE === "1";
+const isBootstrapWithRemote = process.env.ZXCODE_BOOTSTRAP_WITH_REMOTE === "1";
 
 /**
- * Node dist 下载源。默认走国内镜像，`ZCODE_NODE_DIST_MIRROR` 可覆盖（与
+ * Node dist 下载源。默认走国内镜像，`ZXCODE_NODE_DIST_MIRROR` 可覆盖（与
  * `.gitlab/ci/00-workflow.yml` 的同名 CI 变量、`scripts/cua-helper-sea-base.mjs` 同一约定）。
  *
  * 这里原本硬编码 `https://nodejs.org/dist`，而 macOS
@@ -69,7 +69,7 @@ const isBootstrapWithRemote = process.env.ZCODE_BOOTSTRAP_WITH_REMOTE === "1";
 export const DEFAULT_NODE_DIST_BASE = "https://cdn.npmmirror.com/binaries/node";
 
 export function nodeDistBase(env = process.env) {
-  const mirror = env.ZCODE_NODE_DIST_MIRROR?.trim();
+  const mirror = env.ZXCODE_NODE_DIST_MIRROR?.trim();
   return (mirror || DEFAULT_NODE_DIST_BASE).replace(/\/+$/u, "");
 }
 const BROWSER_USE_PLUGIN_PACKAGE_NAME = "@zcode/browser-use-plugin";
@@ -154,7 +154,7 @@ function readZCodeAgentRuntimeVersion() {
   const runtimeSource = readFileSync(runtimeSourcePath, "utf8");
   const match = runtimeSource.match(/version:\s*["']([^"']+)["']/);
   if (!match?.[1]) {
-    throw new Error("Unable to parse ZCode Agent runtime version");
+    throw new Error("Unable to parse ZxCode Agent runtime version");
   }
   return match[1];
 }
@@ -192,7 +192,7 @@ async function downloadWithRetry(url, destinationPath, maxAttempts = 3) {
 }
 
 async function extractArchiveMember(url, destinationDir, archiveMember) {
-  const tempDir = mkdtempSync(join(tmpdir(), "zcode-node-dist-"));
+  const tempDir = mkdtempSync(join(tmpdir(), "zxcode-node-dist-"));
   const archivePath = join(tempDir, "node.tar.xz");
 
   try {
@@ -291,7 +291,7 @@ async function prepareNodeBinaries() {
     } catch (error) {
       console.error(`  [error] 下载或解压失败: ${url}`);
       console.error(
-        `  [error] 请检查 CI runner 的外网访问、tar/xz 依赖，或用 ZCODE_NODE_DIST_MIRROR 覆盖下载源（当前 ${nodeDistBase()}）`,
+        `  [error] 请检查 CI runner 的外网访问、tar/xz 依赖，或用 ZXCODE_NODE_DIST_MIRROR 覆盖下载源（当前 ${nodeDistBase()}）`,
       );
       throw error;
     }
@@ -322,7 +322,7 @@ function buildServerBundle() {
 
 function runBootstrapServerRemoteBuild() {
   // bootstrap:with-remote 会在本地串联 install、remote assets、workspace build。
-  // 这里不能复用已有 zcode-server.cjs：开发时 package version 常不变，旧 bundle 会把缺少新 RPC 的
+  // 这里不能复用已有 zxcode-server.cjs：开发时 package version 常不变，旧 bundle 会把缺少新 RPC 的
   // server 部署到 SSH 远端。只保留“直接用当前 Node 启动 tsx”的低内存优化，不改变 CI 的 build:remote。
   runCommand(
     process.execPath,
@@ -338,10 +338,10 @@ function copyServerBundle() {
   const serverDir = join(releaseDir, "server");
   mkdirSync(serverDir, { recursive: true });
   copyFileSync(
-    join(rootDir, "packages/server/dist/remote/zcode-server.cjs"),
-    join(serverDir, "zcode-server.cjs"),
+    join(rootDir, "packages/server/dist/remote/zxcode-server.cjs"),
+    join(serverDir, "zxcode-server.cjs"),
   );
-  console.log("  [ok] mock-cdn server/zcode-server.cjs");
+  console.log("  [ok] mock-cdn server/zxcode-server.cjs");
 }
 
 function copyNodePtyPrebuilds() {
@@ -485,9 +485,9 @@ function stageRemoteOfficialPlugins(glmDir) {
   }
 }
 
-// 远端 agent 现在跑编译出来的 zcode.cjs（而不是各平台独立的原生二进制）：
-// 远端部署时已经有一份独立 node（跑 zcode-server.cjs），agent 复用它执行 zcode.cjs 即可，
-// 不必再为每个平台准备一份内嵌 node 的 SEA 二进制。zcode.cjs 跨平台同一份，逐平台只是放进各自的
+// 远端 agent 现在跑编译出来的 zxcode.cjs（而不是各平台独立的原生二进制）：
+// 远端部署时已经有一份独立 node（跑 zxcode-server.cjs），agent 复用它执行 zxcode.cjs 即可，
+// 不必再为每个平台准备一份内嵌 node 的 SEA 二进制。zxcode.cjs 跨平台同一份，逐平台只是放进各自的
 // glm/<platform> 组件目录，保持现有 manifest 组件结构不变。
 function stageRemoteAgentBundles() {
   console.log("==> Building zcode-cli bundle for remote agents");
@@ -499,20 +499,20 @@ function stageRemoteAgentBundles() {
   // browser-use runtime 的 tsc 依赖 @zcode/core/dist。远端资产也必须先构建
   // agent CLI 依赖，避免 CI 干净检出时被开发机缓存掩盖的 TS2307。
   buildRemoteOfficialPluginRuntimes();
-  const cliBundlePath = join(rootDir, "apps/zcode-cli/packages/cli/dist/zcode.cjs");
+  const cliBundlePath = join(rootDir, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
   if (!existsSync(cliBundlePath)) {
     throw new Error(`[prepare-prebuilds] expected cli bundle missing: ${cliBundlePath}`);
   }
 
   for (const platformKey of remotePlatforms) {
     const glmDir = join(releaseDir, "glm", platformKey);
-    // 干净重建：glm 组件现在只含 zcode.cjs，清掉历史遗留的原生二进制 / 旧 meta，
+    // 干净重建：glm 组件现在只含 zxcode.cjs，清掉历史遗留的原生二进制 / 旧 meta，
     // 避免被打进组件 tar 把远端资源撑大。
     rmSync(glmDir, { recursive: true, force: true });
     mkdirSync(glmDir, { recursive: true });
-    copyFileSync(cliBundlePath, join(glmDir, "zcode.cjs"));
+    copyFileSync(cliBundlePath, join(glmDir, "zxcode.cjs"));
     stageRemoteOfficialPlugins(glmDir);
-    console.log(`  [ok] mock-cdn glm/${platformKey}/zcode.cjs`);
+    console.log(`  [ok] mock-cdn glm/${platformKey}/zxcode.cjs`);
   }
 }
 
@@ -605,7 +605,7 @@ function resolveComponentSemanticVersion(componentVersion) {
 }
 
 // glm 承载 zcode-cli app-server 协议 schema。即使 runtime 版本未变化，
-// zcode.cjs 也可能随 app 代码变更；跨 release 复用旧 glm 会让远端 agent 拒绝新协议字段。
+// zxcode.cjs 也可能随 app 代码变更；跨 release 复用旧 glm 会让远端 agent 拒绝新协议字段。
 const nonReusableReleaseAssetIds = new Set(["server-bundle", "glm"]);
 
 function readJsonFile(filePath) {
@@ -766,9 +766,9 @@ function buildReusableComponentRequiredPaths(componentId, platformKey) {
     case "node-pty":
       return platformKey.startsWith("darwin-") ? ["pty.node", "spawn-helper"] : ["pty.node"];
     case "glm":
-      // GLM 现在是编译产物 zcode.cjs（跨平台同一份），远端用已部署的 node 执行它。
+      // GLM 现在是编译产物 zxcode.cjs（跨平台同一份），远端用已部署的 node 执行它。
       // 复用时还要确认官方插件 seed 资源完整，否则旧 release 会继续产出 0 builtin plugin 的远端资源包。
-      return ["zcode.cjs", ...remoteOfficialPluginRequiredPaths];
+      return ["zxcode.cjs", ...remoteOfficialPluginRequiredPaths];
     case "bfs":
       return ["bfs"];
     case "ripgrep":
@@ -805,8 +805,8 @@ export function buildRemoteComponentDefinitions(platformKey) {
     {
       id: "glm",
       // GLM native binary 之前固定成 v1，二进制版本升级后不会触发组件 cache 失效。
-      // 这里复用 ZCODE_AGENT_RUNTIME.glm.version，保持 manifest 版本与运行时描述一致。
-      semanticPrefix: ZCODE_AGENT_RUNTIME.glm.version,
+      // 这里复用 ZXCODE_AGENT_RUNTIME.glm.version，保持 manifest 版本与运行时描述一致。
+      semanticPrefix: ZXCODE_AGENT_RUNTIME.glm.version,
       mount: joinPosix("glm", platformKey),
       sourcePath: join(releaseDir, "glm", platformKey),
     },

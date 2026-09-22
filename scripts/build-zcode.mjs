@@ -13,20 +13,20 @@ import {
 import { installScriptSource } from "./zcode-distribution/installer.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const defaultOutDir = resolve(root, "dist", "zcode");
-const defaultBaseUrl = (await loadEndpointEnv()).ZCODE_DIST_BASE_URL?.trim() || "";
-const packageDirName = "zcode";
+const defaultOutDir = resolve(root, "dist", "zxcode");
+const defaultBaseUrl = (await loadEndpointEnv()).ZXCODE_DIST_BASE_URL?.trim() || "";
+const packageDirName = "zxcode";
 const usage = `Usage:
   pnpm build:zcode
   node scripts/build-zcode.mjs --skip-build
   node scripts/build-zcode.mjs --version 3.3.3-dev.1
-  node scripts/build-zcode.mjs --out-dir dist/zcode
-  node scripts/build-zcode.mjs --base-url http://host/zcode/deps/zcode/
+  node scripts/build-zcode.mjs --out-dir dist/zxcode
+  node scripts/build-zcode.mjs --base-url http://host/zcode/deps/zxcode/
 
 Options:
   --skip-build        Reuse existing web/server/agent build outputs.
   --version <text>    Release version. Defaults to root package.json version.
-  --out-dir <path>    Output directory. Defaults to dist/zcode.
+  --out-dir <path>    Output directory. Defaults to dist/zxcode.
   --base-url <url>    Default install.sh download base URL.
   --help, -h          Show this help.
 `;
@@ -99,7 +99,7 @@ function commandText(command, args) {
 }
 
 function run(command, args, options = {}) {
-  console.log(`[zcode] ${commandText(command, args)}`);
+  console.log(`[zxcode] ${commandText(command, args)}`);
   const result = spawnSync(command, args, {
     cwd: root,
     stdio: "inherit",
@@ -141,7 +141,7 @@ async function assertDirectory(directory, label) {
 
 async function buildOutputs(skipBuild) {
   if (skipBuild) {
-    console.log("[zcode] skipping build; reusing existing outputs");
+    console.log("[zxcode] skipping build; reusing existing outputs");
     return;
   }
 
@@ -157,14 +157,14 @@ async function buildOutputs(skipBuild) {
 async function stageZCodePackage({ packageRoot, version }) {
   const webDist = resolve(root, "packages", "web", "dist");
   const serverDist = resolve(root, "packages", "server", "dist");
-  const agentBundle = resolve(root, "apps", "zcode-cli", "packages", "cli", "dist", "zcode.cjs");
+  const agentBundle = resolve(root, "apps", "zcode-cli", "packages", "cli", "dist", "zxcode.cjs");
   const agentProvider = resolve(root, "apps/zcode-cli/packages/cli/dist/provider");
 
   await assertDirectory(webDist, "web dist");
   await assertDirectory(serverDist, "server dist");
   await assertFile(resolve(serverDist, "entry-http.js"), "server HTTP entry");
   await assertFile(agentBundle, "agent app-server bundle");
-  await assertFile(resolve(agentProvider, "zcode-builtin.json"), "Agent provider config");
+  await assertFile(resolve(agentProvider, "zxcode-builtin.json"), "Agent provider config");
 
   await rm(packageRoot, {
     force: true,
@@ -183,14 +183,14 @@ async function stageZCodePackage({ packageRoot, version }) {
   await mkdir(resolve(packageRoot, "agent"), {
     recursive: true,
   });
-  await cp(agentBundle, resolve(packageRoot, "agent", "zcode.cjs"));
+  await cp(agentBundle, resolve(packageRoot, "agent", "zxcode.cjs"));
   // TUI 入口通过真正的 CLI 路径定位伴随配置；只复制 JS 会在仓库外启动失败。
   await cp(agentProvider, resolve(packageRoot, "agent/provider"), { recursive: true });
   await cp(
     resolve(root, "apps/zcode-cli/packages/cli/dist/THIRD-PARTY-NOTICES.md"),
     resolve(packageRoot, "agent/THIRD-PARTY-NOTICES.md"),
   );
-  await chmod(resolve(packageRoot, "agent", "zcode.cjs"), 0o755);
+  await chmod(resolve(packageRoot, "agent", "zxcode.cjs"), 0o755);
 
   await stageTuiRuntime(packageRoot);
   await copyRuntimeNodeModules(packageRoot);
@@ -199,7 +199,7 @@ async function stageZCodePackage({ packageRoot, version }) {
   await mkdir(resolve(packageRoot, "bin"), {
     recursive: true,
   });
-  const runner = resolve(packageRoot, "bin", "zcode.mjs");
+  const runner = resolve(packageRoot, "bin", "zxcode.mjs");
   await cp(resolve(root, "scripts/zcode-distribution/runner.mjs"), runner);
   await chmod(runner, 0o755);
 
@@ -207,7 +207,7 @@ async function stageZCodePackage({ packageRoot, version }) {
     resolve(packageRoot, "package.json"),
     JSON.stringify(
       {
-        name: "zcode-runtime",
+        name: "zxcode-runtime",
         private: true,
         type: "module",
         version,
@@ -233,7 +233,7 @@ async function createTarball({ packageParent, releaseDir, tarballName }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.help && !options.baseUrl)
-    throw new Error("Configure ZCODE_DIST_BASE_URL in .env or pass --base-url");
+    throw new Error("Configure ZXCODE_DIST_BASE_URL in .env or pass --base-url");
   if (options.help) {
     console.log(usage);
     return;
@@ -242,7 +242,7 @@ async function main() {
   const rootPackageJson = await readJson(resolve(root, "package.json"));
   const version = options.version ?? rootPackageJson.version;
   if (!version || typeof version !== "string") {
-    throw new Error("Unable to resolve ZCode version.");
+    throw new Error("Unable to resolve ZxCode version.");
   }
 
   await buildOutputs(options.skipBuild);
@@ -276,7 +276,7 @@ async function main() {
       {
         baseUrl: options.baseUrl,
         createdAt: new Date().toISOString(),
-        name: "zcode",
+        name: "zxcode",
         sha256,
         tarball: tarballName,
         version,
@@ -293,9 +293,9 @@ async function main() {
     recursive: true,
   });
 
-  console.log(`[zcode] release directory: ${outDir}`);
-  console.log(`[zcode] tarball: ${tarball}`);
-  console.log(`[zcode] sha256: ${sha256}`);
+  console.log(`[zxcode] release directory: ${outDir}`);
+  console.log(`[zxcode] tarball: ${tarball}`);
+  console.log(`[zxcode] sha256: ${sha256}`);
 }
 
 await main();

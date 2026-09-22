@@ -78,7 +78,7 @@ function McpServerItem({
   const typeLabel = server.config.command
     ? "stdio"
     : (server.config.type ?? (server.config.url ? "http" : "?"));
-  const canEdit = !server.location || server.location.source === "zcode";
+  const canEdit = !server.location || server.location.source === "zxcode";
   const canOpenAuthorization = Boolean(server.authorization?.authorizationUrl);
   const openAuthorizationLabel = intl.formatMessage({
     id: "settings.mcp.oauth.openAuthorization",

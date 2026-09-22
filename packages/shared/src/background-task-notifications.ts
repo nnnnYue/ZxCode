@@ -79,13 +79,13 @@ export function attachZCodeBackgroundTaskNotificationToRaw(
   }
   const record = asPlainRecord(raw);
   const meta = asPlainRecord(record._meta);
-  const zcode = asPlainRecord(meta.zcode);
+  const zxcode = asPlainRecord(meta.zxcode);
   return {
     ...record,
     _meta: {
       ...meta,
-      zcode: {
-        ...zcode,
+      zxcode: {
+        ...zxcode,
         taskNotification: notification,
       },
     },

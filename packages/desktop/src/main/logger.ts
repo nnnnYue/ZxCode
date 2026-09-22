@@ -6,7 +6,7 @@ import { getAppConfigDir, maybeThrowInjectedFsFault } from "@zcode/services/node
 
 function getLogDir() {
   const e2eLogDir =
-    process.env.ZCODE_ENV === "test" ? process.env.ZCODE_E2E_RUNTIME_LOG_DIR?.trim() : undefined;
+    process.env.ZXCODE_ENV === "test" ? process.env.ZXCODE_E2E_RUNTIME_LOG_DIR?.trim() : undefined;
   if (e2eLogDir) {
     return e2eLogDir;
   }
@@ -92,7 +92,7 @@ function write(level: LogLevel, source: string, ...args: unknown[]) {
 }
 
 /**
- * main 进程日志，默认写入 ~/.zcode/v2/logs/YYYY-MM-DD.log；E2E 测试使用 worker 专属目录。
+ * main 进程日志，默认写入 ~/.zxcode/v2/logs/YYYY-MM-DD.log；E2E 测试使用 worker 专属目录。
  * 同时保留 console 输出方便开发调试
  */
 export const logger = {

@@ -217,11 +217,11 @@ function resolveUserHomeDir(): string {
 }
 
 function getUserZcodeConfigPath(): string {
-  return join(resolveUserHomeDir(), ".zcode", "cli", "config.json");
+  return join(resolveUserHomeDir(), ".zxcode", "cli", "config.json");
 }
 
 function getUserZcodePluginRoot(): string {
-  return join(resolveUserHomeDir(), ".zcode", "plugins");
+  return join(resolveUserHomeDir(), ".zxcode", "plugins");
 }
 
 async function collectLocalUserPluginCandidates(): Promise<PluginSyncCandidate[]> {
@@ -360,7 +360,7 @@ async function importMarketplaceSourceArchiveInternal(
   archive: Uint8Array,
   maxArchiveBytes: number,
 ) {
-  const tempRoot = join(tmpdir(), `zcode-plugin-marketplace-source-${randomUUID()}`);
+  const tempRoot = join(tmpdir(), `zxcode-plugin-marketplace-source-${randomUUID()}`);
   try {
     await extractPluginSyncArchive(archive, tempRoot, {
       maxExtractedBytes: maxArchiveBytes,
@@ -437,7 +437,7 @@ async function importPluginsArchive(
   archive: Uint8Array,
   maxArchiveBytes: number,
 ): Promise<PluginSyncImportResult> {
-  const tempRoot = join(tmpdir(), `zcode-plugin-sync-${randomUUID()}`);
+  const tempRoot = join(tmpdir(), `zxcode-plugin-sync-${randomUUID()}`);
   try {
     await extractPluginSyncArchive(archive, tempRoot, {
       maxExtractedBytes: maxArchiveBytes,

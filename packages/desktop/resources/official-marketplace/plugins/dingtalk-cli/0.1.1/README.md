@@ -12,7 +12,7 @@ Run `/dingtalk-cli:setup`. Install the latest `dws` if needed, reuse an authenti
 
 On macOS/Linux, prefer the official shell installer with `DWS_NO_SKILLS=1`. The npm installer and CLI upgrades may install or restore global upstream Skills; disclose this before installation. Check `authenticated: true`, not just exit code 0 or `success: true`.
 
-The wrapper's two Skills work without upstream Skills. If separately requested, inspect `dws skill setup --help` and choose the actual host (including ZCode), mode, and destination before confirming installation. Administrators may need to enable CLI access or approve app permissions.
+The wrapper's two Skills work without upstream Skills. If separately requested, inspect `dws skill setup --help` and choose the actual host (including ZxCode), mode, and destination before confirming installation. Administrators may need to enable CLI access or approve app permissions.
 
 ## Skills
 
@@ -34,4 +34,4 @@ Custom-app secrets use the local credential store or a securely supplied complet
 - [DingTalk Workspace CLI](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli)
 - [Installation and Skill setup](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli#installation)
 
-Open a new ZCode session after enabling or updating the plugin so the Skill catalog is refreshed.
+Open a new ZxCode session after enabling or updating the plugin so the Skill catalog is refreshed.

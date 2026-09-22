@@ -2,17 +2,17 @@
 
 ## 1. 产品规则
 
-- 用户在自己的公网服务器上部署 `@zcode/relay`（单进程），桌面 ZCode 主动出站连接 relay，手机浏览器经 relay 遥控桌面已有会话。
+- 用户在自己的公网服务器上部署 `@zcode/relay`（单进程），桌面 ZxCode 主动出站连接 relay，手机浏览器经 relay 遥控桌面已有会话。
 - 鉴权模型：**一次性授权链接**。桌面生成 grant（默认 TTL 10 分钟、单次使用），手机打开 `https://<relay>/?remote=<grantId>` 即连；不使用长期共享 token 做手机侧鉴权。
 - 覆盖范围：本地工作区与远程（SSH/WSL/Docker）工作区都支持；手机附着**同一窗口 Host**，复用会话运行时，不另起 Agent、Local Host 或远程会话。
-- 页面托管：relay 单进程内置托管手机静态页面（`ZCODE_RELAY_WEB_ROOT` 指向 `packages/web` 构建产物）+ WS 转发，同进程同端口。
+- 页面托管：relay 单进程内置托管手机静态页面（`ZXCODE_RELAY_WEB_ROOT` 指向 `packages/web` 构建产物）+ WS 转发，同进程同端口。
 - relay 不解析 RPC、不保存任务队列/快照等业务状态；断电即断链（内存注册表 + 一次性票据）。
 
 ## 2. 状态所有者
 
 | 状态                                                                                          | 所有者                                  | 说明                                                                   |
 | --------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
-| deployment token 校验、设备注册表、心跳                                                       | relay `/ws/host-control` 连接           | `ZCODE_RELAY_TOKEN` + deviceId；心跳超时（60s）收割设备                |
+| deployment token 校验、设备注册表、心跳                                                       | relay `/ws/host-control` 连接           | `ZXCODE_RELAY_TOKEN` + deviceId；心跳超时（60s）收割设备               |
 | 一次性 grant（手机接入票据）                                                                  | relay `grantStore`                      | randomBytes(32)、TTL 10min、一次性消费                                 |
 | 一次性 attach ticket（桌面回连接票）                                                          | relay `grantStore`（独立 TTL 30s 实例） | 桌面回连 `/ws/host-attach/:ticket` 时消费                              |
 | relay 客户端生命周期（启停/重连/心跳）                                                        | desktop main 单例 `desktopRelayClient`  | 由设置 `mobileRelay{enabled,serverUrl}` 驱动；app ready 启动、退出销毁 |
@@ -26,10 +26,10 @@
 
 - `GET /*` — 手机静态页面（SPA fallback）
 - `GET /api/server-info` — 兼容手机端 bootstrap（`{serverId, version, authRequired:false, workspaces:[], capabilities}`）
-- `GET /ws/host-control` — 桌面控制连接；header `Authorization: Bearer <ZCODE_RELAY_TOKEN>`；消息 = `zcode-relay-protocol` 控制帧
+- `GET /ws/host-control` — 桌面控制连接；header `Authorization: Bearer <ZXCODE_RELAY_TOKEN>`；消息 = `zcode-relay-protocol` 控制帧
 - `GET /ws/host-attach/:ticket` — 桌面数据回连（ticket 一次性、30s）
 - `GET /ws/remote/:grantId` — 手机接入（grant 一次性、TTL 10min；等桌面回连 15s 超时）
-- 环境变量：`ZCODE_RELAY_PORT`/`ZCODE_RELAY_HOST`、`ZCODE_RELAY_TOKEN`、`ZCODE_RELAY_WEB_ROOT`、`ZCODE_RELAY_TLS_CERT`/`ZCODE_RELAY_TLS_KEY`（可选，主推 nginx/caddy 终结 TLS）
+- 环境变量：`ZXCODE_RELAY_PORT`/`ZXCODE_RELAY_HOST`、`ZXCODE_RELAY_TOKEN`、`ZXCODE_RELAY_WEB_ROOT`、`ZXCODE_RELAY_TLS_CERT`/`ZXCODE_RELAY_TLS_KEY`（可选，主推 nginx/caddy 终结 TLS）
 
 ### 3.2 共享协议（`@zcode/shared/zcode-relay-protocol`）
 
@@ -55,9 +55,9 @@
 
 ### 3.5 桌面 IPC 通道
 
-- `zcode:sync-window-workspace`（renderer → main，on）— 上报 active workspace 三元组
-- `zcode:get-mobile-relay-status`（invoke）
-- `zcode:request-mobile-relay-grant`（invoke）
+- `zxcode:sync-window-workspace`（renderer → main，on）— 上报 active workspace 三元组
+- `zxcode:get-mobile-relay-status`（invoke）
+- `zxcode:request-mobile-relay-grant`（invoke）
 
 ## 4. 事件顺序（attach）
 

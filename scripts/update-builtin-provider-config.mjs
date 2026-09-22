@@ -11,12 +11,12 @@
 //   node scripts/update-builtin-provider-config.mjs                 # 默认：下载远端 + 清洗 + 校验 + 写回
 //   node scripts/update-builtin-provider-config.mjs --local         # 只清洗本地快照（无网络，幂等）
 //   node scripts/update-builtin-provider-config.mjs --check         # 只校验当前快照，不写回
-//   node scripts/update-builtin-provider-config.mjs --out <file>    # 写到指定文件（默认 config/provider/zcode-builtin.json）
+//   node scripts/update-builtin-provider-config.mjs --out <file>    # 写到指定文件（默认 config/provider/zxcode-builtin.json）
 //   node scripts/update-builtin-provider-config.mjs --force         # 跳过 revision 不回退保护（测试用）
 //
 // 环境变量：
-//   ZCODE_BASE_URL            配置服务基址（默认 https://zcode.z.ai）
-//   ZCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET  目标文件覆盖（优先级低于 --out）
+//   ZXCODE_BASE_URL            配置服务基址（默认 https://zcode.z.ai）
+//   ZXCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET  目标文件覆盖（优先级低于 --out）
 //
 // 网络失败 / 离线：打印警告并以 0 退出——仓库快照继续兜底，不阻断构建。
 
@@ -29,7 +29,7 @@ import { runCommand } from "./spawn-command.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDir, "..");
-const defaultTargetPath = resolve(repositoryRoot, "config/provider/zcode-builtin.json");
+const defaultTargetPath = resolve(repositoryRoot, "config/provider/zxcode-builtin.json");
 const maxReleaseBytes = 10 * 1024 * 1024;
 const requestTimeoutMs = 20_000;
 const downloadAttempts = 3;
@@ -51,12 +51,12 @@ Options:
   (none)   下载远端配置并更新本地快照（默认行为）
   --local  跳过网络，只对本地快照执行清洗 + 校验 + 写回（幂等）
   --check  只校验当前快照能否通过 decode 校验链，不写回
-  --out <file>           写入目标文件（默认 config/provider/zcode-builtin.json）
+  --out <file>           写入目标文件（默认 config/provider/zxcode-builtin.json）
   --force                跳过「远端 revision 不得回退」比较，强制写回
   -h, --help             显示本帮助
 
 Environment:
-  ZCODE_BASE_URL       配置服务基址（默认 https://zcode.z.ai）
+  ZXCODE_BASE_URL       配置服务基址（默认 https://zcode.z.ai）
 `);
 }
 
@@ -85,7 +85,7 @@ function parseArgs(argv) {
 }
 
 function baseUrl(env = process.env) {
-  return (env.ZCODE_BASE_URL?.trim() || "https://zcode.z.ai").replace(/\/+$/u, "");
+  return (env.ZXCODE_BASE_URL?.trim() || "https://zcode.z.ai").replace(/\/+$/u, "");
 }
 
 async function fetchTextWithRetry(
@@ -211,7 +211,7 @@ export function sanitizeZCodeBuiltinProviderConfig(input) {
 
   if (Array.isArray(modelConfigRules.providerSiteRules)) {
     const before = modelConfigRules.providerSiteRules.length;
-    // baseUrlMatch 是把 URL 转义后的正则源码（"zcode\\.z\\.ai"）；去掉转义再判断域名命中。
+    // baseUrlMatch 是把 URL 转义后的正则源码（"zxcode\\.z\\.ai"）；去掉转义再判断域名命中。
     modelConfigRules.providerSiteRules = modelConfigRules.providerSiteRules.filter(
       (rule) =>
         !String(rule?.baseUrlMatch ?? "")
@@ -249,12 +249,12 @@ async function decodeReleaseInMemory(release) {
 }
 
 /** 写回后走 scripts/builtin-provider-config.mjs 的既有校验链（显式指向目标文件，避免被
- * 应用外壳注入的 ZCODE_BUILTIN_PROVIDER_CONFIG_FILE 带偏）。 */
+ * 应用外壳注入的 ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE 带偏）。 */
 async function validateWrittenFile(targetPath) {
   const { loadBuiltinProviderConfig } = await import("./builtin-provider-config.mjs");
   await loadBuiltinProviderConfig({
     root: repositoryRoot,
-    env: { ...process.env, ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: targetPath },
+    env: { ...process.env, ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE: targetPath },
   });
 }
 
@@ -289,8 +289,8 @@ async function main() {
   }
   const targetPath = options.out
     ? options.out
-    : process.env.ZCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET?.trim()
-      ? resolve(process.env.ZCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET)
+    : process.env.ZXCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET?.trim()
+      ? resolve(process.env.ZXCODE_BUILTIN_PROVIDER_CONFIG_UPDATE_TARGET)
       : defaultTargetPath;
 
   if (options.mode === "check") {

@@ -1,6 +1,6 @@
 import {
   ApiError,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   normalizeZCodeEndpointOrigin,
   rewriteZCodeEndpointUrl,
   type ApiClient,
@@ -53,7 +53,7 @@ function withZCodeEndpointHeaders(
     });
   }
 
-  if (next.get("HTTP-Referer") === DEFAULT_ZCODE_ENDPOINT_ORIGIN) {
+  if (next.get("HTTP-Referer") === DEFAULT_ZXCODE_ENDPOINT_ORIGIN) {
     next.set("HTTP-Referer", endpointOrigin);
   }
   return next;
@@ -68,7 +68,7 @@ function resolveRequestHeaders(
     return headers;
   }
 
-  // ZCode 后端请求以前只有部分业务路径手动补来源头。
+  // ZxCode 后端请求以前只有部分业务路径手动补来源头。
   // 统一在 ApiClient 出口按 endpoint origin 注入，避免 OAuth/config/billing/snapshot 等链路遗漏。
   return withZCodeEndpointHeaders(headers, endpointOrigin);
 }
@@ -90,7 +90,7 @@ export class NodeApiClient implements ApiClient {
     const endpointOrigin = this.resolveZCodeEndpointOrigin
       ? await this.resolveZCodeEndpointOrigin()
       : undefined;
-    const activeEndpointOrigin = endpointOrigin ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+    const activeEndpointOrigin = endpointOrigin ?? DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
     const requestInput = rewriteZCodeEndpointUrl(input, activeEndpointOrigin);
     const url = resolveUrl(requestInput);
     const method = resolveMethod(init);
@@ -120,7 +120,7 @@ export class NodeApiClient implements ApiClient {
       );
       if (isRequestForEndpoint(requestInput, activeEndpointOrigin)) {
         // 调试说明：这里只记录 header key，避免 Authorization / token 等敏感值落盘。
-        log.debug(undefined, "zcode endpoint request headers prepared", {
+        log.debug(undefined, "zxcode endpoint request headers prepared", {
           headerKeys: readHeaderKeys(requestHeaders),
           method,
           url,
@@ -137,7 +137,7 @@ export class NodeApiClient implements ApiClient {
             this.onZcodeJwtInvalid?.(requestInput, new Headers(requestHeaders));
           }
         } catch (error) {
-          log.warn("zcode jwt invalid response observation failed", { error });
+          log.warn("zxcode jwt invalid response observation failed", { error });
         }
       }
       return response;

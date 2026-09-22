@@ -1,19 +1,19 @@
 import type { ZCodeEnv } from "./env.js";
 
-export const DEFAULT_ZCODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
+export const DEFAULT_ZXCODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
 export const DEFAULT_BIGMODEL_API_ORIGIN = "https://bigmodel.cn";
 export const DEFAULT_ZAI_OAUTH_ORIGIN = "https://chat.z.ai";
 export const DEFAULT_ZAI_BUSINESS_BASE_URL = "https://api.z.ai";
 export const DEFAULT_ZAI_OAUTH_CLIENT_ID = "client_P8X5CMWmlaRO9gyO-KSqtg";
 
 // 构建仅注入公开链接；Node 调用方仍可显式传 env，避免读取另一进程的配置。
-declare const __ZCODE_ENDPOINT_ENV__: Record<string, string | undefined> | undefined;
+declare const __ZXCODE_ENDPOINT_ENV__: Record<string, string | undefined> | undefined;
 export function pickProductEndpointEnv(
   env: Record<string, string | undefined>,
 ): Record<string, string> {
   const keys = [
-    "ZCODE_BASE_URL",
-    "ZCODE_ENDPOINT_ORIGIN",
+    "ZXCODE_BASE_URL",
+    "ZXCODE_ENDPOINT_ORIGIN",
     "BIGMODEL_API_BASE_URL",
     "ZAI_OAUTH_ORIGIN",
     "ZAI_BUSINESS_BASE_URL",
@@ -26,7 +26,7 @@ export function pickProductEndpointEnv(
 }
 export function readProductEndpointEnv(): Record<string, string | undefined> {
   return {
-    ...(typeof __ZCODE_ENDPOINT_ENV__ === "undefined" ? {} : __ZCODE_ENDPOINT_ENV__),
+    ...(typeof __ZXCODE_ENDPOINT_ENV__ === "undefined" ? {} : __ZXCODE_ENDPOINT_ENV__),
     ...pickProductEndpointEnv(typeof process === "undefined" ? {} : process.env),
   };
 }
@@ -43,20 +43,20 @@ export interface ZCodeEndpointUrls {
 
 export interface RuntimeZCodeEndpointEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
-  ZCODE_BASE_URL?: string;
-  ZCODE_ENDPOINT_ORIGIN?: string;
+  ZXCODE_ENV?: string;
+  ZXCODE_BASE_URL?: string;
+  ZXCODE_ENDPOINT_ORIGIN?: string;
 }
 
 export interface RuntimeBigModelApiEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
+  ZXCODE_ENV?: string;
   BIGMODEL_API_BASE_URL?: string;
 }
 
 export interface RuntimeZaiEndpointEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
+  ZXCODE_ENV?: string;
   ZAI_OAUTH_ORIGIN?: string;
   ZAI_BUSINESS_BASE_URL?: string;
   ZAI_OAUTH_CLIENT_ID?: string;
@@ -87,12 +87,12 @@ function readRuntimeEnvValue(
 export function normalizeZCodeEndpointOrigin(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error("ZCode endpoint origin is empty");
+    throw new Error("ZxCode endpoint origin is empty");
   }
 
   const parsed = new URL(trimmed);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    throw new Error("ZCode endpoint origin must use http or https");
+    throw new Error("ZxCode endpoint origin must use http or https");
   }
   return parsed.origin;
 }
@@ -111,7 +111,7 @@ export function isTrustedCodingPlanWebviewOrigin(
   try {
     const origin = normalizeZCodeEndpointOrigin(value);
     if (
-      origin === DEFAULT_ZCODE_ENDPOINT_ORIGIN ||
+      origin === DEFAULT_ZXCODE_ENDPOINT_ORIGIN ||
       origin === resolveRuntimeZCodeEndpointOrigin()
     ) {
       return true;
@@ -129,14 +129,14 @@ export function resolveZCodeEndpointOrigin(options?: {
   overrideOrigin?: string | null;
 }): string {
   const origin = options?.overrideOrigin?.trim() || options?.envBaseOrigin?.trim();
-  return origin ? normalizeZCodeEndpointOrigin(origin) : DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+  return origin ? normalizeZCodeEndpointOrigin(origin) : DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
 }
 
 export function resolveRuntimeZCodeEnv(
   env: RuntimeZCodeEndpointEnv = readProductEndpointEnv(),
 ): ZCodeEnv {
   // 产品身份仅用于既有展示与安装标识，不参与地址解析。
-  return env.ZCODE_ENV?.trim().toLowerCase() === "test" ? "test" : "production";
+  return env.ZXCODE_ENV?.trim().toLowerCase() === "test" ? "test" : "production";
 }
 
 export function resolveRuntimeZCodeEndpointOrigin(
@@ -145,8 +145,8 @@ export function resolveRuntimeZCodeEndpointOrigin(
 ): string {
   return resolveZCodeEndpointOrigin({
     envBaseOrigin:
-      readRuntimeEnvValue(env, "ZCODE_BASE_URL") ??
-      readRuntimeEnvValue(env, "ZCODE_ENDPOINT_ORIGIN"),
+      readRuntimeEnvValue(env, "ZXCODE_BASE_URL") ??
+      readRuntimeEnvValue(env, "ZXCODE_ENDPOINT_ORIGIN"),
     overrideOrigin: options?.overrideOrigin,
   });
 }
@@ -278,7 +278,7 @@ export function rewriteZCodeEndpointUrl(input: string | URL, endpointOrigin: str
   } catch {
     return input;
   }
-  const sourceOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+  const sourceOrigin = DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
   if (parsed.origin !== sourceOrigin) {
     return input;
   }

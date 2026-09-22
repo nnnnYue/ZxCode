@@ -21,7 +21,7 @@ export type ExecutionCommand =
        */
       shellProfile?: "posix-bash";
       /**
-       * ZCode runtime-provided Bash shell selection. Current consumers must only use
+       * ZxCode runtime-provided Bash shell selection. Current consumers must only use
        * this when shellProfile === "posix-bash"; generic shell execution must ignore it.
        */
       shellOverride?: ExecutionShellSelection;
@@ -44,7 +44,7 @@ export interface ExecutionShellSelection {
   id?: string;
   /** Human-readable diagnostic label. This can include more detail than display.name. */
   label?: string;
-  /** Executable path when ZCode resolved a concrete shell. Omitted for legacy shell fallback. */
+  /** Executable path when ZxCode resolved a concrete shell. Omitted for legacy shell fallback. */
   path?: string;
   /** Shell syntax and cwd capture wrapper semantics. */
   dialect: ExecutionShellDialect | "legacy-shell";
@@ -73,7 +73,7 @@ interface EmbeddedSearchCommandBackend {
   args?: string[];
   /**
    * backend 调用需要的环境变量。桌面端 Electron Helper 执行
-   * zcode.cjs 时必须带 ELECTRON_RUN_AS_NODE=1，否则会按 Electron 子进程启动。
+   * zxcode.cjs 时必须带 ELECTRON_RUN_AS_NODE=1，否则会按 Electron 子进程启动。
    */
   env?: Record<string, string>;
 }

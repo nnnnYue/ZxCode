@@ -122,7 +122,7 @@ export const readRootPackageVersion = async ({ root = projectRoot } = {}) => {
 
 export const resolveBuildOptions = (args = [], env = process.env) => {
   const desktopAgent = args.includes(desktopAgentBuildFlag);
-  const e2eCoverage = env.ZCODE_E2E_COVERAGE === "1";
+  const e2eCoverage = env.ZXCODE_E2E_COVERAGE === "1";
 
   return {
     // desktop-agent 正常发布仍需压缩且不携带 map；E2E coverage
@@ -212,7 +212,7 @@ export const buildCli = async ({
   }),
 } = {}) => {
   const cliVersion = await version;
-  const outfile = resolve(cliDirectory, "dist/zcode.cjs");
+  const outfile = resolve(cliDirectory, "dist/zxcode.cjs");
   const sourcemapFile = `${outfile}.map`;
   const notices = await readThirdPartyNotices(resolve(rootDirectory, "../.."));
 
@@ -242,7 +242,7 @@ export const buildCli = async ({
     // SEA 资源由 build-sea 的 native asset 收集阶段单独处理。
     external: resolveBuildExternal(),
     format: "cjs",
-    // 桌面 app 集成只内置 zcode.cjs，旧 desktop-agent 构建复用 CLI 调试产物，
+    // 桌面 app 集成只内置 zxcode.cjs，旧 desktop-agent 构建复用 CLI 调试产物，
     // 未压缩且会留下指向未随包复制的 sourcemap。桌面 agent 模式压缩 JS，同时保留
     // 函数/类名，避免依赖 name 的诊断与注册逻辑被 esbuild 标识符压缩影响。
     keepNames: minify,
@@ -255,7 +255,7 @@ export const buildCli = async ({
     platform: "node",
     sourcemap,
     // target 取所有承载运行时里最低的 Node 版本：桌面用 Electron 内置 Node 24，
-    // 远端 SSH 复用已部署的独立 Node v22.16 跑同一份 zcode.cjs。降到 node22 保证这份产物
+    // 远端 SSH 复用已部署的独立 Node v22.16 跑同一份 zxcode.cjs。降到 node22 保证这份产物
     // 在两端都不会用到目标运行时不支持的语法/特性。
     target: "node22",
     alias: resolveBuildAliases({ cliDirectory, rootDirectory }),

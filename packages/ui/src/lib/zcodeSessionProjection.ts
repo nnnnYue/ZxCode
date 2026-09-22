@@ -1,4 +1,4 @@
-/* oxlint-disable eslint(max-lines) -- ZCode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
+/* oxlint-disable eslint(max-lines) -- ZxCode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
 import {
   decodeCustomModelValue,
   deriveZCodeTaskStatusFromSessionSnapshot,
@@ -6,7 +6,7 @@ import {
   parseModelPickerValue as parseSharedModelSelection,
   formatModelPickerValue as formatSharedModelSelection,
   resolveZCodeVisibleSessionTitle,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
   type ZCodeConfigOption,
   type ZCodeTaskGoal,
   type ZCodeTaskMode,
@@ -22,7 +22,7 @@ import {
 const MODEL_CONFIG_ID = "model";
 const THOUGHT_LEVEL_CONFIG_ID = "thought_level";
 const MODE_CONFIG_ID = "mode";
-const ZCODE_AGENT_MODE_OPTIONS = [
+const ZXCODE_AGENT_MODE_OPTIONS = [
   {
     id: "build",
     name: "Ask before changes",
@@ -44,7 +44,7 @@ const ZCODE_AGENT_MODE_OPTIONS = [
     description: "Edit and run commands with fewer confirmations.",
   },
 ] as const satisfies readonly ZCodeTaskModeInfo[];
-const ZCODE_AGENT_MODE_ID_SET = new Set<string>(ZCODE_AGENT_MODE_OPTIONS.map((mode) => mode.id));
+const ZXCODE_AGENT_MODE_ID_SET = new Set<string>(ZXCODE_AGENT_MODE_OPTIONS.map((mode) => mode.id));
 
 export function formatModelPickerValue(ref: ModelSelection | undefined): string {
   return formatSharedModelSelection(ref);
@@ -75,7 +75,7 @@ export function parseModelPickerValue(value: string): ModelSelection {
   const customModel = decodeCustomModelValue(value);
   if (customModel?.providerId && customModel.modelName) {
     // UI 自定义模型值是展示态 custom:provider:model，
-    // ZCode Protocol 必须收到严格的 providerId/modelId 结构。
+    // ZxCode Protocol 必须收到严格的 providerId/modelId 结构。
     return {
       providerId: customModel.providerId,
       modelId: customModel.modelName,
@@ -166,7 +166,7 @@ function resolveSettingsThoughtLevelCurrentValue(
     thoughtLevel.defaultLevel && thoughtLevelValues.has(thoughtLevel.defaultLevel)
       ? thoughtLevel.defaultLevel
       : undefined;
-  // ZCode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
+  // ZxCode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
   // 实时模型状态事件也要投影默认值，否则工具栏会拿到空 currentValue，出现没有档位被选中的 UI。
   return currentThoughtLevel ?? defaultThoughtLevel ?? thoughtLevel.available[0]?.value;
 }
@@ -183,7 +183,7 @@ export function zcodeSessionSnapshotToTaskMeta(snapshot: ZCodeSessionStateSnapsh
     mode: fromZCodeMode(snapshot.session.mode),
     model: formatModelPickerValue(resolveTaskMetaModelSelectionFromSnapshot(snapshot)),
     thoughtLevel: snapshot.settings.thoughtLevel.current,
-    provider: ZCODE_AGENT_PROVIDER,
+    provider: ZXCODE_AGENT_PROVIDER,
     status: deriveZCodeTaskStatusFromSessionSnapshot(snapshot),
     lastError: snapshot.projection.lastError
       ? {
@@ -216,11 +216,11 @@ function fromZCodeMode(mode: ZCodeSessionMode): ZCodeTaskMode {
 }
 
 function normalizeAvailableZCodeMode(mode: ZCodeSessionMode): string {
-  return ZCODE_AGENT_MODE_ID_SET.has(mode) ? mode : "build";
+  return ZXCODE_AGENT_MODE_ID_SET.has(mode) ? mode : "build";
 }
 
 function getZCodeAgentModeSelectOptions(): NonNullable<ZCodeConfigOption["options"]> {
-  return ZCODE_AGENT_MODE_OPTIONS.map((mode) => ({
+  return ZXCODE_AGENT_MODE_OPTIONS.map((mode) => ({
     value: mode.id,
     name: mode.name,
     description: mode.description,

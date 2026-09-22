@@ -2,13 +2,13 @@
 
 [English](./README.md)
 
-Mimosa 为 ZCode 提供本地优先的代码安全防线：在候选代码写入前检查高风险问题，在单轮任务结束时复查改动，在 commit/push 前执行 Git 门禁，并通过可选 MCP 服务提供显式触发的密封仓库深扫。
+Mimosa 为 ZxCode 提供本地优先的代码安全防线：在候选代码写入前检查高风险问题，在单轮任务结束时复查改动，在 commit/push 前执行 Git 门禁，并通过可选 MCP 服务提供显式触发的密封仓库深扫。
 
 ## 平台支持
 
-本交付包是**纯 Node.js 跨平台构建**，不包含原生可执行文件，面向当前 ZCode 的 macOS、Linux 和 Windows 版本；要求 `node` 可从 `PATH` 访问。本地 Hook 和原生扫描引擎不需要额外配置模型 API Key。
+本交付包是**纯 Node.js 跨平台构建**，不包含原生可执行文件，面向当前 ZxCode 的 macOS、Linux 和 Windows 版本；要求 `node` 可从 `PATH` 访问。本地 Hook 和原生扫描引擎不需要额外配置模型 API Key。
 
-厂商载荷在 `payload/` 目录中保持原样。受保护代码加载前会校验 Ed25519 签名清单；外层目录只提供 ZCode 标准 manifest 和不依赖 shell 语法的跨平台进程 Hook 配置。
+厂商载荷在 `payload/` 目录中保持原样。受保护代码加载前会校验 Ed25519 签名清单；外层目录只提供 ZxCode 标准 manifest 和不依赖 shell 语法的跨平台进程 Hook 配置。
 
 ## 包含的能力
 
@@ -20,15 +20,15 @@ Mimosa 为 ZCode 提供本地优先的代码安全防线：在候选代码写入
 
 ## 安装
 
-正式发布后，在 ZCode **设置 → 插件** 中搜索“代码安全防护”，从官方市场安装 `mimosa`。本地验证时，通过“创建 → 添加插件市场”选择 `zcode-plugins` 仓库根目录，再从该市场安装 `mimosa`。
+正式发布后，在 ZxCode **设置 → 插件** 中搜索“代码安全防护”，从官方市场安装 `mimosa`。本地验证时，通过“创建 → 添加插件市场”选择 `zcode-plugins` 仓库根目录，再从该市场安装 `mimosa`。
 
-安装、启停或修改插件选项后需要**新建任务**，因为 ZCode 会在任务启动时形成 Hook 和 MCP 配置快照。
+安装、启停或修改插件选项后需要**新建任务**，因为 ZxCode 会在任务启动时形成 Hook 和 MCP 配置快照。
 
 ## 基础验收
 
 1. 执行 `/mimosa-status`，查看当前项目最近一次 Mimosa 状态；
-2. 在一次性测试项目中让 ZCode 写入明显不安全的 SQL 拼接或命令执行代码。写入前 Hook 应阻断确定的高风险候选，并把修复上下文返回给模型；
-3. 确认 ZCode 中的 `mimosa` MCP 处于活动状态，新建任务后执行 `/mimosa-deep-audit`，触发显式密封深扫。
+2. 在一次性测试项目中让 ZxCode 写入明显不安全的 SQL 拼接或命令执行代码。写入前 Hook 应阻断确定的高风险候选，并把修复上下文返回给模型；
+3. 确认 ZxCode 中的 `mimosa` MCP 处于活动状态，新建任务后执行 `/mimosa-deep-audit`，触发显式密封深扫。
 
 写入前检查、任务收尾复查和 Git 门禁不依赖主动调用 MCP 深扫。
 

@@ -550,7 +550,7 @@ What must not be in the delivered directory when you hand it over:
 Then confirm it: list `DELIVER`, check the report is there and the scaffolding is
 gone, and cite **the deliverable** — the `.pdf` or the `.docx`, whichever was built —
 exactly once in the final response with
-`::zcode-file-citation{path="..." purpose="output"}` inline in prose. On the DOCX
+`::zxcode-file-citation{path="..." purpose="output"}` inline in prose. On the DOCX
 path that means citing the `.docx` and **not** the PDF LibreOffice converted for QA:
 one is the deliverable, the other is a byproduct with possibly substituted fonts. Do not add a
 separate raw path, Markdown link, trailing citation list, or citation for the

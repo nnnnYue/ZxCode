@@ -36,10 +36,10 @@ export async function cleanupProtocolRuntime(options: {
         }),
       ]);
     } catch (error) {
-      options.logger.warn(`ZCode Protocol ${resource} shutdown failed`, {
+      options.logger.warn(`ZxCode Protocol ${resource} shutdown failed`, {
         errorType: error instanceof Error ? error.name : typeof error,
         event: `zcode_protocol.${resource}.shutdown.failed`,
-        module: "bootstrap.zcode_protocol",
+        module: "bootstrap.zxcode_protocol",
       });
     } finally {
       if (timeout) clearTimeout(timeout);

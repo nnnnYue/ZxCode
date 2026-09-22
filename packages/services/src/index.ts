@@ -59,7 +59,7 @@ export type {
   BroadcastMessage,
 } from "./broadcast/broadcast.js";
 
-// ZCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
+// ZxCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
 export { IZCodeTaskService } from "./session/zcodeTaskService.js";
 export type {
   ZCodeArchivedTaskDeletionResult,
@@ -98,15 +98,15 @@ export type {
   WindowHostControllerTaskListResult,
 } from "./window-controller/windowController.js";
 
-// ZCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
+// ZxCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
 export {
   IZCodeAgentService,
   type ZCodeAgentLocalRuntimeChildProcesses,
-  ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
+  ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
 } from "./zcode-agent/zcodeAgent.js";
 export {
   isZCodeAgentMcpStatusModeUnsupportedError,
-  ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+  ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
   ZCodeAgentMcpStatusModeUnsupportedError,
 } from "./zcode-agent/zcodeAgentErrors.js";
 export {
@@ -142,7 +142,7 @@ export type {
   ZCodeAgentWorkspaceTarget,
 } from "./zcode-agent/zcodeAgent.js";
 
-// ZCode session service — app-facing session facade without ZCode Agent naming.
+// ZxCode session service — app-facing session facade without ZxCode Agent naming.
 export { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
 export type {
   ZCodeSessionCreateParams,

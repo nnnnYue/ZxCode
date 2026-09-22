@@ -1,7 +1,7 @@
 import type { WebZaiOAuthProviderConfig } from "./zaiWebOAuthProvider.js";
 import {
   buildZCodeEndpointUrls,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   resolveBigModelApiOrigin,
 } from "@zcode/shared";
 
@@ -11,8 +11,8 @@ interface WebImportMetaEnv {
   VITE_ZAI_OAUTH_ORIGIN?: string;
   VITE_BIGMODEL_OAUTH_ORIGIN?: string;
   VITE_BIGMODEL_OAUTH_APP_ID?: string;
-  VITE_ZCODE_BASE_URL?: string;
-  VITE_ZCODE_ENDPOINT_ORIGIN?: string;
+  VITE_ZXCODE_BASE_URL?: string;
+  VITE_ZXCODE_ENDPOINT_ORIGIN?: string;
   VITE_WEB_REMOTE_ALLOW_DEV_RETURN_TO?: string;
 }
 
@@ -45,9 +45,9 @@ function buildBigModelAuthorizeUrl(origin: string | undefined): string {
 function createWebZaiOAuthConfig(env: WebImportMetaEnv = {}): WebZaiOAuthConfig {
   const devOrigin = env.VITE_DEV_ORIGIN?.trim().replace(/\/$/, "");
   const zcodeEndpointUrls = buildZCodeEndpointUrls(
-    env.VITE_ZCODE_BASE_URL?.trim() ||
-      env.VITE_ZCODE_ENDPOINT_ORIGIN?.trim() ||
-      DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+    env.VITE_ZXCODE_BASE_URL?.trim() ||
+      env.VITE_ZXCODE_ENDPOINT_ORIGIN?.trim() ||
+      DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   );
 
   return {
@@ -57,8 +57,8 @@ function createWebZaiOAuthConfig(env: WebImportMetaEnv = {}): WebZaiOAuthConfig 
     // client_id 会出现在授权 URL 中，属于公开配置；这里允许 VITE_ 注入，但不能放 secret/token。
     clientId: env.VITE_ZAI_OAUTH_CLIENT_ID?.trim() || "client_P8X5CMWmlaRO9gyO-KSqtg",
     bigmodelAuthorizeUrl: buildBigModelAuthorizeUrl(env.VITE_BIGMODEL_OAUTH_ORIGIN),
-    // BigModel 用 appId 而不是 client_id，且默认值就是桌面端在用的 "zcode"。
-    bigmodelAppId: env.VITE_BIGMODEL_OAUTH_APP_ID?.trim() || "zcode",
+    // BigModel 用 appId 而不是 client_id，且默认值就是桌面端在用的 "zxcode"。
+    bigmodelAppId: env.VITE_BIGMODEL_OAUTH_APP_ID?.trim() || "zxcode",
     redirectUri: zcodeEndpointUrls.webShareCallbackUrl,
     shareRedirectUri: zcodeEndpointUrls.webShareCallbackUrl,
     ...(devOrigin ? { devOrigin } : {}),

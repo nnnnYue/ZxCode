@@ -32,4 +32,4 @@ Upstream Skills are optional. Confirm the desired subset and target directory be
 - [Lark CLI](https://github.com/larksuite/cli)
 - [Installation and quick start](https://github.com/larksuite/cli#installation--quick-start)
 
-Open a new ZCode session after enabling or updating the plugin so the Skill catalog is refreshed.
+Open a new ZxCode session after enabling or updating the plugin so the Skill catalog is refreshed.

@@ -7,7 +7,7 @@
 
 ## 快速开始
 
-从 ZCode 插件管理器安装，然后直接跑命令，或者用自然语言描述任务 —— `vet-companies` agent
+从 ZxCode 插件管理器安装，然后直接跑命令，或者用自然语言描述任务 —— `vet-companies` agent
 会判断工作模式并加载对应 skill。
 
 ```text
@@ -44,7 +44,7 @@
 | `hexin-bond` | 同花顺 iFinD —— 债券与发行主体数据 |
 | `wind-docs` | Wind —— 公告与研究文档 |
 
-三个都是**跑在 ZCode 自有网关上的远程 HTTP MCP 服务**（`${ZCODE_BASE_URL}`），
+三个都是**跑在 ZxCode 自有网关上的远程 HTTP MCP 服务**（`${ZXCODE_BASE_URL}`），
 声明在 [`.zcode-plugin/plugin.json`](./.zcode-plugin/plugin.json) 里。身份由宿主按调用注入
 （`auth: {type: zcode_official, provider: jwt_token}`）。
 
@@ -57,7 +57,7 @@
 | | |
 | --- | --- |
 | Hooks | 无 —— 本插件不装任何 hook，不拦截你的工具调用 |
-| 网络访问 | 只出宿主网关 `${ZCODE_BASE_URL}`，不访问任何第三方端点 |
+| 网络访问 | 只出宿主网关 `${ZXCODE_BASE_URL}`，不访问任何第三方端点 |
 | 写文件 | 报告与工作簿交付物（`.pdf` / `.docx` / `.xlsx`）及其构建中间产物，落盘位置由两个产出 skill 按自己的规则选定 |
 | 执行程序 | 两个产出 skill 会跑 `python3`；**无头 LibreOffice（`soffice` / `libreoffice`）** 用于 xlsx 公式重算和 DOCX→PDF 校验；`fc-list` 用于字体检查 |
 | Python 依赖 | `report-render` 需要 `reportlab`、`matplotlib`、`pypdf`、`pypdfium2`、`pillow`、`fonttools`（见 `skills/report-render/scripts/requirements.txt`）；`xlsx-author` 需要 `openpyxl` |
@@ -73,5 +73,5 @@
 ## 来源
 
 从上游 Z.ai 项目 vendored 而来，`agents/`、`commands/`、`skills/` 由上游生成，不要在此处修改。
-ZCode 适配层（清单、本 README、市场条目）由本仓库拥有。尚未关闭的发布门禁 —— 上游许可未声明、
+ZxCode 适配层（清单、本 README、市场条目）由本仓库拥有。尚未关闭的发布门禁 —— 上游许可未声明、
 源 commit 带 `+dirty` —— 记录在 [`UPSTREAM.md`](./UPSTREAM.md)。

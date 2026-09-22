@@ -122,7 +122,7 @@ def call_tts_provider(provider: str, args: dict, ctx: RunContext, *, sample_mode
     if provider == "cloud_tts":
         if remote_speech_configured():
             return remote_speech_synthesize(args, ctx, sample_mode=sample_mode)
-        from .zcode_speech import zcode_speech_status
+        from .zxcode_speech import zcode_speech_status
 
         if zcode_speech_status(ctx)["available"]:
             return zcode_official_speech_synthesize(args, ctx, sample_mode=sample_mode)
@@ -316,7 +316,7 @@ def cloud_tts_output_path_for(args: dict, ctx: RunContext, audio_format: str) ->
 def zcode_official_speech_synthesize(
     args: dict, ctx: RunContext, *, sample_mode: bool
 ) -> ToolResult:
-    """Use host-injected ZCode identity behind the generic cloud_tts surface."""
+    """Use host-injected ZxCode identity behind the generic cloud_tts surface."""
     from . import zcode_speech as zs
 
     try:
@@ -407,7 +407,7 @@ def cloud_tts_config() -> dict[str, Any]:
 
     Like cloud_asr, this backend ships no endpoint and no model default: it is a
     legacy escape hatch for deployments that bring their own speech service, and
-    the kit does not name or presume a vendor. Under ZCode nothing here is needed
+    the kit does not name or presume a vendor. Under ZxCode nothing here is needed
     — the official channel authenticates through host-injected identity.
     """
     api_key = clean_env(

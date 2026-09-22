@@ -12,8 +12,8 @@ repository:
   - `internal/commands/skills/bundled/assets/glab-stack/SKILL.md`
 - License: MIT, included in [`LICENSE`](./LICENSE)
 
-The ZCode adaptation tracks the skills shipped by `glab v1.112.0` and adds
-ZCode/Claude compatibility manifests, bilingual
+The ZxCode adaptation tracks the skills shipped by `glab v1.112.0` and adds
+ZxCode/Claude compatibility manifests, bilingual
 marketplace documentation, `/gitlab:setup`, a shared binary/authentication
 preflight, installed-version capability checks, and explicit confirmation for
 destructive GitLab operations. The imported workflow content remains derived

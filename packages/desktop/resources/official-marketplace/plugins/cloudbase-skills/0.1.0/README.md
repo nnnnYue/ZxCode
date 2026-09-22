@@ -2,7 +2,7 @@
 
 CloudBase Skills brings the upstream
 [`TencentCloudBase/cloudbase-skills`](https://github.com/TencentCloudBase/cloudbase-skills)
-guidance and the CloudBase MCP server into ZCode as one installable plugin.
+guidance and the CloudBase MCP server into ZxCode as one installable plugin.
 
 ## Included capabilities
 
@@ -24,9 +24,9 @@ the npm `latest` tag moves.
 
 ## Usage
 
-Install and enable `cloudbase-skills` from the ZCode plugin manager, then start a new task. ZCode can
+Install and enable `cloudbase-skills` from the ZxCode plugin manager, then start a new task. ZxCode can
 activate the `cloudbase` skill when a request matches its description. You can also explicitly ask
-ZCode to use the CloudBase skill.
+ZxCode to use the CloudBase skill.
 
 Example prompts:
 

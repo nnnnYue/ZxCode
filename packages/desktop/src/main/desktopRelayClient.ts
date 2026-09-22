@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 import {
   RELAY_CONTROL_HEARTBEAT_INTERVAL_MS,
-  ZCODE_RELAY_PROTOCOL_VERSION,
+  ZXCODE_RELAY_PROTOCOL_VERSION,
   relayControlServerMessageSchema,
   type MobileRelaySettings,
   type RelayAttachTarget,
@@ -180,7 +180,7 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
         type: "relay-control-hello",
         deviceId: deps.deviceId,
         relayToken: settings?.token ?? "",
-        version: ZCODE_RELAY_PROTOCOL_VERSION,
+        version: ZXCODE_RELAY_PROTOCOL_VERSION,
       });
     });
     ws.on("message", (raw) => {

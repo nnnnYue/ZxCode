@@ -72,7 +72,7 @@ const targetPlatform = getTargetPlatform();
 const builtinProviderConfig = await loadBuiltinProviderConfig();
 const desktopProductIdentity = resolveDesktopProductIdentity({
   ...process.env,
-  ZCODE_ENV: builtinProviderConfig.environment,
+  ZXCODE_ENV: builtinProviderConfig.environment,
 });
 const nativeSearchReleasePlan = resolveNativeSearchReleasePlan({
   platform: targetPlatform.os,
@@ -82,7 +82,7 @@ const rawMacSigningIdentity = process.env.APPLE_SIGNING_IDENTITY || process.env.
 const macSigningIdentity =
   rawMacSigningIdentity?.replace(/^Developer ID Application:\s*/, "") ?? null;
 const shouldEnableMacSigning =
-  process.env.ZCODE_ENABLE_MAC_SIGN === "1" && Boolean(macSigningIdentity);
+  process.env.ZXCODE_ENABLE_MAC_SIGN === "1" && Boolean(macSigningIdentity);
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 const desktopPackageRoot = import.meta.dirname;
 const runtimeModuleLookupRoots = [
@@ -91,7 +91,7 @@ const runtimeModuleLookupRoots = [
   resolve(desktopPackageRoot, "node_modules", ".pnpm", "node_modules"),
   resolve(workspaceRoot, "node_modules", ".pnpm", "node_modules"),
 ];
-const desktopDistDir = process.env.ZCODE_DESKTOP_DIST_DIR || "dist";
+const desktopDistDir = process.env.ZXCODE_DESKTOP_DIST_DIR || "dist";
 const DEFAULT_ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/";
 // `pnpm exec asar` 依赖 `.bin/asar`，但 @electron/asar 仅是 electron-builder 传递依赖时，
 // Linux CI（pnpm hoisted）往往解析不到该二进制，`asar list` 未运行即 exit 1。
@@ -152,7 +152,7 @@ const PACMAN_RUNTIME_DEPENDENCIES = [
   "xdg-utils",
 ];
 
-const WINDOWS_INSTALL_MANIFEST_NAME = ".zcode-install-manifest";
+const WINDOWS_INSTALL_MANIFEST_NAME = ".zxcode-install-manifest";
 
 async function writeWindowsInstallManifest(context) {
   if (context.electronPlatformName !== "win32") return;
@@ -178,7 +178,7 @@ async function writeWindowsInstallManifest(context) {
 
 function resolveElectronDownloadMirror(env = process.env) {
   const existingMirror =
-    env.ZCODE_ELECTRON_RUNTIME_MIRROR ||
+    env.ZXCODE_ELECTRON_RUNTIME_MIRROR ||
     env.NPM_CONFIG_ELECTRON_MIRROR ||
     env.npm_config_electron_mirror ||
     env.npm_package_config_electron_mirror ||
@@ -198,11 +198,11 @@ const desktopArtifactEnvSuffix = resolveDesktopArtifactSuffix(process.env);
 // 避免“产物存在”被误认为已经走完和生产版相同的签名链路。
 if (
   desktopProductIdentity.flavor === "preview" &&
-  process.env.ZCODE_ENABLE_MAC_SIGN === "1" &&
+  process.env.ZXCODE_ENABLE_MAC_SIGN === "1" &&
   !macSigningIdentity
 ) {
   throw new Error(
-    "ZCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when ZCODE_ENABLE_MAC_SIGN=1",
+    "ZxCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when ZXCODE_ENABLE_MAC_SIGN=1",
   );
 }
 
@@ -266,7 +266,7 @@ async function runTimedAsync(label, fn) {
 
 function resolveAppAsarPath(context) {
   if (context.electronPlatformName === "darwin") {
-    const appName = `${context.packager?.appInfo?.productFilename ?? "ZCode"}.app`;
+    const appName = `${context.packager?.appInfo?.productFilename ?? "ZxCode"}.app`;
     return resolve(context.appOutDir, appName, "Contents", "Resources", "app.asar");
   }
 
@@ -275,7 +275,7 @@ function resolveAppAsarPath(context) {
 
 function resolvePackagedResourcesDir(context) {
   if (context.electronPlatformName === "darwin") {
-    const appName = `${context.packager?.appInfo?.productFilename ?? "ZCode"}.app`;
+    const appName = `${context.packager?.appInfo?.productFilename ?? "ZxCode"}.app`;
     return resolve(context.appOutDir, appName, "Contents", "Resources");
   }
 
@@ -346,7 +346,7 @@ async function injectHoistedRuntimeModulesIntoAsar(context) {
   // CI 会把 TMPDIR 指到项目内 .tmp，GitLab get_sources/clean 可能在脚本启动前清掉该目录。
   // afterPack 里重写 app.asar 同样依赖 mkdtempSync，必须自己兜底创建父目录，避免后续签名阶段只看到 .app 消失。
   mkdirSync(tmpdir(), { recursive: true });
-  const stagingDir = mkdtempSync(resolve(tmpdir(), "zcode-app-asar-"));
+  const stagingDir = mkdtempSync(resolve(tmpdir(), "zxcode-app-asar-"));
   try {
     runTimedSync("afterPack:asar-extract", () =>
       runAsarCommand(["extract", appAsarPath, stagingDir]),
@@ -446,7 +446,7 @@ export default {
     zcodeProductFlavor: desktopProductIdentity.flavor,
     homepage: "https://zcode.z.ai",
     author: {
-      name: "ZCode",
+      name: "ZxCode",
       email: "dev@zcode.z.ai",
     },
   },
@@ -561,16 +561,16 @@ export default {
             // CUA 权限浮窗的吸附数据源（CGWindowListCopyWindowInfo，不需要任何 TCC 权限）。
             // 主进程按 process.resourcesPath 解析；缺失时 watcher fail-open，浮窗仍可用
             // 只是不吸附，所以这里不做存在性断言。
-            from: "resources/macos-window-bounds/zcode-window-bounds",
-            to: "macos-window-bounds/zcode-window-bounds",
+            from: "resources/macos-window-bounds/zxcode-window-bounds",
+            to: "macos-window-bounds/zxcode-window-bounds",
           },
         ]
       : []),
     {
-      // Provider Registry 的 ZCode Built-in Config 是静态 Provider/Model 事实的唯一内置来源。
+      // Provider Registry 的 ZxCode Built-in Config 是静态 Provider/Model 事实的唯一内置来源。
       // 显式随包发布，避免正式 Host 回退到旧 Catalog/Preset hardcode。
       from: builtinProviderConfig.sourcePath,
-      to: "config/provider/zcode-builtin.json",
+      to: "config/provider/zxcode-builtin.json",
     },
     {
       // 官方插件市场的编译期离线快照（scripts/fetch-official-marketplace.mjs 产物）。
@@ -611,8 +611,8 @@ export default {
       : []),
     {
       // agent 运行时资产，打包到 resources/glm。
-      // 桌面端内置的是 agent 的 JS bundle（glm/zcode.cjs，由 prepare:agent-bundle 生成），
-      // Host 进程用 app 自带的 Electron Node runtime（ELECTRON_RUN_AS_NODE）执行 `zcode.cjs app-server --stdio`，
+      // 桌面端内置的是 agent 的 JS bundle（glm/zxcode.cjs，由 prepare:agent-bundle 生成），
+      // Host 进程用 app 自带的 Electron Node runtime（ELECTRON_RUN_AS_NODE）执行 `zxcode.cjs app-server --stdio`，
       // 不再随包内置独立 Node 二进制。远端 SSH/WSL 仍走原生二进制（无 Electron）。
       from: `bundled-agents/${targetPlatform.key}/glm`,
       to: "glm",
@@ -639,9 +639,9 @@ export default {
   protocols: [
     {
       // 协议处理器的展示名之前使用小写 scheme，打包产物里的协议描述无法体现产品名。
-      // 展示名跟随安装包身份；scheme 仍保持 zcode，因此两个应用中最后注册者会成为默认 handler。
+      // 展示名跟随安装包身份；scheme 统一为 zxcode，旧 zxcode scheme 不再注册。
       name: desktopProductIdentity.productName,
-      schemes: ["zcode"],
+      schemes: ["zxcode"],
     },
   ],
   mac: {
@@ -686,11 +686,11 @@ export default {
     artifactName: buildDesktopArtifactName("linux"),
     // desktop 包名是 scoped package（@zcode/desktop），electron-builder 默认会把
     // Linux executable/Icon 推成 @zcodedesktop。部分桌面环境无法按这个 icon name 命中
-    // hicolor 图标，最终回退成系统齿轮。这里固定成稳定的小写名称，让 Icon=zcode
-    // 与 /usr/share/icons/hicolor/*/apps/zcode.png 保持一致。
+    // hicolor 图标，最终回退成系统齿轮。这里固定成稳定的小写名称，让 Icon=zxcode
+    // 与 /usr/share/icons/hicolor/*/apps/zxcode.png 保持一致。
     executableName: desktopProductIdentity.linuxExecutableName,
     category: "Development",
-    maintainer: "ZCode <dev@zcode.z.ai>",
+    maintainer: "ZxCode <dev@zcode.z.ai>",
   },
   deb: {
     // 生产版与 Preview 必须是两个 dpkg package；只改可执行名仍会让安装器把另一版本当成升级替换。

@@ -52,7 +52,7 @@ type ConversationSelectionAppendResult =
     }
   | { ok: false; reason: ConversationSelectionLimitReason };
 
-const ADD_EVENT = "zcode:conversation-selection-add";
+const ADD_EVENT = "zxcode:conversation-selection-add";
 const USER_SELECT_BLOCK_PATTERN = /(?:\n\n)?# userselect:\n```userselect\n([\s\S]*?)\n```\s*$/;
 const LEGACY_BLOCK_PATTERN =
   /(?:\n\n)?# Conversation selections:\n```zcode-conversation-selections\n([\s\S]*?)\n```\s*$/;

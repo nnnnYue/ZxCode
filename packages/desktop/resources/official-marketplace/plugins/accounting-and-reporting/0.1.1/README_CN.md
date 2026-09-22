@@ -6,7 +6,7 @@
 
 ## 快速开始
 
-从 ZCode 插件管理器安装，然后直接跑命令，或者用自然语言描述任务 —— `accounting-and-reporting` agent 会判断
+从 ZxCode 插件管理器安装，然后直接跑命令，或者用自然语言描述任务 —— `accounting-and-reporting` agent 会判断
 工作模式并加载对应 skill。
 
 ## 组件
@@ -59,5 +59,5 @@
 ## 来源
 
 从上游 Z.ai 项目 vendored 而来，`agents/`、`commands/`、`skills/` 由上游生成，不要在此处修改。
-ZCode 适配层（清单、本 README、市场条目）由本仓库拥有。尚未关闭的发布门禁记录在
+ZxCode 适配层（清单、本 README、市场条目）由本仓库拥有。尚未关闭的发布门禁记录在
 [`UPSTREAM.md`](./UPSTREAM.md)。

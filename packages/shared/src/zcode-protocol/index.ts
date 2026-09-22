@@ -3,9 +3,9 @@ import {
   databaseStartupErrorDetailsSchema,
   databaseMigrationFactsSchema,
 } from "../database-startup.js";
-/* oxlint-disable eslint(max-lines) -- ZCode Protocol schema 需要单文件导出，方便 app 与 agent 共享同一份协议契约。 */
+/* oxlint-disable eslint(max-lines) -- ZxCode Protocol schema 需要单文件导出，方便 app 与 agent 共享同一份协议契约。 */
 // ── 旧协议删除边界──────────────────────
-// 剩余 ~257 个导出：旧 ZCode Protocol 方法契约、请求/响应/事件 schema、
+// 剩余 ~257 个导出：旧 ZxCode Protocol 方法契约、请求/响应/事件 schema、
 // session/workspace state snapshot 投影等（承重类型已迁 zcode-protocol-legacy-types.ts）。
 // 已连根删除的死词（词表+schema+两侧实现）：session/steer、session/rewind、
 // session/rewindCascade、session/previewFileRewind、session/applyFileRewind、
@@ -69,10 +69,10 @@ export {
   type HookInvocationRow,
 } from "../zcode-protocol-v4/rows.js";
 
-export const ZCODE_PROTOCOL_NAME = "ZCode Protocol" as const;
-export const ZCODE_PROTOCOL_VERSION = 1 as const;
+export const ZXCODE_PROTOCOL_NAME = "ZxCode Protocol" as const;
+export const ZXCODE_PROTOCOL_VERSION = 1 as const;
 // V4 wire 与 legacy 主协议并存；禁止为了 V4 physical framing 改写 legacy 版本。
-export const ZCODE_PROTOCOL_V4_WIRE_VERSION = 3 as const;
+export const ZXCODE_PROTOCOL_V4_WIRE_VERSION = 3 as const;
 export const zcodeRuntimeCapabilitiesSchema = z.object({
   independentPlanState: z.boolean().optional(),
 });
@@ -452,7 +452,7 @@ export const zcodeMcpTelemetryEventSchema = z.discriminatedUnion("kind", [
 export type ZCodeMcpTelemetryEvent = z.infer<typeof zcodeMcpTelemetryEventSchema>;
 
 /** MCP 每五分钟只探测一次，周期由生产者与设备总量过期判据共用。 */
-export const ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
+export const ZXCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
 
 export const zcodeMcpResourceSampleSchema = z
   .object({
@@ -988,8 +988,8 @@ export const zcodeSessionStateSnapshotSchema = z
   .object({
     protocol: z
       .object({
-        name: z.literal(ZCODE_PROTOCOL_NAME),
-        version: z.literal(ZCODE_PROTOCOL_VERSION),
+        name: z.literal(ZXCODE_PROTOCOL_NAME),
+        version: z.literal(ZXCODE_PROTOCOL_VERSION),
       })
       .strict(),
     session: zcodeSessionInfoSchema,
@@ -1649,7 +1649,7 @@ export type ZCodeSessionRuntimePreferencesScope = z.infer<
   typeof zcodeSessionRuntimePreferencesScopeSchema
 >;
 
-export const ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS = 15_000;
+export const ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS = 15_000;
 
 export const zcodeSessionRequestRuntimePreferencesParamsSchema = z
   .object({
@@ -1661,7 +1661,7 @@ export type ZCodeSessionRequestRuntimePreferencesParams = z.infer<
   typeof zcodeSessionRequestRuntimePreferencesParamsSchema
 >;
 
-export const DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY = "preflight-v1" as const;
+export const DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY = "preflight-v1" as const;
 
 // 3.12.2：legacy 仅为旧协议接收兼容；Runtime 一律归一为上面的共享默认策略。
 export const zcodeModelContextBudgetStrategySchema = z.enum(["legacy", "preflight-v1"]);
@@ -1675,7 +1675,7 @@ export const zcodeSessionRuntimePreferencesResultSchema = z
     integratedTerminalShell: integratedTerminalShellSelectionSchema.optional(),
     // 兼容旧 Host：缺少字段时在协议解析边界使用当前默认策略。
     modelContextBudgetStrategy: zcodeModelContextBudgetStrategySchema.default(
-      DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     ),
   })
   .strict();
@@ -2399,7 +2399,7 @@ export type ZCodeOfficialMcpAuthHeadersRequestParams = z.infer<
  * 失败原因必须可枚举，避免调用方按文本分流；因此响应不含 errorMessage。
  *
  * `official_mcp_origin_untrusted` 是 host 侧二次校验的拒绝原因：`targetOrigin` 不等于当前
- * ZCode API origin。判定只看 origin，`pluginId` / `mcpKey` 仅用于日志归属。与"未登录/无凭据"
+ * ZxCode API origin。判定只看 origin，`pluginId` / `mcpKey` 仅用于日志归属。与"未登录/无凭据"
  * 分开，才能在排查时区分"被拒绝"和"没身份"。
  */
 export const zcodeOfficialMcpAuthFailureReasonSchema = z.enum(
@@ -2632,7 +2632,7 @@ export type ZCodeSkillsReferenceCatalogResult = z.infer<
 
 // ── 已保存工作流的 GUI 中枢──
 // workspace 级、无会话的五个方法，照 skills/referenceCatalog 的先例：每次调用现扫
-// `<cwd>/.zcode/workflows/`（挂载时快照会漏掉手改的文件）。形状与 @zcode/contracts 的
+// `<cwd>/.zxcode/workflows/`（挂载时快照会漏掉手改的文件）。形状与 @zcode/contracts 的
 // saved-workflow.ts 逐字对齐——依赖方向是 contracts → shared，所以这里结构化地再声明一遍，
 // 而不是 import；两边的 strict 形状由 bootstrap 侧的协议测试互相钉住。
 export const zcodeSavedWorkflowArgTypeSchema = z.enum(["string", "number", "boolean", "json"]);
@@ -2663,7 +2663,7 @@ export const zcodeSavedWorkflowMetaSchema = z
   })
   .strict();
 export type ZCodeSavedWorkflowMeta = z.infer<typeof zcodeSavedWorkflowMetaSchema>;
-// 作用域两档：项目档落 `<cwd>/.zcode/workflows/`、全局档落 agent 机器的 `~/.zcode/workflows/`。作用域由文件所在目录推得，frontmatter 不存 scope。
+// 作用域两档：项目档落 `<cwd>/.zxcode/workflows/`、全局档落 agent 机器的 `~/.zxcode/workflows/`。作用域由文件所在目录推得，frontmatter 不存 scope。
 export const zcodeSavedWorkflowScopeSchema = z.enum(["project", "global"]);
 export type ZCodeSavedWorkflowScope = z.infer<typeof zcodeSavedWorkflowScopeSchema>;
 export const zcodeSavedWorkflowEntrySchema = z
@@ -2700,7 +2700,7 @@ const zcodeSavedWorkflowFailureSchema = z
 export const zcodeWorkflowsListParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema,
-    // 缺省即 `project`（本项目档）。给 `global` 时改扫本机 `~/.zcode/workflows/`；此时 `workspace`
+    // 缺省即 `project`（本项目档）。给 `global` 时改扫本机 `~/.zxcode/workflows/`；此时 `workspace`
     // 仍必填，但只是**载体运行时**——协议处理器对全局档不读它的路径。
     scope: zcodeSavedWorkflowScopeSchema.optional(),
   })
@@ -2772,13 +2772,13 @@ export const zcodeWorkflowsDeleteResultSchema = z.union([
 ]);
 export type ZCodeWorkflowsDeleteResult = z.infer<typeof zcodeWorkflowsDeleteResultSchema>;
 
-export const ZCODE_WORKFLOWS_RUNS_MAX_LIMIT = 50;
+export const ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT = 50;
 export const zcodeWorkflowsRunsParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema,
     /** 只要这个名字的 run（`dwf_run.name` 字面等值）；缺省即本项目全部 run。 */
     name: nonEmptyString.optional(),
-    limit: z.number().int().min(1).max(ZCODE_WORKFLOWS_RUNS_MAX_LIMIT),
+    limit: z.number().int().min(1).max(ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT),
     // 缺省 `project`：只查 `dwf_run.cwd === workspacePath` 的 run。`global` 时**不**按 cwd 过滤，
     // 跨所有项目取该名字的运行历史（全局工作流在任何项目里跑，历史因此跨 cwd）；结果行带 `cwd`
     // 供 GUI 标项目。`workspace` 语义同 list（全局档只当载体）。
@@ -3528,7 +3528,7 @@ export const zcodeProtocolMethods = {
   // @deprecated：host 消费已清零（zcodeAgentService 改走 v4/usage/stats）。
   // 仅剩 CLI server 的 wire 兼容 case；随旧词整体删除时一并移除。
   usageStats: "usage/stats",
-  // ZCode Protocol 对 agent 只暴露 session-first 方法；task 是 UI 投影概念，不能泄露进协议方法名。
+  // ZxCode Protocol 对 agent 只暴露 session-first 方法；task 是 UI 投影概念，不能泄露进协议方法名。
   // @deprecated：host 已改走 v4/conversation/usage；后续与 usage/stats 一并移除。
   sessionUsage: "session/usage",
   // 资源管理器：CLI 回报其 MCP 子进程 pid 与插件归属（纯内存，无 I/O），采样在 Host 侧完成。

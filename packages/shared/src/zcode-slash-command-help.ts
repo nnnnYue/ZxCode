@@ -6,7 +6,7 @@ export type BuiltinZCodeSlashCommandHelpEntry = {
   usage: string;
 };
 
-export const BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlashCommandHelpEntry[] =
+export const BUILTIN_ZXCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlashCommandHelpEntry[] =
   [
     {
       details: [
@@ -29,7 +29,7 @@ export const BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlas
         "/login [zai-coding-plan|bigmodel-coding-plan|zai-coding-plan-api-key <api-key>|bigmodel-coding-plan-api-key <api-key>]",
     },
     {
-      details: ["Deletes Z.ai OAuth credentials from the shared ZCode credential store."],
+      details: ["Deletes Z.ai OAuth credentials from the shared ZxCode credential store."],
       name: "logout",
       summary: "Remove the shared Z.ai login credentials.",
       usage: "/logout",
@@ -44,7 +44,7 @@ export const BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlas
       details: [
         "Runs a normal agent turn that inspects the current workspace and creates or updates AGENTS.md.",
         "Existing AGENTS.md files should be edited rather than overwritten.",
-        "This command targets the workspace root, not the user default ~/.zcode/AGENTS.md.",
+        "This command targets the workspace root, not the user default ~/.zxcode/AGENTS.md.",
       ],
       name: "init",
       summary: "Create or update workspace AGENTS.md instructions.",

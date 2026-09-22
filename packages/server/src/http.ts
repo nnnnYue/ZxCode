@@ -30,8 +30,8 @@ import {
   formatZodError,
   remoteTargetSchema,
   SERVER_REMOTE_PROTOCOL_VERSION,
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_VERSION,
+  ZXCODE_RPC_HOST_CAPABILITY_HEADER,
+  ZXCODE_VERSION,
   type ServerRemoteInfo,
   type ServerRemoteWorkspaceInfo,
 } from "@zcode/shared";
@@ -78,7 +78,7 @@ function wrapWebSocket(ws: WebSocket): ISocket {
 }
 
 const log = (...args: unknown[]) =>
-  console.log(formatLogPrefix("zcode-server:http", process.pid), ...args);
+  console.log(formatLogPrefix("zxcode-server:http", process.pid), ...args);
 
 function setupChannelServer(
   ws: WebSocket,
@@ -146,7 +146,7 @@ function readTrimmedEnv(name: string): string | undefined {
 
 function resolveServerId(options: HttpServerOptions): string {
   return (
-    options.serverId?.trim() || readTrimmedEnv("ZCODE_SERVER_ID") || hostname() || "zcode-server"
+    options.serverId?.trim() || readTrimmedEnv("ZXCODE_SERVER_ID") || hostname() || "zxcode-server"
   );
 }
 
@@ -154,7 +154,7 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
   if (options.workspaces) {
     return options.workspaces;
   }
-  const workspacePath = readTrimmedEnv("ZCODE_SERVER_WORKSPACE") || process.cwd();
+  const workspacePath = readTrimmedEnv("ZXCODE_SERVER_WORKSPACE") || process.cwd();
   return [
     {
       path: workspacePath,
@@ -166,12 +166,12 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
 function createServerInfo(options: HttpServerOptions): ServerRemoteInfo {
   return {
     serverId: resolveServerId(options),
-    ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
-      ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
+    ...(options.name?.trim() || readTrimmedEnv("ZXCODE_SERVER_NAME")
+      ? { name: options.name?.trim() || readTrimmedEnv("ZXCODE_SERVER_NAME") }
       : {}),
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
-    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
+    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZXCODE_SERVER_TOKEN")),
     workspaces: resolveServerWorkspaces(options),
     capabilities: {
       desktopContinuous: true,
@@ -334,7 +334,7 @@ export function createHttpServer(
     },
   }));
   app.use("/ws/host", async (c, next) => {
-    const capability = c.req.header(ZCODE_RPC_HOST_CAPABILITY_HEADER);
+    const capability = c.req.header(ZXCODE_RPC_HOST_CAPABILITY_HEADER);
     if (!hostCapabilities.consume(capability)) {
       return c.json({ error: "Invalid or expired host capability" }, 401);
     }

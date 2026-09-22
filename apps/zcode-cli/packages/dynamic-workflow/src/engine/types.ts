@@ -311,7 +311,7 @@ export interface ArtifactVersionRecord {
   contentType?: string;
   /** 内容成员的字节数。 */
   bytes?: number;
-  /** store 返回的 `zcode-artifact://…`（内容成员）。 */
+  /** store 返回的 `zxcode-artifact://…`（内容成员）。 */
   uri?: string;
   /** 工作区相对的原路径（`file` 才有，作出处与「在工作区显示」）。 */
   sourcePath?: string;
@@ -397,7 +397,7 @@ export interface WorkflowHostApi {
 // Boundary B：driver port
 // ————————————————————————————————————————————————————————————————
 
-/** 一个 actor 会话的不透明引用（生产侧是 zcode session id）。 */
+/** 一个 actor 会话的不透明引用（生产侧是 zxcode session id）。 */
 export interface SessionRef {
   readonly id: string;
 }

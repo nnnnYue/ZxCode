@@ -2,13 +2,13 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
 import type { MessageBoxOptions } from "electron";
 import {
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   DesktopCommandIds,
   type AppSettings,
   type DesktopCommandId,
   type Locale,
   resolveRuntimeZCodeEndpointOrigin,
-  ZCODE_ENV,
+  ZXCODE_ENV,
   buildZCodeEndpointUrls,
   normalizeZCodeEndpointOrigin,
   resolveZCodeEndpointOrigin,
@@ -30,9 +30,9 @@ import {
 } from "./desktopZoom.js";
 
 export const HELP_TOGGLE_DEV_TOOLS_MENU_ID = "help.toggle-dev-tools";
-export const HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID = "help.toggle-zcode-stdio-tap";
-const ZCODE_ENDPOINT_PROMPT_WIDTH = 460;
-const ZCODE_ENDPOINT_PROMPT_HEIGHT = 210;
+export const HELP_TOGGLE_ZXCODE_STDIO_TAP_MENU_ID = "help.toggle-zcode-stdio-tap";
+const ZXCODE_ENDPOINT_PROMPT_WIDTH = 460;
+const ZXCODE_ENDPOINT_PROMPT_HEIGHT = 210;
 
 function resolveTargetWindow(senderWindow?: BrowserWindow | null) {
   if (senderWindow && !senderWindow.isDestroyed()) {
@@ -84,7 +84,7 @@ async function clearAllDataAndRelaunch(options: {
     title: "Clear All Data",
     message: "确定要清除所有数据吗？",
     detail:
-      "将删除 ~/.zcode/v2（配置、凭据、日志）和浏览器缓存（localStorage）。操作不可恢复，清除后应用将自动重启。",
+      "将删除 ~/.zxcode/v2（配置、凭据、日志）和浏览器缓存（localStorage）。操作不可恢复，清除后应用将自动重启。",
   });
   if (response !== 1) {
     return;
@@ -93,9 +93,9 @@ async function clearAllDataAndRelaunch(options: {
   const { rm } = await import("node:fs/promises");
   try {
     await rm(options.credentialsDir, { recursive: true, force: true });
-    options.logger.info("[clear-all-data] deleted ~/.zcode/v2");
+    options.logger.info("[clear-all-data] deleted ~/.zxcode/v2");
   } catch (error) {
-    options.logger.error("[clear-all-data] failed to delete ~/.zcode/v2:", error);
+    options.logger.error("[clear-all-data] failed to delete ~/.zxcode/v2:", error);
   }
 
   for (const win of BrowserWindow.getAllWindows()) {
@@ -144,7 +144,7 @@ function buildZCodeEndpointPromptHtml(currentValue: string): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>ZCode Endpoint</title>
+    <title>ZxCode Endpoint</title>
     <style>
       :root { color-scheme: light dark; }
       body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -157,7 +157,7 @@ function buildZCodeEndpointPromptHtml(currentValue: string): string {
   </head>
   <body>
     <form id="form">
-      <label for="endpoint">ZCode endpoint origin</label>
+      <label for="endpoint">ZxCode endpoint origin</label>
       <input id="endpoint" value="${value}" placeholder="https://endpoint.example.com" spellcheck="false" />
       <div class="hint">Use an http or https origin, for example https://endpoint.example.com.</div>
       <div class="actions">
@@ -189,14 +189,14 @@ function showZCodeEndpointPromptWindow(options: {
   return new Promise((resolve) => {
     let settled = false;
     const promptWindow = new BrowserWindow({
-      width: ZCODE_ENDPOINT_PROMPT_WIDTH,
-      height: ZCODE_ENDPOINT_PROMPT_HEIGHT,
+      width: ZXCODE_ENDPOINT_PROMPT_WIDTH,
+      height: ZXCODE_ENDPOINT_PROMPT_HEIGHT,
       parent: options.parentWindow,
       modal: Boolean(options.parentWindow),
       resizable: false,
       minimizable: false,
       maximizable: false,
-      title: "ZCode Endpoint",
+      title: "ZxCode Endpoint",
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
@@ -245,7 +245,7 @@ async function setZCodeEndpointOverride(options: {
   onZCodeEndpointChanged: () => Promise<void> | void;
   logger: { warn: (...args: unknown[]) => void };
 }) {
-  if (ZCODE_ENV === "production") {
+  if (ZXCODE_ENV === "production") {
     return;
   }
   const normalized = options.value ? normalizeZCodeEndpointOrigin(options.value) : undefined;
@@ -283,7 +283,7 @@ function toggleZCodeStdioTapDevProxy(options: {
 
 function resolveChangelogUrl(
   locale: Locale,
-  endpointOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  endpointOrigin = DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
 ): string {
   // 帮助菜单里的外链以前只有固定英文地址，切到中文界面后仍会落到英文 changelog。
   // 这里统一收口到主进程按当前应用语言分流，避免菜单模板里手写分支后续再出现多处不一致。
@@ -293,7 +293,7 @@ function resolveChangelogUrl(
 
 export async function openChangelog(
   locale: Locale,
-  endpointOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  endpointOrigin = DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
 ) {
   await shell.openExternal(resolveChangelogUrl(locale, endpointOrigin));
 }
@@ -304,7 +304,7 @@ async function resolveCurrentZCodeEndpointOrigin(settingService: {
 }): Promise<string> {
   const settings = await settingService.get();
   return resolveZCodeEndpointOrigin({
-    env: ZCODE_ENV,
+    env: ZXCODE_ENV,
     envBaseOrigin: settingService.envBaseOrigin,
     overrideOrigin: settings.zcodeEndpointOrigin,
   });
@@ -443,7 +443,7 @@ export async function executeDesktopCommand(options: {
       return;
     case DesktopCommandIds.SetZCodeEndpointProduction:
       await setZCodeEndpointOverride({
-        value: DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+        value: DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
         settingService: options.settingService,
         onZCodeEndpointChanged: options.onZCodeEndpointChanged,
         logger: options.logger,
@@ -459,7 +459,7 @@ export async function executeDesktopCommand(options: {
       return;
     case DesktopCommandIds.SetZCodeEndpointCustom: {
       const current =
-        (await options.settingService.get()).zcodeEndpointOrigin ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+        (await options.settingService.get()).zcodeEndpointOrigin ?? DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
       const value = await promptCustomZCodeEndpoint(targetWindow, current);
       if (!value) {
         return;
@@ -474,7 +474,7 @@ export async function executeDesktopCommand(options: {
       } catch (error) {
         await showMessageBoxWithOptionalParent(targetWindow, {
           type: "error",
-          title: "ZCode Endpoint",
+          title: "ZxCode Endpoint",
           message: "Endpoint 无效",
           detail: error instanceof Error ? error.message : String(error),
         });

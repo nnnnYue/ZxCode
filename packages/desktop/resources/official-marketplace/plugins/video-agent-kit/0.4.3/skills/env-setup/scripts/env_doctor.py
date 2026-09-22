@@ -70,13 +70,13 @@ SPEECH_ENDPOINT_LABEL = "configured compatibility speech endpoint"
 
 
 def under_zcode_host() -> bool:
-    """在 ZCode 宿主里跑 → 语音走官方通道, 本地不需要任何 key。
+    """在 ZxCode 宿主里跑 → 语音走官方通道, 本地不需要任何 key。
 
-    ZCODE_BASE_URL 由宿主 spawn 时注入。注意体检脚本是**独立进程**, 看不到随单次
+    ZXCODE_BASE_URL 由宿主 spawn 时注入。注意体检脚本是**独立进程**, 看不到随单次
     ``tools/call`` 的 ``_meta`` 下发的身份头, 所以这里只能判"官方通道在不在", 判不了
     "这次调用的身份好不好" —— 后者由 MCP 工具自己在调用时报。
     """
-    return bool((os.environ.get("ZCODE_BASE_URL") or "").strip())
+    return bool((os.environ.get("ZXCODE_BASE_URL") or "").strip())
 
 # 渲染要落 preview/final mp4 + 抽帧 contact sheet, 空间不够是"渲到一半炸"。
 MIN_FREE_GB = 5
@@ -314,7 +314,7 @@ def probe_tts() -> tuple[bool, str]:
 def probe_speech_net() -> tuple[bool, str]:
     """直连兼容端点的出网可达性。
 
-    只有部署方显式配了兼容端点时才有意义: 官方通道走 ZCODE_BASE_URL, 远端 Speech MCP
+    只有部署方显式配了兼容端点时才有意义: 官方通道走 ZXCODE_BASE_URL, 远端 Speech MCP
     走 VE_SPEECH_MCP_URL, 两者都不经这个域名。没配就直接判"不适用", 免得体检去连一个
     根本不会被调用的主机, 再把结论报成缺口。
 
@@ -481,18 +481,18 @@ CHECKS: list[Check] = [
                    f"#   {'set' if OS == 'windows' else 'export'} VE_FONT_DIRS=<字体目录>"
                    f"   (多个目录用 {os.pathsep!r} 分隔)",
                    "# 无 root 也可以: 下 NotoSansSC-400.ttf/-700.ttf 到任意目录再设 VE_FONT_DIRS"]),
-    # 语音凭据永远是 soft 的, 而且在 ZCode 里根本不是一项配置。
+    # 语音凭据永远是 soft 的, 而且在 ZxCode 里根本不是一项配置。
     #
     # 默认通道是宿主注入身份的官方 Server MCP —— 本地一个 key 都不需要。独立的 doctor
-    # 进程看不到随单次 ``tools/call`` 下发的身份头, 只能看见 ZCODE_BASE_URL 在不在;
-    # 因此在 ZCode 里这两项直接报"官方通道", 不去探测兼容后端, 也不摆配置命令。
+    # 进程看不到随单次 ``tools/call`` 下发的身份头, 只能看见 ZXCODE_BASE_URL 在不在;
+    # 因此在 ZxCode 里这两项直接报"官方通道", 不去探测兼容后端, 也不摆配置命令。
     # 0.4.2 之前这里会报"凭据未配置"并给出写 .env 的修复命令, 于是模型和用户都以为
     # 必须先在本地配 key 才能转录 —— 那是这条提示造成的错觉, 不是真实约束。
     Check("asr-cred", "语音转录通道", "speech_transcribe — 缺则没有转录, 语音类任务全瘸",
           probe_asr,
-          need="ZCode 中无需配置 (宿主注入身份); 其他宿主需远端 Speech MCP, "
+          need="ZxCode 中无需配置 (宿主注入身份); 其他宿主需远端 Speech MCP, "
                "或直连兼容后端 VE_SPEECH_ASR_ENDPOINT + RESOURCE_ID + API_KEY",
-          fix=["# 在 ZCode 中运行时无需任何配置: 官方通道用宿主随调用注入的身份",
+          fix=["# 在 ZxCode 中运行时无需任何配置: 官方通道用宿主随调用注入的身份",
                f"# 其他宿主 —— 写进 {PLUGIN_ROOT / '.env'} (插件级默认) 或 {PROJECT_DIR / '.env'} (按项目覆盖):",
                "#   VE_SPEECH_MCP_URL=<remote MCP URL>      # 推荐: 付费能力集中在服务端",
                "#   VE_SPEECH_MCP_TOKEN=<token>",
@@ -504,9 +504,9 @@ CHECKS: list[Check] = [
           needs="py-requests", soft=True),
     Check("tts-cred", "语音合成通道", "speech_synthesize / 解说旁白合成 — recap 类任务的必需项",
           probe_tts,
-          need="ZCode 中无需配置 (宿主注入身份); 其他宿主需远端 Speech MCP, "
+          need="ZxCode 中无需配置 (宿主注入身份); 其他宿主需远端 Speech MCP, "
                "或直连兼容后端 VE_SPEECH_TTS_ENDPOINT + MODEL + API_KEY",
-          fix=["# 在 ZCode 中运行时无需任何配置",
+          fix=["# 在 ZxCode 中运行时无需任何配置",
                f"# 其他宿主 —— 同上, 写进 {PLUGIN_ROOT / '.env'}:",
                "#   VE_SPEECH_MCP_URL=<remote MCP URL>",
                "#   VE_SPEECH_MCP_TOKEN=<token>",
@@ -569,7 +569,7 @@ def cheap_missing() -> list[str]:
 def credential_lines() -> list[str]:
     """SessionStart hook 用: 转录/合成通道一行一条 (不碰网络, 只看配置)。
 
-    在 ZCode 里这两行报的是"官方通道就绪"。措辞要紧: 上一版这里会打
+    在 ZxCode 里这两行报的是"官方通道就绪"。措辞要紧: 上一版这里会打
     "ASR: cloud_asr 不可用: credentials not set ...", 每个会话开头都摆在模型面前,
     于是模型把"去配一个 key"当成任务第一步 —— 而实际上官方通道本来就能用。
     """
@@ -584,7 +584,7 @@ def credential_lines() -> list[str]:
         else:
             lines.append(
                 f"{label} 未就绪: {detail}"
-                " — 本地不需要 key; 在 ZCode 中运行即走官方通道, 其他宿主见 /env-check"
+                " — 本地不需要 key; 在 ZxCode 中运行即走官方通道, 其他宿主见 /env-check"
             )
     return lines
 

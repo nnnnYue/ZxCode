@@ -44,9 +44,9 @@ interface EnsureSeaRuntimeToolsOptions {
   storageRoot?: string;
 }
 
-const assetPrefix = "zcode-runtime-tools/";
+const assetPrefix = "zxcode-runtime-tools/";
 const manifestAssetKey = `${assetPrefix}manifest.json`;
-const markerFileName = ".zcode-runtime-tool.json";
+const markerFileName = ".zxcode-runtime-tool.json";
 const runtimeToolIds = new Set<RuntimeToolId>(["bfs", "ripgrep", "ugrep"]);
 
 export async function ensureSeaRuntimeTools(
@@ -65,8 +65,8 @@ export async function ensureSeaRuntimeTools(
   }
 
   const env = options.env ?? process.env;
-  const configuredStorageRoot = options.storageRoot ?? env.ZCODE_STORAGE_DIR?.trim();
-  const storageRoot = configuredStorageRoot || join(homedir(), ".zcode");
+  const configuredStorageRoot = options.storageRoot ?? env.ZXCODE_STORAGE_DIR?.trim();
+  const storageRoot = configuredStorageRoot || join(homedir(), ".zxcode");
   const runtimeEnv: CliEnv = {};
 
   for (const tool of manifest.tools) {

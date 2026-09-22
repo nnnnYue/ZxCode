@@ -46,7 +46,7 @@ export async function persistToolResultMediaAttachments(input: {
 
   const attachments: FilePart[] = [];
   for (const [index, block] of projection.mediaBlocks.entries()) {
-    const existingArtifactUri = block.source?.uri?.startsWith("zcode-artifact://")
+    const existingArtifactUri = block.source?.uri?.startsWith("zxcode-artifact://")
       ? block.source.uri
       : undefined;
     const artifactUri =

@@ -6,7 +6,7 @@ Transaction structuring and modeling for M&A, IPO, placements and rights issues:
 
 ## Quick start
 
-Install the plugin from the ZCode plugin manager, then either run a command or just
+Install the plugin from the ZxCode plugin manager, then either run a command or just
 describe the task — the `model-deals` agent classifies it and loads the right skill.
 
 ## Components
@@ -42,7 +42,7 @@ every finance plugin. See [`UPSTREAM.md`](./UPSTREAM.md).
 | `wind-stock` | Wind — A/H equities |
 | `wind-docs` | Wind — filings and research documents |
 
-All of these are **remote HTTP MCP servers on ZCode's own gateway** (`${ZCODE_BASE_URL}`),
+All of these are **remote HTTP MCP servers on ZxCode's own gateway** (`${ZXCODE_BASE_URL}`),
 declared in [`.zcode-plugin/plugin.json`](./.zcode-plugin/plugin.json). Identity is
 injected per tool call by the host (`auth: {type: zcode_official, provider: jwt_token}`).
 
@@ -57,7 +57,7 @@ commercial data, not a free tier.
 | | |
 | --- | --- |
 | Hooks | none — the plugin installs no hooks and does not intercept your tools |
-| Network | only `${ZCODE_BASE_URL}`, the host gateway. No third-party endpoints |
+| Network | only `${ZXCODE_BASE_URL}`, the host gateway. No third-party endpoints |
 | Writes files | report, workbook and deck deliverables (`.pdf`, `.docx`, `.xlsx`, `.pptx`) plus build intermediates, in the working directory the skills pick per their own rules |
 | Executes | `python3` for the authoring skills; **headless LibreOffice (`soffice` / `libreoffice`)** for xlsx formula recalculation and DOCX→PDF verification; `fc-list` for font checks |
 | Python packages | `report-render` needs `reportlab`, `matplotlib`, `pypdf`, `pypdfium2`, `pillow`, `fonttools` (see `skills/report-render/scripts/requirements.txt`); `xlsx-author` needs `openpyxl` |
@@ -73,6 +73,6 @@ can check them; what could not be sourced is reported as a gap rather than smoot
 ## Provenance
 
 Vendored from an upstream Z.ai project; `agents/`, `commands/` and `skills/` are produced
-there and must not be edited here. The ZCode adaptation layer (manifests, this README, the
+there and must not be edited here. The ZxCode adaptation layer (manifests, this README, the
 marketplace entry) is owned by this repository. Open publishing gates are recorded in
 [`UPSTREAM.md`](./UPSTREAM.md).

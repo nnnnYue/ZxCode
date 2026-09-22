@@ -1,6 +1,6 @@
 import {
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
+  ZXCODE_PROTOCOL_NAME,
+  ZXCODE_PROTOCOL_VERSION,
   getZCodeGoalActiveIterationCount,
   zcodeApiRetryFromModelNetworkStatusPayload,
   zcodeApiRetryFromStreamRecoveryPayload,
@@ -101,8 +101,8 @@ export async function buildSessionSnapshot(input: {
     messages,
     projection: mapSessionProjection(projection),
     protocol: {
-      name: ZCODE_PROTOCOL_NAME,
-      version: ZCODE_PROTOCOL_VERSION,
+      name: ZXCODE_PROTOCOL_NAME,
+      version: ZXCODE_PROTOCOL_VERSION,
     },
     runtime: mapRuntimeState({
       activeTurn,
@@ -152,7 +152,7 @@ async function hydrateSnapshotFilePartUrl(
   app: Pick<ZCodeApp, "readToolResultArtifact">,
   part: ReturnType<typeof mapMessageWithParts>["parts"][number],
 ) {
-  // 历史图片附件持久化后只剩 zcode-artifact:// 引用，UI/手机端不能直接渲染。
+  // 历史图片附件持久化后只剩 zxcode-artifact:// 引用，UI/手机端不能直接渲染。
   // snapshot 出协议前在 agent 侧回填 data URL，避免把本地 artifact 目录读法泄漏给前端。
   if (part.type !== "file" || !isImageMime(part.mime) || isUsableDataUrl(part.url)) {
     return part;
@@ -180,7 +180,7 @@ function snapshotFilePartArtifactUri(
   const metadataArtifactUri =
     typeof part.metadata?.artifactUri === "string" ? part.metadata.artifactUri : undefined;
   const artifactUri = metadataArtifactUri ?? part.url;
-  return artifactUri.startsWith("zcode-artifact://") ? artifactUri : undefined;
+  return artifactUri.startsWith("zxcode-artifact://") ? artifactUri : undefined;
 }
 
 function dataUrlFromSnapshotArtifact(
@@ -495,12 +495,12 @@ function mapModelNetworkStatusPayload(payload: unknown): Record<string, unknown>
     return record;
   }
   const meta = asRecord(record._meta);
-  const zcodeMeta = asRecord(meta.zcode);
+  const zcodeMeta = asRecord(meta.zxcode);
   return {
     ...record,
     _meta: {
       ...meta,
-      zcode: {
+      zxcode: {
         ...zcodeMeta,
         // 网络重试是模型请求运行态，不属于可持久化消息内容。
         // 这里通过 app 私有 meta 暴露给旧 task 投影，app 再写入 host runtime snapshot。
@@ -517,12 +517,12 @@ function mapStreamRecoveryPayload(payload: unknown): Record<string, unknown> {
     return record;
   }
   const meta = asRecord(record._meta);
-  const zcodeMeta = asRecord(meta.zcode);
+  const zcodeMeta = asRecord(meta.zxcode);
   return {
     ...record,
     _meta: {
       ...meta,
-      zcode: {
+      zxcode: {
         ...zcodeMeta,
         // streamRecovery.updated 才是 SSE 断流恢复的核心进度事件。
         // 之前只在后续 model_request_started 上补 meta，UI 错过该事件时不会显示重试次数。

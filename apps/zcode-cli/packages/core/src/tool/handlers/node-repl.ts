@@ -13,7 +13,7 @@ import type { ToolEntry, ToolExecutionContext, ToolHandler } from "../types.js";
 import { formatJsModelContent } from "./node-repl-model-content.js";
 
 /**
- * 每个 zcode session 一个持久 NodeReplSession，跨多次 js 调用保持内存状态（globalThis）。
+ * 每个 zxcode session 一个持久 NodeReplSession，跨多次 js 调用保持内存状态（globalThis）。
  * key = context.sessionId。
  *
  * browser-use：只有官方 browser-use 插件启用时，runtime-tooling 才会把 browserControlPort

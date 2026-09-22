@@ -77,7 +77,7 @@ export type Locale = "zh-CN" | "en-US";
 /** 界面语言偏好；system 表示跟随当前运行端系统语言。 */
 export type LocalePreference = "system" | Locale;
 
-/** ZCode 运行中继续输入时的交互行为 */
+/** ZxCode 运行中继续输入时的交互行为 */
 export type ZCodeInteractionBehavior = "queue" | "guide";
 
 /** 桌面端 Electron 自动更新发布通道。 */
@@ -204,7 +204,7 @@ export type ResourceUsageBaseGroupKey = "main" | "gpu" | "renderer" | "host" | "
 /** 资源管理器中的一个进程行（CPU 为整机归一化百分比，内存为字节） */
 export interface ResourceUsageProcess {
   pid: number;
-  /** 进程显示名，如 zcode-main / zcode-agent-zcode-demo / node_repl */
+  /** 进程显示名，如 zxcode-main / zxcode-agent-zcode-demo / node_repl */
   name: string;
   category: ResourceUsageCategory;
   groupKey: string;
@@ -240,7 +240,7 @@ export interface MobileRelaySettings {
   enabled: boolean;
   /** relay 部署地址（https:// 或 http://）；缺失时即使 enabled 也不出站。 */
   serverUrl?: string;
-  /** deployment token（对应 relay 的 ZCODE_RELAY_TOKEN）；仅存在鉴权部署时填写。 */
+  /** deployment token（对应 relay 的 ZXCODE_RELAY_TOKEN）；仅存在鉴权部署时填写。 */
   token?: string;
 }
 
@@ -273,7 +273,7 @@ export interface AppSettings {
   httpProxyCaCertPath?: string;
   /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
-   * 只影响内置浏览器出口，不影响 ZCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
+   * 只影响内置浏览器出口，不影响 ZxCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
    */
   embeddedBrowserAllowInsecureCertificates?: boolean;
   /** 人类用户主动打开 Browser tab 时的一次性显示偏好；Agent Browser Use 不读写。 */
@@ -317,7 +317,7 @@ export interface AppSettings {
   toolGroupingTerminalEnabled?: boolean;
   /** 是否把连续的 Write/Edit/ApplyPatch 工具调用聚合成 Changes。 */
   toolGroupingChangesEnabled?: boolean;
-  /** ZCode 运行中继续输入时，是排队到下一轮，还是引导到下一次工具调用后运行 */
+  /** ZxCode 运行中继续输入时，是排队到下一轮，还是引导到下一次工具调用后运行 */
   zcodeInteractionBehavior?: ZCodeInteractionBehavior;
   /** Agent 提问五分钟无人回答时是否允许自动继续；缺失按开启兼容旧配置。 */
   askUserQuestionAutoResolutionEnabled?: boolean;
@@ -358,7 +358,7 @@ export interface AppSettings {
   lastActiveTabIndex?: number;
   /** 每个 workspace 的最后活跃 taskId，下次打开自动恢复 */
   lastActiveTaskByWorkspace?: Record<string, string>;
-  /** 数据目录的根路径（替代 homedir），默认为 os.homedir()；.zcode/v2 后缀不变 */
+  /** 数据目录的根路径（替代 homedir），默认为 os.homedir()；.zxcode/v2 后缀不变 */
   dataBaseDir?: string;
   /** 自动更新安装完成后，等待首次启动展示的版本说明 */
   pendingPostUpdateReleaseNotes?: {
@@ -376,6 +376,6 @@ export interface AppSettings {
   skippedElectronUpdateVersions?: Partial<Record<ElectronReleaseChannel, string>>;
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
-  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
+  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZXCODE_BASE_URL env 管理。 */
   zcodeEndpointOrigin?: string;
 }

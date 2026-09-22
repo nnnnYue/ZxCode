@@ -98,7 +98,7 @@ async function ensureNodeBinary(repoRoot: string, target: ServerTarget): Promise
   const archiveName = `node-${nodeVersion}-${nodeTarget}.${isWindows ? "zip" : "tar.xz"}`;
   const url = `${resolveNodeDistBase()}/${nodeVersion}/${archiveName}`;
   log(`download node runtime: ${url}`);
-  const tempDir = await mkdtemp(join(tmpdir(), "zcode-server-node-"));
+  const tempDir = await mkdtemp(join(tmpdir(), "zxcode-server-node-"));
   try {
     const archivePath = join(tempDir, archiveName);
     await downloadFile(url, archivePath);
@@ -138,7 +138,7 @@ async function ensureNodeBinary(repoRoot: string, target: ServerTarget): Promise
 }
 
 async function ensureAgentBundle(repoRoot: string, skipBuild: boolean): Promise<string> {
-  const bundlePath = join(repoRoot, "apps/zcode-cli/packages/cli/dist/zcode.cjs");
+  const bundlePath = join(repoRoot, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
   if (await pathExists(bundlePath)) return bundlePath;
   if (skipBuild) {
     throw new Error(`Agent bundle missing: ${bundlePath} (remove --skip-agent-build to build it)`);

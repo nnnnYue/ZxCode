@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { PluginDiagnostic, PluginManifest, PluginStoreListing } from "@zcode/contracts";
-import { isOfficialMarketplaceId, ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { isOfficialMarketplaceId, ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
 import { DEFAULT_PLUGIN_MARKETPLACES, sanitizeZCodeRuntimeEnv } from "@zcode/shared";
 import { loadPluginMcpServerDefinitions, resolvePluginMcpServers } from "./mcp.js";
 import {
@@ -51,7 +51,7 @@ const MARKETPLACE_JSON_MAX_BYTES = 10 * 1024 * 1024;
 const MARKETPLACE_JSON_MAX_REDIRECTS = 5;
 const MARKETPLACE_JSON_TIMEOUT_MS = 180_000;
 const CLAUDE_MARKETPLACE_FILE = join(".claude-plugin", "marketplace.json");
-const ZCODE_MANIFEST_PATH = join(".zcode-plugin", "plugin.json");
+const ZXCODE_MANIFEST_PATH = join(".zcode-plugin", "plugin.json");
 const CLAUDE_MANIFEST_PATH = join(".claude-plugin", "plugin.json");
 const CODEX_MANIFEST_PATH = join(".codex-plugin", "plugin.json");
 const DEFAULT_VERSION = "0.0.0";
@@ -184,7 +184,7 @@ function buildMarketplaceGitEnv(
 ): Record<string, string> {
   const env = sanitizeZCodeRuntimeEnv(sourceEnv);
   // marketplace 安装会启动 Git 子进程，不能只依赖父进程继承的 shell 代理。
-  // 这里统一从 ZCode 显式网络环境恢复 HTTP(S)/NO_PROXY/CA，避免安装按钮卡到协议超时。
+  // 这里统一从 ZxCode 显式网络环境恢复 HTTP(S)/NO_PROXY/CA，避免安装按钮卡到协议超时。
   return applyNetworkEgressEnv(env, { sourceEnv });
 }
 
@@ -373,15 +373,15 @@ export async function addMarketplace(input: {
       );
     }
     if (
-      input.trustedId === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
-      loaded.manifest.name !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE
+      input.trustedId === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
+      loaded.manifest.name !== ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE
     ) {
       throw new Error(
-        `Official marketplace source must provide ${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}, received ${loaded.manifest.name}`,
+        `Official marketplace source must provide ${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE}, received ${loaded.manifest.name}`,
       );
     }
     const persistedManifest =
-      loaded.manifest.name === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE
+      loaded.manifest.name === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE
         ? parseRequiredMarketplaceManifest(
             writeCdnOfficialMarketplacePartitionSync({
               manifest: loaded.manifest.raw,
@@ -399,7 +399,7 @@ export async function addMarketplace(input: {
         persistedManifest.raw,
         operationSignal,
       );
-    } else if (loaded.manifest.name !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE) {
+    } else if (loaded.manifest.name !== ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE) {
       marketplaceActivation = await stageMarketplaceManifest(
         input.storageRoot,
         loaded.manifest.name,
@@ -662,7 +662,7 @@ export async function uninstallMarketplacePlugin(input: {
   pluginId: string;
   storageRoot: string;
   removeCache?: boolean;
-  /** `zcode plugins uninstall --keep-data`：删安装缓存但保留 data/<plugin-id> 用户数据目录。 */
+  /** `zxcode plugins uninstall --keep-data`：删安装缓存但保留 data/<plugin-id> 用户数据目录。 */
   keepData?: boolean;
 }): Promise<InstalledPluginRecord | null> {
   const state = loadInstalledPluginsSync(input.storageRoot);
@@ -1426,7 +1426,7 @@ async function clonePluginSource(
   sha?: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zcode-plugin-src-"));
+  const dir = await mkdtemp(join(tmpdir(), "zxcode-plugin-src-"));
   const args = ["clone"];
   if (!sha) args.push("--depth", "1");
   if (ref) args.push("--branch", ref);
@@ -1661,7 +1661,7 @@ async function cloneMarketplaceSource(
   sparsePaths: string[] | undefined,
   signal?: AbortSignal,
 ): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zcode-marketplace-src-"));
+  const dir = await mkdtemp(join(tmpdir(), "zxcode-marketplace-src-"));
   const args = ["clone", "--depth", "1"];
   if (ref) args.push("--branch", ref);
   if (sparsePaths?.length) args.push("--filter=blob:none", "--sparse");
@@ -1711,7 +1711,7 @@ async function execGitCommand(args: string[], signal?: AbortSignal): Promise<voi
   try {
     // 显式二进制覆盖既支持非标准 Git 安装位置，也让跨进程 E2E 能把 Git 指向不存在的
     // 绝对路径，真实证明 Archive 主链路不依赖开发机上偶然存在的 Git。
-    const gitBinary = process.env.ZCODE_GIT_BINARY?.trim() || "git";
+    const gitBinary = process.env.ZXCODE_GIT_BINARY?.trim() || "git";
     await execFileAsync(gitBinary, args, {
       env: buildMarketplaceGitEnv(),
       killSignal: "SIGTERM",
@@ -2167,7 +2167,7 @@ function findMarketplaceManifestPath(rootPath: string, explicitPath?: string): s
 }
 
 function findPluginManifestPath(rootPath: string): string | null {
-  for (const candidate of [ZCODE_MANIFEST_PATH, CLAUDE_MANIFEST_PATH, CODEX_MANIFEST_PATH]) {
+  for (const candidate of [ZXCODE_MANIFEST_PATH, CLAUDE_MANIFEST_PATH, CODEX_MANIFEST_PATH]) {
     const path = join(rootPath, candidate);
     if (fileExists(path)) return path;
   }
@@ -2297,7 +2297,7 @@ function pushManifestCompatibilityDiagnostics(input: {
     if (key in input.manifest) {
       input.diagnostics.push({
         code: "plugin_unsupported_component",
-        message: `Plugin component is diagnostic-only in this ZCode runtime: ${key}`,
+        message: `Plugin component is diagnostic-only in this ZxCode runtime: ${key}`,
         path: input.manifestPath,
         pluginId: input.pluginId,
         severity: "warning",

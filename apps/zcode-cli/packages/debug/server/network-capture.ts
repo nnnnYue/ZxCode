@@ -30,7 +30,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4184;
 const DEFAULT_MAX_ENTRIES = 300;
 const HEADER_REDACTION_VALUE = "[redacted]";
-const traceHeaderNames = ["x-zcode-trace-id", "x-trace-id", "traceparent"];
+const traceHeaderNames = ["x-zxcode-trace-id", "x-trace-id", "traceparent"];
 const redactedHeaderNames = new Set([
   "authorization",
   "proxy-authorization",
@@ -126,8 +126,8 @@ export class NetworkCaptureService {
     const caCertPath = join(this.caDir, "certs", "ca.pem");
     const env: Record<string, string> = url
       ? {
-          ZCODE_HTTP_PROXY: url,
-          ZCODE_AGENT_CA_CERT: caCertPath,
+          ZXCODE_HTTP_PROXY: url,
+          ZXCODE_AGENT_CA_CERT: caCertPath,
         }
       : {};
 
@@ -304,12 +304,12 @@ export function disabledNetworkCaptureStatus(): NetworkCaptureStatus {
 export function createNetworkCaptureServiceFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): NetworkCaptureService | undefined {
-  if (isDisabled(env.ZCODE_DEBUG_NETWORK_CAPTURE)) return undefined;
+  if (isDisabled(env.ZXCODE_DEBUG_NETWORK_CAPTURE)) return undefined;
   return new NetworkCaptureService({
-    host: env.ZCODE_DEBUG_NETWORK_HOST || undefined,
-    port: parsePositiveInteger(env.ZCODE_DEBUG_NETWORK_PORT) ?? DEFAULT_PORT,
-    caDir: env.ZCODE_DEBUG_NETWORK_CA_DIR || undefined,
-    maxEntries: parsePositiveInteger(env.ZCODE_DEBUG_NETWORK_MAX_ENTRIES) ?? DEFAULT_MAX_ENTRIES,
+    host: env.ZXCODE_DEBUG_NETWORK_HOST || undefined,
+    port: parsePositiveInteger(env.ZXCODE_DEBUG_NETWORK_PORT) ?? DEFAULT_PORT,
+    caDir: env.ZXCODE_DEBUG_NETWORK_CA_DIR || undefined,
+    maxEntries: parsePositiveInteger(env.ZXCODE_DEBUG_NETWORK_MAX_ENTRIES) ?? DEFAULT_MAX_ENTRIES,
   });
 }
 

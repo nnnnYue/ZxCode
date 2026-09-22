@@ -5,12 +5,12 @@ import {
   materializeZCodeBuiltinProviderConfig,
   NodeZCodeBuiltinProviderConfigSource,
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "@zcode/provider-node";
 import type { CliEnv } from "./env.js";
 
-export const SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY = "zcode-provider/zcode-builtin.json";
+export const SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY = "zxcode-provider/zxcode-builtin.json";
 
 type SeaProviderConfigAssets = Pick<typeof import("node:sea"), "getAsset" | "isSea">;
 
@@ -28,13 +28,13 @@ export async function prepareCliProviderRuntimeEnv(
 ): Promise<Record<string, string>> {
   if (!requiresProviderRuntime(options.argv)) return {};
 
-  const explicitZCodeBuiltin = options.env[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
-  const explicitPersonal = options.env[ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]?.trim();
-  const dataBaseDir = options.dataBaseDir ?? options.env.ZCODE_DATA_BASE_DIR?.trim() ?? homedir();
+  const explicitZCodeBuiltin = options.env[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
+  const explicitPersonal = options.env[ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]?.trim();
+  const dataBaseDir = options.dataBaseDir ?? options.env.ZXCODE_DATA_BASE_DIR?.trim() ?? homedir();
   if (explicitZCodeBuiltin && explicitPersonal) {
     return {
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: explicitZCodeBuiltin,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: explicitPersonal,
+      [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: explicitZCodeBuiltin,
+      [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: explicitPersonal,
     };
   }
 
@@ -46,7 +46,7 @@ export async function prepareCliProviderRuntimeEnv(
       sea: options.sea ?? getSeaProviderConfigAssets(),
     }));
   const personalFilePath =
-    explicitPersonal ?? join(dataBaseDir, ".zcode", "v2", PERSONAL_PROVIDER_CONFIG_FILE_NAME);
+    explicitPersonal ?? join(dataBaseDir, ".zxcode", "v2", PERSONAL_PROVIDER_CONFIG_FILE_NAME);
   const source = new NodeZCodeBuiltinProviderConfigSource({
     bundledFilePath: zcodeBuiltinFilePath,
   });
@@ -58,8 +58,8 @@ export async function prepareCliProviderRuntimeEnv(
   }
 
   return {
-    [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-    [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+    [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+    [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
   };
 }
 
@@ -90,24 +90,24 @@ async function resolveBundledZCodeBuiltinProviderConfig(input: {
   readonly sea: SeaProviderConfigAssets | undefined;
 }): Promise<string> {
   if (input.sea?.isSea()) {
-    const content = input.sea.getAsset(SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY, "utf8");
+    const content = input.sea.getAsset(SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY, "utf8");
     return materializeZCodeBuiltinProviderConfig({
-      environmentConfigRoot: join(input.dataBaseDir, ".zcode", "v2"),
+      environmentConfigRoot: join(input.dataBaseDir, ".zxcode", "v2"),
       content,
     });
   }
 
   const entrypoint = input.entrypoint?.trim();
-  if (!entrypoint) throw new Error("无法定位 CLI ZCode Built-in Provider Config：缺少入口路径");
+  if (!entrypoint) throw new Error("无法定位 CLI ZxCode Built-in Provider Config：缺少入口路径");
   // 全局 bin 可以是软链接，随包配置必须相对真实入口定位。
   const entryDirectory = dirname(realpathSync(resolve(entrypoint)));
   const candidates = [
-    join(entryDirectory, "provider", "zcode-builtin.json"),
-    resolve(entryDirectory, "../../../../../config/provider/zcode-builtin.json"),
+    join(entryDirectory, "provider", "zxcode-builtin.json"),
+    resolve(entryDirectory, "../../../../../config/provider/zxcode-builtin.json"),
   ];
   const candidate = candidates.find((filePath) => existsSync(filePath));
   if (candidate) return candidate;
-  throw new Error(`无法定位 CLI ZCode Built-in Provider Config：${candidates.join(", ")}`);
+  throw new Error(`无法定位 CLI ZxCode Built-in Provider Config：${candidates.join(", ")}`);
 }
 
 function getSeaProviderConfigAssets(): SeaProviderConfigAssets | undefined {

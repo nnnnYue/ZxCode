@@ -1,5 +1,5 @@
 export type SettingsSyncAgent =
-  | "zcode"
+  | "zxcode"
   | "claudeCode"
   | "codexCli"
   | "openCode"

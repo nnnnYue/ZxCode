@@ -1,11 +1,11 @@
-"""zcode_speech: 走 ZCode 官方 Server MCP 的 ASR / TTS provider。
+"""zcode_speech: 走 ZxCode 官方 Server MCP 的 ASR / TTS provider。
 
-端点：``POST {ZCODE_BASE_URL}/api/v1/mcp/server/video_edit``（Streamable HTTP MCP，
+端点：``POST {ZXCODE_BASE_URL}/api/v1/mcp/server/video_edit``（Streamable HTTP MCP，
 stateless），工具 ``speech_transcribe`` / ``speech_synthesize``。鉴权不由本插件持有：
-身份头随每次 ``tools/call`` 的 ``_meta`` 由 ZCode 宿主下发，见 ve_tools/official_auth.py。
+身份头随每次 ``tools/call`` 的 ``_meta`` 由 ZxCode 宿主下发，见 ve_tools/official_auth.py。
 
 与直连 HTTP 的兼容通道（cloud_asr / tts.py 的 cloud_tts）相比，这里没有任何 API key：用户只要
-登录 ZCode 且持有 Coding Plan 即可用，配额与计费由服务端统一管。
+登录 ZxCode 且持有 Coding Plan 即可用，配额与计费由服务端统一管。
 
 四个实现上必须记住的服务端事实（都核过源码，改动前先复核）：
 
@@ -13,13 +13,13 @@ stateless），工具 ``speech_transcribe`` / ``speech_synthesize``。鉴权不�
    应用层 go-sdk 侧配的是 50 MiB。这个值运维改过两次：最初是 nginx 默认的 1m（实测
    1,048,576 B 通过、1,048,577 B 起返回 nginx 的 413 HTML）→ 5 MiB → 现在 45 MiB。长音频仍要
    在本地分片逐片上传（见 media.py 的 chunked_payload 与本文件的 max_chunk_seconds），服务端
-   自带的 ``chunk_seconds`` 一律传 0。网关上限再变时设 ``ZCODE_SPEECH_MAX_REQUEST_BYTES``，
+   自带的 ``chunk_seconds`` 一律传 0。网关上限再变时设 ``ZXCODE_SPEECH_MAX_REQUEST_BYTES``，
    分片长度会自动跟着变，不需要改代码。
    **注意到 45 MiB 这一档，卡点已经不是体积而是时间**：45 MiB 的预算够装约 4400 秒音频，
    而一次请求的超时预算是 ASR_TIMEOUT_SECONDS（3600s），转写 70 分钟音频必然先超时；
    因此分片秒数另有上限 MAX_CHUNK_SECONDS_CEILING，见 max_chunk_seconds；
 2. **所有入参都是 required。** 服务端刻意去掉了请求结构体上的全部 ``omitempty``
-   （zcode-server commit b1c7283），推导出的 JSON Schema 里每个字段都进 ``required``。
+   （zxcode-server commit b1c7283），推导出的 JSON Schema 里每个字段都进 ``required``。
    所以下面两个 payload 构造函数把每个字段都显式填齐，含零值——少一个就是 schema 校验失败；
 3. **HTTP 细节。** 只收 POST；``Content-Type: application/json``；``Accept`` 必须同时含
    ``application/json`` 与 ``text/event-stream``（缺一 400）；响应是 SSE 帧（服务端没开
@@ -55,7 +55,7 @@ PROVIDER = "zcode_speech"
 # 留 5 MiB 不贴满 50 MiB：超出应用层上限时 go-sdk 的 413 与 nginx 的 413 表现不同，没必要
 # 把这条边界踩在两个组件的交界上。
 #
-# 网关上限再变时不需要改插件：设 ZCODE_SPEECH_MAX_REQUEST_BYTES 即可，分片长度会跟着自动
+# 网关上限再变时不需要改插件：设 ZXCODE_SPEECH_MAX_REQUEST_BYTES 即可，分片长度会跟着自动
 # 变化（见 max_chunk_seconds）。
 DEFAULT_MAX_REQUEST_BODY_BYTES = 45 * 1024 * 1024
 # 留给 JSON-RPC 包封与另外 7 个必填字段的余量。它们只有几百字节，8 KiB 是宽松取值。
@@ -78,8 +78,8 @@ MAX_CHUNK_SECONDS_CEILING = 1700.0
 
 
 def max_request_body_bytes() -> int:
-    """请求体上限。ZCODE_SPEECH_MAX_REQUEST_BYTES 可覆盖（运维调高 nginx 后用它跟上）。"""
-    raw = clean_env("ZCODE_SPEECH_MAX_REQUEST_BYTES")
+    """请求体上限。ZXCODE_SPEECH_MAX_REQUEST_BYTES 可覆盖（运维调高 nginx 后用它跟上）。"""
+    raw = clean_env("ZXCODE_SPEECH_MAX_REQUEST_BYTES")
     if raw:
         try:
             parsed = int(str(raw).strip())
@@ -117,29 +117,29 @@ def zcode_api_origin() -> tuple[str | None, str | None]:
     """(origin, error)。
 
     **只读进程环境**，不走 clean_env 的 .env 回退。理由与 cloud_asr 的 endpoint 信任模型同源：
-    项目本地 .env 是不可信输入，若允许它提供 origin，一个仓库里的 .env 就能把 ZCode 的 JWT
-    与 Coding Plan key 导向攻击者的主机。ZCODE_BASE_URL 由宿主在 spawn 时注入（它是宿主已解析
+    项目本地 .env 是不可信输入，若允许它提供 origin，一个仓库里的 .env 就能把 ZxCode 的 JWT
+    与 Coding Plan key 导向攻击者的主机。ZXCODE_BASE_URL 由宿主在 spawn 时注入（它是宿主已解析
     完成的权威值），拿不到就是拿不到，不猜。
     """
-    raw = (os.environ.get("ZCODE_BASE_URL") or "").strip().rstrip("/")
+    raw = (os.environ.get("ZXCODE_BASE_URL") or "").strip().rstrip("/")
     if not raw:
         return None, (
-            "ZCODE_BASE_URL is not set in the process environment; the ZCode host injects it, "
-            "so this usually means the plugin is not running under ZCode"
+            "ZXCODE_BASE_URL is not set in the process environment; the ZxCode host injects it, "
+            "so this usually means the plugin is not running under ZxCode"
         )
     try:
         parts = urlsplit(raw)
     except Exception as exc:  # noqa: BLE001
-        return None, f"ZCODE_BASE_URL is unparseable: {raw!r} ({exc})"
+        return None, f"ZXCODE_BASE_URL is unparseable: {raw!r} ({exc})"
     scheme = (parts.scheme or "").lower()
     host = (parts.hostname or "").lower()
     if parts.username or parts.password:
-        return None, "ZCODE_BASE_URL must not embed credentials"
+        return None, "ZXCODE_BASE_URL must not embed credentials"
     is_loopback = host in ("127.0.0.1", "::1", "localhost")
     if scheme == "https" or (scheme == "http" and is_loopback):
         return f"{parts.scheme}://{parts.netloc}", None
     return None, (
-        f"ZCODE_BASE_URL must be https (or http on loopback for local development), got {raw!r}"
+        f"ZXCODE_BASE_URL must be https (or http on loopback for local development), got {raw!r}"
     )
 
 
@@ -157,11 +157,11 @@ def zcode_speech_status(ctx: Any) -> dict[str, Any]:
     auth = official_auth_of(ctx)
     if auth is None:
         reasons.append(
-            "the MCP host did not send ZCode identity headers with this tool call "
-            "(expected when running outside ZCode, e.g. under Claude Code or a direct CLI call)"
+            "the MCP host did not send ZxCode identity headers with this tool call "
+            "(expected when running outside ZxCode, e.g. under Claude Code or a direct CLI call)"
         )
     elif not auth.ok:
-        reasons.append(f"ZCode identity unavailable: {auth.describe_failure()}")
+        reasons.append(f"ZxCode identity unavailable: {auth.describe_failure()}")
     try:
         import requests  # noqa: F401
     except Exception as exc:  # noqa: BLE001
@@ -192,11 +192,11 @@ def call_speech_tool(
 
     origin, origin_error = zcode_api_origin()
     if origin_error or not origin:
-        raise ZCodeSpeechError(origin_error or "ZCODE_BASE_URL is unavailable", {"recoverable": False})
+        raise ZCodeSpeechError(origin_error or "ZXCODE_BASE_URL is unavailable", {"recoverable": False})
     auth = official_auth_of(ctx)
     if auth is None or not auth.ok:
         detail = auth.describe_failure() if auth is not None else "no identity headers in tool call _meta"
-        raise ZCodeSpeechError(f"ZCode identity unavailable: {detail}", {"recoverable": False})
+        raise ZCodeSpeechError(f"ZxCode identity unavailable: {detail}", {"recoverable": False})
 
     body = json.dumps(
         {
@@ -211,7 +211,7 @@ def call_speech_tool(
     if len(body) > body_budget:
         raise ZCodeSpeechError(
             f"request body is {len(body):,d} B, over the {body_budget:,d} B limit; "
-            "split the input further (or raise ZCODE_SPEECH_MAX_REQUEST_BYTES if the gateway "
+            "split the input further (or raise ZXCODE_SPEECH_MAX_REQUEST_BYTES if the gateway "
             "limit was raised)",
             {"recoverable": False, "request_body_bytes": len(body), "body_budget_bytes": body_budget},
         )
@@ -242,7 +242,7 @@ def call_speech_tool(
         # （见 official_auth.py 的约束 2）。标为不可重试，让 agent 重试整个工具调用。
         kind = "official_auth_rejected" if response.status_code == 401 else "official_auth_forbidden"
         raise ZCodeSpeechError(
-            f"ZCode rejected the official MCP call ({response.status_code} {kind})",
+            f"ZxCode rejected the official MCP call ({response.status_code} {kind})",
             {"recoverable": False, "http_status": response.status_code, **meta},
         )
     if 300 <= response.status_code < 400:

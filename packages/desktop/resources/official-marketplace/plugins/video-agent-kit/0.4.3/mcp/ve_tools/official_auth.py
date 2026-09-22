@@ -1,11 +1,11 @@
-"""ZCode 官方 Server MCP 身份头的接收侧。
+"""ZxCode 官方 Server MCP 身份头的接收侧。
 
-宿主（ZCode CLI 的 MCP adapter）在**每次** `tools/call` 的 `params._meta` 上带一个
-`com.zcode/official-mcp-auth` 键，内容是本次调用可用的身份头，或一个失败原因。
+宿主（ZxCode CLI 的 MCP adapter）在**每次** `tools/call` 的 `params._meta` 上带一个
+`com.zxcode/official-mcp-auth` 键，内容是本次调用可用的身份头，或一个失败原因。
 协议见 z-code 仓库的 `docs/coding-plan/zcode-official-server-mcp-stdio-meta-phase-2-spec.md`。
 
 为什么身份头走 `_meta` 而不是 env：env 在本进程生命周期内是死值，而这个 MCP server 活整个
-会话，ZCode 的 JWT 一轮换就必然 401 且无法自救。`_meta` 是逐调用现取的，天然新鲜。
+会话，ZxCode 的 JWT 一轮换就必然 401 且无法自救。`_meta` 是逐调用现取的，天然新鲜。
 
 两个使用约束：
 
@@ -21,21 +21,21 @@ from dataclasses import dataclass
 from typing import Any
 
 # 跨语言协议常量，必须与 z-code 的 OFFICIAL_MCP_AUTH_META_KEY 逐字符一致。
-OFFICIAL_AUTH_META_KEY = "com.zcode/official-mcp-auth"
+OFFICIAL_AUTH_META_KEY = "com.zxcode/official-mcp-auth"
 
 # 宿主下发的失败原因（枚举，不是自由文本）。这里只做人类可读化，不据此改变控制流——
 # 控制流只看"有没有 headers"。
 REASON_HINTS = {
     "official_auth_unavailable": (
-        "ZCode is not signed in, or no provider connection is selected "
+        "ZxCode is not signed in, or no provider connection is selected "
         "(a standalone CLI without a host auth port also reports this)"
     ),
     "official_auth_plan_required": (
         "the official speech MCP is a Coding Plan entitlement, and the currently selected "
-        "ZCode connection has no Coding Plan key (Start Plan and API-key mode are not eligible)"
+        "ZxCode connection has no Coding Plan key (Start Plan and API-key mode are not eligible)"
     ),
     "official_mcp_origin_untrusted": (
-        "the host rejected its own resolved ZCode API origin; this is a client configuration "
+        "the host rejected its own resolved ZxCode API origin; this is a client configuration "
         "problem (non-https or overridden endpoint), not a credential problem"
     ),
 }
@@ -61,7 +61,7 @@ class OfficialAuth:
 
 
 def extract_official_auth(meta: Any) -> OfficialAuth | None:
-    """从一个 `_meta` 对象里取出身份载荷。返回 None = 宿主没下发该键（非 ZCode 宿主）。"""
+    """从一个 `_meta` 对象里取出身份载荷。返回 None = 宿主没下发该键（非 ZxCode 宿主）。"""
     payload = _meta_get(meta, OFFICIAL_AUTH_META_KEY)
     if not isinstance(payload, dict):
         return None

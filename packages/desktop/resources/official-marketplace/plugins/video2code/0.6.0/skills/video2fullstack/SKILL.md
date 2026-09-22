@@ -26,7 +26,7 @@ The video is an **operation recording**: a user driving the site through a journ
      - `app/package.json` scripts: `"build":"vite build"`, `"start":"node server/index.mjs"`, `"seed":"node server/seed.mjs"`.
   3. **Run for verification**: `npm run build && npm run seed && npm start`（后台 bash 起服务，别占住前台 shell）→ single server on `:3000` serving real pages whose data all comes from `/api/*`。
 - **Frame extraction / disambiguation**: use the video server 的 `clip_video`（差分选帧）而不是手写 ffmpeg — 选"能证明一个行为"的帧它更准。
-- **Verification tooling — ZCode 内置浏览器那一套（硬约束）**: 必须同时使用 ZCode 官方 `control-browser` skill（完整遵守其 bootstrap、backend 选择、tab 恢复和页面安全规则；每个 `node_repl` 调用是新 kernel，都要重新 bootstrap 后 `await agent.browsers.get("iab")`），用同一个 IAB WebView 打开 `http://localhost:3000` 重演视频旅程：`domSnapshot()`/`tab.screenshot()` 断言状态、`tab.recording.start()` 拍动效；API 叉用 `curl`。跨刷新断言 = 重新 `goto` 同一 URL（或 `tab.playwright.reload()`），等 `domcontentloaded` 后再 domSnapshot/screenshot —— 必须看到后端持久化的状态。**没有 `browser_*` MCP 工具；不要安装/启动 Playwright、Chrome 或其它外部浏览器。**
+- **Verification tooling — ZxCode 内置浏览器那一套（硬约束）**: 必须同时使用 ZxCode 官方 `control-browser` skill（完整遵守其 bootstrap、backend 选择、tab 恢复和页面安全规则；每个 `node_repl` 调用是新 kernel，都要重新 bootstrap 后 `await agent.browsers.get("iab")`），用同一个 IAB WebView 打开 `http://localhost:3000` 重演视频旅程：`domSnapshot()`/`tab.screenshot()` 断言状态、`tab.recording.start()` 拍动效；API 叉用 `curl`。跨刷新断言 = 重新 `goto` 同一 URL（或 `tab.playwright.reload()`），等 `domcontentloaded` 后再 domSnapshot/screenshot —— 必须看到后端持久化的状态。**没有 `browser_*` MCP 工具；不要安装/启动 Playwright、Chrome 或其它外部浏览器。**
 - **Contract files** live under `out/`（当前项目目录）。Graded on `out/plan.md`, `out/verify.jsonl`, `out/report.md` plus the shipped `app/`。
 
 ## Stack — one server process, boring choices

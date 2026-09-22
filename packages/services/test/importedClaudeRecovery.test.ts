@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import {
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
+  ZXCODE_PROTOCOL_NAME,
+  ZXCODE_PROTOCOL_VERSION,
   zcodeSessionStateSnapshotSchema,
   type ZCodeSessionStateSnapshot,
 } from "@zcode/shared";
@@ -16,7 +16,7 @@ import { createZCodeTaskServiceAdapter } from "../src/zcode-agent/zcodeTaskServi
 
 for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as const) {
   test(`previously imported Claude history becomes a real session for ${clientMode}`, async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-import-recovery-"));
+    const dir = await mkdtemp(join(tmpdir(), "zxcode-import-recovery-"));
     setDataBaseDir(dir);
     const meta = {
       taskId: "claude-import-example",
@@ -63,7 +63,7 @@ for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as cons
         async createSession(input: CreateInput) {
           created.push(input);
           session = zcodeSessionStateSnapshotSchema.parse({
-            protocol: { name: ZCODE_PROTOCOL_NAME, version: ZCODE_PROTOCOL_VERSION },
+            protocol: { name: ZXCODE_PROTOCOL_NAME, version: ZXCODE_PROTOCOL_VERSION },
             session: {
               sessionId: input.sessionId,
               workspace: {

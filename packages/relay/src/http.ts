@@ -11,7 +11,7 @@ import {
   RELAY_CONTROL_HEARTBEAT_REAP_AFTER_MS,
   RELAY_GRANT_TTL_MS,
   RELAY_REMOTE_CLOSE_REASONS,
-  ZCODE_RELAY_PROTOCOL_VERSION,
+  ZXCODE_RELAY_PROTOCOL_VERSION,
   relayControlHelloSchema,
   relayHeartbeatSchema,
   relayIssueGrantRequestSchema,
@@ -123,8 +123,8 @@ export async function createRelayHttpServer(
     // 手机端 bootstrap 兼容：relay 模式下手机始终带 ?remote=<grant> 直连 WS，
     // 该端点只为对齐 packages/web 的探测协议存在。
     const info: ServerRemoteInfo = {
-      serverId: "zcode-relay",
-      version: ZCODE_RELAY_PROTOCOL_VERSION,
+      serverId: "zxcode-relay",
+      version: ZXCODE_RELAY_PROTOCOL_VERSION,
       protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
       authRequired: false,
       workspaces: [],
@@ -177,7 +177,7 @@ export async function createRelayHttpServer(
           }
           const hello = relayControlHelloSchema.safeParse(parsed);
           if (hello.success) {
-            if (hello.data.version !== ZCODE_RELAY_PROTOCOL_VERSION) {
+            if (hello.data.version !== ZXCODE_RELAY_PROTOCOL_VERSION) {
               ws.close(1002, "protocol-version-mismatch");
               return;
             }

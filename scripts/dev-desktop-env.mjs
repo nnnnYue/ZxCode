@@ -17,7 +17,7 @@ const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
 function run(command, args) {
   return new Promise((resolveRun, rejectRun) => {
-    // Windows 下 shell:true 只按空格拼接参数；仓库路径含空格（如 E:\Z Code\...）时
+    // Windows 下 shell:true 只按空格拼接参数；仓库路径含空格（如 E:\ZxCode\...）时
     // node <script> 的脚本路径会被 cmd 截断成 E:\Z 并报 Cannot find module，因此先补引号。
     const spawnArgs = process.platform === "win32" ? quoteArgsForWindowsShell(args) : args;
     const child = spawn(command, spawnArgs, {
@@ -25,8 +25,8 @@ function run(command, args) {
       env: withPinnedNodePath(
         {
           ...process.env,
-          ZCODE_ENV: requestedEnv,
-          ZCODE_DESKTOP_AGENT_BYTECODE: agentBytecode ? "1" : "0",
+          ZXCODE_ENV: requestedEnv,
+          ZXCODE_DESKTOP_AGENT_BYTECODE: agentBytecode ? "1" : "0",
         },
         process.execPath,
       ),

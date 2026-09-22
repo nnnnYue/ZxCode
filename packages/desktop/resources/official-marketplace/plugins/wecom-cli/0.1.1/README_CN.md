@@ -30,4 +30,4 @@
 - [WeCom CLI](https://github.com/WecomTeam/wecom-cli)
 - [CLI 命令参考](https://github.com/WecomTeam/wecom-cli/blob/main/docs/cli-reference.md)
 
-启用或更新插件后请新建 ZCode session，确保 Skill 清单刷新。
+启用或更新插件后请新建 ZxCode session，确保 Skill 清单刷新。

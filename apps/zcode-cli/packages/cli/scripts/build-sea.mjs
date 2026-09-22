@@ -56,8 +56,8 @@ const root = resolve(import.meta.dirname, "../../..");
 const repositoryRoot = resolve(root, "../..");
 const cliRoot = resolve(import.meta.dirname, "..");
 const dist = resolve(cliRoot, "dist");
-const cliBundle = resolve(dist, "zcode.cjs");
-const seaBlobForTarget = (target) => resolve(dist, `zcode-${target}.sea.blob`);
+const cliBundle = resolve(dist, "zxcode.cjs");
+const seaBlobForTarget = (target) => resolve(dist, `zxcode-${target}.sea.blob`);
 const seaConfigForTarget = (target) => resolve(dist, `sea-config-${target}.json`);
 const seaAssetStagingForTarget = (target) => resolve(dist, "sea-assets", target);
 const nodeCache = resolve(dist, "sea-node-cache");
@@ -182,8 +182,8 @@ const prepareSeaBlob = async (target, nodeVersion) => {
           "zcode-node-license": nodeLicensePath,
         },
         disableExperimentalSEAWarning: true,
-        main: "dist/zcode.cjs",
-        output: `dist/zcode-${target}.sea.blob`,
+        main: "dist/zxcode.cjs",
+        output: `dist/zxcode-${target}.sea.blob`,
         useCodeCache: false,
         useSnapshot: false,
       },
@@ -230,15 +230,15 @@ const adHocSignMacBinary = (target, binaryPath) => {
 
 const smokeTestHostTarget = async (target, binaryPath) => {
   if (isHostTarget(target)) {
-    const storageRoot = await mkdtemp(join(tmpdir(), "zcode-sea-smoke-"));
+    const storageRoot = await mkdtemp(join(tmpdir(), "zxcode-sea-smoke-"));
     try {
       const env = {
         ...process.env,
-        ZCODE_STORAGE_DIR: storageRoot,
+        ZXCODE_STORAGE_DIR: storageRoot,
       };
-      delete env.ZCODE_BFS_BINARY;
-      delete env.ZCODE_RG_BINARY;
-      delete env.ZCODE_UGREP_BINARY;
+      delete env.ZXCODE_BFS_BINARY;
+      delete env.ZXCODE_RG_BINARY;
+      delete env.ZXCODE_UGREP_BINARY;
       run(binaryPath, ["--version"], {
         env,
       });
@@ -291,7 +291,7 @@ export const main = async (argv = process.argv.slice(2)) => {
   }
 
   if (!existsSync(cliBundle)) {
-    throw new Error("Missing dist/zcode.cjs. Run `pnpm build` first.");
+    throw new Error("Missing dist/zxcode.cjs. Run `pnpm build` first.");
   }
   const postjectBin = resolvePostjectBin();
   if (!postjectBin) {

@@ -30,8 +30,8 @@ function agentsWithCategory(
 
 function formatAgentName(agent: string, intl: ReturnType<typeof useZCodeIntl>["intl"]): string {
   switch (agent) {
-    case "zcode":
-      return intl.formatMessage({ id: "settingsSync.agent.zcode" });
+    case "zxcode":
+      return intl.formatMessage({ id: "settingsSync.agent.zxcode" });
     case "claudeCode":
       return intl.formatMessage({ id: "settingsSync.agent.claudeCode" });
     case "codexCli":

@@ -14,7 +14,7 @@ from typing import Any
 from .result import ToolResult
 from .run_context import RunContext, clean_env
 from .cloud_asr import prepare_asr_audio, cloud_asr_status, cloud_asr_transcribe_payload
-from .zcode_speech import (
+from .zxcode_speech import (
     max_chunk_seconds as zcode_speech_max_chunk_seconds,
     zcode_speech_status,
     zcode_speech_transcribe_payload,

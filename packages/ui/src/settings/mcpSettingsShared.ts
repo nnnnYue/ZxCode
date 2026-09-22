@@ -1,6 +1,6 @@
 import type { McpServerConfig, ZCodeMcpServer } from "@zcode/shared";
 
-export const MCP_SECTIONS = ["zcodeagentmcp"] as const;
+export const MCP_SECTIONS = ["zxcodeagentmcp"] as const;
 
 export type ServerScope = (typeof MCP_SECTIONS)[number];
 export type ConfigStorageLevel = "user" | "workspace";
@@ -23,7 +23,7 @@ export interface FormState {
 
 export const EMPTY_FORM: FormState = {
   name: "",
-  scope: "zcodeagentmcp",
+  scope: "zxcodeagentmcp",
   storageLevel: "user",
   type: "stdio",
   command: "",
@@ -54,7 +54,7 @@ export function serverToForm(server: ZCodeMcpServer): FormState {
   }
   return {
     name: server.name,
-    scope: "zcodeagentmcp",
+    scope: "zxcodeagentmcp",
     storageLevel: server.scope === "workspace" ? "workspace" : "user",
     type,
     command: cfg.command ?? "",

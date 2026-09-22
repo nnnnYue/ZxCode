@@ -1,15 +1,15 @@
-# GitHub CLI Workflows for ZCode
+# GitHub CLI Workflows for ZxCode
 
 [中文文档](./README_CN.md)
 
-This ZCode plugin brings a focused set of GitHub CLI workflow skills into the ZCode plugin marketplace. It uses the locally installed [GitHub CLI](https://cli.github.com/) (`gh`) for GitHub operations.
+This ZxCode plugin brings a focused set of GitHub CLI workflow skills into the ZxCode plugin marketplace. It uses the locally installed [GitHub CLI](https://cli.github.com/) (`gh`) for GitHub operations.
 
 ## Setup and authentication
 
 - Run `/github:setup` to let the agent check for GitHub CLI, guide installation
   when it is missing, and guide browser-based authentication when needed.
 - A Git repository with a GitHub remote for repository-scoped operations
-- A new ZCode session after installing or updating the plugin
+- A new ZxCode session after installing or updating the plugin
 
 Every GitHub-backed skill verifies the `gh` binary, authenticated host, and
 active account before running its workflow. Authentication is rechecked after
@@ -25,7 +25,7 @@ creating/deleting Codespaces.
 
 ## Skills
 
-| Skill | ZCode command | Description |
+| Skill | ZxCode command | Description |
 |-------|---------------|-------------|
 | setup | `/github:setup` | Verify `gh`, guide browser login, and confirm the active account |
 | commit | `/github:commit` | Create a Conventional Commit from staged changes |
@@ -51,7 +51,7 @@ creating/deleting Codespaces.
 /github:repo clone owner/repo feature/new
 ```
 
-## ZCode packaging
+## ZxCode packaging
 
 The installable manifest is `.zcode-plugin/plugin.json`. The marketplace entry is maintained in the repository root at [`marketplace.json`](../../marketplace.json).
 

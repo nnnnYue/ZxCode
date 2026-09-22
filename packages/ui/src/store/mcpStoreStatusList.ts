@@ -50,7 +50,7 @@ export function mergeMcpServerStatusSnapshots(
 ): ZCodeMcpServer[] {
   const markMissingConnectingAsError = options.markMissingConnectingAsError ?? true;
   return servers.map((server) => {
-    if (server.source !== "zcodeagentmcp") {
+    if (server.source !== "zxcodeagentmcp") {
       return server;
     }
     const snapshot = statuses[server.name];

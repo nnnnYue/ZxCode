@@ -1,7 +1,7 @@
 /*
  * Derived from vercel/ai-elements (packages/elements/src/message.tsx).
  * Copyright 2023 Vercel, Inc. Licensed under Apache-2.0.
- * Modified by ZCode: local integration, formatting and adaptations.
+ * Modified by ZxCode: local integration, formatting and adaptations.
  * See THIRD-PARTY-NOTICES.md in the repository root for license and provenance.
  */
 "use client";
@@ -382,7 +382,7 @@ export type MessageResponseProps = {
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
   onOpenExternalUrl?: (url: string) => void;
-  /** 仅 Assistant 正文开启：把完整 zcode-file-citation 投影为现有文件链接。 */
+  /** 仅 Assistant 正文开启：把完整 zxcode-file-citation 投影为现有文件链接。 */
   renderZCodeFileCitations?: boolean;
 };
 

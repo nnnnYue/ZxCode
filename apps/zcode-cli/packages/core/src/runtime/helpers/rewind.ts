@@ -20,7 +20,7 @@ import type { WorkspaceRewindRestoredFile } from "../types.js";
 import { isPlainRecord, isRuntimeDiffHunk } from "./data.js";
 import { sanitizeSystemReminderBody } from "../../system-reminder/source.js";
 
-export const WORKSPACE_CHECKPOINT_CONTENT_TYPE = "application/vnd.zcode.workspace-checkpoint+json";
+export const WORKSPACE_CHECKPOINT_CONTENT_TYPE = "application/vnd.zxcode.workspace-checkpoint+json";
 
 interface FileMutationCheckpointCandidate {
   content?: string;

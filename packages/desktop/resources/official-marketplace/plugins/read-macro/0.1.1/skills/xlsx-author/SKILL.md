@@ -49,7 +49,7 @@ language either way (口径, 归母, 报告期).
   even though it documents what you did, because a reader opening the directory cannot
   tell which of the two files is the deliverable.
 - Cite the final workbook exactly once in the final message with
-  `::zcode-file-citation{path="..." purpose="output"}` inline in prose, and say in
+  `::zxcode-file-citation{path="..." purpose="output"}` inline in prose, and say in
   one clause why that is the delivery location. Do not add a separate raw path,
   Markdown link, trailing citation list, or citation for the build script, temp
   copy, recalc artifact, or other scaffolding.

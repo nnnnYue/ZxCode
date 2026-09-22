@@ -2,13 +2,13 @@
 
 [简体中文](./README_CN.md)
 
-Mimosa adds local-first code-security guardrails to ZCode. It checks candidate edits before they are written, reviews changes at the end of a turn, guards Git commit/push commands, and provides an optional MCP server for explicit sealed repository scans.
+Mimosa adds local-first code-security guardrails to ZxCode. It checks candidate edits before they are written, reviews changes at the end of a turn, guards Git commit/push commands, and provides an optional MCP server for explicit sealed repository scans.
 
 ## Platform support
 
-This package is a pure Node.js build with no native executables. It is intended for current ZCode releases on macOS, Linux, and Windows, and requires `node` to be available in `PATH`. No separate model API key is required for the local hooks or native scan engine.
+This package is a pure Node.js build with no native executables. It is intended for current ZxCode releases on macOS, Linux, and Windows, and requires `node` to be available in `PATH`. No separate model API key is required for the local hooks or native scan engine.
 
-The vendor payload is stored unchanged under `payload/`. Its Ed25519-signed inventory is verified before protected code is loaded; the outer directory only supplies ZCode-standard manifests and cross-platform process hook definitions.
+The vendor payload is stored unchanged under `payload/`. Its Ed25519-signed inventory is verified before protected code is loaded; the outer directory only supplies ZxCode-standard manifests and cross-platform process hook definitions.
 
 ## Included capabilities
 
@@ -22,13 +22,13 @@ The vendor payload is stored unchanged under `payload/`. Its Ed25519-signed inve
 
 Open **Settings → Plugins**, search for **Code Security Protection**, and install `mimosa` from the official marketplace. For local verification, add the `zcode-plugins` repository root as a local marketplace, then install `mimosa` from that source.
 
-Start a **new task** after installing, enabling, disabling, or changing plugin options because ZCode snapshots hooks and MCP configuration at task startup.
+Start a **new task** after installing, enabling, disabling, or changing plugin options because ZxCode snapshots hooks and MCP configuration at task startup.
 
 ## Basic verification
 
 1. Run `/mimosa-status` to inspect the current project's latest Mimosa state.
-2. Ask ZCode to create an intentionally unsafe SQL or command-execution snippet in a disposable project. The pre-write hook should reject a confirmed high-risk candidate and return remediation context.
-3. Confirm that the `mimosa` MCP server is active in ZCode, start a new task, and run `/mimosa-deep-audit` for an explicit sealed scan.
+2. Ask ZxCode to create an intentionally unsafe SQL or command-execution snippet in a disposable project. The pre-write hook should reject a confirmed high-risk candidate and return remediation context.
+3. Confirm that the `mimosa` MCP server is active in ZxCode, start a new task, and run `/mimosa-deep-audit` for an explicit sealed scan.
 
 Hook checks, end-of-turn review, and Git gates do not depend on invoking an MCP deep scan.
 

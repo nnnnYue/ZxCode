@@ -1,6 +1,6 @@
 import type { PaneSplitSide } from "@/v4/paneLayoutTree.js";
 
-export const WORKBENCH_SESSION_DRAG_MIME = "application/x-zcode-session";
+export const WORKBENCH_SESSION_DRAG_MIME = "application/x-zxcode-session";
 
 export interface WorkbenchSessionDragPayload {
   readonly kind: "zcode/session";

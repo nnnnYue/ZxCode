@@ -8,7 +8,7 @@ import { PluginStoreAvatar } from "@/settings/PluginStoreAvatar.js";
 import type { StorePluginItem } from "@/settings/pluginStoreListing.js";
 
 export function isEditableUserCommand(command: ZCodeCommand): command is UserCommand {
-  return isUserCommand(command) && command.location.source === "zcode";
+  return isUserCommand(command) && command.location.source === "zxcode";
 }
 
 interface CommandCardProps {

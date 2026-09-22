@@ -5,14 +5,14 @@ import { join, resolve } from "node:path";
 import { atomicWritePrivateTextFile, backupCorruptFile, withFileLock } from "@zcode/shared/node";
 import { createZCodeCredentialCipher, type ZCodeCredentialCipher } from "./credential-cipher.js";
 
-const ZCODE_DATA_BASE_DIR_ENV_KEY = "ZCODE_DATA_BASE_DIR";
+const ZXCODE_DATA_BASE_DIR_ENV_KEY = "ZXCODE_DATA_BASE_DIR";
 const ZAI_PROVIDER_ID = "zai";
 const credentialChangeListeners = new Map<
   string,
   Set<() => void | Promise<void>>
 >();
 
-export const SHARED_ZCODE_CREDENTIAL_KEYS = {
+export const SHARED_ZXCODE_CREDENTIAL_KEYS = {
   activeProvider: "oauth:active_provider",
   bigmodelAccessToken: "oauth:bigmodel:access_token",
   bigmodelRefreshToken: "oauth:bigmodel:refresh_token",
@@ -77,14 +77,14 @@ export function createSharedZCodeCredentialStore(
 
     async clearZaiLoginCredentials(): Promise<void> {
       await mutateRawCredentialRecord(filePath, async (rawCredentials) => {
-        const activeProviderRaw = rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider];
+        const activeProviderRaw = rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.activeProvider];
         const activeProvider = activeProviderRaw ? cipher.decrypt(activeProviderRaw) : null;
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiRefreshToken];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiUserInfo];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken];
+        delete rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zaiAccessToken];
+        delete rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zaiRefreshToken];
+        delete rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zaiUserInfo];
+        delete rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zcodeJwtToken];
         if (activeProvider === ZAI_PROVIDER_ID) {
-          delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider];
+          delete rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.activeProvider];
         }
       });
     },
@@ -241,12 +241,12 @@ export function createSharedZCodeCredentialStore(
         userInfo: cipher.encrypt(JSON.stringify(payload.user)),
       };
       await mutateRawCredentialRecord(filePath, (rawCredentials) => {
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider] =
+        rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.activeProvider] =
           encryptedCredentials.activeProvider;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken] =
+        rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zaiAccessToken] =
           encryptedCredentials.accessToken;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken] = encryptedCredentials.jwtToken;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiUserInfo] = encryptedCredentials.userInfo;
+        rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zcodeJwtToken] = encryptedCredentials.jwtToken;
+        rawCredentials[SHARED_ZXCODE_CREDENTIAL_KEYS.zaiUserInfo] = encryptedCredentials.userInfo;
       });
     },
   };
@@ -285,8 +285,8 @@ export function resolveSharedZCodeCredentialsPath(
   }
 
   const env = options.env ?? process.env;
-  const baseDir = options.baseDir ?? env[ZCODE_DATA_BASE_DIR_ENV_KEY] ?? homedir();
-  return join(resolveUserPath(baseDir), ".zcode", "v2", "credentials.json");
+  const baseDir = options.baseDir ?? env[ZXCODE_DATA_BASE_DIR_ENV_KEY] ?? homedir();
+  return join(resolveUserPath(baseDir), ".zxcode", "v2", "credentials.json");
 }
 
 async function readRawCredentialRecord(filePath: string): Promise<Record<string, string>> {
@@ -297,7 +297,7 @@ async function readRawCredentialRecord(filePath: string): Promise<Record<string,
     if (getErrorCode(error) === "ENOENT") {
       return {};
     }
-    throw new Error(`Unable to read shared ZCode credentials: ${filePath}`, { cause: error });
+    throw new Error(`Unable to read shared ZxCode credentials: ${filePath}`, { cause: error });
   }
 
   try {
@@ -307,7 +307,7 @@ async function readRawCredentialRecord(filePath: string): Promise<Record<string,
     // 先保留现场再失败，调用方必须显式处理恢复，不能静默覆盖。
     const backupPath = await backupCorruptFile(filePath).catch(() => undefined);
     const evidence = backupPath ? ` Backup: ${backupPath}` : "";
-    throw new Error(`Shared ZCode credentials are corrupt: ${filePath}.${evidence}`, {
+    throw new Error(`Shared ZxCode credentials are corrupt: ${filePath}.${evidence}`, {
       cause: error,
     });
   }

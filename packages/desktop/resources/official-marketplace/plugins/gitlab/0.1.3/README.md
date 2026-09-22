@@ -1,8 +1,8 @@
-# GitLab CLI Workflows for ZCode
+# GitLab CLI Workflows for ZxCode
 
 [中文文档](./README_CN.md)
 
-This plugin packages the official GitLab CLI (`glab`) Agent Skills for ZCode
+This plugin packages the official GitLab CLI (`glab`) Agent Skills for ZxCode
 and adds a guided installation and authentication flow. It works with
 GitLab.com, GitLab Dedicated, and GitLab Self-Managed instances supported by
 the locally installed [`glab`](https://docs.gitlab.com/cli/).
@@ -28,7 +28,7 @@ exposing the secret.
 
 ## Skills
 
-| Skill | ZCode command | Description |
+| Skill | ZxCode command | Description |
 |-------|---------------|-------------|
 | setup | `/gitlab:setup [hostname]` | Verify `glab`, guide login, and confirm the active account |
 | glab | `/gitlab:glab` | Official general GitLab CLI workflow and API guidance |
@@ -50,7 +50,7 @@ explicit slash command.
 
 The official skill sources are pinned in [`UPSTREAM.md`](./UPSTREAM.md). The
 packaged skills do not depend on the newer `glab skills install` command, so
-they work when ZCode can invoke the underlying commands directly. Setup uses
+they work when ZxCode can invoke the underlying commands directly. Setup uses
 `glab check-update` dynamically instead of hardcoding a release number. The
 imported command patterns were smoke-tested against `glab 1.93.0`; experimental
 command families must inspect their installed `--help` before execution.
@@ -63,7 +63,7 @@ identify the host, project, account, and target before remote-changing
 operations, and must obtain explicit confirmation for destructive actions such
 as merge, delete, unprotect, secret/variable mutation, or token changes.
 
-## ZCode packaging
+## ZxCode packaging
 
 The installable manifest is `.zcode-plugin/plugin.json`;
 `.claude-plugin/plugin.json` is kept as a compatibility mirror. The marketplace

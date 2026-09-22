@@ -22,7 +22,7 @@ interface TurnAbortScope {
   signal: AbortSignal;
 }
 
-const EXTERNAL_TURN_FAULT_MARKER = "zcode.externalTurnFault";
+const EXTERNAL_TURN_FAULT_MARKER = "zxcode.externalTurnFault";
 
 interface ExternalTurnFaultError extends Error {
   code: string;

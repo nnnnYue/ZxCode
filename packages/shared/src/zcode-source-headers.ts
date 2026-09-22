@@ -1,9 +1,9 @@
-import { DEFAULT_ZCODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
+import { DEFAULT_ZXCODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
 
-export const ZCODE_SOURCE_HEADERS = {
-  "User-Agent": "ZCode/unknown",
-  "HTTP-Referer": DEFAULT_ZCODE_ENDPOINT_ORIGIN,
-  "X-Title": "Z Code@electron",
+export const ZXCODE_SOURCE_HEADERS = {
+  "User-Agent": "ZxCode/unknown",
+  "HTTP-Referer": DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
+  "X-Title": "ZxCode@electron",
 } as const;
 
 export interface BuildZCodeSourceHeadersFromContextOptions {
@@ -36,18 +36,18 @@ export function buildZCodeSourceHeadersFromContext(
   const clientTimezone = normalizeZCodeSourceHeaderValue(options.clientTimezone) ?? "unknown";
   const deviceMid = normalizeZCodeSourceHeaderValue(options.deviceMid);
   const endpointOrigin =
-    normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+    normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
   const osVersion = normalizeZCodeSourceHeaderValue(options.osVersion);
   const platform = normalizeZCodeSourceHeaderValue(options.platform);
   const releaseChannel = normalizeZCodeSourceHeaderValue(options.releaseChannel);
   const sourceTitle = normalizeZCodeSourceHeaderValue(options.sourceTitle) ?? "electron";
 
   return {
-    ...ZCODE_SOURCE_HEADERS,
+    ...ZXCODE_SOURCE_HEADERS,
     "HTTP-Referer": endpointOrigin,
-    "User-Agent": `ZCode/${appVersion ?? "unknown"}`,
-    ...(appVersion ? { "X-ZCode-App-Version": appVersion } : {}),
-    "X-Title": `Z Code@${sourceTitle}`,
+    "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
+    ...(appVersion ? { "X-ZxCode-App-Version": appVersion } : {}),
+    "X-Title": `ZxCode@${sourceTitle}`,
     ...(platform && arch ? { "X-Platform": `${platform}-${arch}` } : {}),
     ...(releaseChannel ? { "X-Release-Channel": releaseChannel } : {}),
     "X-Client-Language": clientLanguage,

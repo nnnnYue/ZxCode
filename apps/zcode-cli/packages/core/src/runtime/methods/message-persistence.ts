@@ -72,7 +72,7 @@ export async function persistUserPrompt(
     time: {
       created,
     },
-    agent: this.config.agentName ?? "zcode-agent",
+    agent: this.config.agentName ?? "zxcode-agent",
     modelSelection: this.getSessionModelSelection(),
     contextSnapshot: buildPersistedContextSnapshot(this.config.envInfo),
     semantics: {
@@ -233,7 +233,7 @@ export async function persistSyntheticUserNoticeForSession(
       time: {
         created,
       },
-      agent: this.config.agentName ?? "zcode-agent",
+      agent: this.config.agentName ?? "zxcode-agent",
       metadata: messageMetadata,
       modelSelection: this.getSessionModelSelection(),
       semantics: buildSyntheticUserNoticeSemantics(options.source, visibility),
@@ -311,7 +311,7 @@ export async function persistAssistantMessage(
       providerId,
       mode: this.config.mode ?? "build",
       planEnabled: this.getPlanEnabled(),
-      agent: this.config.agentName ?? "zcode-agent",
+      agent: this.config.agentName ?? "zxcode-agent",
       path: {
         cwd: this.workingDirectory,
         // cwd 可随 Bash cd 变化，root 必须保留会话初始工作区身份。

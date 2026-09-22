@@ -118,9 +118,9 @@ def cloud_asr_available(ctx: Any | None = None) -> bool:
 
     Order matters, and so does the ``ctx`` -less case: hooks (closeout contract)
     call this from a separate process with no tool-call context, so they cannot
-    see the per-call ZCode identity headers. Presence of ``ZCODE_BASE_URL`` is
+    see the per-call ZxCode identity headers. Presence of ``ZXCODE_BASE_URL`` is
     the best signal available there, and it is the right one to trust — under
-    ZCode the official channel needs no local credentials, so answering "no"
+    ZxCode the official channel needs no local credentials, so answering "no"
     just because no API key is configured would wrongly excuse the run from
     producing a transcript.
     """
@@ -128,13 +128,13 @@ def cloud_asr_available(ctx: Any | None = None) -> bool:
         return True
     if ctx is not None:
         try:
-            from .zcode_speech import zcode_speech_status
+            from .zxcode_speech import zcode_speech_status
 
             if zcode_speech_status(ctx).get("available"):
                 return True
         except Exception:
             pass
-    elif (os.environ.get("ZCODE_BASE_URL") or "").strip():
+    elif (os.environ.get("ZXCODE_BASE_URL") or "").strip():
         return True
     try:
         from .cloud_asr import cloud_asr_status

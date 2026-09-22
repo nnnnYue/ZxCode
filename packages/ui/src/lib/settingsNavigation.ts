@@ -29,7 +29,7 @@ const SETTINGS_SECTION_INTENT_KEY = "zcode-settings-section-intent",
   SETTINGS_PLUGIN_ORIGIN_INTENT_KEY = "zcode-settings-plugin-origin-intent",
   SETTINGS_PLUGIN_SCOPE_KEY_INTENT_KEY = "zcode-settings-plugin-scope-key-intent";
 const SETTINGS_MODEL_PROVIDER_ID_INTENT_KEY = "zcode-settings-model-provider-id-intent";
-const SETTINGS_SECTION_INTENT_EVENT = "zcode:settings-section-intent",
+const SETTINGS_SECTION_INTENT_EVENT = "zxcode:settings-section-intent",
   SETTINGS_LAST_SECTION_STORAGE_KEY = "zcode-settings-last-section";
 const HIDDEN_SETTINGS_SECTIONS = new Set<SettingsSectionId>([
   // 产品语义：定时任务是 workspace 主视图，不能再作为设置页分区出现。
@@ -37,7 +37,7 @@ const HIDDEN_SETTINGS_SECTIONS = new Set<SettingsSectionId>([
   "automations",
   // 旧插件市场已迁出设置页；保留 id 只用于迁移历史偏好和旧调用。
   "plugins",
-  // 工作区搜索（.zcodeignore）设置入口先隐藏：规则文件仍生效并可手动编辑，
+  // 工作区搜索（.zxcodeignore）设置入口先隐藏：规则文件仍生效并可手动编辑，
   // 编辑页代码保留，放开时从这里移除即可。
   "workspaceFileSearch",
   "computerUse",

@@ -32,4 +32,4 @@
 - [Lark CLI](https://github.com/larksuite/cli)
 - [安装与快速开始](https://github.com/larksuite/cli#installation--quick-start)
 
-启用或更新插件后请新建 ZCode session，确保 Skill 清单刷新。
+启用或更新插件后请新建 ZxCode session，确保 Skill 清单刷新。

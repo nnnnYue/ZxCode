@@ -116,7 +116,7 @@ function skillTelemetryFactFields(
 
 export function streamingParentToolCallId(payload: Record<string, unknown>): string | undefined {
   const meta = recordValue(payload._meta);
-  const zcode = recordValue(meta.zcode);
+  const zxcode = recordValue(meta.zxcode);
   return (
     optionalString(payload.parentToolCallId) ??
     optionalString(payload.parentToolUseId) ??

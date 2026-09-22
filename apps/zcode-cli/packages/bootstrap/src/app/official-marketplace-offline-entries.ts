@@ -50,9 +50,9 @@ export const OFFICIAL_MARKETPLACE_OFFLINE_ENTRIES: readonly OfficialPluginDefini
         "zh-CN": "代码安全防护",
       },
       description_i18n: {
-        en: "Local-first security guardrails for ZCode with pre-write hooks, end-of-turn review, Git gates, commands, a security-scan skill, and an optional MCP server for sealed deep scans.",
+        en: "Local-first security guardrails for ZxCode with pre-write hooks, end-of-turn review, Git gates, commands, a security-scan skill, and an optional MCP server for sealed deep scans.",
         "zh-CN":
-          "面向 ZCode 的本地优先代码安全防线，提供写入前 Hook、任务收尾复查、Git 门禁、命令、安全扫描 Skill，以及用于密封深扫的可选 MCP 服务。",
+          "面向 ZxCode 的本地优先代码安全防线，提供写入前 Hook、任务收尾复查、Git 门禁、命令、安全扫描 Skill，以及用于密封深扫的可选 MCP 服务。",
       },
       category: "developer-tools",
       author: {
@@ -122,9 +122,9 @@ export const OFFICIAL_MARKETPLACE_OFFLINE_ENTRIES: readonly OfficialPluginDefini
     runtimeTopLevelPaths: ["LICENSE", "mcp", "README_CN.md", "requirements.txt", "tests"],
     listing: {
       description_i18n: {
-        en: "Records WebM through ZCode's built-in Browser Use WebView and converts it to MP4 with ffmpeg for video/URL replication; no Playwright or external Chromium required.",
+        en: "Records WebM through ZxCode's built-in Browser Use WebView and converts it to MP4 with ffmpeg for video/URL replication; no Playwright or external Chromium required.",
         "zh-CN":
-          "基于 ZCode 内置 Browser Use WebView 录制 WebM 并用 ffmpeg 转成 MP4/URL 复刻；无需 Playwright 或外部 Chromium",
+          "基于 ZxCode 内置 Browser Use WebView 录制 WebM 并用 ffmpeg 转成 MP4/URL 复刻；无需 Playwright 或外部 Chromium",
       },
       category: "productivity",
       author: {

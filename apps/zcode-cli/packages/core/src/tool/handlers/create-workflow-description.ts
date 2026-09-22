@@ -21,7 +21,7 @@ const SOURCES = [
   "Three ways to give the workflow to run — pass exactly one:",
   "- `script`: a one-off workflow you write inline, for this situation.",
   `- \`saved\`: a workflow already saved in this project (\`${SAVED_WORKFLOW_PROJECT_DIR}/\`), by name — \`saved: { name: "pr-review", args: { pr: "123" } }\`.`,
-  `- \`path\`: a script file on disk, relative to the working directory or absolute — normally the file a previous result named. Pass \`args\` alongside it when the file declares them in a \`/* zcode-workflow\` block.`,
+  `- \`path\`: a script file on disk, relative to the working directory or absolute — normally the file a previous result named. Pass \`args\` alongside it when the file declares them in a \`/* zxcode-workflow\` block.`,
   "",
   `An inline \`script\` is saved to a file under \`${WORKFLOW_DRAFTS_DIR}/\` and the result names it, whether the script compiled or not.`,
   "After that, edit that file and resubmit with `path` instead of pasting the script again: a resubmitted 20k-token script is slow and some providers stall on it, while an edit is one small tool call.",

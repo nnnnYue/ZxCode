@@ -2,7 +2,7 @@
   "name": "@zcode/relay",
   "private": true,
   "bin": {
-    "zcode-relay": "./dist/main.js"
+    "zxcode-relay": "./dist/main.js"
   },
   "type": "module",
   "exports": {

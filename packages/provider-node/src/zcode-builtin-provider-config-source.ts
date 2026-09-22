@@ -19,7 +19,7 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
 
   constructor(options: NodeZCodeBuiltinProviderConfigSourceOptions) {
     const bundledFilePath = options.bundledFilePath.trim();
-    if (!bundledFilePath) throw new Error("ZCode Built-in bundledFilePath 不能为空");
+    if (!bundledFilePath) throw new Error("ZxCode Built-in bundledFilePath 不能为空");
     this.#bundledFilePath = bundledFilePath;
     // 旧标识只有发布序号，不同 Endpoint 同序号会让 Registry 误复用上一来源。
     // 路径哈希保留同一 revision 语义；远端同步删除后该路径即随包基线本身。
@@ -61,7 +61,7 @@ async function readRelease(filePath: string): Promise<ZCodeBuiltinRelease> {
   try {
     raw = await readFile(filePath, "utf8");
   } catch (error) {
-    throw new Error(`ZCode Built-in Provider Config 不可用: ${filePath}`, { cause: error });
+    throw new Error(`ZxCode Built-in Provider Config 不可用: ${filePath}`, { cause: error });
   }
   return decodeZCodeBuiltinRelease(JSON.parse(raw));
 }
@@ -71,7 +71,7 @@ function snapshotFromRelease(
   sourceKey: string,
 ): ProviderConfigLayerSnapshot {
   return Object.freeze({
-    revision: `zcode-builtin:${release.revision}:${sourceKey}`,
+    revision: `zxcode-builtin:${release.revision}:${sourceKey}`,
     providers: release.config.providers,
     providerTemplates: release.config.providerTemplates,
     models: release.config.modelConfigRules,

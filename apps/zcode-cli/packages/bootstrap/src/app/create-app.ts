@@ -35,7 +35,7 @@ import {
 } from "@zcode/contracts";
 import { isRemoteWorkspaceIdentity, resolveZCodeRuntimeEnv } from "@zcode/shared";
 import {
-  ZCODE_ATTACHMENT_FAULT_CODES,
+  ZXCODE_ATTACHMENT_FAULT_CODES,
   ZCodeAttachmentFaultError,
 } from "@zcode/shared/zcode-protocol-v4";
 
@@ -164,7 +164,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     options,
   );
   const loggerFactory = options.loggerFactory ?? createNodeLoggerFactory({ env: options.env });
-  const logger = loggerFactory.createLogger("zcode").child({
+  const logger = loggerFactory.createLogger("zxcode").child({
     ...traceContextToLogContext(traceContext),
     module: "bootstrap",
   });
@@ -186,7 +186,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     configResult,
     startupTimer,
   });
-  const modelLogger = loggerFactory.createLogger("zcode").child({
+  const modelLogger = loggerFactory.createLogger("zxcode").child({
     ...traceContextToLogContext(traceContext),
     module: "adapters.model",
   });
@@ -279,7 +279,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         ),
       };
     }
-    startupTimer.mark("ZCode runtime configuration resolved", {
+    startupTimer.mark("ZxCode runtime configuration resolved", {
       context: runtimeConfigLogContext(runtimeConfig, workingDirectory),
       event: "bootstrap.app.startup.runtime_config.completed",
       stage: "resolve_runtime_config",
@@ -314,7 +314,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       ...(options.workspaceHookReviewHost
         ? {
             emitReviewEvent: async (event) => {
-              if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+              if (!runtime) throw new Error("ZxCode runtime is not initialized yet.");
               await runtime.appendEvent(
                 createSessionEvent(event.type, sessionId, event.payload, {
                   traceId: traceContext.traceId,
@@ -323,7 +323,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
               );
             },
             emitAdmissionEvent: async (event) => {
-              if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+              if (!runtime) throw new Error("ZxCode runtime is not initialized yet.");
               await runtime.appendEvent(
                 createSessionEvent(event.type, sessionId, event.payload, {
                   traceId: traceContext.traceId,
@@ -356,7 +356,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       (messageEnabled
         ? createNodeSessionMailboxAdapter({
             rootDir: resolvePath(
-              (options.env ?? process.env).ZCODE_MAILBOX_ROOT ?? "~/.zcode/mailbox",
+              (options.env ?? process.env).ZXCODE_MAILBOX_ROOT ?? "~/.zxcode/mailbox",
             ),
           })
         : undefined);
@@ -423,7 +423,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       runtimeConfig,
     });
     const getRuntime = (): AgentRuntime => {
-      if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+      if (!runtime) throw new Error("ZxCode runtime is not initialized yet.");
       return runtime;
     };
     let resumePrepared = false;
@@ -895,7 +895,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           // 热态预览会和冷恢复 artifact 不一致。同一 message/index 必须优先取不可变副本。
           artifactUri =
             persistedAttachment.metadata?.artifactUri ??
-            (persistedAttachment.url.startsWith("zcode-artifact://")
+            (persistedAttachment.url.startsWith("zxcode-artifact://")
               ? persistedAttachment.url
               : undefined);
           ref =
@@ -1020,7 +1020,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         const { ref, mediaType } = await resolvePromptAttachment(input);
         // 读取必须留在 session runtime 内：artifact 走 session store，路径走当前
         // FileSystemPort，SSH/WSL/Docker 才会命中正确的远端文件系统。
-        if (ref.startsWith("zcode-artifact://")) {
+        if (ref.startsWith("zxcode-artifact://")) {
           const artifact = await artifactStore.readToolResultArtifact({
             uri: ref,
             trace: traceContext,
@@ -1038,7 +1038,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         const { ref, mediaType, artifactUri } = await resolvePromptAttachment(input);
         if (artifactUri) {
           if (!artifactStore.statToolResultArtifact) {
-            throw new ZCodeAttachmentFaultError(ZCODE_ATTACHMENT_FAULT_CODES.statUnsupported);
+            throw new ZCodeAttachmentFaultError(ZXCODE_ATTACHMENT_FAULT_CODES.statUnsupported);
           }
           const result = await artifactStore.statToolResultArtifact({
             uri: artifactUri,
@@ -1054,7 +1054,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         if (result.kind !== "file") {
           // 目录/符号链接/已消失都意味着「这个附件不再是可分享的文件」，用稳定码上抛，
           // 让 share 预检按确定分类处理，而不是靠错误文本猜。
-          throw new ZCodeAttachmentFaultError(ZCODE_ATTACHMENT_FAULT_CODES.statNotFile);
+          throw new ZCodeAttachmentFaultError(ZXCODE_ATTACHMENT_FAULT_CODES.statNotFile);
         }
         return {
           totalBytes: result.sizeBytes,
@@ -1263,7 +1263,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
   } catch (error) {
     providerModelRuntime?.dispose();
     void ownedNodeReplBrowserBroker?.close();
-    startupTimer.fail("ZCode app startup failed", error, {
+    startupTimer.fail("ZxCode app startup failed", error, {
       context: { sessionId, workingDirectory },
       event: "bootstrap.app.startup.failed",
       stage: "total",

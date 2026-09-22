@@ -2,7 +2,7 @@
  *
  * 服务端把它渲染成 **tool error content 的 JSON 文本**（不是 `_meta`）：
  * `{"error_code":"quota_exceeded","message":"...","request_id":"..."}`
- * 见 zcode-server `internal/domain/servermcp/toolerror.go` 的 `ToolError.Error()`。
+ * 见 zxcode-server `internal/domain/servermcp/toolerror.go` 的 `ToolError.Error()`。
  *
  * 放在 shared 是因为有三个分属不同包的消费者：
  * - `apps/zcode-cli/packages/core`：解析 MCP 结果，把 code 带进 tool result display；

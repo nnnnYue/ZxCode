@@ -230,9 +230,9 @@ nodes:
     codeSeeds:
       - symbol: TaskIndexRepo
         file: packages/services/src/session/taskIndexRepo.ts
-  - id: service.zcode-agent-connection-scope
+  - id: service.zxcode-agent-connection-scope
     kind: service
-    label: Host-trusted ZCode Agent attachment connection scope
+    label: Host-trusted ZxCode Agent attachment connection scope
     codeSeeds:
       - symbol: createZCodeAgentConnectionScope
         file: packages/services/src/zcode-agent/zcodeAgentConnectionScope.ts
@@ -484,7 +484,7 @@ edges:
     type: delivers-snapshot-and-deltas-to
     rank: must-inspect
   - from: capability.conversation-runtime
-    to: service.zcode-agent-connection-scope
+    to: service.zxcode-agent-connection-scope
     type: attaches-through
     rank: must-inspect
   - from: service.conversation-topic-publisher
@@ -492,7 +492,7 @@ edges:
     type: uses-delivery-policy
     rank: conditional
     condition: For Desktop continuous attachments.
-  - from: service.zcode-agent-connection-scope
+  - from: service.zxcode-agent-connection-scope
     to: boundary.desktop-continuous
     type: injects-trusted-client-mode
     rank: conditional
@@ -502,7 +502,7 @@ edges:
     type: uses-delivery-policy
     rank: conditional
     condition: For replayable Web remote and mobile attachments.
-  - from: service.zcode-agent-connection-scope
+  - from: service.zxcode-agent-connection-scope
     to: boundary.web-remote-replayable
     type: injects-trusted-client-mode
     rank: conditional
@@ -526,7 +526,7 @@ edges:
     to: boundary.workspace-key
     type: supplies-identity-for
     rank: must-inspect
-  - from: service.zcode-agent-connection-scope
+  - from: service.zxcode-agent-connection-scope
     to: boundary.workspace-key
     type: isolated-by
     rank: must-inspect

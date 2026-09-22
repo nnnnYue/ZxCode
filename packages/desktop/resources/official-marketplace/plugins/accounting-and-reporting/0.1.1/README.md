@@ -6,7 +6,7 @@ Accounting close and statutory reporting driven off the company's own ledger. Ev
 
 ## Quick start
 
-Install the plugin from the ZCode plugin manager, then either run a command or just
+Install the plugin from the ZxCode plugin manager, then either run a command or just
 describe the task — the `accounting-and-reporting` agent classifies it and loads the right skill.
 
 ## Components
@@ -63,6 +63,6 @@ can check them; what could not be sourced is reported as a gap rather than smoot
 ## Provenance
 
 Vendored from an upstream Z.ai project; `agents/`, `commands/` and `skills/` are produced
-there and must not be edited here. The ZCode adaptation layer (manifests, this README, the
+there and must not be edited here. The ZxCode adaptation layer (manifests, this README, the
 marketplace entry) is owned by this repository. Open publishing gates are recorded in
 [`UPSTREAM.md`](./UPSTREAM.md).

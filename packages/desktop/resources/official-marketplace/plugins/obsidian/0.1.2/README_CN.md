@@ -1,8 +1,8 @@
-# ZCode 的 Obsidian 插件
+# ZxCode 的 Obsidian 插件
 
 [English](./README.md)
 
-本插件将 [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) 的六个 agent 技能与 [axtonliu/axton-obsidian-visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills) 的可视化技能(Mermaid/Excalidraw 图表生成,以及并入 `json-canvas` 的文本转画布布局算法)打包为 ZCode 插件,并附带一个本地 `setup` 技能,可通过 ZCode 插件市场安装。这些技能教 agent 使用 Obsidian 的文件格式与配套 CLI——插件本身不包含 MCP 服务或 hooks。
+本插件将 [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) 的六个 agent 技能与 [axtonliu/axton-obsidian-visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills) 的可视化技能(Mermaid/Excalidraw 图表生成,以及并入 `json-canvas` 的文本转画布布局算法)打包为 ZxCode 插件,并附带一个本地 `setup` 技能,可通过 ZxCode 插件市场安装。这些技能教 agent 使用 Obsidian 的文件格式与配套 CLI——插件本身不包含 MCP 服务或 hooks。
 
 ## 前置条件
 
@@ -55,4 +55,4 @@
 
 ## 署名
 
-六个核心技能作者为 [Steph Ango](https://github.com/kepano)；`mermaid-visualizer`、`excalidraw-diagram` 两个技能以及并入 `json-canvas` 的布局算法来自 [Axton Liu](https://github.com/axtonliu)。两组技能均从各自上游仓库导入——导入的 commit、许可证与适配差异见 [UPSTREAM.md](./UPSTREAM.md)。本次适配增加了 ZCode 插件清单、市场注册、本文档与一个本地 `setup` 技能；其余技能内容均来自上游。
+六个核心技能作者为 [Steph Ango](https://github.com/kepano)；`mermaid-visualizer`、`excalidraw-diagram` 两个技能以及并入 `json-canvas` 的布局算法来自 [Axton Liu](https://github.com/axtonliu)。两组技能均从各自上游仓库导入——导入的 commit、许可证与适配差异见 [UPSTREAM.md](./UPSTREAM.md)。本次适配增加了 ZxCode 插件清单、市场注册、本文档与一个本地 `setup` 技能；其余技能内容均来自上游。

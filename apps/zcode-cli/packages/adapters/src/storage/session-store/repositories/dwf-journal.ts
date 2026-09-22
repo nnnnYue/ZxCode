@@ -365,7 +365,7 @@ class SqliteDwfJournalStore implements JournalStorePort, DwfRunIntrospectionQuer
     // 追加路径却拿不到它，就会出现「刚写的事件没有时刻、读回来才有」这种两面不一致。
     const timeCreated = Date.now();
     // 序号分配与写入必须是同一条语句：MAX(sequence)+1 单独读一次再插入，会在多进程
-    // （WAL 下 zcode 允许多个 Agent 共享同一个库）之间竞争出重复序号。
+    // （WAL 下 zxcode 允许多个 Agent 共享同一个库）之间竞争出重复序号。
     const row = this.db
       .prepare(
         `

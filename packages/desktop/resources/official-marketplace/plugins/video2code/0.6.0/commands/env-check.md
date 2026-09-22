@@ -1,5 +1,5 @@
 ---
-description: 体检本机环境并装齐缺失依赖 — Python 视频包/ffmpeg/Node/registry 连通性；浏览器录制由 ZCode 内置 Browser Use 提供
+description: 体检本机环境并装齐缺失依赖 — Python 视频包/ffmpeg/Node/registry 连通性；浏览器录制由 ZxCode 内置 Browser Use 提供
 argument-hint: "[--fix]"
 skills: env-setup
 ---
@@ -16,6 +16,6 @@ skills: env-setup
 4. 标 `·` 的是本平台不适用, 不是缺口, 不用管也不要汇报成问题。
 5. 网络类失败先当代理/镜像源配置问题处理, 不要原样重试。
 6. 收尾报告说**能力**而非包名: 哪些工具现在可用、哪些不可用、用户还需要做什么。
-7. 不安装 Playwright/Chromium；URL 交互与录制检查 ZCode `iab` / Browser Use API。
+7. 不安装 Playwright/Chromium；URL 交互与录制检查 ZxCode `iab` / Browser Use API。
 
 只做环境, 不要顺手开始复刻任务。

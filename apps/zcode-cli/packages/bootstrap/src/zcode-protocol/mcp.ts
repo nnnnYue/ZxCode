@@ -41,7 +41,7 @@ export async function listMcpServers(
   const startupTimer = new StartupTimer(
     context.logger ?? noopLogger,
     {
-      module: "bootstrap.zcode_protocol.mcp",
+      module: "bootstrap.zxcode_protocol.mcp",
       workspaceKey: params.workspace.workspaceKey,
       workspacePath: params.workspace.workspacePath,
     },
@@ -60,7 +60,7 @@ export async function listMcpServers(
   const explicitRuntimeMcp = protocolMcpServersToRuntimeMcpConfig(params.mcpServers);
   const configuredMcpServers = {
     ...pluginOutcome.mcpServers,
-    // 设置页的本地 MCP 列表由 desktop main 解析 `.zcode` / `.agents` fallback，
+    // 设置页的本地 MCP 列表由 desktop main 解析 `.zxcode` / `.agents` fallback，
     // session runtime 也使用这批 params.mcpServers。mcp/list 不能再只靠 agent createConfig，
     // 否则 `.agents` fallback 行会缺少 status snapshot 并被 UI 误标红。
     ...(explicitMcpServersProvided

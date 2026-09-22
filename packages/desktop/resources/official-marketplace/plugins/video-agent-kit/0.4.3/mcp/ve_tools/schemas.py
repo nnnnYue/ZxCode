@@ -1085,7 +1085,7 @@ SPEECH_TRANSCRIBE_SCHEMA = {
     "description": (
         "Create a timestamped transcript for a video/audio file through the standard speech_transcribe "
         "tool. provider=auto uses the configured cloud ASR capability: an explicit remote HTTP MCP "
-        "first, the host-authenticated ZCode official channel next, then the local compatibility "
+        "first, the host-authenticated ZxCode official channel next, then the local compatibility "
         "backend. Transient "
         "network/concurrency/rate-limit/server errors retry by default; deterministic input and "
         "configuration failures do not. Long media may be split into cached overlapping chunks and "
@@ -1134,7 +1134,7 @@ SPEECH_SYNTHESIZE_SCHEMA = {
     "description": (
         "Generate narration or dubbing audio through the standard speech_synthesize tool. "
         "preferred_provider=auto uses the configured cloud TTS capability: an explicit remote HTTP MCP "
-        "first, the host-authenticated ZCode official channel next, then the local compatibility "
+        "first, the host-authenticated ZxCode official channel next, then the local compatibility "
         "backend. allowed_providers "
         "is a hard allowlist. Transient network/concurrency/rate-limit failures retry by default; "
         "deterministic parameter and configuration failures do not. The tool writes wav/mp3/ogg_opus "

@@ -6,8 +6,8 @@ This plugin is adapted from an upstream GitHub CLI workflow project. The adaptat
 - Imported on: 2026-08-11
 - License: the upstream README says MIT, but the repository has no `LICENSE` file and GitHub reports no detected license; this remains an open publishing gate.
 
-The ZCode adaptation adds the ZCode-first manifest, bilingual marketplace metadata,
-ZCode marketplace registration, localized documentation, a `/github:setup` skill,
+The ZxCode adaptation adds the ZxCode-first manifest, bilingual marketplace metadata,
+ZxCode marketplace registration, localized documentation, a `/github:setup` skill,
 and a shared GitHub CLI installation/authentication preflight. It also replaces
 unsafe shell interpolation examples with file-based body/notes inputs and adds
 explicit confirmation around sensitive or remote-changing operations. The

@@ -64,12 +64,12 @@ function createPreparedReleaseDiscarder(input: {
 }
 
 export async function prepareOnlineUpdate(layout: ServerLayout): Promise<UpdatePreparation> {
-  const catalogUrl = process.env.ZCODE_SERVER_RELEASE_MANIFEST_URL?.trim();
+  const catalogUrl = process.env.ZXCODE_SERVER_RELEASE_MANIFEST_URL?.trim();
   if (!catalogUrl) {
     const pending = await new ReleaseManager(layout).readPending();
     if (!pending) {
       throw new Error(
-        "ZCode Server release source is not configured and no offline pending release is available",
+        "ZxCode Server release source is not configured and no offline pending release is available",
       );
     }
     return { status: "prepared-offline", version: pending.version };
@@ -108,7 +108,7 @@ export async function prepareOnlineUpdate(layout: ServerLayout): Promise<UpdateP
       };
     }
   }
-  const temporaryDir = await mkdtemp(join(tmpdir(), "zcode-server-update-"));
+  const temporaryDir = await mkdtemp(join(tmpdir(), "zxcode-server-update-"));
   const archiveName = release.archiveUrl.toLowerCase().endsWith(".zip")
     ? "release.zip"
     : "release.tar.gz";
@@ -178,7 +178,7 @@ async function prepareComponentUpdate(input: {
   );
   if (!remoteManifest.components) return null;
   const changed: Array<{ componentId: string; sha256: string; archivePath: string }> = [];
-  const temporaryDir = await mkdtemp(join(tmpdir(), "zcode-server-components-"));
+  const temporaryDir = await mkdtemp(join(tmpdir(), "zxcode-server-components-"));
   const cache = new ComponentCache(input.layout);
   try {
     for (const component of input.release.components ?? []) {

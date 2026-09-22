@@ -3,20 +3,20 @@ import { createRelayHttpServer } from "./http.js";
 
 /**
  * 自部署 relay 入口。环境变量：
- * - ZCODE_RELAY_HOST / ZCODE_RELAY_PORT：监听地址（默认 0.0.0.0:8787）。
- * - ZCODE_RELAY_TOKEN：deployment token；设置后桌面控制连接必须携带 Bearer token。
- * - ZCODE_RELAY_WEB_ROOT：手机静态页面根目录（packages/web 构建产物）。
- * - ZCODE_RELAY_TLS_CERT / ZCODE_RELAY_TLS_KEY：可选自签 TLS；主推 nginx/caddy 终结 TLS。
+ * - ZXCODE_RELAY_HOST / ZXCODE_RELAY_PORT：监听地址（默认 0.0.0.0:8787）。
+ * - ZXCODE_RELAY_TOKEN：deployment token；设置后桌面控制连接必须携带 Bearer token。
+ * - ZXCODE_RELAY_WEB_ROOT：手机静态页面根目录（packages/web 构建产物）。
+ * - ZXCODE_RELAY_TLS_CERT / ZXCODE_RELAY_TLS_KEY：可选自签 TLS；主推 nginx/caddy 终结 TLS。
  */
 function readEnv(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
 }
 
-const portValue = readEnv("ZCODE_RELAY_PORT");
+const portValue = readEnv("ZXCODE_RELAY_PORT");
 const port = portValue ? Number.parseInt(portValue, 10) : 8787;
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-  console.error(`[relay] invalid ZCODE_RELAY_PORT: ${portValue}`);
+  console.error(`[relay] invalid ZXCODE_RELAY_PORT: ${portValue}`);
   process.exit(1);
 }
 
@@ -28,25 +28,25 @@ const logger: Pick<Console, "info" | "warn" | "error"> = {
 
 let shuttingDown = false;
 const relay = await createRelayHttpServer({
-  host: readEnv("ZCODE_RELAY_HOST") ?? "0.0.0.0",
+  host: readEnv("ZXCODE_RELAY_HOST") ?? "0.0.0.0",
   port,
-  token: readEnv("ZCODE_RELAY_TOKEN"),
-  webRoot: readEnv("ZCODE_RELAY_WEB_ROOT"),
+  token: readEnv("ZXCODE_RELAY_TOKEN"),
+  webRoot: readEnv("ZXCODE_RELAY_WEB_ROOT"),
   logger,
 });
 
-if (readEnv("ZCODE_RELAY_TLS_CERT") && readEnv("ZCODE_RELAY_TLS_KEY")) {
+if (readEnv("ZXCODE_RELAY_TLS_CERT") && readEnv("ZXCODE_RELAY_TLS_KEY")) {
   // 自带 TLS 的部署入口：证书常量读取只做存在性校验，实际终结建议交给反代。
-  readFileSync(readEnv("ZCODE_RELAY_TLS_CERT") as string);
+  readFileSync(readEnv("ZXCODE_RELAY_TLS_CERT") as string);
   logger.warn(
-    "[relay] ZCODE_RELAY_TLS_CERT/KEY detected: current build terminates TLS at the reverse proxy; these variables are reserved",
+    "[relay] ZXCODE_RELAY_TLS_CERT/KEY detected: current build terminates TLS at the reverse proxy; these variables are reserved",
   );
 }
 
 logger.info(
-  `zcode-relay ready: host=${relay.host} port=${relay.port} token=${
-    readEnv("ZCODE_RELAY_TOKEN") ? "enabled" : "disabled"
-  } webRoot=${readEnv("ZCODE_RELAY_WEB_ROOT") ?? "(builtin page)"}`,
+  `zxcode-relay ready: host=${relay.host} port=${relay.port} token=${
+    readEnv("ZXCODE_RELAY_TOKEN") ? "enabled" : "disabled"
+  } webRoot=${readEnv("ZXCODE_RELAY_WEB_ROOT") ?? "(builtin page)"}`,
 );
 
 const shutdown = (signal: string): void => {

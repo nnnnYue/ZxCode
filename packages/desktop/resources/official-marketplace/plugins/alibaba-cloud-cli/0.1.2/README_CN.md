@@ -31,4 +31,4 @@
 - [凭证配置](https://www.alibabacloud.com/help/en/cli/configure-credentials)
 - [快速开始](https://www.alibabacloud.com/help/en/cli/quickly-start-using-alibaba-cloud-cli)
 
-启用或更新插件后请新建 ZCode session，确保 Skill 清单刷新。
+启用或更新插件后请新建 ZxCode session，确保 Skill 清单刷新。

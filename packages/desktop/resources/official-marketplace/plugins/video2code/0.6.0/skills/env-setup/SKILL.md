@@ -1,6 +1,6 @@
 ---
 name: env-setup
-description: "Check and provision the video2code plugin environment: Python/MCP/video packages, ffmpeg/ffprobe, Node/npm, registry, and webapp cache. Browser interaction and recording use ZCode's built-in Browser Use WebView, so Playwright and external Chromium are intentionally not installed."
+description: "Check and provision the video2code plugin environment: Python/MCP/video packages, ffmpeg/ffprobe, Node/npm, registry, and webapp cache. Browser interaction and recording use ZxCode's built-in Browser Use WebView, so Playwright and external Chromium are intentionally not installed."
 ---
 
 # Env Setup
@@ -22,10 +22,10 @@ python3 <plugin_root>/skills/env-setup/scripts/env_doctor.py --fix
 | `ffmpeg` + `ffprobe` | video MCP 的视频摄入、裁剪、时长探测；以及 url2video 把内置浏览器录出的 WebM 转成交付用的 MP4（主流程必经，不是可选后处理） |
 | Node.js ≥20 + npm | webapp 构建 |
 | npm registry reachable | 安装 webapp 依赖 |
-| ZCode IAB + Browser Use recording API | URL 浏览、截图、交互和录制 |
+| ZxCode IAB + Browser Use recording API | URL 浏览、截图、交互和录制 |
 
-Playwright、`playwright install chromium` 和独立 Chromium **不是依赖**。浏览器能力由 ZCode
-内置 Browser Use 提供，版本不支持时应升级 ZCode，不要在插件环境里补装浏览器。
+Playwright、`playwright install chromium` 和独立 Chromium **不是依赖**。浏览器能力由 ZxCode
+内置 Browser Use 提供，版本不支持时应升级 ZxCode，不要在插件环境里补装浏览器。
 
 ## 规则
 

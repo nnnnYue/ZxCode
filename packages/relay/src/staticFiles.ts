@@ -26,13 +26,13 @@ const CONTENT_TYPES: Record<string, string> = {
 
 const FALLBACK_PAGE_HTML = `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZCode Relay</title><style>body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;margin:0;
+<title>ZxCode Relay</title><style>body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;margin:0;
 align-items:center;justify-content:center;background:#0b0d12;color:#e6e8ee}
 section{max-width:28rem;padding:2rem;border-radius:12px;background:#151922;border:1px solid #262c38}
 code{background:#0b0d12;padding:.15em .4em;border-radius:4px;font-size:.9em}</style></head>
-<body><section><h1 style="font-size:1.1rem;margin:0 0 .75rem">ZCode Relay 正在运行</h1>
+<body><section><h1 style="font-size:1.1rem;margin:0 0 .75rem">ZxCode Relay 正在运行</h1>
 <p style="line-height:1.7;margin:0">手机页面未部署：请将 <code>packages/web</code> 构建产物放到
-<code>ZCODE_RELAY_WEB_ROOT</code> 指向的目录后重启 relay；随后在桌面端生成授权链接并在手机上打开。</p></section></body></html>`;
+<code>ZXCODE_RELAY_WEB_ROOT</code> 指向的目录后重启 relay；随后在桌面端生成授权链接并在手机上打开。</p></section></body></html>`;
 
 function lookupContentType(filePath: string): string {
   const dot = filePath.lastIndexOf(".");
