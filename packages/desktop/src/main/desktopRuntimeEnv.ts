@@ -17,9 +17,6 @@ import {
   resolveRuntimeZCodeEndpointOrigin,
   readProductEndpointEnv,
   pickProductEndpointEnv,
-  resolveZaiBusinessBaseUrl,
-  resolveZaiOAuthClientId,
-  resolveZaiOAuthOrigin,
   normalizeDynamicWorkflowMode,
   sanitizeZCodeRuntimeEnv,
   type ZCodeRuntimeEnv,
@@ -166,7 +163,7 @@ export function loadHostProcessEnvFromLocalFiles(): Record<string, string> {
     ...(workspaceRoot
       ? [resolve(workspaceRoot, ".env"), resolve(workspaceRoot, ".env.local")]
       : []),
-    // 开发态 host process 不经过 Vite，自行加载相同的 .env 文件以保持 OAuth 配置一致。
+    // 开发态 host process 不经过 Vite，自行加载相同的 .env 文件以保持 endpoint 配置一致。
     ...(workspaceRoot && isLocalDevelopmentRuntime
       ? [
           resolve(workspaceRoot, ".env.development"),
@@ -281,9 +278,6 @@ function applySelectedZCodeEnvLinks(env: Record<string, string>): Record<string,
     ...pickProductEndpointEnv(endpointEnv),
     ...env,
     ZXCODE_BASE_URL: env.ZXCODE_BASE_URL ?? resolveRuntimeZCodeEndpointOrigin(endpointEnv),
-    ZAI_OAUTH_ORIGIN: env.ZAI_OAUTH_ORIGIN ?? resolveZaiOAuthOrigin(endpointEnv),
-    ZAI_BUSINESS_BASE_URL: env.ZAI_BUSINESS_BASE_URL ?? resolveZaiBusinessBaseUrl(endpointEnv),
-    ZAI_OAUTH_CLIENT_ID: env.ZAI_OAUTH_CLIENT_ID ?? resolveZaiOAuthClientId(endpointEnv),
   };
 }
 

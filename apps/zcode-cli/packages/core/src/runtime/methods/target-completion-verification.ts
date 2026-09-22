@@ -20,7 +20,6 @@ import { buildRuntimeProviderRequestMessages, throwIfTurnAborted } from "../help
 import { projectMessagesForModelMediaPolicy } from "../helpers/media-budget.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { isRuntimeAttachmentEntry, type RuntimeMessageEntry } from "../../agent/message-history.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { resolveModelRequestSessionTypeFromTaskType } from "./model-request-session-type.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import { isStartPlanBusyStreamRecoveryFailure } from "./streaming-recovery.js";
@@ -33,10 +32,6 @@ export interface TargetCompletionVerificationResult {
 }
 
 const TARGET_VERIFIER_START_PLAN_BUSY_RETRY_DELAYS_MS = [1_000, 2_000] as const;
-const START_PLAN_TARGET_VERIFIER_RETRY_PROVIDER_IDS = new Set([
-  "account:bigmodel-start-plan",
-  "account:zai-start-plan",
-]);
 
 export async function verifyActiveTargetCompletionForContinuation(
   this: AgentRuntimeInternal,
@@ -329,11 +324,6 @@ async function generateTargetCompletionVerificationText(
         },
         statusSink: this.createModelStatusSink(input.traceContext, input.events),
         traceContext: input.traceContext,
-        refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(this, {
-          abortSignal: input.abortSignal,
-          model: input.model,
-          traceContext: input.traceContext,
-        }),
       };
       return await runWithModelInvocationContext(invocationContext, () =>
         input.model.generateText({
@@ -349,7 +339,7 @@ async function generateTargetCompletionVerificationText(
       if (
         input.abortSignal?.aborted ||
         retryDelayMs === undefined ||
-        !isTargetVerifierStartPlanBusyFailure(error, input.model.providerId)
+        !isStartPlanBusyStreamRecoveryFailure(error)
       ) {
         throw error;
       }
@@ -371,13 +361,6 @@ async function generateTargetCompletionVerificationText(
   }
 
   throw new Error("Goal completion verification retry loop exhausted unexpectedly.");
-}
-
-function isTargetVerifierStartPlanBusyFailure(error: unknown, providerId: string): boolean {
-  return (
-    START_PLAN_TARGET_VERIFIER_RETRY_PROVIDER_IDS.has(providerId) &&
-    isStartPlanBusyStreamRecoveryFailure(error)
-  );
 }
 
 async function getNextTargetCompletionVerificationIteration(

@@ -150,9 +150,7 @@ export class AiSdkModelAdapter {
     const optionSpecs = options.modelConfig.optionSpecs;
     const toLegacyRequest = (request: ModelExecutionRequest): AiSdkModelTextRequest => {
       const context = getCurrentModelInvocationContext();
-      // 请求级 runtime header 刷新只服务历史账号型 Model；该鉴权形态下线后统一不再透传。
-      const { refreshRuntimeHeadersBeforeAttempt: _dropped, ...invocationContext } = context ?? {};
-      void _dropped;
+      const invocationContext = context ?? {};
       const shouldAttachReasoningTelemetry = request.options.reasoningLevel !== undefined;
       const selectedReasoningLevel = request.options.reasoningLevel;
       return {
@@ -182,29 +180,18 @@ export class AiSdkModelAdapter {
       optionValues: Required<ModelOptions>,
     ): ((requestAuth?: ModelRequestAuth) => ResolvedAiSdkModel) => {
       const maxOutputTokens = requireMaxOutputTokens(optionValues);
-      return request.refreshRuntimeHeadersBeforeAttempt
-        ? (requestAuth) => ({
-            ...assertSameBoundModel(
-              resolved,
-              boundResolution.resolveRequest({
-                options: {
-                  maxOutputTokens,
-                  reasoningLevel: optionValues.reasoningLevel,
-                },
-                requestAuth,
-              }),
-            ),
-            properties,
-          })
-        : () => ({
-            ...boundResolution.resolveRequest({
-              options: {
-                maxOutputTokens,
-                reasoningLevel: optionValues.reasoningLevel,
-              },
-            }),
-            properties,
-          });
+      return () => ({
+        ...assertSameBoundModel(
+          resolved,
+          boundResolution.resolveRequest({
+            options: {
+              maxOutputTokens,
+              reasoningLevel: optionValues.reasoningLevel,
+            },
+          }),
+        ),
+        properties,
+      });
     };
     return createModel({
       providerId: resolved.providerId,

@@ -1,8 +1,7 @@
 import {
-  BUILTIN_MODEL_PROVIDER_IDS,
   resolveModelProviderFamilyIdByProviderId,
+  resolveModelProviderFamilySpecByProviderId,
 } from "@zcode/shared";
-import type { IntlInstance } from "@/i18n/IntlProvider.js";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
 
 interface V4ModelTriggerDisplay {
@@ -15,27 +14,16 @@ export function formatModelChangeLabel(
   providerId: string | undefined,
   providerName: string | undefined,
   modelName: string,
-  intl: Pick<IntlInstance, "formatMessage">,
 ): string {
-  let planLabelId: string;
-  // 切换记录必须保留当时的套餐身份，不能从当前连接或可用模型目录反推历史套餐。
-  switch (providerId) {
-    case BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan:
-    case BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan:
-      planLabelId = "settings.modelProvider.connectionMode.codingPlan";
-      break;
-    case BUILTIN_MODEL_PROVIDER_IDS.zaiStartPlan:
-    case BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan:
-      planLabelId = "settings.modelProvider.connectionMode.startPlan";
-      break;
-    case BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan:
-    case BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan:
-      planLabelId = "settings.modelProvider.connectionMode.teamPlan";
-      break;
-    default:
-      return formatProviderModelLabel(providerId, providerName, modelName);
+  // 套餐身份已随去平台化删除；历史切换记录命中 Z.AI/BigModel family 时只标注中性 family 名
+  //（与 model-provider-family.ts 的品牌 label 同源，不进入 i18n）。
+  const familyLabel = providerId
+    ? resolveModelProviderFamilySpecByProviderId(providerId)?.label
+    : undefined;
+  if (!familyLabel) {
+    return formatProviderModelLabel(providerId, providerName, modelName);
   }
-  return `${modelName}(${intl.formatMessage({ id: planLabelId })})`;
+  return `${modelName}(${familyLabel})`;
 }
 
 export function formatProviderModelLabel(

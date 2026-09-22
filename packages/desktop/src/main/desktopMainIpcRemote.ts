@@ -9,7 +9,7 @@ import {
   type RemoteTarget,
 } from "@zcode/shared";
 import { dispatchTaskNotification } from "./desktopNotifications.js";
-import { clearPendingRoutesForWindow, deliverPendingDeepLink } from "./desktopOAuthDeepLink.js";
+import { clearPendingRoutesForWindow, deliverPendingDeepLink } from "./desktopDeepLink.js";
 import type { RemoteConnectionStats } from "./desktopRemoteSessions.js";
 import { openPathInDefaultApp } from "./desktopMainIpcHelpers.js";
 

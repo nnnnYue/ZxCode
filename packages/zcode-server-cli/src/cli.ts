@@ -177,8 +177,12 @@ async function runServe(
     let serviceStarted = false;
     let childEarlyExit: { code: number | null; signal: NodeJS.Signals | null } | undefined;
     if (startupMode === "service") {
-      const { createDaemonServiceDescriptor, registerService, serviceDescriptorPath } =
-        await import("./platform/serviceManager.js");
+      const {
+        createDaemonServiceDescriptor,
+        registerService,
+        serviceDescriptorPath,
+        unregisterRetiredServices,
+      } = await import("./platform/serviceManager.js");
       const platform =
         process.platform === "darwin" || process.platform === "linux" ? process.platform : "win32";
       await writeStableLauncher(layout, platform, {
@@ -190,6 +194,9 @@ async function runServe(
       const descriptorPath = serviceDescriptorPath(layout, descriptor);
       await writeFile(descriptorPath, descriptor.content, "utf8");
       await unregisterLegacyServiceForRoot(layout);
+      // 改名升级：先按退役旧名（com.zhipu.*）清理已加载的旧 job/unit/task，
+      // 否则新旧双注册会抢同一 server-root 锁。清理失败不阻断新名注册。
+      await unregisterRetiredServices(layout);
       // 注册失败必须向调用方返回真实错误；只有显式 opt-out 才允许 detached fallback。
       await registerService(descriptor, descriptorPath);
       serviceStarted = true;

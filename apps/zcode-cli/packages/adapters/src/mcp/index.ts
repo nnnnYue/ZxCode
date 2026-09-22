@@ -31,7 +31,6 @@ import type {
   McpToolCallResult,
   McpToolDescriptor,
   OfficialMcpAuthFailureReason,
-  OfficialMcpAuthHeadersPort,
   OfficialMcpTrustedOriginRegistry,
   TraceContext,
 } from "@zcode/contracts";
@@ -111,19 +110,16 @@ export interface CreateMcpAdapterOptions {
   mcpOAuth?: McpOAuthRuntimeOptions;
   network?: NetworkEgressEnvPolicy;
   /**
-   * 官方 Server MCP 鉴权依赖。trustedOrigins 缺失时仍 fail closed；authHeadersPort
-   * 可缺省，此时各请求匿名降级并交给服务端做权威判定。
+   * 官方 Server MCP 依赖。trustedOrigins 缺失时 fail closed。
+   * 去平台化后身份头签发链已删除：官方 MCP 请求匿名发出，由服务端权威判定。
    */
   officialMcpAuth?: {
-    authHeadersPort?: OfficialMcpAuthHeadersPort;
     trustedOrigins: OfficialMcpTrustedOriginRegistry;
     /**
-     * 当前 ZxCode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出
-     * ——插件因此无法把身份头导向别的 origin。
+     * 当前 ZxCode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出。
      * 与 trustedOrigins 的 `resolveZCodeApiOrigin` 必须同源，否则两侧判定会分叉。
      */
     resolveZCodeApiOrigin?: () => string;
-    workspaceIdentity?: string;
   };
   workingDirectory?: string;
 }
@@ -575,7 +571,6 @@ class NodeMcpAdapter implements McpPort {
       return undefined;
     }
     const official = config.official;
-    const authHeadersPort = this.officialMcpAuth?.authHeadersPort;
     const trustedOrigins = this.officialMcpAuth?.trustedOrigins;
     const resolveZCodeApiOrigin = this.officialMcpAuth?.resolveZCodeApiOrigin;
     const logBase = {
@@ -597,9 +592,9 @@ class NodeMcpAdapter implements McpPort {
       return { ok: false, reason };
     };
 
-    // standalone CLI 没有 host auth port。不静默省略该键：插件区分不了"宿主不支持"与
-    // "宿主支持但我没登录"，只有显式 reason 才能给出正确的用户提示。
-    if (!authHeadersPort || !trustedOrigins || !resolveZCodeApiOrigin) {
+    // 不静默省略该键：插件需要显式 reason 才能给出正确的用户提示。
+    // 去平台化后身份头签发链已删除，官方 stdio MCP 一律显式返回不可用。
+    if (!trustedOrigins || !resolveZCodeApiOrigin) {
       return fail("official_auth_unavailable");
     }
 
@@ -639,30 +634,9 @@ class NodeMcpAdapter implements McpPort {
       return fail("official_mcp_origin_untrusted");
     }
 
-    const resolved = await authHeadersPort.resolveHeaders({
-      mcpKey: official.mcpKey,
-      pluginId: official.pluginId,
-      targetOrigin,
-      ...(this.officialMcpAuth?.workspaceIdentity
-        ? { workspaceIdentity: this.officialMcpAuth.workspaceIdentity }
-        : {}),
-      ...(this.workingDirectory ? { workspacePath: this.workingDirectory } : {}),
-      ...(signal ? { signal } : {}),
-    });
-    if (!resolved.ok) return fail(resolved.reason);
-
-    // 只记 header 名与套餐维度，绝不记 header 值——日志留存周期不受控。
-    this.logger?.debug("Official MCP stdio auth headers attached", {
-      ...logBase,
-      identityHeaderNames: Object.keys(resolved.headers)
-        .map((name) => name.toLowerCase())
-        .sort(),
-      ...(resolved.headers["Bigmodel-Target-Type"]
-        ? { identityTargetType: resolved.headers["Bigmodel-Target-Type"] }
-        : {}),
-      status: "completed",
-    });
-    return { ok: true, headers: resolved.headers };
+    // 去平台化：身份头签发链已删除，stdio 官方 MCP 无凭证可下发，显式返回不可用。
+    void signal;
+    return fail("official_auth_unavailable");
   }
 
   private async callToolOnClient(
@@ -1470,8 +1444,8 @@ class NodeMcpAdapter implements McpPort {
   /**
    * 官方鉴权 MCP 的动态 fetch。返回 undefined 表示走普通 MCP 路径。
    *
-   * trusted origin 依赖缺失时直接 fail closed。auth port 可以缺失：wrapper 仍校验 origin，
-   * 各请求匿名降级并由服务端做权威判定。
+   * trusted origin 依赖缺失时直接 fail closed。身份头签发链已删除：
+   * wrapper 只校验 origin 并剥离保留头，请求匿名发出，由服务端权威判定。
    */
   private createOfficialAuthFetch(
     config: McpServerConfig,
@@ -1482,7 +1456,6 @@ class NodeMcpAdapter implements McpPort {
       return undefined;
     }
     const official = config.official;
-    const authHeadersPort = this.officialMcpAuth?.authHeadersPort;
     const trustedOrigins = this.officialMcpAuth?.trustedOrigins;
     if (!trustedOrigins) {
       return (() => {
@@ -1504,12 +1477,7 @@ class NodeMcpAdapter implements McpPort {
       serverName,
       trustedOrigins,
       url: config.url,
-      ...(authHeadersPort ? { authHeadersPort } : {}),
       ...(this.logger ? { logger: this.logger } : {}),
-      ...(this.officialMcpAuth?.workspaceIdentity
-        ? { workspaceIdentity: this.officialMcpAuth.workspaceIdentity }
-        : {}),
-      ...(this.workingDirectory ? { workspacePath: this.workingDirectory } : {}),
     });
   }
 

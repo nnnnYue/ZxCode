@@ -43,7 +43,7 @@ export async function ensureProviderFamilyDomainMigration(
   }
 
   if (!inferredDomain && selectableProviders?.length === 0) {
-    // 启动早期 OAuth active provider 和 Registry 可能都还没恢复。
+    // 启动早期模型选择视图和 Registry 可能都还没恢复。
     // 此时如果把“空结果”标记为已迁移，会让后续草稿预热在 selectedKey 为空时吃到旧 Start Plan 偏好。
     logger.info("[providerFamilyDomainMigration] provider family domain 迁移等待模型选择视图恢复");
     return;

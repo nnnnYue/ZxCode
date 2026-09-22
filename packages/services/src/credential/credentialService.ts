@@ -59,7 +59,7 @@ async function readAll(credentialsFile = getCredentialsFile()): Promise<Record<s
     }
     return result.data;
   } catch (error) {
-    // 把损坏 JSON/schema 当成空 store 后继续 save 会清空其他 OAuth 与登录凭据。
+    // 把损坏 JSON/schema 当成空 store 后继续 save 会清空其他已存凭据（MCP/Provisioning 等）。
     // 保留损坏文件证据并向上传递错误，禁止自动覆盖。
     const backupPath = await backupCorruptFile(credentialsFile).catch(() => undefined);
     // 服务层日志必须统一经过分级 logger，确保生产环境的损坏凭据告警

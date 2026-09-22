@@ -3,7 +3,9 @@ import { join } from "node:path";
 import {
   createDaemonServiceDescriptor,
   createServiceDescriptor,
+  RETIRED_SERVICE_NAME,
   serviceDescriptorPath,
+  unregisterRetiredServices,
   unregisterService,
   type ServicePlatform,
 } from "../platform/serviceManager.js";
@@ -18,6 +20,9 @@ export async function unregisterInstalledService(layout: ServerLayout): Promise<
   if (await pathExists(descriptorPath)) await unregisterService(descriptor, descriptorPath);
   await unregisterRootScopedAliasServices(layout, platform, descriptorPath);
   await unregisterLegacyServiceForRoot(layout);
+  // 改名（com.zhipu.* → com.zxcode.*）后残留的旧名注册：文件可能已不在 alias 扫描范围，
+  // 必须按旧名做一次 OS 级清理，否则 Windows 计划任务会按旧名永久孤儿。
+  await unregisterRetiredServices(layout);
 }
 
 export async function hasLegacyServiceRegistration(layout: ServerLayout): Promise<boolean> {
@@ -47,6 +52,9 @@ async function resolveLegacyServiceRegistration(layout: ServerLayout): Promise<{
       platform,
       command: join(layout.stableBinDir, platform === "win32" ? "zcode.cmd" : "zxcode"),
       args: ["serve", "--supervisor", "--server-root", layout.serverRoot],
+      // legacy 固定文件名 era 的任务按当时默认名创建；Windows 删除按任务名寻址，
+      // 必须用退役名而不是当前默认名，否则旧计划任务删不掉。
+      name: RETIRED_SERVICE_NAME,
     }),
     descriptorPath,
   };

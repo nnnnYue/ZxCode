@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button.js";
 import { InfoIcon, XIcon } from "lucide-react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -8,8 +8,6 @@ import type {
 } from "@/v4/sessionQuotaBannerState.js";
 
 const MESSAGE_IDS: Record<SessionQuotaBannerKind, string> = {
-  "model-very-low": "chat.quota.startPlan.modelVeryLow",
-  "model-exhausted": "chat.quota.startPlan.modelExhausted",
   "daily-exhausted": "chat.quota.startPlan.dailyExhausted",
   "concurrent-limit": "chat.quota.startPlan.concurrentLimit",
   "provider-limited": "chat.quota.providerLimited",
@@ -18,13 +16,6 @@ const MESSAGE_IDS: Record<SessionQuotaBannerKind, string> = {
 };
 
 function resolveMessageId(state: SessionQuotaBannerState): string {
-  if (state.kind === "model-very-low") {
-    return state.quotaPeriod === "daily"
-      ? "chat.quota.startPlan.bucketDailyLow"
-      : state.quotaPeriod === "one_time"
-        ? "chat.quota.startPlan.bucketActivityLow"
-        : "chat.quota.startPlan.modelVeryLow";
-  }
   if (state.kind === "concurrent-limit") {
     return state.concurrentLimitReason === "retry-exhausted-busy"
       ? "chat.quota.startPlan.concurrentLimit.retryExhausted"
@@ -46,32 +37,12 @@ function formatPercent(value: number | null): string {
 export function ConversationQuotaBanner({
   state,
   onDismiss,
-  onShown,
 }: {
   state: SessionQuotaBannerState;
   onDismiss: () => void;
-  onShown?: () => void;
 }) {
   const { intl, locale } = useZCodeIntl();
   const bannerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!onShown || !state.visible || !bannerRef.current) return;
-    // 后台任务也会计算额度状态，只有实际可见时才能消耗该桶周期的一次提醒。
-    let intersecting = false;
-    const report = () => {
-      if (intersecting && document.visibilityState === "visible") onShown();
-    };
-    const observer = new IntersectionObserver(([entry]) => {
-      intersecting = entry?.isIntersecting ?? false;
-      report();
-    });
-    observer.observe(bannerRef.current);
-    document.addEventListener("visibilitychange", report);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("visibilitychange", report);
-    };
-  }, [onShown, state.visible]);
   if (!state.visible || !state.kind) return null;
 
   const message =

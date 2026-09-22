@@ -1,27 +1,13 @@
 /* ZxCode 官方 Server MCP 鉴权的共享常量与类型。
-   放在 shared 是因为头集合有两个消费者且分属不同包：
-   - `packages/services` 侧生产身份头；
-   - `apps/zcode-cli/packages/adapters` 侧（Plugin parser + MCP adapter）拦截保留头。
-   两侧必须同源，否则新增身份头时会漏掉黑名单，出现静态 header 覆盖凭证的缺口。 */
+   去平台化后身份头签发链（host resolver / 协议端口）已删除：官方 MCP 不再持有
+   账号凭证，本文件只保留两类东西——防伪造头黑名单（Plugin parser + MCP adapter
+   两侧同源消费）与 origin 信任判定。 */
 
 /** `.mcp.json` 中 `auth.type` 的唯一合法值；区分大小写，不接受别名。 */
 export const ZXCODE_OFFICIAL_MCP_AUTH_TYPE = "zcode_official" as const;
 
 /** 第一阶段唯一合法的 provider。后续新增短期 Token 应新增 provider 值，不改变本值语义。 */
 export const ZXCODE_OFFICIAL_MCP_AUTH_PROVIDER_JWT_TOKEN = "jwt_token" as const;
-
-/**
- * 官方 MCP 使用用户身份和套餐身份两组独立凭据。
- * codingPlanAuthorization 必须携带 MaaS 登录 JWT；不能用 Coding Plan 业务 API key
- * 代替。服务端按 JWT 中的 customer_id 校验它与当前用户的关联。
- */
-export const OFFICIAL_MCP_AUTH_HEADER_NAMES = {
-  authorization: "Authorization",
-  codingPlanAuthorization: "X-Bigmodel-Authorization",
-  targetType: "Bigmodel-Target-Type",
-  organization: "Bigmodel-Organization",
-  project: "Bigmodel-Project",
-} as const;
 
 /**
  * stdio 官方 MCP 的身份头在所有出站请求与通知的 `params._meta` 上使用的键。
@@ -45,7 +31,12 @@ export const OFFICIAL_MCP_AUTH_META_KEY = "com.zxcode/official-mcp-auth" as cons
  * 这里显式列出而不是从头名表推导，正是因为表里已经没有它了。
  */
 export const OFFICIAL_MCP_RESERVED_HEADER_NAMES: readonly string[] = [
-  ...Object.values(OFFICIAL_MCP_AUTH_HEADER_NAMES).map((name) => name.toLowerCase()),
+  // 身份头（曾由签发链生产；服务端通道仍有效，禁止插件静态配置伪造或覆盖）。
+  "authorization",
+  "x-bigmodel-authorization",
+  "bigmodel-target-type",
+  "bigmodel-organization",
+  "bigmodel-project",
   "x-coding-plan-api-key",
   "mcp-session-id",
   "mcp-protocol-version",
@@ -70,9 +61,6 @@ export function findOfficialMcpReservedHeaders(
   }
   return [...hits].sort();
 }
-
-/** 服务端 `Bigmodel-Target-Type` 的取值（对齐 zxcode-server 的 CodingPlanTargetType）。 */
-export type OfficialMcpTargetType = "PERSONAL" | "TEAM";
 
 /**
  * 端口/协议层的失败分类（"不发任何请求"的两类）。
@@ -102,11 +90,8 @@ export type OfficialMcpAuthFailureKind =
   | "official_auth_redirect_blocked";
 
 // ── 官方 MCP 信任判定──
-// 放在 shared 而非 CLI bootstrap，是因为有两个消费者且分属互不可见的包：
-//   - apps/zcode-cli/packages/adapters：请求发出前的本地校验；
-//   - packages/services（host）：身份权威边界的二次校验（只依赖 @zcode/shared，
-//     无法 import CLI 侧包）。
-// 单源是硬要求：双处判定分叉会让一侧放行、另一侧拒绝。
+// 放在 shared 而非 CLI bootstrap，是因为 adapter（请求发出前的本地校验）与潜在宿主
+// 都依赖同一实现。单源是硬要求：判定分叉会让一侧放行、另一侧拒绝。
 
 /**
  * 归一化 origin：必须是 https、无 username/password，且 URL 本身即 origin 形态。
@@ -139,26 +124,6 @@ export const OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV = "ZXCODE_OFFICIAL_MCP_DEV_TRU
 
 /** Host 在 spawn 时注入的真实 workspace identity；只用于隔离/审计，不用于文件执行。 */
 export const ZXCODE_WORKSPACE_IDENTITY_ENV = "ZXCODE_WORKSPACE_IDENTITY";
-
-/** 身份头的安全日志摘要：只含 header 名、Team 成对性与 TargetType，不含任何值。 */
-export function summarizeOfficialMcpIdentityHeaders(
-  headers: Record<string, string>,
-): Record<string, unknown> {
-  const lower = new Map(
-    Object.entries(headers).map(([name, value]) => [name.toLowerCase(), value]),
-  );
-  const organization = lower.has("bigmodel-organization");
-  const project = lower.has("bigmodel-project");
-  return {
-    identityHeaderNames: [...lower.keys()].sort(),
-    identityOrganizationPresent: organization,
-    identityProjectPresent: project,
-    identityTeamPaired: organization === project,
-    ...(lower.get("bigmodel-target-type")
-      ? { identityTargetType: lower.get("bigmodel-target-type") }
-      : {}),
-  };
-}
 
 export interface OfficialMcpTrustResult {
   trusted: boolean;

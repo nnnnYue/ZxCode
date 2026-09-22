@@ -1,5 +1,8 @@
 import { DEFAULT_ZXCODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
 
+// 仅保留 OpenRouter 官方归因字段（HTTP-Referer / X-Title）与标准 User-Agent。
+// 环境/统计指纹头（X-Platform/X-Os-*/X-Release-Channel/X-Client-*/X-ZxCode-App-Version/X-Device-Mid）
+// 已随去平台化清理删除。
 export const ZXCODE_SOURCE_HEADERS = {
   "User-Agent": "ZxCode/unknown",
   "HTTP-Referer": DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
@@ -8,14 +11,7 @@ export const ZXCODE_SOURCE_HEADERS = {
 
 export interface BuildZCodeSourceHeadersFromContextOptions {
   appVersion?: string;
-  arch?: string;
-  clientLanguage?: string;
-  clientTimezone?: string;
-  deviceMid?: string;
   endpointOrigin?: string;
-  osVersion?: string;
-  platform?: string;
-  releaseChannel?: string;
   sourceTitle?: string;
 }
 
@@ -31,40 +27,14 @@ export function buildZCodeSourceHeadersFromContext(
   options: BuildZCodeSourceHeadersFromContextOptions = {},
 ): Record<string, string> {
   const appVersion = normalizeZCodeSourceHeaderValue(options.appVersion);
-  const arch = normalizeZCodeSourceHeaderValue(options.arch);
-  const clientLanguage = normalizeZCodeSourceHeaderValue(options.clientLanguage) ?? "unknown";
-  const clientTimezone = normalizeZCodeSourceHeaderValue(options.clientTimezone) ?? "unknown";
-  const deviceMid = normalizeZCodeSourceHeaderValue(options.deviceMid);
   const endpointOrigin =
     normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
-  const osVersion = normalizeZCodeSourceHeaderValue(options.osVersion);
-  const platform = normalizeZCodeSourceHeaderValue(options.platform);
-  const releaseChannel = normalizeZCodeSourceHeaderValue(options.releaseChannel);
   const sourceTitle = normalizeZCodeSourceHeaderValue(options.sourceTitle) ?? "electron";
 
   return {
     ...ZXCODE_SOURCE_HEADERS,
     "HTTP-Referer": endpointOrigin,
     "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
-    ...(appVersion ? { "X-ZxCode-App-Version": appVersion } : {}),
     "X-Title": `ZxCode@${sourceTitle}`,
-    ...(platform && arch ? { "X-Platform": `${platform}-${arch}` } : {}),
-    ...(releaseChannel ? { "X-Release-Channel": releaseChannel } : {}),
-    "X-Client-Language": clientLanguage,
-    "X-Client-Timezone": clientTimezone,
-    ...(platform ? { "X-Os-Category": normalizeOsCategory(platform) } : {}),
-    ...(osVersion ? { "X-Os-Version": osVersion } : {}),
-    ...(deviceMid ? { "X-Device-Mid": deviceMid } : {}),
   };
-}
-
-function normalizeOsCategory(platform: string): string {
-  switch (platform) {
-    case "darwin":
-      return "macos";
-    case "win32":
-      return "windows";
-    default:
-      return "linux";
-  }
 }

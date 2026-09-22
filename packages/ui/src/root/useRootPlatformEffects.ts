@@ -62,7 +62,7 @@ export function useRootPlatformEffects({
   const didBootstrapInitialWorkspaceRef = useRef(false);
 
   useEffect(() => {
-    // 启动时必须先判断 OAuth 本地会话，再恢复历史/初始 workspace。
+    // 启动时必须先完成本地会话状态判定，再恢复历史/初始 workspace。
     // 如果这里抢先 addTab，未登录用户会先看到主界面，之后才被登录页覆盖。
     if (!canBootstrapInitialWorkspace || didBootstrapInitialWorkspaceRef.current) {
       return;

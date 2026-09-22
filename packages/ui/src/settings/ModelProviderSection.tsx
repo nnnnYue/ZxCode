@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { type ModelConnectivityResult } from "@zcode/shared";
 import type { ProviderSettingsFormProvider } from "@/lib/providerSettingsFormTypes.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -7,10 +7,7 @@ import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useModelProviders } from "@/hooks/useModelProviders.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { logger } from "@/logger.js";
-import {
-  PRESET_PROVIDER_SPECS,
-  type ModelProviderNavGroup,
-} from "./model-provider-section/constants.js";
+import { type ModelProviderNavGroup } from "./model-provider-section/constants.js";
 import { ModelProviderSectionDetail } from "./model-provider-section/Detail.js";
 import { ModelProviderSectionLayout } from "./model-provider-section/SectionLayout.js";
 import { ProviderTemplatePicker } from "./model-provider-section/ProviderTemplatePicker.js";
@@ -91,19 +88,7 @@ export function ModelProviderSection({
     setPendingCreatedProviderId(null);
   }, [modelProviders, pendingCreatedProviderId]);
 
-  // 预置 provider 是本地 API Key 接入入口；账号型 OAuth 镜像 provider 已随登录功能删除，
-  // 这里不再按登录身份过滤家族，全部预置模板始终可见。
-  const presetProviders = useMemo(
-    () =>
-      PRESET_PROVIDER_SPECS.map((preset) => ({
-        ...preset,
-        provider: modelProviders.find((provider) => provider.providerId === preset.id) ?? null,
-      })),
-    [modelProviders],
-  );
-
   const { navigationGroups, selectedNavItem } = useModelProviderNavigation({
-    presetProviders,
     modelProviders,
     displayOrder,
     selectedNodeKey,
@@ -201,7 +186,6 @@ export function ModelProviderSection({
   // 首屏慢网时之前直接 return null，导致整块模型供应商页空白，
   // 已有的左侧分组 loading 和刷新按钮 loading 都没有机会渲染。
   // 这里改为始终先渲染布局壳子，再按分组展示 loading，避免用户误以为页面坏了。
-  const presetLoading = loading || modelProvidersRefreshing;
   const customLoading = loading || modelProvidersRefreshing;
 
   if (loadError) {
@@ -220,7 +204,6 @@ export function ModelProviderSection({
       description={intl.formatMessage({ id: "settings.modelProviderDescription" })}
       refreshLabel={intl.formatMessage({ id: "settings.modelProvider.refresh" })}
       loadingLabel={intl.formatMessage({ id: "common.loading" })}
-      presetLoading={presetLoading}
       customLoading={customLoading}
       onRefresh={() => {
         void refreshModelProviderSection({
@@ -250,7 +233,6 @@ export function ModelProviderSection({
       ) : (
         <ModelProviderSectionDetail
           selectedNavItem={selectedNavItem}
-          presetLoading={presetLoading}
           onSave={handleSave}
           onAddPersonalModel={addPersonalModel}
           onSavePersonalModelDraft={savePersonalModelDraft}

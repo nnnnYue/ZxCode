@@ -288,7 +288,6 @@ async function runModelBackedTurnStepImpl(
     }
     const admissionRetryDelayMs = getStartPlanBusyAdmissionRetryDelayMs({
       error: finalError,
-      providerId: executionModelSelection.providerId,
       state,
       turnNumber: this.turnNumber,
     });

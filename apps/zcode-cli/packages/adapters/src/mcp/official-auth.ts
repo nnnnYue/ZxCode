@@ -7,14 +7,12 @@
 import {
   findOfficialMcpReservedHeaders,
   isOfficialMcpReservedHeaderName,
-  summarizeOfficialMcpIdentityHeaders,
   type McpServerFailureKind,
   type OfficialMcpAuthFailureKind,
 } from "@zcode/shared";
 import type {
   Logger,
   McpOfficialProvenance,
-  OfficialMcpAuthHeadersPort,
   OfficialMcpTrustedOriginRegistry,
 } from "@zcode/contracts";
 
@@ -42,7 +40,6 @@ const REQUEST_ID_HEADER = "x-request-id";
 const TRACE_ID_HEADER = "x-trace-id";
 
 interface CreateOfficialMcpAuthFetchInput {
-  authHeadersPort?: OfficialMcpAuthHeadersPort;
   baseFetch: typeof globalThis.fetch;
   logger?: Logger;
   /**
@@ -64,8 +61,6 @@ interface CreateOfficialMcpAuthFetchInput {
   trustedOrigins: OfficialMcpTrustedOriginRegistry;
   /** MCP endpoint URL；Origin 校验以每次请求的实际 URL 为准，不只在连接时校验一次。 */
   url: string;
-  workspaceIdentity?: string;
-  workspacePath?: string;
 }
 
 /** 一次官方 MCP 响应中可用于关联的非敏感事实。不含 body、不含任何 header 值。 */
@@ -152,47 +147,9 @@ export function createOfficialMcpAuthFetch(
     };
 
     const send = async (attempt: number): Promise<{ authApplied: boolean; response: Response }> => {
-      let authHeaders: Record<string, string> = {};
-      let resolveDurationMs: number | undefined;
-      if (input.authHeadersPort) {
-        const resolveStartedAt = Date.now();
-        const resolved = await input.authHeadersPort.resolveHeaders({
-          mcpKey: input.official.mcpKey,
-          pluginId: input.official.pluginId,
-          targetOrigin: origin,
-          ...(input.workspaceIdentity ? { workspaceIdentity: input.workspaceIdentity } : {}),
-          ...(input.workspacePath ? { workspacePath: input.workspacePath } : {}),
-          ...(init?.signal ? { signal: init.signal } : {}),
-        });
-        resolveDurationMs = Date.now() - resolveStartedAt;
-        if (resolved.ok) {
-          authHeaders = resolved.headers;
-        } else {
-          // 解析不到身份时仍把无身份请求交给 server 做权威判定；adapter 不缓存旧凭证，
-          // 也不在本地把解析失败冒充为网络失败。
-          input.logger?.warn("Official MCP auth headers unavailable for request", {
-            ...logBase,
-            attempt,
-            event: "mcp.official_auth.resolve",
-            fallback: "anonymous",
-            reason: resolved.reason,
-            resolveDurationMs,
-            status: "failed",
-          });
-        }
-      } else {
-        input.logger?.warn("Official MCP auth port unavailable for request", {
-          ...logBase,
-          attempt,
-          event: "mcp.official_auth.resolve",
-          fallback: "anonymous",
-          reason: "official_auth_unavailable",
-          status: "failed",
-        });
-      }
-      // 只记 header 名与套餐维度，绝不记 header 值。targetType 是 PERSONAL/TEAM 这类
-      // 低敏枚举，但对"为什么服务端判我没权益"最关键，因此保留原值。
-      const identity = summarizeOfficialMcpIdentityHeaders(authHeaders);
+      // 去平台化：账号凭证签发链已删除，官方 MCP 请求一律匿名发出，由服务端做权威判定；
+      // adapter 只保留 origin 信任校验与保留头剥离，不缓存也不伪造任何身份。
+      const authHeaders: Record<string, string> = {};
       const headers = mergeOfficialAuthHeaders(init?.headers, authHeaders);
 
       // 关联 id 一律**不外发**，只剥离。
@@ -212,10 +169,8 @@ export function createOfficialMcpAuthFetch(
       input.logger?.debug("Official MCP request sending", {
         ...logBase,
         attempt,
-        resolveDurationMs,
         status: "started",
         timeoutHint: describeAbortSignal(init?.signal),
-        ...identity,
       });
 
       const sendStartedAt = Date.now();
@@ -274,7 +229,7 @@ export function createOfficialMcpAuthFetch(
             status: "failed",
           });
         }
-        return { authApplied: Object.keys(authHeaders).length > 0, response };
+        return { authApplied: false, response };
       } catch (error) {
         // 超时/取消在这里表现为 AbortError。区分二者对定位"是谁掐断的"很关键：
         // 上层工具超时预算到期与用户主动取消都会走 abort，但 elapsed 与预算的关系不同。
@@ -362,7 +317,6 @@ async function classifyOfficialMcpResponse(
       if (rpcError && typeof rpcError === "object" && !Array.isArray(rpcError)) {
         const code = (rpcError as Record<string, unknown>)["code"];
         if (code === 1006) return "not_authenticated";
-        if (code === 3101) return "coding_plan_required";
       }
       return "protocol_error";
     }

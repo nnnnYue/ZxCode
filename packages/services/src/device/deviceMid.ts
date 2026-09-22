@@ -188,7 +188,8 @@ export async function ensureDeviceMidInLockedState(
 /**
  * 确保设备身份文件里存在 deviceMid 并返回它。
  *
- * deviceMid 是跨端共享的设备身份：X-Device-Mid 计费 header、反馈、onboarding 都读它。
+ * deviceMid 是跨端共享的设备身份：反馈、onboarding、流客户端 ID、relay 顶替都读它
+ * （X-Device-Mid 请求头已随去平台化清理删除）。
  * 远端 zxcode-server 没有 Desktop main 进程，由 stdio entry 启动时调用本函数补写，
  * 与同机 CLI/Desktop 共享同一个文件、字段与锁。
  */

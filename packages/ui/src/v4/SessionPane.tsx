@@ -1699,13 +1699,8 @@ export function SessionPane({
 
       const fromProvider = resolveProviderLabel(fromProviderId, modelSelectionView);
       const toProvider = resolveProviderLabel(targetModel.provider, modelSelectionView);
-      const fromModel = formatModelChangeLabel(fromProviderId, fromProvider, fromModelId, intl);
-      const toModel = formatModelChangeLabel(
-        targetModel.provider,
-        toProvider,
-        targetModel.model,
-        intl,
-      );
+      const fromModel = formatModelChangeLabel(fromProviderId, fromProvider, fromModelId);
+      const toModel = formatModelChangeLabel(targetModel.provider, toProvider, targetModel.model);
       toast(intl.formatMessage({ id: "chat.modelChangeNotice.changed" }, { fromModel, toModel }));
     },
     [intl, modelSelectionView, sessionId],
@@ -3311,11 +3306,7 @@ export function SessionPane({
       {quotaBanner.state.visible &&
       !quotaBanner.dismissed &&
       (!projectedComposerError || quotaBanner.takesOverError || quotaBanner.state.blocksSubmit) ? (
-        <ConversationQuotaBanner
-          state={quotaBanner.state}
-          onShown={quotaBanner.markShown}
-          onDismiss={quotaBanner.dismiss}
-        />
+        <ConversationQuotaBanner state={quotaBanner.state} onDismiss={quotaBanner.dismiss} />
       ) : null}
       {recoverableCommand ? (
         <PendingCommandRecoveryBanner

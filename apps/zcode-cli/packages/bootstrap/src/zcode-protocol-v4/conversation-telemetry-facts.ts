@@ -116,14 +116,16 @@ function skillTelemetryFactFields(
 
 export function streamingParentToolCallId(payload: Record<string, unknown>): string | undefined {
   const meta = recordValue(payload._meta);
+  // b8ea19c 改名提交将变量重命名为 zxcode 但漏改了下方引用，导致 CLI typecheck 失败；
+  // 修复依据：同作用域变量即 meta.zxcode 的解构结果，引用按其修正。
   const zxcode = recordValue(meta.zxcode);
   return (
     optionalString(payload.parentToolCallId) ??
     optionalString(payload.parentToolUseId) ??
     optionalString(meta.parentToolCallId) ??
     optionalString(meta.parentToolUseId) ??
-    optionalString(zcode.parentToolCallId) ??
-    optionalString(zcode.parentToolUseId)
+    optionalString(zxcode.parentToolCallId) ??
+    optionalString(zxcode.parentToolUseId)
   );
 }
 

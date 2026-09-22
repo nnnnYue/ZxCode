@@ -1,24 +1,15 @@
 import { useEffect, useMemo } from "react";
 import type { ProviderSettingsFormProvider } from "@/lib/providerSettingsFormTypes.js";
 import { getProviderFormLabel } from "@/lib/providerSettingsFormTypes.js";
-import type { PresetProviderSpec } from "@/settings/model-provider-section/constants.js";
 import type { ModelProviderNavGroup } from "@/settings/model-provider-section/constants.js";
-import {
-  createCustomProviderNodeKey,
-  createPresetProviderNodeKey,
-} from "@/settings/model-provider-section/utils.js";
+import { createCustomProviderNodeKey } from "@/settings/model-provider-section/utils.js";
 import {
   sortModelProvidersForDisplay,
   type ProviderOrderView,
 } from "@/lib/modelProviderOrdering.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 
-interface PresetProviderWithConfig extends PresetProviderSpec {
-  provider: ProviderSettingsFormProvider | null;
-}
-
 interface UseModelProviderNavigationOptions {
-  presetProviders: PresetProviderWithConfig[];
   modelProviders: ProviderSettingsFormProvider[];
   displayOrder?: ProviderOrderView;
   selectedNodeKey: string | null;
@@ -27,7 +18,6 @@ interface UseModelProviderNavigationOptions {
 }
 
 export function useModelProviderNavigation({
-  presetProviders,
   modelProviders,
   displayOrder,
   selectedNodeKey,
@@ -45,21 +35,6 @@ export function useModelProviderNavigation({
   const navigationGroups = useMemo<ModelProviderNavGroup[]>(() => {
     return [
       {
-        id: "preset",
-        title: intl.formatMessage({ id: "settings.modelProvider.presetTitle" }),
-        items: presetProviders.map(({ id, displayName, provider }) => ({
-          key: createPresetProviderNodeKey(id),
-          type: "preset" as const,
-          presetId: id,
-          label: displayName,
-          logo: provider?.config.logo,
-          provider,
-          displayName,
-          statusProvider: provider,
-          statusActive: provider?.executable === true,
-        })),
-      },
-      {
         id: "custom",
         title: intl.formatMessage({ id: "settings.modelProvider.customTitle" }),
         items: customProviders.map((provider) => ({
@@ -71,7 +46,7 @@ export function useModelProviderNavigation({
         })),
       },
     ];
-  }, [customProviders, intl, presetProviders]);
+  }, [customProviders, intl]);
 
   const navigationItems = useMemo(
     () => navigationGroups.flatMap((group) => group.items),

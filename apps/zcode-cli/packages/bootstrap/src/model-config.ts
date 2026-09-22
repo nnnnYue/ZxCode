@@ -3,15 +3,7 @@ import type {
   AiSdkNetworkConfig,
   EnvRecord,
 } from "@zcode/adapters/model";
-import {
-  resolveRuntimeZCodeEnv,
-  resolveRuntimeZCodeEndpointOrigin,
-  ZXCODE_APP_VERSION_ENV,
-} from "@zcode/shared";
-import {
-  createRuntimePlatformHeaders,
-  normalizePrintableHeaderValue,
-} from "./runtime-platform-headers.js";
+import { resolveRuntimeZCodeEndpointOrigin, ZXCODE_APP_VERSION_ENV } from "@zcode/shared";
 
 export type ModelProviderSourceTitle = "cli" | "electron";
 
@@ -44,24 +36,18 @@ function normalizeAiSdkNetworkConfig(
   };
 }
 
+// 来源归因头 + agent 代号头。环境/统计指纹头已随去平台化清理删除。
 function buildCliZCodeSourceHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion" | "sourceTitle"> = {},
 ): Record<string, string> {
   const sourceTitle = options.sourceTitle ?? detectDefaultProviderSourceTitle();
   const appVersion = resolveAppVersionForHeaders(env, options);
-  const locale = normalizePrintableHeaderValue(Intl.DateTimeFormat().resolvedOptions().locale);
-  const timezone = normalizePrintableHeaderValue(Intl.DateTimeFormat().resolvedOptions().timeZone);
   return {
     "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
     "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
-    ...(appVersion ? { "X-ZxCode-App-Version": appVersion } : {}),
     "X-Title": `ZxCode@${sourceTitle}`,
-    "X-Release-Channel": resolveRuntimeZCodeEnv(env),
-    "X-Client-Language": locale ?? "unknown",
-    "X-Client-Timezone": timezone ?? "unknown",
     "X-ZxCode-Agent": "glm",
-    ...createRuntimePlatformHeaders(),
   };
 }
 
@@ -69,7 +55,11 @@ function resolveAppVersionForHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion">,
 ): string | undefined {
-  return normalizePrintableHeaderValue(env[ZXCODE_APP_VERSION_ENV] ?? options.appVersion);
+  const value = (env[ZXCODE_APP_VERSION_ENV] ?? options.appVersion)?.trim();
+  if (!value || !/^[\x20-\x7e]+$/.test(value)) {
+    return undefined;
+  }
+  return value;
 }
 
 function detectDefaultProviderSourceTitle(): ModelProviderSourceTitle {

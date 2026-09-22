@@ -69,3 +69,19 @@ packages/desktop/.e2e-artifacts/
 packages/desktop/.e2e-cache/
 packages/desktop/.e2e-network-capture/
 .zxcode-runtime/
+
+# 本地 AI 编码工具在仓库根生成的配置与状态（各客户端私有，不入库）。
+.claude/
+.codex/
+.cursor/
+.mcp.json
+.vscode/mcp.json
+.zcode/
+.zcodeignore
+opencode.jsonc
+
+# scheduler 目录内 tsc 就地生成的编译产物（.ts 源码入库，.js/.d.ts 及 sourcemap 不入库）。
+packages/desktop/src/scheduler/*.js
+packages/desktop/src/scheduler/*.js.map
+packages/desktop/src/scheduler/*.d.ts
+packages/desktop/src/scheduler/*.d.ts.map

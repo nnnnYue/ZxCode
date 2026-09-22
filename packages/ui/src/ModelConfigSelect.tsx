@@ -62,7 +62,7 @@ export interface ModelSelectConnectionOption {
   value: string;
   providerId: string;
   familyId: string;
-  mode: "oauth" | "apiKey";
+  mode: "apiKey";
   disabled?: boolean;
 }
 
