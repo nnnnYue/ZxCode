@@ -12,7 +12,7 @@
 
 ZxCode is an AI coding workspace with desktop, browser, and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
 
-The desktop client has no platform account, login, or telemetry dependency; model inference is accessed through API-key providers. Phones can control existing desktop sessions through a self-hosted relay.
+This project removes Zhipu (Z.ai / BigModel) platform account login, telemetry reporting, and device fingerprint collection: the desktop client starts straight into the workbench with no login gate and no telemetry channels, and model inference is accessed through API-key providers. Phones can control existing desktop sessions through a self-hosted relay. See [REMOVALS.md](REMOVALS.md) for the itemized removal list.
 
 | Interface                     | Purpose                                                                                    | Development command            |
 | ----------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------ |
