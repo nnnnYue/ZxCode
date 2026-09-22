@@ -38,6 +38,7 @@ import {
   resolveLocalizedList,
   type StorePluginItem,
 } from "@/settings/pluginStoreListing.js";
+import { resolvePluginHeroSource } from "@/lib/pluginIconSource.js";
 import {
   buildInstalledPluginDisplayGroups,
   describeResultToDisplayGroups,
@@ -103,7 +104,8 @@ export function PluginStoreDetailView({
   const { intl, locale } = useZCodeIntl();
   const displayName = resolveItemDisplayName(item, locale);
   const description = resolveItemDescription(item, locale);
-  const heroImage = item.listing?.heroImage;
+  // hero 与图标同一机制：先查随包快照映射，再放行受信远端 URL（离线目录数据不含平台资源地址）。
+  const heroImage = resolvePluginHeroSource(item.id, item.listing?.heroImage);
   const examplePrompts =
     resolveLocalizedList(locale, item.listing?.examplePrompts, item.listing?.examplePromptsI18n) ??
     [];

@@ -11,7 +11,7 @@
 //
 // 远端（SSH/WSL/Docker）没有 Electron，仍走 prepare:remote-assets 的原生二进制，互不影响。
 
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -250,6 +250,39 @@ function stageOfficialPlugins() {
   }
 }
 
+// 官方市场离线快照（scripts/fetch-official-marketplace.mjs 产物）经 electron-builder
+// extraResources 随包发布到 resources/official-marketplace，agent seed 的
+// ../official-marketplace/... rootCandidates 直接解析它，因此不复制进 glm（避免双份体积）。
+// 这里在打包前置校验快照完整性：目录缺失只是商店目录退化为内置插件（warn），
+// 但 manifest 声明的条目缺解压目录说明快照半成品，必须 fail fast。
+function validateOfflineMarketplaceStaging() {
+  const manifestPath = resolve(desktopRoot, "resources", "official-marketplace", "manifest.json");
+  if (!existsSync(manifestPath)) {
+    console.warn(
+      "[prepare:agent-bundle] [warn] 官方市场离线快照缺失（先运行 scripts/fetch-official-marketplace.mjs）；商店将只展示内置插件",
+    );
+    return;
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
+  for (const entry of entries) {
+    const pluginRoot = resolve(
+      desktopRoot,
+      "resources",
+      "official-marketplace",
+      "plugins",
+      entry.name,
+      entry.version,
+    );
+    if (!existsSync(resolve(pluginRoot, ".zcode-plugin", "plugin.json"))) {
+      throw new Error(
+        `[prepare:agent-bundle] offline marketplace snapshot incomplete: ${entry.name}@${entry.version} missing at ${pluginRoot}`,
+      );
+    }
+  }
+  console.log(`[prepare:agent-bundle] offline marketplace snapshot ok (${entries.length} plugins)`);
+}
+
 // Electron 生产包只带 resources/glm/zcode.cjs 时，app-server 进程的
 // __dirname 附近没有官方插件目录，启动时 seed 找不到 source，用户侧不会自动得到内置插件。
 // 这里把官方插件按 bootstrap 的 rootCandidates 期望放到 glm/packages/*-plugin，
@@ -260,3 +293,4 @@ buildCliBundle();
 buildOfficialPluginRuntimes();
 stageBundle();
 stageOfficialPlugins();
+validateOfflineMarketplaceStaging();

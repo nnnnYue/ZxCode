@@ -5,28 +5,12 @@ import {
 } from "@zcode/provider";
 import { NodeZCodeBuiltinProviderConfigSource } from "./zcode-builtin-provider-config-source.js";
 import {
-  EndpointScopedZCodeBuiltinSource,
-  type EndpointScopedZCodeBuiltinSourceOptions,
-} from "./endpoint-scoped-zcode-builtin-source.js";
-import {
-  ZCodeBuiltinRemoteSynchronizer,
-  type ZCodeBuiltinRemoteSynchronizerOptions,
-  type ZCodeBuiltinRefreshResult,
-} from "./zcode-builtin-remote-synchronizer.js";
-import {
   NodePersonalProviderConfigRepository,
   type PersonalProviderConfigRecoveryEvent,
 } from "./personal-provider-config-repository.js";
 
 export interface NodeProviderConfigRuntimeOptions {
   readonly zcodeBuiltinFilePath: string;
-  readonly zcodeBuiltinActiveFilePath?: string;
-  readonly zcodeBuiltinRemote?: Omit<ZCodeBuiltinRemoteSynchronizerOptions, "source">;
-  readonly zcodeBuiltinEnvironment?: Omit<
-    EndpointScopedZCodeBuiltinSourceOptions,
-    "bundledFilePath"
-  >;
-  readonly onZCodeBuiltinRefreshError?: (error: unknown) => void;
   readonly onPersonalConfigRecovery?: (event: PersonalProviderConfigRecoveryEvent) => void;
   readonly onPersonalConfigPollingError?: (error: unknown) => void;
   readonly personalFilePath: string;
@@ -34,18 +18,16 @@ export interface NodeProviderConfigRuntimeOptions {
   readonly importLegacy?: (
     zcodeBuiltin: ProviderConfigLayerSnapshot,
   ) => Promise<ProviderConfigLayerUpdate | null>;
-  readonly watch?: boolean;
 }
 
-/** 组装一个 Node.js 进程内共享的 ZCode Built-in/Personal Config 运行边界。 */
+/**
+ * 组装一个 Node.js 进程内共享的 ZCode Built-in/Personal Config 运行边界。
+ * 内置目录为纯打包文件：这里只保留账号恢复等周期监听，不再有远端下载刷新。
+ */
 export class NodeProviderConfigRuntime {
   readonly configService: ProviderConfigService;
-  readonly #zcodeBuiltinSource:
-    | NodeZCodeBuiltinProviderConfigSource
-    | EndpointScopedZCodeBuiltinSource;
+  readonly #zcodeBuiltinSource: NodeZCodeBuiltinProviderConfigSource;
   readonly #personalRepository: NodePersonalProviderConfigRepository;
-  readonly #remoteSynchronizer?: ZCodeBuiltinRemoteSynchronizer;
-  readonly #onRemoteRefreshError?: (error: unknown) => void;
   #startPromise: Promise<void> | null = null;
   #disposed = false;
   readonly #checkListeners = new Set<() => Promise<void>>();
@@ -53,25 +35,9 @@ export class NodeProviderConfigRuntime {
   #checkInFlight: Promise<void> | null = null;
 
   constructor(options: NodeProviderConfigRuntimeOptions) {
-    this.#zcodeBuiltinSource = options.zcodeBuiltinEnvironment
-      ? new EndpointScopedZCodeBuiltinSource({
-          bundledFilePath: options.zcodeBuiltinFilePath,
-          ...options.zcodeBuiltinEnvironment,
-        })
-      : new NodeZCodeBuiltinProviderConfigSource({
-          bundledFilePath: options.zcodeBuiltinFilePath,
-          activeFilePath: options.zcodeBuiltinActiveFilePath,
-          watch: options.watch,
-        });
-    this.#remoteSynchronizer =
-      options.zcodeBuiltinRemote &&
-      this.#zcodeBuiltinSource instanceof NodeZCodeBuiltinProviderConfigSource
-        ? new ZCodeBuiltinRemoteSynchronizer({
-            source: this.#zcodeBuiltinSource,
-            ...options.zcodeBuiltinRemote,
-          })
-        : undefined;
-    this.#onRemoteRefreshError = options.onZCodeBuiltinRefreshError;
+    this.#zcodeBuiltinSource = new NodeZCodeBuiltinProviderConfigSource({
+      bundledFilePath: options.zcodeBuiltinFilePath,
+    });
     this.#personalRepository = new NodePersonalProviderConfigRepository({
       filePath: options.personalFilePath,
       onRecovery: options.onPersonalConfigRecovery,
@@ -89,17 +55,16 @@ export class NodeProviderConfigRuntime {
     });
   }
 
+  /** 远端同步删除后随包基线即唯一事实源；保留方法名以兼容 spawn env 装配。 */
   resolveZCodeBuiltinActiveFilePath(): Promise<string> {
-    return this.#zcodeBuiltinSource instanceof NodeZCodeBuiltinProviderConfigSource
-      ? Promise.resolve(this.#zcodeBuiltinSource.activeFilePath)
-      : this.#zcodeBuiltinSource.resolveActiveFilePath();
+    return Promise.resolve(this.#zcodeBuiltinSource.bundledFilePath);
   }
 
   get personalRepository(): import("@zcode/provider").PersonalProviderConfigRepository {
     return this.#personalRepository;
   }
 
-  /** Environment 同一周期检查中恢复未对齐依赖，不被下载 TTL 或失败挡住。 */
+  /** 同一周期检查中恢复未对齐依赖（账号 Overlay 与 Built-in revision 对齐）。 */
   onDidCheckZCodeBuiltin(listener: () => Promise<void>): () => void {
     this.#checkListeners.add(listener);
     return () => this.#checkListeners.delete(listener);
@@ -110,13 +75,8 @@ export class NodeProviderConfigRuntime {
     if (this.#startPromise) return this.#startPromise;
     const startPromise = this.configService.read().then(() => {
       if (this.#disposed) return;
-      void this.#checkBackground();
-      // Managed Worker 无下载配置也无恢复 owner，不建立周期任务。
-      if (
-        this.#remoteSynchronizer ||
-        this.#zcodeBuiltinSource instanceof EndpointScopedZCodeBuiltinSource ||
-        this.#checkListeners.size > 0
-      ) {
+      // 远端刷新已删除；周期任务只剩账号恢复监听。未注册监听则不建定时器。
+      if (this.#checkListeners.size > 0) {
         this.#checkTimer = setInterval(() => {
           void this.#checkBackground();
         }, 60_000);
@@ -130,25 +90,14 @@ export class NodeProviderConfigRuntime {
     return startPromise;
   }
 
-  refreshZCodeBuiltin(options?: { readonly force?: boolean }): Promise<ZCodeBuiltinRefreshResult> {
-    if (this.#disposed) return Promise.resolve("disposed");
-    if (this.#zcodeBuiltinSource instanceof EndpointScopedZCodeBuiltinSource) {
-      return this.#zcodeBuiltinSource.refresh(options);
-    }
-    return this.#remoteSynchronizer?.refresh(options) ?? Promise.resolve("skipped");
-  }
-
   #checkBackground(): Promise<void> {
     if (this.#disposed) return Promise.resolve();
     if (this.#checkInFlight) return this.#checkInFlight;
-    const check = Promise.allSettled([
-      this.refreshZCodeBuiltin(),
-      ...[...this.#checkListeners].map((listener) => Promise.resolve().then(listener)),
-    ])
-      .then((results) => {
+    const check = Promise.allSettled(
+      [...this.#checkListeners].map((listener) => Promise.resolve().then(listener)),
+    )
+      .then(() => {
         if (this.#disposed) return;
-        for (const result of results)
-          if (result.status === "rejected") this.#onRemoteRefreshError?.(result.reason);
       })
       .finally(() => {
         if (this.#checkInFlight === check) this.#checkInFlight = null;
@@ -163,7 +112,6 @@ export class NodeProviderConfigRuntime {
     if (this.#checkTimer) clearInterval(this.#checkTimer);
     this.#checkTimer = null;
     this.#checkListeners.clear();
-    this.#remoteSynchronizer?.dispose();
     this.configService.dispose();
     this.#personalRepository.dispose();
     this.#zcodeBuiltinSource.dispose();

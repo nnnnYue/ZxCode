@@ -27,23 +27,15 @@ import type {
   ApplicationIconInfo,
   ApplicationIconRequest,
   Locale,
-  OAuthStateRegistration,
-  PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteTarget,
   SSHConfigAliasOption,
-  RendererTelemetryEventPayload,
-  RendererActionTraceBatchV1,
-  RendererActionTraceConfigV1,
   RendererHeapSample,
-  TelemetryRendererContext,
   TaskNotificationPayload,
   WindowScreenshotResult,
   EmbeddedBrowserDataClearResult,
   WSLDistro,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
   OpenInEditorOptions,
 } from "@zcode/shared";
 
@@ -180,8 +172,6 @@ declare global {
       onTaskNotificationClick(handler: (taskId: string) => void): () => void;
       /** 打开外部 URL */
       openExternal(url: string): void;
-      /** 查询当前语言下是否存在可用的用户社群入口 */
-      canOpenCommunity(locale: Locale): Promise<boolean>;
       /** 在系统文件管理器中打开指定路径 */
       openInFileManager(path: string): Promise<{ success: boolean; error?: string }>;
       /** 使用系统默认应用打开本地文件 */
@@ -196,26 +186,10 @@ declare global {
       prepareCuaHelperPermissionDrag?(): Promise<PrepareCuaHelperPermissionDragResult>;
       /** 从权限浮窗拖拽 Helper.app 到 macOS 权限列表 */
       startCuaHelperPermissionDrag?(): void;
-      /** 上报 OAuth state 用于 deep link 路由 */
-      registerOAuthState(payload: OAuthStateRegistration): void;
-      /** 注册 OAuth deep link 回调，返回 disposer */
-      onOAuthCallback(cb: (url: string) => void): () => void;
       /** 注册支付 deep link 回调，返回 disposer */
       onPaymentCallback(cb: (url: string) => void): () => void;
       /** 通知 main process renderer 已就绪 */
       notifyRendererReady(): void;
-      /** 同步当前 renderer 的 telemetry 上下文到 main process */
-      syncTelemetryContext(context: TelemetryRendererContext): void;
-      /** 通过 main process 统一上报业务 telemetry 事件 */
-      reportTelemetryEvent(payload: RendererTelemetryEventPayload): Promise<void>;
-      /** 读取 Desktop Renderer 用户操作 Trace 灰度配置。 */
-      getRendererActionTraceConfig?(): Promise<RendererActionTraceConfigV1>;
-      /** 订阅 Renderer 用户操作 Trace 灰度配置变化。 */
-      onRendererActionTraceConfigChanged?(
-        callback: (config: RendererActionTraceConfigV1) => void,
-      ): () => void;
-      /** 发送已结束的 ui_action batch；Main 不返回业务结果。 */
-      reportRendererActionTraceBatch?(batch: RendererActionTraceBatchV1): void;
       /** 主窗口 renderer 的 60 秒 heap 读数；单向 send，Main 不回执。 */
       reportRendererHeapSample?(sample: RendererHeapSample): void;
       /** 触发任务状态对应的系统通知 */
@@ -257,28 +231,6 @@ declare global {
       ): Promise<ChromeBrowserDataImportResult>;
       /** 清理内置浏览器缓存或全部站点数据。 */
       clearEmbeddedBrowserData?(mode: "cache" | "all"): Promise<EmbeddedBrowserDataClearResult>;
-      /** 注册新版本已下载完毕的回调，返回 disposer */
-      onUpdateReady(callback: (version: string) => void): () => void;
-      /** 注册"手动检查更新"结果的回调，返回 disposer */
-      onUpdateCheckResult(callback: (payload: UpdateCheckResultPayload) => void): () => void;
-      /** 注册自动更新持续状态变化，返回 disposer */
-      onUpdateStateChanged?(callback: (payload: UpdateStatePayload) => void): () => void;
-      /** 主动读取当前自动更新状态 */
-      getUpdateState?(): Promise<UpdateStatePayload>;
-      /** 开始下载当前已发现的更新 */
-      downloadUpdate?(): Promise<void>;
-      /** 取消当前正在下载的更新 */
-      cancelUpdateDownload?(): Promise<void>;
-      /** 打开或聚焦独立更新窗口 */
-      openUpdateStatusWindow?(): Promise<void>;
-      /** 读取自动更新偏好 */
-      getAutoUpdatePreferences?(): Promise<{
-        autoDownloadAndInstallUpdates: boolean;
-      }>;
-      /** 写入“自动下载并安装更新”偏好 */
-      setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
-      /** 跳过当前已发现的更新版本 */
-      skipUpdateVersion?(version: string): Promise<void>;
       /** 注册应用语言变化，返回 disposer */
       onApplicationLocaleChanged?(callback: (locale: Locale) => void): () => void;
       /** 订阅 main 进程修改 settings 后的通知 */
@@ -287,14 +239,6 @@ declare global {
       getDesktopSessionActivity?(): Promise<{
         runningAgentSessionCount: number;
       }>;
-      /** 注册更新安装后的版本说明，返回 disposer */
-      onPostUpdateReleaseNotes(
-        callback: (payload: PostUpdateReleaseNotesPayload) => void,
-      ): () => void;
-      /** 标记当前版本说明已读 */
-      acknowledgePostUpdateReleaseNotes(version: string): Promise<void>;
-      /** 用户确认重启安装更新 */
-      quitAndInstallUpdate(): Promise<void>;
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(): Promise<EditorInfo[]>;
       /** 按兼容 bundle id 或结构化 locator 获取系统应用图标 */

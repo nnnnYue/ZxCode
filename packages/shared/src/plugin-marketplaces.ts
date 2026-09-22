@@ -30,15 +30,10 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
 ]);
 
 export const DEFAULT_PLUGIN_MARKETPLACES: DefaultPluginMarketplace[] = [
-  {
-    // ZCode 官方唯一市场：本地 seed 分片与 CDN 分片在 Agent storage 内合并。
-    // CDN manifest 的 name 必须与该 canonical id 一致。
-    id: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
-    source: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
-    name: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
-    description: "Official ZCode plugins marketplace: built-in and community plugins for ZCode.",
-    pluginCount: 0,
-  },
+  // 去平台化：官方市场目录已在编译期随包分发（resources/official-marketplace + bundled
+  // seed），不再向 known_marketplaces 写入任何 CDN url source，运行时因此不存在
+  // 官方目录的 fetch 路径；官方目录概要由 bootstrap 在 known 缺失时从本地快照合成。
+  // 这里仅保留用户显式添加的自定义市场入口，默认清单为空。
 ];
 
 // 商店「公开」分段只有一个 ZCode 官方市场 id，内置与 CDN 不再拆分身份。

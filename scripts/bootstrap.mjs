@@ -162,6 +162,18 @@ runGit(["submodule", "update", "--init", "--recursive", "apps/zcode-cli"]);
 
 runPnpm(withRemoteAssets ? ["install", "--config.confirmModulesPurge=false"] : ["install"]);
 
+// 编译期刷新内置 Provider 配置快照（下载 -> 去平台化清洗 -> 校验 -> 写回）。
+// 网络失败 / 离线时脚本自身已按 0 退出并保留仓库快照兜底；这里再加一层兜底，
+// 任何异常都不阻断 bootstrap。
+try {
+  runCommand(process.execPath, [resolve(rootDir, "scripts/update-builtin-provider-config.mjs")], {
+    cwd: rootDir,
+    env: process.env,
+  });
+} catch (error) {
+  console.warn(`[bootstrap] update-builtin-provider-config 失败（不阻断）: ${String(error)}`);
+}
+
 runPnpm(["prepare:desktop-runtime"], {
   env: withRemoteAssets
     ? {}

@@ -1,10 +1,8 @@
-/* eslint-disable max-lines -- Usage、Entitlement 与 Reset 的跨进程协议需要共享同一组 Account Access 字段和运行时 schema，暂时集中维护。 */
 import { z } from "zod";
 
 // 额度类型拆在 usage-quota.ts，见该文件头部说明；这里 re-export 保持既有 import 路径不变。
 export * from "./usage-quota.js";
 import type { UsageMcpQuotaSnapshot, UsageQuotaSnapshot } from "./usage-quota.js";
-import type { ZCodeAccountAccess, ZCodeProviderAccountAccess } from "./zcode-protocol/index.js";
 
 export const ESTIMATED_TOKEN_CHAR_DIVISOR = 3;
 
@@ -14,36 +12,6 @@ export type CodingPlanUsageGranularity = "hour" | "day";
 export type CodingPlanUsageDetailMetric = "credits" | "usage";
 export type CodingPlanUsageDetailSubject = "model" | "tool";
 
-export interface UsageStatsRequest {
-  range: UsageStatsRange;
-  /** 使用统计数据源。App Usage 显式使用本地 session 聚合,Coding Plan 显式使用 monitor 接口。 */
-  dataSource?: "local" | "monitor";
-  /** 设置页可传入用户当前选中的 Z.AI / BigModel 来源，避免两边都配置时只隐式读取第一家。 */
-  preferredProviderId?: string;
-  /** Registry 静态访问类别，或调用边界已解析的动态账号访问上下文。 */
-  accountAccess?: ZCodeProviderAccountAccess | ZCodeAccountAccess;
-  /** 指定来源的场景必须命中 preferredProviderId,否则不允许回退到其它 provider 或本地聚合。 */
-  requirePreferredProvider?: boolean;
-  /** 是否允许 host 环境变量覆盖 provider key。默认允许,显式 provider 场景可关闭。 */
-  allowEnvApiKey?: boolean;
-  /**
-   * 统计按调用端时区归桶。
-   * UI 默认传入浏览器当前时区；缺省时 host 侧回退到系统时区。
-   */
-  timeZone?: string;
-}
-
-export interface CodingPlanUsageRequest {
-  range: CodingPlanUsageRange;
-  /** 自定义日期范围。仅 range=custom 时生效，按调用端自然日解释，最大 30 天。 */
-  customStartDate?: string | null;
-  customEndDate?: string | null;
-  preferredProviderId: string;
-  /** Registry 静态访问类别，或本次 Team 查询绑定的动态账号访问上下文。 */
-  accountAccess: ZCodeProviderAccountAccess | ZCodeAccountAccess;
-  timeZone?: string;
-}
-
 export interface UsageEntitlementRequest {
   /** 购买或领取完成后，使对应 Start Plan balance 短期缓存失效。 */
   invalidateBalanceCache?: boolean;
@@ -51,8 +19,6 @@ export interface UsageEntitlementRequest {
   includeSubscription?: boolean;
   /** 聊天输入区可传入当前选中的内置供应商,确保 BigModel/Z.AI 用量跟随模型选择。 */
   preferredProviderId?: string;
-  /** 指定 Account Provider 的静态访问类别，或调用边界已解析的动态账号访问上下文。 */
-  accountAccess?: ZCodeProviderAccountAccess | ZCodeAccountAccess;
   /** 当前模型已明确选中该内置供应商时，即使供应商列表里被隐藏也允许读取其 key。 */
   allowDisabledPreferredProvider?: boolean;
   /** 指定来源的场景必须命中 preferredProviderId,否则不允许回退到其它 provider。 */

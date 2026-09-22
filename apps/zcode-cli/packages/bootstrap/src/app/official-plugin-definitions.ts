@@ -1,4 +1,8 @@
 import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+// 官方市场 CDN 目录的编译期快照（scripts/fetch-official-marketplace.mjs 生成）。
+// 去平台化后商店目录完全随包分发：CDN 条目与内置插件共用同一 filesystem seed，
+// 运行时不存在任何目录刷新 fetch 路径。
+import { OFFICIAL_MARKETPLACE_OFFLINE_ENTRIES } from "./official-marketplace-offline-entries.js";
 
 // 内置插件的商店信息 seed（原样写入官方 marketplace.json 的条目 raw，键名与 CDN 目录
 // schema 一致：displayName_i18n / examplePrompts_i18n 等），解析复用 adapter 的
@@ -16,6 +20,8 @@ export interface OfficialPluginListingSeed {
   heroImage?: string;
   examplePrompts?: string[];
   examplePrompts_i18n?: Record<string, string[]>;
+  /** 与 CDN 目录 schema 对齐：显式 true 才会展示付费套餐提示。 */
+  requiresPaidPlan?: boolean;
 }
 
 const OFFICIAL_BROWSER_USE_PLUGIN_NAME = "browser-use";
@@ -361,6 +367,10 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
     version: "0.6.3",
   },
+  // CDN 目录条目的离线快照：与内置插件同走 filesystem seed（解压目录在
+  // packages/desktop/resources/official-marketplace，打包时随 resources 分发），
+  // cachePath/安装/卸载语义与上方内置条目完全一致。
+  ...OFFICIAL_MARKETPLACE_OFFLINE_ENTRIES,
 ];
 
 // 在 official plugin 定义里标了 defaultEnabled: true 的, 拼成 `<name>@<marketplace>` 形式,

@@ -5,10 +5,12 @@
 // Map<workspaceKey, SessionDataLayer>，本层不感知 workspace。
 import { ConversationProjectionStore } from "@/v4/conversationProjectionStore.js";
 import { shouldExposeE2EStoreBridge } from "@/lib/e2eStoreBridge.js";
-import type { SessionOpenKind } from "@/lib/sessionOpenArmsTelemetry.js";
 import { conversationTopic, type ConversationTransport } from "@/v4/transport.js";
 import { logger } from "@/logger.js";
 import type { CommandsQueryParams, CommandsQueryResult } from "@zcode/shared/zcode-protocol-v4";
+
+/** 本 pane 本次打开 session 的路径：cold 新建订阅 / warm 复用 / keep_warm 复用宽限期 store。 */
+export type SessionOpenKind = "cold" | "warm" | "keep_warm";
 
 /** pane 持有的租约；release 幂等。 */
 export interface SessionLease {

@@ -18,13 +18,28 @@ import {
   type OpenInEditorOptions,
   type SaveCliMcpToUserDirectoryRequest,
   type CreateTempTextAttachmentRequest,
-  type UpdateStatePayload,
   type WindowControlsOverlayReadyPayload,
 } from "@zcode/shared";
+import { z } from "zod";
+
+const windowWorkspaceSyncPayloadSchema = z
+  .object({
+    workspacePath: nonEmptyStringSchema,
+    workspaceIdentity: nonEmptyStringSchema.optional(),
+    workspaceKey: nonEmptyStringSchema,
+  })
+  .strict();
+
+const mobileRelayGrantRequestSchema = z
+  .object({
+    workspacePath: nonEmptyStringSchema,
+    workspaceIdentity: nonEmptyStringSchema.optional(),
+    remoteSessionId: nonEmptyStringSchema.optional(),
+  })
+  .strict();
 import { getInstalledEditors } from "./editors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
 import { exportLogs } from "./exportLogs.js";
-import { resolveCommunityUrl } from "./desktopCommandHandlers.js";
 import { openInEditor } from "./openInEditor.js";
 import {
   openResourceManager,
@@ -57,7 +72,6 @@ import { registerDesktopPrintToPdfIpcHandler } from "./desktopPrintToPdf.js";
 import { registerCuaPipActiveSessionIpc } from "./desktopCuaPipIpc.js";
 
 export function registerPlatformIpcHandlers(options: {
-  fetchHelpConfig?: () => Promise<unknown>;
   logger: {
     info: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
@@ -75,19 +89,30 @@ export function registerPlatformIpcHandlers(options: {
     command: DesktopCommandId,
     senderWindow?: BrowserWindow | null,
   ) => Promise<unknown>;
-  acknowledgePostUpdateReleaseNotes: (version: string) => Promise<void>;
   syncActiveTaskSession: (windowId: number, sessionId: string | null) => void;
   syncTaskRealtimeWorkspaceKeys: (windowId: number, workspaceKeys: Iterable<string>) => void;
-  getUpdateState: () => UpdateStatePayload;
-  openUpdateStatusWindow: () => void;
   getDesktopSessionActivity: () => {
     runningAgentSessionCount: number;
   };
-  getAutoUpdatePreferences: () => Promise<{
-    autoDownloadAndInstallUpdates: boolean;
-  }>;
-  setAutoDownloadAndInstallUpdates: (enabled: boolean) => Promise<void>;
   syncAppSettings: (patch: unknown) => void;
+  /** renderer 上报当前窗口 active workspace 三元组（手机远控 presence 数据源）。 */
+  syncWindowWorkspace?: (
+    windowId: number,
+    payload: { workspacePath: string; workspaceIdentity?: string; workspaceKey: string },
+  ) => void;
+  /** 自部署手机远控 relay 状态查询（设置页与授权入口共用）；supported 由 handler 统一补齐。 */
+  getMobileRelayStatus?: () => {
+    enabled: boolean;
+    connected: boolean;
+    serverUrl?: string;
+    lastError?: string;
+  };
+  /** 请求 relay 签发一次性手机远控授权链接。 */
+  requestMobileRelayGrant?: (payload: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+  }) => Promise<{ success: boolean; url?: string; expiresAt?: number; error?: string }>;
   /** 快捷键设置页录制态开关：true 时 main 重建菜单摘除可配置 accelerator */
   setShortcutRecordingActive?: (active: boolean, ownerWebContentsId?: number | null) => void;
   /** 桌面端设备标识符（基于 userData 路径的 SHA-256） */
@@ -291,6 +316,40 @@ export function registerPlatformIpcHandlers(options: {
     options.syncAppSettings(result.data);
   });
 
+  ipcMain.on(PlatformChannels.SyncWindowWorkspace, (event, payload: unknown) => {
+    const result = windowWorkspaceSyncPayloadSchema.safeParse(payload);
+    if (!result.success) {
+      options.logger.warn(
+        "[sync-window-workspace] invalid payload:",
+        formatZodError(result.error),
+      );
+      return;
+    }
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      options.syncWindowWorkspace?.(win.id, result.data);
+    }
+  });
+
+  ipcMain.handle(PlatformChannels.GetMobileRelayStatus, () => ({
+    supported: true,
+    ...options.getMobileRelayStatus?.(),
+  }));
+
+  ipcMain.handle(PlatformChannels.RequestMobileRelayGrant, (_event, payload: unknown) => {
+    const result = mobileRelayGrantRequestSchema.safeParse(payload);
+    if (!result.success) {
+      return {
+        success: false,
+        error: `invalid mobile relay grant request: ${formatZodError(result.error)}`,
+      };
+    }
+    return options.requestMobileRelayGrant?.(result.data) ?? {
+      success: false,
+      error: "mobile relay is not available",
+    };
+  });
+
   // 快捷键录制态：renderer 设置页进入/退出录制时通知。macOS 系统菜单会先于 renderer
   // 吃掉按键，录制 menu 通道命令必须先摘掉可配置 accelerator，否则按键直接触发原命令。
   // 附带发起方 webContents id：录制中窗口销毁时 main 侧据此复位（见 index.ts）。
@@ -322,46 +381,6 @@ export function registerPlatformIpcHandlers(options: {
     currentApplicationLocale: options.currentApplicationLocale,
   });
 
-  ipcMain.handle(PlatformChannels.CanOpenCommunity, async (_event, locale: unknown) => {
-    const result = localeSchema.safeParse(locale);
-    if (!result.success) {
-      options.logger.warn("[community] invalid locale:", formatZodError(result.error));
-      return false;
-    }
-
-    const communityUrl = await resolveCommunityUrl({
-      locale: result.data,
-      fetchRemoteConfig: options.fetchHelpConfig,
-      logger: options.logger,
-    });
-
-    return typeof communityUrl === "string" && communityUrl.length > 0;
-  });
-
-  ipcMain.handle(
-    PlatformChannels.AcknowledgePostUpdateReleaseNotes,
-    async (_event, version: string) => {
-      const validatedVersion = nonEmptyStringSchema.parse(version);
-      await options.acknowledgePostUpdateReleaseNotes(validatedVersion);
-    },
-  );
-
-  ipcMain.handle(PlatformChannels.GetUpdateState, () => options.getUpdateState());
-  ipcMain.handle(PlatformChannels.OpenUpdateStatusWindow, () => {
-    options.openUpdateStatusWindow();
-  });
-  ipcMain.handle(PlatformChannels.GetAutoUpdatePreferences, () =>
-    options.getAutoUpdatePreferences(),
-  );
-  ipcMain.handle(
-    PlatformChannels.SetAutoDownloadAndInstallUpdates,
-    async (_event, enabled: unknown) => {
-      if (typeof enabled !== "boolean") {
-        return;
-      }
-      await options.setAutoDownloadAndInstallUpdates(enabled);
-    },
-  );
   ipcMain.handle(PlatformChannels.GetDesktopSessionActivity, () =>
     options.getDesktopSessionActivity(),
   );

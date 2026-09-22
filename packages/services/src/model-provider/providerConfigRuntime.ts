@@ -11,16 +11,11 @@ import { importLegacyPersonalProviderConfig } from "./legacyPersonalProviderConf
 
 export interface ProviderConfigRuntimeOptions {
   readonly zcodeBuiltinFilePath: string;
-  readonly zcodeBuiltinActiveFilePath?: string;
-  readonly zcodeBuiltinRemote?: NodeProviderConfigRuntimeOptions["zcodeBuiltinRemote"];
-  readonly zcodeBuiltinEnvironment?: NodeProviderConfigRuntimeOptions["zcodeBuiltinEnvironment"];
-  readonly onZCodeBuiltinRefreshError?: (error: unknown) => void;
   readonly onPersonalConfigRecovery?: (event: PersonalProviderConfigRecoveryEvent) => void;
   readonly onPersonalConfigPollingError?: (error: unknown) => void;
   readonly personalFilePath?: string;
   readonly personalPollingIntervalMs?: number | false;
   readonly readLegacyProviders?: () => Promise<readonly ModelProviderConfig[]>;
-  readonly watch?: boolean;
 }
 
 /**
@@ -34,16 +29,11 @@ export class ProviderConfigRuntime {
   constructor(options: ProviderConfigRuntimeOptions) {
     const runtimeOptions: NodeProviderConfigRuntimeOptions = {
       zcodeBuiltinFilePath: options.zcodeBuiltinFilePath,
-      zcodeBuiltinActiveFilePath: options.zcodeBuiltinActiveFilePath,
-      zcodeBuiltinRemote: options.zcodeBuiltinRemote,
-      zcodeBuiltinEnvironment: options.zcodeBuiltinEnvironment,
-      onZCodeBuiltinRefreshError: options.onZCodeBuiltinRefreshError,
       onPersonalConfigRecovery: options.onPersonalConfigRecovery,
       onPersonalConfigPollingError: options.onPersonalConfigPollingError,
       personalFilePath:
         options.personalFilePath ?? join(getAppConfigDir(), PERSONAL_PROVIDER_CONFIG_FILE_NAME),
       personalPollingIntervalMs: options.personalPollingIntervalMs,
-      watch: options.watch,
       ...(options.readLegacyProviders
         ? {
             importLegacy: async () =>
@@ -69,10 +59,7 @@ export class ProviderConfigRuntime {
     return this.#runtime.resolveZCodeBuiltinActiveFilePath();
   }
 
-  refreshZCodeBuiltin(options?: { readonly force?: boolean }) {
-    return this.#runtime.refreshZCodeBuiltin(options);
-  }
-
+  /** 内置目录改为纯打包文件后不存在远端刷新；保留周期检查钩子供账号恢复使用。 */
   onDidCheckZCodeBuiltin(listener: () => Promise<void>): () => void {
     return this.#runtime.onDidCheckZCodeBuiltin(listener);
   }

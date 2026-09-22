@@ -1,9 +1,16 @@
 import type { RemoteTarget } from "./remoteTarget.js";
-import type { TelemetryEventPayload } from "./telemetry.js";
 import {
   parseRemoteWorkspaceIdentity,
   type RemoteWorkspaceIdentityKind,
 } from "./remote-workspace-identity.js";
+
+/** 去平台化后本地保留的最小埋点 payload 形状（原 @zcode/shared telemetry.ts 已删除）。 */
+interface RemoteUsageTelemetryEventPayload {
+  elementName: string;
+  eventRegion: string;
+  eventType: string;
+  eventExtraDetail: Record<string, string>;
+}
 
 /** 只提取场景枚举；未知远端身份仍为 remote，禁止向业务埋点暴露地址或路径。 */
 export function resolveWorkspaceTelemetryDetail(scope: {
@@ -35,7 +42,7 @@ export function buildRemoteWorkspaceConnectResultTelemetry(input: {
   remoteKind: RemoteUsageRemoteKind;
   connectTrigger: RemoteWorkspaceConnectTrigger;
   errorCategory?: RemoteUsageErrorCategory;
-}): TelemetryEventPayload {
+}): RemoteUsageTelemetryEventPayload {
   return {
     elementName: "remote_workspace_connect_result",
     eventRegion: "remote_workspace",

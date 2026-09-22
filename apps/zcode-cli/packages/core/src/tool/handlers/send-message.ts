@@ -9,10 +9,34 @@ import {
   type SendMessageOutput,
   type TraceContext,
 } from "@zcode/contracts";
-import type { ToolEntry, ToolHandler } from "../types.js";
-import { assertNotOffPeakTurn } from "./off-peak.js";
+import type { ToolEntry, ToolHandler, ToolExecutionContext } from "../types.js";
 
 const MAX_SEND_MESSAGE_MODEL_BYTES = 4096;
+
+/**
+ * 闲时派发轮的 handler 级拒绝（turn denylist 之外的第二层纵深）。
+ * Off-Peak 调度协议已下线；此守卫仅为历史 off-peak resume 轮保留。
+ */
+function assertNotOffPeakTurn(
+  context: ToolExecutionContext,
+  toolName: string,
+  options?: { hint?: string; recoverable?: boolean },
+): void {
+  if (!context.offPeakTurn) return;
+  const hint = options?.hint ? ` ${options.hint}` : "";
+  throw createCoreError(
+    CoreErrorType.PermissionDenied,
+    `${toolName} is not allowed while running an idle-time task.${hint}`,
+    {
+      context: {
+        toolCallId: context.toolCallId,
+        toolName,
+      },
+      recoverable: options?.recoverable ?? false,
+      retryable: false,
+    },
+  );
+}
 /**
  * SendMessage 续跑已完成子 Agent 走
  * resumeTerminalAgentInBackground，不携带闲时轮的 subagentModelOverride，子 Agent 按父会话

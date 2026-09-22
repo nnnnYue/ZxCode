@@ -1,15 +1,5 @@
 /** English translations */
 const enUS: Record<string, string> = {
-  "startPlan.recommendation.subagentDescription":
-    "Your Start Plan has quota available for {model}. Switch this subagent’s model to the Start Plan?",
-  "startPlan.recommendation.preferenceSaveFailed":
-    "Could not save “Don’t ask again”. Continuing with your choice for this operation.",
-  "startPlan.recommendation.title": "Start Plan quota available",
-  "startPlan.recommendation.description":
-    "Your Start Plan still has quota for {model}. Would you like to use it?",
-  "startPlan.recommendation.switch": "Switch plan",
-  "startPlan.recommendation.decline": "Not now",
-  "startPlan.recommendation.dismiss": "Don’t show again",
   "occupationOnboarding.stepMode": "UI mode",
   "occupationOnboarding.modeTitle": "Choose your UI mode",
   "occupationOnboarding.modeDescription": "How would you like ZCode to show its work?",
@@ -111,7 +101,6 @@ const enUS: Record<string, string> = {
     "The preparation process exited or disconnected. Exit and reopen ZCode to check the migration records again.",
   "startup.global.error.unsupported_runtime":
     "The configured Agent does not support storage preparation. Restore the bundled Agent, then reopen ZCode.",
-
   "startup.database.checking": "Checking history",
   "startup.database.waiting_for_lock": "Waiting for another window to prepare data",
   "startup.database.migrating": "Upgrading history",
@@ -133,7 +122,6 @@ const enUS: Record<string, string> = {
   "bashOutput.error.unsupported": "This runtime does not support background output",
   "bashOutput.error.read_failed": "Could not read the output file",
   "bashOutput.error.query_failed": "Could not connect to the task runtime",
-
   "purchase.entry.loading": "Loading plans…",
   "purchase.entry.retry": "Could not load plans. Retry",
   "chat.selections.previewSideBlocked":
@@ -153,10 +141,6 @@ const enUS: Record<string, string> = {
   "chat.composer.attachment": "Attachments",
   "chat.permission.feedback.ariaLabel": "Optional feedback for the model when denying",
   "chat.permission.feedback.placeholder": "Tell the model what to do instead...",
-  "offPeak.chatCreated.defaultTitle": "Idle-time task",
-  "offPeak.chatCreated.queued": "Queued for idle-time compute",
-  "offPeak.chatCreated.queuedAt": "#{position} in queue",
-  "offPeak.chatCreated.open": "Go to idle-time tasks",
   "settings.computerUse.disabledToast":
     "Computer Use is disabled. Existing conversations require a ZCode restart to take effect.",
   "settings.modelProvider.connectionUnavailableNotice": "The current plan is unavailable.",
@@ -170,7 +154,6 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.navigationUnavailable":
     "The requested provider is unavailable. Please choose another provider.",
   "workspace.context.lastActivity": "Last active {time}",
-  // Common
   "common.loading": "Loading...",
   "common.listSeparator": ", ",
   "common.generating": "Generating...",
@@ -186,252 +169,6 @@ const enUS: Record<string, string> = {
   "common.save": "Save",
   "common.saving": "Saving...",
   "common.delete": "Delete",
-  "conversationShare.trigger": "Share",
-  "conversationShare.shareTitle": "Share title",
-  "conversationShare.permissionLabel": "Access",
-  "conversationShare.permission.private": "Only me",
-  "conversationShare.permission.privateHint": "For personal notes",
-  "conversationShare.permission.linkViewer": "Anyone with the link can view",
-  "conversationShare.permission.linkViewerHint": "Cannot import and continue",
-  "conversationShare.permission.linkViewerSummary": "Link holders can view",
-  "conversationShare.permission.linkEditor": "Anyone with the link can import and continue",
-  "conversationShare.permission.linkEditorHint": "Import into ZCode",
-  "conversationShare.permission.linkEditorSummary": "Link holders can import and continue",
-  "conversationShare.permission.privateSummary": "Only me",
-  "conversationShare.openLink": "Open share page",
-  "conversationShare.result.title": "Share created",
-  "conversationShare.result.description": "Your link is ready to copy or view in a browser.",
-  "conversationShare.result.openInBrowser": "View in browser",
-  "conversationShare.result.dismiss": "Close share result",
-  "conversationShare.generatingLink": "Generating share link",
-  "conversationShare.copyLink": "Copy link",
-  "conversationShare.copySucceeded": "Share link copied",
-  "conversationShare.publishSucceeded": "Share link created",
-  "conversationShare.publishSucceededWithSkips": "Share link created; {count} file(s) were skipped",
-  "conversationShare.copyFailed": "Could not copy share link",
-  "conversationShare.publishFailed": "Could not generate the share link. Try again.",
-  "conversationShare.error.authenticationRequired":
-    "Sharing is available only when you are signed in. Your sign-in has expired; sign in again, then retry.",
-  "conversationShare.error.featureDisabled":
-    "Sharing is not available for this workspace or connection type.",
-  "conversationShare.error.artifactNotAllowed":
-    "A previewed file type is not supported for sharing. Deselect that conversation and retry.",
-  "conversationShare.error.limitExceeded":
-    "The selected conversation or its files exceed the sharing limit. Select fewer conversations.",
-  "conversationShare.error.rateLimited": "Too many share attempts. Wait a moment, then try again.",
-  "conversationShare.error.network":
-    "Could not reach the sharing service. Check your connection and try again.",
-  "conversationShare.error.safetyCheckTimeout":
-    "The share safety check took too long. Try again later.",
-  "conversationShare.error.invalidSelection":
-    "The selected conversation changed. Reopen the share panel and select it again.",
-  "conversationShare.error.invalidConversation":
-    "The selection contains a structure that is not shareable yet. Deselect active turns or inline images, confirm preview files are complete, and retry.",
-  "conversationShare.error.runningTurn":
-    "A selected turn is still running. Deselect it and wait for it to finish before sharing.",
-  "conversationShare.error.streamingRow":
-    "A selected response is still streaming. Wait for the turn to finish before sharing.",
-  "conversationShare.error.activeToolCall":
-    "A selected tool call is still active. Wait for it to finish before sharing.",
-  "conversationShare.error.activeSubagent":
-    "A selected subtask is still running. Wait for it to finish before sharing.",
-  "conversationShare.error.inputAttachment":
-    "A user-input attachment could not be shared. Check that it still exists and try again.",
-  "conversationShare.error.inlineToolImage":
-    "A selected turn contains an unsupported inline tool image. Deselect that turn and retry.",
-  "conversationShare.error.unsupportedTimeline":
-    "A selected turn contains an unsupported branch or restore record. Deselect that turn and retry.",
-  "conversationShare.error.unsafeUrl":
-    "The selected content contains a local or inline file URL. Remove it before sharing.",
-  "conversationShare.error.missingProductTurn":
-    "The selected conversation is incomplete. Reopen the share panel and select the turn again.",
-  "conversationShare.error.artifactTypeNotAllowed":
-    "A previewed file type is not allowed for sharing. Deselect its turn and retry.",
-  "conversationShare.error.artifactExtensionMissing":
-    "A previewed file has no valid extension. Check the file and retry.",
-  "conversationShare.error.artifactOutsideWorkspace":
-    "A previewed file is outside the current workspace. Regenerate or move it, then retry.",
-  "conversationShare.error.artifactChanged":
-    "A previewed file changed before sharing. Regenerate the preview file and retry.",
-  "conversationShare.error.artifactReadFailed":
-    "A previewed file could not be read. Check that it still exists and is accessible, then retry.",
-  "conversationShare.error.artifactSizeLimit":
-    "A file exceeds the per-file size limit. Deselect that turn or use a smaller file, then retry.",
-  "conversationShare.error.artifactManifest":
-    "The preview file manifest is incomplete. Regenerate the file and refresh the share panel.",
-  "conversationShare.error.payloadLimit":
-    "The selected conversation or files exceed the sharing limit. Select less and retry.",
-  "conversationShare.error.disclosureRequired":
-    "Review and confirm the shared content before creating the link.",
-  "conversationShare.error.uploadFailed":
-    "A file could not be uploaded completely. Check that it still exists, then retry.",
-  "conversationShare.error.connectionUnavailable":
-    "Desktop connection is not ready. Reopen the share panel and try again.",
-  "conversationShare.error.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.error.summary":
-    "Share failed: {count} issue(s) found. See the share panel for details.",
-  "conversationShare.issue.artifactTypeNotAllowed":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) cannot be shared and will be skipped. Supported types: {allowedFormats}.",
-  "conversationShare.issue.artifactExtensionMissing":
-    "Turn {turnOrdinal}: the preview file has no valid extension. Check the file name and try again.",
-  "conversationShare.issue.artifactOutsideWorkspace":
-    "Turn {turnOrdinal}: the preview file is outside the current workspace. Move or regenerate it and try again.",
-  "conversationShare.issue.artifactChanged":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed while it was being read. Regenerate the file and try again.",
-  "conversationShare.issue.artifactReadFailed":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read. Check that it still exists and is accessible.",
-  "conversationShare.issue.inputAttachment":
-    "Turn {turnOrdinal} contains a user-input attachment, which is not supported in this version. Deselect this turn.",
-  "conversationShare.issue.inputAttachmentUnavailable":
-    "Turn {turnOrdinal} contains a user-input attachment that no longer exists or cannot be read.",
-  "conversationShare.issue.inlineToolImage":
-    "Turn {turnOrdinal} contains an inline tool image that cannot be included in a public share.",
-  "conversationShare.issue.runningTurn":
-    "Turn {turnOrdinal} is still running. Wait for it to finish or deselect it.",
-  "conversationShare.issue.streamingRow":
-    "Turn {turnOrdinal} is still generating. Wait for it to finish or deselect it.",
-  "conversationShare.issue.activeToolCall":
-    "Turn {turnOrdinal} has an unfinished tool call. Deselect this turn.",
-  "conversationShare.issue.activeSubagent":
-    "Turn {turnOrdinal} has a running subtask. Wait for it to finish or deselect it.",
-  "conversationShare.issue.unsupportedTimeline":
-    "Turn {turnOrdinal} contains a timeline record that cannot be included in a public share.",
-  "conversationShare.issue.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.issue.unsafeUrl":
-    "Turn {turnOrdinal} contains a local or inline file address, which is not supported. Remove it and try again.",
-  "conversationShare.issue.missingProductTurn":
-    "The selection is missing a complete turn identity. Re-select the conversation.",
-  "conversationShare.issue.invalidSelection":
-    "The selected turns changed. Return to selection and choose them again.",
-  "conversationShare.issue.invalidConversation":
-    "The selected conversation is incomplete. Deselect the affected turn(s) and try again.",
-  "conversationShare.issue.staleConversation":
-    "The conversation changed while the share was prepared. Return to selection and try again.",
-  "conversationShare.issue.rowsLimit":
-    "The conversation has {actual} rows, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactCountLimit":
-    "The conversation has {actual} artifacts, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactSizeLimit":
-    "{artifactDisplayName} is {actual}, above the per-file limit of {limit}. Deselect the turn or regenerate a smaller file.",
-  "conversationShare.issue.artifactTotalSizeLimit":
-    "Artifacts total {actual}, above the limit of {limit}. Reduce artifacts or deselect the affected turn(s).",
-  "conversationShare.issue.payloadSizeLimit":
-    "The share request is {actual}, above the limit of {limit}. Reduce the selected turns or artifacts.",
-  "conversationShare.issue.artifactManifest":
-    "The preview artifact manifest is duplicated or incomplete. Regenerate files and refresh the share panel.",
-  "conversationShare.issue.uploadIncomplete":
-    "The upload acknowledgement for {artifactDisplayName} does not match the file. Ensure it did not change and try again.",
-  "conversationShare.issue.unknown":
-    "Share failed during {phase}; the server returned no actionable details. Try again later.",
-  "conversationShare.issue.details": "Error details",
-  "conversationShare.issue.requestIdLabel": "Server request ID",
-  "conversationShare.issue.requestId": "Server request ID: {requestId}",
-  "conversationShare.issue.requestIdMissing": "No server request ID was received.",
-  "conversationShare.issue.copyRequestId": "Copy request ID",
-  "conversationShare.issue.deselectTurn": "Deselect this turn",
-  "conversationShare.issue.retryPreflight": "Check again",
-  "conversationShare.issue.more": "{count} more issue(s) not shown.",
-  "conversationShare.warning.summary":
-    "Shared successfully. {count} file(s) were skipped and are not included in the link.",
-  "conversationShare.warning.artifactSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read, so it was skipped. If it should have been shared, regenerate the file and share again.",
-  "conversationShare.warning.inputAttachmentSkipped":
-    "Turn {turnOrdinal}: the input attachment is not included in the share; the turn's text is still shared.",
-  "conversationShare.warning.inputAttachmentUnavailable":
-    "Turn {turnOrdinal}: {artifactDisplayName} no longer exists or cannot be read and was skipped.",
-  "conversationShare.warning.artifactTypeSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) is not supported and was skipped. Supported types: {allowedFormats}.",
-  "conversationShare.warning.artifactChangedSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed before sharing and was skipped.",
-  "conversationShare.partial.panelLabel": "Select conversations to share",
-  "conversationShare.selection.reopen": "Reopen selection panel",
-  "conversationShare.partial.empty": "There are no completed conversations to share",
-  "conversationShare.partial.selectionStageHint":
-    "Select completed conversations to share, then continue to the next step.",
-  "conversationShare.partial.preflightChecking": "Checking share content…",
-  "conversationShare.partial.preflightBlocked":
-    "Some content cannot be shared. Fix the issues below first.",
-  "conversationShare.partial.preflightSkipped":
-    "{count} file(s) will not be included in the share. They will be skipped if you continue.",
-  "conversationShare.partial.preflightDeferred":
-    "Some files cannot be checked yet. They will be verified again when publishing.",
-  "conversationShare.partial.continueWithSkips": "Continue (skip {count} file(s))",
-  "conversationShare.partial.selectionHint":
-    "Review the title, access, and sensitive-content acknowledgement, then create the link.",
-  "conversationShare.partial.confirmationTitle": "Confirm shared content",
-  "conversationShare.publish.failedTitle": "Share publication failed",
-  "conversationShare.publish.failedDescription": "Fix the issue below, then retry.",
-  "conversationShare.publish.retry": "Retry generation",
-  "conversationShare.publish.footerMeta": "Share {selected} conversation turn(s), {access}",
-  "conversationShare.publish.failedFooter": "Adjust the content before publishing again",
-  "conversationShare.partial.selectAll": "Select all",
-  "conversationShare.partial.deselectAll": "Deselect all",
-  "conversationShare.partial.selectionCount": "{selected}/{total}",
-  "conversationShare.partial.selectedSummary": "Selected {selected} / {total}",
-  "conversationShare.partial.cancel": "Cancel",
-  "conversationShare.partial.next": "Next",
-  "conversationShare.partial.back": "Back",
-  "conversationShare.partial.confirm": "Create share link",
-  "conversationShare.partial.publishing": "Generating…",
-  "conversationShare.progress.collecting": "Collecting conversation and artifacts…",
-  "conversationShare.progress.uploading": "Uploading artifacts…",
-  "conversationShare.progress.checking": "Waiting for safety checks to finish…",
-  "conversationShare.progress.collectingFailed": "Collecting conversation and artifacts failed",
-  "conversationShare.progress.uploadingFailed": "Uploading artifacts failed",
-  "conversationShare.progress.checkingFailed": "Safety checks failed",
-  "conversationShare.phase.collecting": "Prepare content",
-  "conversationShare.phase.uploading": "Upload artifacts",
-  "conversationShare.phase.checking": "Safety checks",
-  "conversationShare.phase.collectingComplete": "Conversation and artifacts ready",
-  "conversationShare.phase.uploadingComplete": "Artifacts uploaded",
-  "conversationShare.phase.uploadingActive": "Uploading {completed} / {total}",
-  "conversationShare.phase.collectingPending": "Waiting to start",
-  "conversationShare.phase.uploadingPending": "Waiting for preparation",
-  "conversationShare.phase.checkingPending": "Waiting for upload",
-  "conversationShare.phase.failed": "Failed",
-  "conversationShare.publicWarning":
-    "Check conversations, tool inputs and outputs, and artifacts for sensitive information.",
-  "conversationShare.disclosure.description":
-    "The system does not automatically detect sensitive information.",
-  "conversationShare.disclosure.checkbox":
-    "I reviewed the shared content and confirm it contains no sensitive information.",
-  "conversationShare.disclosure.scope.trigger": "View review scope",
-  "conversationShare.disclosure.scope.title": "Review scope",
-  "conversationShare.disclosure.scope.reviewLabel": "Review these areas",
-  "conversationShare.disclosure.scope.conversation":
-    "Conversation content: user messages, assistant replies, and task titles",
-  "conversationShare.disclosure.scope.tools":
-    "Tool inputs and outputs: commands, parameters, and results",
-  "conversationShare.disclosure.scope.generated":
-    "Generated content: code, files, and preview content",
-  "conversationShare.disclosure.scope.sensitiveLabel": "Check carefully",
-  "conversationShare.disclosure.scope.sensitive":
-    "Credentials, tokens, passwords, private keys, internal addresses, and personal information",
-  "conversationShare.disclosure.scope.note":
-    "The system does not scan or redact this content automatically. Review each item before sharing.",
-  "conversationShare.import.source": "Imported from share: {title}",
-  "conversationShare.import.dividerLabel": "Imported from share",
-  "conversationShare.import.fallbackRemoteWorkspace":
-    "Imported from share: {title}. The current workspace is remote, which import does not support yet, so the session was created in the local workspace {workspacePath}.",
-  "conversationShare.import.fallbackDefaultWorkspace":
-    "Imported from share: {title}. No target workspace was available, so the session was created in the default workspace {workspacePath}.",
-  "conversationShare.import.downloading": "Downloading shared files: {completed}/{total}",
-  "conversationShare.import.installing": "Installing shared files",
-  "conversationShare.import.committing": "Creating the shared conversation",
-  "conversationShare.import.complete": "Share import complete",
-  "conversationShare.import.loginRequired":
-    "This share cannot be imported anonymously. Sign in to ZCode and try again",
-  "conversationShare.import.notFound": "The share is unavailable for this account",
-  "conversationShare.import.expired": "The share expired. Ask the author to create a new one",
-  "conversationShare.import.integrityFailed": "Share file verification failed; import stopped",
-  "conversationShare.import.failed": "Share import failed. Check your network and retry",
-  "conversationShare.import.integrityFailedWithArtifact":
-    "Verification failed for shared file {artifactDisplayName}; import stopped. Ask the author to create a new link.",
-  "conversationShare.import.failedWithArtifact":
-    "Downloading shared file {artifactDisplayName} failed. Check your network and retry.",
-  "conversationShare.import.retry": "Retry",
   "settings.resourceGroup.item.one": "{count} item",
   "settings.resourceGroup.item.other": "{count} items",
   "pluginCreator.add": "Add",
@@ -498,7 +235,6 @@ const enUS: Record<string, string> = {
   "quickPick.command.toggleDiffPanel": "Switch to diff panel",
   "quickPick.command.feedback": "Feedback",
   "quickPick.command.myTickets": "My feedback",
-  "quickPick.command.community": "Community",
   "quickPick.command.productDocs": "Product docs",
   "quickPick.command.login": "Connect",
   "quickPick.command.logout": "Disconnect",
@@ -545,55 +281,16 @@ const enUS: Record<string, string> = {
   "confirmDialog.projectRemoveTitle": "Remove this project?",
   "confirmDialog.projectRemoveDescription":
     "Project “{projectName}” will be removed from the sidebar, but files on disk will remain untouched.",
-
-  // Welcome / Login
   "welcome.title": "Welcome to ZCode",
   "welcome.username": "Username",
   "welcome.password": "Password",
   "welcome.login": "Login",
   "welcome.loggingIn": "Logging in...",
   "welcome.loginFailed": "Login failed",
-  "login.title": "Welcome to ZCode",
-  "login.description": "Connect your account to start using ZCode",
-  "login.oauth.activeProviderHint":
-    "Current active provider: {provider}. Signing in again replaces the current identity.",
-  "login.oauth.loadingProviders": "Loading account providers...",
-  "login.oauth.noProviders":
-    "No account providers are available right now. Please try again later.",
-  "login.oauth.button": "Continue with {provider}",
-  "login.oauth.button.zai": "Connect to Z.ai",
-  "login.oauth.button.bigmodel": "Connect to BigModel",
-  "login.oauth.regionTag.zai": "Global",
-  "login.oauth.regionTag.bigmodel": "CN",
-  "login.oauth.waiting": "Waiting for {provider} authentication...",
-  "login.oauth.loginFailure": "Login failed, please try again",
-  "login.oauth.cancel": "Cancel",
-  "login.oauth.retry": "Retry login",
-  "login.expired.title": "Your session has expired",
-  "login.expired.description": "To keep your account secure, please sign in again.",
-  "login.expired.action": "Sign in again",
-  "login.expired.restart": "Confirm and restart",
-  "login.useApiKey": "Use API key",
-  "login.apiKey.title": "API Key",
-  "login.apiKey.placeholder": "Enter API key",
-  "login.apiKey.providerLabel": "API key provider",
-  "login.apiKey.provider.zai": "Z.ai",
-  "login.apiKey.provider.bigmodel": "BigModel",
-  "login.apiKey.getApiKey": "Get API Key",
-  "login.apiKey.cancel": "Cancel",
-  "login.apiKey.continue": "Continue",
-  "login.apiKey.emptyError": "Enter an API key.",
-  "login.apiKey.providerMissingError":
-    "Built-in provider configuration for {provider} was not found. Please try again later.",
-  "login.apiKey.saveError": "Failed to save API key: {error}",
-  "login.apiKey.skipError": "Failed to skip API key setup: {error}",
-  "login.skip": "Skip for now",
   "settings.onboarding": "Onboard",
   "settings.onboardingDescription":
     "Choose your role, interface mode, and preferences again. Use Migration settings to import data.",
   "settings.onboardingOpen": "Open onboarding",
-
-  // App header
   "app.currentTheme": "Current: {theme}",
   "app.login": "Connect",
   "app.logout": "Disconnect",
@@ -1187,11 +884,6 @@ const enUS: Record<string, string> = {
   "appHeader.workspaceSessionActionLoading": "Applying session changes...",
   "appHeader.copyLogPath": "Copy log path",
   "workspaceHeader.help.menu": "Help",
-  "workspaceHeader.help.issueReport": "Report an issue",
-  "workspaceHeader.help.productRequest": "Request a feature",
-  "workspaceHeader.help.productRequestDraft": "I would like to suggest: ",
-  "workspaceHeader.help.community": "User community",
-  "workspaceHeader.help.docs": "Product docs",
   "titleBar.menu.file": "File",
   "titleBar.menu.view": "View",
   "titleBar.menu.help": "Help",
@@ -1214,8 +906,6 @@ const enUS: Record<string, string> = {
   "titleBar.menu.help.resourceManager": "Resource manager",
   "titleBar.menu.help.toggleZCodeStdioTap": "Capture agent stdio traffic",
   "titleBar.menu.help.clearAllData": "Clear all data",
-
-  // Directory browser
   "directoryBrowser.title": "Browse folder",
   "directoryBrowser.pathPlaceholder": "Enter path",
   "directoryBrowser.go": "Go",
@@ -1225,56 +915,8 @@ const enUS: Record<string, string> = {
   "directoryBrowser.selectDir": "Select this directory",
   "directoryBrowser.errorSystem": "Failed to get system info",
   "directoryBrowser.errorReadDir": "Failed to read directory: {error}",
-
-  // Update ready button
-  "updateReady.shortTitle": "Update",
-  "updateReady.title": "Update v{version}",
-  "updateReady.releaseNotesTitle": "v{version} Release Notes",
-  "updateReady.tooltip": "v{version} ready, click to restart and update",
-  "updateAvailable.tooltip": "New version v{version} is available. Click to review.",
-  "updateReady.confirm.title": "Update to v{version}?",
-  "updateReady.confirm.description":
-    "The app will quit and restart to update. In-progress tasks will be interrupted.",
-  "updateReady.confirm.ok": "Restart & update now",
-  "updateReady.confirm.cancel": "Later",
-  "updateDialog.availableTitle": "New version v{version}",
-  "updateDialog.downloadingTitle": "Downloading v{version}",
-  "updateDialog.readyTitle": "v{version} is ready",
-  "updateDialog.releaseDate": "{date}",
-  "updateDialog.releaseNotesExpand": "Show",
-  "updateDialog.releaseNotesCollapse": "Hide",
-  "updateDialog.downloadAndUpdate": "Download update",
-  "updateDialog.cancelDownload": "Cancel download",
-  "updateDialog.autoDownloadAndInstall": "Automatically download and install updates next time",
-  "updateDialog.downloadingAction": "Downloading",
-  "updateDialog.downloadProgress": "Download progress",
-  "updateDialog.restartToUpdate": "Restart to update",
-  "updateDialog.skipVersion": "Skip this version",
-  "updateDialog.later": "Later",
-  "update.toast.upToDate": "You're on the latest version (v{version})",
-  "update.toast.available": "New version v{version} is available",
-  "update.toast.downloading": "Downloading new version v{version}",
-  "update.toast.alreadyDownloading": "Downloading new version ({progress}%)",
-  "update.toast.ready": "v{version} downloaded, restart to install",
-  "update.toast.devSkipped": "Updates are disabled in dev builds",
-  "update.toast.error": "Update check failed: {error}",
-  "forceUpdate.title": "Update ZCode to continue",
-  "forceUpdate.description":
-    "Your current version v{currentVersion} is below the minimum supported version v{minimalVersion}. Update first before continuing with this client.",
-  "forceUpdate.currentVersion": "Current version",
-  "forceUpdate.minimalVersion": "Minimum version",
-  "forceUpdate.action.check": "Check and download update",
-  "forceUpdate.action.restart": "Restart to install update",
-  "forceUpdate.action.reload": "Reload page",
-  "desktopMenu.help.checkingForUpdates": "Checking for updates...",
-  "desktopMenu.help.updateAvailableVersion": "Update available {version}",
-  "desktopMenu.help.downloadingUpdateVersion": "Downloading update {version}...",
-  "desktopMenu.help.downloadingUpdateProgress": "Downloading update... {progress}",
-  "desktopMenu.help.restartUpdateAction": "Restart to update",
-  "desktopMenu.help.restartToUpdate": "Restart to update ({version})",
   "postUpdateReleaseNotes.title": "Release notes",
   "postUpdateReleaseNotes.acknowledge": "I know",
-
   "projectSelector.heroTitle": "Open fast. Stay focused.",
   "projectSelector.heroDescription": "Pick a workspace, jump back in, and keep the surface clean.",
   "appError.title": "The app ran into a problem",
@@ -1290,8 +932,6 @@ const enUS: Record<string, string> = {
     "The error is isolated to this section, so the rest of the app can keep running. Try this section again first, and refresh the app if the issue keeps happening.",
   "appError.sectionRetry": "Try this section again",
   "appError.sectionHint": "Diagnostic details have been recorded to help investigation.",
-
-  // Workspace
   "workspace.openWorkspace": "Open workspace",
   "workspace.addNewWorkspace": "Add new workspace",
   "workspace.startFromScratch": "Start from scratch",
@@ -1367,8 +1007,6 @@ const enUS: Record<string, string> = {
   "workspaceFileTree.openFailed": "Could not open this item",
   "workspaceFileTree.addToChat": "Add to chat",
   "workspaceFileTree.gitStatus.ignored": "Ignored",
-
-  // SSH dialog
   "ssh.trigger": "SSH Connection",
   "ssh.title": "SSH Remote connection",
   "ssh.host": "Host",
@@ -1492,15 +1130,9 @@ const enUS: Record<string, string> = {
   "docker.unavailable": "No running containers detected.",
   "docker.noContainers": "No running containers detected.",
   "docker.validation.required": "Container name or ID is required",
-
-  // Locale switch
   "locale.switchLanguage": "Switch language",
-
-  // File tree
   "fileTree.loading": "Loading...",
   "fileTree.error": "Failed to load",
-
-  // Terminal
   "terminal.exited": "[Process exited]",
   "terminal.title": "Terminal",
   "terminal.show": "Toggle terminal",
@@ -1517,13 +1149,10 @@ const enUS: Record<string, string> = {
     "An input submitted before the CLI restarted did not reach the conversation. Confirm whether to send it again.",
   "chat.pendingCommand.resend": "Send again",
   "chat.pendingCommand.dismiss": "Later",
-  // Soft gate: persistent banner when workspace hooks are pending review
   "chat.workspaceHookPending.message":
     "{count} workspace hook(s) pending review; disabled for this session",
   "chat.workspaceHookPending.review": "Review",
   "chat.workspaceHookPending.dismiss": "Dismiss",
-
-  // Task list
   "taskList.newTask": "New task",
   "taskList.newThread": "New task",
   "taskList.forkedUntitled": "New task",
@@ -1697,8 +1326,6 @@ const enUS: Record<string, string> = {
   "sidebar.exportLogs.pending": "Exporting logs...",
   "sidebar.exportLogs.error": "Failed to export logs: {error}",
   "sidebar.newTask": "New task",
-
-  // Settings
   "settings.title": "Settings",
   "settings.breadcrumbLabel": "Settings path",
   "settings.subtitle":
@@ -1879,12 +1506,6 @@ const enUS: Record<string, string> = {
     "Turn this off to work around blank windows, crashes, or rendering issues caused by some GPUs or drivers. Restart the app to take effect.",
   "settings.desktopChromiumHardwareAccelerationSavedHint":
     "Chrome hardware acceleration setting saved. Restart the app to take effect.",
-  "settings.receivePreviewUpdates": "Receive preview updates early",
-  "settings.receivePreviewUpdatesDescription":
-    "When enabled, you will get the earliest access to new features and improvements. When disabled, you will receive update pushes according to the regular release schedule.",
-  "settings.autoDownloadAndInstallUpdates": "Automatically download and install updates",
-  "settings.autoDownloadAndInstallUpdatesDescription":
-    "When enabled, updates start downloading as soon as they are found. Restart still requires confirmation when tasks are running.",
   "settings.notification": "Task notifications",
   "settings.notificationDescription":
     "Send desktop notifications when a task completes, fails, or needs approval.",
@@ -3122,10 +2743,6 @@ const enUS: Record<string, string> = {
     "Sync exact plan level, 5-hour prompt pool, weekly quota, and monthly tool quota from the connected Coding Plan account.",
   "settings.usage.entitlementError":
     "Unable to load Coding Plan entitlement. Try again later or check the provider configuration.",
-  "usage.error.entitlement.credential":
-    "No Coding Plan entitlement was found. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.entitlement.generic":
-    "Unable to load Coding Plan entitlement. Try again later or check the provider configuration.",
   "settings.usage.entitlementRemaining": "Tool usage",
   "settings.usage.entitlementRealtime": "Synced from the provider quota api",
   "settings.usage.entitlementHidden": "Provider marked this balance as hidden",
@@ -3136,36 +2753,6 @@ const enUS: Record<string, string> = {
   "settings.usage.entitlementResetTime": "Next reset",
   "settings.usage.entitlementTokenUsage": "5-hour prompt pool used {percent}",
   "settings.usage.quotaTitle": "Quota remaining",
-  "codingPlan.quotaReset.openDialog": "Get {count} reset quotas",
-  "codingPlan.quotaReset.countdown.daysHours": "{days}d {hours}h",
-  "codingPlan.quotaReset.countdown.daysOnly": "{days}d",
-  "codingPlan.quotaReset.countdown.hoursMinutes": "{hours}h {minutes}m",
-  "codingPlan.quotaReset.countdown.hoursOnly": "{hours}h",
-  "codingPlan.quotaReset.countdown.minutesSeconds": "{minutes}m {seconds}s",
-  "codingPlan.quotaReset.dialog.title": "Resettable quota",
-  "codingPlan.quotaReset.dialog.remaining": "Remaining quota",
-  "codingPlan.quotaReset.dialog.resettable": "Available resets",
-  "codingPlan.quotaReset.dialog.fiveHour": "5-hour quota reset",
-  "codingPlan.quotaReset.dialog.week": "Weekly quota reset",
-  "codingPlan.quotaReset.dialog.expiresIn": "Expires in {time}",
-  "codingPlan.quotaReset.dialog.expiresInSoonest": "Soonest expires in {time}",
-  "codingPlan.quotaReset.dialog.itemCount": "×{count}",
-  "codingPlan.quotaReset.opportunity": "{count} reset available",
-  "codingPlan.quotaReset.expiresIn": "Expires in {time}",
-  "codingPlan.quotaReset.contextReminder.available": "{count} reset available",
-  "codingPlan.quotaReset.contextReminder.expiresIn": "Reset expires in",
-  "codingPlan.quotaReset.contextReminder.dismiss": "Dismiss reminder",
-  "codingPlan.quotaReset.reset": "Reset",
-  "codingPlan.quotaReset.resetAria": "Reset 5-hour quota",
-  "codingPlan.quotaReset.resetAriaWeek": "Reset weekly quota",
-  "codingPlan.quotaReset.success": "Reset successful",
-  "codingPlan.quotaReset.failed": "Reset failed. Please try again.",
-  "codingPlan.quotaReset.processing": "Resetting 5-hour quota…",
-  "codingPlan.quotaReset.processingWeek": "Resetting weekly quota…",
-  "codingPlan.quotaReset.done": "5-hour quota reset",
-  "codingPlan.quotaReset.doneWeek": "Weekly quota reset",
-  "codingPlan.quotaReset.completed": "Reset",
-  "codingPlan.quotaReset.completedAt": "Reset at {time}",
   "settings.usage.trendsTitle": "Usage trends",
   "settings.usage.entitlementFiveHourUsage": "5-hour remaining",
   "settings.usage.entitlementWeeklyUsage": "Weekly remaining",
@@ -3190,47 +2777,6 @@ const enUS: Record<string, string> = {
   "settings.usage.entitlementStatusLoginRequired": "Login required",
   "settings.usage.entitlementStatusNoPlan": "Not subscribed",
   "settings.usage.entitlementStatusNotConfigured": "Not configured",
-  "sidebar.usage.summaryTitle": "Last 30 days",
-  "sidebar.usage.plan.title": "Usage remaining",
-  "sidebar.usage.plan.upgrade": "Upgrade",
-  "sidebar.usage.plan.renew": "Renew",
-  "sidebar.usage.plan.codingPlanTitle": "Coding Plan",
-  "sidebar.usage.plan.audienceIndividual": "Individual",
-  "sidebar.usage.plan.audienceTeam": "Team",
-  "sidebar.usage.plan.open": "More",
-  "sidebar.usage.plan.loading": "Syncing...",
-  "sidebar.usage.plan.unavailable": "No available entitlement data yet.",
-  "sidebar.usage.plan.loginRequired": "Login to view plan usage.",
-  "sidebar.usage.plan.notConfigured": "No connected Coding Plan account found.",
-  "sidebar.usage.plan.noPlanShort": "No plan",
-  "sidebar.usage.plan.remainingShort": "{value} left",
-  "sidebar.usage.plan.planTypeValue": "Plan: {plan}",
-  "sidebar.usage.plan.tokensLimit": "Token quota",
-  "sidebar.usage.plan.timeLimit": "Time quota",
-  "sidebar.usage.plan.otherLimit": "Quota",
-  "sidebar.usage.plan.percentUsed": "{percent}% used",
-  "sidebar.usage.plan.remainingValue": "Remaining",
-  "sidebar.usage.plan.total": "Total",
-  "sidebar.usage.plan.resetAt": "Resets {time}",
-  "sidebar.usage.plan.modelUsage": "Model usage",
-  "sidebar.usage.plan.openStats": "Usage stats",
-  "sidebar.usage.plan.refresh": "Refresh quota",
-  "sidebar.usage.plan.refreshing": "Updating quota",
-  "sidebar.usage.plan.updateFailed": "Possible network issue",
-  "sidebar.usage.plan.updated": "Quota updated",
-  "sidebar.usage.plan.noLimits": "Quota details unavailable.",
-  "sidebar.usage.plan.remaining": "Tool quota remaining",
-  "sidebar.usage.plan.realtime": "Synced from quota api",
-  "sidebar.usage.plan.hidden": "Provider marked this balance as hidden",
-  "sidebar.usage.plan.currentPlan": "Plan level",
-  "sidebar.usage.plan.noPlan": "No active Coding Plan",
-  "sidebar.usage.plan.expires": "Resets",
-  "sidebar.usage.plan.fiveHour": "5 hours",
-  "sidebar.usage.plan.weekly": "Weekly",
-  "sidebar.usage.plan.toolCalls": "Tool calls",
-  "sidebar.usage.plan.mcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcpDescription": "Daily aggregate quota for ZCode built-in plugin MCPs",
   "chat.planUsage.title": "Plan usage",
   "chat.planUsage.titleWithPlan": "{plan} Plan usage",
   "chat.planUsage.providerFallback": "Current provider",
@@ -3248,10 +2794,6 @@ const enUS: Record<string, string> = {
   "chat.planUsage.toolUsed": "{used} / {total} used · resets {time}",
   "chat.planUsage.noQuotaLimits":
     "No Coding Plan quota was found. Confirm that the connected account has an active Coding Plan.",
-  "usage.error.chatPlan.credential":
-    "Unable to read plan quota. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.chatPlan.generic":
-    "Unable to read plan quota. Try again later or check the provider configuration.",
   "settings.usage.range.all": "All time",
   "settings.usage.range.7d": "Last 7 days",
   "settings.usage.range.30d": "Last 30 days",
@@ -3279,10 +2821,6 @@ const enUS: Record<string, string> = {
   "settings.usage.error":
     "Unable to load usage stats. Try again later or check the network and provider configuration.",
   "settings.usage.checkApiKey": "Check account",
-  "usage.error.stats.credential":
-    "Unable to load usage stats. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.stats.generic":
-    "Unable to load usage stats. Try again later or check the network and provider configuration.",
   "settings.usage.emptyTitle": "No usage data yet",
   "settings.usage.emptyDescription": "The selected range has no usage data yet.",
   "settings.usage.estimationHint": "Estimated from local session history",
@@ -3965,7 +3503,6 @@ const enUS: Record<string, string> = {
   "settings.commands.import.resultList": "Command results",
   "settings.commands.import.resultEmpty": "No command results were returned.",
   "settings.commands.import.finish": "Done",
-
   "settings.hooks.review.trust": "Trust",
   "settings.hooks.review.notice":
     "Hooks can run outside of the sandbox so we ask you to review any recently installed or modified hooks",
@@ -4181,8 +3718,6 @@ const enUS: Record<string, string> = {
   "onboarding.finish.summary.agentsFile": "AGENTS.md",
   "onboarding.finish.summary.settings.detail":
     "Imported {imported}, skipped {skipped}, failed {failed}.",
-
-  // Chat
   "chat.empty.title": "Start a Conversation",
   "chat.empty.description": "Start a new task in {workspace}",
   "chat.empty.description.beforeWorkspace": "Start a new task in",
@@ -4505,7 +4040,6 @@ const enUS: Record<string, string> = {
   "chat.modelSwitch.contextWindowGuard.stillTooLarge":
     "After compression, the context used by this conversation is still larger than the target model's available context after reserving maximum output. Model switching was canceled.",
   "chat.toolbar.mode.label": "Switch mode",
-  // CUA composer entry button
   "chat.toolbar.computerUse.label": "Computer Use",
   "chat.toolbar.computerUse.tooltip.idle":
     "Computer Use is idle — it will start automatically on first use",
@@ -4797,7 +4331,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.models.levelsNoDefault": "Thinking levels: {levels}",
   "chat.toolCall.workflow.models.noLevels": "No thinking levels",
   "chat.toolCall.workflow.models.truncated": "Not all models are shown",
-
   "automations.pageTab.ariaLabel": "Automations page",
   "automations.pageTab.automation": "Automations",
   "automations.pageTab.workflow": "Workflows",
@@ -4916,7 +4449,6 @@ const enUS: Record<string, string> = {
   "workflows.hub.reason.read_error": "File could not be read",
   "workflows.hub.time.duration.seconds": "{seconds}s",
   "workflows.hub.time.duration.minutes": "{minutes}m {seconds}s",
-  // ── Observation tool cards  ──
   "chat.toolCall.workflow.getRun.fetching": "Checking workflow status",
   "chat.toolCall.workflow.getRun.runningNodes": "{count} running nodes",
   "chat.toolCall.workflow.getRun.fetched": "Workflow status",
@@ -5003,7 +4535,6 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.completed": "Workflow completed",
   "chat.backgroundResult.workflow.errored": "Workflow errored",
   "chat.backgroundResult.workflow.stopped": "Workflow stopped",
-  // run 级停滞通知：run 还在跑，只是没有进展。
   "chat.backgroundResult.workflow.stall": "Workflow waiting on the model",
   "chat.backgroundResult.workflow.stall.body":
     "No model request in this run has succeeded for {minutes} min. It is still running and retrying with backoff; stop it from the run card if you no longer need it.",
@@ -5013,8 +4544,6 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.answered": "Subagent question answered",
   "chat.backgroundResult.workflow.asked": "Subagent asked a question",
   "chat.backgroundResult.workflow.artifacts.more": "+{count}",
-  // ── Escalation tool cards ──
-  // escalate：子代理把阻塞问题升级给主代理，停驻等答案。asking 相可能持续很久，措辞要平静。
   "chat.toolCall.workflow.escalate.asking": "Asking the main agent",
   "chat.toolCall.workflow.escalate.asked": "Asked the main agent",
   "chat.toolCall.workflow.escalate.question": "Question",
@@ -5033,7 +4562,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.status.completed": "Completed",
   "chat.toolCall.workflow.run.status.errored": "Errored",
   "chat.toolCall.workflow.run.status.stopped": "Stopped",
-  // stopped 的原因词，跟在状态词后。
   "chat.toolCall.workflow.run.stopReason.user": "by you",
   "chat.toolCall.workflow.run.stopReason.model": "by the agent",
   "chat.toolCall.workflow.run.stopReason.provider": "model error",
@@ -5168,8 +4696,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.preset.otherColumn": "Other",
   "chat.toolCall.workflow.run.artifacts.preset.empty": "No data yet",
   "chat.toolCall.workflow.run.artifacts.preset.items": "{count} items",
-  // 待答问题区（升级问答）：actor 停驻在自己那次 ask 里等
-  // 主代理回话。只读——应答者是主代理，不是用户，所以文案不能读起来像在请用户作答。
   "chat.toolCall.workflow.run.questions.title": "Waiting on an answer",
   "chat.toolCall.workflow.run.graph.unavailable":
     "The workflow graph is not in this conversation's visible history.",
@@ -5223,7 +4749,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.event.nodeSettledCached": "Settled · {outcome} (cached)",
   "chat.toolCall.workflow.run.event.usageUpdated": "Usage updated",
   "chat.toolCall.workflow.run.event.log": "Log",
-  // amend-resume: the first workspace write closed the predecessor cache; later steps run live.
   "chat.toolCall.workflow.run.event.importCacheClosed": "Cache closed by a workspace write",
   "chat.toolCall.workflow.run.event.report": "Reported",
   "chat.toolCall.workflow.run.event.phaseEntered": "Entered phase",
@@ -5399,7 +4924,6 @@ const enUS: Record<string, string> = {
   "chat.slash.emptyUnavailable":
     "No slash commands have been broadcast for the current ZCode Agent session",
   "chat.slash.emptyResults": "No matching slash commands",
-  // Errors
   "chat.error.connectionLost": "Connection to agent lost",
   "chat.error.processExited": "Agent process exited unexpectedly",
   "chat.error.dismiss": "Dismiss error",
@@ -5421,8 +4945,6 @@ const enUS: Record<string, string> = {
   "chat.error.sendFailed": "Failed to send. Try again later.",
   "chat.error.modelSettings": "Model settings",
   "chat.error.setModels": "Set",
-
-  // Start Plan per-bucket quota reminders
   "chat.quota.startPlan.bucketDailyLow":
     "{model} has {percent} of its daily quota remaining ({remaining} tokens).",
   "chat.quota.startPlan.bucketActivityLow":
@@ -5437,8 +4959,6 @@ const enUS: Record<string, string> = {
     "The system is busy. Please switch models, upgrade your account, or try again later.",
   "chat.quota.startPlan.concurrentLimit.retryExhausted":
     "The system is busy, and automatic retries have reached the maximum count. Please try again later or upgrade your account.",
-  "chat.quota.startPlan.concurrentLimit.switchModel":
-    "The current model request concurrency limit has been reached. Switch models to continue your current task.",
   "chat.quota.mcp.quotaExhausted":
     'ZCode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
   "chat.quota.mcp.codingPlanRequired":
@@ -5446,12 +4966,6 @@ const enUS: Record<string, string> = {
   "chat.quota.providerLimited":
     "The current account quota or plan limit has been reached. Upgrade or adjust the plan to continue.",
   "chat.quota.action.upgrade": "Upgrade",
-  "chat.quota.action.renew": "Renew",
-  "chat.quota.action.switchModel": "Switch model",
-  "chat.quota.action.switchProvider": "Switch provider",
-  "chat.quota.action.refresh": "Refresh quota",
-
-  // Permissions
   "chat.permission.title": "Permission required",
   "chat.permission.awaitingApproval": "Awaiting approval",
   "chat.permission.approve": "Allow",
@@ -5511,8 +5025,6 @@ const enUS: Record<string, string> = {
   "chat.cuaPermission.openScreenRecording": "Open Screen Recording",
   "chat.cuaPermission.opening": "Opening...",
   "chat.cuaPermission.openFailed": "Could not open CUA permissions: {error}",
-
-  // Elicitation
   "chat.elicitation.title": "Input required",
   "chat.elicitation.keyboardHint": "Use Tab / arrow keys to choose, then Enter or Space to select",
   "chat.elicitation.customAnswer": "Custom answer",
@@ -5553,8 +5065,6 @@ const enUS: Record<string, string> = {
   "chat.permission.fileChange.addMany": "Creates {count} files",
   "chat.permission.fileChange.updateMany": "Updates {count} files",
   "chat.permission.fileChange.mixedMany": "Update {count} files",
-
-  // Modes
   "mode.plan": "Plan",
   "mode.label.glm.build": "Ask before changes",
   "mode.label.glm.edit": "Edit automatically",
@@ -5584,8 +5094,6 @@ const enUS: Record<string, string> = {
   "planTool.panel.syncing": "Syncing plan…",
   "planTool.guidance.enterMode": "Entered plan mode",
   "chat.permission.switchMode.placeholder": "Implementation plan",
-
-  // ZCode Agent
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
@@ -5627,15 +5135,11 @@ const enUS: Record<string, string> = {
     "The upstream service is temporarily unavailable. Please try again later.",
   "zcode.error.providerBusiness.429":
     "You're sending requests too quickly. Please try again later.",
-
-  // Debug info bar
   "debugInfo.taskId": "Task ID",
   "debugInfo.traceId": "Trace ID",
   "debugInfo.sessionId": "Session ID",
   "debugInfo.provider": "Provider",
   "debugInfo.copied": "Copied",
-
-  // Resource manager
   "resourceManager.title": "Resource manager",
   "resourceManager.loading": "Reading resource usage...",
   "resourceManager.unavailable": "Resource manager bridge is unavailable",
@@ -5652,338 +5156,10 @@ const enUS: Record<string, string> = {
   "resourceManager.sampling": "Sampling metrics",
   "resourceManager.column.process": "Process",
   "resourceManager.column.pid": "PID",
-
-  // Feedback
-  "feedback.center.title": "Feedback",
-  "feedback.center.description": "Describe the issue and track progress after submitting.",
-  "feedback.center.submitTitle": "Submit feedback",
-  "feedback.center.ticketsTitle": "My feedback",
-  "feedback.center.backToSubmit": "Back to submit feedback",
-  "feedback.center.submitTab": "Submit",
-  "feedback.center.ticketsTab": "My feedback",
-  "feedback.background.title": "Submitting feedback",
-  "feedback.background.open": "Open feedback submission details",
-  "feedback.background.openDetail": "Open details",
-  "feedback.background.defaultDetail":
-    "Feedback submission continues and stops if you quit the app",
-  "feedback.background.expand": "Expand feedback submission status",
-  "feedback.background.collapse": "Collapse feedback submission status",
-  "feedback.background.dismiss": "Hide feedback submission status",
-  "feedback.background.pauseLogs": "Pause logs",
-  "feedback.module.pluginMcp": "Plugin / MCP",
-  "feedback.module.agentTaskFailed": "Agent task failed",
-  "feedback.module.modelConfigApiKey": "Model configuration / API key",
-  "feedback.module.modelCallError": "Model call error",
-  "feedback.module.permissionConfigSave": "Permissions / settings save",
-  "feedback.module.sshConnectionFailed": "SSH connection failed",
-  "feedback.module.wslConnectionFailed": "WSL connection failed",
-  "feedback.module.uiLayoutInteraction": "UI layout / interaction",
-  "feedback.module.modelSlowQuota": "Slow model response / quota",
-  "feedback.module.crashInternalError": "Crash / Internal error",
-  "feedback.module.docsUsage": "Docs / usage question",
-  "feedback.module.other": "Other",
-  "feedback.status.pendingReview": "Submitted",
-  "feedback.status.needInfo": "Need more info",
-  "feedback.status.accepted": "Accepted",
-  "feedback.status.closedByReply": "Closed after reply",
-  "feedback.status.completed": "Completed",
-  "feedback.status.rejected": "Rejected",
-  "feedback.status.inDevelopment": "In development",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.released": "Released",
-  "feedback.statusHint.pendingReview": "We received it and will handle it soon.",
-  "feedback.statusHint.needInfo": "We need a bit more information. Check the team reply below.",
-  "feedback.statusHint.accepted":
-    "Your feedback was accepted. We will schedule a fix or improvement.",
-  "feedback.statusHint.closedByReply":
-    "The product team replied and closed this feedback. Submit a new one if the issue remains.",
-  "feedback.statusHint.archived":
-    "The product team replied and closed this feedback. Submit a new one if the issue remains.",
-  "feedback.statusHint.rejected":
-    "This feedback is not planned for now. You can check the explanation below.",
-  "feedback.statusHint.inDevelopment": "We are working on it. Updates will appear below.",
-  "feedback.statusHint.resolved": "The issue has been fixed and is waiting for release.",
-  "feedback.statusHint.released":
-    "The related fix or improvement is live. Thanks for the feedback.",
-  "feedback.time.justNow": "just now",
-  "feedback.time.minutesAgo": "{count} min ago",
-  "feedback.time.hoursAgo": "{count} hr ago",
-  "feedback.time.daysAgo": "{count} day(s) ago",
-  "feedback.time.submittedAt": "Submitted {time}",
-  "feedback.title.fallback": "User feedback",
-  "feedback.submit.notReported": "Not reported",
-  "feedback.tickets.newFeedback": "New feedback",
-  "feedback.tickets.backToList": "Back to list",
-  "feedback.tickets.empty.title": "No feedback yet",
-  "feedback.tickets.empty.description":
-    "Send a note whenever you run into an issue. We will sync progress here.",
-  "feedback.tickets.empty.action": "Submit feedback",
-  "feedback.tickets.placeholder.title": "Select feedback to view details",
-  "feedback.tickets.placeholder.description":
-    "Replies from our team will appear here. You can also add reproduction steps, screenshots, or logs in the details.",
-  "feedback.tickets.group.last24h": "Last 24 hours",
-  "feedback.tickets.group.last7d": "Last 7 days",
-  "feedback.tickets.group.earlier": "Earlier",
-  "feedback.tickets.column.status": "Status",
-  "feedback.tickets.column.description": "Issue description",
-  "feedback.tickets.column.id": "ID",
-  "feedback.tickets.issuePrefix": "Issue #",
-  "feedback.detail.noActivity": "No activity yet",
-  "feedback.detail.issueCopy": "Copy issue ID",
-  "feedback.detail.issueCopied": "Issue ID copied",
-  "feedback.detail.issueCopyFailed": "Failed to copy issue ID",
-  "feedback.detail.viewFullProcess": "View full process",
-  "feedback.detail.yourDescription": "Your description",
-  "feedback.process.backToDetail": "Back to details",
-  "feedback.process.title": "Process",
-  "feedback.process.currentLatest": "Latest:",
-  "feedback.progress.title": "Progress",
-  "feedback.progress.currentHandler": "Current handler:",
-  "feedback.progress.assignee.dev": "Developer",
-  "feedback.progress.assignee.unassigned": "Unassigned",
-  "feedback.progress.stage.submitted": "Submitted",
-  "feedback.progress.stage.reviewing": "Reviewing",
-  "feedback.progress.stage.inProgress": "In progress",
-  "feedback.progress.stage.done": "Done",
-  "feedback.progress.stage.closed": "Closed",
-  "feedback.timeline.stepCount": "{count} step(s)",
-  "feedback.timeline.latestUpdate": "Updated {time}",
-  "feedback.timeline.syncWhenUpdated": "Updates will sync here",
-  "feedback.timeline.officialReply": "Team reply",
-  "feedback.timeline.yourSupplement": "You added information",
-  "feedback.timeline.empty": "No activity yet. We will notify you here when there is progress.",
-  "feedback.timeline.duration": "Took {time}",
-  "feedback.timeline.assignedToDev": "Assigned to development",
-  "feedback.timeline.event.submitted": "Feedback submitted",
-  "feedback.timeline.event.progressUpdated": "Progress updated",
-  "feedback.timeline.event.conclusion": "Conclusion added",
-  "feedback.timeline.event.fullLogUploaded": "Full logs uploaded; feedback submitted",
-  "feedback.timeline.event.statusChanged": "Status changed to {status}",
-  "feedback.timeline.event.agentSubmitted": "{name} submitted feedback via Agent",
-  "feedback.timeline.event.progressUpdatedWithStatus":
-    "Progress updated (status to {status}): {message}",
-  "feedback.timeline.event.progressUpdatedWithMessage": "Progress updated: {message}",
-  "feedback.timeline.event.markedStatus": "Marked as {status}: {message}",
-  "feedback.actor.user": "User",
-  "feedback.actor.productManager": "Product manager",
-  "feedback.actor.dev": "Developer",
-  "feedback.duration.instant": "Instant",
-  "feedback.duration.lessThanMinute": "Less than 1 min",
-  "feedback.duration.minutes": "{count} min",
-  "feedback.duration.hours": "{count} hr",
-  "feedback.duration.days": "{count} day(s)",
-  "feedback.supplement.title": "Additional information",
-  "feedback.supplement.description":
-    "Add reproduction steps, screenshot notes, log snippets, or more clues here.",
-  "feedback.supplement.continueTitle": "Add more information",
-  "feedback.supplement.continueDescription":
-    "You can add reproduction steps, screenshot notes, log snippets, or new clues while viewing the process.",
-  "feedback.supplement.attachmentLimit": "You can add up to {count} attachments",
-  "feedback.supplement.attachmentTooLarge": "{name} is over 100 MB and cannot be uploaded yet.",
-  "feedback.supplement.attachment": "Attachment",
-  "feedback.supplement.uploadedAttachments": "Attachments: {names}",
-  "feedback.supplement.addAttachment": "Add attachment",
-  "feedback.supplement.placeholder": "Add more details, paste a screenshot, or add a local file...",
-  "feedback.supplement.removeAttachment": "Remove {name}",
-  "feedback.supplement.attachmentHint":
-    "Supports pasted screenshots or local files. Each attachment must be under 100 MB.",
-  "feedback.supplement.sending": "Sending",
-  "feedback.supplement.send": "Send update",
-  "feedback.type.bug.label": "Bug",
-  "feedback.type.bug.description": "Errors, crashes, or unexpected behavior",
-  "feedback.type.usage.label": "How-to help",
-  "feedback.type.usage.description": "Unclear steps or configuration",
-  "feedback.type.feature.label": "Suggestion",
-  "feedback.type.feature.description": "New capabilities or UX improvements",
-  "feedback.type.performance.label": "Slow performance",
-  "feedback.type.performance.description": "Lag, slow response, or resource issues",
-  "feedback.severity.P1-高.label": "Cannot use it",
-  "feedback.severity.P2-中.label": "Affects usage",
-  "feedback.severity.P3-低.label": "Minor issue/suggestion",
-  "feedback.submit.bug.sectionTitle": "What happened?",
-  "feedback.submit.bug.titleLabel": "Title",
-  "feedback.submit.bug.titlePlaceholder": "Example: SSH connection fails",
-  "feedback.submit.bug.descriptionLabel": "Details",
-  "feedback.submit.bug.descriptionPlaceholder":
-    "Describe what you ran into: where you clicked, what happened, what you expected, and whether there was an error. We keep your original description and analyze it after submission.",
-  "feedback.submit.bug.helper.1": "Location",
-  "feedback.submit.bug.helper.2": "Steps to reproduce",
-  "feedback.submit.bug.helper.3": "Expected result",
-  "feedback.submit.bug.helper.4": "Actual result / error",
-  "feedback.submit.bug.supplementalDescription": "",
-  "feedback.submit.bug.screenshotHint":
-    "Paste a screenshot, or add a local screenshot as an attachment.",
-  "feedback.submit.bug.missingTitle": "Please enter a title",
-  "feedback.submit.bug.missingDescription": "Please describe the issue",
-  "feedback.submit.usage.sectionTitle": "Where are you stuck?",
-  "feedback.submit.usage.titleLabel": "Question title",
-  "feedback.submit.usage.titlePlaceholder":
-    "Example: Not sure how to configure a remote connection",
-  "feedback.submit.usage.descriptionLabel": "Blocked step",
-  "feedback.submit.usage.descriptionPlaceholder":
-    "Describe what you are trying to do, where you got stuck, what prompt you saw, and how you want us to explain or guide you.",
-  "feedback.submit.usage.helper.1": "Current task",
-  "feedback.submit.usage.helper.2": "Blocked step",
-  "feedback.submit.usage.helper.3": "What you tried",
-  "feedback.submit.usage.helper.4": "Help needed",
-  "feedback.submit.usage.supplementalDescription":
-    "Module and model help us locate documentation, guidance, or default configuration issues.",
-  "feedback.submit.usage.screenshotHint": "You can paste a screenshot of the blocked screen.",
-  "feedback.submit.usage.missingTitle": "Please enter a question title",
-  "feedback.submit.usage.missingDescription": "Please describe where you are stuck",
-  "feedback.submit.feature.sectionTitle": "What would you suggest?",
-  "feedback.submit.feature.titleLabel": "Suggestion title",
-  "feedback.submit.feature.titlePlaceholder": "Example: Support one-click task report export",
-  "feedback.submit.feature.descriptionLabel": "Suggestion",
-  "feedback.submit.feature.descriptionPlaceholder":
-    "Describe what you want added or improved: the scenario, what is inconvenient now, the ideal behavior, and what it would save you.",
-  "feedback.submit.feature.helper.1": "Scenario",
-  "feedback.submit.feature.helper.2": "Current friction",
-  "feedback.submit.feature.helper.3": "Expected capability / interaction",
-  "feedback.submit.feature.helper.4": "Value",
-  "feedback.submit.feature.supplementalDescription":
-    "Choose a module so we can assess priority and impact.",
-  "feedback.submit.feature.screenshotHint":
-    "You can attach a reference screenshot, sketch, or current awkward screen.",
-  "feedback.submit.feature.missingTitle": "Please enter a suggestion title",
-  "feedback.submit.feature.missingDescription": "Please describe the suggestion",
-  "feedback.submit.performance.sectionTitle": "What feels slow?",
-  "feedback.submit.performance.titleLabel": "Performance issue title",
-  "feedback.submit.performance.titlePlaceholder": "Example: Task list opens slowly",
-  "feedback.submit.performance.descriptionLabel": "Where it is slow",
-  "feedback.submit.performance.descriptionPlaceholder":
-    "Describe which operation is slow, how slow it feels, whether it happens every time, and the approximate data or task size.",
-  "feedback.submit.performance.helper.1": "Operation",
-  "feedback.submit.performance.helper.2": "Delay felt",
-  "feedback.submit.performance.helper.3": "Stable reproduction",
-  "feedback.submit.performance.helper.4": "Task scale / data size",
-  "feedback.submit.performance.supplementalDescription":
-    "Performance reports attach logs by default. Module and model help locate the slow path.",
-  "feedback.submit.performance.screenshotHint":
-    "You can attach loading, stuck, or resource-usage screenshots.",
-  "feedback.submit.performance.missingTitle": "Please enter a performance issue title",
-  "feedback.submit.performance.missingDescription": "Please describe what is slow",
-  "feedback.submit.template.bug.problem": "Problem:",
-  "feedback.submit.template.bug.steps": "Steps:",
-  "feedback.submit.template.bug.expected": "Expected result:",
-  "feedback.submit.template.bug.actual": "Actual result / error:",
-  "feedback.submit.template.usage.task": "Current task:",
-  "feedback.submit.template.usage.blockedStep": "Blocked step:",
-  "feedback.submit.template.usage.tried": "What you tried:",
-  "feedback.submit.template.usage.help": "Help needed:",
-  "feedback.submit.template.feature.scenario": "Scenario:",
-  "feedback.submit.template.feature.currentPain": "Current friction:",
-  "feedback.submit.template.feature.expected": "Expected capability / interaction:",
-  "feedback.submit.template.performance.action": "Operation:",
-  "feedback.submit.template.performance.delay": "Delay felt:",
-  "feedback.submit.template.performance.reproducible": "Stable reproduction:",
-  "feedback.submit.template.occurredAt": "Time: {timestamp}",
-  "feedback.submit.template.occurredAtPrefix": "Time:",
-  "feedback.submit.template.proposedAt": "Proposed at: {timestamp}",
-  "feedback.submit.template.proposedAtPrefix": "Proposed at:",
-  "feedback.submit.template.section.errorHeading":
-    "I encountered an error during use. Please help investigate.",
   "feedback.submit.template.section.errorSummary": "Error Summary",
-  "feedback.submit.template.section.errorSummaryLine": "Error Summary: {message}",
   "feedback.submit.template.section.errorDetail": "Error Details",
   "feedback.submit.template.section.errorTraceId": "TraceID: {traceId}",
   "feedback.submit.template.section.copyErrorHeading": "ZCode Error Info",
-  "feedback.submit.template.section.notProvided": "Not provided",
-  "feedback.submit.template.section.remoteLogEmpty": "No connection logs captured",
-  "feedback.submit.template.section.taskFeedbackTitle": "Feedback about task: {title}",
-  "feedback.submit.template.section.remoteConnectFailed": "Remote connection failed",
-  "feedback.submit.template.section.taskHeading":
-    "I encountered a problem with this task. Please help investigate.",
-  "feedback.submit.template.section.taskInfo": "Task Info",
-  "feedback.submit.template.section.taskTitle": "Task title: {title}",
-  "feedback.submit.template.section.taskId": "Task ID: {id}",
-  "feedback.submit.template.section.taskWorkspace": "Workspace: {path}",
-  "feedback.submit.template.section.taskSessionPath": "Task session: {path}",
-  "feedback.submit.template.section.taskLogPath": "Task log: {path}",
-  "feedback.submit.template.section.problem": "Issue",
-  "feedback.submit.template.section.whatDoing": "What I Was Doing",
-  "feedback.submit.template.section.expectedResult": "Expected result",
-  "feedback.submit.template.section.supplement": "Please describe:",
-  "feedback.submit.template.section.remoteHeading":
-    "An error occurred during remote connection. Please help investigate.",
-  "feedback.submit.template.section.remoteLog": "Connection logs (last 30)",
-  "feedback.submit.template.section.remoteEnvironment": "Environment I Was Connecting To",
-  "feedback.submit.template.section.featureSource": "Source",
-  "feedback.submit.type.label": "Feedback type",
-  "feedback.submit.type.hint": "Changing it updates the description guide below",
-  "feedback.submit.simple.descriptionTitle": "Issue description",
-  "feedback.submit.simple.descriptionLabel": "Description",
-  "feedback.submit.simple.descriptionPlaceholder":
-    "Describe the issue, where it happened, what you expected, or what you want improved.",
-  "feedback.submit.simple.screenshotTitle": "Screenshots",
-  "feedback.submit.simple.screenshotHint": "Paste, drag images here, or choose files.",
-  "feedback.submit.simple.screenshotPrivacyHint":
-    "Please check images for private information before uploading.",
-  "feedback.submit.simple.contactTitle": "Contact",
-  "feedback.submit.simple.logsTitle": "Logs",
-  "feedback.submit.simple.logsLabel": "Upload diagnostic logs",
-  "feedback.submit.simple.logsHint":
-    "Off by default. Uploads today's diagnostic logs, excluding databases, configuration files and model conversation traces. Automatic redaction may not remove all business information. Please choose carefully.",
-  "feedback.submit.simple.footerHint": "Track progress later in My feedback.",
-  "feedback.submit.missingDescription": "Please describe the issue first",
-  "feedback.submit.addScreenshot": "Add screenshot",
-  "feedback.submit.removeScreenshot": "Remove",
-  "feedback.submit.contact.label": "Contact",
-  "feedback.submit.contact.hint":
-    "Optional, for follow-up. You can also enter another social account.",
-  "feedback.submit.contact.placeholder": "example@domain.com / social account",
-  "feedback.submit.supplemental.title": "Additional information",
-  "feedback.submit.module.label": "Module",
-  "feedback.submit.severity.label": "Impact",
-  "feedback.submit.model.label": "Current model",
-  "feedback.submit.model.unavailable": "Model not detected",
-  "feedback.submit.continueUpload": "Continue upload",
-  "feedback.submit.processing": "Processing",
-  "feedback.submit.submitting": "Submitting",
-  "feedback.submit.submit": "Submit feedback",
-  "feedback.submit.screenshotLimit": "You can add up to {count} screenshots",
-  "feedback.featureRequest.title": "Request a feature",
-  "feedback.featureRequest.descriptionLabel": "Request description",
-  "feedback.featureRequest.descriptionPlaceholder":
-    "Example: I want to save common prompts while a task is running, then insert them with one click later.",
-  "feedback.featureRequest.solutionLabel": "Expected solution",
-  "feedback.featureRequest.solutionPlaceholder":
-    "Example: Add a quick prompt menu next to the composer with create, edit, and insert actions.",
-  "feedback.featureRequest.contactLabel": "Contact",
-  "feedback.featureRequest.reset": "Reset",
-  "feedback.featureRequest.submit": "Submit request",
-  "feedback.featureRequest.missingRequired":
-    "Please fill in the request description and expected solution",
-  "feedback.featureRequest.source": "Workspace Header help menu / Request a feature",
-  "feedback.featureRequest.submittedToast": "Request submitted. We will review it carefully.",
-  "feedback.submission.connectingLabel": "Connecting to feedback service",
-  "feedback.submission.connectingDetail":
-    "Screenshots and logs will continue uploading after the ticket is created",
-  "feedback.submission.cancelingCreateLabel": "Canceling submission",
-  "feedback.submission.cancelingCreateDetail": "Cancel request received. Stopping ticket creation.",
-  "feedback.submission.canceledLabel": "Feedback submission canceled",
-  "feedback.submission.canceledDetail": "Feedback submission canceled",
-  "feedback.submission.uploadingScreenshotLabel": "Uploading screenshot",
-  "feedback.submission.submittedLabel": "Feedback submitted",
-  "feedback.submission.submittedDetail": "We will review it soon.",
-  "feedback.submission.submittedToast": "Feedback submitted. We will review it soon.",
-  "feedback.submission.failedLabel": "Feedback submission failed",
-  "feedback.submission.networkErrorDetail":
-    "Could not connect to the feedback service. Check your network, VPN, or proxy settings, then try again.",
-  "feedback.submission.postCreateNetworkErrorDetail":
-    "Feedback was created, but additional materials failed to upload. Open the existing feedback to add the missing files; do not submit it again.",
-  "feedback.submission.pausingLogLabel": "Pausing log upload",
-  "feedback.submission.pausingLogDetail": "Cancel request received. Please wait.",
-  "feedback.submission.exportingLogLabel": "Exporting full logs",
-  "feedback.submission.exportingLogDetail":
-    "This may take a few seconds depending on local log size",
-  "feedback.submission.uploadingLogLabel": "Uploading full logs",
-  "feedback.submission.logUploadSuccessLabel": "Log upload completed",
-  "feedback.submission.logUploadPausedLabel": "Log upload paused",
-  "feedback.submission.logUploadPausedDetail":
-    "Logs are required for investigation. Please continue the upload.",
-  "feedback.submission.preparingUploadDetail": "Preparing upload",
-  // Forms
   "forms.labels.name": "Name",
   "forms.labels.description": "Description",
   "forms.labels.color": "Color",
@@ -6001,7 +5177,6 @@ const enUS: Record<string, string> = {
   "forms.validation.agentDescriptionHint": "Briefly describe the subagent's purpose",
   "forms.validation.agentSystemPromptHint": "Define the subagent's behavior and capabilities",
   "forms.validation.fileExists": "File {fileName} already exists",
-  // ---- Scheduled tasks / Automations ----
   "taskList.cronTaskLabel": "Scheduled task",
   "taskList.offPeakTaskLabel": "Idle-time task",
   "taskList.workflowRun.ariaLabel": "Workflow run {name}: {status}",
@@ -6027,116 +5202,16 @@ const enUS: Record<string, string> = {
   "automations.createManually": "Create scheduled task",
   "automations.list.title": "Scheduled tasks",
   "automations.createdLabel": "Task created",
-  "offPeak.notify.completed.title": "Idle-time task finished",
-  "offPeak.notify.completed.body": '"{title}" completed successfully.',
-  "offPeak.notify.failed.title": "Idle-time task failed",
-  "offPeak.notify.failed.body": '"{title}" stopped with an error.',
-  "offPeak.sidebar.groupTitle": "Idle-time tasks",
-  "offPeak.newTask.bannerText":
-    'New feature for subscribers: Create "Idle-time task" , We will complete your assigned task for free during periods of surplus computing power.',
-  "offPeak.newTask.bannerTipText":
-    "This feature does not consume your subscription plan quota and is available exclusively to subscribers.",
-  "offPeak.newTask.carousel.goToSlide": "Go to idle-time task template {index}",
-  "offPeak.newTask.template.customize.title": "Customize",
-  "offPeak.newTask.template.customize.description":
-    "Skip the template and tell it directly what you want to do.",
-  "offPeak.tabs.scheduled": "Scheduled tasks",
-  "offPeak.tabs.idle": "Idle-time task",
   "automations.statusFilter.all": "All",
   "automations.statusFilter.inProgress": "In progress",
   "automations.statusFilter.completed": "Completed",
   "automations.statusFilter.failed": "Failed",
   "automations.statusFilter.empty": "No tasks match this filter",
   "offPeak.keepAwakeBanner": "Keep your computer awake while ZCode is running a chat.",
-  "offPeak.sectionTitle": "Idle-time tasks",
-  "offPeak.createButton": "Create idle-time task",
-  "offPeak.templates.sectionTitle": "Idle-time task template",
-  "offPeak.list.empty":
-    "No idle-time tasks yet. Create one to run it during off-peak hours at no extra cost.",
-  "offPeak.badge.pausedPosition": "#{position} Paused",
-  "offPeak.action.pauseHint":
-    "Tasks paused beyond the queue wait time will be placed back in the queue",
-  "offPeak.action.continueHint":
-    "If the queue ticket has expired, Continue re-queues the task at the back.",
-  "offPeak.badge.queuePosition": "#{position} in queue",
-  "offPeak.status.queued": "Waiting for idle compute",
-  "offPeak.status.paused": "Paused",
-  "offPeak.status.running": "Running",
-  "offPeak.status.completed": "Succeeded",
-  "offPeak.status.failed": "Failed",
-  "offPeak.status.cancelled": "Cancelled",
-  "offPeak.goToSession": "Go to session",
-  "offPeak.boundSession.label": "Runs in: {title}",
-  "offPeak.nav.listUnavailable": "Idle-time task list failed to load. Refresh and try again.",
-  "offPeak.boundSession.hint":
-    "Runs in that session; stopping the session while the task runs cancels it.",
-  "offPeak.chatCreated.boundHint": "Runs in this session",
-  "offPeak.action.pause": "Pause",
-  "offPeak.action.continue": "Continue",
-  "offPeak.action.cancel": "Cancel task",
-  "offPeak.cancel.title": "Cancel idle-time task?",
-  "offPeak.cancel.description": '"{title}" will stop running. Files it already changed are kept.',
-  "offPeak.delete.title": "Delete this idle-time task?",
-  "offPeak.delete.description":
-    "This action can't be undone. If the task is currently queued or running, it will stop immediately.",
-  "offPeak.delete.confirm": "Delete idle-time task",
-  "offPeak.error.quota": "Free tier limit reached. Try again later.",
-  "offPeak.error.unavailable":
-    "Idle-time task service is temporarily unavailable. Try again later.",
-  "offPeak.error.generic": "Idle-time task operation failed.",
-  "offPeak.create.title": "New Idle-time task",
-  "offPeak.create.subtitle": "Configure the instructions and how this task runs during idle time.",
-  "offPeak.create.defaultTitle": "Untitled",
-  "offPeak.edit.title": "Edit Idle-time task",
-  "offPeak.edit.subtitle": "Update the instructions and how this task runs during idle time.",
-  "offPeak.modelSelection.repairRequired":
-    "The model configuration needs updating. Choose a model again and save.",
   "modelSelection.invalidated.fallback":
     "The previous model selection is no longer available. Switched to the current default; review it before continuing.",
   "modelSelection.invalidated.reselect":
     "The previous model selection is no longer available. Choose a model again.",
-  "offPeak.create.submit": "Create Idle-time task",
-  "offPeak.edit.save": "Save",
-  "offPeak.edit.peakHoursWarning":
-    "This task runs during peak hours, which may cause errors to occur.",
-  "offPeak.form.soonestAvailable": "Soonest available",
-  "offPeak.form.titleLabel": "Task title",
-  "offPeak.form.titlePlaceholder": "e.g. Nightly refactor",
-  "offPeak.form.instructionsLabel": "Instructions",
-  "offPeak.form.instructionsPlaceholder":
-    "Describe a task ZCode can work on in the background, including the expected result and any constraints…",
-  "offPeak.form.permissionWarning":
-    "Idle-time runs are unattended. Actions that need confirmation will pause the task until you respond.",
-  "offPeak.form.modelLabel": "Model",
-  "offPeak.thought.max": "Max",
-  "offPeak.thought.high": "High",
-  "offPeak.thought.low": "Low",
-  "offPeak.thought.enabled": "Enabled",
-  "offPeak.thought.off": "Off",
-  "offPeak.thought.nothink": "No thinking",
-  "offPeak.form.keepAwakeLabel": "Keep your computer running",
-  "offPeak.form.keepAwakeHint":
-    "Prevent idle sleep (desktop-wide switch; also available under Settings → General).",
-  "offPeak.tab.settings": "Settings",
-  "offPeak.tab.history": "History",
-  "offPeak.history.empty": "No history yet.",
-  "offPeak.history.col.instructions": "Instructions",
-  "offPeak.history.delete": "Delete history",
-  "offPeak.history.durationMinutes": "{count} min",
-  "offPeak.form.fullAccessHint": "Switch permissions to Full access to reduce task failures",
-  "offPeak.discard.title": "Discard Idle-time task draft?",
-  "offPeak.discard.description": "Your changes to the current idle-time task will be lost.",
-  "offPeak.discard.confirm": "Discard",
-  "offPeak.create.codingPlanOnly": "Coding plan users only",
-  "offPeak.create.availabilityUnavailable": "Could not verify availability. Refresh and try again.",
-  "offPeak.create.limitReachedAt":
-    "Free tier limit reached. You can create another task in {time}.",
-  "offPeak.create.remaining.hoursMinutes": "{hours} hr {minutes} min",
-  "offPeak.create.remaining.hours": "{hours} hr",
-  "offPeak.create.remaining.minutes": "{minutes} min",
-  "offPeak.create.remaining.lessThanMinute": "less than 1 min",
-  "offPeak.create.codingPlanToast":
-    "Idle-time tasks are available for Coding Plan subscribers only.",
   "automations.moreIdeas": "Scheduled task template",
   "automations.templates.unavailable": "No templates available",
   "automations.runNow": "Run now",
@@ -6297,7 +5372,6 @@ const enUS: Record<string, string> = {
   "automations.runs.delete": "Delete run",
   "automations.runs.prevPage": "Previous",
   "automations.runs.nextPage": "Next",
-  // CUA (Computer Use)
   "chat.cuaReadiness.toolsNotLoaded":
     "ZCode Computer Use is still preparing — its tools aren't loaded yet ({count} loaded). Grant the permissions below; tools appear once the helper is ready.",
   "chat.cuaReadiness.toolsPreparing":
@@ -6458,6 +5532,27 @@ const enUS: Record<string, string> = {
   "cuaPermission.ready.sessionValidationHint":
     "ZCode will verify the Computer Use tools against the exact session when your first session starts.",
   "settings.computerUse.title": "Computer Use",
+  "settings.mobileRelay.title": "Mobile Remote",
+  "settings.mobileRelay.enable": "Enable mobile remote",
+  "settings.mobileRelay.enableDescription": "Connect to your self-deployed relay server to control this workspace from a phone browser.",
+  "settings.mobileRelay.statusUnsupported": "Mobile remote is not supported on this platform (desktop required).",
+  "settings.mobileRelay.statusDisabled": "Disabled",
+  "settings.mobileRelay.statusConnected": "Connected",
+  "settings.mobileRelay.statusConnecting": "Connecting…",
+  "settings.mobileRelay.statusError": "Connection failed: {error}",
+  "settings.mobileRelay.serverUrl": "Relay server",
+  "settings.mobileRelay.serverUrlDescription": "Address of your self-deployed relay, e.g. https://relay.example.com; deploy packages/relay first.",
+  "settings.mobileRelay.tokenPlaceholder": "Deployment token (optional)",
+  "settings.mobileRelay.save": "Save",
+  "settings.mobileRelay.saveFailed": "Failed to save mobile relay settings",
+  "settings.mobileRelay.grant": "Generate phone authorization link",
+  "settings.mobileRelay.grantDescription": "Generate a one-time authorization link for the current workspace (valid for 10 minutes, single use); scan or open it on your phone to connect.",
+  "settings.mobileRelay.generate": "Generate link",
+  "settings.mobileRelay.regenerate": "Regenerate",
+  "settings.mobileRelay.grantCountdown": "Expires in {seconds}s",
+  "settings.mobileRelay.grantExpired": "Link expired; regenerate to continue",
+  "settings.mobileRelay.grantFailed": "Failed to generate authorization link",
+  "settings.mobileRelay.grantNoWorkspace": "No active workspace found for authorization",
   "settings.computerUse.toggleLabel": "Enable Computer Use",
   "settings.computerUse.toggleDescription":
     "Turning this on enables Computer Use — its MCP server and skills.",

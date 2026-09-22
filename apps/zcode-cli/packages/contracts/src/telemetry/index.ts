@@ -1,10 +1,7 @@
-import type { ModelId, ModelProviderId } from "../model/index.js";
 import type {
-  AgentExecutionTelemetryPort,
   AgentTelemetryAbandonReason,
   AgentTelemetryCancellationReason,
   AgentTelemetryErrorCategory,
-  AgentTelemetryOperation,
   AgentTelemetryScope,
 } from "./agent-execution.js";
 
@@ -27,12 +24,6 @@ export const ModelApiOperation = {
 } as const;
 
 export type ModelApiOperation = (typeof ModelApiOperation)[keyof typeof ModelApiOperation];
-
-export function mapModelApiOperationToAgentOperation(
-  operation: ModelApiOperation,
-): AgentTelemetryOperation {
-  return operation;
-}
 
 export const ModelApiActorKind = {
   MainAgent: "main",
@@ -205,29 +196,6 @@ function mapQuerySourceToModelApiOperation(querySource: string | undefined): {
   }
 }
 
-export interface ProviderEndpointIdentity {
-  origin: string;
-  route: string;
-  sanitizerVersion: string;
-}
-
-export interface TelemetryIdentitySnapshot {
-  identityState: "authenticated" | "anonymous" | "unknown";
-  userSubjectId?: string;
-}
-
-export interface TelemetryResourceContext {
-  buildCommitId?: string;
-  cliVersion?: string;
-  deploymentEnvironment?: string;
-  installationId?: string;
-  productVersion?: string;
-  runtimeDistribution?: "source" | "development_bundle" | "packaged" | "unknown";
-  runtimeSurface: ModelApiRuntimeSurface;
-  serviceInstanceId: string;
-  serviceName: string;
-}
-
 export type ModelApiOperationKind =
   | "messages"
   | "chat_completions"
@@ -349,29 +317,3 @@ export interface ModelAttemptSpanWriter extends AgentTelemetryScope {
   finishCancelled(reason: AgentTelemetryCancellationReason): void;
 }
 
-export interface ModelExecutionTelemetryPort {
-  startCall(input: ModelCallTraceStart): ModelCallSpanWriter;
-}
-
-/**
- * App 注入和 Standalone 初始化共用的进程级 Owner。一个 CLI 进程只能创建一个 Owner。
- */
-export interface AgentTelemetryRuntimeOwner {
-  readonly agentExecution: AgentExecutionTelemetryPort;
-  readonly enabled: boolean;
-  readonly modelExecution: ModelExecutionTelemetryPort;
-  readonly statusSink?: import("../model/index.js").ModelStatusSink;
-  abandonSession(sessionId: string): void;
-  flush(options?: { timeoutMs?: number }): Promise<void>;
-  shutdown(options?: { timeoutMs?: number }): Promise<void>;
-  updateIdentity(snapshot: TelemetryIdentitySnapshot): void;
-}
-
-export interface ModelApiCallDescriptor {
-  observation: Required<
-    Pick<ModelApiCallObservation, "operation" | "actorKind" | "logicalCallId">
-  > &
-    ModelApiCallObservation;
-  providerId: ModelProviderId;
-  modelId: ModelId;
-}

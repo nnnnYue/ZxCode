@@ -234,7 +234,19 @@ export interface ResourceUsageSnapshot {
   processes: ResourceUsageProcess[];
 }
 
+/** 自部署手机远控 relay 的桌面侧连接配置；serverUrl 形如 https://relay.example.com。 */
+export interface MobileRelaySettings {
+  /** 是否让桌面 main 出站连接 relay；关闭即断开并停止 presence 上报。 */
+  enabled: boolean;
+  /** relay 部署地址（https:// 或 http://）；缺失时即使 enabled 也不出站。 */
+  serverUrl?: string;
+  /** deployment token（对应 relay 的 ZCODE_RELAY_TOKEN）；仅存在鉴权部署时填写。 */
+  token?: string;
+}
+
 export interface AppSettings {
+  /** 自部署手机远控 relay 的桌面侧配置；未配置时桌面不出站连接任何 relay。 */
+  mobileRelay?: MobileRelaySettings;
   /** 当前 App/Host 不再显示提交前体验套餐推荐；不改变任何入口的模型选择。 */
   startPlanRecommendationDismissed?: boolean;
   recentProjects: string[]; // 最近项目列表，最多保留 10 个

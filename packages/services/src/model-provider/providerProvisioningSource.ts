@@ -19,16 +19,12 @@ import {
 import type { ISettingService } from "../setting/setting.js";
 
 const CREDENTIAL_FILE_NAME = "credentials.json";
-export const PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS = [
-  "oauth:active_provider",
-  "oauth:zai:access_token",
-  "oauth:zai:refresh_token",
-  "oauth:zai:user_info",
-  "oauth:bigmodel:access_token",
-  "oauth:bigmodel:refresh_token",
-  "oauth:bigmodel:user_info",
-  "zcodejwttoken",
-] as const;
+/**
+ * 去平台化：OAuth 登录删除后不再存在可同步的 oauth-session 凭据；
+ * 保留空列表维持 Provisioning credential allowlist 的结构（仅剩 account-provider key 分类），
+ * 旧凭据条目即使残留在本机 credential store 也不会再被导出同步。
+ */
+export const PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS = [] as const;
 
 export interface ProviderProvisioningSource {
   read(syncId: string): Promise<ProviderProvisioningEnvelope>;

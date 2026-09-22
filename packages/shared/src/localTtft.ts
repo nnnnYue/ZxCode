@@ -8,9 +8,6 @@ export const LOCAL_TTFT_STAGES = [
   "model_request",
   "output_return",
 ] as const;
-export const LOCAL_TTFT_BUCKETS_MS = [
-  1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000, 60000, 300000,
-];
 export const LOCAL_TTFT_MAX_DETAILS = 64;
 export const LOCAL_TTFT_PREPARATION_STAGES = [
   "context",
@@ -177,16 +174,6 @@ export const localTtftRecordSchema = z
   .strict()
   .refine((record) => record.end >= record.start);
 export type LocalTtftRecord = z.infer<typeof localTtftRecordSchema>;
-export const localTtftBatchSchema = z
-  .object({
-    version: z.literal(1),
-    rendererInstanceId: identifier,
-    sequence: z.number().int().nonnegative(),
-    records: z.array(localTtftRecordSchema).max(32),
-    dropped: z.number().int().nonnegative(),
-  })
-  .strict();
-export type LocalTtftBatch = z.infer<typeof localTtftBatchSchema>;
 export function localTtftNow(): number {
   return performance.timeOrigin + performance.now();
 }

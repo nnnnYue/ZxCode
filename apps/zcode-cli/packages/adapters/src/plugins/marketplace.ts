@@ -65,6 +65,9 @@ const UNSUPPORTED_MANIFEST_FIELDS = ["channels", "lspServers", "outputStyles", "
 
 export type MarketplaceSource =
   | { source: "url"; headers?: Record<string, string>; url: string }
+  // 官方市场离线快照的投影专用：目录随包分发，没有任何可执行的外部 source。
+  // 只出现在 bootstrap 合成的概要记录里，永不落盘、永不进入网络刷新路径。
+  | { source: "bundled" }
   | { path?: string; ref?: string; repo: string; source: "github"; sparsePaths?: string[] }
   | { path?: string; ref?: string; source: "git"; sparsePaths?: string[]; url: string }
   | { package: string; source: "npm" }
@@ -317,6 +320,12 @@ export async function ensureMarketplaceManifestAvailable(input: {
     (item) => item.id === input.marketplace,
   );
   if (!record) return null;
+  // 官方市场目录在编译期随包分发、启动 seed 物化为 canonical manifest，不存在远端
+  // 回源路径；旧版本写入的 CDN source 记录不得在此触发 fetch。manifest 缺失只能
+  // 说明快照尚未 seed，返回 null 等待下一次启动 seed，而不是回源拉取。
+  if (isOfficialMarketplaceId(record.id)) {
+    return loadMarketplaceManifestSync(input.storageRoot, record.id) ? record : null;
+  }
   // 受信任的内部懒加载：用 known record 的规范 source 拉取，并以 record.id 作为 trustedId，
   // 使官方 id 只能由本来就是该官方 id 的记录刷新得到。
   return await addMarketplace({
@@ -509,6 +518,10 @@ export async function updateMarketplace(input: {
   const updated: KnownMarketplaceRecord[] = [];
   for (const record of selected) {
     throwIfPluginOperationAborted(input.signal);
+
+    // 官方市场随包分发，无远端目录可刷新：无论 known 记录里的 source 是什么
+    // （旧版本安装可能残留 CDN url），刷新都必须跳过官方 id，只走本地快照。
+    if (isOfficialMarketplaceId(record.id)) continue;
 
     // 受信任的刷新会重新拉取已知 marketplace 自带的 source；record.id 作为 trustedId，
     // 使官方 id 只能由原本就是该 id 的记录刷新得到。
@@ -1512,6 +1525,12 @@ async function loadMarketplaceFromSource(
 ): Promise<LoadMarketplaceResult> {
   throwIfPluginOperationAborted(options.signal);
   switch (source.source) {
+    case "bundled":
+      // 离线快照不是可加载的 source：canonical manifest 已由启动 seed 物化，
+      // 一律经 loadMarketplaceManifestSync 直接读取。到这里说明调用方绕过了官方 id 短路。
+      throw new Error(
+        "Bundled marketplace source has no remote manifest; read the materialized marketplace.json instead.",
+      );
     case "settings":
       return { manifest: normalizeMarketplaceManifest(source.marketplace) };
     case "file": {

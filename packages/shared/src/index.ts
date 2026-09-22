@@ -25,12 +25,13 @@ export type {
   RemoteTargetSnapshot,
   RemoteWorkspaceSessionEntry,
   PersistedWorkspaceSessionEntry,
+  MobileRelaySettings,
 } from "./protocol.js";
 export type { WorkspacePurpose } from "./workspacePurpose.js";
 export { DEFAULT_LOCALE } from "./protocol.js";
 export { ZCODE_VERSION, ZCODE_COMMIT, ZCODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
-export type { ArmsRumEnv, ZCodeEnv, ZCodeProductFlavor } from "./env.js";
+export type { ZCodeEnv, ZCodeProductFlavor } from "./env.js";
 export type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 export type {
   RemoteResourcePackageId,
@@ -65,10 +66,6 @@ export {
   ZCODE_APP_VERSION_ENV,
   ZCODE_BUILD_COMMIT_ID_ENV,
   RUNTIME_ZCODE_DEBUG,
-  ZCODE_TELEMETRY_REPORT_ENDPOINT,
-  ZCODE_ARMS_RUM_ENDPOINT,
-  ZCODE_TELEMETRY_ENABLED,
-  mapZCodeEnvToArmsRumEnv,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,
 } from "./env.js";
@@ -79,6 +76,7 @@ export * from "./rendererActionTrace.js";
 export * from "./validation.js";
 export * from "./api.js";
 export * from "./zcode-protocol/index.js";
+export * from "./zcode-relay-protocol/index.js";
 export * from "./account-provider-state.js";
 // re-home：旧协议承重面的幸存文件（消费者继续走 barrel，零感知）
 export * from "./zcode-protocol-legacy-types.js";
@@ -128,7 +126,6 @@ export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
 export * from "./onboardingRecord.js";
 export * from "./remoteResourcePackages.js";
-export * from "./plan-identity.js";
 export {
   BROWSER_SCREENSHOT_SURFACE_PREPARE_TIMEOUT_MS,
   BROWSER_VIEW_RESTORE_BOOTSTRAP_URL,
@@ -137,37 +134,7 @@ export {
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
 } from "./platform.js";
-export type {
-  ArmsCustomEventPayload,
-  ConfigureFinalArmsCustomEventE2ERequest,
-  FinalArmsCustomEventE2EEntry,
-  FinalArmsCustomEventPayload,
-  RendererTelemetryEventPayload,
-  TelemetryEventPayload,
-  TelemetryRendererContext,
-} from "./telemetry.js";
-export {
-  collectTelemetryRendererContext,
-  resolveSafeTelemetryHostname,
-  sanitizeTelemetryErrorMessage,
-  sanitizeTelemetryEventDetail,
-} from "./telemetry.js";
-export type {
-  RedactTelemetryTextOptions,
-  TelemetryProviderIdentity,
-  TelemetryProviderScope,
-} from "./telemetryRedaction.js";
-export {
-  TELEMETRY_SAFE_BUILTIN_MODEL_IDS,
-  TELEMETRY_TEXT_MAX_LENGTH,
-  redactTelemetryText,
-  redactTelemetryUrl,
-  resolveTelemetryModelId,
-  resolveTelemetryProviderScope,
-  sanitizeTelemetryModelValue,
-} from "./telemetryRedaction.js";
 export * from "./remoteUsageTelemetry.js";
-export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
 export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
 export type {
@@ -210,16 +177,19 @@ export type {
   IPlatformService,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
-  PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteServiceSession,
   SSHConfigAliasOption,
   TaskNotificationPayload,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
+  WindowControlsOverlayReadyPayload,
   WSLDistro,
   ZCodeStdioTapDevState,
+} from "./platform.js";
+export type {
+  MobileRelayStatus,
+  MobileRelayGrantRequest,
+  MobileRelayGrantResult,
 } from "./platform.js";
 export type {
   CuaAccessibilitySettingsResult,
@@ -230,7 +200,6 @@ export type {
 export type { ZCodeTaskCreateResult } from "./zcode-task-types.js";
 export * from "./zcode-task-types.js";
 export * from "./automation-types.js";
-export * from "./off-peak-types.js";
 export * from "./background-task-control-merge.js";
 export * from "./background-task-controls.js";
 export * from "./background-task-notifications.js";
@@ -277,7 +246,6 @@ export * from "./settings-sync.js";
 export * from "./uuid.js";
 export * from "./usage-stats.js";
 export * from "./coding-plan-subscription.js";
-export * from "./forceUpdate.js";
 export * from "./intranetProbe.js";
 export * from "./intranetDefaults.js";
 export * from "./hooks.js";
@@ -286,7 +254,6 @@ export * from "./workspaceSessionRestore.js";
 export * from "./skill-scan-policy.js";
 export * from "./browser-use/index.js";
 
-export * from "./coding-plan-reset.js";
 export {
   parseSubagentMarkdownSelection,
   formatSubagentMarkdownModel,

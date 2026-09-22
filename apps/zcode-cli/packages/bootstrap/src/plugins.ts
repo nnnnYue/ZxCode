@@ -1097,6 +1097,22 @@ function resolveEffectiveMarketplaceRecords(input: {
       useCachedManifest: false,
     });
   }
+  // 去平台化：官方市场不再写入 known_marketplaces（默认清单为空，且刷新对官方 id
+  // 一律短路）。目录本身仍由启动 seed 物化为 canonical manifest，这里在 known 缺失时
+  // 直接投影本地快照，让商店「公开」分段与旧安装（known 里仍有官方记录）看到同一目录。
+  // 官方市场排首位，与旧版 DEFAULT 清单的顺序保持一致。
+  if (!input.known.some((record) => isOfficialMarketplaceId(record.id))) {
+    records.unshift({
+      record: {
+        id: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        source: { source: "bundled" },
+        name: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        addedAt: "",
+        pluginCount: 0,
+      },
+      useCachedManifest: true,
+    });
+  }
   return records;
 }
 

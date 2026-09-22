@@ -7,20 +7,8 @@ import type {
   MigrateLegacyCommonMcpResult,
   SaveCliMcpToUserDirectoryRequest,
 } from "./index.js";
-import type { OAuthStateRegistration } from "./oauth.js";
 import type { AppSettings, Locale } from "./protocol.js";
 import type { StorageCleanRequest, StorageCleanResult, StorageUsageSnapshot } from "./storage.js";
-import type {
-  ArmsCustomEventPayload,
-  ConfigureFinalArmsCustomEventE2ERequest,
-  FinalArmsCustomEventE2EEntry,
-  RendererTelemetryEventPayload,
-  TelemetryRendererContext,
-} from "./telemetry.js";
-import type {
-  RendererActionTraceBatchV1,
-  RendererActionTraceConfigV1,
-} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CancelPendingRemoteConnectionRequest,
@@ -47,13 +35,10 @@ import type {
   SaveFileResult,
   PrintPageToPdfResult,
   OpenInEditorOptions,
-  PostUpdateReleaseNotesPayload,
   RemoteSessionClosedEvent,
   SSHConfigAliasOption,
   TaskNotificationPayload,
   WSLDistro,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
   DesktopZoomState,
   DesktopWindowChromeState,
   WindowControlsOverlayMetrics,
@@ -204,6 +189,12 @@ export const PlatformChannels = {
   SyncActiveTaskSession: "zcode:sync-active-task-session",
   /** Renderer → Main：同步 main 进程需即时感知的应用设置 */
   SyncAppSettings: "zcode:sync-app-settings",
+  /** Renderer → Main：上报当前窗口 active workspace 三元组（手机远控 presence 用） */
+  SyncWindowWorkspace: "zcode:sync-window-workspace",
+  /** Renderer → Main：查询自部署手机远控 relay 的连接状态 */
+  GetMobileRelayStatus: "zcode:get-mobile-relay-status",
+  /** Renderer → Main：请求 relay 签发一次性手机远控授权链接 */
+  RequestMobileRelayGrant: "zcode:request-mobile-relay-grant",
   /** Renderer → Main：快捷键设置页录制态开关；true = main 暂时摘除可配置菜单 accelerator */
   SetShortcutRecordingActive: "zcode:set-shortcut-recording-active",
   /** Main → Renderer：聚焦到指定 workspace 路径的 tab */
@@ -240,10 +231,6 @@ export const PlatformChannels = {
   OpenWorkspace: "zcode:open-workspace",
   /** Main → Renderer：deep link 直接打开指定本地工作区目录 */
   OpenWorkspacePath: "zcode:open-workspace-path",
-  /** Main → Renderer：打开内置反馈对话框 */
-  OpenFeedbackDialog: "zcode:open-feedback-dialog",
-  /** Main → Renderer：打开我的工单面板 */
-  OpenTicketsPanel: "zcode:open-tickets-panel",
   /** Main → Renderer：窗口全屏状态变化 */
   WindowFullscreenChanged: "zcode:window-fullscreen-changed",
   /** Renderer → Main：读取窗口最大化状态与系统原生圆角能力 */
@@ -273,8 +260,6 @@ export const PlatformChannels = {
   StorageScanProgress: "zcode:storage-scan-progress",
   /** Renderer → Main：打开外部 URL（用于 OAuth 跳转浏览器） */
   OpenExternal: "zcode:open-external",
-  /** Renderer → Main：查询当前语言下是否存在可用的用户社群入口 */
-  CanOpenCommunity: "zcode:can-open-community",
   /** Renderer → Main：在系统文件管理器中打开路径 */
   OpenInFileManager: "zcode:open-in-file-manager",
   /** Renderer → Main：使用系统默认应用打开本地文件 */
@@ -297,39 +282,12 @@ export const PlatformChannels = {
    * 立刻消失可能打断正在进行的拖拽。
    */
   NotifyCuaHelperPermissionDragEnded: "zcode:notify-cua-helper-permission-drag-ended",
-  /** Renderer → Main：上报 OAuth state 用于 deep link 路由 */
-  OAuthRegisterState: "zcode:oauth-register-state",
-  /** Main → Renderer：转发 deep link URL */
-  OAuthCallback: "zcode:oauth-callback",
   /** Main → Renderer：转发支付 deep link URL */
   PaymentCallback: "zcode:payment-callback",
-  /** Main → Renderer：外部分享页请求导入 share code。 */
-  ShareImport: "zcode:share-import",
-  /** Renderer → Main：OAuth 回调已处理完成，可继续后置启动流程 */
-  OAuthCallbackHandled: "zcode:oauth-callback-handled",
   /** Renderer → Main：renderer 已就绪，可接收缓存的 deep link */
   RendererReady: "zcode:renderer-ready",
-  /** Renderer → Main：同步当前 renderer 的 telemetry 上下文 */
-  SyncTelemetryContext: "zcode:sync-telemetry-context",
-  /** Renderer → Main：通过统一 telemetry 层上报业务事件 */
-  ReportTelemetryEvent: "zcode:report-telemetry-event",
-  /** Renderer → Main：上报 ARMS 自定义事件 */
-  ReportArmsCustomEvent: "zcode:report-arms-custom-event",
-  /** Renderer → Main：读取 Renderer 用户操作 Trace 灰度配置。 */
-  GetRendererActionTraceConfig: "zcode:get-renderer-action-trace-config",
-  /** Main → Renderer：Renderer 用户操作 Trace 灰度配置变化。 */
-  RendererActionTraceConfigChanged: "zcode:renderer-action-trace-config-changed",
-  /** Renderer → Main：发送已结束的 ui_action batch。 */
-  ReportRendererActionTraceBatch: "zcode:report-renderer-action-trace-batch",
   /** Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，单向 send，不需要回执。 */
   ReportRendererHeapSample: "zcode:report-renderer-heap-sample",
-  ReportLocalTtftBatch: "zcode:report-local-ttft-batch",
-  /** E2E preload → Main：读取 sendCustom 最终参数的内存 ring。 */
-  ReadFinalArmsCustomEventsE2E: "zcode:e2e:read-final-arms-custom-events",
-  /** E2E preload → Main：清空 sendCustom 最终参数的内存 ring。 */
-  ClearFinalArmsCustomEventsE2E: "zcode:e2e:clear-final-arms-custom-events",
-  /** E2E preload → Main：配置只针对目标 event name 的真实网络抑制。 */
-  ConfigureFinalArmsCustomEventsE2E: "zcode:e2e:configure-final-arms-custom-events",
   /** Renderer → Main：触发任务完成/失败的系统通知 */
   ShowTaskNotification: "zcode:show-task-notification",
   /** Main → Preload：通知 renderer 播放任务通知提示音 */
@@ -365,24 +323,6 @@ export const PlatformChannels = {
   ImportChromeBrowserData: "zcode:import-chrome-browser-data",
   /** Renderer → Main：清理内置浏览器缓存或全部站点数据。 */
   ClearEmbeddedBrowserData: "zcode:clear-embedded-browser-data",
-  /** Main → Renderer：通知有新版本已下载完毕，可以重启安装 */
-  UpdateReady: "zcode:update-ready",
-  /** Main → Renderer：用户手动点击"检查更新"后的结果反馈（toast 用） */
-  UpdateCheckResult: "zcode:update-check-result",
-  /** Main → Renderer：自动更新持续状态变化（菜单 UI 用） */
-  UpdateStateChanged: "zcode:update-state-changed",
-  /** Renderer → Main：主动获取当前自动更新状态（菜单打开时补偿事件丢失） */
-  GetUpdateState: "zcode:get-update-state",
-  /** Renderer → Main：开始下载当前已发现的自动更新 */
-  DownloadUpdate: "zcode:download-update",
-  /** Renderer → Main：取消当前正在下载的自动更新 */
-  CancelUpdateDownload: "zcode:cancel-update-download",
-  /** Renderer → Main：打开独立自动更新窗口 */
-  OpenUpdateStatusWindow: "zcode:open-update-status-window",
-  /** Renderer → Main：读取自动更新偏好 */
-  GetAutoUpdatePreferences: "zcode:get-auto-update-preferences",
-  /** Renderer → Main：写入“自动下载并安装更新”偏好 */
-  SetAutoDownloadAndInstallUpdates: "zcode:set-auto-download-and-install-updates",
   /** Renderer → Main：查询桌面端正在运行的会话数量 */
   GetDesktopSessionActivity: "zcode:get-desktop-session-activity",
   /** Renderer → Main：读取当前窗口页面缩放档位 */
@@ -397,14 +337,6 @@ export const PlatformChannels = {
   ApplicationLocaleChanged: "zcode:application-locale-changed",
   /** Renderer → Main：读取宿主系统语言 */
   GetSystemLocale: "zcode:get-system-locale",
-  /** Main → Renderer：更新安装后的版本说明 */
-  PostUpdateReleaseNotes: "zcode:post-update-release-notes",
-  /** Renderer → Main：确认版本说明已读 */
-  AcknowledgePostUpdateReleaseNotes: "zcode:ack-post-update-release-notes",
-  /** Renderer → Main：跳过当前已发现的自动更新版本 */
-  SkipUpdateVersion: "zcode:skip-update-version",
-  /** Renderer → Main：用户确认重启安装更新 */
-  QuitAndInstallUpdate: "zcode:quit-and-install-update",
   /** Renderer → Main：获取系统中已安装的编辑器/终端列表（含图标） */
   GetInstalledEditors: "zcode:get-installed-editors",
   /** Renderer → Main：按 bundle id 获取系统应用图标 */
@@ -540,8 +472,6 @@ export const HostMessageTypes = {
   FeedbackLogArchiveResult: "feedback-log-archive-result",
   /** main → host：定时任务到点派发；会话内 cron 复用 targetTaskId，历史未绑定任务才建 session */
   CronRun: "cron-run",
-  /** main → host：闲时任务派发；首跑 createTask 新建 session，续跑带 conversationId/sessionId resume */
-  OffPeakRun: "off-peak-run",
   /** main → host：browser-use 命令执行结果（CDP 执行完回传，按 requestId 关联） */
   BrowserExecuteResult: "browser-execute-result",
   /** main → host：本地视频 canonical path 授权结果 */
@@ -585,8 +515,6 @@ export const HostResponseTypes = {
   McpTelemetry: "mcp-telemetry",
   McpResourceSamples: "mcp-resource-samples",
   ToolExecResource: "tool-exec-resource",
-  /** 自动化 Host 首次输入 accepted 后报告新建 Session。 */
-  SessionCreateTelemetry: "session-create-telemetry",
   /** host → main：资源管理器采样结果（按 requestId 关联） */
   ResourceUsageSnapshotResult: "resource-usage-snapshot-result",
   /** host 内当前正在执行 prompt 的 agent session 数量变化 */
@@ -627,12 +555,8 @@ export const HostResponseTypes = {
   FeedbackLogArchiveRequest: "feedback-log-archive-request",
   /** host → main：定时任务派发结果（成功回填 taskId/sessionId，失败带 transient/permanent） */
   CronRunResult: "cron-run-result",
-  /** host → main：闲时任务派发结果（成功回填 conversationId/sessionId，失败带 transient/permanent） */
-  OffPeakRunResult: "off-peak-run-result",
   /** host → main：manual run 已落库，请立即唤醒 scheduler 认领派发 */
   CronSchedulerWakeRequest: "cron-scheduler-wake-request",
-  /** host → main：闲时任务翻 schedulable，请立即唤醒 scheduler 认领派发（与 cron 消息独立） */
-  OffPeakSchedulerWakeRequest: "off-peak-scheduler-wake-request",
   /** host → main：执行一条 browser-use 命令（main 用 WebContentsView+CDP 执行，按 requestId 关联） */
   BrowserExecuteRequest: "browser-execute-request",
   /** host → main：请求授权 Agent 已精确校验的本地视频路径 */
@@ -755,6 +679,22 @@ export interface PlatformChannelMap {
     request: Partial<AppSettings>;
     response: void;
   };
+  [PlatformChannels.SyncWindowWorkspace]: {
+    request: {
+      workspacePath: string;
+      workspaceIdentity?: string;
+      workspaceKey: string;
+    };
+    response: void;
+  };
+  [PlatformChannels.GetMobileRelayStatus]: {
+    request: void;
+    response: import("./platform.js").MobileRelayStatus;
+  };
+  [PlatformChannels.RequestMobileRelayGrant]: {
+    request: import("./platform.js").MobileRelayGrantRequest;
+    response: import("./platform.js").MobileRelayGrantResult;
+  };
   [PlatformChannels.GetResourceUsageSnapshot]: {
     request: void;
     response: ResourceUsageSnapshot;
@@ -842,10 +782,6 @@ export interface PlatformChannelMap {
     request: BrowserViewResidencyTransitionPayload;
     response: void;
   };
-  [PlatformChannels.CanOpenCommunity]: {
-    request: Locale;
-    response: boolean;
-  };
   [PlatformChannels.OpenInFileManager]: {
     request: string;
     response: { success: boolean; error?: string };
@@ -875,69 +811,17 @@ export interface PlatformChannelMap {
     request: { operationId: string };
     response: void;
   };
-  [PlatformChannels.OAuthRegisterState]: {
-    request: OAuthStateRegistration;
-    response: void;
-  };
-  [PlatformChannels.OAuthCallback]: {
-    request: string;
-    response: void;
-  };
   [PlatformChannels.PaymentCallback]: {
     request: string;
-    response: void;
-  };
-  [PlatformChannels.ShareImport]: {
-    request: { shareCode: string };
-    response: void;
-  };
-  [PlatformChannels.OAuthCallbackHandled]: {
-    request: void;
     response: void;
   };
   [PlatformChannels.RendererReady]: {
     request: void;
     response: void;
   };
-  [PlatformChannels.SyncTelemetryContext]: {
-    request: TelemetryRendererContext;
-    response: void;
-  };
-  [PlatformChannels.ReportTelemetryEvent]: {
-    request: RendererTelemetryEventPayload;
-    response: void;
-  };
-  [PlatformChannels.ReportArmsCustomEvent]: {
-    request: ArmsCustomEventPayload;
-    response: void;
-  };
-  [PlatformChannels.GetRendererActionTraceConfig]: {
-    request: void;
-    response: RendererActionTraceConfigV1;
-  };
-  [PlatformChannels.RendererActionTraceConfigChanged]: {
-    request: RendererActionTraceConfigV1;
-    response: void;
-  };
-  [PlatformChannels.ReportRendererActionTraceBatch]: {
-    request: RendererActionTraceBatchV1;
-    response: void;
-  };
   // 单向 send（不是 invoke）：60 秒一条的旁路遥测样本，renderer 不等 main 回执。
   [PlatformChannels.ReportRendererHeapSample]: {
     request: RendererHeapSample;
-    response: void;
-  };
-  [PlatformChannels.ReadFinalArmsCustomEventsE2E]: {
-    request: void;
-    response: FinalArmsCustomEventE2EEntry[];
-  };
-  [PlatformChannels.ClearFinalArmsCustomEventsE2E]: {
-    request: void;
-    response: void;
-  };
-  [PlatformChannels.ConfigureFinalArmsCustomEventsE2E]: {
-    request: ConfigureFinalArmsCustomEventE2ERequest;
     response: void;
   };
   [PlatformChannels.ShowTaskNotification]: {
@@ -1036,44 +920,6 @@ export interface PlatformChannelMap {
       value?: boolean;
     };
   };
-  [PlatformChannels.UpdateReady]: {
-    request: string;
-    response: void;
-  };
-  [PlatformChannels.UpdateCheckResult]: {
-    request: UpdateCheckResultPayload;
-    response: void;
-  };
-  [PlatformChannels.UpdateStateChanged]: {
-    request: UpdateStatePayload;
-    response: void;
-  };
-  [PlatformChannels.GetUpdateState]: {
-    request: void;
-    response: UpdateStatePayload;
-  };
-  [PlatformChannels.DownloadUpdate]: {
-    request: void;
-    response: void;
-  };
-  [PlatformChannels.CancelUpdateDownload]: {
-    request: void;
-    response: void;
-  };
-  [PlatformChannels.OpenUpdateStatusWindow]: {
-    request: void;
-    response: void;
-  };
-  [PlatformChannels.GetAutoUpdatePreferences]: {
-    request: void;
-    response: {
-      autoDownloadAndInstallUpdates: boolean;
-    };
-  };
-  [PlatformChannels.SetAutoDownloadAndInstallUpdates]: {
-    request: boolean;
-    response: void;
-  };
   [PlatformChannels.SettingsChanged]: {
     request: void;
     response: void;
@@ -1098,22 +944,6 @@ export interface PlatformChannelMap {
   };
   [PlatformChannels.DesktopZoomLevelChanged]: {
     request: DesktopZoomState;
-    response: void;
-  };
-  [PlatformChannels.PostUpdateReleaseNotes]: {
-    request: PostUpdateReleaseNotesPayload;
-    response: void;
-  };
-  [PlatformChannels.AcknowledgePostUpdateReleaseNotes]: {
-    request: string;
-    response: void;
-  };
-  [PlatformChannels.SkipUpdateVersion]: {
-    request: string;
-    response: void;
-  };
-  [PlatformChannels.QuitAndInstallUpdate]: {
-    request: void;
     response: void;
   };
   [PlatformChannels.GetInstalledEditors]: {

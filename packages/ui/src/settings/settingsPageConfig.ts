@@ -7,7 +7,6 @@ import {
   Bot,
   Palette,
   Sun,
-  BarChart3,
   Terminal,
   AlarmClock,
   Anchor,
@@ -18,6 +17,7 @@ import {
   WandSparkles,
   Keyboard,
   FileSearch,
+  Smartphone,
 } from "lucide-react";
 import { isSettingsSectionEnabled, type SettingsSectionId } from "@/lib/settingsNavigation.js";
 import type { Theme } from "@/useTheme.js";
@@ -31,7 +31,7 @@ export const THEME_MODES: Array<{
   { mode: "zai-light", icon: Sun },
 ];
 
-type SettingsSectionGroupId = "basics" | "agentCapabilities" | "dataAndStats";
+type SettingsSectionGroupId = "basics" | "agentCapabilities";
 
 interface SettingsSectionDefinition {
   id: SettingsSectionId;
@@ -51,7 +51,6 @@ const BASE_SETTINGS_SECTION_GROUPS: Array<{
     id: "agentCapabilities",
     titleId: "settings.sidebar.group.agentCapabilities",
   },
-  { id: "dataAndStats", titleId: "settings.sidebar.group.dataAndStats" },
 ];
 
 const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
@@ -128,6 +127,13 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.browser.title",
     groupId: "basics",
   },
+  // 手机远控紧跟「浏览器」：同属远程操控入口，自部署 relay 的连接与授权都收在这里。
+  {
+    id: "mobileRelay",
+    icon: Smartphone,
+    titleId: "settings.mobileRelay.title",
+    groupId: "basics",
+  },
   // 电脑控制紧跟「浏览器」：两者都是给 Agent 用的本机操控入口，
   // 放在基础设置里让用户在同一处理解「控制浏览器 / 控制整台电脑」的关系。
   {
@@ -149,12 +155,6 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     icon: FileSearch,
     titleId: "settings.workspaceFileSearch.title",
     groupId: "basics",
-  },
-  {
-    id: "usage",
-    icon: BarChart3,
-    titleId: "settings.usageTitle",
-    groupId: "dataAndStats",
   },
 ];
 

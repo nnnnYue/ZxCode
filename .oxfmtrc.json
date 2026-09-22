@@ -1,10 +1,16 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // 官方市场离线快照是第三方插件包的忠实落盘（scripts/fetch-official-marketplace.mjs 产物），
+  // 不参与仓库格式治理，避免每次刷新快照都产生海量格式噪音。
   "ignorePatterns": [
+    ".oxfmtrc.json",
+    "packages/desktop/resources/official-marketplace",
     "THIRD-PARTY-NOTICES.md",
     "third-party/inventory.json",
     "third-party/upstream/**",
     "third-party/native-search/licenses/**",
-    "third-party/runtime/*.txt"
+    "third-party/runtime/*.txt",
+    "packages/desktop/src/scheduler/schedulerProtocol.d.ts",
+    "packages/desktop/src/scheduler/schedulerProtocol.js"
   ]
 }

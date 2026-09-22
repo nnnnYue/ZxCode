@@ -179,16 +179,9 @@ function createSettingsMutationTarget(
       ),
     refresh: (reason) => registryService.refresh(reason),
     refreshSources: async (reason) => {
-      const sourceResults = await Promise.allSettled([
-        configRuntime.refreshZCodeBuiltin({ force: true }),
-        accountSource.refresh?.(reason) ?? Promise.resolve(),
-      ]);
-      const snapshot = await registryService.refresh(reason);
-      const failed = sourceResults.find(
-        (result): result is PromiseRejectedResult => result.status === "rejected",
-      );
-      if (failed) throw failed.reason;
-      return snapshot;
+      // 内置目录为纯打包文件，无远端源可刷新；只剩账号事实的刷新。
+      await accountSource.refresh?.(reason);
+      return await registryService.refresh(reason);
     },
   };
 }

@@ -1,8 +1,4 @@
 import { databaseStartupControlSchema, databaseStartupStateSchema } from "./database-startup.js";
-import {
-  sessionCreateTelemetrySchema,
-  automationSessionCreateTelemetrySchema,
-} from "./sessionCreateTelemetry.js";
 /* eslint-disable max-lines -- 运行时 schema 当前集中在共享包入口，外部 relay payload 校验加入后先保持单一导出面。 */
 import { z } from "zod";
 import { zcodeProcessDiagnosticSchema } from "./process-diagnostic.js";
@@ -47,7 +43,6 @@ export {
   appSettingsPatchSchema,
   appSettingsSchema,
   localeSchema,
-  postUpdateReleaseNotesPayloadSchema,
 } from "./validationAppSettings.js";
 
 export function formatZodError(error: z.ZodError): string {
@@ -130,33 +125,6 @@ export const taskNotificationPayloadSchema = z.object({
   requestId: nonEmptyStringSchema.optional(),
   title: z.string(),
   body: z.string(),
-});
-
-export const telemetryRendererContextSchema = z.object({
-  clientTimezone: nonEmptyStringSchema,
-  clientLanguage: nonEmptyStringSchema,
-  screenResolution: nonEmptyStringSchema,
-});
-
-export const rendererTelemetryEventPayloadSchema = z.object({
-  context: telemetryRendererContextSchema,
-  elementName: nonEmptyStringSchema,
-  eventRegion: nonEmptyStringSchema,
-  eventType: nonEmptyStringSchema,
-  eventText: z.string().optional(),
-  eventExtraDetail: z.record(z.string(), z.string()),
-  userId: z.string().optional(),
-  talkId: z.string().optional(),
-  messageId: z.string().optional(),
-});
-
-export const armsCustomEventPayloadSchema = z.object({
-  name: nonEmptyStringSchema,
-  group: nonEmptyStringSchema,
-  value: z.number().finite().optional(),
-  properties: z
-    .record(z.string(), z.union([z.string(), z.number().finite(), z.boolean(), z.undefined()]))
-    .optional(),
 });
 
 export const broadcastMessageSchema = z.object({
@@ -376,23 +344,6 @@ export const hostCronRunMessageSchema = z.object({
   mode: z.string().optional(),
 });
 
-// main → host：闲时任务派发（仿 cron-run，字段独立不复用）。首跑不带 conversationId/sessionId，
-// host createTask 新建 session；3h 续跑 / 中断恢复带上两者 resume 同一会话。
-// serverTicketId 供 idle plan 适配层注入 X-Off-Peak-Ticket-ID 请求头（run 作用域）。
-export const hostOffPeakRunMessageSchema = z.object({
-  type: z.literal("off-peak-run"),
-  offPeakTaskId: nonEmptyStringSchema,
-  workspacePath: nonEmptyStringSchema,
-  workspaceIdentity: z.string().optional(),
-  prompt: nonEmptyStringSchema,
-  // 权限四档映射现有 ZCodeTaskMode；与 cron-run 的 mode 同样按宽松 string 传输
-  permissionMode: nonEmptyStringSchema,
-  modelSelection: modelSelectionSchema,
-  conversationId: z.string().optional(),
-  sessionId: z.string().optional(),
-  serverTicketId: z.string().optional(),
-});
-
 // main → host：browser-use 命令执行结果（按 requestId 关联到 host 的 pending）。
 export const hostBrowserExecuteResultMessageSchema = z.object({
   type: z.literal("browser-execute-result"),
@@ -470,7 +421,6 @@ export const hostIncomingMessageSchema = z.discriminatedUnion("type", [
   hostSessionMessageDeliveryResultMessageSchema,
   hostFeedbackLogArchiveResultMessageSchema,
   hostCronRunMessageSchema,
-  hostOffPeakRunMessageSchema,
   hostBrowserExecuteResultMessageSchema,
   hostLocalMediaPreviewPathAuthorizeResultMessageSchema,
   hostCuaPipFocusChangedMessageSchema,
@@ -705,16 +655,6 @@ export const hostMcpTelemetryResponseSchema = z
   })
   .strict();
 export type HostMcpTelemetryResponse = z.infer<typeof hostMcpTelemetryResponseSchema>;
-
-export const hostSessionCreateTelemetryResponseSchema = z
-  .object({
-    type: z.literal("session-create-telemetry"),
-    event: automationSessionCreateTelemetrySchema,
-  })
-  .strict();
-export type HostSessionCreateTelemetryResponse = z.infer<
-  typeof hostSessionCreateTelemetryResponseSchema
->;
 
 export const hostAgentRunningTaskCountChangedResponseSchema = z.object({
   type: z.literal("agent-running-task-count-changed"),
@@ -952,7 +892,6 @@ export const hostResponseMessageSchema = z.discriminatedUnion("type", [
   hostMcpTelemetryResponseSchema,
   hostMcpResourceSamplesResponseSchema,
   hostToolExecResourceResponseSchema,
-  hostSessionCreateTelemetryResponseSchema,
   hostAgentRunningTaskCountChangedResponseSchema,
   hostWorkspaceRunningTaskCountChangedResponseSchema,
   hostCuaOperationStateResponseSchema,

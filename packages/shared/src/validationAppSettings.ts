@@ -56,7 +56,28 @@ export const integratedTerminalShellSelectionSchema = z.discriminatedUnion("mode
 ]);
 const providerFamilyDomainSchema = z.enum(["zai", "bigmodel"]);
 
-export const postUpdateReleaseNotesPayloadSchema = z.object({
+const mobileRelayServerUrlSchema = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed;
+}, z.string().url());
+
+/** 自部署手机远控 relay 桌面侧配置；schema 与 MobileRelaySettings 保持同构。 */
+export const mobileRelaySettingsSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    serverUrl: mobileRelayServerUrlSchema.optional(),
+    token: z.string().optional(),
+  })
+  .strict();
+export type MobileRelaySettingsInput = z.infer<typeof mobileRelaySettingsSchema>;
+
+const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
   title: nonEmptyStringSchema,
   markdown: nonEmptyStringSchema,
@@ -472,6 +493,7 @@ const appSettingsObjectSchema = z.object({
   skippedElectronUpdateVersions: skippedElectronUpdateVersionsSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
+  mobileRelay: mobileRelaySettingsSchema.default({ enabled: false }),
 });
 
 export const appSettingsSchema = z.preprocess(
@@ -559,4 +581,5 @@ export const appSettingsPatchSchema = z.object({
     .optional(),
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
+  mobileRelay: mobileRelaySettingsSchema.optional(),
 });

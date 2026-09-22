@@ -15,7 +15,6 @@ import { WebCallbackPage } from "./auth/WebCallbackPage.js";
 import { createWebAuthService } from "./auth/webAuthService.js";
 import { WEB_ZAI_OAUTH_CONFIG, resolveWebAuthDevReturnTo } from "./auth/webZaiOAuthConfig.js";
 import { parseOAuthState, resolveSafeAppReturnTo } from "./auth/oauthStateCodec.js";
-import { resolveWebCommunityUrl, resolveWebHelpConfig } from "./communityUrl.js";
 import {
   ConversationShareLandingLoader,
   ConversationShareLandingStatus,
@@ -30,6 +29,7 @@ import {
 } from "./share/conversationShareRoute.js";
 import type { IPlatformService, RemoteTarget, ServerRemoteInfo } from "@zcode/shared";
 import { WEB_DEFAULT_THEME, resolveWebInitialTheme } from "./webThemeSeed.js";
+import { resolveWebCommunityUrl, resolveWebHelpConfig } from "./communityUrl.js";
 
 function resolveWebThemePreference(defaultTheme: Theme = WEB_DEFAULT_THEME): Theme {
   const saved = localStorage.getItem("zcode-theme");
@@ -255,13 +255,8 @@ function createWebPlatform(): IPlatformService {
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    registerOAuthState: (_payload) => {},
-    onOAuthCallback: () => () => {},
     onPaymentCallback: () => () => {},
-    onShareImport: () => () => {},
     notifyRendererReady: () => {},
-    reportTelemetryEvent: async () => {},
-    reportArmsCustomEvent: () => Promise.resolve(),
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
         return;
@@ -313,22 +308,9 @@ function createWebPlatform(): IPlatformService {
       }),
     clearEmbeddedBrowserData: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    // IPlatformService 新增更新提示能力后，Web fallback 没有同步补齐空实现，
-    // 根级 typecheck 会直接失败，连与桌面端无关的改动都没法完成校验。
-    // Web 端当前没有桌面更新器，先显式 no-op，保持接口完整且不改变现有行为。
-    onUpdateReady: () => () => {},
-    onUpdateCheckResult: () => () => {},
-    onUpdateStateChanged: () => () => {},
-    getUpdateState: () => Promise.resolve({ kind: "idle", enabled: true }),
-    downloadUpdate: () => Promise.resolve(),
-    cancelUpdateDownload: () => Promise.resolve(),
     getDesktopSessionActivity: () => Promise.resolve({ runningAgentSessionCount: 0 }),
     getDesktopZoomLevel: () => Promise.resolve({ zoomLevel: 0 }),
     onDesktopZoomLevelChanged: () => () => {},
-    onPostUpdateReleaseNotes: () => () => {},
-    acknowledgePostUpdateReleaseNotes: () => Promise.resolve(),
-    skipUpdateVersion: () => Promise.resolve(),
-    quitAndInstallUpdate: () => Promise.resolve(),
     getInstalledEditors: () => Promise.resolve([]),
     openInEditor: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
     executeDesktopCommand: () => Promise.resolve(),

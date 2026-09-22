@@ -1,9 +1,5 @@
 import type { IServiceAccessor } from "@zcode/services";
-import {
-  type ProviderFamilyDomain,
-  resolveModelProviderFamilyIdByProviderId,
-  resolveProviderFamilyDomainFromOAuthProvider,
-} from "@zcode/shared";
+import { type ProviderFamilyDomain, resolveModelProviderFamilyIdByProviderId } from "@zcode/shared";
 import { logger } from "@/logger.js";
 
 function inferProviderFamilyDomainFromSelection(
@@ -24,16 +20,15 @@ function inferProviderFamilyDomainFromSelection(
 }
 
 export async function ensureProviderFamilyDomainMigration(
-  services: Pick<IServiceAccessor, "settingService" | "oauthService" | "modelSelectionService">,
+  services: Pick<IServiceAccessor, "settingService" | "modelSelectionService">,
 ): Promise<void> {
   const settings = await services.settingService.get();
   if (settings.providerFamilyDomain || settings.providerFamilyDomainMigrated) {
     return;
   }
 
-  let inferredDomain = resolveProviderFamilyDomainFromOAuthProvider(
-    await services.oauthService.getActiveProvider(),
-  );
+  // 去平台化：OAuth 登录删除后不再有 active provider 推断来源，只从模型选择视图推断。
+  let inferredDomain: ProviderFamilyDomain | null = null;
   let selectableProviders: readonly { readonly providerId: string }[] | null = null;
 
   if (!inferredDomain) {

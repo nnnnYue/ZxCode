@@ -88,15 +88,8 @@ const commandStdoutMaxBuffer = 64 * 1024 * 1024;
 const requiredRuntimeModules = [
   "module-details-from-path",
   "pngjs",
-  // Bugfix: telemetry 的 OTLP exporter 在启动阶段依赖 sdk-metrics；开发态 hoist 会掩盖
-  // electron-builder 漏包。最终产物必须机械校验该闭包，禁止可生成但无法启动的安装包流出。
-  "@opentelemetry/sdk-metrics",
-  // 与注入闭包同口径：校验 OTLP proto 导出链（exporter → otlp-transformer → protobufjs）完整进包。
-  "@opentelemetry/exporter-trace-otlp-proto",
-  "@opentelemetry/exporter-metrics-otlp-proto",
-  // @arms/rum-core 运行时会从 CJS 入口继续 require('@babel/runtime/helpers/*')。
-  // 它把 @babel/runtime 挂在 peerDependencies，pnpm workspace 开发态通常能解析，
-  // 但如果生产包没把该 peer 运行时带进 app.asar，已安装应用会在主进程启动阶段直接崩溃。
+  // @babel/runtime 在 pnpm workspace 开发态通常能从 hoisted 布局解析，
+  // 但如果生产包没把该运行时带进 app.asar，已安装应用会在主进程启动阶段直接崩溃。
   // 这里把 @babel/runtime 纳入 bundle 后机械校验，防止坏包继续流出。
   "@babel/runtime",
   // services 里的代理探测会在运行时 require("undici")。
@@ -725,6 +718,17 @@ async function main() {
   }
 
   if (!skipPrepare) {
+    // 打包前置：刷新内置 Provider 配置快照（下载 -> 去平台化清洗 -> 校验 -> 写回）。
+    // 脚本离线时自身按 0 退出保留仓库快照；这里再兜底一层，刷新失败不阻断打包。
+    try {
+      run(
+        process.execPath,
+        [resolve(workspaceRoot, "scripts", "update-builtin-provider-config.mjs")],
+        buildEnv,
+      );
+    } catch (error) {
+      console.warn(`[bundle] update-builtin-provider-config 失败（不阻断）: ${String(error)}`);
+    }
     run(pnpmCommand, ["prepare:runtime-assets"], buildEnv);
   }
 

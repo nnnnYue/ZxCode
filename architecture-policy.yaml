@@ -40,6 +40,9 @@ modules:
   - id: zcode-server-cli
     roots: [packages/zcode-server-cli/src]
     managed: false
+  - id: relay
+    roots: [packages/relay/src]
+    managed: false
   - id: ui
     roots: [packages/ui/src]
     managed: false

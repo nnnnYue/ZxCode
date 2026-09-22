@@ -1,20 +1,12 @@
-import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
-import { buildStartPlanEntitlementOptions } from "@/lib/startPlanEntitlementOptions.js";
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { BUILTIN_MODEL_PROVIDER_IDS, isStartPlanModelProviderId } from "@zcode/shared";
-import type { IUsageStatsService } from "@zcode/services";
 import type { SessionErrorInfo, SessionPhase } from "@zcode/shared/zcode-protocol-v4";
-import { useUsageEntitlementWithService } from "@/hooks/useUsageEntitlement.js";
 import {
   resolveGlmQuotaBannerBusinessCode,
   resolveStartPlanConcurrentLimitBannerReason,
   resolveStartPlanConcurrentLimitBusinessCode,
   resolveStartPlanQuotaExhaustedBusinessCode,
 } from "@/lib/providerBusinessError.js";
-import {
-  isMaxCodingPlanSnapshot,
-  isTerminalCodingPlanSnapshot,
-} from "@/lib/sidebarCodingPlanUpgrade.js";
 import {
   buildSessionQuotaBannerDismissKey,
   buildSessionQuotaBannerState,
@@ -35,10 +27,6 @@ function isGlmQuotaBannerProviderId(providerId: string | null): boolean {
   );
 }
 
-function isRunningPhase(phase: SessionPhase | null): boolean {
-  return phase === "prewarming" || phase === "running";
-}
-
 /**
  * V4 quota 业务状态：conversation snapshot 只提供当前 provider/model/错误，额度仍由
  * entitlement 服务读取。两者在 renderer 合并，不把购买或额度状态写回 conversation。
@@ -50,10 +38,9 @@ export function useV4SessionQuotaBanner(params: {
   phase: SessionPhase | null;
   providerId: string | null;
   modelId: string | null;
-  usageStatsService?: IUsageStatsService;
   /**
    * 官方 Server MCP 不可用的事实。由调用方从 conversation rows 解析——它是会话事件的投影，
-   * 与 entitlement 服务无关，不放进这个 hook 里取。
+   * 与额度服务无关，不放进这个 hook 里取。
    */
   mcpUnavailableNotice?: McpUnavailableNotice | null;
 }) {
@@ -78,13 +65,8 @@ export function useV4SessionQuotaBanner(params: {
   );
   const takesOverError = serverQuotaExhausted || serverConcurrentLimited || serverProviderLimited;
 
-  const settings = useProviderSettingsView();
-  const entitlement = useUsageEntitlementWithService(params.usageStatsService, {
-    ...buildStartPlanEntitlementOptions(
-      settings.state.status === "ready" ? settings.state.view : null,
-      isStartPlanProvider ? activeProviderId! : "",
-    ),
-  });
+  // 去平台化：usageStatsService 已随账号/Coding Plan 网关删除，权益快照恒为空；
+  // banner 的可见性只由会话错误里的服务端业务码（额度耗尽/并发受限）驱动。
   const reminderVersion = useSyncExternalStore(
     startPlanQuotaReminderStore.subscribe,
     startPlanQuotaReminderStore.getSnapshot,
@@ -99,7 +81,7 @@ export function useV4SessionQuotaBanner(params: {
     () =>
       buildSessionQuotaBannerState({
         activeProviderId,
-        snapshot: entitlement.snapshot,
+        snapshot: null,
         modelId,
         isReminderHidden: (key, referenceTime) =>
           startPlanQuotaReminderStore.isHidden(key, reminderOwner, referenceTime),
@@ -126,7 +108,6 @@ export function useV4SessionQuotaBanner(params: {
       reminderOwner,
       reminderVersion,
       concurrentLimitCode,
-      entitlement.snapshot,
       modelId,
       params.error?.message,
       params.mcpUnavailableNotice,
@@ -173,56 +154,9 @@ export function useV4SessionQuotaBanner(params: {
   }, [dismissKey, dismissed, params.sessionId]);
 
   const upgradeProviderId = resolveQuotaBannerUpgradeProviderId(activeProviderId);
-  const shouldCheckTerminalPlan =
-    state.visible &&
-    upgradeProviderId !== null &&
-    // 不提供升级入口的提示（如 MCP 今日额度用完）无需判断是否已是顶配套餐，
-    // 省掉一次 refreshOnMount 的 entitlement 请求。
-    shouldOfferQuotaBannerUpgrade(state.kind) &&
-    !isStartPlanModelProviderId(upgradeProviderId);
-  const upgradeEntitlement = useUsageEntitlementWithService(params.usageStatsService, {
-    enabled: shouldCheckTerminalPlan,
-    includeSubscription: true,
-    preferredProviderId: upgradeProviderId ?? undefined,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    refreshOnMount: true,
-  });
-  const terminalSnapshot =
-    entitlement.snapshot?.provider?.id === upgradeProviderId
-      ? entitlement.snapshot
-      : upgradeEntitlement.snapshot?.provider?.id === upgradeProviderId
-        ? upgradeEntitlement.snapshot
-        : null;
-  const terminalPlan = terminalSnapshot !== null && isTerminalCodingPlanSnapshot(terminalSnapshot);
-  const maxPlan = terminalSnapshot !== null && isMaxCodingPlanSnapshot(terminalSnapshot);
 
-  const previousPhaseRef = useRef<SessionPhase | null>(params.phase);
-  useEffect(() => {
-    const previousPhase = previousPhaseRef.current;
-    previousPhaseRef.current = params.phase;
-    if (!isStartPlanProvider || previousPhase === params.phase) return;
-    if (isRunningPhase(previousPhase) !== isRunningPhase(params.phase)) {
-      // 任务开始会预占额度，终止会扣减或释放；必须绕过普通 freshness 校正一次。
-      void entitlement.refresh({ force: true, silent: true, reason: "manual" });
-    }
-  }, [entitlement.refresh, isStartPlanProvider, params.phase]);
-
-  const modelRefreshInitializedRef = useRef(false);
-  const previousModelKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const nextKey = isStartPlanProvider && modelId ? `${activeProviderId}:${modelId}` : null;
-    const previousKey = previousModelKeyRef.current;
-    previousModelKeyRef.current = nextKey;
-    if (!modelRefreshInitializedRef.current) {
-      modelRefreshInitializedRef.current = true;
-      return;
-    }
-    if (nextKey && nextKey !== previousKey) {
-      void entitlement.refresh({ reason: "initial" });
-    }
-  }, [activeProviderId, entitlement.refresh, isStartPlanProvider, modelId]);
+  // 权益快照已随 usageStatsService 删除恒为空，顶配套餐（terminal/max plan）检测不再可用；
+  // 升级入口退化为常量文案，由 buildSessionQuotaBannerState 的 kind 决定是否展示。
 
   const dismiss = useCallback(() => {
     if (state.reminderKey) {
@@ -271,8 +205,7 @@ export function useV4SessionQuotaBanner(params: {
     dismiss,
     markShown,
     takesOverError,
-    upgradeProviderId:
-      terminalPlan || !shouldOfferQuotaBannerUpgrade(state.kind) ? null : upgradeProviderId,
-    upgradeActionLabelId: maxPlan ? "chat.quota.action.renew" : "chat.quota.action.upgrade",
+    upgradeProviderId: shouldOfferQuotaBannerUpgrade(state.kind) ? upgradeProviderId : null,
+    upgradeActionLabelId: "chat.quota.action.upgrade",
   } as const;
 }

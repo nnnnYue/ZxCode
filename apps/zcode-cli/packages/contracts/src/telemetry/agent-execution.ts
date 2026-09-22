@@ -1,8 +1,6 @@
 import type { CompactPhase, CompactTrigger } from "../compact/index.js";
 import type { SyntheticUserMessageSource } from "../interfaces/session-store.port.js";
 
-export const TELEMETRY_SCHEMA_VERSION = 6 as const;
-
 export const AgentTelemetryOperation = {
   AgentStep: "agent_step",
   ContextCompaction: "context_compaction",
