@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
 import { cn } from "@/components/lib/utils.js";
@@ -65,10 +64,10 @@ export function WorkspaceHelpMenuButton({
         className="min-w-0 w-max [&_[data-slot=dropdown-menu-item]]:pr-6"
       >
         {/* Windows/Linux 没有原生菜单栏，自绘标题栏箭头菜单也已下线，
-            资源管理器只能从这里进；Web 端没有该窗口，不渲染。 */}
+            资源管理器只能从这里进；Web 端没有该窗口，不渲染。
+            顶部不得残留分隔线：上方已无菜单项，分隔线会渲染成一条无文字的空行。 */}
         {isDesktop ? (
           <>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               data-testid={TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER}
               onSelect={handleOpenResourceManager}

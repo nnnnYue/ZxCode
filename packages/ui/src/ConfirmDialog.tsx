@@ -162,6 +162,20 @@ export function ConfirmDialogHost() {
                 <span className="font-mono text-ui-base text-foreground-subtle">esc</span>
               ) : null}
             </Button>
+            {displayedRequest?.discardLabel ? (
+              <Button
+                type="button"
+                variant="outline"
+                size={"lg"}
+                onClick={() => settleChoice("discard")}
+                className={cn(
+                  "h-9 gap-3 px-4",
+                  displayedRequest?.showKeyboardHints !== false && "justify-between sm:min-w-28",
+                )}
+              >
+                <span>{displayedRequest.discardLabel}</span>
+              </Button>
+            ) : null}
             <Button
               type="button"
               autoFocus

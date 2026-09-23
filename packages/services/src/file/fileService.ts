@@ -1,6 +1,6 @@
 /* eslint-disable max-lines */
 import type { Dirent } from "node:fs";
-import { mkdir, open, readFile, readdir, realpath, stat } from "node:fs/promises";
+import { mkdir, open, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { extname, join, relative, sep } from "node:path";
 import type {
@@ -31,6 +31,9 @@ import { createServiceLogger } from "../logger/serviceLogger.js";
 import { getConversationWorkspaceDir } from "../paths.js";
 const DEFAULT_TEXT_READ_BYTES = 128 * 1024;
 const MAX_TEXT_READ_BYTES = 256 * 1024;
+// 预览编辑保存的上限与读取上限（256KB）同源放宽到 1MB：编辑可能整行扩写，
+// 但超出 1MB 的内容已超出预览编辑的产品边界，应走外部编辑器。
+const MAX_TEXT_WRITE_BYTES = 1024 * 1024;
 const DEFAULT_MEDIA_PREVIEW_BYTES = 4 * 1024 * 1024;
 const MAX_MEDIA_PREVIEW_BYTES = 8 * 1024 * 1024;
 const DEFAULT_BINARY_READ_BYTES = 256 * 1024;
@@ -229,6 +232,7 @@ export function createFileService(options: CreateFileServiceOptions = {}): IFile
   const workspaceFileSearchFilter =
     options.workspaceFileSearchFilter ?? defaultWorkspaceFileSearchFilter;
   const workspaceIgnoreLogger = createServiceLogger("workspace-file-ignore");
+  const fileWriteLogger = createServiceLogger("file-write");
   const fileExistenceCache = new FileExistenceCache();
   // 索引归服务实例；不同 Host/注入过滤器不能通过模块全局缓存复用同路径结果。
   const workspaceFileListCache = new Map<string, WorkspaceFileIndex>();
@@ -518,6 +522,23 @@ export function createFileService(options: CreateFileServiceOptions = {}): IFile
       } finally {
         await handle.close();
       }
+    },
+    async writeTextFile(params: { path: string; content: string }): Promise<void> {
+      const contentBytes = Buffer.byteLength(params.content, "utf8");
+      if (contentBytes > MAX_TEXT_WRITE_BYTES) {
+        throw new Error(`File is too large to save: ${params.path}`);
+      }
+      // 保存永远针对已打开的文件：stat 前置校验“已存在的普通文件”，
+      // 防止该 RPC 通道被用于在任意位置创建新文件或覆盖目录。
+      const fileStat = await stat(params.path);
+      if (!fileStat.isFile()) {
+        throw new Error(`Path is not a file: ${params.path}`);
+      }
+      await writeFile(params.path, params.content, "utf8");
+      fileWriteLogger.info(undefined, "[file] text file saved", {
+        path: params.path,
+        bytes: contentBytes,
+      });
     },
     async readFileRange(params: {
       path: string;

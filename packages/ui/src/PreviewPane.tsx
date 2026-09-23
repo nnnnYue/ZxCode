@@ -19,10 +19,14 @@ import {
   ExternalLinkIcon,
   FileCode2Icon,
   CopyIcon,
+  Pencil,
+  Save,
+  Undo2,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
+import { Textarea } from "@/components/ui/textarea.js";
 import { cn } from "@/components/lib/utils.js";
 import type { FileBinaryPreview, FileMediaPreview, FileTextSlice } from "@zcode/shared";
 import { TID_PREVIEW_PANE } from "@zcode/shared";
@@ -48,6 +52,12 @@ import { decodeBase64ToArrayBuffer, getOfficeFilePreviewKind } from "@/lib/offic
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useFileContextActions } from "@/hooks/useFileContextActions.js";
 import { useWorkspaceOpenInEditorTarget } from "@/hooks/useWorkspaceOpenInEditorTarget.js";
+import { useTabStore } from "@/store/TabStoreProvider.js";
+import { isWorkspaceReadOnly } from "@/store/tabStore.js";
+import {
+  registerPreviewEditGuard,
+  unregisterPreviewEditGuard,
+} from "@/store/previewEditGuardStore.js";
 import { logger } from "@/logger.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { useCodeCommentPreviewStore } from "@/store/codeCommentPreviewStore.js";
@@ -484,6 +494,7 @@ export function PreviewPane({
   onOpenCodeViewer,
   renderHeavyContent = true,
   markdownSelectionTarget,
+  sidePaneTabId,
 }: {
   source: CodeViewerSource | null;
   onClose: () => void;
@@ -492,6 +503,8 @@ export function PreviewPane({
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   renderHeavyContent?: boolean;
   markdownSelectionTarget?: MarkdownSelectionTarget;
+  /** 所属 side pane tab id；编辑态用它登记未保存守卫，关闭/刷新 tab 前由 useAppPanels 拦截。 */
+  sidePaneTabId?: string;
 }) {
   const platform = usePlatform();
   const { intl } = useZCodeIntl();
@@ -551,6 +564,14 @@ export function PreviewPane({
   const [markdownViewMode, setMarkdownViewMode] = useState<"preview" | "code">("preview");
   const [svgViewMode, setSvgViewMode] = useState<"preview" | "code">("preview");
   const [wrapLongLinesOverride, setWrapLongLinesOverride] = useState<boolean | null>(null);
+  // 编辑态状态机：预览（只读）⇄ 编辑（draft 可写）。draft/baseline 唯一属于本组件顶层 state，
+  // 切 tab 不卸载（TabsContent forceMount），编辑内容跨 tab 切换存活；tab 被关闭由守卫拦截。
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const draftRef = useRef("");
+  const baselineRef = useRef<string | null>(null);
   const [breadcrumbMaskState, setBreadcrumbMaskState] = useState<BreadcrumbMaskState>("none");
   const breadcrumbScrollRef = useRef<HTMLDivElement | null>(null);
   const breadcrumbContentRef = useRef<HTMLDivElement | null>(null);
@@ -642,6 +663,26 @@ export function PreviewPane({
   );
   const { canToggleCodeWrap, canToggleMarkdownView, canToggleSvgView, hasMoreMenu } =
     displayOptions;
+  const workspaceTabs = useTabStore((state) => state.tabs);
+  const workspaceWritable = useMemo(
+    () =>
+      !sourceWorkspacePath ||
+      !isWorkspaceReadOnly(workspaceTabs, sourceWorkspacePath, source?.workspaceIdentity),
+    [source?.workspaceIdentity, sourceWorkspacePath, workspaceTabs],
+  );
+  // 可编辑 = 纯文本文件 source + 本地可写 workspace + 读取结果完整非二进制。
+  // 图片/PDF/Office/PPTX/媒体已在 fileSource 排除；截断（>256KB）与二进制保存会丢内容，必须排除。
+  const canEditFile = Boolean(
+    fileSource &&
+      source?.type === "file" &&
+      source.path &&
+      !isRemoteSource &&
+      workspaceWritable &&
+      filePreview !== null &&
+      !filePreview.isBinary &&
+      !fileTooLarge,
+  );
+  const editDirty = editing && draft !== baseline;
   const codeCommentLabels = useMemo(
     () => ({
       addComment: intl.formatMessage({ id: "codeViewer.comment.add" }),
@@ -663,6 +704,79 @@ export function PreviewPane({
   // 两个 labels 接口都是必填全字段，各写一份漏的不会是类型错误，而是一句没翻译的文案。
   const pdfViewerLabels = usePdfViewerLabels();
   const pptxViewerLabels = usePptxViewerLabels();
+
+  const handleExitPreviewEdit = useCallback(() => {
+    draftRef.current = "";
+    baselineRef.current = null;
+    setDraft("");
+    setBaseline(null);
+    setEditing(false);
+  }, []);
+
+  const handleEnterPreviewEdit = useCallback(() => {
+    if (!filePreview || filePreview.isBinary) {
+      return;
+    }
+    draftRef.current = filePreview.content;
+    baselineRef.current = filePreview.content;
+    setDraft(filePreview.content);
+    setBaseline(filePreview.content);
+    setEditing(true);
+  }, [filePreview]);
+
+  const handleSavePreviewEdits = useCallback(async (): Promise<boolean> => {
+    const savePath = source?.type === "file" ? source.path : null;
+    if (!savePath || saving) {
+      return false;
+    }
+    const content = draftRef.current;
+    setSaving(true);
+    try {
+      await fileService.writeTextFile({ path: savePath, content });
+      const savedBytes = new TextEncoder().encode(content).length;
+      // 保存成功后用刚落盘的内容就地更新预览缓存（避免额外回读 RPC），
+      // bytesRead/totalBytes 同步为保存后的文件大小，保持 FileTextSlice 语义一致。
+      setFilePreview((prev) =>
+        prev
+          ? {
+              ...prev,
+              content,
+              bytesRead: savedBytes,
+              totalBytes: savedBytes,
+              truncated: false,
+              isBinary: false,
+            }
+          : prev,
+      );
+      handleExitPreviewEdit();
+      toast(intl.formatMessage({ id: "codeViewer.saved" }));
+      return true;
+    } catch (saveError) {
+      // 保存失败必须保持编辑态：draft 不清空，未保存守卫继续拦截关闭。
+      toast(
+        intl.formatMessage(
+          { id: "codeViewer.saveFailed" },
+          { error: getPreviewPaneSafeErrorMessage(saveError, savePath) },
+        ),
+      );
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [fileService, handleExitPreviewEdit, intl, saving, source]);
+
+  useEffect(() => {
+    if (!sidePaneTabId || !editing) {
+      return;
+    }
+    registerPreviewEditGuard(sidePaneTabId, {
+      isDirty: () => draftRef.current !== baselineRef.current,
+      save: () => handleSavePreviewEdits(),
+    });
+    return () => {
+      unregisterPreviewEditGuard(sidePaneTabId);
+    };
+  }, [editing, handleSavePreviewEdits, sidePaneTabId]);
 
   useEffect(() => {
     let disposed = false;
@@ -703,7 +817,9 @@ export function PreviewPane({
         : "code",
     );
     setWrapLongLinesOverride(null);
-  }, [source]);
+    // 切换 source（含同一 tab 原位刷新 source）必须退出编辑：draft 属于旧文件内容。
+    handleExitPreviewEdit();
+  }, [handleExitPreviewEdit, source]);
 
   const handleSubmitCodeComment = useCallback(
     (params: { range: CodeCommentRange; selectedText: string; comment: string }) => {
@@ -1587,6 +1703,30 @@ export function PreviewPane({
                   id: "codeViewer.openSourcePreview",
                 })}
               </span>
+            </Button>
+          ) : null}
+          {/* 编辑入口按产品规则固定在 more 按钮左侧；编辑态同一按钮切换为保存。 */}
+          {canEditFile ? (
+            <Button
+              type="button"
+              size="icon-md"
+              variant="ghost"
+              className="shrink-0 text-foreground-subtle hover:text-foreground disabled:text-foreground-subtlest"
+              disabled={saving || (editing && !editDirty)}
+              onClick={() => {
+                if (editing) {
+                  void handleSavePreviewEdits();
+                } else {
+                  handleEnterPreviewEdit();
+                }
+              }}
+              title={intl.formatMessage({ id: editing ? "codeViewer.save" : "codeViewer.edit" })}
+              aria-label={intl.formatMessage({
+                id: editing ? "codeViewer.save" : "codeViewer.edit",
+              })}
+              data-testid={editing ? "preview-pane-save" : "preview-pane-edit"}
+            >
+              {editing ? <Save className="size-3.5" /> : <Pencil className="size-3.5" />}
             </Button>
           ) : null}
           {/* 图片和 patch 这类预览没有任何显示选项，继续渲染触发器会打开空菜单，所以只在存在菜单项时显示更多按钮。*/}

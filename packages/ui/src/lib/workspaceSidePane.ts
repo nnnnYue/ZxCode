@@ -1005,6 +1005,16 @@ function createCodeViewerSidePaneTab(source: CodeViewerSource): CodeViewerSidePa
   };
 }
 
+/**
+ * 预判 source 打开后会复用（原位刷新 source）的既有 tab id。
+ * 与 createCodeViewerSidePaneTab 的 id 规则同源；返回 null 表示每次都会新建 tab。
+ * 未保存守卫靠它在真正 commit 之前找到会被刷新的编辑中 tab。
+ */
+export function resolveReusableCodeViewerSidePaneTabId(source: CodeViewerSource): string | null {
+  const sourceKey = getCodeViewerTabSourceKey(normalizeCodeViewerSource(source));
+  return sourceKey ? `code-viewer:${sourceKey}` : null;
+}
+
 function findTabIndexById(tabs: WorkspaceSidePaneTab[], tabId: string): number {
   return tabs.findIndex((tab) => tab.id === tabId);
 }

@@ -9,6 +9,8 @@ export interface ConfirmDialogRequest {
   presentation?: "automation-confirmation";
   confirmLabel?: string;
   cancelLabel?: string;
+  /** 三选弹框的第三按钮（如“直接离开”）；提供才渲染，点击结算为 "discard"。 */
+  discardLabel?: string;
   confirmVariant?: "default" | "destructive";
   showCloseButton?: boolean;
   showKeyboardHints?: boolean;
@@ -16,7 +18,7 @@ export interface ConfirmDialogRequest {
   checkbox?: { label: string; onCheckedChange: (checked: boolean) => void };
 }
 
-type ConfirmDialogChoice = "confirm" | "cancel" | "dismiss";
+export type ConfirmDialogChoice = "confirm" | "cancel" | "dismiss" | "discard";
 
 interface PendingConfirmDialogRequest extends ConfirmDialogRequest {
   resolve: (choice: ConfirmDialogChoice) => void;
