@@ -30,7 +30,6 @@ import {
   readFile,
   readdir,
   symlink,
-  writeFile,
 } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
@@ -40,6 +39,7 @@ import { CommandFileParser } from "../commands/commandFileParser.js";
 import type { ISettingService } from "../setting/setting.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
 import { walkSkillMarkdownPaths } from "../skills/skillDiscoveryWalk.js";
+import { atomicWriteJson } from "../fs/atomicFileUtils.js";
 import type { ISettingsSyncService } from "./settingsSync.js";
 
 const log = createServiceLogger("settings-sync");
@@ -994,6 +994,28 @@ async function readJsonFileOrEmpty(filePath: string): Promise<Record<string, unk
   }
 }
 
+/**
+ * 写回 config.json 前的严格读取：仅允许「文件不存在」按空对象处理。
+ * JSON 损坏或 IO 失败时必须抛错中止导入，否则后续 read-modify-write 会把
+ * provider、MCP、secret 等其余顶层配置静默清空（与 mcpSyncService 的导入门槛一致）。
+ */
+async function readJsonFileForWrite(filePath: string): Promise<Record<string, unknown>> {
+  let raw: string;
+  try {
+    raw = await readFile(filePath, "utf-8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {};
+    }
+    throw error;
+  }
+  const parsed = JSON.parse(raw) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error(`无法解析配置文件（非 JSON 对象）: ${filePath}`);
+  }
+  return parsed;
+}
+
 function normalizeMcpServerNameKey(name: string): string {
   return name.trim().toLowerCase();
 }
@@ -1109,7 +1131,7 @@ async function addMcpServerToZcodeConfig(
   name: string,
   config: McpServerConfig,
 ): Promise<void> {
-  const parsed = await readJsonFileOrEmpty(filePath);
+  const parsed = await readJsonFileForWrite(filePath);
   const currentMcp = isRecord(parsed.mcp) ? parsed.mcp : {};
   const servers = readZcodeMcpServers(parsed);
   await writeJsonFile(filePath, {
@@ -1131,12 +1153,13 @@ function readStringArray(value: unknown): string[] {
 }
 
 async function writeJsonFile(filePath: string, value: Record<string, unknown>): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+  // config.json 承载 MCP/secret 等关键配置，非原子写入在崩溃或杀软占用中途会留下截断文件，
+  // 下次读取被当作空对象后触发整份覆盖。统一走临时文件 + rename 的原子写。
+  await atomicWriteJson(filePath, value);
 }
 
 async function addPluginDirToConfig(filePath: string, pluginPath: string): Promise<void> {
-  const parsed = await readJsonFileOrEmpty(filePath);
+  const parsed = await readJsonFileForWrite(filePath);
   const plugins = isRecord(parsed.plugins) ? parsed.plugins : {};
   const dirs = readStringArray(plugins.dirs);
   const resolvedPluginPath = resolve(pluginPath);

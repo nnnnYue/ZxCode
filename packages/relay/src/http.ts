@@ -183,8 +183,22 @@ export async function createRelayHttpServer(
               ws.close(1013, "another desktop already connected");
               return;
             }
+            if (control && control.ws === ws) {
+              // 同一连接重复 hello（客户端重试等）：按幂等处理，仅刷新注册与心跳；
+              // 不能走 superseded 路径，否则会关闭自身连接并把所有 pending attach
+              // 误按桌面离线收口，手机端在途授权全部失败。
+              control = { ws, deviceId: hello.data.deviceId, lastSeenAt: now(), reapTimer };
+              helloed = true;
+              ws.send(
+                JSON.stringify({
+                  type: "relay-control-ack",
+                  deviceId: hello.data.deviceId,
+                }),
+              );
+              return;
+            }
             if (control) {
-              // 同 deviceId 顶替旧连接：旧连接的 pending attach 一并按离线收口，
+              // 同 deviceId 的新连接顶替旧连接：旧连接的 pending attach 一并按离线收口，
               // 手机端需重新生成授权链接（v1 接受该竞态，桌面重启是罕见路径）。
               dropControl("superseded");
             }

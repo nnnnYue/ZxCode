@@ -75,8 +75,15 @@ export class BroadcastHub {
     });
   }
 
-  /** 注销 host process（窗口关闭时调用） */
-  unregister(windowId: number): void {
+  /**
+   * 注销 host process（host exit / 窗口关闭时调用）。
+   * 传入 child 时做进程身份校验：同窗口的 host 被重建后，旧 host 的延迟 exit
+   * 不能把新 host 的注册和 claim 状态一并删掉，否则该窗口的跨窗口广播静默丢失。
+   */
+  unregister(windowId: number, child?: ElectronUtilityProcess): void {
+    if (child && this.processes.get(windowId) !== child) {
+      return;
+    }
     this.processes.delete(windowId);
     // 窗口在 reservation 返回前关闭时无法主动 release；只回收该窗口未 commit
     // 的占用，已 commit claim 继续保留，避免后来打开的窗口重播同一次完成提示。

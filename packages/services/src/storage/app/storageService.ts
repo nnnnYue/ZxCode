@@ -47,6 +47,12 @@ export function createStorageService(deps: StorageServiceDependencies): IStorage
       const jobId = `scan-${++jobCounter}`;
       latestJobId = jobId;
       const roots = await deps.roots.resolveRoots();
+      // resolveRoots 有 IO 等待窗口：期间再次 startScan 会把 latestJobId 顶掉且
+      // 它的 cancelCurrentJob() 逮不到尚未创建的本 job。等待结束后发现已被更新的一次
+      // 取代时直接放弃创建，避免两个 job 并发遍历同一批根目录、事件流交叉。
+      if (jobId !== latestJobId) {
+        return { jobId };
+      }
       const job = createScanJob({
         jobId,
         roots,

@@ -209,7 +209,12 @@ export function registerHostProcess(label: string, child: ElectronUtilityProcess
   hostProcesses.set(label, child);
 }
 
-export function unregisterHostProcess(label: string): void {
+export function unregisterHostProcess(label: string, child?: ElectronUtilityProcess): void {
+  // 同 label 的 host 被重建后，旧 host 的延迟 exit 不能把新 host 从
+  // 资源注册表里删掉，否则存活 host/agent 从资源遥测中消失。按进程身份校验。
+  if (child && hostProcesses.get(label) !== child) {
+    return;
+  }
   hostProcesses.delete(label);
   hostAgentProcesses.delete(label);
   forgetHostResourceUsage(label);

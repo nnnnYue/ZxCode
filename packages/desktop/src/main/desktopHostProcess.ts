@@ -480,9 +480,9 @@ export function spawnHostProcess(
     dependencies.logger.info(`[spawnHostProcess] host process (${label}) exited with code ${code}`);
     dependencies.hostRunningTaskCountMap.delete(child);
     if (shouldRegisterBroadcast) {
-      dependencies.broadcastHub.unregister(windowId);
+      dependencies.broadcastHub.unregister(windowId, child);
     }
-    unregisterHostProcess(label);
+    unregisterHostProcess(label, child);
     for (const [wcId, process] of dependencies.windowHostProcessMap) {
       if (process === child) {
         dependencies.windowHostProcessMap.delete(wcId);

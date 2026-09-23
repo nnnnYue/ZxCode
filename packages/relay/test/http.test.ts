@@ -190,6 +190,35 @@ test("手机接入时桌面离线：grant 已消费仍拒绝连接", async () =>
   }
 });
 
+test("同连接重复 hello：幂等处理，不触发 superseded 断连", async () => {
+  const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
+  try {
+    const control = await openControl(relay);
+    // 同一连接重发 hello（客户端重试逻辑等）：修复前会走 superseded 路径，
+    // 关闭自身连接并按桌面离线收口所有 pending attach。
+    control.ws.send(
+      JSON.stringify({
+        type: "relay-control-hello",
+        deviceId: "device-test",
+        relayToken: DEVICE_TOKEN,
+        version: ZXCODE_RELAY_PROTOCOL_VERSION,
+      }),
+    );
+    const ack = await control.next(
+      (m) => (m as { type?: string }).type === "relay-control-ack",
+    );
+    assert.equal((ack as { deviceId?: string }).deviceId, "device-test");
+
+    // 连接仍然存活且控制注册未被拆掉：还能正常签发 grant。
+    const grant = await control.requestGrant("req-dup-hello");
+    assert.equal(grant.ok, true);
+
+    control.ws.close();
+  } finally {
+    await relay.close();
+  }
+});
+
 test("静态托管：未配置 webRoot 返回引导页", async () => {
   const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
   try {

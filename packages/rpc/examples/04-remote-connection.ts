@@ -41,7 +41,6 @@ import {
   ISocketFactory,
   RemoteSocketFactoryService,
   ResolvedAuthority,
-  RemoteConnection,
   createURITransformer,
 } from "../src/index.js";
 

@@ -23,6 +23,7 @@ import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "@zcode/shared";
 import type { ICommandsService } from "./commands.js";
 import { CommandFileParser, type CommandFileFormat } from "./commandFileParser.js";
 import { readInstalledPluginRoots } from "#src/plugins/installedPluginRoots.js";
+import { atomicWriteJson } from "#src/fs/atomicFileUtils.js";
 
 function resolveUserHomeDir() {
   const envHome = process.env.HOME?.trim() || process.env.USERPROFILE?.trim();
@@ -103,10 +104,32 @@ async function readUserCliConfig(): Promise<Record<string, unknown>> {
   }
 }
 
+/**
+ * 写回 `~/.zxcode/cli/config.json` 前的严格读取：仅允许「文件不存在」按空对象处理。
+ * JSON 损坏时若当作空对象继续写，会静默清空 config.json 里 command 之外的
+ * MCP、plugin、provider 等全部顶层配置（与 mcpSyncService 的导入门槛一致）。
+ */
+async function readUserCliConfigForWrite(): Promise<Record<string, unknown>> {
+  let content: string;
+  try {
+    content = await readFile(getUserCliConfigPath(), "utf-8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {};
+    }
+    throw error;
+  }
+  const parsed = JSON.parse(content) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error(`无法解析用户配置文件（非 JSON 对象）: ${getUserCliConfigPath()}`);
+  }
+  return parsed;
+}
+
 async function writeUserCliConfig(config: Record<string, unknown>): Promise<void> {
-  const filePath = getUserCliConfigPath();
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+  // config.json 承载 MCP/plugin 等关键配置，非原子写入在崩溃中途会留下截断文件，
+  // 下次读取被当作空对象后触发整份覆盖。统一走临时文件 + rename 的原子写。
+  await atomicWriteJson(getUserCliConfigPath(), config);
 }
 
 function readCommandEnabledOverrides(config: Record<string, unknown>): Map<string, boolean> {
@@ -597,7 +620,9 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
       descriptor.format,
     );
     await writeFile(filePath, content, "utf-8");
-    await writeUserCliConfig(setCommandEnabledOverride(await readUserCliConfig(), filePath, true));
+    await writeUserCliConfig(
+      setCommandEnabledOverride(await readUserCliConfigForWrite(), filePath, true),
+    );
 
     const parsed = CommandFileParser.parseCommandFile(content, filePath, descriptor.format);
     if (!parsed) {
@@ -680,7 +705,7 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
       // 禁用状态按命令文件路径存放；编辑命令改名会换文件路径，必须迁移 override，
       // 否则用户刚禁用的命令会因为改名重新启用。
       const migratedConfig = setCommandEnabledOverride(
-        setCommandEnabledOverride(await readUserCliConfig(), params.oldFilePath, true),
+        setCommandEnabledOverride(await readUserCliConfigForWrite(), params.oldFilePath, true),
         newFilePath,
         enabledOverrides.get(params.oldFilePath) ?? true,
       );
@@ -726,13 +751,13 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
       }
     }
     await writeUserCliConfig(
-      setCommandEnabledOverride(await readUserCliConfig(), params.filePath, true),
+      setCommandEnabledOverride(await readUserCliConfigForWrite(), params.filePath, true),
     );
   }
 
   async function setCommandEnabled(params: CommandSetEnabledParams): Promise<void> {
     const nextConfig = setCommandEnabledOverride(
-      await readUserCliConfig(),
+      await readUserCliConfigForWrite(),
       params.filePath,
       params.enabled,
     );
