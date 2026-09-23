@@ -27,7 +27,6 @@ interface RootWorkspaceContentProps {
   handleOpenWorkspace: AppProps["onOpenWorkspace"];
   handleOpenFolderFromWorkspaceMenu: AppProps["onOpenFolderFromWorkspaceMenu"];
   handleOpenRemoteWorkspace?: AppProps["onOpenRemoteWorkspace"];
-  handleCreateScratchWorkspace: AppProps["onCreateScratchWorkspace"];
   remoteConnectionInProgress?: AppProps["remoteConnectionInProgress"];
   remoteWorkspaceSessions: NonNullable<AppProps["remoteWorkspaceSessions"]>;
   allowRemoteWorkspace: NonNullable<RootProps["allowRemoteWorkspace"]>;
@@ -61,7 +60,6 @@ export function RootWorkspaceContent({
   handleOpenWorkspace,
   handleOpenFolderFromWorkspaceMenu,
   handleOpenRemoteWorkspace,
-  handleCreateScratchWorkspace,
   remoteConnectionInProgress,
   remoteWorkspaceSessions,
   allowRemoteWorkspace,
@@ -140,7 +138,6 @@ export function RootWorkspaceContent({
               onOpenWorkspace={handleOpenWorkspace}
               onOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
               onOpenRemoteWorkspace={handleOpenRemoteWorkspace}
-              onCreateScratchWorkspace={handleCreateScratchWorkspace}
               remoteConnectionInProgress={remoteConnectionInProgress}
               onReturnToWorkspace={handleBackFromSettings}
               allowOpenWorkspace={allowOpenWorkspace}

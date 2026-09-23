@@ -6,7 +6,6 @@ import type {
   ZCodeTaskMeta,
   GitChangeSourceId,
   DesktopWindowChromeState,
-  IPlatformService,
   RemoteTarget,
   RemoteWorkspaceSessionEntry,
 } from "@zcode/shared";
@@ -26,7 +25,6 @@ import type {
   OpenScopedWorkflowWorkspaceSideTabRequest,
   WorkspaceSidePaneState,
 } from "@/lib/workspaceSidePane.js";
-import type { TreemappingSidePaneTab } from "@/lib/workspaceSidePane.js";
 import type { WorkspaceZCodeUIState } from "@/store/zcodeSessionStore.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import type { Theme } from "@/useTheme.js";
@@ -90,7 +88,6 @@ export interface AppProps {
   onOpenWorkspace: () => void;
   onOpenFolderFromWorkspaceMenu: () => void;
   onOpenRemoteWorkspace?: () => void;
-  onCreateScratchWorkspace: (name: string) => Promise<string | null>;
   remoteConnectionInProgress?: boolean;
   onReturnToWorkspace?: () => void;
   allowOpenWorkspace?: boolean;
@@ -185,7 +182,6 @@ export interface WorkspaceShellLayoutProps extends AppProps {
   taskSessionFile: ReturnType<
     typeof import("@/hooks/useTaskSessionFilePath.js").useTaskSessionFilePath
   >;
-  testMessages: import("@/lib/taskChatMessageTypes.js").TaskChatMessage[] | null;
   conversationFindActiveIndex: number;
   conversationFindNavigationRequestId: number;
   conversationFindQuery: string;
@@ -197,7 +193,6 @@ export interface WorkspaceShellLayoutProps extends AppProps {
   fileChangeFindQuery: string;
   onFileChangeFindMatchCountChange: (count: number) => void;
   appLogoUrl: string;
-  platform: IPlatformService;
   reloadSessionDisabled: boolean;
   reloadSessionPending: boolean;
   handleReloadSession: (options?: {
@@ -226,7 +221,6 @@ export interface WorkspaceShellLayoutProps extends AppProps {
   handleToggleTerminal: () => void;
   handleToggleBrowser: () => void;
   handleOpenBrowserTab: () => void;
-  handleOpenTreemapping: (source?: TreemappingSidePaneTab["source"]) => void;
   handleOpenWhiteboard: () => void;
   handleOpenDeveloperTools: () => void;
   handleOpenTerminalTab: () => void;

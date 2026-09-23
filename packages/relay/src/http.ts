@@ -1,6 +1,4 @@
 import { timingSafeEqual } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
-import { join, normalize, resolve, sep } from "node:path";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { Hono } from "hono";

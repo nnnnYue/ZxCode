@@ -100,7 +100,6 @@ export function App({
   onOpenWorkspace,
   onOpenFolderFromWorkspaceMenu,
   onOpenRemoteWorkspace,
-  onCreateScratchWorkspace,
   remoteConnectionInProgress = false,
   onReturnToWorkspace,
   allowOpenWorkspace = true,
@@ -220,7 +219,6 @@ export function App({
     handleOpenBrowserTab,
     handleToggleGit,
     handleOpenGit,
-    handleOpenTreemapping,
     handleOpenWhiteboard,
     handleOpenDeveloperTools,
     handleOpenTerminalTab,
@@ -569,14 +567,6 @@ export function App({
       handleOpenCodeViewers(request.sources);
     },
     [handleOpenCodeViewers, isDesktop, workspaceReadOnlyReason],
-  );
-  const handleOpenTreemappingIfWritable = useCallback(
-    (...args: Parameters<typeof handleOpenTreemapping>) => {
-      if (!workspaceReadOnlyReason) {
-        handleOpenTreemapping(...args);
-      }
-    },
-    [handleOpenTreemapping, workspaceReadOnlyReason],
   );
   const projectName = getPathLeaf(workspaceAbsPath);
   const handleOpenTaskFind = useCallback(() => {
@@ -1066,7 +1056,6 @@ export function App({
         onOpenWorkspace={onOpenWorkspace}
         onOpenFolderFromWorkspaceMenu={onOpenFolderFromWorkspaceMenu}
         onOpenRemoteWorkspace={onOpenRemoteWorkspace}
-        onCreateScratchWorkspace={onCreateScratchWorkspace}
         remoteConnectionInProgress={remoteConnectionInProgress}
         allowOpenWorkspace={allowOpenWorkspace}
         allowRemoteWorkspace={allowRemoteWorkspace}
@@ -1123,7 +1112,6 @@ export function App({
         browserRestoreUrls={browserRestoreUrls}
         taskNativeSessionLogFile={taskNativeSessionLogFile}
         taskSessionFile={taskSessionFile}
-        testMessages={testMessages}
         conversationFindActiveIndex={conversationFindState.activeIndex}
         conversationFindNavigationRequestId={conversationFindState.navigationRequestId}
         conversationFindQuery={conversationFindState.query}
@@ -1135,7 +1123,6 @@ export function App({
         fileChangeFindQuery={fileChangeFindState.query}
         onFileChangeFindMatchCountChange={setFileChangeFindMatchCount}
         appLogoUrl={appLogoUrl}
-        platform={platform}
         reloadSessionDisabled={reloadSessionDisabled}
         reloadSessionPending={reloadSessionPending}
         handleReloadSession={handleReloadSession}
@@ -1152,7 +1139,6 @@ export function App({
         handleToggleTerminal={handleToggleTerminalIfWritable}
         handleToggleBrowser={handleToggleBrowser}
         handleOpenBrowserTab={handleOpenBrowserTab}
-        handleOpenTreemapping={handleOpenTreemappingIfWritable}
         handleOpenWhiteboard={handleOpenWhiteboard}
         handleOpenDeveloperTools={handleOpenDeveloperTools}
         handleOpenTerminalTab={handleOpenTerminalTabIfWritable}

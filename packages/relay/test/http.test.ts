@@ -6,7 +6,6 @@ import { createRelayHttpServer, type RelayHttpServer } from "../src/http.js";
 import {
   ZXCODE_RELAY_PROTOCOL_VERSION,
   type RelayAttachRequest,
-  type RelayControlServerMessage,
   type RelayIssueGrantResponse,
 } from "@zcode/shared/zcode-relay-protocol";
 

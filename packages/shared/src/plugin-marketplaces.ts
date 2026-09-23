@@ -26,7 +26,8 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
   "zcode-guide@zcode-plugins-official",
   // 电脑控制回退为默认关闭，故 computer-use 不在此名单内。
   // 该集合必须与 official-plugin-definitions.ts 里标了 defaultEnabled 的插件逐一对应，
-  // bootstrap 的「Settings 默认启用集合与 CLI 的官方插件声明一致」单测机械对照两者。
+  // 由 bootstrap 的 official-plugin-defaults.test.ts 机械对照两者（运行方式：
+  // tsx --test test/official-plugin-defaults.test.ts）。
 ]);
 
 export const DEFAULT_PLUGIN_MARKETPLACES: DefaultPluginMarketplace[] = [

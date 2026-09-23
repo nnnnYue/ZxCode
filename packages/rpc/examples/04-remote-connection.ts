@@ -133,7 +133,7 @@ class SSHAuthorityResolver implements IRemoteAuthorityResolver {
 const pendingServerSockets: MockSocket[] = [];
 
 class MockWebSocketFactory implements ISocketFactory<RemoteConnectionType.WebSocket> {
-  supports(connectTo: RemoteConnection & { type: RemoteConnectionType.WebSocket }): boolean {
+  supports(): boolean {
     return true;
   }
 

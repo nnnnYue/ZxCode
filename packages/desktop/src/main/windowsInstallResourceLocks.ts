@@ -34,10 +34,6 @@ interface WindowsInstallResourceLockProcess {
   executablePath?: string;
 }
 
-function normalizeForWindowsCommandLineMatch(value: string): string {
-  return value.trim().replaceAll("/", "\\").toLowerCase();
-}
-
 export function resolveWindowsPackagedResourceLockMarkers(resourcesPath: string): string[] {
   return WINDOWS_PACKAGED_RESOURCE_DIRS.map((dir) => join(resourcesPath, dir));
 }

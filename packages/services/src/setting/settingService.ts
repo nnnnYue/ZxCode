@@ -1,7 +1,7 @@
 import { access, readFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { AppSettings, ProviderFamilyConnectionSelectionSettings } from "@zcode/shared";
+import type { AppSettings } from "@zcode/shared";
 import {
   appSettingsPatchSchema,
   appSettingsSchema,

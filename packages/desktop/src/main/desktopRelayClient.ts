@@ -60,7 +60,6 @@ export interface DesktopRelayClientHandle {
 
 const RECONNECT_INITIAL_DELAY_MS = 1_000;
 const RECONNECT_MAX_DELAY_MS = 30_000;
-const ATTACH_CONNECT_TIMEOUT_MS = 10_000;
 
 interface PendingGrant {
   requestId: string;

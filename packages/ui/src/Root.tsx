@@ -345,7 +345,6 @@ function RootInner({
     handleCreateConversationTask,
     handleOpenWorkspace,
     handleOpenFolderFromWorkspaceMenu,
-    handleCreateScratchWorkspace,
     handleCreateTask,
     handleBackFromSettings,
   } = useRootWorkspaceActions({
@@ -715,7 +714,6 @@ function RootInner({
             handleOpenRemoteWorkspace={
               allowRemoteWorkspace ? handleOpenRemoteConnection : undefined
             }
-            handleCreateScratchWorkspace={handleCreateScratchWorkspace}
             remoteConnectionInProgress={remoteConnectionInProgress}
             remoteWorkspaceSessions={remoteWorkspaceSessions}
             allowRemoteWorkspace={allowRemoteWorkspace}

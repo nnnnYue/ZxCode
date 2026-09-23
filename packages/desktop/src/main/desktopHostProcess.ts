@@ -25,7 +25,6 @@ import {
   LAUNCH_MARKS_QUERY_KEY,
   RUNTIME_ZXCODE_DEBUG,
   serializeLaunchMarks,
-  type RemoteTarget,
   type WorkspacePurpose,
 } from "@zcode/shared";
 import { getMainLaunchPartialMarks } from "./desktopLaunchMarks.js";
