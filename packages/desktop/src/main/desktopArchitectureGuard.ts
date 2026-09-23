@@ -1,5 +1,6 @@
 import type { BrowserWindow, NativeImage } from "electron";
-import { DEFAULT_ZXCODE_ENDPOINT_ORIGIN, buildZCodeEndpointUrls, type Locale } from "@zcode/shared";
+import type { Locale } from "@zcode/shared";
+import { ZCODE_RELEASES_URL } from "./desktopExternalLinks.js";
 
 interface ArchitectureMismatch {
   /** 当前运行的二进制架构，例如 x64。 */
@@ -44,13 +45,10 @@ function detectArchitectureMismatch(
   return { binaryArch, nativeArch: "arm64" };
 }
 
-function resolveArchitectureDownloadUrl(
-  locale: Locale,
-  endpointOrigin = DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
-): string {
-  // 与 changelog 等外链保持一致，按应用语言分流到官网下载页。
-  const origin = buildZCodeEndpointUrls(endpointOrigin).origin;
-  return locale === "zh-CN" ? `${origin}/cn` : `${origin}/en`;
+function resolveArchitectureDownloadUrl(): string {
+  // 与更新日志入口一致，固定跳转 GitHub Releases（见 specs/desktop-external-links.md），
+  // 不再按语言/endpoint 分流到官网。
+  return ZCODE_RELEASES_URL;
 }
 
 interface ArchitectureMismatchDialogText {
@@ -73,7 +71,7 @@ function formatArchitectureMismatchDialogText(
       detail:
         `你正在运行 ${mismatch.binaryArch} 版本，但本机是 ${mismatch.nativeArch}（Apple 芯片）架构，` +
         `当前通过系统转译运行，会更慢、更耗电。\n\n` +
-        `建议前往官网下载并安装 ${mismatch.nativeArch} 原生版本以获得最佳性能。`,
+        `建议前往 GitHub Releases 下载并安装 ${mismatch.nativeArch} 原生版本以获得最佳性能。`,
       downloadButton: "前往下载",
       dismissButton: "暂不处理",
     };
@@ -137,7 +135,7 @@ export async function maybeWarnArchitectureMismatch(options: {
       : await dialog.showMessageBox(dialogOptions);
 
   if (response === 0) {
-    const url = resolveArchitectureDownloadUrl(options.locale);
+    const url = resolveArchitectureDownloadUrl();
     options.logger.info(`[architecture] 用户选择前往下载：${url}`);
     await shell.openExternal(url);
   }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button.js";
 import { Switch } from "@/components/ui/switch.js";
@@ -22,7 +22,14 @@ export function CustomSection() {
   const { intl } = useZCodeIntl();
   const { settings, update } = useSettings();
   const storedEnabled = settings?.customModelRequestHeadersEnabled === true;
-  const storedRows = settings?.customModelRequestHeaders ?? [];
+  // storedRows 必须引用稳定：老配置里 customModelRequestHeaders 字段缺失（undefined）时，
+  // 若在渲染期写 `?? []`，每轮渲染都会生成新数组并作为下方 useEffect 的依赖，
+  // 导致 effect 反复 setRows 触发无限重渲染（React error #185）。
+  // 修复依据：以 settings 快照为唯一依赖做 useMemo，仅在快照变化时重建派生数组。
+  const storedRows = useMemo(
+    () => settings?.customModelRequestHeaders ?? [],
+    [settings],
+  );
   const [rows, setRows] = useState<HeaderRowDraft[]>(() =>
     storedRows.map((entry) => ({ name: entry.name, value: entry.value })),
   );
