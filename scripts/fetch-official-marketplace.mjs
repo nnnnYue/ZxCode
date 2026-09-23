@@ -67,6 +67,27 @@ const requestTimeoutMs = 30_000;
 const downloadAttempts = 3;
 const OFFICIAL_MARKETPLACE_ID = "zcode-plugins-official";
 
+// 产品下架名单：以下插件不再随包分发。这些插件的数据能力全部挂载在
+// ${ZXCODE_BASE_URL}/api/v1/mcp/server/* 官方 MCP 端点上，随产品移除对
+// zcode.z.ai 的运行时依赖一并下架（specs/official-marketplace-removal-list.md）。
+// 在计算 payload 哈希与 staging 之前过滤，保证重新生成快照不会使其复活。
+const REMOVED_PLUGIN_NAMES = new Set([
+  "run-fpa",
+  "vet-companies",
+  "assess-credit",
+  "pick-funds",
+  "find-clients",
+  "watch-positions",
+  "model-deals",
+  "read-macro",
+  "write-research",
+  "finance-search",
+  "hexin",
+  "tianyancha",
+  "wind",
+  "video-agent-kit",
+]);
+
 const require = createRequire(import.meta.url);
 
 // 内置插件（official-plugin-definitions.ts）图标也发布在同一 CDN assets 路径下。
@@ -402,6 +423,15 @@ async function main() {
   }
   if (marketplace?.name !== OFFICIAL_MARKETPLACE_ID || !Array.isArray(marketplace.plugins)) {
     throw new Error(`目录 manifest 不合法（name 必须为 ${OFFICIAL_MARKETPLACE_ID}）`);
+  }
+  const beforeFilterCount = marketplace.plugins.length;
+  // 只按下架名单过滤；name 缺失等非法条目仍交给下游逐条校验抛错，不在这里静默吞掉。
+  marketplace.plugins = marketplace.plugins.filter((raw) => !REMOVED_PLUGIN_NAMES.has(raw.name));
+  const removedCount = beforeFilterCount - marketplace.plugins.length;
+  if (removedCount > 0) {
+    console.log(
+      `[fetch-official-marketplace] 按下架名单跳过 ${removedCount} 个插件: ${[...REMOVED_PLUGIN_NAMES].join(", ")}`,
+    );
   }
 
   const previousManifest = readJson(manifestFile) ?? {};

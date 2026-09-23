@@ -12,9 +12,6 @@ import browserUseIcon from "@/assets/plugin-icons/official/browser-use.png";
 import computerUseIcon from "@/assets/plugin-icons/official/computer-use.png";
 import githubIcon from "@/assets/plugin-icons/official/github.png";
 import gitlabIcon from "@/assets/plugin-icons/official/gitlab.png";
-import hexinIcon from "@/assets/plugin-icons/official/hexin.png";
-import tianyanchaIcon from "@/assets/plugin-icons/official/tianyancha.png";
-import windIcon from "@/assets/plugin-icons/official/wind.png";
 import type { DraftSuggestedPromptItem } from "@/v4/draftSuggestedPromptItems.js";
 
 type FeatureRecommendedPrompt = DraftSuggestedPromptItem & {
@@ -274,128 +271,6 @@ export const featureSuggestedPrompts: FeatureRecommendedPrompt[] = [
     plugin: {
       stableId: "computer-use@zcode-plugins-official",
       label: { cn: "电脑控制", en: "Computer Use" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4aOFp",
-    mode: "office",
-    iconUrl: windIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用 Wind 看一个行业最近发生了什么变化",
-      en: "See what has changed in an industry with Wind",
-    },
-    prompt: {
-      cn: "我想了解 [目标行业] 最近三个月发生了什么变化。请使用已连接的 [@Wind 万得](plugin://wind@zcode-plugins-official) 数据，梳理最值得关注的行业指标、重要事件和研究观点，说明变化方向、数据截至日期及来源，最后给我一份能继续追查的行业速览。若 Wind 未连接或没有对应数据，先说明缺口，不要用别的来源冒充 Wind。",
-      en: "I want to understand changes in [target industry] over the past three months. Use connected [@Wind](plugin://wind@zcode-plugins-official) data to review key indicators, major events, and research views. Explain the direction of change, data dates, and sources in a concise industry brief. If Wind is unavailable, describe the gap rather than substituting another source without saying so.",
-    },
-    plugin: {
-      stableId: "wind@zcode-plugins-official",
-      label: { cn: "Wind 万得", en: "Wind" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4bCq1",
-    mode: "office",
-    iconUrl: windIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用 Wind 梳理一家公司的经营与市场表现",
-      en: "Review a company’s operating and market performance",
-    },
-    prompt: {
-      cn: "帮我研究 [目标公司] 近四个季度的经营变化。请使用已连接的 [@Wind 万得](plugin://wind@zcode-plugins-official) 数据，整理收入、利润、现金流等能查到的关键指标；如果它是上市公司，再补充近一年的市场表现和可比公司。标清数据期间、口径与来源，把事实、分析和未确认的问题分开。",
-      en: "Research [target company] over the past four quarters using connected [@Wind](plugin://wind@zcode-plugins-official) data. Summarize available revenue, profit, and cash-flow metrics. If it is listed, add one year of market performance and relevant peers. State periods, definitions, and sources; separate facts, analysis, and open questions.",
-    },
-    plugin: {
-      stableId: "wind@zcode-plugins-official",
-      label: { cn: "Wind 万得", en: "Wind" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4ivrd",
-    mode: "office",
-    iconUrl: hexinIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用同花顺 iFinD 比较一个行业的龙头公司",
-      en: "Compare leading companies in an industry",
-    },
-    prompt: {
-      cn: "我想快速看懂 [目标行业] 的主要公司。请使用已连接的 [@同花顺](plugin://hexin@zcode-plugins-official) 数据，选取三到五家有代表性的公司，对比最近四个季度的增长、盈利、现金流和能查到的估值指标，解释差异与异常项。每组数字标明期间、口径和来源；没有数据的指标留空，不要给买卖建议。",
-      en: "Help me understand the main companies in [target industry]. Use connected [@RoyalFlush iFinD](plugin://hexin@zcode-plugins-official) data to compare three to five representative companies on recent growth, profitability, cash flow, and available valuation metrics. Explain differences and anomalies, show dates and sources, leave missing values blank, and avoid buy or sell advice.",
-    },
-    plugin: {
-      stableId: "hexin@zcode-plugins-official",
-      label: { cn: "同花顺", en: "RoyalFlush iFinD" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4g9yq",
-    mode: "office",
-    iconUrl: hexinIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用同花顺 iFinD 整理一家公司的重要公告",
-      en: "Summarize a company’s important recent filings",
-    },
-    prompt: {
-      cn: "帮我查看 [目标公司] 最近九十天有哪些值得关注的公告。请使用已连接的 [@同花顺](plugin://hexin@zcode-plugins-official)，按时间梳理公告中的主要事实、相关金额或指标，以及可能影响后续判断的待核实问题。附公告日期和原文入口；不要把推测写成公司已确认的计划。",
-      en: "Use connected [@RoyalFlush iFinD](plugin://hexin@zcode-plugins-official) to review [target company] announcements from the past 90 days. Build a timeline of important facts, figures, and questions to verify, with filing dates and original links. Do not present speculation as confirmed company plans.",
-    },
-    plugin: {
-      stableId: "hexin@zcode-plugins-official",
-      label: { cn: "同花顺", en: "RoyalFlush iFinD" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4AtLY",
-    mode: "office",
-    iconUrl: tianyanchaIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用天眼查摸清一家企业的股权与经营风险",
-      en: "Check a company’s ownership and business risks",
-    },
-    prompt: {
-      cn: "我想先了解 [目标企业] 是否值得进一步接触。请使用已连接的 [@天眼查](plugin://tianyancha@zcode-plugins-official)，核对企业当前登记状态、主要股东与实际控制人、对外投资，以及可查到的经营和司法风险。整理成简短尽调清单，标明信息更新日期与来源；同名企业先核对主体，风险记录不要直接等同于违法结论。",
-      en: "Use connected [@Tianyancha](plugin://tianyancha@zcode-plugins-official) to review [target company] before I contact it. Verify the legal entity, registration status, key shareholders, controlling parties, investments, and available business or legal risk records. Provide a concise due-diligence checklist with source dates. Do not treat a risk record alone as proof of wrongdoing.",
-    },
-    plugin: {
-      stableId: "tianyancha@zcode-plugins-official",
-      label: { cn: "天眼查", en: "Tianyancha" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4Hsa3",
-    mode: "office",
-    iconUrl: tianyanchaIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "用天眼查核对一家企业的关联公司和人员",
-      en: "Map a company’s related entities and key people",
-    },
-    prompt: {
-      cn: "帮我梳理 [目标企业] 的股东、对外投资、分支机构和关键人员之间的关系。请使用已连接的 [@天眼查](plugin://tianyancha@zcode-plugins-official)，先确认企业主体，再把直接关系和间接关系分开，给我一份关系清单，说明每条关系的依据、更新时间及仍需人工核实的地方。",
-      en: "Use connected [@Tianyancha](plugin://tianyancha@zcode-plugins-official) to map shareholders, investments, branches, and key people for [target company]. Verify the legal entity first, distinguish direct from indirect links, and provide a relationship list with evidence, update dates, and points requiring manual confirmation.",
-    },
-    plugin: {
-      stableId: "tianyancha@zcode-plugins-official",
-      label: { cn: "天眼查", en: "Tianyancha" },
-    },
-  },
-  {
-    id: "feature-recvvsV4e4FqWU",
-    mode: "office",
-    iconUrl: windIcon,
-    iconStyle: "plugin",
-    label: {
-      cn: "结合 Wind、同花顺和天眼查研究一家企业",
-      en: "Research a company across three data sources",
-    },
-    prompt: {
-      cn: "我想全面了解 [目标企业]。请结合我已连接的 [@Wind 万得](plugin://wind@zcode-plugins-official)、[@同花顺](plugin://hexin@zcode-plugins-official) 和 [@天眼查](plugin://tianyancha@zcode-plugins-official)，分别核对经营与市场数据、近期公告及企业关系和风险，再整理一份简短研究报告。相互矛盾的数据请列出口径和时间差，不要强行合并；缺少某个数据源就说明未覆盖的部分。",
-      en: "Help me understand [target company]. Cross-check connected [@Wind](plugin://wind@zcode-plugins-official), [@RoyalFlush iFinD](plugin://hexin@zcode-plugins-official), and [@Tianyancha](plugin://tianyancha@zcode-plugins-official) for operating and market data, recent filings, company relationships, and risks. Write a concise report, preserve conflicting figures with their dates and definitions, and say which sources were unavailable.",
     },
   },
   {
