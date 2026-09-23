@@ -11,7 +11,7 @@
 
 ## 状态所有者与接口
 
-- 唯一事实源：`packages/desktop/src/main/desktopExternalLinks.ts` 导出的常量 `ZCODE_RELEASES_URL`。
+- 唯一事实源：`packages/desktop/src/main/desktopExternalLinks.ts` 导出的常量 `ZXCODE_RELEASES_URL`。
 - 更新日志：`openChangelog()`（`desktopCommandHandlers.ts`）用 `shell.openExternal` 打开该常量；菜单项只触发命令 id，不自行拼 URL。
 - 下载：`maybeWarnArchitectureMismatch`（`desktopArchitectureGuard.ts`）在用户确认后打开同一常量。
 

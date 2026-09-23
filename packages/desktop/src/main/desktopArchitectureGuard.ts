@@ -1,6 +1,6 @@
 import type { BrowserWindow, NativeImage } from "electron";
 import type { Locale } from "@zcode/shared";
-import { ZCODE_RELEASES_URL } from "./desktopExternalLinks.js";
+import { ZXCODE_RELEASES_URL } from "./desktopExternalLinks.js";
 
 interface ArchitectureMismatch {
   /** 当前运行的二进制架构，例如 x64。 */
@@ -48,7 +48,7 @@ function detectArchitectureMismatch(
 function resolveArchitectureDownloadUrl(): string {
   // 与更新日志入口一致，固定跳转 GitHub Releases（见 specs/desktop-external-links.md），
   // 不再按语言/endpoint 分流到官网。
-  return ZCODE_RELEASES_URL;
+  return ZXCODE_RELEASES_URL;
 }
 
 interface ArchitectureMismatchDialogText {

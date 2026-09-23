@@ -12,7 +12,7 @@ import {
   normalizeZCodeEndpointOrigin,
 } from "@zcode/shared";
 import { readZCodeStdioTapDevState, setZCodeStdioTapDevEnabled } from "@zcode/services/node";
-import { ZCODE_RELEASES_URL } from "./desktopExternalLinks.js";
+import { ZXCODE_RELEASES_URL } from "./desktopExternalLinks.js";
 import { showAboutDialog } from "./about.js";
 import { exportLogs } from "./exportLogs.js";
 import { openResourceManager } from "./resourceManagerWindow.js";
@@ -283,7 +283,7 @@ function toggleZCodeStdioTapDevProxy(options: {
 function resolveChangelogUrl(): string {
   // 外链统一指向 GitHub Releases（见 specs/desktop-external-links.md），
   // 不再按应用语言或 endpoint origin 分流，避免多分支后续不一致。
-  return ZCODE_RELEASES_URL;
+  return ZXCODE_RELEASES_URL;
 }
 
 export async function openChangelog() {
