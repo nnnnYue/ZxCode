@@ -40,9 +40,7 @@ test("writeTextFile rejects oversized content and keeps the original file", asyn
 test("writeTextFile refuses missing files and directories", async () => {
   await withTempDir(async (dir) => {
     const service = createFileService();
-    await assert.rejects(
-      service.writeTextFile({ path: join(dir, "missing.txt"), content: "x" }),
-    );
+    await assert.rejects(service.writeTextFile({ path: join(dir, "missing.txt"), content: "x" }));
     await assert.rejects(service.writeTextFile({ path: dir, content: "x" }), /not a file/);
   });
 });

@@ -667,20 +667,20 @@ export function PreviewPane({
   const workspaceWritable = useMemo(
     () =>
       !sourceWorkspacePath ||
-      !isWorkspaceReadOnly(workspaceTabs, sourceWorkspacePath, source?.workspaceIdentity),
+      !isWorkspaceReadOnly({ tabs: workspaceTabs }, sourceWorkspacePath, source?.workspaceIdentity),
     [source?.workspaceIdentity, sourceWorkspacePath, workspaceTabs],
   );
   // 可编辑 = 纯文本文件 source + 本地可写 workspace + 读取结果完整非二进制。
   // 图片/PDF/Office/PPTX/媒体已在 fileSource 排除；截断（>256KB）与二进制保存会丢内容，必须排除。
   const canEditFile = Boolean(
     fileSource &&
-      source?.type === "file" &&
-      source.path &&
-      !isRemoteSource &&
-      workspaceWritable &&
-      filePreview !== null &&
-      !filePreview.isBinary &&
-      !fileTooLarge,
+    source?.type === "file" &&
+    source.path &&
+    !isRemoteSource &&
+    workspaceWritable &&
+    filePreview !== null &&
+    !filePreview.isBinary &&
+    !fileTooLarge,
   );
   const editDirty = editing && draft !== baseline;
   const codeCommentLabels = useMemo(
@@ -1745,7 +1745,16 @@ export function PreviewPane({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {canToggleMarkdownView ? (
+                {editing ? (
+                  <>
+                    <DropdownMenuItem onSelect={handleExitPreviewEdit} disabled={saving}>
+                      <Undo2 className="size-4" />
+                      {intl.formatMessage({ id: "codeViewer.discardChanges" })}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
+                {!editing && canToggleMarkdownView ? (
                   <>
                     <DropdownMenuLabel>
                       {intl.formatMessage({ id: "codeViewer.markdownMode" })}
@@ -1771,7 +1780,7 @@ export function PreviewPane({
                     </DropdownMenuRadioGroup>
                   </>
                 ) : null}
-                {canToggleSvgView ? (
+                {!editing && canToggleSvgView ? (
                   <>
                     {canToggleMarkdownView ? <DropdownMenuSeparator /> : null}
                     <DropdownMenuLabel>
@@ -1794,7 +1803,7 @@ export function PreviewPane({
                     </DropdownMenuRadioGroup>
                   </>
                 ) : null}
-                {canToggleCodeWrap ? (
+                {!editing && canToggleCodeWrap ? (
                   <>
                     {canToggleMarkdownView || canToggleSvgView ? <DropdownMenuSeparator /> : null}
                     <DropdownMenuCheckboxItem
@@ -1810,7 +1819,7 @@ export function PreviewPane({
                 ) : null}
                 {source.path ? (
                   <>
-                    {hasMoreMenu ? <DropdownMenuSeparator /> : null}
+                    {hasMoreMenu && !editing ? <DropdownMenuSeparator /> : null}
                     <DropdownMenuItem
                       onSelect={() => void fileActions.copyAbsolutePath({ path: source.path! })}
                     >
@@ -1868,75 +1877,102 @@ export function PreviewPane({
       </div>
       <div className="min-h-0 flex-1">
         {renderHeavyContent ? (
-          <PreviewPaneContent
-            source={pptxSource ?? imageSource ?? pdfSource ?? mediaSource ?? source}
-            filePreview={filePreview}
-            fileTooLarge={fileTooLarge}
-            loadingInitial={loadingInitial}
-            loadingImagePreview={loadingImagePreview}
-            imagePreview={imagePreview}
-            mediaSource={mediaSource}
-            loadingMediaPreview={loadingMediaPreview}
-            mediaPreviewUrl={mediaPreviewUrl}
-            onMediaError={handleMediaError}
-            onMediaLoadedMetadata={handleMediaLoadedMetadata}
-            loadingPdfPreview={loadingPdfPreview}
-            pdfViewerSource={pdfViewerSource}
-            pdfViewerLabels={pdfViewerLabels}
-            loadingOfficePreview={loadingOfficePreview}
-            officePreview={officePreview}
-            officePreviewKind={officePreviewKind}
-            loadingPptxPreview={loadingPptxPreview}
-            pptxPreviewData={pptxPreviewData}
-            pptxViewerLabels={pptxViewerLabels}
-            pptxReferenceSource={
-              pptxSource && sourceWorkspacePath
-                ? {
-                    workspacePath: sourceWorkspacePath,
-                    ...(pptxSource.workspaceIdentity
-                      ? { workspaceIdentity: pptxSource.workspaceIdentity }
-                      : {}),
-                    ...(pptxSource.workspaceRemoteSessionId
-                      ? { remoteSessionId: pptxSource.workspaceRemoteSessionId }
-                      : {}),
-                    sourcePath: pptxSource.path,
-                    sourceTitle: pptxSource.title,
+          editing && filePreview !== null && !filePreview.isBinary ? (
+            <div className="h-full min-h-0 overflow-hidden bg-background p-3">
+              <Textarea
+                value={draft}
+                onChange={(event) => {
+                  draftRef.current = event.target.value;
+                  setDraft(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  // 保存快捷键：编辑器内 Ctrl/Cmd+S 与点保存按钮等价（preventDefault
+                  // 阻止浏览器默认行为）；门控与按钮一致（有改动且未在保存中）。
+                  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+                    event.preventDefault();
+                    if (!saving && draftRef.current !== baselineRef.current) {
+                      void handleSavePreviewEdits();
+                    }
                   }
-                : null
-            }
-            pptxReferenceNavigation={pptxReferenceNavigation}
-            pptxReferenceNavigationReady={
-              pptxReferenceNavigation !== null &&
-              validatedPptxReferenceNavigationRequestId === pptxReferenceNavigation.requestId
-            }
-            error={error}
-            codePreviewSettings={codePreviewSettings}
-            codeTheme={codeTheme}
-            resolvedTheme={resolvedTheme}
-            theme={theme}
-            workspacePath={sourceWorkspacePath}
-            onOpenBrowserUrl={onOpenBrowserUrl}
-            markdownSelectionTarget={
-              markdownSelectionTarget &&
-              (source.workspaceIdentity?.trim() || sourceWorkspacePath) ===
-                markdownSelectionTarget.workspaceKey
-                ? markdownSelectionTarget
-                : undefined
-            }
-            markdownViewMode={markdownViewMode}
-            svgViewMode={svgViewMode}
-            wrapLongLines={wrapLongLines}
-            codeComments={codeComments}
-            enableCodeLineSelection={canCreateCodeComment}
-            enableCodeGutterUtility={canCreateCodeComment}
-            codeCommentLabels={codeCommentLabels}
-            onSubmitCodeComment={handleSubmitCodeComment}
-            onDeleteCodeComment={handleDeleteCodeComment}
-            // PreviewPane 外层只是 flex 壳，真实滚动发生在具体内容组件的 overflow 容器。
-            // 折叠侧边面板卸载重内容前必须保存该容器的位置。
-            onScroll={handlePreviewContentScroll}
-            scrollContainerRef={scrollContainerRef}
-          />
+                }}
+                spellCheck={false}
+                disabled={saving}
+                className="h-full w-full resize-none font-mono text-ui-base"
+                aria-label={intl.formatMessage({ id: "codeViewer.edit" })}
+                data-testid="preview-pane-file-editor"
+              />
+            </div>
+          ) : (
+            <PreviewPaneContent
+              source={pptxSource ?? imageSource ?? pdfSource ?? mediaSource ?? source}
+              filePreview={filePreview}
+              fileTooLarge={fileTooLarge}
+              loadingInitial={loadingInitial}
+              loadingImagePreview={loadingImagePreview}
+              imagePreview={imagePreview}
+              mediaSource={mediaSource}
+              loadingMediaPreview={loadingMediaPreview}
+              mediaPreviewUrl={mediaPreviewUrl}
+              onMediaError={handleMediaError}
+              onMediaLoadedMetadata={handleMediaLoadedMetadata}
+              loadingPdfPreview={loadingPdfPreview}
+              pdfViewerSource={pdfViewerSource}
+              pdfViewerLabels={pdfViewerLabels}
+              loadingOfficePreview={loadingOfficePreview}
+              officePreview={officePreview}
+              officePreviewKind={officePreviewKind}
+              loadingPptxPreview={loadingPptxPreview}
+              pptxPreviewData={pptxPreviewData}
+              pptxViewerLabels={pptxViewerLabels}
+              pptxReferenceSource={
+                pptxSource && sourceWorkspacePath
+                  ? {
+                      workspacePath: sourceWorkspacePath,
+                      ...(pptxSource.workspaceIdentity
+                        ? { workspaceIdentity: pptxSource.workspaceIdentity }
+                        : {}),
+                      ...(pptxSource.workspaceRemoteSessionId
+                        ? { remoteSessionId: pptxSource.workspaceRemoteSessionId }
+                        : {}),
+                      sourcePath: pptxSource.path,
+                      sourceTitle: pptxSource.title,
+                    }
+                  : null
+              }
+              pptxReferenceNavigation={pptxReferenceNavigation}
+              pptxReferenceNavigationReady={
+                pptxReferenceNavigation !== null &&
+                validatedPptxReferenceNavigationRequestId === pptxReferenceNavigation.requestId
+              }
+              error={error}
+              codePreviewSettings={codePreviewSettings}
+              codeTheme={codeTheme}
+              resolvedTheme={resolvedTheme}
+              theme={theme}
+              workspacePath={sourceWorkspacePath}
+              onOpenBrowserUrl={onOpenBrowserUrl}
+              markdownSelectionTarget={
+                markdownSelectionTarget &&
+                (source.workspaceIdentity?.trim() || sourceWorkspacePath) ===
+                  markdownSelectionTarget.workspaceKey
+                  ? markdownSelectionTarget
+                  : undefined
+              }
+              markdownViewMode={markdownViewMode}
+              svgViewMode={svgViewMode}
+              wrapLongLines={wrapLongLines}
+              codeComments={codeComments}
+              enableCodeLineSelection={canCreateCodeComment}
+              enableCodeGutterUtility={canCreateCodeComment}
+              codeCommentLabels={codeCommentLabels}
+              onSubmitCodeComment={handleSubmitCodeComment}
+              onDeleteCodeComment={handleDeleteCodeComment}
+              // PreviewPane 外层只是 flex 壳，真实滚动发生在具体内容组件的 overflow 容器。
+              // 折叠侧边面板卸载重内容前必须保存该容器的位置。
+              onScroll={handlePreviewContentScroll}
+              scrollContainerRef={scrollContainerRef}
+            />
+          )
         ) : (
           <PreviewPaneDeferredHeavyContent style={deferredBodyStyle} />
         )}
