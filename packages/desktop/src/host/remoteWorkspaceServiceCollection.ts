@@ -15,7 +15,6 @@ import {
   IFileWatcherService,
   IModelSelectionService,
   IProviderSettingsService,
-  IClientConfigService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
@@ -52,7 +51,6 @@ import {
 const runtimePreferencesLogger = createServiceLogger("remote-runtime-preferences");
 
 export function createRemoteWorkspaceServiceCollection(params: {
-  clientConfigService: IClientConfigService;
   connectionServices: IServiceAccessor;
   sourceServices?: ServiceCollection;
   parentPort: Parameters<typeof createBroadcastService>[0];
@@ -203,7 +201,6 @@ export function createRemoteWorkspaceServiceCollection(params: {
     // 必须直接读取远端 Registry，不能继续显示 Desktop 本地 Provider。
     .register(IModelSelectionService, params.connectionServices.modelSelectionService)
     .register(IProviderSettingsService, params.connectionServices.providerSettingsService)
-    .register(IClientConfigService, params.clientConfigService)
     // 远端 workspace 的项目级 skills/plugins/commands 位于 SSH/Docker 文件系统。
     // 这里必须透出远端服务，避免本机服务拿远端 workspacePath 去本机目录扫描。
     .register(ISkillsService, params.connectionServices.skillsService)

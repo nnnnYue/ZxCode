@@ -16,7 +16,6 @@ import type {
   IModelSelectionService,
   IProviderSettingsService,
 } from "./model-provider/providerFacadeServices.js";
-import type { IClientConfigService } from "./client-config/clientConfig.js";
 import type { ISkillsService } from "./skills/skills.js";
 import type { ISkillSyncService } from "./skill-sync/skillSync.js";
 import type { IMcpSyncService } from "./mcp-sync/mcpSync.js";
@@ -57,7 +56,6 @@ export interface IServiceAccessor {
   readonly providerSettingsService: IProviderSettingsService;
   /** 当前 Environment Registry 发布的唯一模型选择 View。 */
   readonly modelSelectionService: IModelSelectionService;
-  readonly clientConfigService: IClientConfigService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;

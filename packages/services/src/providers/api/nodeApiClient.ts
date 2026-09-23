@@ -66,8 +66,8 @@ function resolveRequestHeaders(
     return headers;
   }
 
-  // 去平台化后后端仅剩公共客户端配置（client-config）链路；统一在 ApiClient
-  // 出口按 endpoint origin 注入来源头，后续新增后端链路无需各自补头。
+  // ZxCode 后端请求统一在 ApiClient 出口按 endpoint origin 注入来源头，
+  // 后续新增后端链路无需各自补头。
   return withZCodeEndpointHeaders(headers, endpointOrigin);
 }
 

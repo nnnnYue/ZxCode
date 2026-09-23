@@ -222,4 +222,3 @@ export type {
   PromptAttachmentTransferPhase,
   PromptAttachmentTransferProgress,
 } from "./prompt-attachment-transfer/promptAttachmentTransfer.js";
-export { IClientConfigService } from "./client-config/clientConfig.js";

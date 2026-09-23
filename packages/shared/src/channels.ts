@@ -90,7 +90,6 @@ export const ServiceChannels = {
   ModelSelection: "model-selection",
   /** 远端 Environment 内部 Provider Provisioning target */
   ProviderProvisioningTarget: "provider-provisioning-target",
-  ClientConfig: "client-config",
   /** ZxCode 客户端场景配置服务 */
   ClientScenes: "client-scenes",
   /** Skills 管理服务 */

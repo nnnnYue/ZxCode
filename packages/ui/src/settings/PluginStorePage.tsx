@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useServices } from "@/hooks/useServices.js";
-import { usePluginStoreOrder } from "@/hooks/usePluginStoreOrder.js";
 import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 import type { CreateTaskRequest } from "@/app-shell/types.js";
@@ -59,7 +58,6 @@ export function PluginStorePage({
   onManageInstalled,
 }: PluginStorePageProps) {
   const { intl, locale } = useZCodeIntl();
-  const { order: storeOrder, refresh: refreshStoreOrder } = usePluginStoreOrder();
   const { pluginManagementService, skillsService } = useServices();
   const zcodeSessionService = useZCodeSessionService(
     workspacePath ?? undefined,
@@ -230,7 +228,6 @@ export function PluginStorePage({
   // 顶栏刷新 = updateMarketplace(null)：重拉用户显式添加的自定义市场（git/url 源），
   // 官方市场对刷新一律短路、只读随包快照。操作完成后按更新徽标数量给完成提示。
   const handleRefresh = async () => {
-    void refreshStoreOrder(true);
     setRefreshing(true);
     try {
       await handleCheckForUpdates();
@@ -528,7 +525,6 @@ export function PluginStorePage({
         />
       ) : (
         <PluginStoreListView
-          order={storeOrder}
           items={items}
           marketplaces={marketplaces}
           actions={actions}

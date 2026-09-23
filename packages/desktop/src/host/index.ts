@@ -31,7 +31,6 @@ import { materializeBrowserRecordingArtifact } from "./browserRecordingArtifactM
 import {
   ServiceCollection,
   IFileService,
-  IClientConfigService,
   IMediaPreviewService,
   IModelSelectionService,
   ISettingService,
@@ -1219,7 +1218,6 @@ async function createWindowRemoteConnectionHandle(params: {
   signal: AbortSignal;
 }): Promise<WindowRemoteConnectionHandle<ServiceCollection, HostRemoteConnectionCapabilities>> {
   if (!activeServices) throw new Error("Local Host services are not initialized.");
-  const clientConfigService = activeServices.get(IClientConfigService);
   if (params.signal.aborted) {
     throw new Error("远程连接已取消");
   }
@@ -1264,7 +1262,6 @@ async function createWindowRemoteConnectionHandle(params: {
     },
   );
   const services = createRemoteWorkspaceServiceCollection({
-    clientConfigService,
     connectionServices: backendConnection.services,
     sourceServices: activeServices ?? undefined,
     parentPort,

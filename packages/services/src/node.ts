@@ -168,7 +168,6 @@ export {
 } from "./storage/adapters/rootsResolver.js";
 export { createFsVolumeProbe } from "./storage/adapters/volumeProbe.js";
 export { runStorageScan } from "./storage/adapters/inProcessScanRunner.js";
-export { createClientConfigService } from "./client-config/clientConfigService.js";
 export { createSkillsService } from "./skills/skillsService.js";
 export { createSkillSyncService } from "./skill-sync/skillSyncService.js";
 export { createMcpSyncService } from "./mcp-sync/mcpSyncService.js";
@@ -283,8 +282,6 @@ import {
 } from "./model-provider/providerProvisioningSource.js";
 import { createProviderProvisioningTarget } from "./model-provider/providerProvisioningTarget.js";
 import { IProviderProvisioningTargetService } from "./model-provider/providerProvisioning.js";
-import { createClientConfigService } from "./client-config/clientConfigService.js";
-import { IClientConfigService } from "./client-config/clientConfig.js";
 import { createSkillsService } from "./skills/skillsService.js";
 import { createSkillSyncService } from "./skill-sync/skillSyncService.js";
 import { createMcpSyncService } from "./mcp-sync/mcpSyncService.js";
@@ -297,7 +294,6 @@ import { createHooksService } from "./hooks/hooksService.js";
 import { createMemoryService } from "./memory/memoryService.js";
 import { createSettingsSyncService } from "./settings-sync/settingsSyncService.js";
 import { createLocalPromptAttachmentTransferService } from "./prompt-attachment-transfer/promptAttachmentTransferService.js";
-import { createNodeApiClient } from "./providers/api/nodeApiClient.js";
 import {
   createHostApiNetworkTransport,
   type HostApiNetworkTransport,
@@ -372,7 +368,6 @@ import {
   type ZCodeAutomation,
   type ZCodeAutomationRun,
   ZXCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
-  ZXCODE_VERSION,
 } from "@zcode/shared";
 
 interface ServiceWithDisposeAll {
@@ -1232,10 +1227,6 @@ export function createLocalServices(options: {
         caCertPath: settings.httpProxyCaCertPath,
       };
     });
-  const apiClient = createNodeApiClient({
-    fetchImpl: hostApiNetworkTransport.fetch,
-    resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
-  });
   const systemService = createSystemService();
   // 去平台化：登录态删除后 onboarding 完成记录不再有 userId 来源，恒为 null。
   const onboardingRecordService = createOnboardingRecordService({
@@ -1958,17 +1949,6 @@ export function createLocalServices(options: {
     .register(ICuaPermissionService, cuaPermissionService)
     .register(ICuaPipSessionService, cuaPipSessionService)
     .register(IFileWatcherService, createFileWatcherService())
-    .register(
-      IClientConfigService,
-      createClientConfigService({
-        apiClient,
-        resolveRequestContext: async () => ({
-          endpointOrigin: await resolveCurrentZCodeEndpointOrigin(),
-          appVersion: ZXCODE_VERSION,
-          platform: `${process.platform}-${process.arch}`,
-        }),
-      }),
-    )
     .register(ISkillsService, skillsService)
     .register(ISkillSyncService, createSkillSyncService())
     .register(IMcpSyncService, mcpSyncService)

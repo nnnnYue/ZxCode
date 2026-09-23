@@ -18,7 +18,6 @@ import {
   IModelSelectionService,
   IProviderSettingsService,
   IProviderProvisioningTargetService,
-  IClientConfigService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
@@ -63,7 +62,6 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly modelSelectionService: IModelSelectionService;
   /** Host-only target proxy；不属于 IServiceAccessor，避免向 Renderer 暴露 Secret 写入接口。 */
   readonly providerProvisioningTargetService!: IProviderProvisioningTargetService;
-  readonly clientConfigService: IClientConfigService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
@@ -140,9 +138,6 @@ export class RemoteServiceAccess implements IServiceAccessor {
       ),
       enumerable: false,
     });
-    this.clientConfigService = ProxyChannel.toService<IClientConfigService>(
-      channelClient.getChannel(IClientConfigService.channelName),
-    );
     this.skillsService = ProxyChannel.toService<ISkillsService>(
       channelClient.getChannel(ISkillsService.channelName),
     );
