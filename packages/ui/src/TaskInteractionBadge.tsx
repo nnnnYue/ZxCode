@@ -141,7 +141,7 @@ export function TaskInteractionBadge({
       {progress !== undefined ? (
         <span
           aria-hidden="true"
-          className="zcode-task-interaction-countdown-fill absolute inset-0 origin-left bg-interaction-ask-fill transition-opacity group-hover/interaction-badge:opacity-0 group-focus-visible/interaction-badge:opacity-0 motion-reduce:transition-none"
+          className="zxcode-task-interaction-countdown-fill absolute inset-0 origin-left bg-interaction-ask-fill transition-opacity group-hover/interaction-badge:opacity-0 group-focus-visible/interaction-badge:opacity-0 motion-reduce:transition-none"
         />
       ) : null}
       {canSnooze ? (

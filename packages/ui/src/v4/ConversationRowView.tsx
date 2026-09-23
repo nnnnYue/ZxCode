@@ -1401,7 +1401,7 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
             <span
               className={cn(
                 "relative inline-flex",
-                localFeedback === "like" && "zcode-reaction-burst",
+                localFeedback === "like" && "zxcode-reaction-burst",
               )}
             >
               <ThumbsUpIcon className="size-3.5" />
@@ -1419,7 +1419,7 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
             <span
               className={cn(
                 "relative inline-flex",
-                localFeedback === "dislike" && "zcode-reaction-burst",
+                localFeedback === "dislike" && "zxcode-reaction-burst",
               )}
             >
               <ThumbsDownIcon className="size-3.5" />
