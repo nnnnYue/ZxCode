@@ -14,8 +14,6 @@ const log = createServiceLogger("node-api-client");
 
 interface NodeApiClientOptions {
   fetchImpl?: typeof fetch;
-  onZcodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
-  isZcodeJwtRequest?: (input: string | URL, headers: Headers) => boolean | Promise<boolean>;
   resolveZCodeEndpointOrigin?: () => Promise<string> | string;
 }
 
@@ -68,21 +66,17 @@ function resolveRequestHeaders(
     return headers;
   }
 
-  // ZxCode 后端请求以前只有部分业务路径手动补来源头。
-  // 统一在 ApiClient 出口按 endpoint origin 注入，避免 OAuth/config/billing/snapshot 等链路遗漏。
+  // 去平台化后后端仅剩公共客户端配置（client-config）链路；统一在 ApiClient
+  // 出口按 endpoint origin 注入来源头，后续新增后端链路无需各自补头。
   return withZCodeEndpointHeaders(headers, endpointOrigin);
 }
 
 export class NodeApiClient implements ApiClient {
   private readonly fetchImpl?: typeof fetch;
   private readonly resolveZCodeEndpointOrigin?: () => Promise<string> | string;
-  private readonly onZcodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
-  private readonly isZcodeJwtRequest?: NodeApiClientOptions["isZcodeJwtRequest"];
 
   constructor(options: NodeApiClientOptions = {}) {
     this.fetchImpl = options.fetchImpl;
-    this.onZcodeJwtInvalid = options.onZcodeJwtInvalid;
-    this.isZcodeJwtRequest = options.isZcodeJwtRequest;
     this.resolveZCodeEndpointOrigin = options.resolveZCodeEndpointOrigin;
   }
 
@@ -126,21 +120,11 @@ export class NodeApiClient implements ApiClient {
           url,
         });
       }
-      const response = await fetchImpl(requestInput, {
+      return await fetchImpl(requestInput, {
         ...init,
         headers: requestHeaders,
         ...(signal ? { signal } : {}),
       });
-      if (response.status === 401) {
-        try {
-          if (await this.isZcodeJwtRequest?.(requestInput, new Headers(requestHeaders))) {
-            this.onZcodeJwtInvalid?.(requestInput, new Headers(requestHeaders));
-          }
-        } catch (error) {
-          log.warn("zxcode jwt invalid response observation failed", { error });
-        }
-      }
-      return response;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;

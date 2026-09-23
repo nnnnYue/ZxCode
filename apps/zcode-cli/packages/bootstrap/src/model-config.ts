@@ -3,7 +3,13 @@ import type {
   AiSdkNetworkConfig,
   EnvRecord,
 } from "@zcode/adapters/model";
-import { resolveRuntimeZCodeEndpointOrigin, ZXCODE_APP_VERSION_ENV } from "@zcode/shared";
+import {
+  applyCustomModelRequestHeaders,
+  parseCustomModelRequestHeadersEnv,
+  resolveRuntimeZCodeEndpointOrigin,
+  ZXCODE_APP_VERSION_ENV,
+  ZXCODE_MODEL_CUSTOM_HEADERS_ENV,
+} from "@zcode/shared";
 
 export type ModelProviderSourceTitle = "cli" | "electron";
 
@@ -37,18 +43,23 @@ function normalizeAiSdkNetworkConfig(
 }
 
 // 来源归因头 + agent 代号头。环境/统计指纹头已随去平台化清理删除。
+// 用户自定义模型请求头（specs/custom-request-headers.md）按名覆盖默认来源头：env 由桌面 host
+// spawn 时注入（CLI 用户也可手设）；非法条目只剔除，不影响其余默认头。
 function buildCliZCodeSourceHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion" | "sourceTitle"> = {},
 ): Record<string, string> {
   const sourceTitle = options.sourceTitle ?? detectDefaultProviderSourceTitle();
   const appVersion = resolveAppVersionForHeaders(env, options);
-  return {
-    "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
-    "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
-    "X-Title": `ZxCode@${sourceTitle}`,
-    "X-ZxCode-Agent": "glm",
-  };
+  return applyCustomModelRequestHeaders(
+    {
+      "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
+      "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
+      "X-Title": `ZxCode@${sourceTitle}`,
+      "X-ZxCode-Agent": "glm",
+    },
+    parseCustomModelRequestHeadersEnv(env[ZXCODE_MODEL_CUSTOM_HEADERS_ENV]),
+  );
 }
 
 function resolveAppVersionForHeaders(

@@ -7,6 +7,7 @@ export type SettingsSectionId =
   | "migration"
   | "browser"
   | "modelProvider"
+  | "custom"
   | "memory"
   | "plugin"
   | "mcp"
@@ -51,7 +52,7 @@ interface SettingsSectionIntentEventDetail {
   modelProviderId?: string;
 }
 
-export interface SettingsModelProviderTarget {
+interface SettingsModelProviderTarget {
   providerId: string;
 }
 
@@ -62,6 +63,7 @@ function isSettingsSectionId(value: string): value is SettingsSectionId {
     value === "migration" ||
     value === "browser" ||
     value === "modelProvider" ||
+    value === "custom" ||
     value === "memory" ||
     value === "plugin" ||
     value === "mcp" ||

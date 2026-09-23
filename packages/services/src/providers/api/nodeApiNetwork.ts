@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { rootCertificates } from "node:tls";
 import { Agent, ProxyAgent, fetch as undiciFetch, type Dispatcher } from "undici";
 
-export interface HostApiNetworkOptions {
+interface HostApiNetworkOptions {
   httpProxy?: string;
   noProxy?: string;
   caCertPath?: string;

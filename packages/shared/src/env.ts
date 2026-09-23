@@ -36,6 +36,8 @@ export const ZXCODE_PRODUCT_FLAVOR = normalizeZCodeProductFlavor(
 );
 export const ZXCODE_APP_VERSION_ENV = "ZXCODE_APP_VERSION" as const;
 export const ZXCODE_BUILD_COMMIT_ID_ENV = "ZXCODE_BUILD_COMMIT_ID" as const;
+/** 桌面 host 下发用户自定义模型请求头的 env；值为 JSON `Array<{name, value}>`。 */
+export const ZXCODE_MODEL_CUSTOM_HEADERS_ENV = "ZXCODE_MODEL_CUSTOM_HEADERS" as const;
 
 // ── 运行时环境变量（不经过编译打包，启动时从 process.env 读取） ──
 // 启用调试模式，值为 inspect-brk 的端口号，如 ZXCODE_DEBUG=9230

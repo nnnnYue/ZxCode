@@ -6,6 +6,11 @@ import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
 import { wslUserSchema } from "./wslUserValidation.js";
 import { normalizeZCodeEndpointOrigin } from "./zcodeEndpoint.js";
 import {
+  CUSTOM_MODEL_REQUEST_HEADERS_MAX_ENTRIES,
+  isValidModelRequestHeaderName,
+  isValidModelRequestHeaderValue,
+} from "./zcode-source-headers.js";
+import {
   DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
   embeddedBrowserViewportPreferenceSchema,
 } from "./browser-use/command-metadata.js";
@@ -75,6 +80,24 @@ const mobileRelaySettingsSchema = z
     token: z.string().optional(),
   })
   .strict();
+
+/** 用户自定义模型请求头条目；名字/值校验与 agent 侧 env 解析共用同一份实现（specs/custom-request-headers.md）。 */
+const customModelRequestHeaderEntrySchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .refine(isValidModelRequestHeaderName, "header name must be a valid HTTP token"),
+    value: z
+      .string()
+      .trim()
+      .refine(isValidModelRequestHeaderValue, "header value must be printable ASCII"),
+  })
+  .strict();
+
+const customModelRequestHeadersSchema = z
+  .array(customModelRequestHeaderEntrySchema)
+  .max(CUSTOM_MODEL_REQUEST_HEADERS_MAX_ENTRIES);
 
 const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
@@ -493,6 +516,8 @@ const appSettingsObjectSchema = z.object({
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
   mobileRelay: mobileRelaySettingsSchema.default({ enabled: false }),
+  customModelRequestHeadersEnabled: z.boolean().default(false),
+  customModelRequestHeaders: customModelRequestHeadersSchema.optional(),
 });
 
 export const appSettingsSchema = z.preprocess(
@@ -581,4 +606,6 @@ export const appSettingsPatchSchema = z.object({
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
   mobileRelay: mobileRelaySettingsSchema.optional(),
+  customModelRequestHeadersEnabled: z.boolean().optional(),
+  customModelRequestHeaders: customModelRequestHeadersSchema.optional(),
 });

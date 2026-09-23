@@ -45,6 +45,7 @@ import { PluginsSection } from "@/settings/PluginsSection.js";
 import { HooksSection } from "@/settings/HooksSection.js";
 import { WorkspaceFileSearchSection } from "@/settings/WorkspaceFileSearchSection.js";
 import { MemorySettingsSection } from "@/settings/MemorySettingsSection.js";
+import { CustomSection } from "@/settings/CustomSection.js";
 import { BrowserSettingsSection } from "@/settings/BrowserSettingsSection.js";
 import { MobileRelaySettingsSection } from "@/settings/MobileRelaySettingsSection.js";
 import { ComputerUseSection } from "@/settings/ComputerUseSection.js";
@@ -1344,6 +1345,11 @@ export function SettingsPage({
                               }
                               connectivityWorkspaceRequired={isRemoteModelProviderWorkspace}
                             />
+                          </ServiceProvider>
+                        ) : activeSection === "custom" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* 自定义请求头属于本机全局设置；激活远端 workspace 时也读本地 Host。 */}
+                            <CustomSection />
                           </ServiceProvider>
                         ) : activeSection === "memory" ? (
                           <ServiceProvider services={localHostServices}>

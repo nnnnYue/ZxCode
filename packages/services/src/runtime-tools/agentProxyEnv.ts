@@ -1,8 +1,10 @@
 import {
   ZXCODE_AGENT_CA_CERT_ENV_KEY,
   ZXCODE_HTTP_PROXY_ENV_KEY,
+  ZXCODE_MODEL_CUSTOM_HEADERS_ENV,
   ZXCODE_NO_PROXY_ENV_KEY,
   ZXCODE_WORKSPACE_IDENTITY_ENV,
+  type CustomModelRequestHeaderEntry,
 } from "@zcode/shared";
 
 // 把设置页的 HTTP 代理、No Proxy 和自定义 CA 翻译成 agent 子进程的环境变量补丁。
@@ -118,6 +120,25 @@ export function buildAgentWorkspaceIdentityEnv(
 ): Record<string, string> {
   const trimmed = workspaceIdentity?.trim();
   return trimmed ? { [ZXCODE_WORKSPACE_IDENTITY_ENV]: trimmed } : {};
+}
+
+/**
+ * 把设置页的用户自定义模型请求头翻译成 agent 子进程 env 补丁（specs/custom-request-headers.md）。
+ * 与代理/CA 同语义：spawn 时读取，「下次启动 agent」生效。仅开关开启且列表非空时注入；
+ * header 值可能含用户凭据，调用方不得把返回值写入日志。
+ */
+export function buildAgentCustomModelHeadersEnv(input: {
+  enabled: boolean | undefined;
+  headers: readonly CustomModelRequestHeaderEntry[] | undefined;
+}): Record<string, string> {
+  if (input.enabled !== true || !input.headers || input.headers.length === 0) {
+    return {};
+  }
+  return {
+    [ZXCODE_MODEL_CUSTOM_HEADERS_ENV]: JSON.stringify(
+      input.headers.map((header) => ({ name: header.name, value: header.value })),
+    ),
+  };
 }
 
 function normalizeProxyValue(value: string | undefined): string | undefined {

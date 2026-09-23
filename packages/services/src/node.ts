@@ -308,6 +308,7 @@ import type {
 } from "#src/process/runtimeProcessLifecycle.js";
 import { initializeRuntimeProcessEnv } from "./runtime-tools/runtimeCommandEnv.js";
 import {
+  buildAgentCustomModelHeadersEnv,
   buildAgentEndpointOriginEnv,
   buildAgentRuntimeEnv,
 } from "./runtime-tools/agentProxyEnv.js";
@@ -1817,6 +1818,11 @@ export function createLocalServices(options: {
           httpProxy: agentNetwork.httpProxy,
           noProxy: agentNetwork.noProxy,
           caCertPath: settings.httpProxyCaCertPath,
+        }),
+        // 用户自定义模型请求头同样按 spawn 时读取注入；仅模型 API 请求消费，改动后下次启动 agent 生效。
+        ...buildAgentCustomModelHeadersEnv({
+          enabled: settings.customModelRequestHeadersEnabled,
+          headers: settings.customModelRequestHeaders,
         }),
         // 把 host 解析出的权威 origin（含 settings 覆盖）下发给 agent，否则 agent 侧只按
         // env 推导，test env + 自定义端点时两侧信任判定的输入分叉、官方 MCP 整体 fail closed。

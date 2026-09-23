@@ -6,6 +6,7 @@ import {
   Package,
   Bot,
   Palette,
+  SlidersHorizontal,
   Sun,
   Terminal,
   AlarmClock,
@@ -154,6 +155,13 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     id: "workspaceFileSearch",
     icon: FileSearch,
     titleId: "settings.workspaceFileSearch.title",
+    groupId: "basics",
+  },
+  // 自定义请求头等用户级自定义项：与网络配置同属高级基础配置，收在基础设置最尾部。
+  {
+    id: "custom",
+    icon: SlidersHorizontal,
+    titleId: "settings.custom.title",
     groupId: "basics",
   },
 ];

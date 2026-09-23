@@ -5,6 +5,7 @@ import type { ProviderFamilyConnectionSelectionSettings } from "./provider-famil
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
+import type { CustomModelRequestHeaderEntry } from "./zcode-source-headers.js";
 
 // ── Domain types ──
 
@@ -271,6 +272,16 @@ export interface AppSettings {
   httpProxyNoProxy?: string;
   /** 自定义 PEM 根证书路径；下次启动 app/agent 时用于 renderer 校验与 agent NODE_EXTRA_CA_CERTS。 */
   httpProxyCaCertPath?: string;
+  /**
+   * 模型 API 请求自定义头开关；关闭（缺省）时模型请求只携带默认来源头，编辑器在设置页隐藏。
+   * 行为见 specs/custom-request-headers.md。
+   */
+  customModelRequestHeadersEnabled?: boolean;
+  /**
+   * 用户自定义的模型请求头（有序列表；同名不区分大小写覆盖默认来源头）。
+   * 仅作用于模型 API 请求，经 spawn env 下发，下次启动 agent 生效。
+   */
+  customModelRequestHeaders?: CustomModelRequestHeaderEntry[];
   /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
    * 只影响内置浏览器出口，不影响 ZxCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
