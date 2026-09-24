@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -28,6 +28,37 @@ test("defaultEnabled 插件的随包内容必须真实存在，不允许指向�
     assert.ok(
       existsSync(join(contentRoot, ".zcode-plugin", "plugin.json")),
       `${definition.name}@${definition.version} 的内容包缺失（rootCandidates[0]=${definition.rootCandidates[0]}）`,
+    );
+  }
+});
+
+test("桌面与 SEA 打包清单必须覆盖全部内置层插件定义", () => {
+  // 历史教训：打包清单与官方定义是两份平行数据，内容包恢复后打包清单没有同步，
+  // dev 可用但生产包 seed 不到内容。内置层定义的 rootCandidates[0] 均为
+  // "packages/<dir>" 形态（离线快照条目则是 official-marketplace/plugins/...，不在此列），
+  // 这里机械对照两份打包脚本，缺一个名字就失败。
+  const repoRoot = resolve(cliWorkspaceRoot, "../..");
+  const desktopScript = readFileSync(
+    join(repoRoot, "packages/desktop/scripts/prepare-agent-node-bundle.mjs"),
+    "utf8",
+  );
+  const seaScript = readFileSync(
+    join(repoRoot, "apps/zcode-cli/packages/cli/scripts/sea-official-plugin-assets.mjs"),
+    "utf8",
+  );
+  const builtinDefinitions = OFFICIAL_PLUGIN_DEFINITIONS.filter((definition) =>
+    definition.rootCandidates[0]?.startsWith("packages/"),
+  );
+  assert.ok(builtinDefinitions.length >= 14, "内置层定义数量异常，请检查定义文件");
+  for (const definition of builtinDefinitions) {
+    const dir = definition.rootCandidates[0].slice("packages/".length);
+    assert.ok(
+      desktopScript.includes(`packages/${dir}`),
+      `prepare-agent-node-bundle.mjs 缺少内置插件 ${definition.name}（应含 packages/${dir}）`,
+    );
+    assert.ok(
+      seaScript.includes(`"${dir}"`),
+      `sea-official-plugin-assets.mjs 缺少内置插件 ${definition.name}（应含 "${dir}"）`,
     );
   }
 });

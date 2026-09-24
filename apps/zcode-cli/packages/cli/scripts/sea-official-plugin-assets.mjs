@@ -30,7 +30,6 @@ export const officialSeaPlugins = [
     version: "0.6.0",
   },
   {
-
     marketplace: "zcode-plugins-official",
     name: "browser-use",
     packageName: "@zcode/browser-use-plugin",
@@ -42,6 +41,123 @@ export const officialSeaPlugins = [
     // SEA 清单仍指向旧版时，runtime 会与官方 definition 精确匹配失败，
     // 导致发布产物不 seed browser-use，进而无法装配宿主 node_repl MCP。
     version: "0.5.1",
+  },
+
+  // 内容型官方插件（无 MCP runtime）。name/version 必须与 bootstrap 的
+  // official-plugin-definitions.ts 逐一一致，否则运行时按 name+version 精确匹配
+  // 会失败、发布产物拒绝 seed。缺项会让 SEA 产物出现「定义在、内容无」的死条目
+  // （bootstrap 的 official-plugin-defaults.test.ts 会钉住这层覆盖关系）。
+  {
+    marketplace: "zcode-plugins-official",
+    name: "documents",
+    packageName: "@zcode/documents-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: ["agents/visual-judge.md", "skills/docx/SKILL.md"],
+    rootPath: join("packages", "documents-plugin"),
+    version: "0.1.7",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "pdf",
+    packageName: "@zcode/pdf-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: ["agents/visual-judge.md", "skills/pdf/SKILL.md"],
+    rootPath: join("packages", "pdf-plugin"),
+    version: "0.1.7",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "presentations",
+    packageName: "@zcode/presentations-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: ["agents/visual-judge.md", "skills/pptx/SKILL.md"],
+    rootPath: join("packages", "presentations-plugin"),
+    version: "0.1.7",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "spreadsheets",
+    packageName: "@zcode/spreadsheets-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: ["agents/visual-judge.md", "skills/xlsx/SKILL.md"],
+    rootPath: join("packages", "spreadsheets-plugin"),
+    version: "0.1.7",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "image-search",
+    packageName: "@zcode/image-search-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: [".mcp.json"],
+    rootPath: join("packages", "image-search-plugin"),
+    version: "0.1.1",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "skill-creator",
+    packageName: "@zcode/skill-creator-plugin",
+    requiresRuntime: false,
+    rootPath: join("packages", "skill-creator-plugin"),
+    version: "0.1.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "plugin-creator",
+    packageName: "@zcode/plugin-creator-plugin",
+    requiresRuntime: false,
+    rootPath: join("packages", "plugin-creator-plugin"),
+    version: "0.1.1",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "zcode-guide",
+    packageName: "@zcode/zcode-guide-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: [
+      "commands/workflow.md",
+      "skills/dynamic-workflows/SKILL.md",
+      "skills/dynamic-workflows/examples.md",
+      "skills/dynamic-workflows/patterns.md",
+    ],
+    rootPath: join("packages", "zcode-guide-plugin"),
+    version: "0.2.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "android-emulator",
+    packageName: "@zcode/android-emulator-plugin",
+    requiresRuntime: false,
+    rootPath: join("packages", "android-emulator-plugin"),
+    version: "0.1.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "ios-simulator",
+    packageName: "@zcode/ios-simulator-plugin",
+    requiresRuntime: false,
+    rootPath: join("packages", "ios-simulator-plugin"),
+    version: "0.1.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "computer-use",
+    packageName: "@zcode/zcode-cua-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: [
+      "docs/computer-use.md",
+      "scripts/computer-use-client.mjs",
+      "skills/computer-use/SKILL.md",
+    ],
+    rootPath: join("packages", "zcode-cua-plugin"),
+    version: "0.6.3",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "restore-legacy-sessions",
+    packageName: "@zcode/restore-legacy-sessions-plugin",
+    requiresRuntime: false,
+    rootPath: join("packages", "restore-legacy-sessions-plugin"),
+    version: "0.1.0",
   },
 ];
 
