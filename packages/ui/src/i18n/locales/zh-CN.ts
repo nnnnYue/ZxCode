@@ -681,6 +681,7 @@ const zhCN: Record<string, string> = {
   "codeViewer.title": "代码查看",
   "codeViewer.close": "关闭代码面板",
   "codeViewer.edit": "编辑文件",
+  "codeViewer.editorLoading": "正在加载编辑器…",
   "codeViewer.save": "保存",
   "codeViewer.saving": "保存中…",
   "codeViewer.discardChanges": "放弃更改",

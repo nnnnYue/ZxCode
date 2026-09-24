@@ -730,6 +730,7 @@ const enUS: Record<string, string> = {
   "codeViewer.title": "Code viewer",
   "codeViewer.close": "Close code viewer",
   "codeViewer.edit": "Edit file",
+  "codeViewer.editorLoading": "Loading editor…",
   "codeViewer.save": "Save",
   "codeViewer.saving": "Saving…",
   "codeViewer.discardChanges": "Discard changes",

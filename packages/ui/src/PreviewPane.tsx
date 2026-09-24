@@ -26,7 +26,7 @@ import {
 import { nanoid } from "nanoid";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
-import { Textarea } from "@/components/ui/textarea.js";
+import { PreviewPaneFileEditContent } from "@/previewPaneFileEditContent.js";
 import { cn } from "@/components/lib/utils.js";
 import type { FileBinaryPreview, FileMediaPreview, FileTextSlice } from "@zcode/shared";
 import { TID_PREVIEW_PANE } from "@zcode/shared";
@@ -37,6 +37,7 @@ import { usePdfViewerLabels, usePptxViewerLabels } from "@/hooks/usePreviewViewe
 import {
   FILE_VIEWER_MAX_TEXT_BYTES,
   createDiffSourceFilePreviewSource,
+  inferCodeLanguage,
   inferImageMediaType,
   inferMediaPreview,
   isPdfPreviewPath,
@@ -1879,27 +1880,26 @@ export function PreviewPane({
         {renderHeavyContent ? (
           editing && filePreview !== null && !filePreview.isBinary ? (
             <div className="h-full min-h-0 overflow-hidden bg-background p-3">
-              <Textarea
-                value={draft}
-                onChange={(event) => {
-                  draftRef.current = event.target.value;
-                  setDraft(event.target.value);
+              <PreviewPaneFileEditContent
+                initialValue={draft}
+                onChange={(value) => {
+                  // 与保存/守卫共用 draftRef 真源：先写 ref 再同步 state。
+                  draftRef.current = value;
+                  setDraft(value);
                 }}
-                onKeyDown={(event) => {
-                  // 保存快捷键：编辑器内 Ctrl/Cmd+S 与点保存按钮等价（preventDefault
-                  // 阻止浏览器默认行为）；门控与按钮一致（有改动且未在保存中）。
-                  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-                    event.preventDefault();
-                    if (!saving && draftRef.current !== baselineRef.current) {
-                      void handleSavePreviewEdits();
-                    }
+                onSaveShortcut={() => {
+                  // Cmd/Ctrl+S 门控与保存按钮一致（有改动且未在保存中）。
+                  if (!saving && draftRef.current !== baselineRef.current) {
+                    void handleSavePreviewEdits();
                   }
                 }}
-                spellCheck={false}
-                disabled={saving}
-                className="h-full w-full resize-none font-mono text-ui-base"
+                readOnly={saving}
+                language={inferCodeLanguage(source.path, filePreview.content)}
+                codeTheme={codeTheme}
+                settings={codePreviewSettings}
                 aria-label={intl.formatMessage({ id: "codeViewer.edit" })}
                 data-testid="preview-pane-file-editor"
+                loadingLabel={intl.formatMessage({ id: "codeViewer.editorLoading" })}
               />
             </div>
           ) : (
