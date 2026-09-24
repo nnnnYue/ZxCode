@@ -1,0 +1,22 @@
+/* 原 SVG <animate begin="3s" dur="1.8s" values="1;0.4;1"> 呼吸动画的等效整体版：
+   挂载 3s 后进入 1.8s 无限循环（1 → 0.4 → 1）。 */
+.root-startup-logo-animated {
+  animation: root-startup-logo-pulse 1.8s ease-in-out 3s infinite;
+}
+
+@keyframes root-startup-logo-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root-startup-logo-animated {
+    animation: none;
+  }
+}

@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import { cn } from "@/components/lib/utils.js";
+// 新版劈裂 Z 品牌图（shattered-Z master，7ff37fe 起的官方图标素材与 public/logo/icons 同源）。
+// 品牌壳为固定深色底，白色位图不受主题影响。
+import zcodeLogoUrl from "@/assets/zcode-logo.png";
+import "./rootStartupLoading.css";
 
 interface RootStartupLoadingProps {
   label: string;
@@ -41,34 +45,12 @@ function ZCodeStartupLogo({
   animated?: boolean;
 }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="118"
-      height="100"
-      fill="none"
-      viewBox="0 0 256 218"
-      className={cn("shrink-0 text-current", className)}
+    <img
+      src={zcodeLogoUrl}
+      alt=""
       aria-hidden="true"
-      focusable="false"
-    >
-      {animated ? (
-        <animate
-          attributeName="opacity"
-          begin="3s"
-          dur="1.8s"
-          repeatCount="indefinite"
-          values="1;0.4;1"
-        />
-      ) : null}
-      <path
-        fill="currentColor"
-        d="M134.4 0.130152L116.48 25.6022C113.665 29.5699 109.054 32.0019 104.064 32.0019H6.3999V0C6.3999 0.130149 134.4 0.130152 134.4 0.130152Z"
-      />
-      <path fill="currentColor" d="M256 0.130127L102.401 217.732H0L153.599 0.130127H256Z" />
-      <path
-        fill="currentColor"
-        d="M121.601 217.732L139.65 192.134C142.465 188.166 147.076 185.734 152.067 185.734H249.604V217.736H121.601V217.732Z"
-      />
-    </svg>
+      draggable={false}
+      className={cn("shrink-0 select-none", animated && "root-startup-logo-animated", className)}
+    />
   );
 }
