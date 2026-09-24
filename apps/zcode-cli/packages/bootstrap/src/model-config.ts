@@ -5,6 +5,7 @@ import type {
 } from "@zcode/adapters/model";
 import {
   applyCustomModelRequestHeaders,
+  buildModelRequestDefaultHeaders,
   parseCustomModelRequestHeadersEnv,
   resolveRuntimeZCodeEndpointOrigin,
   ZXCODE_APP_VERSION_ENV,
@@ -43,6 +44,8 @@ function normalizeAiSdkNetworkConfig(
 }
 
 // 来源归因头 + agent 代号头。环境/统计指纹头已随去平台化清理删除。
+// 默认头统一由 shared 的 buildModelRequestDefaultHeaders 构造：设置页展示的预填值
+// （ISettingService.getModelRequestHeaderDefaults）与本函数共用同一实现，保证两侧一致。
 // 用户自定义模型请求头（specs/custom-request-headers.md）按名覆盖默认来源头：env 由桌面 host
 // spawn 时注入（CLI 用户也可手设）；非法条目只剔除，不影响其余默认头。
 function buildCliZCodeSourceHeaders(
@@ -52,12 +55,11 @@ function buildCliZCodeSourceHeaders(
   const sourceTitle = options.sourceTitle ?? detectDefaultProviderSourceTitle();
   const appVersion = resolveAppVersionForHeaders(env, options);
   return applyCustomModelRequestHeaders(
-    {
-      "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
-      "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
-      "X-Title": `ZxCode@${sourceTitle}`,
-      "X-ZxCode-Agent": "glm",
-    },
+    buildModelRequestDefaultHeaders({
+      appVersion,
+      endpointOrigin: resolveRuntimeZCodeEndpointOrigin(env),
+      sourceTitle,
+    }),
     parseCustomModelRequestHeadersEnv(env[ZXCODE_MODEL_CUSTOM_HEADERS_ENV]),
   );
 }

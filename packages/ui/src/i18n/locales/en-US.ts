@@ -1498,7 +1498,9 @@ const enUS: Record<string, string> = {
     "Manage user-level customizations. Changes stay on this machine and never sync to remote workspaces.",
   "settings.custom.headers.title": "User-managed request headers",
   "settings.custom.headers.description":
-    "When enabled, custom HTTP headers are appended to requests sent to model providers; headers with the same name override the defaults. Only model requests are affected. Restart the Agent to take effect.",
+    "When enabled, custom HTTP headers are appended to requests sent to model providers; headers with the same name override the defaults. Only model requests are affected. Reload the session (or restart the app) to take effect.",
+  "settings.custom.headers.defaultsHint":
+    "These are the default headers currently sent with model requests — edit them to override. Removing a row keeps the default value.",
   "settings.custom.headers.nameLabel": "Header name",
   "settings.custom.headers.namePlaceholder": "Header name, e.g. User-Agent",
   "settings.custom.headers.valueLabel": "Header value",
@@ -1506,9 +1508,11 @@ const enUS: Record<string, string> = {
   "settings.custom.headers.addRow": "Add header",
   "settings.custom.headers.removeRow": "Remove this row",
   "settings.custom.headers.save": "Save",
-  "settings.custom.headers.saved": "Headers saved. Restart the Agent to take effect.",
+  "settings.custom.headers.saved":
+    "Headers saved. Reload the session (or restart the app) to take effect.",
   "settings.custom.headers.saveFailed": "Save failed. Please try again.",
-  "settings.custom.headers.restartHint": "Takes effect after restarting the Agent.",
+  "settings.custom.headers.restartHint":
+    "Takes effect after reloading the session (or switching models / restarting the app).",
   "settings.custom.headers.invalidName": "Name is not a valid HTTP header name",
   "settings.custom.headers.invalidValue": "Value must contain printable ASCII characters only",
   "settings.custom.headers.duplicateName": "This name already exists (case-insensitive)",

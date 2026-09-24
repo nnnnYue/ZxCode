@@ -143,7 +143,27 @@
       .zxcode-boot-loading__logo {
         width: 56px;
         height: auto;
-        color: #ffffff;
+        user-select: none;
+        -webkit-user-select: none;
+        /* 原 SVG 逐路径 <animate> 呼吸动画的等效整体版：1.5s 循环 1 → 0.3 → 1。 */
+        animation: zxcode-boot-logo-pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes zxcode-boot-logo-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .zxcode-boot-loading__logo {
+          animation: none;
+        }
       }
     </style>
   </head>
@@ -158,47 +178,15 @@
         aria-label="Loading..."
       >
         <div class="zxcode-boot-loading__logo-shell">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="118px"
-            height="100px"
-            fill="none"
-            viewBox="0 0 256 218"
+          <!-- 新版劈裂 Z 品牌图（shattered-Z master，7ff37fe 起的官方图标素材）；256px 源在
+               56px 显示位约 4.5 倍采样密度，Vite 会把该相对引用纳入资源图并保真拷贝。 -->
+          <img
+            src="./startup-logo.png"
             class="zxcode-boot-loading__logo"
+            alt=""
             aria-hidden="true"
-          >
-            <path
-              fill="currentColor"
-              d="M134.4 0.130152L116.48 25.6022C113.665 29.5699 109.054 32.0019 104.064 32.0019H6.3999V0C6.3999 0.130149 134.4 0.130152 134.4 0.130152Z"
-            >
-              <animate
-                attributeName="opacity"
-                dur="1.5s"
-                repeatCount="indefinite"
-                values="1;0.3;1"
-              />
-            </path>
-            <path fill="currentColor" d="M256 0.130127L102.401 217.732H0L153.599 0.130127H256Z">
-              <animate
-                attributeName="opacity"
-                begin="0.75s"
-                dur="1.5s"
-                repeatCount="indefinite"
-                values="1;0.3;1"
-              />
-            </path>
-            <path
-              fill="currentColor"
-              d="M121.601 217.732L139.65 192.134C142.465 188.166 147.076 185.734 152.067 185.734H249.604V217.736H121.601V217.732Z"
-            >
-              <animate
-                attributeName="opacity"
-                dur="1.5s"
-                repeatCount="indefinite"
-                values="1;0.3;1"
-              />
-            </path>
-          </svg>
+            draggable="false"
+          />
         </div>
       </div>
     </div>

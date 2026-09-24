@@ -1,12 +1,16 @@
 import { access, readFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { AppSettings } from "@zcode/shared";
+import type { AppSettings, CustomModelRequestHeaderEntry } from "@zcode/shared";
 import {
   appSettingsPatchSchema,
   appSettingsSchema,
+  buildModelRequestDefaultHeaders,
   formatLogPrefix,
   formatZodError,
+  listModelRequestDefaultHeaderEntries,
+  resolveRuntimeZCodeEndpointOrigin,
+  ZXCODE_APP_VERSION_ENV,
 } from "@zcode/shared";
 import type { ISettingService } from "./setting.js";
 import { normalizeSettingsPatch } from "#src/setting/normalizeSettingsPatch.js";
@@ -358,6 +362,23 @@ export function createSettingService(): ISettingService {
       }
 
       return { path, created: !existedBefore };
+    },
+
+    async getModelRequestHeaderDefaults(): Promise<CustomModelRequestHeaderEntry[]> {
+      // 设置页预填值必须与 agent 实际发送的默认头一致（specs/custom-request-headers.md）：
+      // 版本号取 host env 的 ZXCODE_APP_VERSION（desktopRuntimeEnv 显式下发，agent 子进程继承同值）；
+      // origin 与 spawn 时 buildAgentEndpointOriginEnv 同语义（含 zcodeEndpointOrigin 设置覆盖）；
+      // X-Title 按桌面 host spawn 形态（app-server/agent-server）固定为 electron。
+      const current = await readSettings();
+      return listModelRequestDefaultHeaderEntries(
+        buildModelRequestDefaultHeaders({
+          appVersion: process.env[ZXCODE_APP_VERSION_ENV],
+          endpointOrigin: resolveRuntimeZCodeEndpointOrigin(process.env, {
+            overrideOrigin: current.zcodeEndpointOrigin,
+          }),
+          sourceTitle: "electron",
+        }),
+      );
     },
   };
 

@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   applyCustomModelRequestHeaders,
+  buildModelRequestDefaultHeaders,
+  diffCustomModelRequestHeadersAgainstDefaults,
+  listModelRequestDefaultHeaderEntries,
+  mergeCustomModelRequestHeaderRows,
   parseCustomModelRequestHeadersEnv,
 } from "../src/zcode-source-headers.js";
+import { DEFAULT_ZXCODE_ENDPOINT_ORIGIN } from "../src/zcodeEndpoint.js";
 
 test("parseCustomModelRequestHeadersEnv 透传空输入", () => {
   assert.deepEqual(parseCustomModelRequestHeadersEnv(undefined), []);
@@ -79,4 +84,100 @@ test("applyCustomModelRequestHeaders 同名不区分大小写覆盖，其余默�
     "X-Custom": "v",
   });
   assert.equal("User-Agent" in merged, false);
+});
+
+test("buildModelRequestDefaultHeaders 输出四条默认头且顺序稳定", () => {
+  const headers = buildModelRequestDefaultHeaders({
+    appVersion: "3.14.0",
+    endpointOrigin: "https://zcode.example.com",
+    sourceTitle: "electron",
+  });
+  assert.deepEqual(Object.keys(headers), [
+    "HTTP-Referer",
+    "User-Agent",
+    "X-Title",
+    "X-ZxCode-Agent",
+  ]);
+  assert.equal(headers["HTTP-Referer"], "https://zcode.example.com");
+  assert.equal(headers["User-Agent"], "ZxCode/3.14.0");
+  assert.equal(headers["X-Title"], "ZxCode@electron");
+  assert.equal(headers["X-ZxCode-Agent"], "glm");
+});
+
+test("buildModelRequestDefaultHeaders 缺省输入回退默认 origin/electron/unknown", () => {
+  const headers = buildModelRequestDefaultHeaders();
+  assert.equal(headers["HTTP-Referer"], DEFAULT_ZXCODE_ENDPOINT_ORIGIN);
+  assert.equal(headers["User-Agent"], "ZxCode/unknown");
+  assert.equal(headers["X-Title"], "ZxCode@electron");
+});
+
+test("listModelRequestDefaultHeaderEntries 与 builder 键序一致", () => {
+  const entries = listModelRequestDefaultHeaderEntries(
+    buildModelRequestDefaultHeaders({ appVersion: "9.9.9" }),
+  );
+  assert.deepEqual(entries, [
+    { name: "HTTP-Referer", value: DEFAULT_ZXCODE_ENDPOINT_ORIGIN },
+    { name: "User-Agent", value: "ZxCode/9.9.9" },
+    { name: "X-Title", value: "ZxCode@electron" },
+    { name: "X-ZxCode-Agent", value: "glm" },
+  ]);
+});
+
+test("mergeCustomModelRequestHeaderRows 预填默认头、命中覆盖显示覆盖值", () => {
+  const defaults = buildModelRequestDefaultHeaders({ appVersion: "3.14.0" });
+  const rows = mergeCustomModelRequestHeaderRows(defaults, [
+    { name: "user-agent", value: "MyApp/1.0" },
+    { name: "X-Custom", value: "v1" },
+  ]);
+  assert.deepEqual(rows, [
+    { name: "HTTP-Referer", value: DEFAULT_ZXCODE_ENDPOINT_ORIGIN },
+    { name: "User-Agent", value: "MyApp/1.0" },
+    { name: "X-Title", value: "ZxCode@electron" },
+    { name: "X-ZxCode-Agent", value: "glm" },
+    { name: "X-Custom", value: "v1" },
+  ]);
+});
+
+test("mergeCustomModelRequestHeaderRows 无覆盖时原样展开默认值", () => {
+  const defaults = buildModelRequestDefaultHeaders({ appVersion: "3.14.0" });
+  assert.deepEqual(mergeCustomModelRequestHeaderRows(defaults, []), [
+    { name: "HTTP-Referer", value: DEFAULT_ZXCODE_ENDPOINT_ORIGIN },
+    { name: "User-Agent", value: "ZxCode/3.14.0" },
+    { name: "X-Title", value: "ZxCode@electron" },
+    { name: "X-ZxCode-Agent", value: "glm" },
+  ]);
+});
+
+test("diffCustomModelRequestHeadersAgainstDefaults 只保留覆盖与新增", () => {
+  const defaults = buildModelRequestDefaultHeaders({ appVersion: "3.14.0" });
+  const entries = diffCustomModelRequestHeadersAgainstDefaults(defaults, [
+    { name: "HTTP-Referer", value: DEFAULT_ZXCODE_ENDPOINT_ORIGIN }, // 与默认相同 → 不落盘
+    { name: "User-Agent", value: "MyApp/1.0" }, // 覆盖 → 保留
+    { name: "X-Title", value: "ZxCode@electron" }, // 与默认相同 → 不落盘
+    { name: "X-Custom", value: "v1" }, // 新增 → 保留
+    { name: "x-custom", value: "v2" }, // 同名靠后胜出
+    { name: "", value: "" }, // 空行跳过
+  ]);
+  assert.deepEqual(entries, [
+    { name: "User-Agent", value: "MyApp/1.0" },
+    { name: "x-custom", value: "v2" },
+  ]);
+});
+
+test("diffCustomModelRequestHeadersAgainstDefaults 全默认行返回空列表", () => {
+  const defaults = buildModelRequestDefaultHeaders({ appVersion: "3.14.0" });
+  assert.deepEqual(
+    diffCustomModelRequestHeadersAgainstDefaults(
+      defaults,
+      listModelRequestDefaultHeaderEntries(defaults),
+    ),
+    [],
+  );
+});
+
+test("merge + diff 组合可逆：无编辑时差量为空，保留原覆盖", () => {
+  const defaults = buildModelRequestDefaultHeaders({ appVersion: "3.14.0" });
+  const stored = [{ name: "User-Agent", value: "MyApp/1.0" }];
+  const rows = mergeCustomModelRequestHeaderRows(defaults, stored);
+  assert.deepEqual(diffCustomModelRequestHeadersAgainstDefaults(defaults, rows), stored);
 });

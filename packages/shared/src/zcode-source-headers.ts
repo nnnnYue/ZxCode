@@ -46,6 +46,46 @@ export interface CustomModelRequestHeaderEntry {
   value: string;
 }
 
+// 模型请求默认头中的 agent 代号头；取值与 CLI bootstrap 保持同一常量，
+// 避免设置页展示的默认值与 agent 实际发送分叉。
+export const MODEL_REQUEST_AGENT_HEADER_NAME = "X-ZxCode-Agent";
+export const MODEL_REQUEST_AGENT_HEADER_VALUE = "glm";
+
+export interface ModelRequestDefaultHeaderOptions {
+  appVersion?: string;
+  endpointOrigin?: string;
+  sourceTitle?: string;
+}
+
+/**
+ * 模型 API 请求的默认来源头（specs/custom-request-headers.md）。
+ * agent 侧 `buildCliZCodeSourceHeaders` 构造实际发送头与设置页 `getModelRequestHeaderDefaults`
+ * 展示预填值共用本实现；键插入顺序即展示顺序。来源归因头（`buildZCodeSourceHeadersFromContext`）
+ * 是后端链路的另一份语义，不包含 agent 代号头，两者不合并。
+ */
+export function buildModelRequestDefaultHeaders(
+  options: ModelRequestDefaultHeaderOptions = {},
+): Record<string, string> {
+  const appVersion = normalizeZCodeSourceHeaderValue(options.appVersion);
+  const endpointOrigin =
+    normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZXCODE_ENDPOINT_ORIGIN;
+  const sourceTitle = normalizeZCodeSourceHeaderValue(options.sourceTitle) ?? "electron";
+
+  return {
+    "HTTP-Referer": endpointOrigin,
+    "User-Agent": `ZxCode/${appVersion ?? "unknown"}`,
+    "X-Title": `ZxCode@${sourceTitle}`,
+    [MODEL_REQUEST_AGENT_HEADER_NAME]: MODEL_REQUEST_AGENT_HEADER_VALUE,
+  };
+}
+
+/** 默认头的有序条目形态，供设置页按稳定顺序预填编辑行。 */
+export function listModelRequestDefaultHeaderEntries(
+  headers: Readonly<Record<string, string>> = buildModelRequestDefaultHeaders(),
+): CustomModelRequestHeaderEntry[] {
+  return Object.entries(headers).map(([name, value]) => ({ name, value }));
+}
+
 // RFC 7230 header 名 token 约束；冒号、空白等分隔符不允许出现在名字里。
 const MODEL_REQUEST_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 // 值与来源头同约束：仅可打印 ASCII，避免多字节字符在 SDK/网关侧被不可控地转码。
@@ -118,4 +158,67 @@ export function applyCustomModelRequestHeaders(
     headers[entry.name] = entry.value;
   }
   return headers;
+}
+
+/**
+ * 设置页预填行（specs/custom-request-headers.md「默认展示」）：
+ * 默认头逐条展开，命中的已存覆盖显示覆盖值（默认头顺序不变），未命中任何默认头的已存条目按原顺序追加。
+ * 返回的是 UI 草稿，不落盘；持久层仍只保存差量覆盖条目。
+ * 同名条目（不区分大小写）靠后者胜出，与 `applyCustomModelRequestHeaders` 一致。
+ */
+export function mergeCustomModelRequestHeaderRows(
+  defaults: Readonly<Record<string, string>>,
+  stored: readonly CustomModelRequestHeaderEntry[],
+): CustomModelRequestHeaderEntry[] {
+  const overrides = new Map<string, CustomModelRequestHeaderEntry>();
+  for (const entry of stored) {
+    const name = entry.name.trim();
+    const value = entry.value.trim();
+    if (!name || !value) continue;
+    overrides.set(name.toLowerCase(), { name, value });
+  }
+  const isDefaultName = new Map<string, boolean>();
+  for (const name of Object.keys(defaults)) {
+    isDefaultName.set(name.toLowerCase(), true);
+  }
+  const rows: CustomModelRequestHeaderEntry[] = Object.entries(defaults).map(([name, value]) => ({
+    name,
+    value: overrides.get(name.toLowerCase())?.value ?? value,
+  }));
+  for (const [key, entry] of overrides) {
+    if (!isDefaultName.has(key)) {
+      rows.push(entry);
+    }
+  }
+  return rows;
+}
+
+/**
+ * 设置页差量捕获（specs/custom-request-headers.md「差量捕获」）：
+ * 与默认值完全相同的行不落盘，避免把版本号 / origin 钉死在用户配置里（升级后仍跟随新默认值）；
+ * 只保留真正的同名覆盖与新增条目。行允许临时带空白，这里先裁剪；空行跳过；
+ * 同名（不区分大小写）靠后的行胜出。
+ */
+export function diffCustomModelRequestHeadersAgainstDefaults(
+  defaults: Readonly<Record<string, string>>,
+  rows: readonly CustomModelRequestHeaderEntry[],
+): CustomModelRequestHeaderEntry[] {
+  const merged = new Map<string, CustomModelRequestHeaderEntry>();
+  for (const row of rows) {
+    const name = row.name.trim();
+    const value = row.value.trim();
+    if (!name || !value) continue;
+    merged.set(name.toLowerCase(), { name, value });
+  }
+  const defaultValues = new Map<string, string>();
+  for (const [name, value] of Object.entries(defaults)) {
+    defaultValues.set(name.toLowerCase(), value);
+  }
+  const entries: CustomModelRequestHeaderEntry[] = [];
+  for (const [key, entry] of merged) {
+    if (defaultValues.get(key) !== entry.value) {
+      entries.push(entry);
+    }
+  }
+  return entries;
 }

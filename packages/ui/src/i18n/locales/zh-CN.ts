@@ -1421,7 +1421,9 @@ const zhCN: Record<string, string> = {
   "settings.custom.description": "管理用户级自定义项。改动只影响本机，不会同步到远端 workspace。",
   "settings.custom.headers.title": "用户管理请求头",
   "settings.custom.headers.description":
-    "开启后可为发给模型供应商的请求追加自定义 HTTP 头，同名头将覆盖默认值；只影响模型请求，改动在重启 Agent 后生效。",
+    "开启后可为发给模型供应商的请求追加自定义 HTTP 头，同名头将覆盖默认值；只影响模型请求，改动在重新加载会话（或重启应用）后生效。",
+  "settings.custom.headers.defaultsHint":
+    "以下为当前实际发送的默认请求头，可直接修改；删除某行表示不覆盖该头，默认值仍会发送。",
   "settings.custom.headers.nameLabel": "请求头名称",
   "settings.custom.headers.namePlaceholder": "Header 名称，例如 User-Agent",
   "settings.custom.headers.valueLabel": "请求头值",
@@ -1429,9 +1431,9 @@ const zhCN: Record<string, string> = {
   "settings.custom.headers.addRow": "添加请求头",
   "settings.custom.headers.removeRow": "删除该行",
   "settings.custom.headers.save": "保存",
-  "settings.custom.headers.saved": "请求头已保存，重启 Agent 后生效",
+  "settings.custom.headers.saved": "请求头已保存，重新加载会话（或重启应用）后生效",
   "settings.custom.headers.saveFailed": "保存失败，请重试",
-  "settings.custom.headers.restartHint": "保存后需重启 Agent 生效",
+  "settings.custom.headers.restartHint": "保存后重新加载会话（或切换模型、重启应用）后生效",
   "settings.custom.headers.invalidName": "名称不是合法的 HTTP header 名",
   "settings.custom.headers.invalidValue": "值只能包含可打印 ASCII 字符",
   "settings.custom.headers.duplicateName": "该名称已存在（不区分大小写）",
