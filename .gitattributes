@@ -9,3 +9,11 @@ third-party/upstream/** -text -whitespace
 third-party/native-search/licenses/** -text -whitespace
 third-party/runtime/*.txt -text -whitespace
 third-party/inventory.json linguist-generated=true
+
+# 品牌资产不接受上游改写：合并双方都改动同一文件时，一律保留本仓库版本。
+# 注意：该驱动只在双方都改动同一文件时生效；上游删除/改名等结构冲突仍需手工裁定
+# （判据见 REMOVALS.md 与 specs/）。
+packages/ui/src/assets/zcode-logo.png merge=zcode-brand
+packages/desktop/src/renderer/startup-logo.png merge=zcode-brand
+packages/web/startup-logo.png merge=zcode-brand
+packages/desktop/src/main/aboutWindowLogoDataUri.ts merge=zcode-brand
