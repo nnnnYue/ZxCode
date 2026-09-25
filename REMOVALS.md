@@ -1,10 +1,11 @@
 # 移除项清单：智谱登录、遥测与指纹
 
-本仓库在开源代码基础上移除了与智谱（Z.ai / BigModel 平台，`zcode.z.ai`）相关的账号登录、遥测上报和设备指纹信息，主要改动见提交 `3c58a21`。本文只列删除项；当前保留的能力与对外请求说明见 [README.md](README.md) 和 [NOTICE.md](NOTICE.md)。
+本仓库在开源代码基础上移除了与智谱（Z.ai / BigModel 平台，`zcode.z.ai`）相关的账号登录、遥测上报和设备指纹信息，以及插件商店的在线链路，主要改动见提交 `3c58a21` 与 `7b5ce75`。本文只列删除项；当前保留的能力与对外请求说明见 [README.md](README.md) 和 [NOTICE.md](NOTICE.md)。
 
 ## 一、平台账号登录
 
 - Z.ai / BigModel OAuth 登录（`bigmodel-oauth.ts`、`browser.ts`）
+- Web 端 OAuth 登录页与回调（`packages/web/src/auth/`）
 - CLI 设备码（device flow）登录：`login` 命令、登录轮询与中止、TUI 登录态（`cli-oauth.ts`、`login-command.ts`、`auth-login*.ts`、`login-flow.ts`、`tui-auth.ts`、`tui-login-state.ts`）
 - zhipu-account Provider 账号鉴权运行时（`standalone-account-provider-runtime.ts`）
 - 启动登录门控：桌面端不再要求登录，直接进入工作台
@@ -12,12 +13,15 @@
 
 ## 二、zcode.z.ai 平台运行时调用
 
-- 客户端配置与场景（client scenes）在线拉取
+- 客户端配置与场景（client scenes）在线拉取（含下发的自动化模板目录）
+- 单功能灰度下发（`singleFeatureRollout.ts`、`desktopContextPromptRollout.ts`）
 - 官方 Coding Plan 网关改写（`official-coding-plan-gateway.ts`）
 - 用量 / 订阅：Coding Plan 用量图表、Start Plan 余额与配额卡片、配额重置 store、套餐商品拉取
-- 会话分享：分享确认 / 选择面板、分享附件服务、分享预检指纹
+- 本地应用使用统计设置分区：App Usage 面板、热力图 / 趋势图与 `usageStats` 聚合服务
+- 会话分享：分享确认 / 选择面板、分享附件服务、分享预检指纹、Web 端落地页与预览（`packages/web/src/share/`）
 - 反馈工单、飞书反馈表单与社区链接跳转
 - 闲时任务（off-peak）：工具、协议端口、失败重试策略与全部设置界面
+- 插件商店官方市场在线自动刷新（`officialMarketplaceAutoRefresh.ts`），目录改为构建期内置离线清单
 - 官方 MCP 凭据下发
 
 ## 三、自动更新链路
@@ -43,6 +47,11 @@
 
 - 移除依赖：`@arms/rum-electron`、`electron-updater`、OpenTelemetry API 与 OTLP 导出器
 - 重新生成 `THIRD-PARTY-NOTICES.md` 与第三方清单，移除上述组件的声明条目
+
+## 七、插件商店后续清理
+
+- 远端排序下发（`client/configs`、`pluginStoreOrder`），改为本地默认排序（`dd04568`）
+- 14 个官方插件下线，移除资源与清单条目（`5879dd4`）：assess-credit、finance-search、find-clients、hexin、model-deals、pick-funds、read-macro、run-fpa、tianyancha、vet-companies、video-agent-kit、watch-positions、wind、write-research
 
 ## 保留说明
 
