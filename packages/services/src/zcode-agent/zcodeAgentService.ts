@@ -89,6 +89,8 @@ import {
   type ZCodeAutomation,
   type ZCodeAutomationRun,
   zcodeWorkspaceUpdateDynamicWorkflowPolicyResultSchema,
+  createDynamicWorkflowClientConfig,
+  DEFAULT_DYNAMIC_WORKFLOW_MODE,
   type DynamicWorkflowClientConfig,
   type AgentLaneResourceSample,
   type ProcessResourceCliLane,
@@ -966,8 +968,8 @@ export function createZCodeAgentService(
   const activeClientsByWorkspaceKey = new Map<string, ActiveWorkspaceClient>();
   const interactionPreferenceSyncByWorkspaceKey = new Map<string, Promise<void>>();
   let latestAppRuntimePreferences: ZCodeAgentAppRuntimePreferences | undefined;
-  /** 动态工作流灰度门的进程内单次判定；见 resolveDynamicWorkflowGate 的注释。 */
-  let dynamicWorkflowGate: Promise<boolean> | undefined;
+  /** 动态工作流灰度快照的进程内单次判定；见 resolveDynamicWorkflowConfigSnapshot 的注释。 */
+  let dynamicWorkflowConfigSnapshot: Promise<DynamicWorkflowClientConfig> | undefined;
   const waitingWorkspaceStartups = new Map<string, WaitingWorkspaceStartup>();
   function cancelWaitingWorkspaceStartup(workspaceKey: string): void {
     const waiting = waitingWorkspaceStartups.get(workspaceKey);
@@ -2530,29 +2532,38 @@ export function createZCodeAgentService(
   }
 
   /**
-   * 动态工作流灰度门：Host 判定一次并在本
-   * 进程内固定。三点理由：
-   *   1. 同一次判定同时喂给 workspace/updateDynamicWorkflowPolicy 和 session flag，两者不会
-   *      出现"策略说开、create 说关"的裂口；
-   *   2. 判定落在 client 就绪路径上，不能每次建会话都等远端——3.12.2 已因此回归过一次；
-   *   3. 读取失败 fail-closed 且不再重试，避免离线时每条 create 都赔上一次请求超时；
-   *      服务端翻转灰度按设计在下一个 Host 进程生效（provider 侧另有 1h 快照与 forceRefresh）。
+   * 动态工作流灰度快照：Host 判定一次并在本进程内固定。三点理由：
+   *   1. 同一份快照同时喂给 workspace/updateDynamicWorkflowPolicy、session flag 与
+   *      getDynamicWorkflowClientConfig（renderer 入口），三者不会出现"界面有入口、
+   *      模型没工具"或"策略说开、create 说关"的裂口；
+   *   2. 判定落在 client 就绪路径上，不能每次建会话都等一次判定——3.12.2 已因此回归过一次；
+   *   3. 读取失败 fail-closed 且不再重试，避免离线时每条 create 都赔上一次请求超时。
+   * 去平台化后数据源是 Host 进程 env（desktop main 在 fork 前按用户设置与构建档位写定，
+   * 远端经 connect 白名单透传），进程内不可变，因此闩住即终值，无 forceRefresh 语义。
    * 与 Off-Peak 不同：远程 workspace 同样可用，所以这里不看 workspaceIdentity / remoteSessionId。
    */
-  function resolveDynamicWorkflowGate(): Promise<boolean> {
-    const resolve = options?.resolveDynamicWorkflowClientConfig;
-    if (!resolve) return Promise.resolve(false);
-    dynamicWorkflowGate ??= (async () => {
+  function resolveDynamicWorkflowConfigSnapshot(): Promise<DynamicWorkflowClientConfig> {
+    dynamicWorkflowConfigSnapshot ??= (async () => {
+      const resolve = options?.resolveDynamicWorkflowClientConfig;
+      if (!resolve)
+        return createDynamicWorkflowClientConfig(DEFAULT_DYNAMIC_WORKFLOW_MODE, "default");
       try {
-        return (await resolve())?.enabled === true;
+        return (
+          (await resolve()) ??
+          createDynamicWorkflowClientConfig(DEFAULT_DYNAMIC_WORKFLOW_MODE, "default")
+        );
       } catch (error) {
         logger.warn(undefined, "动态工作流灰度读取失败，按关闭处理", {
           errorMessage: error instanceof Error ? error.message : String(error),
         });
-        return false;
+        return createDynamicWorkflowClientConfig(DEFAULT_DYNAMIC_WORKFLOW_MODE, "default");
       }
     })();
-    return dynamicWorkflowGate;
+    return dynamicWorkflowConfigSnapshot;
+  }
+
+  function resolveDynamicWorkflowGate(): Promise<boolean> {
+    return resolveDynamicWorkflowConfigSnapshot().then((snapshot) => snapshot.enabled);
   }
 
   async function buildConversationCommandEnvelope(
@@ -2677,6 +2688,15 @@ export function createZCodeAgentService(
           }),
         ),
       );
+    },
+
+    /**
+     * 动态工作流灰度快照的 renderer 只读投影：与会话 gate 共用同一份进程内闩住的快照
+     * （见 resolveDynamicWorkflowConfigSnapshot）。forceRefresh 仅为维持 store 取数契约而
+     * 保留形参；数据源是进程 env，进程内恒等值，不存在可绕过的缓存。
+     */
+    getDynamicWorkflowClientConfig(): Promise<DynamicWorkflowClientConfig> {
+      return resolveDynamicWorkflowConfigSnapshot();
     },
 
     async getWorkspaceRuntimeIdentity(params: ZCodeAgentWorkspaceTarget) {

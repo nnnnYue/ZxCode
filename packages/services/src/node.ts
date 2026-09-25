@@ -14,6 +14,8 @@ import { getAppConfigDir as resolveAppConfigDir } from "./paths.js";
 import {
   buildLocalMediaPreviewUrl,
   isProviderProvisioningAccountCredentialKey,
+  // 别名导入：option key 与纯函数同名，字面量里直接写会让人误读成自引用。
+  resolveDynamicWorkflowClientConfig as foldDynamicWorkflowClientConfig,
   type ProviderProvisioningTrigger,
 } from "@zcode/shared";
 
@@ -1712,6 +1714,12 @@ export function createLocalServices(options: {
     ...(modelSelectionReadinessSource ? { modelSelectionReadinessSource } : {}),
     authorizeLocalMediaPreviewPath: options?.authorizeLocalMediaPreviewPath,
     commandResolver: options?.zcodeAgentCommandResolver,
+    // 动态工作流灰度：数据源是本进程 env（desktop main fork 前按用户设置与构建档位写定，
+    // 远端 server 经 connect 白名单透传得到同一档位；无 main 的 Web/server Host 读运维环境）。
+    // 远端配置来源已随去平台化删除，remote 恒 undefined；纯函数 fail-closed。
+    // 与旧 CodingPlanSubscription 装配一致：不按 serviceAuthorityMode 裁剪，desktop-attached-remote 同样可用。
+    resolveDynamicWorkflowClientConfig: () =>
+      Promise.resolve(foldDynamicWorkflowClientConfig({ remote: undefined, env: process.env })),
     presentationSurface: resolveZCodeAgentPresentationSurface({
       runtimeSurface: options?.agentRuntimeContext?.runtimeSurface,
       serviceAuthorityMode: options?.serviceAuthorityMode,

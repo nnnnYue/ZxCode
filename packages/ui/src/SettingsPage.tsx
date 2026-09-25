@@ -322,6 +322,7 @@ export function SettingsPage({
   ] = useState(true);
   const [messageStreamShowReasoning, setMessageStreamShowReasoning] = useState(true);
   const [messageStreamShowTodos, setMessageStreamShowTodos] = useState(false);
+  const [dynamicWorkflowEnabled, setDynamicWorkflowEnabled] = useState(false);
   const [toolGroupingExploreEnabled, setToolGroupingExploreEnabled] = useState(true);
   const [toolGroupingTerminalEnabled, setToolGroupingTerminalEnabled] = useState(true);
   const [toolGroupingChangesEnabled, setToolGroupingChangesEnabled] = useState(false);
@@ -372,6 +373,7 @@ export function SettingsPage({
         );
         setMessageStreamShowReasoning(settings.messageStreamShowReasoning ?? true);
         setMessageStreamShowTodos(settings.messageStreamShowTodos ?? false);
+        setDynamicWorkflowEnabled(settings.dynamicWorkflowEnabled ?? false);
         setToolGroupingExploreEnabled(settings.toolGroupingExploreEnabled ?? true);
         setToolGroupingTerminalEnabled(settings.toolGroupingTerminalEnabled ?? true);
         setToolGroupingChangesEnabled(settings.toolGroupingChangesEnabled ?? false);
@@ -405,6 +407,7 @@ export function SettingsPage({
     }
     setMessageStreamShowReasoning(sharedSettings.messageStreamShowReasoning ?? true);
     setMessageStreamShowTodos(sharedSettings.messageStreamShowTodos ?? false);
+    setDynamicWorkflowEnabled(sharedSettings.dynamicWorkflowEnabled ?? false);
     setToolGroupingExploreEnabled(sharedSettings.toolGroupingExploreEnabled ?? true);
     setToolGroupingTerminalEnabled(sharedSettings.toolGroupingTerminalEnabled ?? true);
     setToolGroupingChangesEnabled(sharedSettings.toolGroupingChangesEnabled ?? false);
@@ -733,6 +736,25 @@ export function SettingsPage({
       setMessageStreamShowReasoning(enabled);
     },
     [updateSharedSettings],
+  );
+  const handleDynamicWorkflowEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.desktop",
+        action: "toggle_dynamic_workflow",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ dynamicWorkflowEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+          requiresRestart: true,
+        },
+      });
+      setDynamicWorkflowEnabled(enabled);
+      // 折算发生在 main fork Host 时（buildHostProcessEnv），已运行 Host 不热切换，重启后生效。
+      toast(intl.formatMessage({ id: "settings.dynamicWorkflowSavedHint" }));
+    },
+    [updateSharedSettings, intl],
   );
   const handleMessageStreamShowTodosChange = useCallback(
     async (enabled: boolean) => {
@@ -1247,6 +1269,7 @@ export function SettingsPage({
                             taskAutoArchiveOlderThanDays={taskAutoArchiveOlderThanDays}
                             messageStreamShowReasoning={messageStreamShowReasoning}
                             messageStreamShowTodos={messageStreamShowTodos}
+                            dynamicWorkflowEnabled={dynamicWorkflowEnabled}
                             toolGroupingExploreEnabled={toolGroupingExploreEnabled}
                             toolGroupingTerminalEnabled={toolGroupingTerminalEnabled}
                             toolGroupingChangesEnabled={toolGroupingChangesEnabled}
@@ -1283,6 +1306,7 @@ export function SettingsPage({
                             onMessageStreamShowReasoningChange={
                               handleMessageStreamShowReasoningChange
                             }
+                            onDynamicWorkflowEnabledChange={handleDynamicWorkflowEnabledChange}
                             onMessageStreamShowTodosChange={handleMessageStreamShowTodosChange}
                             onToolGroupingExploreEnabledChange={
                               handleToolGroupingExploreEnabledChange

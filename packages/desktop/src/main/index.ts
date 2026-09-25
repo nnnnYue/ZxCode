@@ -143,9 +143,7 @@ import {
 } from "./desktopDeepLinkUrl.js";
 import { createRemoteWorkspaceSessionManager } from "./desktopRemoteSessions.js";
 import { resolveCanonicalWslTarget } from "./desktopWslTargetResolver.js";
-import {
-  setBrowserUseGuestWebContentsIdsProvider,
-} from "./resourceManagerWindow.js";
+import { setBrowserUseGuestWebContentsIdsProvider } from "./resourceManagerWindow.js";
 import { registerPlatformIpcHandlers } from "./desktopMainIpcPlatform.js";
 import { registerRemoteIpcHandlers } from "./desktopMainIpcRemote.js";
 import { applyDesktopChromiumNetworkPolicies } from "./desktopNetworkPolicy.js";
@@ -204,6 +202,10 @@ let closeToTrayOnWindows = true;
 // powerSaveBlocker("prevent-app-suspension")，阻止系统闲置休眠（防不了合盖/手动睡眠）。
 // 不再绑定闲时任务活跃计数——设置页「常规」与 Automations 入口镜像同一配置。
 let keepAwakeWhileRunning = false;
+// 动态工作流（实验功能）用户设置的 main 内存镜像：bootstrap 读取、SyncAppSettings 更新。
+// 只在 fork Host / scheduler 时按构建档位折算进 env（见 buildHostProcessEnv），
+// 不参与任何运行时裁决——已运行进程维持旧档位，重启后全局一致。
+let dynamicWorkflowUserEnabled = false;
 let powerSaveBlockerId: number | null = null;
 function reconcileKeepAwakeBlocker(): void {
   const shouldBlock = keepAwakeWhileRunning;
@@ -731,6 +733,11 @@ function syncImmediateAppSettings(patch: Partial<AppSettings>) {
     reconcileKeepAwakeBlocker();
   }
 
+  if (typeof patch.dynamicWorkflowEnabled === "boolean") {
+    // 只更新内存镜像，供后续 fork 的 Host 读到新档位；已运行 Host 不热切换（spec 生效时机）。
+    dynamicWorkflowUserEnabled = patch.dynamicWorkflowEnabled;
+  }
+
   if (patch.shortcutBindings !== undefined) {
     // 快捷键改绑：
     // 落盘已完成（useSettings.update 先 await settingService.update 再走本通道），
@@ -1072,6 +1079,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         },
         {
           hostProcessLocalEnv,
+          resolveDynamicWorkflowUserEnabled: () => dynamicWorkflowUserEnabled,
           logger,
           broadcastHub,
           taskRealtimeBus,
@@ -1285,6 +1293,7 @@ app.whenReady().then(async () => {
     }
     closeToTrayOnWindows = bootstrapSettings.closeToTrayOnWindows ?? true;
     keepAwakeWhileRunning = bootstrapSettings.keepAwakeWhileRunning ?? false;
+    dynamicWorkflowUserEnabled = bootstrapSettings.dynamicWorkflowEnabled ?? false;
     currentDesktopZoomLevel = clampDesktopZoomLevel(bootstrapSettings.desktopZoomLevel ?? 0);
     currentDesktopWindowSize = bootstrapSettings.desktopWindowSize;
     // 全局 keep-awake：启动时若设置已开，立刻持有 powerSaveBlocker，不必等设置变更事件。
@@ -1304,6 +1313,7 @@ app.whenReady().then(async () => {
     try {
       cronScheduler = spawnCronScheduler({
         hostProcessLocalEnv,
+        resolveDynamicWorkflowUserEnabled: () => dynamicWorkflowUserEnabled,
         logger,
         resolveDispatchHost: resolveCronDispatchHost,
       });

@@ -129,6 +129,26 @@ nodes:
     codeSeeds:
       - file: packages/services/src/session/automationRepo.ts
         symbol: AutomationRepo
+  - id: capability.dynamic-workflow
+    kind: capability
+    label: Dynamic workflows (experimental)
+    aliases:
+      - dynamic workflow
+      - workflow tab
+      - 工作流
+      - 动态工作流
+      - 工作流实验开关
+    codeSeeds:
+      - file: packages/shared/src/dynamic-workflow-feature.ts
+        symbol: resolveDynamicWorkflowClientConfig
+      - file: packages/desktop/src/main/desktopDynamicWorkflowTier.ts
+        symbol: resolveDynamicWorkflowModeHostEnv
+  - id: state.dynamic-workflow-availability
+    kind: state-owner
+    label: Dynamic workflow availability snapshot (renderer)
+    codeSeeds:
+      - symbol: useDynamicWorkflowAvailabilityStore
+        file: packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
   - id: capability.subagents
     kind: capability
     label: Subagents
@@ -598,3 +618,13 @@ edges:
     type: emits-model-selection-for
     rank: must-inspect
     condition: Applied runtime model selection is projected through ModelSelected events.
+  - from: capability.dynamic-workflow
+    to: state.dynamic-workflow-availability
+    type: delivers-snapshot-and-deltas-to
+    rank: must-inspect
+    condition:
+      Host latches one snapshot from ZXCODE_DYNAMIC_WORKFLOW_MODE (folded by buildHostProcessEnv
+      from AppSettings.dynamicWorkflowEnabled and the build tier); the same snapshot feeds the
+      session tool policy (workspace/updateDynamicWorkflowPolicy) and the renderer store —
+      the UI entry and the model tool face must never diverge. Toggles take effect on the next
+      Host process (see specs/dynamic-workflow-setting-toggle.md).

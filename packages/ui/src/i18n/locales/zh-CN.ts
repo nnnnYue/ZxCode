@@ -1741,6 +1741,10 @@ const zhCN: Record<string, string> = {
     "关闭后可规避部分显卡或驱动导致的白屏、闪退、渲染异常。修改后需重启应用生效。",
   "settings.desktopChromiumHardwareAccelerationSavedHint":
     "Chrome 硬件加速设置已保存，重启应用后生效",
+  "settings.dynamicWorkflow": "工作流（实验）",
+  "settings.dynamicWorkflowDescription":
+    "在自动化页启用「自动化 / 工作流」切换，并允许会话创建动态工作流。重启应用后生效。",
+  "settings.dynamicWorkflowSavedHint": "工作流设置已保存，重启应用后生效",
   "settings.notification": "任务通知",
   "settings.notificationDescription": "任务完成、失败或需要确认时发送桌面通知。",
   "settings.notificationSound": "通知声音",

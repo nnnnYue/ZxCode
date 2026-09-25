@@ -74,6 +74,7 @@ export function GeneralSectionContent({
   taskAutoArchiveOlderThanDays,
   messageStreamShowReasoning,
   messageStreamShowTodos,
+  dynamicWorkflowEnabled = false,
   toolGroupingExploreEnabled,
   toolGroupingTerminalEnabled,
   toolGroupingChangesEnabled,
@@ -94,6 +95,7 @@ export function GeneralSectionContent({
   onCloseToTrayOnWindowsChange,
   onKeepAwakeWhileRunningChange = async () => {},
   onDesktopChromiumHardwareAccelerationChange = async () => {},
+  onDynamicWorkflowEnabledChange = async () => {},
   onMessageStreamShowReasoningChange,
   onMessageStreamShowTodosChange,
   onToolGroupingExploreEnabledChange,
@@ -133,6 +135,7 @@ export function GeneralSectionContent({
   taskAutoArchiveOlderThanDays: number;
   messageStreamShowReasoning: boolean;
   messageStreamShowTodos: boolean;
+  dynamicWorkflowEnabled?: boolean;
   toolGroupingExploreEnabled: boolean;
   toolGroupingTerminalEnabled: boolean;
   toolGroupingChangesEnabled: boolean;
@@ -153,6 +156,7 @@ export function GeneralSectionContent({
   onCloseToTrayOnWindowsChange: (enabled: boolean) => Promise<void>;
   onKeepAwakeWhileRunningChange?: (enabled: boolean) => Promise<void>;
   onDesktopChromiumHardwareAccelerationChange?: (enabled: boolean) => Promise<void>;
+  onDynamicWorkflowEnabledChange?: (enabled: boolean) => Promise<void>;
   onMessageStreamShowReasoningChange: (enabled: boolean) => Promise<void>;
   onMessageStreamShowTodosChange: (enabled: boolean) => Promise<void>;
   onToolGroupingExploreEnabledChange: (enabled: boolean) => Promise<void>;
@@ -562,6 +566,21 @@ export function GeneralSectionContent({
                   checked={desktopChromiumHardwareAccelerationEnabled}
                   onCheckedChange={(checked) => {
                     void onDesktopChromiumHardwareAccelerationChange(checked);
+                  }}
+                />
+              }
+            />
+            <SettingsRow
+              label={intl.formatMessage({ id: "settings.dynamicWorkflow" })}
+              description={intl.formatMessage({
+                id: "settings.dynamicWorkflowDescription",
+              })}
+              control={
+                <Switch
+                  aria-label={intl.formatMessage({ id: "settings.dynamicWorkflow" })}
+                  checked={dynamicWorkflowEnabled}
+                  onCheckedChange={(checked) => {
+                    void onDynamicWorkflowEnabledChange(checked);
                   }}
                 />
               }

@@ -39,6 +39,7 @@ import { useRemoteWorkspaceHistory } from "@/root/useRemoteWorkspaceHistory.js";
 import { useRemoteWorkspaceTabLifecycle } from "@/root/useRemoteWorkspaceTabLifecycle.js";
 import { useRootProviderStateRefresh } from "@/root/useRootProviderStateRefresh.js";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
+import { useDynamicWorkflowAvailabilityLoader } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { useRootProviderSettingsSnapshot } from "@/root/useRootProviderSettingsSnapshot.js";
 import { useDesktopNativeThemeSync } from "@/root/useDesktopNativeThemeSync.js";
 import { useRootPlatformEffects } from "@/root/useRootPlatformEffects.js";
@@ -137,6 +138,9 @@ function RootInner({
   const { intl, locale } = useZCodeIntl();
   const theme = useZCodeStore((state) => state.theme);
   const { settings: appSettings, refresh: refreshAppSettings } = useSettings();
+  // 动态工作流灰度快照的 app 级唯一取数：自动化页与 run 面板只读
+  // useDynamicWorkflowAvailability，不各自再发（store 注释「唯一 owner」）。
+  useDynamicWorkflowAvailabilityLoader(services.zcodeAgentService);
   const rootModelSelectionRead = useModelSelectionServiceView(services.modelSelectionService);
   const rootModelSelectionErrorNode =
     rootModelSelectionRead.state.status === "error" ? (

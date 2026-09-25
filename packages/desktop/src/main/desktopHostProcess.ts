@@ -143,6 +143,8 @@ export function spawnHostProcess(
   initMessage: HostInitMessage,
   dependencies: {
     hostProcessLocalEnv: Record<string, string>;
+    /** 读当前「工作流（实验）」用户设置；用 getter 而非快照，保证晚开的窗口拿到最新值。 */
+    resolveDynamicWorkflowUserEnabled: () => boolean;
     logger: {
       info: (...args: unknown[]) => void;
       warn: (...args: unknown[]) => void;
@@ -232,7 +234,10 @@ export function spawnHostProcess(
     serviceName: formatZCodeHostProcessName(label),
     execArgv,
     env: {
-      ...buildHostProcessEnv(dependencies.hostProcessLocalEnv),
+      ...buildHostProcessEnv(
+        dependencies.hostProcessLocalEnv,
+        dependencies.resolveDynamicWorkflowUserEnabled(),
+      ),
       ...buildHostE2ECoverageEnv(),
       ZXCODE_PROCESS_LABEL: label,
       // macOS-only: the Computer Use Helper launcher runs inside this forked host utilityProcess, whose
@@ -443,7 +448,6 @@ export function spawnHostProcess(
       });
       return;
     }
-
 
     if (result.data.type === HostResponseTypes.BotRemoteWorkspaceReconnectRequest) {
       const request = result.data;

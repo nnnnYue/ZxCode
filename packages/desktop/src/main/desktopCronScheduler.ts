@@ -22,6 +22,8 @@ export interface CronRunResultPayload {
 
 interface CronSchedulerDeps {
   hostProcessLocalEnv: Record<string, string>;
+  /** 读当前「工作流（实验）」用户设置，fork scheduler 进程时按构建档位折算 env。 */
+  resolveDynamicWorkflowUserEnabled: () => boolean;
   logger: {
     info: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
@@ -47,7 +49,7 @@ export function spawnCronScheduler(deps: CronSchedulerDeps): CronSchedulerHandle
     serviceName: "zcode-cron-scheduler",
     execArgv: ["--no-warnings"],
     env: {
-      ...buildHostProcessEnv(deps.hostProcessLocalEnv),
+      ...buildHostProcessEnv(deps.hostProcessLocalEnv, deps.resolveDynamicWorkflowUserEnabled()),
       ZXCODE_PROCESS_LABEL: "scheduler",
     },
   });

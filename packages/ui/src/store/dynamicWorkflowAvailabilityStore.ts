@@ -3,10 +3,12 @@ import type { DynamicWorkflowClientConfig } from "@zcode/shared";
 import { logger } from "@/logger.js";
 
 /**
- * 去平台化：CodingPlanSubscription 服务已删除，动态工作流灰度没有远端配置来源。
- * 这里保留最小结构类型以维持 store 的取数契约；当前装配不再提供实现，入口保持关闭。
+ * 去平台化：CodingPlanSubscription 服务已删除，动态工作流灰度改由 Host 进程 env 折算
+ * （desktop main 按用户设置与构建档位写定，见 specs/dynamic-workflow-setting-toggle.md）。
+ * 现由 IZCodeAgentService.getDynamicWorkflowClientConfig 提供实现；本接口保留结构契约，
+ * 不绑定具体服务类型。
  */
-interface DynamicWorkflowConfigSource {
+export interface DynamicWorkflowConfigSource {
   getDynamicWorkflowClientConfig(options: {
     forceRefresh?: boolean;
   }): Promise<DynamicWorkflowClientConfig>;
@@ -19,9 +21,9 @@ interface DynamicWorkflowConfigSource {
 // Host 是唯一的决策者，这里只缓存它给出的那一份 `{ mode, enabled, source }`：
 //   - 一个 app 会话只取一次。发请求的是 Root 里的 loader（唯一 owner），
 //     自动化页与 run 面板只读，不各自再发一次；
-//   - 不带 forceRefresh。Host 用同一份 1h 快照推导发给 CLI 的工具策略，
+//   - 不带 forceRefresh。Host 把同一份进程内闩住的快照喂给会话工具策略，
 //     renderer 单独 force 一次会让「界面有入口 / 模型没工具」这类分歧成为可能；
-//     要强制重取走 refresh()；
+//     要强制重取走 refresh()（本地 env 源下无缓存可绕，恒等值，仅为契约保留）；
 //   - 请求失败按 disabled 处理（fail-closed，与 resolveDynamicWorkflowClientConfig 同一裁决），
 //     但**不记住失败**：换一份 service 实例会重试。手机 `/remote` 在工作区桥接前拿到的是
 //     unsupported 代理，必然抛错，桥接完成后 accessor 会换一份，那一次必须能纠正回来。

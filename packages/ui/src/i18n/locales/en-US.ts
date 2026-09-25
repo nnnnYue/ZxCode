@@ -1847,6 +1847,10 @@ const enUS: Record<string, string> = {
     "Turn this off to work around blank windows, crashes, or rendering issues caused by some GPUs or drivers. Restart the app to take effect.",
   "settings.desktopChromiumHardwareAccelerationSavedHint":
     "Chrome hardware acceleration setting saved. Restart the app to take effect.",
+  "settings.dynamicWorkflow": "Workflows (experimental)",
+  "settings.dynamicWorkflowDescription":
+    'Enable the "Automations / Workflows" switch on the automations page and allow sessions to create dynamic workflows. Restart the app to take effect.',
+  "settings.dynamicWorkflowSavedHint": "Workflow setting saved. Restart the app to take effect.",
   "settings.notification": "Task notifications",
   "settings.notificationDescription":
     "Send desktop notifications when a task completes, fails, or needs approval.",

@@ -2,6 +2,7 @@ import type { BackgroundBashOutputResult, SessionDebugSnapshot } from "@zcode/sh
 /* eslint-disable max-lines -- ZxCode agent service 接口集中声明 protocol/session/workspace 方法，拆分会增加 service descriptor 迁移成本。 */
 import type { Event, IDisposable } from "@zcode/rpc";
 import { ServiceChannels } from "@zcode/shared";
+import type { DynamicWorkflowClientConfig } from "@zcode/shared";
 import type { AppUsageRange, AppUsageSnapshot, ZCodeTaskTokenUsageResult } from "@zcode/shared";
 import type { ZCodeAutomation, ZCodeAutomationRun } from "@zcode/shared";
 import type {
@@ -580,6 +581,14 @@ export interface IZCodeAgentService {
    * 同步 App 全局运行时偏好到所有已活动 workspace；不得为此启动空闲 Agent。
    */
   syncAppRuntimePreferences(preferences: ZCodeAgentAppRuntimePreferences): Promise<void>;
+  /**
+   * 动态工作流灰度快照（Host 唯一裁决的只读投影），与会话 gate 同源；renderer
+   * 自动化页 / run 面板入口据此渲染。进程内闩住：forceRefresh 形参仅为兼容
+   * UI store 取数契约保留，同进程内恒等值。见 specs/dynamic-workflow-setting-toggle.md。
+   */
+  getDynamicWorkflowClientConfig(options?: {
+    forceRefresh?: boolean;
+  }): Promise<DynamicWorkflowClientConfig>;
   getWorkspaceRuntimeIdentity(
     params: ZCodeAgentWorkspaceTarget,
   ): Promise<ZCodeAgentWorkspaceRuntimeIdentity>;
