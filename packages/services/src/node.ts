@@ -116,6 +116,7 @@ export type {
   CuaHelperInstaller,
   CuaHelperInstallerOptions,
 } from "./cua-permission-broker/index.js";
+export { createBotsService } from "./bots/botsService.js";
 export { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 export { ensureDeviceMid } from "./device/deviceMid.js";
 export type { EnsureDeviceMidOptions } from "./device/deviceMid.js";
@@ -228,6 +229,7 @@ import { IZCodeTaskService } from "./session/zcodeTaskService.js";
 import { IZCodeAgentService } from "./zcode-agent/zcodeAgent.js";
 import type { CuaOperationStateReporter } from "./zcode-agent/cuaOperationTurnTracker.js";
 import { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
+import { IBotsService } from "./bots/bots.js";
 import { IFileWatcherService } from "./fileWatcher/fileWatcher.js";
 import { ISkillsService } from "./skills/skills.js";
 import { ISkillSyncService } from "./skill-sync/skillSync.js";
@@ -261,6 +263,8 @@ import { createZCodeTaskServiceAdapter } from "./zcode-agent/zcodeTaskServiceAda
 import { createZCodeSessionService } from "./zcode-session/zcodeSessionService.js";
 import { createZCodeTaskIndexSyncer } from "./zcode-agent/zcodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
+import { createBotsService } from "./bots/botsService.js";
+import { createBotRemoteWorkspaceService } from "./bots/botRemoteWorkspaceBridge.js";
 import type { SessionMessageSendRequested } from "#src/session/sessionMailbox.js";
 import { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 import { readLegacyZCodeConfigProviders } from "./model-provider/legacyZCodeConfigProviderReader.js";
@@ -1229,8 +1233,12 @@ export function createLocalServices(options: {
     });
   const systemService = createSystemService();
   // 去平台化：登录态删除后 onboarding 完成记录不再有 userId 来源，恒为 null。
+  // onboarding 资格与任务列表共用同一份全局 tasks-index；repo 懒加载数据库，提前构造不会
+  // 增加启动 I/O，后续 session syncer 也继续复用这一实例。
+  const taskIndexRepo = new TaskIndexRepo();
   const onboardingRecordService = createOnboardingRecordService({
     loadUserId: async () => null,
+    hasExistingLocalTask: async () => (await taskIndexRepo.listTaskMetas({})).length > 0,
   });
   const providerConfigLog = createServiceLogger("provider-config");
   const providerConfigRuntime = createProviderConfigRuntime({
@@ -1858,7 +1866,6 @@ export function createLocalServices(options: {
   // mapServiceEvent 路径，导致 task_complete 永远不会写回 sqlite，侧边栏 spinner 不停。
   // 在 services 层装配一个共享的 taskIndexRepo + syncer，session 任意入口都会唤醒
   // shadow 订阅，把 runtime 终态收敛进 sqlite。
-  const taskIndexRepo = new TaskIndexRepo();
   const zcodeTaskIndexSyncer = createZCodeTaskIndexSyncer({
     agentService: zcodeAgentService,
     taskIndexRepo,
@@ -1917,6 +1924,11 @@ export function createLocalServices(options: {
     settingService,
     cuaProductMcpServerResolver,
   });
+  const botRemoteWorkspaceService = createBotRemoteWorkspaceService({
+    parentPort: options?.parentPort,
+    settingService,
+    credentialService,
+  });
   const fileService = createFileService({
     workspaceFileSearchFilter: options?.workspaceFileSearchFilter,
   });
@@ -1944,6 +1956,20 @@ export function createLocalServices(options: {
     .register(IZCodeSessionService, zcodeSessionService)
     .register(ICuaPermissionService, cuaPermissionService)
     .register(ICuaPipSessionService, cuaPipSessionService)
+    .register(
+      IBotsService,
+      createBotsService({
+        credentialService,
+        zcodeTaskService,
+        broadcastService,
+        settingService,
+        modelSelectionService: providerRuntime.modelSelection,
+        remoteWorkspaceService: botRemoteWorkspaceService,
+        // 远端与本地 Bot 都读取所属 Environment 的 Model Selection View。
+        // 远端启动期不再轮询旧 Preset，避免重新制造一套模型候选事实。
+        runStartupBackgroundTasks: !isDesktopAttachedRemote,
+      }),
+    )
     .register(IFileWatcherService, createFileWatcherService())
     .register(ISkillsService, skillsService)
     .register(ISkillSyncService, createSkillSyncService())
@@ -2040,6 +2066,7 @@ export function disposeServiceResources(services: ServiceCollection): void {
     services.getOptional(IZCodeTaskService),
     services.getOptional(IZCodeAgentService),
     services.getOptional(IZCodeSessionService),
+    services.getOptional(IBotsService),
     services.getOptional(IFileWatcherService),
   ].filter((service) => service !== undefined);
 
@@ -2072,6 +2099,7 @@ export async function disposeServiceResourcesAndWait(services: ServiceCollection
     services.getOptional(IZCodeTaskService),
     services.getOptional(IZCodeAgentService),
     services.getOptional(IZCodeSessionService),
+    services.getOptional(IBotsService),
     services.getOptional(IFileWatcherService),
   ].filter((service) => service !== undefined);
 

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "5ebb91fa5ec66e48cbb0d3e92647d203d4f51a7ccc85c5948484e2250ff93a67",
+  "noticesSha256": "79dadbdaade1850daa6e433d8061599e648823303c39542d00f1aec235e71650",
   "inputs": {
     ".agents/skills/agent-browser/references/authentication.md": "fa3533cf0b9702a746578ab6932546e1a9080a711cf7be9f999fb685f4d44a74",
     ".agents/skills/agent-browser/references/commands.md": "5dcf063a83d06674dbdaae646d410f0330301d68594a211abd628902fa9b4979",
@@ -255,9 +255,9 @@
     "apps/zcode-cli/packages/zcode-guide-plugin/package.json": "443120bf58202f03e7d93be17d700d413c51239e6f2a596981935e149261624c",
     "apps/zcode-cli/tools/prompt-trajectory/package.json": "7f161fc87f36691f01eb8c2034bd89cf28107da36db02bc20e76f059edd36af6",
     "apps/zcode-cli/tools/typescript/package.json": "23d7e50d2089d205ce3022c5bafbb6b3e31d000e41ac678a5934e0b72627cf3a",
-    "package.json": "dbf2eab097fffbcf62a1d36881a7827318c557b1aab9f0d0004633607956ef9f",
+    "package.json": "17fb06ca2a7aab9dcfe0bfad39eeef4a1492deb6977b9661454b2537cf7545b2",
     "packages/client/package.json": "e76f441549130dc3e5e68072a36b6cb9044e19a6625f1e813f19a4def2b1b689",
-    "packages/desktop/package.json": "5b66a443e6fe6ff7de935a3bc8345ed4c6db0425383b1637e69aac95109ab4bf",
+    "packages/desktop/package.json": "473eeded2fa07ec83d1fc7246adb548e84fd0cdbcae6da43356ff8518ac301f0",
     "packages/desktop/src/renderer/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
     "packages/desktop/src/renderer/public/material-icons/abap.svg": "1335bd7eb9a0ed49deb622330d680c2e97731726a7a5eee8e4f46dc1e5db4de4",
     "packages/desktop/src/renderer/public/material-icons/abc.svg": "d1a68020e8f020ef29dca5f94dc8613b7ae8fb5b212d8b1cc23b0f975ac7acda",
@@ -1431,7 +1431,7 @@
     "packages/rpc/src/remote.ts": "a11e072d5df7e1c1ce64814a68f72afc081246b364f0da409b5c9d22bc815957",
     "packages/rpc/src/serialization.ts": "e949418e1cd17cc863c147fc8d1ff15237e1b5f0cb8e3344fd2a9ccfae9d54e7",
     "packages/server/package.json": "a461c6ebe7ecd46c1b8bcd77087bc19d18a088f5f12d026c89329de6b3337dfa",
-    "packages/services/package.json": "8d7757a8d8328ef827925cb730c28ce21fed20e27ddd83f2aae7b447229bd17a",
+    "packages/services/package.json": "71fef5a81918526e8cdda4d3309ef3528353d0a526a9418c306ec9f95641ad50",
     "packages/shared/package.json": "6fc3dcb4042b5c7104df9b9fed949e81459daeb3c10b8e92ff138e519a2a300b",
     "packages/shared/src/zcode-protocol-v4/wire-codec.ts": "ac2494a3acc795c809c94ee9393f50271a9c2a0fd33813459e5ab93842ceef75",
     "packages/ui/package.json": "67e6395df986e7fb604aad20183816a54fdc40b8e93a072fb0f5dd6b2c03e973",
@@ -1527,7 +1527,7 @@
     "packages/ui/src/components/ui/tooltip.tsx": "301dbf3a6f8b1bc496f9bdc6fbc5fe6202ed373182897f39cd1ecd19b00fdfbe",
     "packages/ui/src/components/ui/usePdfZoomOverlay.ts": "c8c91b003ce2fded32c7a2369dc6eac43aa4b9dc9c830a0f5ceccb21d366b610",
     "packages/ui/src/components/ui/ZCodeAboutLogo.tsx": "8989ee68418e043dbdf5170ab8124c0db48fb6e85270941f1e26f57b0fb81859",
-    "packages/ui/src/lib/builtinSkillI18n.ts": "feb4fc0ce1e7c17fbcddfff1785457e5c04977f130fc699fbeeaf7ec58bac9a7",
+    "packages/ui/src/lib/builtinSkillI18n.ts": "80f515907920a3aa93294282b6eeb72184678ecb8f5c2ba4a02f896b733ec01c",
     "packages/ui/src/styles.css": "e9b3e3bed0733adbdfaf72ec8d92f24ead6b811f23ca6b4df01851c447c465f8",
     "packages/web/package.json": "0810e762bf1d6641d5f73ab642b81953e183e53fd963a1d405ffc65b206e5ce6",
     "packages/web/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
@@ -2680,7 +2680,7 @@
     "packages/zcode-server-cli/package.json": "70f1fb0a5f1a20c88bd3ddb28f30b3e0d30a379a1ab7cb717c4c578e8e4592e0",
     "patches/@ai-sdk__anthropic@3.0.81.patch": "d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18",
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
-    "pnpm-lock.yaml": "0b776129f4b3b1dde2cd6bfed8845f0c42f5f83797a20c8b97500fb26f60c5bc",
+    "pnpm-lock.yaml": "0b6f595326b86a0705ff8bd32ea583f7e407b3ebc5a1426f897e84652e644461",
     "pnpm-workspace.yaml": "f18a18233e82cda1dc40be61bf2ad1bc99de25de63ad0be64bc652761a638372",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "scripts/native-search-tools-config.mjs": "281d368464f61363fa2d8ab74f416962fe730dd0a0572db5564475f876bb65aa",
@@ -4589,6 +4589,36 @@
       ]
     },
     {
+      "name": "@larksuiteoapi/node-sdk",
+      "version": "1.61.1",
+      "license": "MIT",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344"
+        }
+      ]
+    },
+    {
+      "name": "@larksuiteoapi/node-sdk",
+      "version": "1.64.0",
+      "license": "MIT",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344"
+        }
+      ]
+    },
+    {
       "name": "@lexical/clipboard",
       "version": "0.42.0",
       "license": "MIT",
@@ -4854,9 +4884,9 @@
     },
     {
       "name": "@lezer/common",
-      "version": "1.5.2",
+      "version": "1.5.3",
       "license": "MIT",
-      "repository": "https://github.com/lezer-parser/common.git",
+      "repository": "git+https://code.haverbeke.berlin/lezer/common.git",
       "notices": [
         {
           "member": "LICENSE",
@@ -4890,9 +4920,9 @@
     },
     {
       "name": "@lezer/highlight",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "license": "MIT",
-      "repository": "https://github.com/lezer-parser/highlight.git",
+      "repository": "git+https://code.haverbeke.berlin/lezer/highlight.git",
       "notices": [
         {
           "member": "LICENSE",
@@ -5544,6 +5574,126 @@
         {
           "member": "README.md (license section)",
           "sha256": "1a70b7436b85394d20ba1a0b5574002fc33b4619b9d1b62388ef74d79f9cf0de"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/aspromise",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/base64",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/codegen",
+      "version": "2.0.4",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/eventemitter",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/fetch",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/float",
+      "version": "1.0.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/inquire",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/path",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/pool",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/utf8",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
         }
       ]
     },
@@ -7932,6 +8082,22 @@
       ]
     },
     {
+      "name": "asynckit",
+      "version": "0.4.0",
+      "license": "MIT",
+      "repository": "git+https://github.com/alexindigo/asynckit.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "1953150d5d4b10c7542cee6f6e0c613b2682545233f069d75cfff1936386ce10"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "e133e504ede8af9b1ae168c212c792f38e03fbaa339510f346e21e45d0b301de"
+        }
+      ]
+    },
+    {
       "name": "await-to-js",
       "version": "3.0.0",
       "license": "MIT",
@@ -7944,6 +8110,22 @@
         {
           "member": "README.md (license section)",
           "sha256": "fd9a050fb486b88c9944eed4e7e91b9e7ad27de1e0be767309e962107969003c"
+        }
+      ]
+    },
+    {
+      "name": "axios",
+      "version": "1.13.6",
+      "license": "MIT",
+      "repository": "https://github.com/axios/axios.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "82761059eaedacb3356803aea8a170d8298609f91b14fc32ee1bfb40d690183c"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "8473eb9be53be85369a78427af60d82922bf44da8c3a16d6ebe643badd150f31"
         }
       ]
     },
@@ -8572,6 +8754,22 @@
         {
           "member": "LICENSE",
           "sha256": "c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2"
+        }
+      ]
+    },
+    {
+      "name": "combined-stream",
+      "version": "1.0.8",
+      "license": "MIT",
+      "repository": "git://github.com/felixge/node-combined-stream.git",
+      "notices": [
+        {
+          "member": "License",
+          "sha256": "47eb8ca82c798246774946d1be0f9aa08f025fa8325ced0947aeeb4c05fe5547"
+        },
+        {
+          "member": "Readme.md (license section)",
+          "sha256": "a02b2123bae911f4c7e058e96be2a9150a50e357384d4e7cf0a71c699e1398eb"
         }
       ]
     },
@@ -9632,6 +9830,22 @@
       ]
     },
     {
+      "name": "delayed-stream",
+      "version": "1.0.0",
+      "license": "MIT",
+      "repository": "git://github.com/felixge/node-delayed-stream.git",
+      "notices": [
+        {
+          "member": "License",
+          "sha256": "47eb8ca82c798246774946d1be0f9aa08f025fa8325ced0947aeeb4c05fe5547"
+        },
+        {
+          "member": "Readme.md (license section)",
+          "sha256": "a456ca0dd0e5f08f8b1c74e3f4672d84addaa8baaff2d9b30f7ad89ce18fa86c"
+        }
+      ]
+    },
+    {
       "name": "depd",
       "version": "2.0.0",
       "license": "MIT",
@@ -10108,6 +10322,18 @@
         {
           "member": "LICENSE",
           "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292"
+        }
+      ]
+    },
+    {
+      "name": "es-set-tostringtag",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "git+https://github.com/es-shims/es-set-tostringtag.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "1a3aeb1f1398bd697d57c3c585faadf59d825aca6e3162cd7eeb72ff76eb2466"
         }
       ]
     },
@@ -10596,6 +10822,38 @@
       ]
     },
     {
+      "name": "follow-redirects",
+      "version": "1.16.0",
+      "license": "MIT",
+      "repository": "git+ssh://git@github.com/follow-redirects/follow-redirects.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "bfa8a54bb952ccda79f0f1889721d108f5b605babbb2b8a3705ffb52f4132eb7"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "abd3792ba3b4f3da7f4ed431de50254c3e748bba1596bc7f36937b97767e02d2"
+        }
+      ]
+    },
+    {
+      "name": "form-data",
+      "version": "4.0.5",
+      "license": "MIT",
+      "repository": "git://github.com/form-data/form-data.git",
+      "notices": [
+        {
+          "member": "License",
+          "sha256": "e5b780d4f38d1d3328e3e53186c4e62d3fa149ea6f2bacd5de5ad0c30ac85343"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "8d4313d2ec98dee47b0c630ccfe5ca0b6e7c60e8d74cf460db5bcb271f908c14"
+        }
+      ]
+    },
+    {
       "name": "formdata-polyfill",
       "version": "4.0.10",
       "license": "MIT",
@@ -10912,6 +11170,18 @@
         {
           "member": "LICENSE",
           "sha256": "206c1adcf206dc0031b11232f5b054ec5f1662407ab1ca415247921cab2068ab"
+        }
+      ]
+    },
+    {
+      "name": "has-tostringtag",
+      "version": "1.0.2",
+      "license": "MIT",
+      "repository": "git+https://github.com/inspect-js/has-tostringtag.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "e2560e002e13281578c75c850061d9255c33d16d732939e8c2db64c2506642fa"
         }
       ]
     },
@@ -12372,6 +12642,42 @@
       ]
     },
     {
+      "name": "lodash.identity",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE.txt",
+          "sha256": "2b61a34ef17beffb1e555efa8b46110d25398d47f2e88b2cacc46f8bd382c639"
+        }
+      ]
+    },
+    {
+      "name": "lodash.merge",
+      "version": "4.6.2",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f71e8ed126b46346494aad5486874cd8f0aafe95092ed67d2e3cb6110f939abc"
+        }
+      ]
+    },
+    {
+      "name": "lodash.pickby",
+      "version": "4.6.0",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
+        }
+      ]
+    },
+    {
       "name": "log-symbols",
       "version": "6.0.0",
       "license": "MIT",
@@ -12380,6 +12686,18 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+        }
+      ]
+    },
+    {
+      "name": "long",
+      "version": "5.3.2",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/dcodeIO/long.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
         }
       ]
     },
@@ -13465,6 +13783,18 @@
     },
     {
       "name": "mime-db",
+      "version": "1.52.0",
+      "license": "MIT",
+      "repository": "jshttp/mime-db",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "cc1dfd4dafa27271e8212cd3b274eeb3f262e40a6fdab36ddc3f9696f706f58b"
+        }
+      ]
+    },
+    {
+      "name": "mime-db",
       "version": "1.54.0",
       "license": "MIT",
       "repository": "jshttp/mime-db",
@@ -13472,6 +13802,22 @@
         {
           "member": "LICENSE",
           "sha256": "cc1dfd4dafa27271e8212cd3b274eeb3f262e40a6fdab36ddc3f9696f706f58b"
+        }
+      ]
+    },
+    {
+      "name": "mime-types",
+      "version": "2.1.35",
+      "license": "MIT",
+      "repository": "jshttp/mime-types",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "71f83c4c0621102a56d9853812777b85751bce7e9726f686f5b056c1f8a4b0e6"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "0f40e7bf9319221245cc318bd5ca1bb5e077f7c839eeadbfd1d981404f65d8ea"
         }
       ]
     },
@@ -14840,6 +15186,22 @@
       ]
     },
     {
+      "name": "protobufjs",
+      "version": "7.5.5",
+      "license": "BSD-3-Clause",
+      "repository": "protobufjs/protobuf.js",
+      "notices": [
+        {
+          "member": "google/LICENSE",
+          "sha256": "4ab87e6e3c0c0b78e47c77d49ec10c048f8a519fb8062e6e3217e3e6e9b0c6e9"
+        },
+        {
+          "member": "LICENSE",
+          "sha256": "49d6a1c9a623784c61c6cb70f773f3457faceb1914a13c8560a9823b7631950c"
+        }
+      ]
+    },
+    {
       "name": "proxy-addr",
       "version": "2.0.7",
       "license": "MIT",
@@ -14864,6 +15226,18 @@
         {
           "member": "LICENSE",
           "sha256": "8d8c55319c7729d57be811c747452636688d54f19701ee0752b6b15ad3771d9a"
+        }
+      ]
+    },
+    {
+      "name": "proxy-from-env",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/Rob--W/proxy-from-env.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f55828df4b8752c48e765a806465b76a103e3cb363379c569b15a1df2ba2d79e"
         }
       ]
     },
@@ -16561,14 +16935,10 @@
     },
     {
       "name": "tinyexec",
-      "version": "1.1.1",
+      "version": "1.2.4",
       "license": "MIT",
       "repository": "git+https://github.com/tinylibs/tinyexec.git",
       "notices": [
-        {
-          "member": "dist/LICENSES.txt",
-          "sha256": "538cf6250ba4f1ecf9986515e6db7885fd8f28892ab593f4f3dfb78a5deb6159"
-        },
         {
           "member": "LICENSE",
           "sha256": "f95f668fe64081ddb4153b322e34fdd719b991285ed08177d5ad7133b7988d92"
@@ -28687,7 +29057,7 @@
       "files": [
         {
           "file": "packages/ui/src/lib/builtinSkillI18n.ts",
-          "sha256": "feb4fc0ce1e7c17fbcddfff1785457e5c04977f130fc699fbeeaf7ec58bac9a7"
+          "sha256": "80f515907920a3aa93294282b6eeb72184678ecb8f5c2ba4a02f896b733ec01c"
         },
         {
           "file": "apps/zcode-cli/packages/superpowers-plugin/LICENSE",
