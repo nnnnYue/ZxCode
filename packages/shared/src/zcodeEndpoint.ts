@@ -20,11 +20,6 @@ export function readProductEndpointEnv(): Record<string, string | undefined> {
   };
 }
 
-export interface ZCodeEndpointUrls {
-  origin: string;
-  apiBaseUrl: string;
-}
-
 export interface RuntimeZCodeEndpointEnv {
   [key: string]: string | undefined;
   ZXCODE_ENV?: string;
@@ -89,42 +84,12 @@ export function resolveRuntimeZCodeEndpointOrigin(
   });
 }
 
-export function buildRuntimeZCodeEndpointUrls(
-  env: RuntimeZCodeEndpointEnv = readProductEndpointEnv(),
-): ZCodeEndpointUrls {
-  return buildZCodeEndpointUrls(resolveRuntimeZCodeEndpointOrigin(env));
-}
-
-export function buildRuntimeZCodeApiUrl(
-  env: RuntimeZCodeEndpointEnv = readProductEndpointEnv(),
-  path: string,
-): string {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${resolveRuntimeZCodeEndpointOrigin(env)}${normalizedPath}`;
-}
-
 export function resolveBigModelApiOrigin(
   env: RuntimeBigModelApiEnv = readProductEndpointEnv(),
 ): string {
   return normalizeZCodeEndpointOrigin(
     readRuntimeEnvValue(env, "BIGMODEL_API_BASE_URL") ?? DEFAULT_BIGMODEL_API_ORIGIN,
   );
-}
-
-export function buildBigModelApiUrl(
-  env: RuntimeBigModelApiEnv = readProductEndpointEnv(),
-  path: string,
-): string {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${resolveBigModelApiOrigin(env)}${normalizedPath}`;
-}
-
-export function buildZCodeEndpointUrls(origin: string): ZCodeEndpointUrls {
-  const normalizedOrigin = normalizeZCodeEndpointOrigin(origin);
-  return {
-    origin: normalizedOrigin,
-    apiBaseUrl: `${normalizedOrigin}/api/v1`,
-  };
 }
 
 export function rewriteZCodeEndpointUrl(input: string | URL, endpointOrigin: string): string | URL {

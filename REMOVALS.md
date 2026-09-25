@@ -23,6 +23,7 @@
 - 闲时任务（off-peak）：工具、协议端口、失败重试策略与全部设置界面
 - 插件商店官方市场在线自动刷新（`officialMarketplaceAutoRefresh.ts`），目录改为构建期内置离线清单
 - 官方 MCP 凭据下发
+- 端点工具函数死链（v3.14.3 同步审计确认零调用方后清理）：`buildRuntimeZCodeEndpointUrls`、`buildRuntimeZCodeApiUrl`、`buildBigModelApiUrl`、`buildZCodeEndpointUrls` 与 `ZCodeEndpointUrls` 接口；保留环境变量解析、provider 遗留配置导入与 `rewriteZCodeEndpointUrl` 等存活链路
 
 ## 三、自动更新链路
 
