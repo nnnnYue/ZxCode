@@ -1,6 +1,6 @@
 {
   "name": "zxcode",
-  "version": "3.14.3",
+  "version": "3.14.3.1",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
