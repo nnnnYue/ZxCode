@@ -2,6 +2,7 @@
 const canonicalIds = [
   "GLM-5.3",
   "GLM-5.3-Flash",
+  "GLM-5.3-FlashX",
   "GLM-5V-Turbo",
   "GLM-5.2",
   "GLM-5.1",
