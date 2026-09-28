@@ -1,9 +1,10 @@
 import { execFile } from "node:child_process";
-import { statSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { shell } from "electron";
 import type { OpenInEditorOptions, OpenInEditorRemoteTarget } from "@zcode/shared";
 import { listWSLDistros } from "@zcode/server/remote/wsl-detect.js";
 import { getEditorDefsForCurrentPlatform, resolveEditorDefAppPath } from "./editors.js";
+import { findCustomEditor } from "./customEditors.js";
 import { logger } from "./logger.js";
 import { isDelegatedWindowsExplorerExit } from "./windowsExplorerDelegation.js";
 
@@ -302,6 +303,46 @@ async function openWindowsEditor(
   }
 }
 
+/** 用注册表里的自定义应用打开路径。用户自选应用没有 CLI/白名单语义，按平台走最通用的启动方式。 */
+async function openCustomEditor(
+  editorId: string,
+  path: string,
+  options?: OpenInEditorOptions,
+): Promise<OpenInEditorResult> {
+  const entry = findCustomEditor(editorId);
+  if (!entry) {
+    return { success: false, error: `unknown editor: ${editorId}` };
+  }
+
+  // 远程工作区路径只在远端存在，用户自选的本地应用无法消费；UI 侧已按 id 白名单过滤，
+  // 这里在打开边界再兜底一次失败关闭。
+  if (options?.remoteTarget) {
+    return { success: false, error: "custom editor does not support remote workspace" };
+  }
+
+  // 应用可能已被移动/卸载：预检给出明确错误，条目保留在列表里由用户手动删除。
+  if (!existsSync(entry.appPath)) {
+    return { success: false, error: `application not found: ${entry.appPath}` };
+  }
+
+  try {
+    if (process.platform === "win32") {
+      await execFileAsync(entry.appPath, [path]);
+    } else {
+      await execFileAsync("open", ["-a", entry.appPath, path]);
+    }
+    return { success: true };
+  } catch (error) {
+    logger.warn("[editors] 打开自定义应用失败", {
+      editorId,
+      path,
+      appPath: entry.appPath,
+      error: stringifyError(error),
+    });
+    return { success: false, error: stringifyError(error) };
+  }
+}
+
 /**
  * 用指定编辑器打开路径。
  */
@@ -312,7 +353,7 @@ export async function openInEditor(
 ): Promise<OpenInEditorResult> {
   const def = getEditorDefsForCurrentPlatform().find((editor) => editor.id === editorId);
   if (!def) {
-    return { success: false, error: `unknown editor: ${editorId}` };
+    return openCustomEditor(editorId, path, options);
   }
 
   const appPath = resolveEditorDefAppPath(def) ?? def.appPath;

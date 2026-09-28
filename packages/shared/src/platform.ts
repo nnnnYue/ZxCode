@@ -196,6 +196,15 @@ export interface EditorInfo {
   iconDataUrl: string;
 }
 
+/** 自定义打开方式条目的 id 前缀。注册表所有者是 desktop main（specs/open-with-custom-apps.md），
+ *  UI 只用该前缀区分条目来源，不持有注册表。 */
+export const CUSTOM_EDITOR_ID_PREFIX = "custom:";
+
+/** 判断一个 EditorInfo 是否为用户注册的自定义打开方式条目。 */
+export function isCustomEditorInfo(editor: EditorInfo): boolean {
+  return editor.id.startsWith(CUSTOM_EDITOR_ID_PREFIX);
+}
+
 export interface ApplicationIconInfo {
   iconDataUrl: string;
 }
@@ -909,6 +918,13 @@ export interface IPlatformService {
     path: string,
     options?: OpenInEditorOptions,
   ): Promise<{ success: boolean; error?: string }>;
+
+  /** 弹出系统对话框选择一个本地应用（macOS .app / Windows .exe）注册为自定义打开方式。
+   *  仅桌面端提供；用户取消或路径非法返回 null。 */
+  selectAndAddCustomEditor?(): Promise<EditorInfo | null>;
+
+  /** 删除一个已注册的自定义打开方式（editorId 以 "custom:" 开头）。仅桌面端提供。 */
+  removeCustomEditor?(editorId: string): Promise<{ success: boolean }>;
 
   /** 执行桌面窗口级命令（标题栏菜单、缩放、窗口控制等）。
    *  返回值直通 main 进程 handler 的 return（大多数命令无返回值；

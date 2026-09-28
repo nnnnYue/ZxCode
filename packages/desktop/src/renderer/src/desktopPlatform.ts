@@ -120,6 +120,10 @@ export function createDesktopPlatform(options: {
       window.zxcode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>
       window.zxcode.openInEditor(editorId, path, editorOptions),
+    selectAndAddCustomEditor: () =>
+      window.zxcode.selectAndAddCustomEditor?.() ?? Promise.resolve(null),
+    removeCustomEditor: (editorId) =>
+      window.zxcode.removeCustomEditor?.(editorId) ?? Promise.resolve({ success: false }),
     executeDesktopCommand: (command) => window.zxcode.executeDesktopCommand(command),
     setApplicationLocale: (locale) => window.zxcode.setApplicationLocale(locale),
     getSystemLocale: () =>

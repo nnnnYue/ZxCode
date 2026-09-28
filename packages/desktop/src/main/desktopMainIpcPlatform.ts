@@ -38,6 +38,7 @@ const mobileRelayGrantRequestSchema = z
   })
   .strict();
 import { getInstalledEditors } from "./editors.js";
+import { addCustomEditor, listCustomEditors, removeCustomEditor } from "./customEditors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
 import { exportLogs } from "./exportLogs.js";
 import { openInEditor } from "./openInEditor.js";
@@ -397,7 +398,12 @@ export function registerPlatformIpcHandlers(options: {
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     return resolveDesktopWindowChromeState(senderWindow?.isMaximized() ?? false);
   });
-  ipcMain.handle(PlatformChannels.GetInstalledEditors, () => getInstalledEditors());
+  // 自定义打开方式不进 editors.ts 的静态缓存（注册表可随时增删），在 IPC 边界现读合并；
+  // 所有 open-with 消费面（workspace 头部、文件树、任务右键）因此同步可见。
+  ipcMain.handle(PlatformChannels.GetInstalledEditors, async () => [
+    ...(await getInstalledEditors()),
+    ...listCustomEditors(),
+  ]);
   ipcMain.handle(
     PlatformChannels.GetApplicationIcon,
     (_event, request: string | ApplicationIconRequest) => getApplicationIcon(request),
@@ -413,6 +419,33 @@ export function registerPlatformIpcHandlers(options: {
     (_event, payload: { editorId: string; path: string; options?: OpenInEditorOptions }) =>
       openInEditor(payload.editorId, payload.path, payload.options),
   );
+  ipcMain.handle(PlatformChannels.SelectAndAddCustomEditor, async (event) => {
+    // 文件选择对话框必须在 main 弹出：renderer 只收注册结果，永远不向 main 传可执行路径。
+    // 挂到 sender window 保证对话框模态于发起的窗口。
+    const filters =
+      process.platform === "win32"
+        ? [{ name: "Applications", extensions: ["exe"] }]
+        : [{ name: "Applications", extensions: ["app"] }];
+    const senderWindow = BrowserWindow.fromWebContents(event.sender);
+    const result =
+      senderWindow && !senderWindow.isDestroyed()
+        ? await dialog.showOpenDialog(senderWindow, { properties: ["openFile"], filters })
+        : await dialog.showOpenDialog({ properties: ["openFile"], filters });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return addCustomEditor(result.filePaths[0]!);
+  });
+  ipcMain.handle(PlatformChannels.RemoveCustomEditor, (_event, payload: unknown) => {
+    const result = nonEmptyStringSchema.safeParse(
+      (payload as { editorId?: unknown } | null | undefined)?.editorId,
+    );
+    if (!result.success) {
+      options.logger.warn("[custom-editors] invalid remove payload:", payload);
+      return { success: false };
+    }
+    return { success: removeCustomEditor(result.data) };
+  });
 
   ipcMain.handle(PlatformChannels.ExecuteDesktopCommand, async (event, command: string) => {
     const senderWindow = BrowserWindow.fromWebContents(event.sender);

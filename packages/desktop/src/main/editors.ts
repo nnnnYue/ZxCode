@@ -20,6 +20,7 @@ import { join, win32 as pathWin32 } from "node:path";
 import { app, nativeImage } from "electron";
 import type { EditorInfo } from "@zcode/shared";
 import { getZCodeDataRootDir } from "@zcode/services/node";
+import { readAppBundleInfoPlist } from "./appBundlePlist.js";
 import { logger } from "./logger.js";
 
 const require = createRequire(import.meta.url);
@@ -34,18 +35,6 @@ interface EditorDef {
   windowsCommandAppNames?: string[];
   /** CLI 命令名（如果有）。用于 open folder；null 则 fallback 到 `open -a` */
   command: string | null;
-}
-
-interface AppBundleInfoPlist {
-  CFBundleIconFile?: string;
-  CFBundleIconFiles?: string[];
-  CFBundleIconName?: string;
-  CFBundleIcons?: {
-    CFBundlePrimaryIcon?: {
-      CFBundleIconFiles?: string[];
-      CFBundleIconName?: string;
-    };
-  };
 }
 
 interface ResolvedAppIconPath {
@@ -378,23 +367,6 @@ function getIcnsModule(): typeof import("@fiahfy/icns") | null {
   }
 
   return cachedIcnsModule;
-}
-
-function readAppBundleInfoPlist(appPath: string): AppBundleInfoPlist | null {
-  try {
-    const infoPlistPath = join(appPath, "Contents", "Info.plist");
-    const raw = execFileSync("plutil", ["-convert", "json", "-o", "-", infoPlistPath], {
-      encoding: "utf8",
-      timeout: 3000,
-    });
-    return JSON.parse(raw) as AppBundleInfoPlist;
-  } catch (error) {
-    logger.warn("[editors] 读取 Info.plist 失败，图标将回退到 file icon", {
-      appPath,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
 }
 
 function resolveAppIconPath(appPath: string): ResolvedAppIconPath {

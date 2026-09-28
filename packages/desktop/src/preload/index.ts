@@ -40,6 +40,7 @@ import type {
   DesktopTitleBarTheme,
   EmbeddedBrowserOpenUrlRequest,
   Locale,
+  EditorInfo,
   OpenInEditorOptions,
   RemoteTarget,
   TaskNotificationPayload,
@@ -620,6 +621,12 @@ contextBridge.exposeInMainWorld("zxcode", {
       path,
       options,
     }),
+  /** 弹出对话框选择本地应用并注册为自定义打开方式（取消返回 null） */
+  selectAndAddCustomEditor: (): Promise<EditorInfo | null> =>
+    ipcRenderer.invoke(PlatformChannels.SelectAndAddCustomEditor),
+  /** 删除已注册的自定义打开方式 */
+  removeCustomEditor: (editorId: string) =>
+    ipcRenderer.invoke(PlatformChannels.RemoveCustomEditor, { editorId }),
   /** 执行桌面窗口级命令 */
   executeDesktopCommand: (command: DesktopCommandId) =>
     ipcRenderer.invoke(PlatformChannels.ExecuteDesktopCommand, command),

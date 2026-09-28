@@ -339,6 +339,10 @@ export const PlatformChannels = {
   GetApplicationIcon: "zxcode:get-application-icon",
   /** Renderer → Main：用指定编辑器打开路径 */
   OpenInEditor: "zxcode:open-in-editor",
+  /** Renderer → Main：弹出对话框选择本地应用并注册为自定义打开方式 */
+  SelectAndAddCustomEditor: "zxcode:select-and-add-custom-editor",
+  /** Renderer → Main：删除已注册的自定义打开方式 */
+  RemoveCustomEditor: "zxcode:remove-custom-editor",
   /** Renderer → Main：执行桌面窗口级命令 */
   ExecuteDesktopCommand: "zxcode:execute-desktop-command",
   /** Renderer → Main：同步应用菜单语言，用于重建原生菜单 */
@@ -934,6 +938,14 @@ export interface PlatformChannelMap {
   [PlatformChannels.OpenInEditor]: {
     request: { editorId: string; path: string; options?: OpenInEditorOptions };
     response: { success: boolean; error?: string };
+  };
+  [PlatformChannels.SelectAndAddCustomEditor]: {
+    request: void;
+    response: EditorInfo | null;
+  };
+  [PlatformChannels.RemoveCustomEditor]: {
+    request: { editorId: string };
+    response: { success: boolean };
   };
   [PlatformChannels.CloseActiveContextRequest]: {
     request: void;

@@ -1,17 +1,28 @@
-import { createOpenInEditorRemoteTarget, type EditorInfo, type RemoteTarget } from "@zcode/shared";
-import { useEffect, useMemo, useState } from "react";
+import {
+  createOpenInEditorRemoteTarget,
+  isCustomEditorInfo,
+  type EditorInfo,
+  type RemoteTarget,
+} from "@zcode/shared";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button.js";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { persistLastSelectedEditorId, readLastSelectedEditorId } from "@/lib/editorPreference.js";
+import {
+  clearLastSelectedEditorId,
+  persistLastSelectedEditorId,
+  readLastSelectedEditorId,
+} from "@/lib/editorPreference.js";
 import {
   resolveWorkspaceEditorSelection,
   shouldPersistWorkspaceEditorSelection,
@@ -74,6 +85,66 @@ export function WorkspaceEditorButtonGroup({
       }),
     [installedEditors, isOfficeMode, remoteTarget, selectedEditorId],
   );
+
+  // 自定义应用与内置白名单分开渲染：自定义行需要删除按钮和手动画勾
+  //（RadioItem 右缘的绝对定位指示器会与删除按钮冲突）。
+  const { builtinEditors, customEditors } = useMemo(() => {
+    const builtin = availableEditors.filter((editor) => !isCustomEditorInfo(editor));
+    const custom = availableEditors.filter(isCustomEditorInfo);
+    return { builtinEditors: builtin, customEditors: custom };
+  }, [availableEditors]);
+
+  // 桌面端 preload 才提供选择/删除自定义应用；web 端隐藏入口。
+  const canManageCustomEditors =
+    !isOfficeMode &&
+    typeof platform.selectAndAddCustomEditor === "function" &&
+    typeof platform.removeCustomEditor === "function";
+
+  const refreshInstalledEditors = useCallback(async () => {
+    try {
+      setInstalledEditors(await platform.getInstalledEditors());
+    } catch (error) {
+      logger.warn("[WorkspaceEditorButtonGroup] 刷新已安装 IDE 列表失败:", error);
+    }
+  }, [platform]);
+
+  // 「选择应用程序…」：对话框由主进程弹出并写注册表，这里只刷新列表并选中（不自动打开）。
+  const handleChooseApplication = async () => {
+    if (disabledReason || !platform.selectAndAddCustomEditor) {
+      return;
+    }
+
+    try {
+      const editor = await platform.selectAndAddCustomEditor();
+      if (!editor) {
+        return; // 用户取消
+      }
+
+      await refreshInstalledEditors();
+      setSelectedEditorId(editor.id);
+      persistLastSelectedEditorId(editor.id);
+    } catch (error) {
+      logger.warn("[WorkspaceEditorButtonGroup] 添加自定义应用失败:", error);
+    }
+  };
+
+  const handleRemoveCustomEditor = async (editor: EditorInfo) => {
+    if (!platform.removeCustomEditor) {
+      return;
+    }
+
+    try {
+      await platform.removeCustomEditor(editor.id);
+      await refreshInstalledEditors();
+      if (readLastSelectedEditorId() === editor.id) {
+        // 删除的是当前选中项：清除持久化偏好，选择回落到列表第一项
+        clearLastSelectedEditorId();
+        setSelectedEditorId(null);
+      }
+    } catch (error) {
+      logger.warn("[WorkspaceEditorButtonGroup] 删除自定义应用失败:", error);
+    }
+  };
 
   useEffect(() => {
     onSelectedEditorChange?.(selectedEditor);
@@ -172,7 +243,7 @@ export function WorkspaceEditorButtonGroup({
           <DropdownMenuRadioGroup
             value={selectedEditor.id}
             onValueChange={(editorId) => {
-              const editor = availableEditors.find((candidate) => candidate.id === editorId);
+              const editor = builtinEditors.find((candidate) => candidate.id === editorId);
               if (!editor) {
                 return;
               }
@@ -180,7 +251,7 @@ export function WorkspaceEditorButtonGroup({
               handleOpenEditor(editor);
             }}
           >
-            {availableEditors.map((editor) => (
+            {builtinEditors.map((editor) => (
               <DropdownMenuRadioItem key={editor.id} value={editor.id}>
                 <img
                   src={editor.iconDataUrl}
@@ -191,6 +262,55 @@ export function WorkspaceEditorButtonGroup({
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
+          {customEditors.length > 0 && <DropdownMenuSeparator />}
+          {customEditors.map((editor) => (
+            <DropdownMenuItem key={editor.id} onSelect={() => handleOpenEditor(editor)}>
+              <img src={editor.iconDataUrl} alt={editor.name} className={editorMenuIconClassName} />
+              <span className="flex-1 truncate">{editor.name}</span>
+              {selectedEditor.id === editor.id ? (
+                <Check className="size-4 shrink-0 text-foreground-subtle" />
+              ) : (
+                <span className="size-4 shrink-0" />
+              )}
+              <button
+                type="button"
+                className="rounded p-0.5 text-foreground-subtlest hover:text-foreground"
+                aria-label={intl.formatMessage(
+                  { id: "appHeader.removeCustomApp" },
+                  { app: editor.name },
+                )}
+                title={intl.formatMessage(
+                  { id: "appHeader.removeCustomApp" },
+                  { app: editor.name },
+                )}
+                // Radix item 会在 pointerdown/click 上触发选中；删除按钮要吃掉这两个事件，
+                // 否则点删除会先切换成"用该应用打开"。
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void handleRemoveCustomEditor(editor);
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </DropdownMenuItem>
+          ))}
+          {canManageCustomEditors && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  // 保持菜单打开：对话框结束后新条目原地出现在菜单里
+                  event.preventDefault();
+                  void handleChooseApplication();
+                }}
+              >
+                <Plus className="size-3.5 shrink-0" />
+                {intl.formatMessage({ id: "appHeader.chooseApplication" })}
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

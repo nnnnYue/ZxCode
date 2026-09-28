@@ -128,9 +128,11 @@ export {
   BROWSER_SCREENSHOT_SURFACE_PREPARE_TIMEOUT_MS,
   BROWSER_VIEW_RESTORE_BOOTSTRAP_URL,
   LOCAL_MEDIA_PREVIEW_SCHEME,
+  CUSTOM_EDITOR_ID_PREFIX,
   DesktopCommandIds,
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
+  isCustomEditorInfo,
 } from "./platform.js";
 export * from "./remoteUsageTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";

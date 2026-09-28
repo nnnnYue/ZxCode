@@ -1092,6 +1092,8 @@ const zhCN: Record<string, string> = {
   "appHeader.openInFileManagerFailed": "无法在系统文件管理器中打开",
   "appHeader.openInEditor": "在 {editor} 中打开",
   "appHeader.selectOpenApp": "选择打开方式",
+  "appHeader.chooseApplication": "选择应用程序…",
+  "appHeader.removeCustomApp": "移除 {app}",
   "appHeader.copyPath": "复制路径",
   "fileActions.copyAbsolutePath": "复制绝对路径",
   "fileActions.copyRelativePath": "复制相对路径",

@@ -256,6 +256,10 @@ declare global {
         path: string,
         options?: OpenInEditorOptions,
       ): Promise<{ success: boolean; error?: string }>;
+      /** 弹出对话框选择本地应用并注册为自定义打开方式；取消返回 null */
+      selectAndAddCustomEditor?(): Promise<EditorInfo | null>;
+      /** 删除已注册的自定义打开方式 */
+      removeCustomEditor?(editorId: string): Promise<{ success: boolean }>;
       /** 执行桌面窗口级命令 */
       executeDesktopCommand(command: DesktopCommandId): Promise<void>;
       /** 同步应用菜单语言 */

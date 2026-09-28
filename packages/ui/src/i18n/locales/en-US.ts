@@ -1175,6 +1175,8 @@ const enUS: Record<string, string> = {
   "appHeader.openInFileManagerFailed": "Could not open in the system file manager",
   "appHeader.openInEditor": "Open in {editor}",
   "appHeader.selectOpenApp": "Choose app",
+  "appHeader.chooseApplication": "Choose Application…",
+  "appHeader.removeCustomApp": "Remove {app}",
   "appHeader.copyPath": "Copy path",
   "fileActions.copyAbsolutePath": "Copy absolute path",
   "fileActions.copyRelativePath": "Copy relative path",
