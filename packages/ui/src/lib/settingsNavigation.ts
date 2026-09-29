@@ -20,7 +20,8 @@ export type SettingsSectionId =
   | "computerUse"
   | "automations"
   | "mobileRelay"
-  | "shortcuts";
+  | "shortcuts"
+  | "usage";
 
 type SettingsPluginTabTarget = "plugins" | "mcps" | "skills" | "commands";
 type SettingsPluginNavigationOrigin = "plugin-store";
@@ -76,7 +77,8 @@ function isSettingsSectionId(value: string): value is SettingsSectionId {
     value === "computerUse" ||
     value === "automations" ||
     value === "shortcuts" ||
-    value === "mobileRelay"
+    value === "mobileRelay" ||
+    value === "usage"
   );
 }
 

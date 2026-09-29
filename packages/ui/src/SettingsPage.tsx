@@ -46,6 +46,7 @@ import { HooksSection } from "@/settings/HooksSection.js";
 import { WorkspaceFileSearchSection } from "@/settings/WorkspaceFileSearchSection.js";
 import { MemorySettingsSection } from "@/settings/MemorySettingsSection.js";
 import { CustomSection } from "@/settings/CustomSection.js";
+import { AppUsagePanel } from "@/settings/usage-stats/AppUsagePanel.js";
 import { BrowserSettingsSection } from "@/settings/BrowserSettingsSection.js";
 import { MobileRelaySettingsSection } from "@/settings/MobileRelaySettingsSection.js";
 import { ComputerUseSection } from "@/settings/ComputerUseSection.js";
@@ -1374,6 +1375,11 @@ export function SettingsPage({
                           <ServiceProvider services={localHostServices}>
                             {/* 自定义请求头属于本机全局设置；激活远端 workspace 时也读本地 Host。 */}
                             <CustomSection />
+                          </ServiceProvider>
+                        ) : activeSection === "usage" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* App Usage 统计的是本机 agent 全局库；激活远端 workspace 时也读本地 Host。 */}
+                            <AppUsagePanel />
                           </ServiceProvider>
                         ) : activeSection === "memory" ? (
                           <ServiceProvider services={localHostServices}>
