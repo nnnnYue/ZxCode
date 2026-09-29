@@ -85,3 +85,6 @@ packages/desktop/src/scheduler/*.js
 packages/desktop/src/scheduler/*.js.map
 packages/desktop/src/scheduler/*.d.ts
 packages/desktop/src/scheduler/*.d.ts.map
+
+# 发布日志仅本地维护，不入库（按用户要求不提交推送）。
+release-notes/
