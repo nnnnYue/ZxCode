@@ -264,7 +264,17 @@ export function WorkspaceEditorButtonGroup({
           </DropdownMenuRadioGroup>
           {customEditors.length > 0 && <DropdownMenuSeparator />}
           {customEditors.map((editor) => (
-            <DropdownMenuItem key={editor.id} onSelect={() => handleOpenEditor(editor)}>
+            <DropdownMenuItem
+              key={editor.id}
+              onSelect={(event) => {
+                // Radix menu item 的选中由 pointerup 触发；即使删除按钮已 stopPropagation，
+                // 仍按事件来源兜底一次，杜绝"点删除却打开了应用"。
+                if ((event.target as HTMLElement | null)?.closest("[data-custom-editor-remove]")) {
+                  return;
+                }
+                handleOpenEditor(editor);
+              }}
+            >
               <img src={editor.iconDataUrl} alt={editor.name} className={editorMenuIconClassName} />
               <span className="flex-1 truncate">{editor.name}</span>
               {selectedEditor.id === editor.id ? (
@@ -274,6 +284,7 @@ export function WorkspaceEditorButtonGroup({
               )}
               <button
                 type="button"
+                data-custom-editor-remove
                 className="rounded p-0.5 text-foreground-subtlest hover:text-foreground"
                 aria-label={intl.formatMessage(
                   { id: "appHeader.removeCustomApp" },
@@ -283,9 +294,11 @@ export function WorkspaceEditorButtonGroup({
                   { id: "appHeader.removeCustomApp" },
                   { app: editor.name },
                 )}
-                // Radix item 会在 pointerdown/click 上触发选中；删除按钮要吃掉这两个事件，
-                // 否则点删除会先切换成"用该应用打开"。
+                // Radix item 的 select 在 pointerup 上触发（react-menu dist 实现如此），
+                // pointerdown/click 也一并吃掉，三个事件都不允许冒泡到行条目；
+                // 否则点删除会先触发"用该应用打开"。
                 onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
