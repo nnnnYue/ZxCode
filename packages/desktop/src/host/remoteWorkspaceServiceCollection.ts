@@ -7,6 +7,7 @@ import {
   ISystemService,
   ITerminalService,
   ISettingService,
+  IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
   IZCodeTaskService,
@@ -26,6 +27,7 @@ import {
   ICommandsService,
   IHooksService,
   IMemoryService,
+  IOutputStyleService,
   ISettingsSyncService,
   IPromptAttachmentTransferService,
   type IServiceAccessor,
@@ -39,6 +41,7 @@ import {
   createServiceLogger,
   createSubagentsService,
   createMemoryService,
+  createOutputStyleService,
 } from "@zcode/services/node";
 import {
   DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
@@ -55,6 +58,7 @@ const runtimePreferencesLogger = createServiceLogger("remote-runtime-preferences
 export function createRemoteWorkspaceServiceCollection(params: {
   connectionServices: IServiceAccessor;
   sourceServices?: ServiceCollection;
+  localOnboardingRecordService: IOnboardingRecordService;
   parentPort: Parameters<typeof createBroadcastService>[0];
   createReportingRemoteZCodeTaskService: <T extends object>(service: T) => T;
   createRemotePromptAttachmentTaskService: <T extends object>(service: T) => T;
@@ -193,6 +197,8 @@ export function createRemoteWorkspaceServiceCollection(params: {
     .register(ISystemService, params.connectionServices.systemService)
     .register(ITerminalService, params.connectionServices.terminalService)
     .register(ISettingService, localSettingService)
+    // 手机重建远程 Root 后曾因缺少此通道误弹引导；复用 Local Host owner，保持记录与登录态同源。
+    .register(IOnboardingRecordService, params.localOnboardingRecordService)
     .register(ICredentialService, localCredentialService)
     .register(IBroadcastService, localBroadcastService)
     .register(IZCodeTaskService, remoteZCodeTaskService)
@@ -229,6 +235,7 @@ export function createRemoteWorkspaceServiceCollection(params: {
     .register(ISubagentsService, createSubagentsService({ isDesktopRuntime: true }))
     .register(IHooksService, params.connectionServices.hooksService)
     .register(IMemoryService, createMemoryService())
+    .register(IOutputStyleService, createOutputStyleService())
     .register(
       ISettingsSyncService,
       createSettingsSyncService({ settingService: localSettingService }),

@@ -6,12 +6,17 @@ import type {
   ZCodeMcpServer,
 } from "@zcode/shared";
 
-const MCP_CONFIG_KEY = "zcode-mcp-config";
+export const MCP_CONFIG_KEY = "zcode-mcp-config";
+export const MCP_ENABLED_STATES_KEY = "zcode-mcp-enabled-states";
 export const MCP_DELETED_PRELOAD_KEY = "zcode-mcp-deleted-preload";
 
 export const DEFAULT_MCP_CONFIG: McpConfig = {
   mcp: { mcpServers: {} },
   zxcodeagentmcp: { mcpServers: {}, projects: {} },
+  claudeclimcp: { mcpServers: {}, projects: {} },
+  geminiclimcp: { mcpServers: {}, projects: {} },
+  codexclimcp: { mcpServers: {}, projects: {} },
+  opencodemcp: { mcpServers: {}, projects: {} },
 };
 
 export function safeReadJson<T>(key: string, fallback: T): T {
@@ -41,8 +46,7 @@ export function loadPersistedConfig(): McpConfig {
 
 export function readLegacyCommonMcpServers(): Record<string, McpServerConfig> {
   const saved = safeReadJson<Record<string, unknown>>(MCP_CONFIG_KEY, {});
-  const legacyServers = (saved.mcp as { mcpServers?: Record<string, McpServerConfig> } | undefined)
-    ?.mcpServers;
+  const legacyServers = (saved.mcp as { mcpServers?: Record<string, McpServerConfig> } | undefined)?.mcpServers;
   return legacyServers && typeof legacyServers === "object" ? legacyServers : {};
 }
 
@@ -141,12 +145,7 @@ export function buildServerList(
   const servers: ZCodeMcpServer[] = [];
 
   for (const server of nativeServers) {
-    const serverId = makeServerId(
-      server.source,
-      server.name,
-      server.projectPath,
-      server.location?.source,
-    );
+    const serverId = makeServerId(server.source, server.name, server.projectPath, server.location?.source);
     if (!deletedPreload.has(serverId)) {
       servers.push(
         makeServer(

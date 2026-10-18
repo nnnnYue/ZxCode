@@ -51,7 +51,6 @@ export function captureProjectMemoryAgentContext(
       querySource: input.operation,
       skipTranscript: true,
     },
-    modelRequestSessionType: "other",
     modelCall: { operation: input.operation },
     traceContext: input.traceContext,
   }));

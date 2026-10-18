@@ -22,5 +22,7 @@ Web 端社群入口请求当前 endpoint 的 `GET /api/v1/client/configs`，
           内置 default.json -> 平台入口
 ```
 
-default.json 为随客户端分发的内置默认配置；历史上曾经 CDN 分发、仅为旧版客户端兼容保留，
-现版本无请求或 URL 构造链路，只依赖本目录内置文件，其他字段与既有消费者保持不变。
+旧 CDN default.json 仅为旧版客户端兼容保留；新版无请求或 URL 构造链路，
+不要因此删除线上旧文件或本目录内置文件。内置文件的其他字段与既有消费者保持不变。
+
+详细规则见 [用户社群入口配置](../docs/ui/settings-community-link-config.md)。

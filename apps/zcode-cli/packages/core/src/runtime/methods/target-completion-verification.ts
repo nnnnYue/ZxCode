@@ -20,7 +20,6 @@ import { buildRuntimeProviderRequestMessages, throwIfTurnAborted } from "../help
 import { projectMessagesForModelMediaPolicy } from "../helpers/media-budget.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { isRuntimeAttachmentEntry, type RuntimeMessageEntry } from "../../agent/message-history.js";
-import { resolveModelRequestSessionTypeFromTaskType } from "./model-request-session-type.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import { isStartPlanBusyStreamRecoveryFailure } from "./streaming-recovery.js";
 import { recordModelUsageFact } from "./usage-observability.js";
@@ -318,7 +317,6 @@ async function generateTargetCompletionVerificationText(
     try {
       const invocationContext = {
         metadata: traceContextToLogContext(input.traceContext),
-        modelRequestSessionType: resolveModelRequestSessionTypeFromTaskType(this.config.taskType),
         modelCall: {
           operation: "goal_completion_verification" as const,
         },

@@ -4,7 +4,7 @@ import {
 } from "@zcode/shared";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
 
-interface V4ModelTriggerDisplay {
+export interface V4ModelTriggerDisplay {
   fullLabel: string;
   modelLabel: string;
   providerPrefix?: string;

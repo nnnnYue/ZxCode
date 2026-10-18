@@ -1,5 +1,11 @@
 import { execFile } from "node:child_process";
-import { existsSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
@@ -34,7 +40,9 @@ interface WindowsInstallResourceLockProcess {
   executablePath?: string;
 }
 
-export function resolveWindowsPackagedResourceLockMarkers(resourcesPath: string): string[] {
+export function resolveWindowsPackagedResourceLockMarkers(
+  resourcesPath: string,
+): string[] {
   return WINDOWS_PACKAGED_RESOURCE_DIRS.map((dir) => join(resourcesPath, dir));
 }
 

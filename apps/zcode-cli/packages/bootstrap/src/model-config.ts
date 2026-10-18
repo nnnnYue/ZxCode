@@ -3,6 +3,7 @@ import type {
   AiSdkNetworkConfig,
   EnvRecord,
 } from "@zcode/adapters/model";
+import type { ProviderEndpointRoutingPort } from "@zcode/contracts";
 import {
   applyCustomModelRequestHeaders,
   buildModelRequestDefaultHeaders,
@@ -16,6 +17,7 @@ export type ModelProviderSourceTitle = "cli" | "electron";
 
 interface RuntimeExecutionConfigOptions {
   appVersion?: string;
+  endpointRoutingPort?: ProviderEndpointRoutingPort;
   network?: AiSdkNetworkConfig;
   sourceTitle?: ModelProviderSourceTitle;
 }
@@ -29,6 +31,7 @@ export function createRuntimeAiSdkModelExecutionConfig(
     defaultHeaders: buildCliZCodeSourceHeaders(env, options),
     env,
     ...(network ? { network } : {}),
+    ...(options.endpointRoutingPort ? { endpointRoutingPort: options.endpointRoutingPort } : {}),
   };
 }
 
@@ -48,7 +51,7 @@ function normalizeAiSdkNetworkConfig(
 // （ISettingService.getModelRequestHeaderDefaults）与本函数共用同一实现，保证两侧一致。
 // 用户自定义模型请求头（specs/custom-request-headers.md）按名覆盖默认来源头：env 由桌面 host
 // spawn 时注入（CLI 用户也可手设）；非法条目只剔除，不影响其余默认头。
-function buildCliZCodeSourceHeaders(
+export function buildCliZCodeSourceHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion" | "sourceTitle"> = {},
 ): Record<string, string> {

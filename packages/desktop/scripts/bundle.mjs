@@ -88,6 +88,7 @@ const commandStdoutMaxBuffer = 64 * 1024 * 1024;
 const requiredRuntimeModules = [
   "module-details-from-path",
   "pngjs",
+  // fork：上游为 OTLP/ARMS 遥测新增的 @opentelemetry/* 校验项保持移除（REMOVALS 遥测域）。
   // @babel/runtime 在 pnpm workspace 开发态通常能从 hoisted 布局解析，
   // 但如果生产包没把该运行时带进 app.asar，已安装应用会在主进程启动阶段直接崩溃。
   // 这里把 @babel/runtime 纳入 bundle 后机械校验，防止坏包继续流出。
@@ -154,9 +155,13 @@ export function createElectronRuntimeMirrorEnv(mirror) {
 }
 
 function resolveDefaultElectronBuilderBinariesMirror(env = process.env) {
-  return env.ZXCODE_DEPS_BASE_URL?.trim() || env.INTRANET_MACHINE_HOST?.trim()
-    ? `${resolveIntranetDepsBaseUrl(env)}/electron-builder-binaries/`
-    : NPMMIRROR_ELECTRON_BUILDER_BINARIES_MIRROR;
+  // fork：上游改为 try/catch 回退官方 release；内网 env（ZXCODE_DEPS_BASE_URL）读取
+  // 已收敛在 resolveIntranetDepsBaseUrl 内，无需在此重复命名判断。
+  try {
+    return `${resolveIntranetDepsBaseUrl(env)}/electron-builder-binaries/`;
+  } catch {
+    return OFFICIAL_ELECTRON_BUILDER_BINARIES_MIRROR;
+  }
 }
 
 export function resolveElectronBuilderBinariesMirror(env = process.env) {

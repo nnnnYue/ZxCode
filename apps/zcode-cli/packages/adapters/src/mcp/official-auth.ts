@@ -361,7 +361,7 @@ async function readBoundedResponseText(
  * ——parse 期已拦截静态保留头，这里是合并点的二次强制。
  * 不触碰 mcp-session-id / mcp-protocol-version / accept / content-type。
  */
-function mergeOfficialAuthHeaders(
+export function mergeOfficialAuthHeaders(
   incoming: HeadersInit | undefined,
   authHeaders: Record<string, string>,
 ): Headers {

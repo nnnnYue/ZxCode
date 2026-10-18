@@ -44,7 +44,7 @@ There are two ways to work with configuration in the ZxCode client, and this plu
 - **Workspace scope**: `<repo>/AGENTS.md`. Use this for repository-specific rules that should be shared with the project, such as architecture boundaries, logging rules, testing requirements, and commit/MR policy.
 - **Resolution**: ZxCode searches for the workspace `AGENTS.md` from the current working directory upward until the detected project root. The user default file is resolved from the user's home directory.
 - **Merge order**: when both files exist, ZxCode injects `~/.zxcode/AGENTS.md` first, then the resolved workspace `AGENTS.md`. Workspace instructions appear later, so they can narrow or override broad user defaults for that repository.
-- **Migration and creation**: onboarding can copy Claude user memory from `~/.claude/CLAUDE.md` into `~/.zxcode/AGENTS.md`. The built-in `/init` command targets the current workspace `AGENTS.md`, creating or updating repository instructions instead of editing the user default file.
+- **Migration and creation**: onboarding can copy existing user memory from `~/.claude/CLAUDE.md` into `~/.zxcode/AGENTS.md`. The built-in `/init` command targets the current workspace `AGENTS.md`, creating or updating repository instructions instead of editing the user default file.
 
 ## Skills and commands: discovery order (identical)
 
@@ -74,7 +74,7 @@ Within a level, `.zxcode` is scanned before `.agents`. A deeper working-director
 
 ## Plugins: essentials
 
-- Managed in **Settings → Plugin Management** (the **Installed** and **Discover** tabs). A plugin directory carries a manifest at `.zcode-plugin/plugin.json` (the compatibility names `.claude-plugin/` and `.codex-plugin/` are also recognized). The minimal manifest requires only `name` (matching `^[a-z0-9][a-z0-9._-]{0,127}$`).
+- Managed in **Settings → Plugin Management** (the **Installed** and **Discover** tabs). A plugin directory carries a manifest at `.zxcode-plugin/plugin.json` (the compatibility names `.claude-plugin/` and `.codex-plugin/` are also recognized). The minimal manifest requires only `name` (matching `^[a-z0-9][a-z0-9._-]{0,127}$`).
 - Component fields: `commands`, `skills`, `hooks`, `mcpServers`, `agents` (each may be a directory name, an array, or inline). The fields `channels`, `lspServers`, `outputStyles`, and `settings` are recorded but not executed.
 - Enable/disable state is stored under `plugins` in `~/.zxcode/cli/config.json`. A built-in plugin can be disabled but not uninstalled.
 - Marketplaces can be added (via the **`+`** button on the Discover tab) from a GitHub repository, a Git URL, a local directory, or a file.
@@ -83,7 +83,7 @@ Within a level, `.zxcode` is scanned before `.agents`. A deeper working-director
 
 - Personal, used across projects → user scope (`~/.zxcode/...` or `~/.agents/...`).
 - Team- or project-shared, versioned with the repository → workspace scope (`<repo>/.zxcode/...` or `.agents/...`).
-- Shared across tools (Claude, Codex, Cursor) → put skills in `~/.agents/skills/`; to override a same-named skill only inside ZxCode, use `.zxcode/skills/`.
+- Shared with other coding agents that read `~/.agents/skills/` → put skills there; to override a same-named skill only inside ZxCode, use `.zxcode/skills/`.
 - Personal default instructions → `~/.zxcode/AGENTS.md`; repository-specific instructions → `<repo>/AGENTS.md`. If both exist, keep broad preferences in the user file and project rules in the workspace file.
 - MCP servers → user configuration for personal servers, or workspace configuration to share with a team; both scopes connect automatically. Because opening a project now auto-connects the MCP servers declared in its configuration, only open workspaces you trust.
 - Secrets → never commit them to version control; use environment variables or local settings.

@@ -8,7 +8,11 @@ import { logger } from "@/logger.js";
 import { matchesPrimaryShortcut } from "@/lib/keyboardShortcuts.js";
 import { isShortcutRecordingActive } from "@/shortcuts/bindings.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
-import { shouldPublishCompleteWorkspaceSnapshot } from "@/root/rootPlatformWorkspaceSync.js";
+import {
+  buildConnectedRemoteWorkspaceSessionTargets,
+  buildWebRemoteControlWorkspaceTargets,
+  shouldPublishCompleteWorkspaceSnapshot,
+} from "@/root/rootPlatformWorkspaceSync.js";
 
 export function useRootPlatformEffects({
   initialWorkspaceAbsPath,
@@ -30,6 +34,8 @@ export function useRootPlatformEffects({
   locale,
   tabs,
   totalUnreadTaskCount,
+  webRemoteControlFeatureEnabled = false,
+  webRemoteControlSessionActive = false,
   hasCompletedFullTabRestore = true,
 }: {
   initialWorkspaceAbsPath?: string;
@@ -57,6 +63,8 @@ export function useRootPlatformEffects({
   locale: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["locale"];
   tabs: WindowTabState[];
   totalUnreadTaskCount: number;
+  webRemoteControlFeatureEnabled?: boolean;
+  webRemoteControlSessionActive?: boolean;
   hasCompletedFullTabRestore?: boolean;
 }) {
   const didBootstrapInitialWorkspaceRef = useRef(false);
@@ -191,6 +199,44 @@ export function useRootPlatformEffects({
       .map((tab) => tab.workspacePath);
     platform.syncWindowTabs(paths);
   }, [hasCompletedFullTabRestore, isDesktop, platform, tabs]);
+
+  useEffect(() => {
+    if (
+      !isDesktop ||
+      !shouldPublishCompleteWorkspaceSnapshot(hasCompletedFullTabRestore) ||
+      !platform.syncWebRemoteControlWorkspaces
+    ) {
+      return;
+    }
+
+    const connectedRemoteWorkspaces = buildConnectedRemoteWorkspaceSessionTargets({ tabs });
+    if (connectedRemoteWorkspaces.length > 0) {
+      // Bugfix: Bot 远端连接状态查询依赖 main 进程里 remoteSessionId -> workspaceIdentity 的绑定。
+      // 之前这条绑定复用 Web 远控 workspace 同步，Web 远控未开启时不会执行，导致 UI 已连接但 Bot 误判未连接。
+      platform.syncWebRemoteControlWorkspaces(connectedRemoteWorkspaces);
+    }
+
+    if (!webRemoteControlFeatureEnabled || !webRemoteControlSessionActive) {
+      return;
+    }
+
+    const workspaces = buildWebRemoteControlWorkspaceTargets({
+      tabs,
+      reconnectingRemoteWorkspaceKeys,
+      remoteWorkspaceErrorByWorkspaceKey,
+    });
+
+    platform.syncWebRemoteControlWorkspaces(workspaces);
+  }, [
+    hasCompletedFullTabRestore,
+    isDesktop,
+    platform,
+    reconnectingRemoteWorkspaceKeys,
+    remoteWorkspaceErrorByWorkspaceKey,
+    tabs,
+    webRemoteControlFeatureEnabled,
+    webRemoteControlSessionActive,
+  ]);
 
   useEffect(() => {
     if (isDesktop) {

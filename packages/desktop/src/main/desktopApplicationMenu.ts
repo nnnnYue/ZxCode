@@ -20,6 +20,7 @@ import {
 } from "./desktopCommandHandlers.js";
 
 const HELP_ZXCODE_ENDPOINT_PRODUCTION_MENU_ID = "help.zxcode-endpoint.production";
+export const HELP_ZCODE_ENDPOINT_TEST_MENU_ID = "help.zcode-endpoint.test";
 
 export function getDesktopMenuLabel(
   locale: Locale,
@@ -281,6 +282,14 @@ function buildApplicationMenuTemplate(options: {
                       void options.executeDesktopCommand(
                         DesktopCommandIds.SetZCodeEndpointProduction,
                       ),
+                  },
+                  {
+                    id: HELP_ZCODE_ENDPOINT_TEST_MENU_ID,
+                    label: getLabel(desktopMenuMessageIds.helpZCodeEndpointTest),
+                    type: "radio" as const,
+                    checked: options.zcodeEndpointSelection === "test",
+                    click: () =>
+                      void options.executeDesktopCommand(DesktopCommandIds.SetZCodeEndpointTest),
                   },
                   { type: "separator" as const },
                   {

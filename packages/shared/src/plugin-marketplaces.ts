@@ -9,6 +9,12 @@ export interface DefaultPluginMarketplace {
 
 export const ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID = "zcode-plugins-official";
 
+/**
+ * Claude Code 官方市场（GitHub git 源）。它不是 ZCode 的强依赖：GitHub 不可达时刷新必然失败，
+ * 该失败不应作为错误提示打扰用户，UI 侧按此 id 静默处理其刷新失败（任何原因）。
+ */
+export const CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID = "claude-plugins-official";
+
 /** Settings 三类资源发现共用；Bootstrap 单测与官方 definition 的 defaultEnabled 机械对照。 */
 export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set([
   "browser-use@zcode-plugins-official",
@@ -24,6 +30,9 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
   "skill-creator@zcode-plugins-official",
   "plugin-creator@zcode-plugins-official",
   "zcode-guide@zcode-plugins-official",
+  // visualize（交互视图）随 UI 插件合入时 CLI 定义已标 defaultEnabled，但这里漏加，
+  // Settings 会把它当成默认关闭，与 CLI 实际启用状态不一致。
+  "visualize@zcode-plugins-official",
   // 电脑控制回退为默认关闭，故 computer-use 不在此名单内。
   // 该集合必须与 official-plugin-definitions.ts 里标了 defaultEnabled 的插件逐一对应，
   // 由 bootstrap 的 official-plugin-defaults.test.ts 机械对照两者（运行方式：
@@ -34,7 +43,17 @@ export const DEFAULT_PLUGIN_MARKETPLACES: DefaultPluginMarketplace[] = [
   // 去平台化：官方市场目录已在编译期随包分发（resources/official-marketplace + bundled
   // seed），不再向 known_marketplaces 写入任何 CDN url source，运行时因此不存在
   // 官方目录的 fetch 路径；官方目录概要由 bootstrap 在 known 缺失时从本地快照合成。
-  // 这里仅保留用户显式添加的自定义市场入口，默认清单为空。
+  // 这里仅保留用户显式添加的自定义市场入口与上游新增的 Claude 官方市场（GitHub 源，
+  // 非 zcode.z.ai 平台链路）；ZxCode 官方市场不写 CDN source。
+  {
+    id: CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+    source: "anthropics/claude-plugins-official",
+    name: CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+    description:
+      "Directory of popular Claude Code extensions including development tools, productivity plugins, and MCP integrations",
+    // 只内置官方 catalog 来源，不把远端 manifest 快照打包进仓库；首次刷新前数量未知。
+    pluginCount: 0,
+  },
 ];
 
 // 商店「公开」分段只有一个 ZxCode 官方市场 id，内置与 CDN 不再拆分身份。

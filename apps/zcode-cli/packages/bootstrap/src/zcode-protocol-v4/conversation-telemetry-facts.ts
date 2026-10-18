@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 八类 strict telemetry fact 的同源归一集中维护，避免 privacy allowlist 分叉。 */
 import type {
   CompactLifecyclePayload,
   DynamicWorkflowRunProgressPayload,
@@ -119,13 +120,16 @@ export function streamingParentToolCallId(payload: Record<string, unknown>): str
   // b8ea19c 改名提交将变量重命名为 zxcode 但漏改了下方引用，导致 CLI typecheck 失败；
   // 修复依据：同作用域变量即 meta.zxcode 的解构结果，引用按其修正。
   const zxcode = recordValue(meta.zxcode);
+  const claudeCode = recordValue(meta.claudeCode);
   return (
     optionalString(payload.parentToolCallId) ??
     optionalString(payload.parentToolUseId) ??
     optionalString(meta.parentToolCallId) ??
     optionalString(meta.parentToolUseId) ??
     optionalString(zxcode.parentToolCallId) ??
-    optionalString(zxcode.parentToolUseId)
+    optionalString(zxcode.parentToolUseId) ??
+    optionalString(claudeCode.parentToolCallId) ??
+    optionalString(claudeCode.parentToolUseId)
   );
 }
 

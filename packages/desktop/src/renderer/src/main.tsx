@@ -9,6 +9,7 @@ import {
   registerBaseWorkspaceServices,
   registerRemoteWorkspaceSession,
   createRemoteWorkspaceDisconnectedError,
+  installDocumentHiddenMotionPause,
   playTaskNotificationSound,
   setStreamClientId,
 } from "@zcode/ui";
@@ -27,7 +28,12 @@ import type { Locale } from "@zcode/shared";
 import type { IServiceAccessor } from "@zcode/services";
 import { createDesktopPlatform } from "./desktopPlatform.js";
 import { startPerformanceTimelineCleanup } from "./performanceTimelineCleanup.js";
-import { buildRemoteWorkspaceSessionServices } from "./remoteWorkspaceSessionServices.js";
+// fork：initializeDesktopUserActionTrace（用户行为轨迹）保持移除；server remote 会话
+// 服务装配保留（renderer 侧直连自部署 server）。
+import {
+  buildRemoteWorkspaceSessionServices,
+  buildServerRemoteWorkspaceSessionServices,
+} from "./remoteWorkspaceSessionServices.js";
 import {
   notifyRemoteWorkspaceServicePortReady,
   parseRemoteWorkspaceServicePortMessage,
@@ -144,6 +150,8 @@ const desktopPlatform = createDesktopPlatform({ isLocalDevelopmentRuntime });
  */
 // 之前用匿名函数注册 addEventListener("message")，reload/HMR 时会重复注册，
 // 导致多次 createRoot 在同一 DOM 节点上挂载。用 flag 防止重复初始化。
+// 窗口 hidden 时禁用 CSS 动画，避免 DocumentTimeline 持有已卸载的 DOM 子树。
+installDocumentHiddenMotionPause();
 let appInitialized = false;
 const databaseStartupAdmission = new DatabaseStartupAdmission();
 const appRoot = createRoot(document.getElementById("root")!);
@@ -201,10 +209,10 @@ function registerRemoteWorkspaceServicePort(params: RemoteWorkspaceServicePortRe
 
   const remoteConnection = createMessagePortServiceConnection(params.port);
   const remoteServices = remoteConnection.services;
-  const services = buildRemoteWorkspaceSessionServices(
-    baseServicesForRemoteSessions,
-    remoteServices,
-  );
+  const services =
+    params.target.kind === "server"
+      ? buildServerRemoteWorkspaceSessionServices(baseServicesForRemoteSessions, remoteServices)
+      : buildRemoteWorkspaceSessionServices(baseServicesForRemoteSessions, remoteServices);
   registerRemoteWorkspaceSession({
     sessionId: params.sessionId,
     target: params.target,

@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import type { RootsResolverPort } from "../app/ports.js";
 import type { StorageRootSpec } from "@zcode/shared";
 
-const ZXCODE_DATA_DIR_NAME = ".zxcode";
+export const ZXCODE_DATA_DIR_NAME = ".zxcode";
 
 export function resolveStorageRoots(params: {
   homeDir: string;

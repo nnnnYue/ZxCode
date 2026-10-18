@@ -7,7 +7,7 @@ import { z } from "zod";
  * 避免各处内联 z.enum([...]) 副本随新增/删除 provider 漂移。
  * 本模块只依赖 zod(叶子),可被 validation / zcode-protocol 等无环引用。
  */
-const ZXCODE_PROVIDERS = ["glm"] as const;
+export const ZXCODE_PROVIDERS = ["glm"] as const;
 
 export const zcodeProviderSchema = z.enum(ZXCODE_PROVIDERS);
 

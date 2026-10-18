@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "incremental": false,
+    "rootDir": "../..",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@zcode/provider": ["../provider-tmpcheck/src/index.ts"],
+      "@zcode/shared": ["../shared-tmpcheck/src/index.ts"],
+      "@zcode/shared/*": ["../shared-tmpcheck/src/*"]
+    }
+  },
+  "references": []
+}

@@ -1,3 +1,4 @@
+import type { ModelRequestObservation } from "../model/index.js";
 import type {
   AgentTelemetryAbandonReason,
   AgentTelemetryCancellationReason,
@@ -14,6 +15,8 @@ export const ModelApiOperation = {
   GoalVerification: "goal_completion_verification",
   GitCommitMessage: "workspace_git_commit_message",
   ProjectMemoryExtract: "project_memory_extract",
+  ProjectMemoryDream: "project_memory_dream",
+  ProjectMemoryRecall: "project_memory_recall",
   ReadSessionContextExtract: "read_session_context_extract",
   ReadSessionContextSynthesize: "read_session_context_synthesize",
   SessionTitle: "session_title_generation",
@@ -188,6 +191,16 @@ function mapQuerySourceToModelApiOperation(querySource: string | undefined): {
         operation: ModelApiOperation.ProjectMemoryExtract,
         actorKind: ModelApiActorKind.System,
       };
+    case "project_memory_dream":
+      return {
+        operation: ModelApiOperation.ProjectMemoryDream,
+        actorKind: ModelApiActorKind.System,
+      };
+    case "project_memory_recall":
+      return {
+        operation: ModelApiOperation.ProjectMemoryRecall,
+        actorKind: ModelApiActorKind.System,
+      };
     default:
       return {
         operation: ModelApiOperation.ToolInternalModelCall,
@@ -307,6 +320,8 @@ export interface ModelAttemptSpanWriter extends AgentTelemetryScope {
   markFirstContent(): void;
   markFirstText(): void;
   markStreamStalled(idleMs: number): void;
+  /** 请求观测交由发行实现映射到 Attribute 与 Event。 */
+  recordRequestObservation(observation: ModelRequestObservation): void;
   finishCompleted(): void;
   finishFailed(
     stage: ModelAttemptFailureStage,

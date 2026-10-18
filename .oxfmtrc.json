@@ -5,12 +5,16 @@
   "ignorePatterns": [
     ".oxfmtrc.json",
     "packages/desktop/resources/official-marketplace",
+    "packages/desktop/src/renderer/src/plugin-sandbox/genUiTweakRuntime.js",
+    "apps/zcode-cli/packages/visualize-plugin/skills/visualize/assets/**",
     "THIRD-PARTY-NOTICES.md",
     "third-party/inventory.json",
     "third-party/upstream/**",
     "third-party/native-search/licenses/**",
     "third-party/runtime/*.txt",
     "packages/desktop/src/scheduler/schedulerProtocol.d.ts",
-    "packages/desktop/src/scheduler/schedulerProtocol.js"
+    "packages/desktop/src/scheduler/schedulerProtocol.js",
+    "docs/knip/docs/LICENSE",
+    "docs/knip/docs/licenses/**"
   ]
 }

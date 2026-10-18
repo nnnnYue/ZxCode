@@ -1,18 +1,22 @@
 import { buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
+import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
 
 export function createDesktopPlatform(options: {
   isLocalDevelopmentRuntime: boolean;
 }): IPlatformService {
   return {
     canSelectFilePath: true,
+    pluginSandbox: createDesktopPluginSandboxPlatform(),
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
     selectDirectory: () => window.zxcode.selectDirectory(),
     selectFile: () => window.zxcode.selectFile(),
     selectFiles: () => window.zxcode.selectFiles?.() ?? Promise.resolve([]),
     createTempTextAttachment: (payload) => window.zxcode.createTempTextAttachment(payload),
+    materializeWorkflowArtifactFile: (payload) =>
+      window.zxcode.materializeWorkflowArtifactFile(payload),
     onRemoteConnectionLog: (handler) => window.zxcode.onRemoteConnectionLog(handler),
     onRemoteSessionClosed: (handler) => window.zxcode.onRemoteSessionClosed(handler),
     onBotRemoteWorkspaceReconnected: (handler) =>
@@ -25,6 +29,15 @@ export function createDesktopPlatform(options: {
       window.zxcode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
     bindRemoteWorkspaceSessionContext: (context) =>
       window.zxcode.bindRemoteWorkspaceSessionContext?.(context) ?? Promise.resolve(),
+    // fork：采纳上游 webRemoteControl 桥（main 侧 IPC 已注册，preload 已暴露）；
+    // 反馈/社群入口维持去平台化 no-op（REMOVALS：反馈工单与社区链接跳转）。
+    startWebRemoteControl: (context) => window.zxcode.startWebRemoteControl(context),
+    refreshWebRemoteControlPairing: (context) =>
+      window.zxcode.refreshWebRemoteControlPairing(context),
+    stopWebRemoteControl: () => window.zxcode.stopWebRemoteControl(),
+    getWebRemoteControlStatus: () => window.zxcode.getWebRemoteControlStatus(),
+    onWebRemoteControlStatusChanged: (handler) =>
+      window.zxcode.onWebRemoteControlStatusChanged?.(handler) ?? (() => {}),
     disposeRemoteSession: (sessionId) => window.zxcode.disposeRemoteSession(sessionId),
     isDockerAvailable: () => window.zxcode.isDockerAvailable(),
     listWSLDistros: () => window.zxcode.listWSLDistros(),
@@ -34,7 +47,6 @@ export function createDesktopPlatform(options: {
     saveMcpToUserDirectory: (payload) => window.zxcode.saveMcpToUserDirectory(payload),
     migrateLegacyCommonMcp: (payload) => window.zxcode.migrateLegacyCommonMcp(payload),
     openExternal: (url) => window.zxcode.openExternal(url),
-    // 去平台化：社群/反馈入口已随桌面命令删除；web 形态仍实现该接口，桌面侧保留 no-op。
     openFeedback: async () => {},
     openCommunity: async () => {},
     canOpenCommunity: async () => false,
@@ -63,6 +75,28 @@ export function createDesktopPlatform(options: {
     syncWindowWorkspace: (payload) => window.zxcode.syncWindowWorkspace?.(payload),
     getMobileRelayStatus: () => window.zxcode.getMobileRelayStatus?.(),
     requestMobileRelayGrant: (payload) => window.zxcode.requestMobileRelayGrant?.(payload),
+    // fork：上游 rendererActionTrace / TTFT 埋点桥保持移除（REMOVALS 遥测域）。
+    syncWebRemoteControlWorkspaces: (workspaces) =>
+      window.zxcode.syncWebRemoteControlWorkspaces?.(workspaces),
+    syncWebRemoteControlTasks: (tasks) => window.zxcode.syncWebRemoteControlTasks?.(tasks),
+    onWebRemoteControlReconnectWorkspace: (handler) =>
+      window.zxcode.onWebRemoteControlReconnectWorkspace?.(handler) ?? (() => {}),
+    // 桥缺失（旧 preload 升级窗口）时按 supported 兜底，与 Windows 现状一致，设置开关可用。
+    getCloseToTrayCapability: () =>
+      window.zxcode.getCloseToTrayCapability?.() ??
+      Promise.resolve({ supported: true, gnomeLikeWithoutTray: false }),
+    onEmbeddedBrowserPermissionPrompt: (handler) =>
+      window.zxcode.onEmbeddedBrowserPermissionPrompt?.(handler) ?? (() => {}),
+    resolveEmbeddedBrowserPermissionPrompt: (request) =>
+      window.zxcode.resolveEmbeddedBrowserPermissionPrompt?.(request),
+    getEmbeddedBrowserSitePermissions: () =>
+      window.zxcode.getEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+    setEmbeddedBrowserSitePermission: (request) =>
+      window.zxcode.setEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
+    clearEmbeddedBrowserSitePermissions: () =>
+      window.zxcode.clearEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+    resetEmbeddedBrowserSitePermission: (request) =>
+      window.zxcode.resetEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
     syncWindowUnreadCount: (count) => window.zxcode.syncWindowUnreadCount(count),
     syncActiveTaskSession: (sessionId) => window.zxcode.syncActiveTaskSession(sessionId),
     syncAppSettings: (patch) => window.zxcode.syncAppSettings?.(patch),

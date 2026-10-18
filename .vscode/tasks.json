@@ -5,7 +5,9 @@
       "label": "zxcode: tsup watch (debug)",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/.vscode/tsup-watch.mjs"],
+      "args": [
+        "${workspaceFolder}/.vscode/tsup-watch.mjs"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -32,7 +34,9 @@
       "label": "zxcode: vite dev",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/.vscode/vite-dev.mjs"],
+      "args": [
+        "${workspaceFolder}/.vscode/vite-dev.mjs"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -64,7 +68,9 @@
       "label": "zxcode: start electron (debug)",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/.vscode/start-electron.mjs"],
+      "args": [
+        "${workspaceFolder}/.vscode/start-electron.mjs"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -92,7 +98,10 @@
       "label": "zxcode: start electron (debug with host inspect)",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/.vscode/start-electron.mjs", "--host-inspect"],
+      "args": [
+        "${workspaceFolder}/.vscode/start-electron.mjs",
+        "--host-inspect"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },

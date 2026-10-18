@@ -18,17 +18,7 @@
         "type": "zcode_official",
         "provider": "jwt_token"
       },
-      "timeoutMs": 90000,
-      "command": "/Applications/ZCode.app/Contents/Frameworks/ZCode Helper.app/Contents/MacOS/ZCode Helper",
-      "args": [
-        "/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs",
-        "__zcode-plugin-host",
-        "/Users/edward/.zcode/cli/plugins/cache/zcode-plugins-official/image-search/0.1.1/dist/mcp/server.js"
-      ],
-      "env": {
-        "ELECTRON_RUN_AS_NODE": "1",
-        "ZCODE_PLUGIN_ID": "image-search@zcode-plugins-official"
-      }
+      "timeoutMs": 90000
     }
   }
 }

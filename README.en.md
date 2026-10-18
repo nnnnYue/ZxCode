@@ -20,6 +20,11 @@ This project removes Zhipu (Z.ai / BigModel) platform account login, telemetry r
 | Web / ZxCode CLI distribution | Terminal and browser workspace; packages the TUI, Web client, backend, and Agent together  | `pnpm dev:web`                 |
 | Agent CLI                     | The `zxcode` terminal interface, which also provides the Agent runtime for Desktop and Web | `pnpm --filter @zcode/cli dev` |
 
+## Updates
+
+- 2026-10-19: Merged upstream ZCode v3.15.1.
+- 2026-9-25: Merged upstream ZCode v3.14.3.
+
 ## Setup
 
 Install Git, Node.js **24.14.0**, and pnpm **10.33.2**. [mise.toml](mise.toml) is the source of truth for tool versions. Run all development and packaging commands below from the repository root.
@@ -136,6 +141,12 @@ node apps/zcode-cli/packages/cli/dist/zxcode.cjs --help
 ```
 
 This entry runs the Agent CLI directly and does not handle the distribution's `--web` switch. Use `pnpm dev:web` for Web development, or the extracted `bin/zxcode.mjs` shown below to test the unified command.
+
+### UI Plugin development
+
+See the [UI Plugin guide](UI_PLUGIN.en.md) for the Excalidraw workflow, supported APIs, plugin installation and updates, and host debugging.
+
+**Plugin PRs in `zcode-plugins` must declare whether they affect a UI Plugin and list the plugin names in the PR template.** See the [required plugin-type declaration](UI_PLUGIN.en.md#declare-the-plugin-type-in-pull-requests).
 
 ## Configuration
 

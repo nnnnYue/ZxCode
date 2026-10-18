@@ -26,3 +26,4 @@ export function shouldOpenFallbackWorkspaceAfterCreate(
 ): boolean {
   return state.isMounted && !state.activeWorkspacePath;
 }
+

@@ -10,13 +10,15 @@ import type {
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
 import { createModelRequestAttributionHeaders, type ModelStatusContext } from "./runner-status.js";
+import { withoutModelQuerySourceHeader } from "./model-request-headers.js";
 
 function mergeRequestHeaders(
   providerHeaders: Record<string, string> | undefined,
   attributionHeaders: Record<string, string>,
 ): Record<string, string> {
+  // 通用大小写去重会改变旧归因头的 SDK 合并结果；本次只剔除 query-source 静态值。
   return {
-    ...providerHeaders,
+    ...withoutModelQuerySourceHeader(providerHeaders),
     ...attributionHeaders,
   };
 }

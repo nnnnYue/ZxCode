@@ -1,3 +1,13 @@
+/** 与 core `model-errors.ts` 中 anomaly guard 文案保持一致。 */
+export const SUSPICIOUS_EMPTY_MODEL_RESULT_MESSAGE =
+  "Model returned no text, no tool calls, and no usage before completing the turn.";
+
+export {
+  resolveRequestVerificationBusinessCode,
+  isRequestVerificationTerminalError,
+  isRequestVerificationRejectedMessage,
+  REQUEST_VERIFICATION_REJECTED_MESSAGE,
+} from "@/request-security-edition/errors.js";
 /**
  * zcode-plan / Coding Plan 业务错误码与前端处理约定。
  *
@@ -14,7 +24,7 @@
  * | 上游 HTTP 异常 | 2007 | 500  | 可重试；刷新配额，勿本地扣额度 |
  */
 
-const PROVIDER_BUSINESS_ERROR_CODES = [
+export const PROVIDER_BUSINESS_ERROR_CODES = [
   "1006",
   "1005",
   "3006",
@@ -29,9 +39,9 @@ const PROVIDER_BUSINESS_ERROR_CODES = [
   "429",
 ] as const;
 
-type ProviderBusinessErrorCode = (typeof PROVIDER_BUSINESS_ERROR_CODES)[number];
+export type ProviderBusinessErrorCode = (typeof PROVIDER_BUSINESS_ERROR_CODES)[number];
 
-const PROVIDER_BUSINESS_ERROR_MESSAGE_IDS: Record<ProviderBusinessErrorCode, string> = {
+export const PROVIDER_BUSINESS_ERROR_MESSAGE_IDS: Record<ProviderBusinessErrorCode, string> = {
   "1006": "zcode.error.providerBusiness.1006",
   "1005": "zcode.error.providerBusiness.1005",
   "3006": "zcode.error.providerBusiness.3006",
@@ -96,6 +106,8 @@ export function resolveStartPlanQuotaExhaustedBusinessCode(
 
   return undefined;
 }
+
+const CONCURRENT_LIMIT_BUSINESS_CODES = new Set(["3008", "3009", "3010"]);
 
 const CONCURRENT_LIMIT_WRAPPER_CODES = new Set([
   "PROVIDER_BUSINESS_ERROR",
@@ -174,6 +186,11 @@ export function resolveStartPlanConcurrentLimitBusinessCode(
   return undefined;
 }
 
+/** 判断业务码是否为并发上限类型。 */
+export function isConcurrentLimitBusinessCode(code: string | undefined): boolean {
+  return Boolean(code && CONCURRENT_LIMIT_BUSINESS_CODES.has(code));
+}
+
 export function resolveGlmQuotaBannerBusinessCode(
   code: string | undefined,
 ): GlmQuotaBannerBusinessCode | undefined {
@@ -194,9 +211,10 @@ export function resolveStartPlanConcurrentLimitBannerReason(
     : "initial-busy";
 }
 
-/** 与 core `model-errors.ts` 中 anomaly guard 文案保持一致。 */
-export const SUSPICIOUS_EMPTY_MODEL_RESULT_MESSAGE =
-  "Model returned no text, no tool calls, and no usage before completing the turn.";
+/** 上游 500 类错误：重试前建议刷新配额快照，避免 UI 本地误扣额度。 */
+export function shouldRefreshQuotaOnProviderBusinessRetry(code: string | undefined): boolean {
+  return code === "2007" || code === "1005";
+}
 
 export function isSuspiciousEmptyModelResultMessage(message: string | undefined): boolean {
   if (!message) {

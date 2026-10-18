@@ -1,7 +1,7 @@
-import { ensureDeviceMid as ensureSharedDeviceMid } from "@zcode/services/node";
+import { ensureTelemetryDeviceMid } from "@zcode/services/node";
 
-interface EnsureRemoteServerDeviceMidOptions {
-  /** 仅测试注入；生产固定使用 services 的 ensureDeviceMid。 */
+export interface EnsureRemoteServerDeviceMidOptions {
+  /** 仅测试注入；生产固定使用 services 的 ensureTelemetryDeviceMid。 */
   ensureDeviceMid?: () => Promise<string>;
   log: (...args: unknown[]) => void;
 }
@@ -21,7 +21,7 @@ interface EnsureRemoteServerDeviceMidOptions {
 export async function ensureRemoteServerDeviceMid(
   options: EnsureRemoteServerDeviceMidOptions,
 ): Promise<string | undefined> {
-  const ensureDeviceMid = options.ensureDeviceMid ?? ensureSharedDeviceMid;
+  const ensureDeviceMid = options.ensureDeviceMid ?? ensureTelemetryDeviceMid;
   try {
     return await ensureDeviceMid();
   } catch (error) {

@@ -1,3 +1,4 @@
+import { collectRuntimeAgentListing } from "../helpers/agent-listing.js";
 import {
   CompactPhase,
   CompactReason,
@@ -17,7 +18,6 @@ import {
   getUsageTotalTokens,
 } from "../deps.js";
 import type { SessionEvent, TraceContext } from "../deps.js";
-import { resolveModelRequestSessionTypeFromTaskType } from "./model-request-session-type.js";
 import {
   defaultCompactPhaseForTrigger,
   defaultCompactReasonForTrigger,
@@ -62,6 +62,7 @@ import {
 import { runCompactSummaryModelRequest } from "./compact-summary-model-request.js";
 import { resolveNormalRequestMaxOutputTokens } from "./model-token-limits.js";
 import { recordModelUsageFact } from "./usage-observability.js";
+import { resetProjectMemoryRecall } from "../helpers/project-memory-recall.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import {
   filterOutputTokenContinuationEntries,
@@ -91,6 +92,7 @@ export async function compactActiveConversation(
     sourceCommandId?: string;
     trigger?: CompactTrigger;
     model?: Model;
+    agentListingTools?: readonly { name: string }[];
     activeEntries?: readonly RuntimeMessageEntry[];
   } = {},
 ): Promise<{
@@ -158,6 +160,7 @@ async function compactActiveConversationImpl(
     sourceCommandId?: string;
     trigger?: CompactTrigger;
     model?: Model;
+    agentListingTools?: readonly { name: string }[];
     activeEntries?: readonly RuntimeMessageEntry[];
   } = {},
 ): Promise<{
@@ -385,7 +388,6 @@ async function compactActiveConversationImpl(
           maxOutputTokens: compactSummaryMaxOutputTokens,
           messages: projectedRequestMessages,
           metadata: traceContextToLogContext(modelTraceContext),
-          modelRequestSessionType: resolveModelRequestSessionTypeFromTaskType(this.config.taskType),
           modelCall: {
             attributes: {
               compactionOuterAttempt: attempt,
@@ -486,7 +488,13 @@ async function compactActiveConversationImpl(
             workspaceRoot: this.workspaceRoot,
           })
         : undefined;
+      const agentListingEntry = collectRuntimeAgentListing(
+        this,
+        preservedEntries,
+        options.agentListingTools ?? this.getTools(options.model ?? compactModel),
+      );
       const postCompactReminderEntries = [
+        ...(agentListingEntry ? [agentListingEntry] : []),
         ...(planFileReferenceEntry ? [planFileReferenceEntry] : []),
         ...buildPostCompactReadStateReminderEntries({
           preservedEntries,
@@ -617,6 +625,8 @@ async function compactActiveConversationImpl(
           : recordablePostCompactEntries,
       );
       this.readFileState.clear();
+      resetProjectMemoryRecall(this);
+
       return {
         displayText: "Compacted",
         entries: postCompactEntries,
