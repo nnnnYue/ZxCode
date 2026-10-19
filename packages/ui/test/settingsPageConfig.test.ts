@@ -34,7 +34,16 @@ describe("settingsPageConfig", () => {
     ).toEqual([
       {
         id: "basics",
-        sections: ["general", "appearance", "modelProvider", "browser", "shortcuts"],
+        // fork 新增手机远控（mobileRelay）与自定义请求头（custom）基础分区。
+        sections: [
+          "general",
+          "appearance",
+          "modelProvider",
+          "browser",
+          "mobileRelay",
+          "shortcuts",
+          "custom",
+        ],
       },
       {
         id: "agentCapabilities",
@@ -58,7 +67,9 @@ describe("settingsPageConfig", () => {
       "commands",
       "hooks",
       "browser",
+      "mobileRelay",
       "shortcuts",
+      "custom",
       "usage",
     ]);
   });
@@ -79,7 +90,9 @@ describe("settingsPageConfig", () => {
       "commands",
       "hooks",
       "browser",
+      "mobileRelay",
       "shortcuts",
+      "custom",
       "usage",
     ]);
   });
@@ -99,14 +112,13 @@ describe("settingsPageConfig", () => {
     expect(SETTINGS_SECTIONS.find((section) => section.id === "skill")?.icon).toBe(WandSparkles);
   });
 
-  it("Usage 分区文案和头像菜单使用统计入口保持一致", async () => {
+  it("Usage 分区使用本地使用统计文案（fork 无头像菜单套餐入口）", async () => {
     const { SETTINGS_SECTIONS } = await loadSettingsPageConfig("test");
     const usageSection = SETTINGS_SECTIONS.find((section) => section.id === "usage");
 
     expect(usageSection?.icon).toBe(BarChart3);
-    expect(enUS["settings.usageTitle"]).toBe(enUS["sidebar.usage.plan.openStats"]);
-    expect(enUS["settings.usage.sectionTitle"]).toBe(enUS["sidebar.usage.plan.openStats"]);
-    expect(zhCN["settings.usageTitle"]).toBe(zhCN["sidebar.usage.plan.openStats"]);
+    expect(enUS["settings.usageTitle"]).toBe("Usage stats");
+    expect(zhCN["settings.usageTitle"]).toBe("使用统计");
   });
 
   it("侧栏分组标题同时提供中英文文案", () => {
@@ -140,8 +152,10 @@ describe("settingsPageConfig", () => {
       "appearance",
       "modelProvider",
       "browser",
+      "mobileRelay",
       "computerUse",
       "shortcuts",
+      "custom",
     ]);
     expect(
       settingsSectionGroups

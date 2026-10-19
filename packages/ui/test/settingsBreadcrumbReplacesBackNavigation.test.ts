@@ -17,7 +17,7 @@ describe("Settings breadcrumb replaces detail back navigation", () => {
     expect(readSource(name)).not.toContain("SettingsBackButton");
   });
 
-  it.each(["AutomationEditView", "OffPeakEditView"])(
+  it.each(["AutomationEditView"])(
     "moves %s back navigation into the breadcrumb",
     (name) => {
       const source = readSource(name);

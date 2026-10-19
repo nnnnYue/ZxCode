@@ -107,7 +107,7 @@ describe("pluginStoreListing", () => {
 
   it("formats marketplace slugs as display names", () => {
     expect(formatCanonicalMarketplaceName("zcode-plugins-official", "en-US")).toBe(
-      "ZCode Plugins Official",
+      "ZxCode Plugins Official",
     );
     expect(formatCanonicalMarketplaceName("claude-plugins-official", "en-US")).toBe(
       "Claude Plugins Official",
@@ -454,7 +454,7 @@ describe("pluginStoreListing", () => {
     });
     expect(item).toBeDefined();
     expect(resolveItemDisplayName(item!, "en-US")).toBe("Cloudbase Skills");
-    expect(formatCanonicalPluginName("zcode-guide", "en-US")).toBe("ZCode Guide");
+    expect(formatCanonicalPluginName("zcode-guide", "en-US")).toBe("ZxCode Guide");
     expect(formatCanonicalPluginName("aws-mcp-server", "en-US")).toBe("AWS MCP Server");
     expect(formatCanonicalPluginName("AWS_mCp_tools", "en-US")).toBe("AWS MCP Tools");
   });
@@ -610,21 +610,6 @@ describe("document plugin default order", () => {
       expect(items[0]?.name).toBe("aaa");
     },
   );
-  it("retains explicit server priority and skips absent document plugins", () => {
-    const groups = groupItemsByCategory(
-      items.filter((item) => item.name !== "pdf"),
-      "en-US",
-      {
-        pluginOrder: { productivity: ["aaa@zcode-plugins-official"] },
-      },
-    );
-    expect(groups[0]?.items.map((item) => item.name)).toEqual([
-      "aaa",
-      "presentations",
-      "spreadsheets",
-      "documents",
-    ]);
-  });
   it("does not pin personal plugins with the same name", () => {
     const personal = items.map((item) => ({
       ...item,

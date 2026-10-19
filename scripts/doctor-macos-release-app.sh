@@ -4,30 +4,30 @@ set -euo pipefail
 
 APP_PATH="${1:-${ZXCODE_MACOS_RELEASE_APP_PATH:-/Applications/ZxCode.app}}"
 # 上游新增：CUA Helper 的用户级安装目录与安装变体读取（变量名与 macosReleaseAppDoctor.test.ts 锁定的字面量保持一致）。
-ZCODE_HOME_DIR="${ZCODE_HOME:-${HOME:+$HOME/.zcode}}"
-CUA_HELPER_INSTALL_VARIANT="${ZCODE_CUA_HELPER_INSTALL_VARIANT:-}"
+ZCODE_HOME_DIR="${ZXCODE_HOME:-${HOME:+$HOME/.zxcode}}"
+CUA_HELPER_INSTALL_VARIANT="${ZXCODE_CUA_HELPER_INSTALL_VARIANT:-}"
 # 安装包身份与后端环境分轴：ZXCODE_PREVIEW_IDENTITY=1 让生产后端的构建仍是 ZxCode Preview。
 # 只认 "1"，与 CI workflow / release 门的精确比较同一套语义（其它拼写一律视为未开启）。
 is_preview_identity_requested() {
   [[ "${ZXCODE_PREVIEW_IDENTITY:-}" = "1" ]]
 }
-if [ -z "$CUA_HELPER_INSTALL_VARIANT" ] && { [ "${ZCODE_ENV:-production}" = "test" ] || is_preview_identity_requested; }; then
+if [ -z "$CUA_HELPER_INSTALL_VARIANT" ] && { [ "${ZXCODE_ENV:-production}" = "test" ] || is_preview_identity_requested; }; then
   CUA_HELPER_INSTALL_VARIANT="preview"
 fi
 if [ -n "$CUA_HELPER_INSTALL_VARIANT" ] && [[ ! "$CUA_HELPER_INSTALL_VARIANT" =~ ^[A-Za-z0-9_-]+$ ]]; then
-  echo "[macos-release-doctor] invalid ZCODE_CUA_HELPER_INSTALL_VARIANT: $CUA_HELPER_INSTALL_VARIANT" >&2
+  echo "[macos-release-doctor] invalid ZXCODE_CUA_HELPER_INSTALL_VARIANT: $CUA_HELPER_INSTALL_VARIANT" >&2
   exit 1
 fi
 CUA_HELPER_INSTALL_SUBDIR="${CUA_HELPER_INSTALL_VARIANT:+$CUA_HELPER_INSTALL_VARIANT/}"
 # Shell cannot import producer TS constants. macosReleaseAppDoctor.test.ts locks these literals to
 # @zcode/zcode-cua/broker/helperConstants so a future producer rename fails loudly.
-ZCODE_HOME_HELPER_APP_PATH="${ZCODE_HOME_DIR:+$ZCODE_HOME_DIR/computer-use/${CUA_HELPER_INSTALL_SUBDIR}ZCode Computer Use.app}"
-HELPER_APP_PATH="${ZCODE_CUA_HELPER_APP_PATH:-$ZCODE_HOME_HELPER_APP_PATH}"
+ZCODE_HOME_HELPER_APP_PATH="${ZCODE_HOME_DIR:+$ZCODE_HOME_DIR/computer-use/${CUA_HELPER_INSTALL_SUBDIR}ZxCode Computer Use.app}"
+HELPER_APP_PATH="${ZXCODE_CUA_HELPER_APP_PATH:-$ZCODE_HOME_HELPER_APP_PATH}"
 APP_BUNDLE_NAME="$(basename "$APP_PATH")"
 APP_DISPLAY_NAME="${APP_BUNDLE_NAME%.app}"
 APP_EXECUTABLE_NAME="${ZXCODE_APP_EXECUTABLE_NAME:-$APP_DISPLAY_NAME}"
-HELPER_EXECUTABLE_NAME="${ZCODE_CUA_HELPER_EXECUTABLE_NAME:-ZCode Computer Use}"
-REQUIRE_CUA_HELPER="${ZCODE_CUA_REQUIRE_HELPER:-0}"
+HELPER_EXECUTABLE_NAME="${ZXCODE_CUA_HELPER_EXECUTABLE_NAME:-ZxCode Computer Use}"
+REQUIRE_CUA_HELPER="${ZXCODE_CUA_REQUIRE_HELPER:-0}"
 REQUIRE_CUA_HELPER_STAPLE=0
 if [[ "$REQUIRE_CUA_HELPER" =~ ^(1|true|on)$ ]]; then
   REQUIRE_CUA_HELPER_STAPLE=1
@@ -37,24 +37,24 @@ if [ "${APP_PATH:-}" = "--help" ] || [ "${APP_PATH:-}" = "-h" ]; then
   cat <<'USAGE'
 Usage:
   bash scripts/doctor-macos-release-app.sh /Applications/ZxCode.app
-  ZCODE_CUA_REQUIRE_HELPER=1 bash scripts/doctor-macos-release-app.sh /Applications/ZxCode.app
-  ZCODE_CUA_HELPER_APP_PATH=/path/to/ZCode\ Computer\ Use.app ZCODE_CUA_REQUIRE_HELPER=1 bash scripts/doctor-macos-release-app.sh /Applications/ZxCode.app
+  ZXCODE_CUA_REQUIRE_HELPER=1 bash scripts/doctor-macos-release-app.sh /Applications/ZxCode.app
+  ZCODE_CUA_HELPER_APP_PATH=/path/to/ZCode\ Computer\ Use.app ZXCODE_CUA_REQUIRE_HELPER=1 bash scripts/doctor-macos-release-app.sh /Applications/ZxCode.app
   ZXCODE_MACOS_RELEASE_APP_PATH=/Applications/ZxCode.app pnpm run doctor:macos-release
 
 Always validates the installed macOS release app with:
   codesign --verify --deep --strict <app>
   spctl -a -vv -t exec <app>
 
-Set ZCODE_CUA_REQUIRE_HELPER=1 for CUA/Helper release gates. In that mode this
+Set ZXCODE_CUA_REQUIRE_HELPER=1 for CUA/Helper release gates. In that mode this
 also validates the independently signed Helper bundle selected below with the
 same codesign/spctl checks and a local notarization staple check.
 
 Helper lookup order:
-  1. ZCODE_CUA_HELPER_APP_PATH (CI passes the Helper bundled inside ZCode.app)
-  2. ${ZCODE_HOME:-$HOME/.zcode}/computer-use/<optional variant>/ZCode Computer Use.app
+  1. ZXCODE_CUA_HELPER_APP_PATH (CI passes the Helper bundled inside ZxCode.app)
+  2. ${ZXCODE_HOME:-$HOME/.zxcode}/computer-use/<optional variant>/ZxCode Computer Use.app
 
 CI release acceptance validates the copy actually shipped at
-ZCode.app/Contents/Resources/cua-helper/ZCode Computer Use.app. Post-install checks
+ZxCode.app/Contents/Resources/cua-helper/ZxCode Computer Use.app. Post-install checks
 may omit the override to validate the user-level installed copy. A missing selected
 Helper.app fails closed.
 USAGE
@@ -144,7 +144,7 @@ require_command spctl
 # Bugfix: 过去 release/notarization 成功只说明 DMG 通过了 gate，不能证明安装后的主 app
 # 和 Computer Use Helper.app 都能被 Gatekeeper 以 exec 类型放行。这里先 fail-closed 检查 bundle
 # 结构，再分别跑 codesign/spctl，避免 helper 缺失或未独立签名时误报发布成功。
-# CI 显式传入最终 ZCode.app 内的 Helper；安装后验收则默认检查用户级复制品。
+# CI 显式传入最终 ZxCode.app 内的 Helper；安装后验收则默认检查用户级复制品。
 assert_bundle_dir "$APP_BUNDLE_NAME" "$APP_PATH"
 assert_executable "$APP_BUNDLE_NAME" "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE_NAME"
 validate_release_bundle "$APP_BUNDLE_NAME" "$APP_PATH"

@@ -3426,7 +3426,7 @@ async function createRecord(
               subagentRuntimeConfigSchema,
               {
                 signal,
-                timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+                timeoutMs: ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
                 trace: { traceId: traceContext.traceId },
               },
             );

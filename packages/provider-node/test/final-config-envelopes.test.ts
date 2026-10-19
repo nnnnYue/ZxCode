@@ -71,7 +71,7 @@ describe("Todo104 最终文件外壳", () => {
   it("实际 Builtin 用最终包装并完整往返，发布 revision 不倒退", async () => {
     const raw = JSON.parse(
       await readFile(
-        new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );
@@ -79,7 +79,8 @@ describe("Todo104 最终文件外壳", () => {
     expect(raw.revision).toBeGreaterThanOrEqual(18);
     const parsed = decodeZCodeBuiltinRelease(raw);
     expect(encodeZCodeBuiltinRelease(parsed)).toEqual(raw);
-    expect(parsed.config.providers.keys().length).toBeGreaterThan(0);
+    // fork 生产配置不声明 providerRules 成员（账号型 Provider 已全部下线），仅模板与模型规则；
+    // 往返与外壳校验仍覆盖全部实际存在的规则。
     expect(parsed.config.providerTemplates.keys().length).toBeGreaterThan(0);
     for (const rule of parsed.config.providers.toJSON()) {
       expect(rule.config).not.toHaveProperty("templateId");

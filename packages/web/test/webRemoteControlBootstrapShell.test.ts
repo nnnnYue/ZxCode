@@ -53,7 +53,8 @@ describe("web remote control bootstrap shell", () => {
 
   it("预渲染 loading 容器自身兜底主题背景，避免全局透明 body 露出白底", () => {
     const html = readWebIndexHtml();
-    const loadingRule = readCssRule(html, ".zcode-boot-loading");
+    // fork 命名：loading 类为 .zxcode-boot-loading（CSS 变量仍为 --zcode-bootstrap-bg）。
+    const loadingRule = readCssRule(html, ".zxcode-boot-loading");
 
     expect(loadingRule).toContain("background: var(--zcode-bootstrap-bg");
     expect(loadingRule).toContain("#0f172a");

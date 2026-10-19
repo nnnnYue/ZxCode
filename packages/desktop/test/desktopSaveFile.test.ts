@@ -344,6 +344,7 @@ describe("desktopSaveFile", () => {
   });
 
   it("注册到统一的平台频道", () => {
-    expect(PlatformChannels.SaveFile).toBe("zcode:save-file");
+    // fork 频道前缀为 zxcode:。
+    expect(PlatformChannels.SaveFile).toBe("zxcode:save-file");
   });
 });

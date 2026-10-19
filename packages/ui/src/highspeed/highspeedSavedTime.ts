@@ -1,6 +1,3 @@
-import type { CodingPlanRegularTpsRequest } from "@zcode/shared";
-import type { IUsageStatsService } from "@zcode/services";
-
 export interface HighspeedTimingMetricsForSavedTime {
   outputTokens: number;
   durationMs: number;
@@ -45,7 +42,8 @@ export function calculateHighspeedSavedDurationMs(params: {
         ? params.otherDurationMs
         : Math.max(0, params.durationMs - modelDurationMs - toolDurationMs);
     // CLI 已把真实模型/工具区间持久化；工具与其它等待不因模型换速而缩短。
-    const regularDurationMs = toolDurationMs + otherDurationMs + modelDurationMs * modelSpeedup;
+    const regularDurationMs =
+      toolDurationMs + otherDurationMs + modelDurationMs * modelSpeedup;
     const actualDurationMs = modelDurationMs + toolDurationMs + otherDurationMs;
     return Math.max(0, Math.round(regularDurationMs - actualDurationMs));
   }
@@ -53,7 +51,10 @@ export function calculateHighspeedSavedDurationMs(params: {
   // 工具占 20% 且不变，只有模型推理的 80% 按 Highspeed 倍率缩短。
   const highspeedShare = 0.2 + 0.8 / modelSpeedup;
   const estimatedRegularDurationMs = params.durationMs / highspeedShare;
-  return Math.max(0, Math.round(estimatedRegularDurationMs - params.durationMs));
+  return Math.max(
+    0,
+    Math.round(estimatedRegularDurationMs - params.durationMs),
+  );
 }
 
 /**
@@ -68,24 +69,5 @@ export function calculateHighspeedSavedDurationFromMetrics(
     ...metrics,
     regularTps,
     highspeedTps,
-  });
-}
-
-export async function readHighspeedRegularTpsFromHealth(params: {
-  usageStatsService: IUsageStatsService;
-  preferredProviderId: string;
-  /**
-   * 当前 Coding Plan 的账号访问上下文。Provider 重构后请求期鉴权只能由它解析，
-   * 缺失时 host 无法确定用哪个账号/团队项目查询，必定抛错。
-   */
-  accountAccess: CodingPlanRegularTpsRequest["accountAccess"];
-  timeZone?: string;
-}): Promise<number | undefined> {
-  const getRegularTps = params.usageStatsService.getCodingPlanRegularTps;
-  if (!getRegularTps) return undefined;
-  return getRegularTps.call(params.usageStatsService, {
-    preferredProviderId: params.preferredProviderId,
-    accountAccess: params.accountAccess,
-    ...(params.timeZone ? { timeZone: params.timeZone } : {}),
   });
 }

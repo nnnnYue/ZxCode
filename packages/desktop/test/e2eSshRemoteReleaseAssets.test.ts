@@ -86,8 +86,9 @@ describe("wdio.conf.ts SSH remote assets wiring", () => {
     expect(stageDesktopE2EAppOutput).not.toContain("SSH remote assets missing");
     // prepare 调用点必须带 timeoutMs：CI 上下载/构建挂死时让 onPrepare 可失败退出，
     // 而不是占住专用 runner 直到 job 全局超时。（本片段内仅 prepare 一处 pnpm 调用。）
+    // 修复原因：wdio.conf.ts 的调用改为多行缩进风格（`(` 与 `[` 不同行），正则允许跨行空白。
     expect(stageDesktopE2EAppOutput).toMatch(
-      /runPnpmWorkspaceCommand\(\[[^)]*prepare:remote-assets/u,
+      /runPnpmWorkspaceCommand\(\s*\[[^)]*prepare:remote-assets/us,
     );
     expect(stageDesktopE2EAppOutput).toContain("timeoutMs: ");
   });

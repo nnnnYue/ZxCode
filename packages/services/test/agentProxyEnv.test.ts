@@ -21,12 +21,12 @@ describe("buildAgentProxyEnv", () => {
     expect(buildAgentProxyEnv("   ")).toEqual({});
   });
 
-  it("sets the standard uppercase proxy keys plus ZCODE_HTTP_PROXY", () => {
+  it("sets the standard uppercase proxy keys plus ZXCODE_HTTP_PROXY", () => {
     expect(buildAgentProxyEnv("http://127.0.0.1:7890")).toEqual({
       HTTP_PROXY: "http://127.0.0.1:7890",
       HTTPS_PROXY: "http://127.0.0.1:7890",
       ALL_PROXY: "http://127.0.0.1:7890",
-      ZCODE_HTTP_PROXY: "http://127.0.0.1:7890",
+      ZXCODE_HTTP_PROXY: "http://127.0.0.1:7890",
     });
   });
 
@@ -45,10 +45,10 @@ describe("buildAgentCaCertEnv", () => {
     expect(buildAgentCaCertEnv("  ")).toEqual({});
   });
 
-  it("sets NODE_EXTRA_CA_CERTS and ZCODE_AGENT_CA_CERT to the cert path", () => {
+  it("sets NODE_EXTRA_CA_CERTS and ZXCODE_AGENT_CA_CERT to the cert path", () => {
     expect(buildAgentCaCertEnv("/tmp/zcode-network-ca.pem")).toEqual({
       NODE_EXTRA_CA_CERTS: "/tmp/zcode-network-ca.pem",
-      ZCODE_AGENT_CA_CERT: "/tmp/zcode-network-ca.pem",
+      ZXCODE_AGENT_CA_CERT: "/tmp/zcode-network-ca.pem",
     });
   });
 });
@@ -59,11 +59,11 @@ describe("buildAgentNoProxyEnv", () => {
     expect(buildAgentNoProxyEnv("  ")).toEqual({});
   });
 
-  it("sets standard no-proxy keys plus ZCODE_NO_PROXY", () => {
+  it("sets standard no-proxy keys plus ZXCODE_NO_PROXY", () => {
     expect(buildAgentNoProxyEnv(" localhost, 127.0.0.1 ,.example.com ")).toEqual({
       NO_PROXY: "localhost,127.0.0.1,.example.com",
       no_proxy: "localhost,127.0.0.1,.example.com",
-      ZCODE_NO_PROXY: "localhost,127.0.0.1,.example.com",
+      ZXCODE_NO_PROXY: "localhost,127.0.0.1,.example.com",
     });
   });
 });
@@ -80,12 +80,12 @@ describe("buildAgentRuntimeEnv", () => {
       HTTP_PROXY: "http://127.0.0.1:7890",
       HTTPS_PROXY: "http://127.0.0.1:7890",
       ALL_PROXY: "http://127.0.0.1:7890",
-      ZCODE_HTTP_PROXY: "http://127.0.0.1:7890",
+      ZXCODE_HTTP_PROXY: "http://127.0.0.1:7890",
       NO_PROXY: "localhost,127.0.0.1",
       no_proxy: "localhost,127.0.0.1",
-      ZCODE_NO_PROXY: "localhost,127.0.0.1",
+      ZXCODE_NO_PROXY: "localhost,127.0.0.1",
       NODE_EXTRA_CA_CERTS: "/tmp/root-ca.pem",
-      ZCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
+      ZXCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
     });
   });
 
@@ -94,7 +94,7 @@ describe("buildAgentRuntimeEnv", () => {
       HTTP_PROXY: "http://127.0.0.1:7890",
       HTTPS_PROXY: "http://127.0.0.1:7890",
       ALL_PROXY: "http://127.0.0.1:7890",
-      ZCODE_HTTP_PROXY: "http://127.0.0.1:7890",
+      ZXCODE_HTTP_PROXY: "http://127.0.0.1:7890",
     });
   });
 
@@ -103,7 +103,7 @@ describe("buildAgentRuntimeEnv", () => {
       buildAgentRuntimeEnv({ httpProxy: undefined, caCertPath: " /tmp/root-ca.pem " }),
     ).toEqual({
       NODE_EXTRA_CA_CERTS: "/tmp/root-ca.pem",
-      ZCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
+      ZXCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
     });
   });
 });
@@ -120,8 +120,8 @@ describe("buildAgentEndpointOriginEnv", () => {
   });
 
   it("pins the resolved origin onto ZCODE_BASE_URL", () => {
-    expect(buildAgentEndpointOriginEnv("https://zcode.z.ai")).toEqual({
-      ZCODE_BASE_URL: "https://zcode.z.ai",
+    expect(buildAgentEndpointOriginEnv("https://endpoint-fixture.example.test")).toEqual({
+      ZXCODE_BASE_URL: "https://endpoint-fixture.example.test",
     });
   });
 
@@ -145,7 +145,7 @@ describe("buildAgentEndpointOriginEnv", () => {
 describe("buildAgentWorkspaceIdentityEnv", () => {
   it("injects only a trimmed remote workspace identity", () => {
     expect(buildAgentWorkspaceIdentityEnv(" remote:ssh:host:/repo ")).toEqual({
-      ZCODE_WORKSPACE_IDENTITY: "remote:ssh:host:/repo",
+      ZXCODE_WORKSPACE_IDENTITY: "remote:ssh:host:/repo",
     });
     expect(buildAgentWorkspaceIdentityEnv("   ")).toEqual({});
     expect(buildAgentWorkspaceIdentityEnv(undefined)).toEqual({});
@@ -182,7 +182,7 @@ describe("official MCP trust: host and agent must agree on the ZCode API origin"
 
   it("agrees in test env once the resolved origin is injected", async () => {
     // 复现场景：ZCODE_ENV=test（桌面测试包显式下发）+ 设置页自定义端点 ≠ env base URL。
-    const hostEnv = { ZCODE_ENV: "test", ZCODE_BASE_URL: "https://env-derived.example" };
+    const hostEnv = { ZCODE_ENV: "test", ZXCODE_BASE_URL: "https://env-derived.example" };
     const agentEnv = {
       ...hostEnv,
       ...buildAgentEndpointOriginEnv(
@@ -206,7 +206,7 @@ describe("official MCP trust: host and agent must agree on the ZCode API origin"
 
   it("would diverge without the injection (guards against silently dropping it)", async () => {
     // 反向护栏：去掉注入后本用例必须观察到分叉，否则上面那条就是恒真的假护栏。
-    const hostEnv = { ZCODE_ENV: "test", ZCODE_BASE_URL: "https://env-derived.example" };
+    const hostEnv = { ZCODE_ENV: "test", ZXCODE_BASE_URL: "https://env-derived.example" };
     const host = hostRegistry(hostEnv, SETTINGS_ORIGIN);
     const agentWithoutInjection = agentRegistry(hostEnv);
 
@@ -214,23 +214,23 @@ describe("official MCP trust: host and agent must agree on the ZCode API origin"
     expect(await verdict(agentWithoutInjection, SETTINGS_ORIGIN)).toBe(false);
   });
 
-  it("agrees in production, where the settings override is ignored on both sides", async () => {
-    // production 下 override 被忽略，注入值等于 env 派生值，行为不得改变。
-    const hostEnv = { ZCODE_ENV: "production", ZCODE_BASE_URL: "https://zcode.z.ai" };
+  it("agrees in production: fork 的 settings override 在两侧一致生效", async () => {
+    // fork 的 overrideOrigin 语义不再按环境忽略：注入值即 settings 覆盖值，两侧判定保持一致。
+    const hostEnv = { ZXCODE_ENV: "production", ZXCODE_BASE_URL: "https://endpoint-fixture.example.test" };
     const injected = resolveRuntimeZCodeEndpointOrigin(hostEnv, {
       overrideOrigin: SETTINGS_ORIGIN,
     });
-    expect(injected).toBe("https://zcode.z.ai");
+    expect(injected).toBe(SETTINGS_ORIGIN);
 
     const agentEnv = { ...hostEnv, ...buildAgentEndpointOriginEnv(injected) };
     const host = hostRegistry(hostEnv, SETTINGS_ORIGIN);
     const agent = agentRegistry(agentEnv);
 
-    for (const origin of ["https://zcode.z.ai", SETTINGS_ORIGIN]) {
+    for (const origin of ["https://endpoint-fixture.example.test", SETTINGS_ORIGIN]) {
       expect(await verdict(agent, origin)).toBe(await verdict(host, origin));
     }
-    expect(await verdict(host, "https://zcode.z.ai")).toBe(true);
-    expect(await verdict(host, SETTINGS_ORIGIN)).toBe(false);
+    expect(await verdict(host, SETTINGS_ORIGIN)).toBe(true);
+    expect(await verdict(host, "https://endpoint-fixture.example.test")).toBe(false);
   });
 });
 
@@ -261,8 +261,9 @@ describe("node.ts wires the authoritative origin into resolveSpawnEnv", () => {
     // 承重项：必须用 resolveCurrentZCodeEndpointOrigin（含 settings 覆盖）。
     // 接成 resolveRuntimeZCodeEndpointOrigin(process.env) 会让这次修复完全失效，
     // 而两侧仍然"看起来"都在解析 origin。
-    expect(spawnEnvBlock).toContain(
-      "buildAgentEndpointOriginEnv(await resolveCurrentZCodeEndpointOrigin())",
+    // 格式化可能把调用拆成多行（含尾随逗号）；用正则匹配真实调用形态。
+    expect(spawnEnvBlock).toMatch(
+      /buildAgentEndpointOriginEnv\(\s*await\s+resolveCurrentZCodeEndpointOrigin\(/,
     );
   });
 });

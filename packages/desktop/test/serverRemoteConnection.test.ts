@@ -377,7 +377,7 @@ describe("server remote connection", () => {
     expect(await rejectedWebSocketStatus(wsHost)).toBe(401);
     expect(
       await rejectedWebSocketStatus(wsHost, {
-        "x-zcode-rpc-host-capability": "forged",
+        "x-zxcode-rpc-host-capability": "forged",
       }),
     ).toBe(401);
 
@@ -393,7 +393,7 @@ describe("server remote connection", () => {
     expect(ticket.expiresAt).toBeGreaterThan(Date.now());
 
     const trusted = await connectNodeRpc(wsHost, {
-      "x-zcode-rpc-host-capability": ticket.capability,
+      "x-zxcode-rpc-host-capability": ticket.capability,
     });
     await expect(trusted.services.zcodeAgentService.helloConversationV4()).resolves.toMatchObject({
       clientMode: "desktop-continuous",
@@ -401,7 +401,7 @@ describe("server remote connection", () => {
     });
     expect(
       await rejectedWebSocketStatus(wsHost, {
-        "x-zcode-rpc-host-capability": ticket.capability,
+        "x-zxcode-rpc-host-capability": ticket.capability,
       }),
     ).toBe(401);
     trusted.socket.close();

@@ -7,18 +7,15 @@ import {
 } from "../src/index.js";
 
 describe("Todo 21 source contracts", () => {
-  it("ZCode Built-in Provider 只接受 Account Family Provider", () => {
+  it("ZCode Built-in Provider 只接受家族分组 Provider", () => {
+    // fork：zhipu-account Access 已下线，Built-in Provider 以 api-key 形态声明访问材料。
     const providers = parseZCodeBuiltinProviderConfigMap([
       {
         providerId: "builtin",
         config: {
           group: "zai-family",
           visibility: "visible",
-          access: {
-            type: "zhipu-account",
-            accountType: "zai",
-            mode: "individual-coding-plan",
-          },
+          access: { type: "api-key", apiKey: "test-only" },
           api: { type: "anthropic-messages", baseUrl: "https://example.com" },
           builtinModelIds: ["model-a"],
         },
@@ -42,25 +39,14 @@ describe("Todo 21 source contracts", () => {
   });
 
   it("Account Provider 只能投影账号约束字段", () => {
+    // fork：账号 Overlay 仅余 builtinModelIds 历史字段面，不再携带 access。
     const providers = parseAccountProviderConfigMap({
-      account: {
-        access: { type: "zhipu-account", entitled: true },
-        builtinModelIds: ["model-a"],
-      },
+      account: { builtinModelIds: ["model-a"] },
     });
-    expect(providers.get("account")?.access).toMatchObject({
-      type: "zhipu-account",
-      entitled: true,
-    });
+    expect(providers.get("account")?.builtinModelIds).toEqual(["model-a"]);
     expect(() =>
       parseAccountProviderConfigMap({
-        account: {
-          access: {
-            type: "zhipu-account",
-            accountType: "zai",
-            mode: "start-plan",
-          },
-        },
+        account: { access: { type: "zhipu-account", entitled: true } },
       }),
     ).toThrow();
     expect(() => parseAccountProviderConfigMap({ account: { label: "Account" } })).toThrow();
@@ -92,16 +78,7 @@ describe("Todo 21 source contracts", () => {
         providerRules: [{ providerId: "personal", config: { group: "standard-builtin" } }],
       }),
     ).toThrow();
-    expect(() =>
-      parsePersonalProviderConfigMap({
-        providerRules: [
-          {
-            providerId: "account:zai-start-plan",
-            config: { access: { type: "zhipu-account", accountType: "zai", mode: "start-plan" } },
-          },
-        ],
-      }),
-    ).toThrow("固定 Account Provider 的 Access 只能由 ZCode Built-in Config 声明");
+    // fork：“固定 Account Provider 的 Access 只能由 Built-in 声明”守卫已随账号型 Provider 下线。
   });
 
   it("Personal Provider 缺失 access 时保持不完整，不从 group 推断 Access", () => {
@@ -114,30 +91,6 @@ describe("Todo 21 source contracts", () => {
 
     expect(providers.get("personal")?.access).toBeUndefined();
     expect(providers.get("overlay")?.access).toBeUndefined();
-  });
-
-  it("智谱产品模式属于 Provider Access", () => {
-    const providers = parseZCodeBuiltinProviderConfigMap([
-      {
-        providerId: "offpeak",
-        config: {
-          group: "zai-family",
-          visibility: "hidden",
-          access: {
-            type: "zhipu-account",
-            accountType: "zai",
-            mode: "off-peak",
-          },
-          api: { type: "anthropic-messages", baseUrl: "https://example.com" },
-          builtinModelIds: ["model-a"],
-        },
-      },
-    ]);
-    expect(providers.get("offpeak")?.access?.toJSON()).toEqual({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "off-peak",
-    });
   });
 
   it("Model 没有 visibility", () => {

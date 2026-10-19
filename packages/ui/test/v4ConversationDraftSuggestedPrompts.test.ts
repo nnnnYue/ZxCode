@@ -128,15 +128,15 @@ describe("ConversationDraftSuggestedPrompts", () => {
     render(createElement(ConversationDraftSuggestedPrompts, { items }));
     const rows = screen.getAllByRole("button");
 
-    expect(rows[0]?.classList.contains("zcode-draft-prompt-waterfall")).toBe(true);
-    expect(rows[1]?.classList.contains("zcode-draft-prompt-waterfall")).toBe(true);
+    expect(rows[0]?.classList.contains("zxcode-draft-prompt-waterfall")).toBe(true);
+    expect(rows[1]?.classList.contains("zxcode-draft-prompt-waterfall")).toBe(true);
     expect(rows[0]?.style.getPropertyValue("--zcode-draft-prompt-waterfall-delay")).toBe("0ms");
     expect(rows[1]?.style.getPropertyValue("--zcode-draft-prompt-waterfall-delay")).toBe("65ms");
     expect(stylesSource).toContain("@keyframes zcode-draft-prompt-waterfall");
     expect(stylesSource).toContain("clip-path: inset(0 0 100% 0)");
     expect(stylesSource).toContain("transform: translateY(-12px)");
     expect(stylesSource).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.zcode-draft-prompt-waterfall[\s\S]*?animation: none/u,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.zxcode-draft-prompt-waterfall[\s\S]*?animation: none/u,
     );
   });
 

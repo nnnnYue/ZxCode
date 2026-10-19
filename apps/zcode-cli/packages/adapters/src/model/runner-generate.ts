@@ -50,7 +50,6 @@ import type {
   AiSdkModelTextRequest,
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { AccountRequestRetry } from "./account-request-retry.js";
 import { resolveModelForAttempt } from "./runner-runtime-headers.js";
 import { retryAllowedByFailurePolicy } from "./workflow-model-failure-policy.js";
 import { modelFailureStatusFields, providerRequestIdFromHeaders } from "./runner-telemetry.js";
@@ -90,7 +89,6 @@ export async function runGenerateText(input: {
   const isDev = isDevelopmentModelIOEnv(input.env);
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
-  const authRetry = new AccountRequestRetry(input.request, input.resolved, input.logger);
   let emptyCompletionRetryCount = 0;
 
   for (
@@ -98,18 +96,18 @@ export async function runGenerateText(input: {
     retryAttemptLoopContinues(
       retryBudget,
       attempt,
-      input.retry.maxAttempts + Number(signatureRepairAttempted) + authRetry.extraAttempts,
+      input.retry.maxAttempts + Number(signatureRepairAttempted),
     );
     attempt += 1
   ) {
-    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted) - authRetry.extraAttempts;
+    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted);
     const attemptRequest = { ...input.request, messages: requestMessages };
     const startedAt = Date.now();
     let resolved = input.resolved;
     let statusContext = createAttemptStatusContext(
       {
         ...baseStatusContext,
-        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted) + authRetry.extraAttempts),
+        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted)),
       },
       attempt,
     );
@@ -158,8 +156,7 @@ export async function runGenerateText(input: {
     try {
       resolved = await resolveModelForAttempt({
         attempt,
-        reason: authRetry.takeReason(),
-        request: authRetry.prepareRequest(attemptRequest),
+        request: attemptRequest,
         resolveModel: input.resolveModel,
       });
       const anthropicMetadataUserId = await resolveAnthropicRequestMetadataUserId({
@@ -353,7 +350,7 @@ export async function runGenerateText(input: {
         requestMessages = repairedMessages;
         statusContext = {
           ...statusContext,
-          maxAttempts: statusMaxAttempts(1 + authRetry.extraAttempts),
+          maxAttempts: statusMaxAttempts(1),
         };
       }
       const canRetryWithFailurePolicy =
@@ -417,19 +414,6 @@ export async function runGenerateText(input: {
         throw toAdapterError(error, failure, statusContext, attempt, {
           errorPhase: requestInvocationCompleted ? "response" : "prepare",
         });
-      }
-
-      if (retryWithAuth) {
-        await publishRetryScheduledStatus(
-          input,
-          statusContext,
-          attempt,
-          0,
-          { ...failure, retryReason: ModelRetryReason.AuthRefresh },
-          requestHeaders,
-          responseHeaders,
-        );
-        continue;
       }
 
       if (retryWithRepairedHistory) {
@@ -582,13 +566,11 @@ function statusPublishOptions(
   input: {
     logger?: Logger;
     request: AiSdkModelTextRequest;
-    resolved?: Pick<ResolvedAiSdkModel, "requestObservations">;
     statusSink?: ModelStatusSink;
   },
   admission?: AttemptAdmission,
 ) {
   return {
-    requestObservations: input.resolved?.requestObservations,
     logger: input.logger,
     requestStatusSink: input.request.statusSink,
     statusSink: input.statusSink,

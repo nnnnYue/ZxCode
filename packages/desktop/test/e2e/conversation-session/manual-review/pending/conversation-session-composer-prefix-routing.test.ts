@@ -1,9 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  TID_V4_COMPOSER_INPUT,
-  ZCODE_AGENT_PROVIDER,
-} from "@zcode/shared";
+import { TID_V4_COMPOSER_INPUT, ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import { DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
 import {
   prepareConversationE2E,
@@ -26,7 +23,11 @@ interface PanelOptionSnapshot {
 
 interface PanelSnapshot {
   options: PanelOptionSnapshot[];
-  statuses: Array<{ sectionId: string | null; status: string | null; text: string }>;
+  statuses: Array<{
+    sectionId: string | null;
+    status: string | null;
+    text: string;
+  }>;
   trigger: string | null;
 }
 
@@ -72,9 +73,17 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     await seedRendererPromptSources(seed);
 
     await setComposerText(`@${seed.fileName}`);
-    const atFilePanel = await waitForPanelSections("@", ["files"], "@ 文件候选面板没有打开");
+    const atFilePanel = await waitForPanelSections(
+      "@",
+      ["files"],
+      "@ 文件候选面板没有打开",
+    );
     expect(optionTexts(atFilePanel).join("\n")).toContain(seed.fileName);
-    assertPanelExcludesSections(atFilePanel, ["commands", "subagents", "skills"]);
+    assertPanelExcludesSections(atFilePanel, [
+      "commands",
+      "subagents",
+      "skills",
+    ]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       seed.fileName,
@@ -82,8 +91,14 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`@${seed.directoryName}`);
-    const atDirectoryPanel = await waitForPanelSections("@", ["files"], "@ 文件夹候选面板没有打开");
-    expect(optionTexts(atDirectoryPanel).join("\n")).toContain(seed.directoryName);
+    const atDirectoryPanel = await waitForPanelSections(
+      "@",
+      ["files"],
+      "@ 文件夹候选面板没有打开",
+    );
+    expect(optionTexts(atDirectoryPanel).join("\n")).toContain(
+      seed.directoryName,
+    );
     await browser.keys("Tab");
     await waitForComposerMarkdownContaining(
       `${seed.directoryName}/`,
@@ -91,17 +106,35 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`@${seed.whiteboardName}`);
-    const atWhiteboardPanel = await waitForPanelSections("@", ["whiteboards"], "@ 画板候选面板没有打开");
-    expect(optionTexts(atWhiteboardPanel).join("\n")).toContain(seed.whiteboardName);
-    assertPanelExcludesSections(atWhiteboardPanel, ["commands", "subagents", "skills"]);
+    const atWhiteboardPanel = await waitForPanelSections(
+      "@",
+      ["whiteboards"],
+      "@ 画板候选面板没有打开",
+    );
+    expect(optionTexts(atWhiteboardPanel).join("\n")).toContain(
+      seed.whiteboardName,
+    );
+    assertPanelExcludesSections(atWhiteboardPanel, [
+      "commands",
+      "subagents",
+      "skills",
+    ]);
 
     // S01 语义：`@` 固定按 plugins → files → sessions → whiteboards 路由；
     // 当前 query 只命中 Plugin，选中后仍写入既有 canonical plugin:// markdown。
     // 默认启用的官方纯内容插件 skill-creator 作为确定性候选；选中写入 canonical plugin:// markdown。
     await setComposerText("@skill-creator");
-    const atPluginPanel = await waitForPanelSections("@", ["plugins"], "@ plugin 候选面板没有打开");
+    const atPluginPanel = await waitForPanelSections(
+      "@",
+      ["plugins"],
+      "@ plugin 候选面板没有打开",
+    );
     expect(optionTexts(atPluginPanel).join("\n")).toContain("skill-creator");
-    assertPanelExcludesSections(atPluginPanel, ["commands", "subagents", "skills"]);
+    assertPanelExcludesSections(atPluginPanel, [
+      "commands",
+      "subagents",
+      "skills",
+    ]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       "plugin://skill-creator@zcode-plugins-official",
@@ -109,12 +142,22 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText("/");
-    const slashPanel = await waitForPanelSections("/", ["commands", "skills", "subagents"], "/ 候选面板没有打开");
+    const slashPanel = await waitForPanelSections(
+      "/",
+      ["commands", "skills", "subagents"],
+      "/ 候选面板没有打开",
+    );
     assertPanelExcludesSections(slashPanel, ["files", "whiteboards"]);
 
     await setComposerText(`/${seed.commandName}`);
-    const slashCommandPanel = await waitForPanelSections("/", ["commands"], "/ command 候选面板没有打开");
-    expect(optionTexts(slashCommandPanel).join("\n")).toContain(`/${seed.commandName}`);
+    const slashCommandPanel = await waitForPanelSections(
+      "/",
+      ["commands"],
+      "/ command 候选面板没有打开",
+    );
+    expect(optionTexts(slashCommandPanel).join("\n")).toContain(
+      `/${seed.commandName}`,
+    );
     await browser.keys("Enter");
     await waitForComposerMarkdown(
       `/${seed.commandName}`,
@@ -122,8 +165,14 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`/${seed.skillName}`);
-    const slashSkillPanel = await waitForPanelSections("/", ["skills"], "/ skill 候选面板没有打开");
-    expect(optionTexts(slashSkillPanel).join("\n")).toContain(`$${seed.skillName}`);
+    const slashSkillPanel = await waitForPanelSections(
+      "/",
+      ["skills"],
+      "/ skill 候选面板没有打开",
+    );
+    expect(optionTexts(slashSkillPanel).join("\n")).toContain(
+      `$${seed.skillName}`,
+    );
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       `$${seed.skillName}`,
@@ -131,8 +180,14 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`/${seed.subagentName}`);
-    const slashSubagentPanel = await waitForPanelSections("/", ["subagents"], "/ subagent 候选面板没有打开");
-    expect(optionTexts(slashSubagentPanel).join("\n")).toContain(seed.subagentName);
+    const slashSubagentPanel = await waitForPanelSections(
+      "/",
+      ["subagents"],
+      "/ subagent 候选面板没有打开",
+    );
+    expect(optionTexts(slashSubagentPanel).join("\n")).toContain(
+      seed.subagentName,
+    );
     await browser.keys("Tab");
     await waitForComposerMarkdown(
       `@${seed.subagentName}`,
@@ -140,9 +195,18 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`$${seed.skillName}`);
-    const skillPanel = await waitForPanelSections("$", ["skills"], "$ skill 候选面板没有打开");
+    const skillPanel = await waitForPanelSections(
+      "$",
+      ["skills"],
+      "$ skill 候选面板没有打开",
+    );
     expect(optionTexts(skillPanel).join("\n")).toContain(seed.skillName);
-    assertPanelExcludesSections(skillPanel, ["files", "whiteboards", "commands", "subagents"]);
+    assertPanelExcludesSections(skillPanel, [
+      "files",
+      "whiteboards",
+      "commands",
+      "subagents",
+    ]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       `$${seed.skillName}`,
@@ -172,11 +236,26 @@ async function seedRendererPromptSources(seed: {
   subagentName: string;
   whiteboardName: string;
 }) {
+  // fork 修复：@wdio/globals 的 execute 回调默认把首参推成 HTMLElement，
+  // 显式标注参数类型，避免 seed 数据被当成 DOM 元素。
   const result = (await browser.execute(
-    (workspacePath, provider, currentSeed) => {
+    (
+      workspacePath: string,
+      provider: unknown,
+      currentSeed: {
+        commandName: string;
+        skillName: string;
+        subagentName: string;
+        whiteboardName: string;
+      },
+    ) => {
       const e2eWindow = window as unknown as {
-        __skillStoreE2E?: { setState: (state: Record<string, unknown>) => void };
-        __subagentsStoreE2E?: { setState: (state: Record<string, unknown>) => void };
+        __skillStoreE2E?: {
+          setState: (state: Record<string, unknown>) => void;
+        };
+        __subagentsStoreE2E?: {
+          setState: (state: Record<string, unknown>) => void;
+        };
         __whiteboardStoreE2E?: {
           getState: () => {
             createBoard: (params: {
@@ -268,7 +347,8 @@ async function seedRendererPromptSources(seed: {
             id: `e2e-${currentSeed.subagentName}`,
             name: currentSeed.subagentName,
             description: "E2E subagent for composer prefix routing",
-            systemPrompt: "You are only used by an E2E composer suggestion case.",
+            systemPrompt:
+              "You are only used by an E2E composer suggestion case.",
             path: `${workspacePath}/.zcode/agents/${currentSeed.subagentName}.md`,
             scope: "workspace",
             source: "user",
@@ -290,35 +370,43 @@ async function seedRendererPromptSources(seed: {
       return { ok: true, boardId: board.id };
     },
     DEFAULT_WORKSPACE,
-    ZCODE_AGENT_PROVIDER,
+    ZXCODE_AGENT_PROVIDER,
     seed,
   )) as { ok: boolean; reason?: string; bridges?: Record<string, boolean> };
 
   if (!result.ok) {
-    throw new Error(`composer prefix routing seed failed: ${JSON.stringify(result)}`);
+    throw new Error(
+      `composer prefix routing seed failed: ${JSON.stringify(result)}`,
+    );
   }
 }
 
 async function setComposerText(text: string) {
   await browser.waitUntil(
     async () =>
-      browser.execute((inputTestId, nextText) => {
-        const input = document.querySelector<HTMLElement>(
-          `[data-testid="${inputTestId}"]`,
-        ) as (HTMLElement & {
-          __zcodeLexicalInputE2E?: {
-            focus: () => void;
-            setText: (value: string) => void;
-          };
-        }) | null;
-        const bridge = input?.__zcodeLexicalInputE2E;
-        if (!bridge) {
-          return false;
-        }
-        bridge.setText(nextText);
-        bridge.focus();
-        return true;
-      }, TID_V4_COMPOSER_INPUT, text),
+      browser.execute(
+        (inputTestId, nextText) => {
+          const input = document.querySelector<HTMLElement>(
+            `[data-testid="${inputTestId}"]`,
+          ) as
+            | (HTMLElement & {
+                __zcodeLexicalInputE2E?: {
+                  focus: () => void;
+                  setText: (value: string) => void;
+                };
+              })
+            | null;
+          const bridge = input?.__zcodeLexicalInputE2E;
+          if (!bridge) {
+            return false;
+          }
+          bridge.setText(nextText);
+          bridge.focus();
+          return true;
+        },
+        TID_V4_COMPOSER_INPUT,
+        text,
+      ),
     {
       timeout: 10000,
       timeoutMsg: `composer prefix routing: 输入框 E2E bridge 未就绪，无法输入 ${text}`,
@@ -352,7 +440,10 @@ async function waitForPanelSections(
 }
 
 function arraysEqual(left: string[], right: string[]) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
 }
 
 function getPanelSnapshot(): Promise<PanelSnapshot> {
@@ -362,20 +453,28 @@ function getPanelSnapshot(): Promise<PanelSnapshot> {
         `[data-testid="${panelTestId}"]`,
       );
       const options = Array.from(
-        panel?.querySelectorAll<HTMLElement>(`[data-testid^="${optionPrefix}-"]`) ?? [],
+        panel?.querySelectorAll<HTMLElement>(
+          `[data-testid^="${optionPrefix}-"]`,
+        ) ?? [],
       ).map((element) => ({
         id: element.getAttribute("data-option-id"),
         index: Number(element.getAttribute("data-option-index") ?? "0"),
         sectionId: element.getAttribute("data-section-id"),
         selected: element.getAttribute("data-selected") === "true",
-        text: (element.innerText || element.textContent || "").replace(/\u00a0/g, " ").trim(),
+        text: (element.innerText || element.textContent || "")
+          .replace(/\u00a0/g, " ")
+          .trim(),
       }));
       const statuses = Array.from(
-        panel?.querySelectorAll<HTMLElement>(`[data-testid^="${statusPrefix}-"]`) ?? [],
+        panel?.querySelectorAll<HTMLElement>(
+          `[data-testid^="${statusPrefix}-"]`,
+        ) ?? [],
       ).map((element) => ({
         sectionId: element.getAttribute("data-section-id"),
         status: element.getAttribute("data-status"),
-        text: (element.innerText || element.textContent || "").replace(/\u00a0/g, " ").trim(),
+        text: (element.innerText || element.textContent || "")
+          .replace(/\u00a0/g, " ")
+          .trim(),
       }));
       return {
         options,
@@ -403,7 +502,10 @@ function optionTexts(snapshot: PanelSnapshot) {
   return snapshot.options.map((option) => option.text);
 }
 
-function assertPanelExcludesSections(snapshot: PanelSnapshot, excludedSectionIds: string[]) {
+function assertPanelExcludesSections(
+  snapshot: PanelSnapshot,
+  excludedSectionIds: string[],
+) {
   const actualSectionIds = optionSectionIds(snapshot);
   for (const excluded of excludedSectionIds) {
     expect(actualSectionIds).not.toContain(excluded);
@@ -411,26 +513,37 @@ function assertPanelExcludesSections(snapshot: PanelSnapshot, excludedSectionIds
 }
 
 async function waitForComposerMarkdown(expected: string, timeoutMsg: string) {
-  await browser.waitUntil(async () => (await getComposerMarkdown()).trim() === expected, {
-    timeout: 10000,
-    timeoutMsg,
-  });
+  await browser.waitUntil(
+    async () => (await getComposerMarkdown()).trim() === expected,
+    {
+      timeout: 10000,
+      timeoutMsg,
+    },
+  );
 }
 
-async function waitForComposerMarkdownContaining(expected: string, timeoutMsg: string) {
-  await browser.waitUntil(async () => (await getComposerMarkdown()).includes(expected), {
-    timeout: 10000,
-    timeoutMsg,
-  });
+async function waitForComposerMarkdownContaining(
+  expected: string,
+  timeoutMsg: string,
+) {
+  await browser.waitUntil(
+    async () => (await getComposerMarkdown()).includes(expected),
+    {
+      timeout: 10000,
+      timeoutMsg,
+    },
+  );
 }
 
 function getComposerMarkdown(): Promise<string> {
   return browser.execute((inputTestId) => {
     const input = document.querySelector<HTMLElement>(
       `[data-testid="${inputTestId}"]`,
-    ) as (HTMLElement & {
-      __zcodeLexicalInputE2E?: { getText: () => string };
-    }) | null;
+    ) as
+      | (HTMLElement & {
+          __zcodeLexicalInputE2E?: { getText: () => string };
+        })
+      | null;
     return input?.__zcodeLexicalInputE2E?.getText() ?? "";
   }, TID_V4_COMPOSER_INPUT);
 }

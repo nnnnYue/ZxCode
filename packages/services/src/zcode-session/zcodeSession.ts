@@ -6,7 +6,6 @@ import type {
   ZCodeMessageWithParts,
   ModelSelection,
   ZCodePermissionRequestParams,
-  ZCodeProviderRuntimeHeadersRequestParams,
   ZCodeUserInputRequestParams,
   ZCodeUserInputResponse,
   ZCodeSessionInfo,
@@ -19,7 +18,6 @@ import type {
   ZCodeWorkspacePresentation,
 } from "@zcode/shared";
 import { createServiceDescriptor } from "#src/descriptors.js";
-import type { ProviderRuntimeHeadersUiResponse } from "#src/zcode-agent/zcodeAgent.js";
 
 export interface ZCodeSessionWorkspaceTarget {
   workspacePath: string;
@@ -27,7 +25,8 @@ export interface ZCodeSessionWorkspaceTarget {
   remoteSessionId?: string;
 }
 
-export type ZCodeSessionReadWorkspacePresentationParams = ZCodeSessionWorkspaceTarget;
+export type ZCodeSessionReadWorkspacePresentationParams =
+  ZCodeSessionWorkspaceTarget;
 
 export interface ZCodeTaskTarget extends ZCodeSessionWorkspaceTarget {
   sessionId: string;
@@ -95,11 +94,6 @@ export interface ZCodeSessionSetModeParams extends ZCodeTaskTarget {
   expectedRevision?: number;
 }
 
-export interface ZCodeSessionRespondProviderRuntimeHeadersParams extends ZCodeTaskTarget {
-  requestId: string;
-  response: ProviderRuntimeHeadersUiResponse;
-}
-
 export interface ZCodeSessionSubscribeParams extends ZCodeTaskTarget {
   deliveryKind: ZCodeDeliveryKind;
   afterSeq?: number;
@@ -120,7 +114,6 @@ export type ZCodeSessionServiceEvent =
       requestId: string;
       response: ZCodeUserInputResponse;
     }
-  | { type: "providerRuntimeHeaders.request"; request: ZCodeProviderRuntimeHeadersRequestParams }
   | { type: "snapshot"; snapshot: ZCodeSessionStateSnapshot };
 
 export interface ZCodeSessionInitializeResult {
@@ -141,33 +134,47 @@ export interface ZCodeSessionWorkspaceRuntimeIdentity {
 }
 
 export interface IZCodeSessionService {
-  initializeWorkspace(params: ZCodeSessionWorkspaceTarget): Promise<ZCodeSessionInitializeResult>;
+  initializeWorkspace(
+    params: ZCodeSessionWorkspaceTarget,
+  ): Promise<ZCodeSessionInitializeResult>;
   getWorkspaceRuntimeIdentity(
     params: ZCodeSessionWorkspaceTarget,
   ): Promise<ZCodeSessionWorkspaceRuntimeIdentity>;
   readWorkspacePresentation(
     params: ZCodeSessionReadWorkspacePresentationParams,
   ): Promise<ZCodeWorkspacePresentation>;
-  createSession(params: ZCodeSessionCreateParams): Promise<ZCodeSessionStateSnapshot>;
-  resumeSession(params: ZCodeSessionResumeParams): Promise<ZCodeSessionStateSnapshot>;
+  createSession(
+    params: ZCodeSessionCreateParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
+  resumeSession(
+    params: ZCodeSessionResumeParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
   listSessions(params: ZCodeSessionListParams): Promise<ZCodeSessionInfo[]>;
-  readSession(params: ZCodeSessionReadParams): Promise<ZCodeSessionStateSnapshot>;
-  readSessionMessages(params: ZCodeSessionMessagesParams): Promise<ZCodeMessageWithParts[]>;
-  readSessionEvents(params: ZCodeSessionEventsParams): Promise<ZCodeSessionEvent[]>;
+  readSession(
+    params: ZCodeSessionReadParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
+  readSessionMessages(
+    params: ZCodeSessionMessagesParams,
+  ): Promise<ZCodeMessageWithParts[]>;
+  readSessionEvents(
+    params: ZCodeSessionEventsParams,
+  ): Promise<ZCodeSessionEvent[]>;
   promoteDeferredDraftSession(params: ZCodeTaskTarget): Promise<void>;
   closeSession(params: ZCodeTaskTarget): Promise<void>;
   closeDeferredDraftSession(params: ZCodeTaskTarget): Promise<boolean>;
-  setModel(params: ZCodeSessionSetModelParams): Promise<ZCodeSessionStateSnapshot>;
-  setThoughtLevel(params: ZCodeSessionSetThoughtLevelParams): Promise<ZCodeSessionStateSnapshot>;
-  setMode(params: ZCodeSessionSetModeParams): Promise<ZCodeSessionStateSnapshot>;
-  respondProviderRuntimeHeaders(
-    params: ZCodeSessionRespondProviderRuntimeHeadersParams,
-  ): Promise<void>;
+  setModel(
+    params: ZCodeSessionSetModelParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
+  setThoughtLevel(
+    params: ZCodeSessionSetThoughtLevelParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
+  setMode(
+    params: ZCodeSessionSetModeParams,
+  ): Promise<ZCodeSessionStateSnapshot>;
   // M5 删波次 2：onDynamicSessionEvent（旧 session/subscribe 词表的 renderer 订阅面）
   // 已删除——v4 UI 走 agentService 的 conversation/sessions-index 帧通道，
   // 该方法在 renderer 侧已无任何调用者（grep packages/ui packages/desktop 为零）。
 }
 
-export const IZCodeSessionService = createServiceDescriptor<IZCodeSessionService>(
-  ServiceChannels.ZCodeSession,
-);
+export const IZCodeSessionService =
+  createServiceDescriptor<IZCodeSessionService>(ServiceChannels.ZCodeSession);

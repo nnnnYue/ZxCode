@@ -10,9 +10,12 @@
 //   2. 同一枚产物再点一次 ⇒ 复用那一个 tab，并**重新**发导航请求（v2 必须显示新字节）；
 //   3. 任何一条判据不成立、出处查不到、查询本身失败 ⇒ 退回产物 tab，点击绝不落空。
 import { act, renderHook } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { V4ConversationWorkflowRunArtifactsResult } from "@zcode/shared/zcode-protocol-v4";
 import { useAppPanels } from "@/hooks/useAppPanels.js";
+// fork 的 useAppPanels 需要 intl；renderHook 统一包 ZCodeIntlProvider。
+import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { shouldOpenWorkflowArtifactInBrowser } from "@/lib/workflowArtifactOpen.js";
 import { clearTaskSidePaneMemoryStateForTest } from "@/lib/taskSidePaneMemory.js";
 import { getVisibleSidePaneTabs } from "@/lib/workspaceSidePane.js";
@@ -20,6 +23,9 @@ import type {
   OpenScopedWorkflowArtifactSideTabRequest,
   WorkspaceSidePaneTab,
 } from "@/lib/workspaceSidePane.js";
+
+const intlWrapper = ({ children }: { children: ReactNode }) =>
+  createElement(ZCodeIntlProvider, { initialLocale: "en-US" }, children);
 
 const { conversationWorkflowRunArtifactsV4 } = vi.hoisted(() => ({
   conversationWorkflowRunArtifactsV4:
@@ -42,16 +48,18 @@ const SESSION_ID = "sess-a";
 const REPORT_URL = "file:///repo/.zcode/workflow-runs/run-1/report.html";
 
 function renderPanels(options?: { supportsEmbeddedBrowser?: boolean; sidePaneOwnerId?: string }) {
-  return renderHook(() =>
-    useAppPanels({
-      workspaceAbsPath: WORKSPACE_PATH,
-      activeTaskId: options?.sidePaneOwnerId ?? SESSION_ID,
-      sidePaneOwnerId: options?.sidePaneOwnerId ?? SESSION_ID,
-      isDesktop: true,
-      isWorkspaceVisible: true,
-      supportsEmbeddedBrowser: options?.supportsEmbeddedBrowser ?? true,
-      defaultWhiteboardNamePrefix: "Whiteboard",
-    }),
+  return renderHook(
+    () =>
+      useAppPanels({
+        workspaceAbsPath: WORKSPACE_PATH,
+        activeTaskId: options?.sidePaneOwnerId ?? SESSION_ID,
+        sidePaneOwnerId: options?.sidePaneOwnerId ?? SESSION_ID,
+        isDesktop: true,
+        isWorkspaceVisible: true,
+        supportsEmbeddedBrowser: options?.supportsEmbeddedBrowser ?? true,
+        defaultWhiteboardNamePrefix: "Whiteboard",
+      }),
+    { wrapper: intlWrapper },
   );
 }
 

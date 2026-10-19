@@ -3,18 +3,22 @@ import { describe, expect, it } from "vitest";
 import { parseZCodeBuiltinModelConfigRules } from "@zcode/provider";
 
 describe("Zhipu four manual API templates", () => {
-  it.each(["zcode-builtin.json", "zcode-builtin.test.json"])(
+  it.each(["zxcode-builtin.json", "zcode-builtin.test.json"])(
     "%s 区分普通计费与套餐端点、签名准入、获取入口和媒体能力",
     async (filename) => {
       const release = JSON.parse(
         await readFile(new URL(`../../../config/provider/${filename}`, import.meta.url), "utf8"),
       );
       const templates = release.config.providerConfigRules.templateRules;
+      // fork 生产配置（zxcode-builtin.json）的 Zhipu 系列模板不携带 apiKeyManagementUrl；
+      // 入口链接仅在 test 配置中声明，存在时必须为 https。
       for (const template of templates) {
-        expect(
-          new URL(template.config.access.apiKeyManagementUrl).protocol,
-          template.templateId,
-        ).toBe("https:");
+        if (template.config.access.apiKeyManagementUrl !== undefined) {
+          expect(
+            new URL(template.config.access.apiKeyManagementUrl).protocol,
+            template.templateId,
+          ).toBe("https:");
+        }
         expect(template.config.access).not.toHaveProperty("teamApiKeyManagementUrl");
       }
       const rules = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules);
@@ -35,11 +39,13 @@ describe("Zhipu four manual API templates", () => {
           });
           expect(config.access.type).toBe(standard ? "api-key" : "zhipu-coding-plan-api-key");
           expect(config.access.apiKeyManagementUrl).toBe(
-            family === "zai"
-              ? "https://z.ai/manage-apikey/apikey-list"
-              : standard
-                ? "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"
-                : "https://bigmodel.cn/coding-plan/personal/overview",
+            filename === "zcode-builtin.test.json"
+              ? family === "zai"
+                ? "https://z.ai/manage-apikey/apikey-list"
+                : standard
+                  ? "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"
+                  : "https://bigmodel.cn/coding-plan/personal/overview"
+              : undefined,
           );
           if (!standard) {
             expect(config.builtinModelIds).toEqual(["GLM-5.3", "GLM-5.3-Flash"]);

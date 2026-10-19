@@ -145,7 +145,7 @@ async function bindRunningSessionsToFourPane(lanes: PerfLane[]) {
 
 function resolveArtifactPath(fileName: string) {
   return resolve(
-    process.env.ZCODE_E2E_ARTIFACT_DIR?.trim() ||
+    process.env.ZXCODE_E2E_ARTIFACT_DIR?.trim() ||
       process.env.CODEX_E2E_ARTIFACT_DIR?.trim() ||
       join(process.cwd(), ".e2e-artifacts", CASE_NAME),
     fileName,

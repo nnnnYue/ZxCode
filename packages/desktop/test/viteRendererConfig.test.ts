@@ -32,9 +32,9 @@ describe("desktop renderer Vite dependency aliases", () => {
   // Windows 跳过：环境配置差异导致断言失败，需要 CI 环境统一配置
   const isWindows = process.platform === "win32";
 
-  (isWindows ? it.skip : it)("injects the selected ZCode endpoint origin into renderer env", async () => {
-    vi.stubEnv("ZCODE_ENV", "test");
-    vi.stubEnv("ZCODE_BASE_URL", "");
+  (isWindows ? it.skip : it)("injects the selected ZCode endpoint env into renderer env", async () => {
+    vi.stubEnv("ZXCODE_ENV", "test");
+    vi.stubEnv("ZXCODE_BASE_URL", "https://renderer-endpoint.example.test");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -49,17 +49,18 @@ describe("desktop renderer Vite dependency aliases", () => {
       "silent",
     );
 
+    // fork 构建期经 pickProductEndpointEnv 注入 __ZXCODE_ENDPOINT_ENV__；
+    // VITE_ZCODE_BASE_URL/VITE_ZCODE_ENDPOINT_ORIGIN 注入已随去平台化删除。
     expect(result?.config.define).toMatchObject({
-      "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify("https://zcode.z.ai"),
-      "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify(
-        "https://zcode.z.ai",
-      ),
-      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
+      __ZXCODE_ENDPOINT_ENV__: JSON.stringify({
+        ZXCODE_BASE_URL: "https://renderer-endpoint.example.test",
+      }),
+      __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
     });
   });
 
   it("marks non-production renderer builds as local development runtime", async () => {
-    vi.stubEnv("ZCODE_ENV", "production");
+    vi.stubEnv("ZXCODE_ENV", "production");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -75,10 +76,10 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZCODE_ENV__: JSON.stringify("production"),
-      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("production"),
-      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(true),
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
+      __ZXCODE_ENV__: JSON.stringify("production"),
+      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("production"),
+      __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(true),
+      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
     });
   });
 
@@ -97,14 +98,14 @@ describe("desktop renderer Vite dependency aliases", () => {
       "silent",
     );
 
-    expect(result?.config.plugins?.some((plugin) => plugin.name === "zcode:pdfjs-cmaps")).toBe(
+    expect(result?.config.plugins?.some((plugin) => plugin.name === "zxcode:pdfjs-cmaps")).toBe(
       true,
     );
   });
 
   it("injects the E2E store bridge only from the runner flag", async () => {
-    vi.stubEnv("ZCODE_ENV", "test");
-    vi.stubEnv("VITE_ZCODE_E2E_STORE_BRIDGE", "1");
+    vi.stubEnv("ZXCODE_ENV", "test");
+    vi.stubEnv("VITE_ZXCODE_E2E_STORE_BRIDGE", "1");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -120,15 +121,15 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZCODE_ENV__: JSON.stringify("test"),
-      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
+      __ZXCODE_ENV__: JSON.stringify("test"),
+      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
+      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
     });
   });
 
-  it("ZCODE_PREVIEW_IDENTITY=1 让生产后端的 renderer 编译成 Preview 身份", async () => {
-    vi.stubEnv("ZCODE_ENV", "production");
-    vi.stubEnv("ZCODE_PREVIEW_IDENTITY", "1");
+  it("ZXCODE_PREVIEW_IDENTITY=1 让生产后端的 renderer 编译成 Preview 身份", async () => {
+    vi.stubEnv("ZXCODE_ENV", "production");
+    vi.stubEnv("ZXCODE_PREVIEW_IDENTITY", "1");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -144,8 +145,8 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZCODE_ENV__: JSON.stringify("production"),
-      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
+      __ZXCODE_ENV__: JSON.stringify("production"),
+      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
     });
   });
 });

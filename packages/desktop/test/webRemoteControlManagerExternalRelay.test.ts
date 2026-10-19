@@ -85,7 +85,7 @@ function createManagerHarness(options?: {
     options?.disposeWorkspaceHostAttachmentsForRemoteSession ?? vi.fn();
   const manager = createWebRemoteControlManager({
     relayWsUrl: "ws://relay.test/ws",
-    mobileRemoteControlUrl: "https://zcode.z.ai/remote/v3",
+    mobileRemoteControlUrl: "https://remote.example.test/remote/v3",
     getEndpointUrls: options?.getEndpointUrls,
     deviceMid: "mid-1",
     deviceName: "MacBook",
@@ -519,7 +519,9 @@ describe("createWebRemoteControlManager external relay", () => {
     expect(JSON.stringify(readyPayload)).not.toContain("wsUrl");
   });
 
-  it("uses the current endpoint resolver for relay and QR URL on each start", async () => {
+  it("uses the current endpoint resolver for the QR URL and keeps relay WS from relay config", async () => {
+    // fork 的 relay 为自部署单进程（packages/relay），WS 地址来自 relay 配置
+    // （dependencies.relayWsUrl），endpoint resolver 只负责 QR 页面地址（remoteUrl）。
     const { getLatestTransportOptions, manager } = createManagerHarness({
       getEndpointUrls: () => buildZCodeEndpointUrls("http://localhost:3030"),
     });
@@ -527,7 +529,7 @@ describe("createWebRemoteControlManager external relay", () => {
     await manager.start(1, { workspacePath: "/workspace/demo" });
     const status = manager.getStatus(1);
 
-    expect(getLatestTransportOptions()?.relayWsUrl).toBe("ws://localhost:3030/ws");
+    expect(getLatestTransportOptions()?.relayWsUrl).toBe("ws://relay.test/ws");
     expect(status.qrUrl).toContain("http://localhost:3030/remote/v3?");
   });
 

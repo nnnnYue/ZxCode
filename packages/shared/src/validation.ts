@@ -49,14 +49,8 @@ import {
 } from "./task-realtime-core.js";
 import { wslUserSchema } from "./wslUserValidation.js";
 import { legacyZCodeProviderSchema } from "./zcode-agent-policy.js";
-import { errorAttributionSchema } from "./zcode-protocol-v4/snapshot.js";
-import {
-  zcodeMcpResourceSamplesSchema,
-  zcodeMcpTelemetryEventSchema,
-  zcodeProcessResourceSampleSchema,
-  zcodeToolExecResourceSchema,
-} from "./zcode-protocol/index.js";
-import { zcodeTaskModeSchema } from "./zcode-task-mode-schema.js";
+// 修复：上游 v3.15.1 合并把 snapshot / zcode-protocol index / task-mode 一组 import
+// 重复粘贴了两份，属语法级冲突（oxc/tsc 解析失败，阻断全部依赖 shared 的测试）；只保留一份。
 
 export {
   appSettingsOccupationEnum,

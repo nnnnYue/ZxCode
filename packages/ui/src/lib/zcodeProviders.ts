@@ -1,13 +1,13 @@
 import {
-  ZCODE_AGENT_PROVIDER,
-  ZCODE_AGENT_PROVIDER_LABEL,
+  ZXCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER_LABEL,
   type ZCodeProvider,
 } from "@zcode/shared";
 
-export const ZCODE_AGENT_PROVIDERS: ZCodeProvider[] = [ZCODE_AGENT_PROVIDER];
+export const ZCODE_AGENT_PROVIDERS: ZCodeProvider[] = [ZXCODE_AGENT_PROVIDER];
 
 export const ZCODE_AGENT_PROVIDER_LABELS: Record<ZCodeProvider, string> = {
-  glm: ZCODE_AGENT_PROVIDER_LABEL,
+  glm: ZXCODE_AGENT_PROVIDER_LABEL,
 };
 
 export function supportsZCodeSessionFork(provider: ZCodeProvider): boolean {
@@ -17,6 +17,8 @@ export function supportsZCodeSessionFork(provider: ZCodeProvider): boolean {
   return true;
 }
 
-export function shouldHideZCodeSessionForkAction(provider: ZCodeProvider): boolean {
+export function shouldHideZCodeSessionForkAction(
+  provider: ZCodeProvider,
+): boolean {
   return !supportsZCodeSessionFork(provider);
 }

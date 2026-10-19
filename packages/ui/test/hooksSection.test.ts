@@ -226,7 +226,7 @@ describe("Hooks settings page", () => {
         command: "echo legacy",
         enabled: true,
         location: expect.objectContaining({
-          source: "zcode",
+          source: "zxcode",
           scope: "project",
         }),
       }),
@@ -537,7 +537,7 @@ describe("Hooks settings page", () => {
       ...workspaceConfiguredHook("pending_trust"),
       editable: false,
       location: {
-        source: "zcode",
+        source: "zxcode",
         scope: "project",
         directoryPath: "/ancestor/.zcode",
         projectPath: "/workspace",
@@ -713,7 +713,7 @@ function configuredHook(): Hook {
     args: ["hook.mjs"],
     enabled: true,
     location: {
-      source: "zcode",
+      source: "zxcode",
       scope: "project",
       directoryPath: "/workspace/.zcode",
       projectPath: "/workspace",

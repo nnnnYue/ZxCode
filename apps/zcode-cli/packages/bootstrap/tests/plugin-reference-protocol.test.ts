@@ -158,11 +158,9 @@ describe("plugins/referenceCatalog protocol", () => {
       const zcodeGuide = result.plugins.find(
         (entry) => entry.pluginId === "zcode-guide@zcode-plugins-official",
       );
-      expect(zcodeGuide?.icon).toBe(
-        "https://cdn-zcode.z.ai/zcode/official-plugin/assets/zcode-guide/icon.png",
-      );
-      // 内置 seed listing 的本地化显示名沿 display-only 通道进入 catalog，
-      // 供 Picker 中文搜索/展示（插件 @ 引用中文搜索）。
+      // fork 把官方插件图标改为 UI 侧随包快照（officialPluginIcons.generated），
+      // 内置 seed listing 不再携带远端 CDN 图标；zcode-guide 定义本身没有 listing。
+      expect(zcodeGuide?.icon).toBeUndefined();
       expect(zcodeGuide?.category).toBeUndefined();
       const enriched = await getPluginReferenceCatalog(
         {} as ZCodeProtocolAgentServerContext,
@@ -178,8 +176,8 @@ describe("plugins/referenceCatalog protocol", () => {
         result.plugins.map((x) => x.pluginId),
       );
       expect(() => zcodePluginsReferenceCatalogResultSchema.parse(enriched)).not.toThrow();
-      expect(zcodeGuide?.displayName).toBe("ZCode Guide");
-      expect(zcodeGuide?.displayNameI18n?.["zh-CN"]).toBe("ZCode 使用指南");
+      expect(zcodeGuide?.displayName).toBe("ZxCode Guide");
+      expect(zcodeGuide?.displayNameI18n?.["zh-CN"]).toBe("ZxCode 使用指南");
       expect(zcodeGuide?.description).toEqual(expect.any(String));
       expect(zcodeGuide?.descriptionI18n?.["zh-CN"]).toEqual(expect.any(String));
       expect(

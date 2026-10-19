@@ -72,7 +72,7 @@ describe("desktop e2e process cleanup", () => {
       /const exitAfterLastWindowClosed[\s\S]*?exitPreparedApp\("all-windows-closed-after-preparation"\)/u,
     );
     expect(mainSource).toMatch(
-      /process\.env\.ZCODE_E2E_RUN_ID\?\.trim\(\)[\s\S]*?spawn\("taskkill"[\s\S]*?spawn\("kill", \["-9", String\(process\.pid\)\]/u,
+      /process\.env\.ZXCODE_E2E_RUN_ID\?\.trim\(\)[\s\S]*?spawn\("taskkill"[\s\S]*?spawn\("kill", \["-9", String\(process\.pid\)\]/u,
     );
   });
 
@@ -85,16 +85,11 @@ describe("desktop e2e process cleanup", () => {
       /async function prepareAppQuit[\s\S]*?remoteSessionManager\.disposeAllAndWaitForAppShutdown\(reason\)/u,
     );
     expect(mainSource).toMatch(
-      /async function prepareAppQuit[\s\S]*?stopRemoteUsageArmsPeriodicSampling\(\)[\s\S]*?remoteSessionManager\.disposeAllAndWaitForAppShutdown\(reason\)/u,
+      /async function prepareAppQuit[\s\S]*?remoteSessionManager\.disposeAllAndWaitForAppShutdown\(reason\)/u,
     );
-    expect(mainSource).toMatch(
-      /async function prepareAppQuit[\s\S]*?stopDesktopResourceTelemetry\(\{ flushPendingWindows: true \}\)/u,
-    );
-    // 修复原因：更新安装现在复用唯一的 prepareAppQuit 屏障并显式选择严格预算；旧断言要求
-    // Windows 专项资源扫描再次等待 Remote Host，已经与“只执行一次 Host 屏障”的事实冲突。
-    expect(mainSource).toMatch(
-      /prepareAppQuit\("auto-update quitAndInstall", "update-install"\)[\s\S]*?prepareWindowsProcessesForUpdateInstall\(\)/u,
-    );
+    expect(mainSource).not.toMatch(/stopDesktopResourceTelemetry/u);
+    // fork 已移除自动更新链路：不再有 auto-update quitAndInstall 的严格预算分支。
+    expect(mainSource).not.toMatch(/auto-update quitAndInstall/u);
     expect(mainSource).toMatch(
       /async function prepareAppQuit[\s\S]*?selectAppShutdownPolicy[\s\S]*?if \(hasPreparedAppQuit\)[\s\S]*?if \(appQuitPreparationInFlight\)/u,
     );
@@ -110,10 +105,8 @@ describe("desktop e2e process cleanup", () => {
     expect(mainSource).not.toMatch(
       /appQuitPreparationInFlight = Promise\.all\(\[[\s\S]*?desktopWindowSizePersistence\?\.flush\(\)/u,
     );
-    // /event/report 的内存内投递必须与 Host/Cron 清理并行进入同一个退出屏障，且等待有界。
-    expect(mainSource).toMatch(
-      /appQuitPreparationInFlight = Promise\.all\(\[[\s\S]*?appTelemetryCore\.flushPendingReports\(\{ timeoutMs: 2_000 \}\)/u,
-    );
+    // fork 已移除事件上报链路：退出屏障只保留 Host/Cron 等 owner，不再等待遥测 flush。
+    expect(mainSource).not.toMatch(/appTelemetryCore/u);
     // Bug 根因：Browser tab 已改为进程内 stateless residency，完整退出不再恢复 tab。
     // 退出屏障只等待真实的 Host/Cron owner；继续要求 recovery idle 会让测试绑定已删除的恢复链路。
     expect(mainSource).not.toMatch(/browserGuestManager\.whenRecoveryIdle\(\)/u);

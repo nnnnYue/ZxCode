@@ -6,7 +6,7 @@ describe("normalizeZCodeUiError", () => {
     (error: object) => error,
     (error: object) => ({ data: error }),
     (error: object) => ({ data: { error } }),
-    (error: object) => ({ data: { zcode: { error } } }),
+    (error: object) => ({ data: { zxcode: { error } } }),
   ])("preserves structured underlying fields through RPC wrappers", (wrap) => {
     expect(
       normalizeZCodeUiError(
@@ -100,7 +100,7 @@ describe("normalizeZCodeUiError", () => {
     const normalized = normalizeZCodeUiError({
       message: "Internal error",
       data: {
-        zcode: {
+        zxcode: {
           error: {
             code: "UNKNOWN_ERROR",
             message: "Network connection failed for the provider request.",

@@ -7,24 +7,16 @@ import { loadBuiltinProviderConfig } from "../../../scripts/builtin-provider-con
 describe("server tsup config", () => {
   it("embeds the selected environment's Built-in config used by the HTTP entry", async () => {
     const expected = await loadBuiltinProviderConfig();
-    expect(JSON.parse(SERVER_HTTP_DEFINES.__ZCODE_BUILTIN_PROVIDER_CONFIG_JSON__)).toBe(
+    expect(JSON.parse(SERVER_HTTP_DEFINES.__ZXCODE_BUILTIN_PROVIDER_CONFIG_JSON__)).toBe(
       expected.content,
     );
-    expect(JSON.parse(SERVER_HTTP_DEFINES.__ZCODE_ENV__)).toBe(expected.environment);
+    expect(JSON.parse(SERVER_HTTP_DEFINES.__ZXCODE_ENV__)).toBe(expected.environment);
   });
 
   it("externalizes CommonJS multipart dependencies for the ESM HTTP dev bundle", () => {
     expect(SERVER_HTTP_EXTERNAL_DEPENDENCIES).toEqual(
-      expect.arrayContaining([
-        "axios",
-        "form-data",
-        "combined-stream",
-        "proxy-from-env",
-        "follow-redirects",
-        "yazl",
-        "node-forge",
-        "yaml",
-      ]),
+      // fork：axios/form-data 等 axios 系外置随云内容/反馈链路移除，仅保留实际依赖。
+      expect.arrayContaining(["yazl", "node-forge", "yaml", "yauzl"]),
     );
   });
 

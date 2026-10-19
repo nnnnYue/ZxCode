@@ -20,7 +20,7 @@ async function runTar(args: string[]): Promise<void> {
 const temporaryDirs: string[] = [];
 
 async function makeTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zcode-server-stage-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "zxcode-server-stage-test-"));
   temporaryDirs.push(dir);
   return dir;
 }
@@ -176,7 +176,7 @@ describe("stageRelease", () => {
       files: { "prebuilds/linux-x64/pty.node": "linux-binary" },
     });
 
-    const agentBundlePath = join(root, "zcode.cjs");
+    const agentBundlePath = join(root, "zxcode.cjs");
     await writeFile(agentBundlePath, "// fake agent bundle\n", "utf8");
     const nodeBinaryPath = join(root, "node-binary");
     await writeFile(nodeBinaryPath, "#!/bin/sh\nexit 0\n", "utf8");
@@ -209,12 +209,12 @@ describe("stageRelease", () => {
     });
 
     const releaseDir = staged.releaseDir;
-    expect(releaseDir.endsWith("zcode-server-linux-x64")).toBe(true);
+    expect(releaseDir.endsWith("zxcode-server-linux-x64")).toBe(true);
 
-    const launcher = await readFile(join(releaseDir, "bin", "zcode"), "utf8");
+    const launcher = await readFile(join(releaseDir, "bin", "zxcode"), "utf8");
     expect(launcher).toContain('"$DIR/runtime/node"');
     expect(launcher).toContain('"$DIR/runtime/server-cli.js"');
-    const launcherStat = await stat(join(releaseDir, "bin", "zcode"));
+    const launcherStat = await stat(join(releaseDir, "bin", "zxcode"));
     // Bugfix: NTFS 不保留 POSIX exec 位（Windows 上 stat.mode 恒无 0o111 位），
     // 可执行性断言只在 POSIX 宿主上生效；Windows 宿主仍验证文件存在与内容。
     if (process.platform !== "win32") expect(launcherStat.mode & 0o111).not.toBe(0);
@@ -227,7 +227,7 @@ describe("stageRelease", () => {
     for (const relativePath of [
       "runtime/server-cli.js",
       "runtime/server-core.js",
-      "runtime/zcode.cjs",
+      "runtime/zxcode.cjs",
       "runtime/node",
       "runtime/node_modules/fake-dep/package.json",
       "runtime/node_modules/fake-transitive/package.json",
@@ -266,14 +266,14 @@ describe("stageRelease", () => {
       nodeVersion: string;
       entrypoints: { cli: string; core: string; agent: string };
     };
-    expect(manifest.product).toBe("zcode-server");
+    expect(manifest.product).toBe("zxcode-server");
     expect(manifest.target).toBe("linux-x64");
     expect(manifest.appVersion).toBe("9.9.9-test");
     expect(manifest.nodeVersion).toBe("22.16.0");
     expect(manifest.entrypoints).toEqual({
       cli: "runtime/server-cli.js",
       core: "runtime/server-core.js",
-      agent: "runtime/zcode.cjs",
+      agent: "runtime/zxcode.cjs",
     });
 
     expect(staged.packagedDependencies).toEqual(["fake-dep", "fake-transitive", "node-pty"]);

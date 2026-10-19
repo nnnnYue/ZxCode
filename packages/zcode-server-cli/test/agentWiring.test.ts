@@ -7,7 +7,7 @@ import { createReleaseAgentWiring, resolveBundledAgentWiring } from "../src/runt
 const temporaryDirs: string[] = [];
 
 async function makeTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zcode-server-agent-wiring-"));
+  const dir = await mkdtemp(join(tmpdir(), "zxcode-server-agent-wiring-"));
   temporaryDirs.push(dir);
   return dir;
 }
@@ -17,32 +17,32 @@ afterEach(async () => {
 });
 
 describe("resolveBundledAgentWiring", () => {
-  it("returns wiring for a bundled zcode.cjs next to the entry", async () => {
+  it("returns wiring for a bundled zxcode.cjs next to the entry", async () => {
     const entryDir = await makeTempDir();
-    const bundlePath = join(entryDir, "zcode.cjs");
+    const bundlePath = join(entryDir, "zxcode.cjs");
     await writeFile(bundlePath, "// bundle\n", "utf8");
 
     const wiring = await resolveBundledAgentWiring(entryDir, {});
     expect(wiring).not.toBeNull();
-    expect(wiring?.ZCODE_AGENT_SERVER_COMMAND).toBe(process.execPath);
-    expect(JSON.parse(wiring?.ZCODE_AGENT_SERVER_ARGS_JSON ?? "[]")).toEqual([
+    expect(wiring?.ZXCODE_AGENT_SERVER_COMMAND).toBe(process.execPath);
+    expect(JSON.parse(wiring?.ZXCODE_AGENT_SERVER_ARGS_JSON ?? "[]")).toEqual([
       bundlePath,
       "app-server",
       "--stdio",
     ]);
   });
 
-  it("keeps an explicit ZCODE_AGENT_SERVER_COMMAND untouched", async () => {
+  it("keeps an explicit ZXCODE_AGENT_SERVER_COMMAND untouched", async () => {
     const entryDir = await makeTempDir();
-    await writeFile(join(entryDir, "zcode.cjs"), "// bundle\n", "utf8");
+    await writeFile(join(entryDir, "zxcode.cjs"), "// bundle\n", "utf8");
 
     const wiring = await resolveBundledAgentWiring(entryDir, {
-      ZCODE_AGENT_SERVER_COMMAND: "/custom/agent",
+      ZXCODE_AGENT_SERVER_COMMAND: "/custom/agent",
     });
     expect(wiring).toBeNull();
   });
 
-  it("returns null when no bundled zcode.cjs exists (dev workspace)", async () => {
+  it("returns null when no bundled zxcode.cjs exists (dev workspace)", async () => {
     const entryDir = await makeTempDir();
     expect(await resolveBundledAgentWiring(entryDir, {})).toBeNull();
   });
@@ -52,18 +52,18 @@ describe("resolveBundledAgentWiring", () => {
     const newRuntime = "/releases/new/runtime";
 
     expect(createReleaseAgentWiring(oldRuntime, join(oldRuntime, "node"), {})).toEqual({
-      ZCODE_AGENT_SERVER_COMMAND: join(oldRuntime, "node"),
-      ZCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(oldRuntime, "zcode.cjs"), "app-server", "--stdio"]),
+      ZXCODE_AGENT_SERVER_COMMAND: join(oldRuntime, "node"),
+      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(oldRuntime, "zxcode.cjs"), "app-server", "--stdio"]),
     });
     expect(createReleaseAgentWiring(newRuntime, join(newRuntime, "node"), {})).toEqual({
-      ZCODE_AGENT_SERVER_COMMAND: join(newRuntime, "node"),
-      ZCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(newRuntime, "zcode.cjs"), "app-server", "--stdio"]),
+      ZXCODE_AGENT_SERVER_COMMAND: join(newRuntime, "node"),
+      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(newRuntime, "zxcode.cjs"), "app-server", "--stdio"]),
     });
   });
 
   it("does not replace an explicit agent command while computing release wiring", () => {
     expect(createReleaseAgentWiring("/release/runtime", "/release/runtime/node", {
-      ZCODE_AGENT_SERVER_COMMAND: "/custom/agent",
+      ZXCODE_AGENT_SERVER_COMMAND: "/custom/agent",
     })).toBeNull();
   });
 });

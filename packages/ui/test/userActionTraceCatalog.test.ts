@@ -6,11 +6,11 @@ import {
 } from "../src/lib/userActionTraceCatalog.js";
 
 describe("user action trace catalog", () => {
-  it("固定 24 个 Core 与 15 个 Settings 叶子 feature", () => {
+  it("固定 24 个 Core 与 16 个 Settings 叶子 feature", () => {
     expect(Object.keys(CORE_USER_ACTION_FEATURES)).toHaveLength(24);
-    expect(Object.keys(SETTINGS_USER_ACTION_FEATURES)).toHaveLength(15);
+    expect(Object.keys(SETTINGS_USER_ACTION_FEATURES)).toHaveLength(16);
     expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "core")).toHaveLength(94);
-    expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "settings")).toHaveLength(44);
+    expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "settings")).toHaveLength(46);
   });
 
   it("feature/action 组合唯一且不使用动态标识", () => {
@@ -23,7 +23,7 @@ describe("user action trace catalog", () => {
     }
   });
 
-  it("不声明 /event/report sink", () => {
+  it("不声明通用事件上报的策略字段", () => {
     for (const entry of USER_ACTION_CATALOG) {
       expect(entry).not.toHaveProperty("eventPolicy");
       expect(entry).not.toHaveProperty("elementName");

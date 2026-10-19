@@ -80,7 +80,7 @@ describe("external relay QR helpers", () => {
   it("builds an encoded web remote control QR URL without theme params", () => {
     expect(
       buildWebRemoteControlExternalQrUrl({
-        baseUrl: "https://zcode.z.ai/remote",
+        baseUrl: "https://remote.example.test/remote",
         deviceSid: "sid-1",
         passHash: "hash+with/slash=",
         timestamp: 1710000000000,
@@ -90,7 +90,7 @@ describe("external relay QR helpers", () => {
         theme: "zai-dark",
       }),
     ).toBe(
-      "https://zcode.z.ai/remote?sid=sid-1&hash=hash%2Bwith%2Fslash%3D&t=1710000000000&mid=mid-1&name=MacBook&app_version=1.5.0",
+      "https://remote.example.test/remote?sid=sid-1&hash=hash%2Bwith%2Fslash%3D&t=1710000000000&mid=mid-1&name=MacBook&app_version=1.5.0",
     );
   });
 

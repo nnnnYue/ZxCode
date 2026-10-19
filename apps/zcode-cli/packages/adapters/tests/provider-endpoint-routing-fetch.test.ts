@@ -4,7 +4,7 @@ import { createProviderEndpointRoutingFetch } from "../src/model/provider-endpoi
 import { createProviderBusinessErrorFetch } from "../src/model/model-execution.js";
 
 const SOURCE_ZAI = "https://api.z.ai/api/anthropic/v1/messages";
-const TARGET = "https://zcode.z.ai/api/v1/proxy/anthropic/v1/messages";
+const TARGET = "https://proxy.example.test/api/v1/proxy/anthropic/v1/messages";
 
 describe("provider endpoint routing fetch", () => {
   it("preserves request semantics and the streaming response while recalculating Host", async () => {

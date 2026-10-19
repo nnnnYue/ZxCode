@@ -49,8 +49,8 @@ describe("DB109 App 库统一迁移", () => {
     const insert = db.prepare(
       `INSERT INTO automations(automation_id,cron_expr,prompt,workspace_key,workspace_path,created_at,updated_at,model,provider,thought_level,model_selection) VALUES(?, '* * * * *','正文','ws','/ws',1,2,?,?,?,?)`,
     );
-    insert.run("known", "custom:builtin%3Abigmodel-coding-plan:GLM-5.3", "zcode", "high", "null");
-    insert.run("unknown", "unknown-model", "zcode", "high", "null");
+    insert.run("known", "custom:builtin%3Abigmodel-coding-plan:GLM-5.3", "zxcode", "high", "null");
+    insert.run("unknown", "unknown-model", "zxcode", "high", "null");
     insert.run("default", null, null, null, null);
     runTasksDatabaseMigrations(db);
     const known = db.prepare("SELECT * FROM automations WHERE automation_id='known'").get()!;
@@ -61,7 +61,7 @@ describe("DB109 App 库统一迁移", () => {
     });
     expect(known).toMatchObject({
       model: "custom:builtin%3Abigmodel-coding-plan:GLM-5.3",
-      provider: "zcode",
+      provider: "zxcode",
       thought_level: "high",
       prompt: "正文",
       created_at: 1,

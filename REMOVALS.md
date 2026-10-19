@@ -54,8 +54,23 @@
 - 远端排序下发（`client/configs`、`pluginStoreOrder`），改为本地默认排序（`dd04568`）
 - 14 个官方插件下线，移除资源与清单条目（`5879dd4`）：assess-credit、finance-search、find-clients、hexin、model-deals、pick-funds、read-macro、run-fpa、tianyancha、vet-companies、video-agent-kit、watch-positions、wind、write-research
 
+## 八、v3.15.1 同步剔除（上游新增的已删域复活内容）
+
+- 账号请求安全子系统：`apps/zcode-cli/packages/adapters` 的 `request-security(-edition)`、`account-request-retry`；`packages/shared/src/request-security-edition/`；desktop main 与 UI 侧同名 no-op 壳；`@zcode/telemetry` 包残留骨架（`request-observation-target` 等）与全部测试。runner 三件套（generate/stream/execution）中的账号重试与请求验证接线同步剥离
+- zhipu-account Provider 规则：`config/provider/zxcode-builtin.json` 上游侧新增的 `account:zai-*`（个人/团队 Coding Plan、Start Plan、highspeed 卡）provider 规则不合入，仅保留 API key 模板
+- 营销触达与奖励中心：`packages/services/src/marketing-touch/`、`packages/services/src/cloud-content/`、`packages/shared/src/{marketingTouch,rewardsBridge,rewardsEmbedded,cloudContent}.ts`、UI 侧 `components/marketing-touch/`、`rewards/`、`manual-claim-plan/`、`cloud-content-dialog/`、`global-notice/`、`sidebar-activity/`、营销导航 store 与相关 i18n key
+- 高速卡（highspeed）营销分享面：分享卡（`HighspeedShareNoticeCard`）、到期自动分享链路、分享对话框与引流文案；加速执行与视觉反馈层保留为休眠态（fork 无账号 provider，永不激活）
+- 会话分享 Web 落地：`packages/web-share/`、`packages/share-ui/`、`packages/web/src/share/` 页面与路由、`conversationShareInlineImages`
+- Web 登录页：`packages/web/src/auth/`（WebLoginPage/WebCallbackPage/WebLoggedInWaitingPage、webAuthService、oauthStateCodec）
+- 反馈工单 UI 残件：`packages/ui/src/feedback/` 剩余视图与 `useFeedbackStore` 接线、Windows 标题栏菜单组件（仅剩反馈/更新入口，fork 无消费方）
+- 自动更新残留：`platformUpdate.ts`、`PostUpdateReleaseNotesDialog`、`desktopUpdateMenu`、web `remoteFrontendVersion.mjs`
+- Coding Plan 购买支付：`@stripe/*` 依赖、`CodingPlanBillingDiscount`、share-ui 内嵌购买页
+- 平台端点运行时白名单新增：`packages/shared/test/pluginMarketplaces.test.ts`（插件市场 CDN `cdn-zcode.z.ai` 保留项的来源 fixture）
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。
 - 桌面端本地仍会生成一个随机 `deviceMid`（存于 `~/.zxcode/v2/telemetry-state.json`），仅用作本地流式连接与手机 Relay 的连接标识，不会发送到智谱或任何遥测服务器。
 - 模型请求仍会按所配提供商的协议要求附带认证与会话标识，具体见 [NOTICE.md](NOTICE.md) 的对外请求说明。
+- v3.15.1 起 `packages/shared/src/zcodeEndpoint.ts` 恢复 `buildZCodeEndpointUrls` 裁剪版（仅 origin/apiBaseUrl/remoteUrl，供 web 远控前端 v3/v4 版本门槛使用）并新增 `resolveWebRemoteControlRelayWsUrl`（默认官方 relay 地址，自部署 relay 经设置覆盖）；上游 webRemoteControl manager 与 fork 自部署 `mobileRelayClient` 并存，互不替代。
+- 上游 v3.15.1 的 UI 插件、插件 UI 沙箱（`zcodePluginSandbox` preload 命名空间）、内联 Gen UI、vitest 测试体系为保留能力。

@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
 import {
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+  ZXCODE_CUA_OFFICIAL_PLUGIN_ID,
   TID_LOGIN_USE_API_KEY_BUTTON,
   TID_TASK_SETTINGS_BUTTON,
   TID_CHAT_MODEL_SELECT_TRIGGER,
@@ -31,13 +31,15 @@ import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboard
 
 const CASE_NAME = "conversation-session-composer-compression";
 const evidence = join(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? join(process.cwd(), ".e2e-artifacts"),
+  process.env.ZXCODE_E2E_ARTIFACT_DIR ?? join(process.cwd(), ".e2e-artifacts"),
   CASE_NAME,
 );
 
 async function snapshot() {
   return browser.execute((testId) => {
-    const model = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!;
+    const model = document.querySelector<HTMLElement>(
+      `[data-testid="${testId}"]`,
+    )!;
     const root =
       model.closest<HTMLElement>("[data-composer-toolbar]") ??
       model.closest<HTMLElement>(".group\\/toolbar")!;
@@ -50,14 +52,23 @@ async function snapshot() {
         getComputedStyle(el).visibility !== "hidden",
       );
     const controls = ["0", "1", "2", "3"].map((priority) =>
-      root.querySelector<HTMLElement>(`[data-composer-collapse-priority="${priority}"]`),
+      root.querySelector<HTMLElement>(
+        `[data-composer-collapse-priority="${priority}"]`,
+      ),
     );
     const thought = controls[3];
     const prefix = model.querySelector(".composer-provider-prefix");
     const bar = thought?.querySelector(".bg-success") ?? null;
     const rect = (el: Element) => {
       const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      return {
+        x: r.x,
+        y: r.y,
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+      };
     };
     const modelIcon = root.dataset.composerModelIcon === "true";
     const providerHidden = root.dataset.composerProviderCompact === "true";
@@ -90,7 +101,9 @@ async function snapshot() {
       label: model.querySelector(".overflow-hidden[title]")
         ? rect(model.querySelector(".overflow-hidden[title]")!)
         : null,
-      modelText: prefix?.nextElementSibling ? rect(prefix.nextElementSibling) : null,
+      modelText: prefix?.nextElementSibling
+        ? rect(prefix.nextElementSibling)
+        : null,
       providerText: prefix ? rect(prefix) : null,
       title: model.querySelector("[title]")?.getAttribute("title") ?? null,
       controls: controls.map((el) => (el ? rect(el) : null)),
@@ -105,8 +118,8 @@ async function snapshot() {
 
 type Snapshot = Awaited<ReturnType<typeof snapshot>>;
 function assertLayout(s: Snapshot) {
-  const expected: string[] = [s.stage >= 1, s.stage >= 2, s.stage >= 3].map((compact) =>
-    compact ? "true" : "full",
+  const expected: string[] = [s.stage >= 1, s.stage >= 2, s.stage >= 3].map(
+    (compact) => (compact ? "true" : "full"),
   );
   expected.push(s.stage >= 6 ? "icon" : s.stage >= 4 ? "true" : "full");
   assert.deepEqual(s.compact, expected, JSON.stringify(s));
@@ -121,16 +134,27 @@ function assertLayout(s: Snapshot) {
       );
     }
   }
-  if (s.modelIcon) assert.ok(Math.abs(s.model.width - 28) < 1 && Math.abs(s.model.height - 28) < 1);
-  else assert.ok(s.text.includes(UPSTREAM_SECONDARY_MODEL), "模型文字必须保留到最后一档");
+  if (s.modelIcon)
+    assert.ok(
+      Math.abs(s.model.width - 28) < 1 && Math.abs(s.model.height - 28) < 1,
+    );
+  else
+    assert.ok(
+      s.text.includes(UPSTREAM_SECONDARY_MODEL),
+      "模型文字必须保留到最后一档",
+    );
   if (!s.modelIcon) {
-    assert.ok(s.label && s.modelText, "有名称 provider 必须生成独立模型文字片段");
+    assert.ok(
+      s.label && s.modelText,
+      "有名称 provider 必须生成独立模型文字片段",
+    );
     assert.ok(
       s.modelText.x >= s.label.x - 1 && s.modelText.right <= s.label.right + 1,
       "模型文字不能横向截断",
     );
     assert.ok(
-      s.modelText.y >= s.label.y - 2 && s.modelText.bottom <= s.label.bottom + 2,
+      s.modelText.y >= s.label.y - 2 &&
+        s.modelText.bottom <= s.label.bottom + 2,
       "模型文字不能落到第二行被裁掉",
     );
     if (s.prefixVisible)
@@ -141,11 +165,17 @@ function assertLayout(s: Snapshot) {
   }
   if (s.barVisible) {
     assert.ok(s.bar && s.track && s.bar.width > 0 && s.bar.height > 0);
-    assert.ok(Math.abs(s.bar.height - s.track.height) < 1, "max 档绿条应占满轨道");
+    assert.ok(
+      Math.abs(s.bar.height - s.track.height) < 1,
+      "max 档绿条应占满轨道",
+    );
   }
   assert.ok(s.leading.right <= s.trailing.x + 1, "两组按钮不能相互覆盖");
   assert.ok(s.trailing.right <= s.root.right + 1, "发送区不能溢出");
-  assert.ok(Math.abs(s.model.y - s.controls[3]!.y) < 2, "模型与 think 必须保持单行");
+  assert.ok(
+    Math.abs(s.model.y - s.controls[3]!.y) < 2,
+    "模型与 think 必须保持单行",
+  );
 }
 
 async function settledSnapshot() {
@@ -199,10 +229,12 @@ describe("Composer 七档压缩", () => {
         );
         const configFile = join(paths.homeDir, ".zcode", "cli", "config.json");
         const config = JSON.parse(
-          await readFile(configFile, "utf8").catch((error: NodeJS.ErrnoException) => {
-            if (error.code === "ENOENT") return "{}";
-            throw error;
-          }),
+          await readFile(configFile, "utf8").catch(
+            (error: NodeJS.ErrnoException) => {
+              if (error.code === "ENOENT") return "{}";
+              throw error;
+            },
+          ),
         );
         await mkdir(dirname(configFile), { recursive: true });
         await writeFile(
@@ -214,7 +246,7 @@ describe("Composer 七档压缩", () => {
               enabled: true,
               enabledPlugins: {
                 ...config.plugins?.enabledPlugins,
-                [ZCODE_CUA_OFFICIAL_PLUGIN_ID]: true,
+                [ZXCODE_CUA_OFFICIAL_PLUGIN_ID]: true,
               },
             },
           }),
@@ -261,7 +293,9 @@ describe("Composer 七档压缩", () => {
         previous = state.stage;
         if (!stages.has(state.stage)) {
           stages.set(state.stage, width);
-          await browser.saveScreenshot(join(evidence, `stage-${state.stage}.png`));
+          await browser.saveScreenshot(
+            join(evidence, `stage-${state.stage}.png`),
+          );
         }
         if (state.stage === 7) break;
       }
@@ -277,9 +311,13 @@ describe("Composer 七档压缩", () => {
         assert.equal(state.stage, stage, "相同宽度放宽必须恢复相同档位");
       }
     } finally {
-      await writeFile(join(evidence, "compression.json"), JSON.stringify(samples, null, 2));
+      await writeFile(
+        join(evidence, "compression.json"),
+        JSON.stringify(samples, null, 2),
+      );
       await browser.electron.execute(
-        (electron, id, min) => electron.BrowserWindow.fromId(id)?.setMinimumSize(min[0]!, min[1]!),
+        (electron, id, min) =>
+          electron.BrowserWindow.fromId(id)?.setMinimumSize(min[0]!, min[1]!),
         original.windowId,
         minimum,
       );

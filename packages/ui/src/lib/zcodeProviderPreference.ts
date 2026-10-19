@@ -1,6 +1,6 @@
 import {
   normalizeAgentProviderToZCodeAgent,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
   type ZCodeProvider,
 } from "@zcode/shared";
 import { ZCODE_AGENT_PROVIDERS } from "./zcodeProviders.js";
@@ -10,7 +10,8 @@ interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY = "zcode-last-agent-provider";
+export const LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY =
+  "zcode-last-agent-provider";
 
 function getBrowserStorage(): StorageLike | null {
   if (typeof window === "undefined") {
@@ -25,13 +26,18 @@ function getBrowserStorage(): StorageLike | null {
 }
 
 function isAgentProvider(value: unknown): value is ZCodeProvider {
-  return typeof value === "string" && ZCODE_AGENT_PROVIDERS.includes(value as ZCodeProvider);
+  return (
+    typeof value === "string" &&
+    ZCODE_AGENT_PROVIDERS.includes(value as ZCodeProvider)
+  );
 }
 
-export function readLastSelectedAgentProvider(storage: StorageLike | null = getBrowserStorage()): ZCodeProvider | null {
+export function readLastSelectedAgentProvider(
+  storage: StorageLike | null = getBrowserStorage(),
+): ZCodeProvider | null {
   const rawValue = storage?.getItem(LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY);
   if (!isAgentProvider(rawValue)) {
-    return ZCODE_AGENT_PROVIDER;
+    return ZXCODE_AGENT_PROVIDER;
   }
 
   // Bugfix: 单 ZCode Agent 迁移后，旧本地存储里已移除的第三方 provider 值不能再参与首屏预热。

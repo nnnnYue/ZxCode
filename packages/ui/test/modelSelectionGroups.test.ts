@@ -4,13 +4,9 @@ import type { ModelSelectionView } from "@zcode/services";
 import { buildRegistryModelSelectGroups } from "../src/lib/modelSelectionGroups.js";
 
 describe("model selection groups", () => {
+  // 账号型（zhipu-account）Provider 已下线；视觉标例外只剩静态套餐 Key。
   it.each([
-    [{ type: "zhipu-account", accountType: "zai", mode: "individual-coding-plan" }, false],
-    [{ type: "zhipu-account", accountType: "bigmodel", mode: "team-coding-plan" }, false],
     [{ type: "zhipu-coding-plan-api-key" }, false],
-    [{ type: "zhipu-account", accountType: "zai", mode: "start-plan" }, false],
-    [{ type: "zhipu-account", accountType: "bigmodel", mode: "start-plan" }, false],
-    [{ type: "zhipu-account", accountType: "bigmodel", mode: "off-peak" }, true],
     [{ type: "api-key" }, true],
   ])("仅套餐 GLM-5.3 隐藏视觉标，不影响 Flash/真实能力：%j", (access, expected) => {
     const view: ModelSelectionView = {
@@ -131,7 +127,7 @@ describe("model selection groups", () => {
     ]);
   });
 
-  it("直接把 Registry Account Provider 投影为已选连接，不重新裁决 Family", () => {
+  it("直接把 Registry Provider 投影为分组，标题沿用 Registry 自身命名", () => {
     const providerId = BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan;
     const selectionView: ModelSelectionView = {
       revision: 8,
@@ -141,10 +137,8 @@ describe("model selection groups", () => {
           providerName: "BigModel Coding Plan",
           config: {
             access: {
-              type: "zhipu-account",
-              accountType: "bigmodel",
-              mode: "team-coding-plan",
-              entitled: true,
+              type: "zhipu-coding-plan-api-key",
+              apiKey: "fixture",
             },
             api: {
               type: "anthropic-messages",
@@ -160,9 +154,7 @@ describe("model selection groups", () => {
     expect(buildRegistryModelSelectGroups("glm", selectionView)).toEqual([
       {
         key: `registry-provider:${providerId}`,
-        label: "BigModel",
-        labelBadge: "Team",
-        directItems: true,
+        label: "BigModel Coding Plan",
         items: [
           {
             key: `registry-provider:${providerId}:GLM-5.2`,

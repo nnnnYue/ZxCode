@@ -86,8 +86,6 @@ describe("desktop second-instance workspace deep link routing", () => {
         buildWorkspaceOpenUrl(workspacePath),
       ]),
       argv: ["ZCode"],
-      focusForceUpdateGateWindow: vi.fn(),
-      forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>
         handleDeepLink(url, { info: vi.fn(), warn: logger.warn }, options),
       handleOpenWorkspacePath: (path) =>
@@ -98,7 +96,6 @@ describe("desktop second-instance workspace deep link routing", () => {
             allowWithoutReadyWindow: true,
           },
         ),
-      logger,
       workspaceConfirmationCopy: resolveExternalWorkspaceOpenDialogCopy("zh-CN"),
     });
 
@@ -129,8 +126,6 @@ describe("desktop second-instance workspace deep link routing", () => {
         workspacePath,
       ]),
       argv: ["ZCode"],
-      focusForceUpdateGateWindow: vi.fn(),
-      forceUpdateBlocked: false,
       handleDeepLink: vi.fn(() => false),
       handleOpenWorkspacePath,
       logger: { warn: vi.fn() },
@@ -164,8 +159,6 @@ describe("desktop second-instance workspace deep link routing", () => {
         buildWorkspaceOpenUrl(workspacePath),
       ]),
       argv: ["ZCode"],
-      focusForceUpdateGateWindow: vi.fn(),
-      forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>
         handleDeepLink(url, { info: vi.fn(), warn: logger.warn }, options),
       handleOpenWorkspacePath: (path) =>
@@ -176,7 +169,6 @@ describe("desktop second-instance workspace deep link routing", () => {
             allowWithoutReadyWindow: true,
           },
         ),
-      logger,
     });
 
     expect(handled).toBe(true);
@@ -205,8 +197,6 @@ describe("desktop second-instance workspace deep link routing", () => {
         buildWorkspaceOpenUrl("\\\\attacker\\share"),
       ]),
       argv: ["ZCode"],
-      focusForceUpdateGateWindow: vi.fn(),
-      forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>
         handleDeepLink(url, { info: vi.fn(), warn: logger.warn }, options),
       handleOpenWorkspacePath: (path) =>
@@ -217,7 +207,6 @@ describe("desktop second-instance workspace deep link routing", () => {
             allowWithoutReadyWindow: true,
           },
         ),
-      logger,
     });
 
     expect(handled).toBe(false);
@@ -231,18 +220,19 @@ describe("desktop second-instance workspace deep link routing", () => {
 });
 
 async function importHarness() {
-  const [{ createDeepLinkSingleInstanceData }, oauthDeepLink, secondInstance] = await Promise.all([
+  // fork 适配：desktopOAuthDeepLink.ts 已随 OAuth 功能剔除，深链处理函数在 desktopDeepLink.ts。
+  const [{ createDeepLinkSingleInstanceData }, deepLink, secondInstance] = await Promise.all([
     import("../src/main/desktopDeepLinkUrl.js"),
-    import("../src/main/desktopOAuthDeepLink.js"),
+    import("../src/main/desktopDeepLink.js"),
     import("../src/main/desktopSecondInstanceDeepLink.js"),
   ]);
   return {
     createDeepLinkSingleInstanceData,
-    deliverPendingDeepLink: oauthDeepLink.deliverPendingDeepLink,
-    handleDeepLink: oauthDeepLink.handleDeepLink,
-    handleOpenWorkspacePath: oauthDeepLink.handleOpenWorkspacePath,
+    deliverPendingDeepLink: deepLink.deliverPendingDeepLink,
+    handleDeepLink: deepLink.handleDeepLink,
+    handleOpenWorkspacePath: deepLink.handleOpenWorkspacePath,
     handleSecondInstanceWorkspaceRequest: secondInstance.handleSecondInstanceWorkspaceRequest,
-    resolveExternalWorkspaceOpenDialogCopy: oauthDeepLink.resolveExternalWorkspaceOpenDialogCopy,
+    resolveExternalWorkspaceOpenDialogCopy: deepLink.resolveExternalWorkspaceOpenDialogCopy,
   };
 }
 
@@ -267,5 +257,5 @@ function createMockWindow(webContentsId: number) {
 }
 
 function buildWorkspaceOpenUrl(workspacePath: string): string {
-  return `zcode://workspace/open?path=${encodeURIComponent(workspacePath)}`;
+  return `zxcode://workspace/open?path=${encodeURIComponent(workspacePath)}`;
 }

@@ -19,15 +19,14 @@ import {
   createNodeProviderRuntimePathEnv,
   materializeZCodeBuiltinProviderConfig,
   encodeProviderConfigFile,
-  resolveZCodeBuiltinCachePaths,
   resolveNodeProviderRuntimePaths,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "../src/index.js";
 
 const temporaryDirectories: string[] = [];
 const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
-  new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+  new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
 );
 
 afterEach(async () => {
@@ -45,7 +44,6 @@ describe("@zcode/provider-node", () => {
   it("从 Built-in Model Config Rules 解析 ox-alpha 同策略别名和 API-specific reasoning", async () => {
     const source = new NodeZCodeBuiltinProviderConfigSource({
       bundledFilePath: zcodeBuiltinProviderConfigFilePath,
-      watch: false,
     });
     const snapshot = await source.read();
 
@@ -111,7 +109,6 @@ describe("@zcode/provider-node", () => {
   it("从 Built-in Config 解析模型能力、Access 协议和 Tool Schema 兼容事实", async () => {
     const source = new NodeZCodeBuiltinProviderConfigSource({
       bundledFilePath: zcodeBuiltinProviderConfigFilePath,
-      watch: false,
     });
     const snapshot = await source.read();
 
@@ -152,16 +149,6 @@ describe("@zcode/provider-node", () => {
       supportsMidConversationSystem: true,
       supportsNativeWebSearch: false,
     });
-    expect(snapshot.providers.get("account:zai-start-plan")?.access).toMatchObject({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "start-plan",
-    });
-    expect(snapshot.providers.get("account:zai-offpeak-idle-plan")?.access).toMatchObject({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "off-peak",
-    });
     expect(snapshot.providerTemplates?.get("deepseek")?.config.access).toMatchObject({
       type: "api-key",
     });
@@ -194,11 +181,7 @@ describe("@zcode/provider-node", () => {
               providerId: "zcodeBuiltin",
               config: {
                 group: "zai-family",
-                access: {
-                  type: "zhipu-account",
-                  accountType: "zai",
-                  mode: "start-plan",
-                },
+                access: { type: "api-key", apiKey: "test-only" },
                 builtinModelIds: [],
               },
             },
@@ -229,11 +212,11 @@ describe("@zcode/provider-node", () => {
     });
 
     expect(repeatedPath).toBe(firstPath);
-    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "zcode-builtin.json"));
+    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "zxcode-builtin.json"));
     expect(secondPath).toBe(firstPath);
     expect(JSON.parse(await readFile(secondPath, "utf8"))).toEqual(JSON.parse(secondContent));
     expect(await readdir(join(root, "runtime", "provider", "bundled"))).toEqual([
-      "zcode-builtin.json",
+      "zxcode-builtin.json",
     ]);
   });
 
@@ -241,13 +224,13 @@ describe("@zcode/provider-node", () => {
     expect(resolveNodeProviderRuntimePaths({})).toBeNull();
     expect(() =>
       resolveNodeProviderRuntimePaths({
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
+        [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
       }),
     ).toThrow("必须同时提供");
     expect(
       resolveNodeProviderRuntimePaths({
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: " /zcodeBuiltin.json ",
-        [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: " /personal.json ",
+        [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: " /zcodeBuiltin.json ",
+        [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: " /personal.json ",
       }),
     ).toEqual({
       zcodeBuiltinFilePath: "/zcodeBuiltin.json",
@@ -259,8 +242,8 @@ describe("@zcode/provider-node", () => {
         personalFilePath: "/personal.json",
       }),
     ).toEqual({
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/personal.json",
+      [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
+      [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/personal.json",
     });
   });
 
@@ -270,7 +253,6 @@ describe("@zcode/provider-node", () => {
     await writeZCodeBuiltin(filePath, "model-a");
     const source = new NodeZCodeBuiltinProviderConfigSource({
       bundledFilePath: filePath,
-      watch: false,
     });
 
     const first = await source.read();
@@ -280,30 +262,6 @@ describe("@zcode/provider-node", () => {
     expect(first.providers.get("zcodeBuiltin")?.builtinModelIds).toEqual(["model-a"]);
     expect(second.providers.get("zcodeBuiltin")?.builtinModelIds).toEqual(["model-b"]);
     expect(second.revision).not.toBe(first.revision);
-    source.dispose();
-  });
-
-  it("ZCode Built-in Source 只为新的 content revision 发布一次变化", async () => {
-    const root = await temporaryDirectory();
-    const filePath = join(root, "zcodeBuiltin.json");
-    await writeZCodeBuiltin(filePath, "model-a");
-    const source = new NodeZCodeBuiltinProviderConfigSource({ bundledFilePath: filePath });
-    const reasons: string[] = [];
-    source.onDidChange((reason) => reasons.push(reason));
-    await source.read();
-
-    await writeZCodeBuiltin(filePath, "model-a");
-    await settleFileWatcher();
-    expect(reasons).toEqual([]);
-
-    await writeZCodeBuiltin(filePath, "model-b");
-    await vi.waitFor(() => expect(reasons).toContain("file-changed"));
-    await settleFileWatcher();
-
-    expect(reasons).toEqual(["file-changed"]);
-    expect((await source.read()).providers.get("zcodeBuiltin")?.builtinModelIds).toEqual([
-      "model-b",
-    ]);
     source.dispose();
   });
 
@@ -517,42 +475,6 @@ describe("@zcode/provider-node", () => {
     second.dispose();
   });
 
-  it("Endpoint-scoped Config Runtime 向 Agent 暴露当前 Endpoint 的 Active 路径", async () => {
-    const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
-    const environmentConfigRoot = join(root, "environment");
-    const personalFilePath = join(root, "config.json");
-    const endpointOrigin = "https://api.example.com";
-    await writeZCodeBuiltin(zcodeBuiltinFilePath, "zcodeBuiltin-model");
-    const runtime = new NodeProviderConfigRuntime({
-      zcodeBuiltinFilePath,
-      personalFilePath,
-      zcodeBuiltinEnvironment: {
-        environmentConfigRoot,
-        platform: "darwin-aarch64",
-        appVersion: "3.9.2",
-        resolveEndpointOrigin: () => endpointOrigin,
-        fetchRelease: async () => null,
-        watch: false,
-      },
-      watch: false,
-    });
-
-    await runtime.start();
-
-    await expect(runtime.resolveZCodeBuiltinActiveFilePath()).resolves.toBe(
-      resolveZCodeBuiltinCachePaths({
-        environmentConfigRoot,
-        platform: "darwin-aarch64",
-        appVersion: "3.9.2",
-        zcodeEndpointOrigin: endpointOrigin,
-      }).activeFilePath,
-    );
-    // start 不等待后台下载；释放临时目录前等待首轮控制文件 lease 收尾，不能和 rm 竞态。
-    await runtime.refreshZCodeBuiltin();
-    runtime.dispose();
-  });
-
   it("正式 Personal Config 损坏时保留原文件且不误调 Legacy Importer", async () => {
     const root = await temporaryDirectory();
     const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
@@ -662,11 +584,7 @@ async function writeZCodeBuiltin(filePath: string, modelId: string): Promise<voi
               providerId: "zcodeBuiltin",
               config: {
                 group: "zai-family",
-                access: {
-                  type: "zhipu-account",
-                  accountType: "zai",
-                  mode: "start-plan",
-                },
+                access: { type: "api-key", apiKey: "test-only" },
                 builtinModelIds: [modelId],
               },
             },

@@ -23,7 +23,7 @@ describe("ensureRemoteServerDeviceMid", () => {
     await expect(ensureRemoteServerDeviceMid({ ensureDeviceMid, log })).resolves.toBeUndefined();
 
     expect(log).toHaveBeenCalledTimes(1);
-    expect(String(log.mock.calls[0]?.[0])).toContain("X-Device-Mid");
+    expect(String(log.mock.calls[0]?.[0])).toContain("deviceMid 初始化失败");
     expect(String(log.mock.calls[0]?.[1])).toContain("Telemetry state lock timeout");
   });
 });

@@ -32,21 +32,8 @@ const { attachmentState, chatPromptEditorProps, dialogOpenStates, inputClear } =
 }));
 
 function expectedTelemetrySendOptions() {
-  return expect.objectContaining({
-    telemetrySeed: {
-      sendTime: expect.any(Number),
-      extraDetail: {
-        ask_mode: "",
-        model_name: "",
-        model_provider: "glm",
-        agent: "glm",
-        plan_status: "unknown",
-        plan_product_id: "",
-        message_source: "chat",
-        task_trigger: "",
-      },
-    },
-  });
+  // fork 已移除发送遥测：send options 不再包含 telemetrySeed，这里只校验第二个参数存在。
+  return expect.anything();
 }
 
 vi.mock("@/components/ui/dialog.js", async () => {
@@ -407,36 +394,6 @@ describe("ConversationComposer prompt history", () => {
       taskId: null,
       skillCatalogSessionId: "prewarm-a",
     });
-    await act(async () => root.unmount());
-  });
-
-  it("prewarm snapshot 未到时仍用冻结草稿 config 建立 send telemetry seed", async () => {
-    const onSendText = vi.fn(async () => {});
-    const { root } = renderComposer(onSendText, {
-      mode: "build",
-      model: "deepseek-v4-flash",
-      provider: "e2e-deepseek",
-    });
-    const submit = chatPromptEditorProps.at(-1)?.onSubmit;
-
-    await act(async () => {
-      (submit as (value: string) => boolean)("立即发送草稿");
-      await flushAsyncWork();
-    });
-
-    expect(onSendText).toHaveBeenCalledWith(
-      "立即发送草稿",
-      expect.objectContaining({
-        telemetrySeed: expect.objectContaining({
-          extraDetail: expect.objectContaining({
-            ask_mode: "build",
-            model_name: "custom:e2e-deepseek:deepseek-v4-flash",
-            model_provider: "e2e-deepseek",
-          }),
-        }),
-      }),
-    );
-
     await act(async () => root.unmount());
   });
 

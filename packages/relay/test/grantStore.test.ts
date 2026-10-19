@@ -1,50 +1,53 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { describe, expect, it } from "vitest";
 import { createOneTimeTicketStore } from "../src/grantStore.js";
 
-test("issue/peek/consume 遵循一次性语义", () => {
-  let current = 1_000;
-  const store = createOneTimeTicketStore<string>({
-    ttlMs: 60_000,
-    now: () => current,
-    createTicket: () => `ticket-${current++}`,
-  });
-  const ticket = store.issue("payload-a");
-  assert.equal(ticket.payload, "payload-a");
+// fork 原 node:test 用例，vitest 全量接管后转为 vitest 断言，语义不变。
 
-  assert.ok(store.peek(ticket.id));
-  assert.ok(store.consume(ticket.id));
-  // 一次性：重放（peek 与 consume）都失效。
-  assert.equal(store.peek(ticket.id), null);
-  assert.equal(store.consume(ticket.id), null);
-  assert.equal(store.consume(undefined), null);
-});
+describe("one-time ticket store", () => {
+  it("issue/peek/consume 遵循一次性语义", () => {
+    let current = 1_000;
+    const store = createOneTimeTicketStore<string>({
+      ttlMs: 60_000,
+      now: () => current,
+      createTicket: () => `ticket-${current++}`,
+    });
+    const ticket = store.issue("payload-a");
+    expect(ticket.payload).toBe("payload-a");
 
-test("TTL 过期后消费失败且惰性清理", () => {
-  let current = 5_000;
-  const store = createOneTimeTicketStore<number>({
-    ttlMs: 1_000,
-    now: () => current,
-    createTicket: () => `t-${current++}`,
+    expect(store.peek(ticket.id)).toBeTruthy();
+    expect(store.consume(ticket.id)).toBeTruthy();
+    // 一次性：重放（peek 与 consume）都失效。
+    expect(store.peek(ticket.id)).toBeNull();
+    expect(store.consume(ticket.id)).toBeNull();
+    expect(store.consume(undefined)).toBeNull();
   });
-  const ticket = store.issue(42);
-  current += 2_000;
-  assert.equal(store.peek(ticket.id), null);
-  assert.equal(store.consume(ticket.id), null);
-});
 
-test("不同票据互不影响；payload 随票据返回", () => {
-  const store = createOneTimeTicketStore<{ id: number }>({
-    ttlMs: 60_000,
-    createTicket: (() => {
-      let seq = 0;
-      return () => `t-${seq++}`;
-    })(),
+  it("TTL 过期后消费失败且惰性清理", () => {
+    let current = 5_000;
+    const store = createOneTimeTicketStore<number>({
+      ttlMs: 1_000,
+      now: () => current,
+      createTicket: () => `t-${current++}`,
+    });
+    const ticket = store.issue(42);
+    current += 2_000;
+    expect(store.peek(ticket.id)).toBeNull();
+    expect(store.consume(ticket.id)).toBeNull();
   });
-  const first = store.issue({ id: 1 });
-  const second = store.issue({ id: 2 });
-  const consumed = store.consume(second.id);
-  assert.ok(consumed);
-  assert.deepEqual(consumed.payload, { id: 2 });
-  assert.ok(store.consume(first.id));
+
+  it("不同票据互不影响；payload 随票据返回", () => {
+    const store = createOneTimeTicketStore<{ id: number }>({
+      ttlMs: 60_000,
+      createTicket: (() => {
+        let seq = 0;
+        return () => `t-${seq++}`;
+      })(),
+    });
+    const first = store.issue({ id: 1 });
+    const second = store.issue({ id: 2 });
+    const consumed = store.consume(second.id);
+    expect(consumed).toBeTruthy();
+    expect(consumed?.payload).toEqual({ id: 2 });
+    expect(store.consume(first.id)).toBeTruthy();
+  });
 });

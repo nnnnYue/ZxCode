@@ -251,7 +251,7 @@ function setupExternalRelayGlobals(pathname = "/remote") {
     matchMedia: () => ({ matches: false }),
     location: {
       pathname,
-      href: `https://zcode.z.ai${pathname}?sid=sid-1&hash=hash-1&t=1&mid=mid-1&app_version=1.0.0`,
+      href: `https://relay.example.com${pathname}?sid=sid-1&hash=hash-1&t=1&mid=mid-1&app_version=1.0.0`,
       replace: navigateMock,
       search: "?sid=sid-1&hash=hash-1&t=1&mid=mid-1&app_version=1.0.0",
     },

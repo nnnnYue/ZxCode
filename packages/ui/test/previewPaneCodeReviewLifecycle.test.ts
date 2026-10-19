@@ -3,6 +3,8 @@ import { createElement } from "react";
 import { render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+// PreviewPane 读取 tab store 判断 workspace 只读态；测试需在真实 TabStoreProvider 内渲染。
+import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 
 const mocks = vi.hoisted(() => {
   const fileService = {
@@ -85,22 +87,26 @@ describe("PreviewPane code-review lifecycle", () => {
       createElement(
         ZCodeIntlProvider,
         { initialLocale: "zh-CN" },
-        createElement(PreviewPane, {
-          onClose: vi.fn(),
-          source: {
-            type: "code-review",
-            title: "app.ts",
-            path: "/workspace/src/app.ts",
-            workspacePath: "/workspace",
-            review: {
-              requestId: "review-1",
-              title: "模型评论",
-              body: "这里需要检查。",
-              startLine: 1,
-              endLine: 1,
+        createElement(
+          TabStoreProvider,
+          null,
+          createElement(PreviewPane, {
+            onClose: vi.fn(),
+            source: {
+              type: "code-review",
+              title: "app.ts",
+              path: "/workspace/src/app.ts",
+              workspacePath: "/workspace",
+              review: {
+                requestId: "review-1",
+                title: "模型评论",
+                body: "这里需要检查。",
+                startLine: 1,
+                endLine: 1,
+              },
             },
-          },
-        }),
+          }),
+        ),
       ),
     );
 

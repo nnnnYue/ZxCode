@@ -188,7 +188,8 @@ describe("Todo104 规则集合读写与应用", () => {
   it("真实 Builtin 越层规则按精确 Endpoint 接回，Start 搜索保留", async () => {
     const release = JSON.parse(
       await readFile(
-        new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+        // fork 生产配置改名为 zxcode-builtin.json（coding plan 端点规则已剔除）。
+        new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );
@@ -204,16 +205,12 @@ describe("Todo104 规则集合读写与应用", () => {
     for (const baseUrl of [
       "https://api.z.ai/api/anthropic",
       "https://open.bigmodel.cn/api/anthropic",
-      "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
     ]) {
       expect(resolve(baseUrl)?.inputFormat).toMatchObject({
         supportsImage: true,
         supportsVideo: true,
       });
     }
-    expect(resolve("https://zcode.z.ai/api/v1/zcode-plan/anthropic")?.supportsNativeWebSearch).toBe(
-      true,
-    );
     expect(resolve("https://api.z.ai/api/anthropic")?.supportsNativeWebSearch).toBe(true);
     expect(resolve("https://open.bigmodel.cn/api/anthropic")?.supportsMidConversationSystem).toBe(
       true,

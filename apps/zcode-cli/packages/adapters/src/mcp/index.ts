@@ -508,7 +508,7 @@ class NodeMcpAdapter implements McpPort {
             tool,
             record.config.timeoutMs,
             record.config.type === "http" &&
-              record.config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+              record.config.auth?.type === ZXCODE_OFFICIAL_MCP_AUTH_TYPE,
           ),
         );
         record.status = { ...record.status, toolCount: record.tools.length };

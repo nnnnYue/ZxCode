@@ -14,12 +14,11 @@ function getQuickPickCommandsMemoBlock(source: string): string {
 }
 
 describe("App quick pick command render stability", () => {
-  it("does not recreate quick pick commands when only the user object reference changes", () => {
+  it("quick pick commands memo 不订阅用户对象引用", () => {
     const memoBlock = getQuickPickCommandsMemoBlock(readAppSource());
 
     // 性能回归保护：commands 会一路传给 CommandCenterDialog。
-    // 这里只需要登录态布尔值，不应订阅完整 user 对象引用。
-    expect(memoBlock).toContain("isLoggedIn");
+    // fork 已移除登录态，这里只守护 memo 块不重新引入 user 对象订阅。
     expect(memoBlock).not.toMatch(/\n\s+user,\n/);
   });
 

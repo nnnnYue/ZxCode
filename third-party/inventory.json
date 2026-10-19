@@ -2,152 +2,152 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "5c9b538d09bd3769e6630db4032deb4f8ae01fb518e61712618bbef91f640057",
+  "noticesSha256": "66a778a53dfcab81a7e2f48b59177e0ec3361d9c3408302e1b6207b8d67bc8f8",
   "inputs": {
-    ".agents/skills/agent-browser/references/authentication.md": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b",
-    ".agents/skills/agent-browser/references/commands.md": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909",
+    ".agents/skills/agent-browser/references/authentication.md": "fa3533cf0b9702a746578ab6932546e1a9080a711cf7be9f999fb685f4d44a74",
+    ".agents/skills/agent-browser/references/commands.md": "5dcf063a83d06674dbdaae646d410f0330301d68594a211abd628902fa9b4979",
     ".agents/skills/agent-browser/references/profiling.md": "15f1e6c7994d7471a274dc1476992d0ec178acd91f8b626e0d6f24a4dbef738f",
     ".agents/skills/agent-browser/references/proxy-support.md": "4c44ba60d9397523109fdbdf1d972739691856c5bf6bf1587fc58793c71b4671",
-    ".agents/skills/agent-browser/references/session-management.md": "b3bb0ed32a893f44aeeae761a85353f5341dd1dd49ebb534dd3db204e3fcf280",
-    ".agents/skills/agent-browser/references/snapshot-refs.md": "2cdef4267f5a2875dc5d1be62708e84f10339640a975a4e8339204604185b061",
+    ".agents/skills/agent-browser/references/session-management.md": "81bb339da278828424e15bbfe8c49616eb000ee039f2681b2cbc53440863dba4",
+    ".agents/skills/agent-browser/references/snapshot-refs.md": "d14f08662f999c95dc057546991c1249802f52447a25838338cda4ddddfee00a",
     ".agents/skills/agent-browser/references/video-recording.md": "c2c12bd8c44e5d36fbb94cfc376180d47507d3c26a7ee8876b892fc700dcf332",
-    ".agents/skills/agent-browser/SKILL.md": "c0428aedede3e47001cf520c939ba565be9d3e4020d4300446e794da253311ee",
+    ".agents/skills/agent-browser/SKILL.md": "0cc7bcbdd85495eff6ed868830b865c86ff3a4c6b4072db543d720cd9c739089",
     ".agents/skills/agent-browser/templates/authenticated-session.sh": "1fa9926c36dbe71191120ce067e5e3babe732cd1cc605020f3bd04dc430aa58c",
     ".agents/skills/agent-browser/templates/capture-workflow.sh": "bf3f3a2f8413773891d9fa400d2a2fddf6d73ffc7a9b2fa00f797f944171c3d5",
     ".agents/skills/agent-browser/templates/form-automation.sh": "b86836986d339f736b15ca78cf3d566e845a6293ae25a5b00aa520b837572650",
-    ".agents/skills/ai-elements/references/agent.md": "55e0b5e1c5459112da444cd5d5b315a3be87827d209dc91d85a9fdb7204d1de1",
-    ".agents/skills/ai-elements/references/artifact.md": "b8e2c9c5c9803828b30f6df2eb0e3b7ac8a0e287d96688e48bccf57525c2747b",
-    ".agents/skills/ai-elements/references/attachments.md": "5cadca1e185fcc1adc31b913da602e0b5d2a038430e8262fe743edd14475213e",
-    ".agents/skills/ai-elements/references/audio-player.md": "7f5eb5d35c2a20032a748293009629db5257b70e32e567c63fdfd8c7bab1e561",
-    ".agents/skills/ai-elements/references/canvas.md": "cea6d3031128b12b093aa7773ac186b276420d962af34daf1be7789b8899fe48",
-    ".agents/skills/ai-elements/references/chain-of-thought.md": "7649426315c55f59471412d28a08eafe3f52677b553b2bf96b8f015e5f8cb813",
-    ".agents/skills/ai-elements/references/checkpoint.md": "7da3a4eef21694b65470f32cea1bff863088d53cb0ede4071571784d792e25df",
-    ".agents/skills/ai-elements/references/code-block.md": "8d8408b93ecc9083bf15c759cc10635981ea340ea9b6689db5bd091fc091282a",
-    ".agents/skills/ai-elements/references/commit.md": "674ca01a36c2b7213067fd4d74b70ced07d1459783da84d520c8cc67d247c927",
-    ".agents/skills/ai-elements/references/confirmation.md": "d6823cbbfe1c8ec71866638619d9a90301e592f7d9dfd2d2fd3267e670ac3738",
-    ".agents/skills/ai-elements/references/connection.md": "d2666a168ae4c2e05ca867607efd7786a018ddc2e0329f57e5375f20ed8b9eed",
-    ".agents/skills/ai-elements/references/context.md": "a245c6102256f27404fdd1ced85fd97b18dd44898824b120ef0f16a1c732de82",
-    ".agents/skills/ai-elements/references/controls.md": "e43c81c434651982e852844d79d8e43689e97ec62fd78a91d3c6f126d5b88f1b",
-    ".agents/skills/ai-elements/references/conversation.md": "c3a42ea296a5874182228f6764f48467457aaac62ac1b7e10338d7643c42d434",
-    ".agents/skills/ai-elements/references/edge.md": "382fb053cb7474c7dbb728ed60b99f47b87940c3c4082dc0168268ba5883b27d",
-    ".agents/skills/ai-elements/references/environment-variables.md": "609daaa219dba9e1988348d402334096e2ab97830744cc741adaf4f4bcde130c",
-    ".agents/skills/ai-elements/references/file-tree.md": "d1cf5189774e94c6719a3a53d3fe2e046e4e94008d696bf06770605584128364",
-    ".agents/skills/ai-elements/references/image.md": "aa6797edee3227e5947dc9de023ce82a06a09f2c293d1aeacb706ad526e3e258",
-    ".agents/skills/ai-elements/references/inline-citation.md": "d1e08b9d8467f8c9a3ec371a16dad6435376706ff1ad73114350d5c258ee5ae5",
-    ".agents/skills/ai-elements/references/jsx-preview.md": "aa612d450ff40a586564fc0d00eb9ba55234418fab43e526b76b6792704f9997",
-    ".agents/skills/ai-elements/references/message.md": "ee59bc150672f3c6e9e92501d4ed316efd18e63da6c6166b2b510a3e46d7af9d",
-    ".agents/skills/ai-elements/references/mic-selector.md": "77e85e5275e84fc7dca66ac5921239c90da76d27eec220705745642b7f4370f5",
-    ".agents/skills/ai-elements/references/model-selector.md": "1f19d651fe082793c8e58f0898be4a2d1dd20406fce7c943c5619e97c4706916",
-    ".agents/skills/ai-elements/references/node.md": "b8b5398b8baff3310c8828db698c28c1c83b2e346dc484d8fcb41597572f6859",
-    ".agents/skills/ai-elements/references/open-in-chat.md": "9f0bb1d24b47ee1f59201ef1f2ebf1b8c766c8ae0e029c362d652b09b85050f9",
-    ".agents/skills/ai-elements/references/package-info.md": "56072a983268a57fd44a3f7a8353be62f9c1be88e0c2dee2fc06826119f93e4e",
-    ".agents/skills/ai-elements/references/panel.md": "ed6e8fe5398c95af5e2247b1367dbc56cf7c34071d7217c56324d7259dae607c",
-    ".agents/skills/ai-elements/references/persona.md": "59fb2bd9ae826056e113ccdc97e5bcb6e559993e9eef53f4b1af86ae3c8764f1",
-    ".agents/skills/ai-elements/references/plan.md": "cfaef136b64a185efb3a59e6207c4f58061e96370b5e0930be537e202163a0c1",
-    ".agents/skills/ai-elements/references/prompt-input.md": "468924ec8800eafa5c19960874540b8ef762bd42ab9cb39f85d3b9af4fbd1a3c",
-    ".agents/skills/ai-elements/references/queue.md": "0455f224d9224cc2fa8002441cd5728809c1c5508b8c33b4aaec474be3808d6c",
-    ".agents/skills/ai-elements/references/reasoning.md": "ef40f6f88e7c4d6131b4864adc89bfd9caa70d9e9ca418a0804140ebf3c82172",
-    ".agents/skills/ai-elements/references/sandbox.md": "e614b816e98bc042954afe13fd02fa62438460fd558ef4e4208144962366f032",
-    ".agents/skills/ai-elements/references/schema-display.md": "43e823786db5881ad2c5a52109521d28c018e3bc46fafdc60266b1f82263d4e0",
-    ".agents/skills/ai-elements/references/shimmer.md": "b690886d94fe379535f49d8601c68dc3581b46876afe72e49b2d55e357a24639",
-    ".agents/skills/ai-elements/references/snippet.md": "a6d9093ae3a3e84f35d050cb1856b063071d6e0528624685f39f39549d176501",
-    ".agents/skills/ai-elements/references/sources.md": "5798e7d8a6ebc375645d292144a9fb720df236fb5bb4b4a6900213617c857063",
-    ".agents/skills/ai-elements/references/speech-input.md": "6fb09689337bf7512d5ee8048710ea2b6989e32e4b6bfaf6175461ddace65baf",
-    ".agents/skills/ai-elements/references/stack-trace.md": "c1ad3d63333bfea1d04d7b5a640688bb48d8de2464850a1fd83047e2c0e8c373",
-    ".agents/skills/ai-elements/references/suggestion.md": "ebc3e1cf885d4a6d81ca1bd897ff962b7a04ae5a84572cfa5a1cf4f4c950782e",
-    ".agents/skills/ai-elements/references/task.md": "7c070e6b6ea9cfb668e9b69659b0391b38538bc8ec70a79ed5c279bd3dcdd6ef",
-    ".agents/skills/ai-elements/references/terminal.md": "1f514b8e910d55890fba1dede3dc77e1e97b0d0bc8bade8854f76480cc8b67a0",
-    ".agents/skills/ai-elements/references/test-results.md": "fd5972d0e665b637c24814495a4f8b5dc6b6ff4068f0d77e3634d45e47664416",
-    ".agents/skills/ai-elements/references/tool.md": "e7a5ca2665f1ddd25fb0d2addaa1c9d527075ed1bbd574a2ebb467ec84867953",
-    ".agents/skills/ai-elements/references/toolbar.md": "8d6a86dc4a5a8ff3600cd9a6f4d2d81a262e830620bcb94f6dd8d9d789600bc6",
-    ".agents/skills/ai-elements/references/transcription.md": "3e389546669d515a8e1a08dcc132167b881a024eeaf71fb4259ddb500c68384e",
-    ".agents/skills/ai-elements/references/voice-selector.md": "b014b61c028b126db733c1e7e535bf4f3eb2d472c023a181faa2a7e136f2a83e",
-    ".agents/skills/ai-elements/references/web-preview.md": "8f62f25ad412c461ed185d8d70baffabf93b97714caa3c66bf7432d1007df947",
-    ".agents/skills/ai-elements/scripts/agent.tsx": "4652bca8c438d6c2714da6e13f42fe0f7a0a8ac9d99f52e02a4dd3e3efb2a2b8",
-    ".agents/skills/ai-elements/scripts/artifact.tsx": "6eb6b05e469c7457eaee524d8b79c1eb68f8fbbcfbbcd54b5f96c32daf2f9f28",
-    ".agents/skills/ai-elements/scripts/attachments-inline.tsx": "91a3ce9cfb1db246b9e6dc624dc9779e41c3a9ba73b18796df2955a342bf1b6a",
-    ".agents/skills/ai-elements/scripts/attachments-list.tsx": "d31b2696b7543d13b26f2c2b4884a7bcf44f07607d5c83b3c463373433603617",
-    ".agents/skills/ai-elements/scripts/attachments.tsx": "302c8f23a8a84fc596cee83f74901d541e425af1c375127a8a1cb77e71f44f6c",
+    ".agents/skills/ai-elements/references/agent.md": "3d568c5124763ec368725e2620a27905f3da21d168aab448c456e69affe78455",
+    ".agents/skills/ai-elements/references/artifact.md": "ea80e4abb4f3d7044eaadc076e89b7ce33d350e4d1fdbeaa266c3aeb1cfbc868",
+    ".agents/skills/ai-elements/references/attachments.md": "b27228bc23fe412f52904d451895540897aa0369537cbc5ce704706c788fff7b",
+    ".agents/skills/ai-elements/references/audio-player.md": "32d39a73b9617e137b38cc00dc321130cdb21bc6c1169922258c0f26d82d3c18",
+    ".agents/skills/ai-elements/references/canvas.md": "79010f71f7774f2f77a29d3238dfab6aba159b273fe8b4eda33179b3b974e158",
+    ".agents/skills/ai-elements/references/chain-of-thought.md": "b9f3f1db67c6a766dd5bf23b62ea10d4bbf4bca600995f98e391e002e0f092c6",
+    ".agents/skills/ai-elements/references/checkpoint.md": "a609978f89f53e1af9083a635dcbe40eeea544a24e5c7963045c55be449eb6ea",
+    ".agents/skills/ai-elements/references/code-block.md": "f1e004b189b990621c44949af7c189d7c130200c9ea2306870f10ddf16343c61",
+    ".agents/skills/ai-elements/references/commit.md": "2918f192466916295e9c2cfa66282e92726e7da5e4ebf73ed94e5844bb71f224",
+    ".agents/skills/ai-elements/references/confirmation.md": "a80cb2c527c0aa1bda4b3c3b99c2f9cc7a43a192886b97434b9e0124103f97da",
+    ".agents/skills/ai-elements/references/connection.md": "cd26ebd2fc4ab5bf1d05d3f127009950465521319b9a5e66a5560651e7a2deaa",
+    ".agents/skills/ai-elements/references/context.md": "199ced0b7c25c1470f23e54148768ff943c3d6767c8d2dccf01141204fd98902",
+    ".agents/skills/ai-elements/references/controls.md": "5954c819f72bfa37ac40ae2e77a9637bee08db7fbe4cd2727b89340ccc847f12",
+    ".agents/skills/ai-elements/references/conversation.md": "3df4c49537ab03cbaa10a40212efe8b30434959c3c7346999d2723fe3436e00e",
+    ".agents/skills/ai-elements/references/edge.md": "4eda3f41cf8b2b129ae18cfe9348f883f1d2026dc334c2800b74112b3dd6861c",
+    ".agents/skills/ai-elements/references/environment-variables.md": "c1702f69fca1c33434dbdf5382145e9cc706cd8122fe64cd56702973a8a0a823",
+    ".agents/skills/ai-elements/references/file-tree.md": "5bbb52619e946a80244491dbedfb7b1586746be133bb570ba1a79d7a944e285d",
+    ".agents/skills/ai-elements/references/image.md": "486dbfc886624715bc9662f9cbba862ae008dd00963177d9301ea8c906e2c190",
+    ".agents/skills/ai-elements/references/inline-citation.md": "5663713253108c6863eddcaa93e122e60e4be6755a2410aa1eb284f6170e86c1",
+    ".agents/skills/ai-elements/references/jsx-preview.md": "601fb9a6fc1177470097d9a98d4df5169a8ddc371f39e7db0ce05b64cf9af735",
+    ".agents/skills/ai-elements/references/message.md": "ea0be95b29de41f14ca42732ebd63f623d1230ecdcb0f6d7fb07fcf311057314",
+    ".agents/skills/ai-elements/references/mic-selector.md": "1d5475e6f2f55a94d841b2c0edb7c7b15843ce9c747ddd9571d46432c2ad79f1",
+    ".agents/skills/ai-elements/references/model-selector.md": "72695a481fd57c872897338030f6ad6345756bfe1189104b2c3bbac41a9f7897",
+    ".agents/skills/ai-elements/references/node.md": "1b87d4e229ea87e33ca0be0abbd42747c0c0ff282e16c7b406345d15874cfcae",
+    ".agents/skills/ai-elements/references/open-in-chat.md": "95d99d08d25a60c3af0a83ab90883a2748ec86f3ff972ef19a6a02f9641e4cfc",
+    ".agents/skills/ai-elements/references/package-info.md": "57a51e764155d3028fab4c60b8260b0cec5046fa8b6864d018ac722fa3ed9308",
+    ".agents/skills/ai-elements/references/panel.md": "525e452670fc9f70f247633404bbba52733e907bf451109feb169ce9a0063bcb",
+    ".agents/skills/ai-elements/references/persona.md": "7eee03ce529418633f3165f777085d4887bee72c0eeb2382277d7aaf3d7b6e47",
+    ".agents/skills/ai-elements/references/plan.md": "6abb1838ec2102a6ed41238fc5869f677c746a7d9bd20a86ad2fd616a595e63d",
+    ".agents/skills/ai-elements/references/prompt-input.md": "400b23be34c41b93c69145bb02bfb6e802e0f87a582b99397d24687972291397",
+    ".agents/skills/ai-elements/references/queue.md": "e22929b0c61992ce84ecbee4c302977d5c53bb05e597f851edff00659954fa03",
+    ".agents/skills/ai-elements/references/reasoning.md": "8dce4de1806c298beae795b2f1b1e1e14db58c8b3966f8a7d532368035a7e521",
+    ".agents/skills/ai-elements/references/sandbox.md": "873d751aff106dc6710386f18d5ae50b9148579ae0430411e4c1d4d21f36aa19",
+    ".agents/skills/ai-elements/references/schema-display.md": "795d181381b9b8eacf04032dbf6dfc04b4358eb86c892d4eeb18a512f479fcb9",
+    ".agents/skills/ai-elements/references/shimmer.md": "9bfc5341f8f41b5e99c250ef618cabdeaf96d5b47340fd152172bb21e581dc7f",
+    ".agents/skills/ai-elements/references/snippet.md": "2e2653a5d2ce65bb4867e21d7ebff1a714cff327eaf9b2da9484083d7ece395f",
+    ".agents/skills/ai-elements/references/sources.md": "97acbc4ff962593e0109c6799e3b25d6c7db65f911addb8ea32c4dd17c5059c7",
+    ".agents/skills/ai-elements/references/speech-input.md": "c3bd6d135a6550e2a09a8bf7856faa953cdb2ffe4673b66b7d0db872d54f55f5",
+    ".agents/skills/ai-elements/references/stack-trace.md": "4429878e7694af3a17bf1ff467a9ecfb3de4a873aa5f0325deb0be42cc3c91ba",
+    ".agents/skills/ai-elements/references/suggestion.md": "5155141c11aea6b9654722baed01cfc0bde8b670aa147166e2d6b63962f2ea9b",
+    ".agents/skills/ai-elements/references/task.md": "a48d5b7ac2d8bbd80e049491c2c7397b72471203110644713302026af1df33fc",
+    ".agents/skills/ai-elements/references/terminal.md": "26a9f70a2436119437cf4c00ee2d27c7c4342494d7cf87b71c9c920fe2d2559f",
+    ".agents/skills/ai-elements/references/test-results.md": "de1f5545bcf21566c3cfb1ffdfea9e69957931c1e725c8fe2cc52ec1f8c0beeb",
+    ".agents/skills/ai-elements/references/tool.md": "f320717f5ed5e8bf928c0ba3dd99b81adc9e44257dccd79cf83a2dba5ffd0f07",
+    ".agents/skills/ai-elements/references/toolbar.md": "df69059007d39eec9341df8ee5c8f5fca1e730b81d61857080304f9b4929883f",
+    ".agents/skills/ai-elements/references/transcription.md": "28876e1b82dc942a544111f0d21b0dd43de456d873e42471ca741f7d6c0412c5",
+    ".agents/skills/ai-elements/references/voice-selector.md": "7c9b8094b5990b9fc5afd4260d2016e2465f4d6c296020885e90564602822f82",
+    ".agents/skills/ai-elements/references/web-preview.md": "8b91b1fa549e2ed9d41a27163df360e3ea3eb18fcfc5f0e8d2bb3404951fad5c",
+    ".agents/skills/ai-elements/scripts/agent.tsx": "4e744c0f57587a733199c810fd29035f582a89aa7bd6f5bee323f4d9c3a4992c",
+    ".agents/skills/ai-elements/scripts/artifact.tsx": "3f7045bfb81d575ef0b1a6e14cb9129ea34b673172c7a7f972d47c6dca95a497",
+    ".agents/skills/ai-elements/scripts/attachments-inline.tsx": "ee11cc4d3563d6f977743e9af5d1e4c9e23786ca867510bd0837f18e97b790c0",
+    ".agents/skills/ai-elements/scripts/attachments-list.tsx": "14bb5668f3a9d47ed8e32863afb5d8b2752570e5914384603c7c95a95db1bfb2",
+    ".agents/skills/ai-elements/scripts/attachments.tsx": "cbb9de377398c274d2ed0bb69be5d36206f7aadbdd126d12196b929c73010e05",
     ".agents/skills/ai-elements/scripts/audio-player-remote.tsx": "59040a9e79898a8de0fe88813bca035d7f2abed684465826f4bc322d4c52a2bb",
-    ".agents/skills/ai-elements/scripts/audio-player.tsx": "4260e7e1385607cc64cb5bad56862c9b674d9c872a71fcd67d8f98e2c4f24e57",
-    ".agents/skills/ai-elements/scripts/chain-of-thought.tsx": "bb57dc04e298197fc3c29265244d37b761a42b47c414a1cfc9347b15bca6ab1a",
-    ".agents/skills/ai-elements/scripts/checkpoint.tsx": "cce86147dbb00aedac1bd53ae03889a2a781f19e22680247400bccdd5179f004",
+    ".agents/skills/ai-elements/scripts/audio-player.tsx": "9a7d9445ef58c8e2b6a6df14e6424952bdfc4918ef28c0418cbb0489575c1965",
+    ".agents/skills/ai-elements/scripts/chain-of-thought.tsx": "58ee623517d90e1bdd8b1ac4a49e2914fcde5a82f40018f5451448e1a2bdfd47",
+    ".agents/skills/ai-elements/scripts/checkpoint.tsx": "049ca87c7eedaf67e12467d9e9a1ea67cf5a21ac916172c02c51aa448e0895a0",
     ".agents/skills/ai-elements/scripts/code-block-dark.tsx": "6f3b11047fa9d2cab32fe650c3067f2f37a40d5e8cac101fa2fc6699283b836a",
-    ".agents/skills/ai-elements/scripts/code-block.tsx": "f075b34dda31ff10fe0311e72f4b4f86fa7bcda41daa3b0fc33fac06a0997340",
+    ".agents/skills/ai-elements/scripts/code-block.tsx": "98f55ea3c94c0f800073e226fd6545177b3172c45eb4aa8792591ef26d139883",
     ".agents/skills/ai-elements/scripts/commit.tsx": "4efda612212b526704286c7771478628365b1c58fb3a54a5ad46400c83b092a4",
-    ".agents/skills/ai-elements/scripts/confirmation-accepted.tsx": "3f9a05a286f3dd5c1abcdf58a3246e851e5b864f5124f91a78722ae8dfb5ffe2",
-    ".agents/skills/ai-elements/scripts/confirmation-rejected.tsx": "9714c9e0e793f72a999a6b204e62a61e212b6953b4fde5ccc08b40d42d58eefe",
+    ".agents/skills/ai-elements/scripts/confirmation-accepted.tsx": "4cdc5ab64018f8ead91cd32ae1df39a21fa83ef10f54ff6687da7ce4693fe50e",
+    ".agents/skills/ai-elements/scripts/confirmation-rejected.tsx": "18b1eeaa7fd2176337de5fb5c88ded5866ef47f6834f4352da2c40863672f370",
     ".agents/skills/ai-elements/scripts/confirmation-request.tsx": "d3c74a6d4ea699d33054d7e56d6d8ff71678b329c83cba832ea97f6a5aa44df2",
-    ".agents/skills/ai-elements/scripts/confirmation.tsx": "86b2c0591239aba027968994c8dcead4f7c39c9e887c30e086794c5addaf50b8",
+    ".agents/skills/ai-elements/scripts/confirmation.tsx": "b045bd404096794bd444c4b364e7879ada789b24e6017aec572200b67a5cf96f",
     ".agents/skills/ai-elements/scripts/context.tsx": "c6e8c87e38a44c5d794f31c60e3a52381f215018fb85b80e55a45dd10502ad1f",
-    ".agents/skills/ai-elements/scripts/conversation.tsx": "4cbf2ee7c20d0cdbcaa3651571e48c71093f843ee961c2aed7976f1b5c90adea",
-    ".agents/skills/ai-elements/scripts/environment-variables.tsx": "ea300510455f0c7796bcb73aa63ddb5b92471e56cdff5218e64705af9e43649a",
-    ".agents/skills/ai-elements/scripts/file-tree-basic.tsx": "a4d73b01a0c702cf2dcfeb70eb44ee3fd7a3eaded0c8e18cecf7d4a1949a7c0c",
-    ".agents/skills/ai-elements/scripts/file-tree-expanded.tsx": "b306a5e2a322bbf9819068af868d35b2eec6a4a4a7d4621631ba7cef6ce9a7fd",
-    ".agents/skills/ai-elements/scripts/file-tree-selection.tsx": "e44d4a9c8f927de42fc45973670bc57968649e41b6180959870eb7b673410b2a",
-    ".agents/skills/ai-elements/scripts/file-tree.tsx": "b9a93b001df3e2277d7ec5f3656e134c56a0b9e6bd717516578fe5e2c763ae55",
+    ".agents/skills/ai-elements/scripts/conversation.tsx": "93e3d9bd47ea31d80e411788af36b7ab4ccb8dd75a9cb22e4661420de4d1ff6c",
+    ".agents/skills/ai-elements/scripts/environment-variables.tsx": "d12490f8bfccf8c3c200564d7e550446212bb64aa78202ef857b45625eb79fdf",
+    ".agents/skills/ai-elements/scripts/file-tree-basic.tsx": "61a7c225bbb5d12f528fc97b56eff7e9e6a318627b917f0cc8d8a4dd607c056a",
+    ".agents/skills/ai-elements/scripts/file-tree-expanded.tsx": "6dc016df1803cde03b9f6abde1b1b809fa15cd5e0b37a6ec8f8f4516de713c94",
+    ".agents/skills/ai-elements/scripts/file-tree-selection.tsx": "854dda6cb080eaa1c0766cc5a82e2fd245d152cab1e7115d7ccfaf74a2790667",
+    ".agents/skills/ai-elements/scripts/file-tree.tsx": "0330e83991eead0129e6385b0b82e3506e929725a81a3d4148dc25e3775c434a",
     ".agents/skills/ai-elements/scripts/image.tsx": "ad20593bd14c3027e11822843ddbd9a19ccc8e7bb8cd8c0a82cfc8ed1786a8b4",
-    ".agents/skills/ai-elements/scripts/inline-citation.tsx": "138f25f95e8755f7ca9c6dee771de3b456497d0f1a3bdcffca739e32f6ebe61e",
-    ".agents/skills/ai-elements/scripts/jsx-preview.tsx": "cd12d68a3b1d3829f12344b0e0dbf2dd530efc290b739bd4a1db8de53812001e",
-    ".agents/skills/ai-elements/scripts/message.tsx": "5fb8c27ce87118c01321b503d08584e34865e670fdc97b108025a9801eb52cd7",
-    ".agents/skills/ai-elements/scripts/mic-selector.tsx": "d6f3286e964b56974da76fbf59a5e2fd57c73664a13c15b1a89c0245c1f98a97",
-    ".agents/skills/ai-elements/scripts/model-selector.tsx": "eb9288a81beb8f796fff55fcfdd50dce65f3310724d6655c701b01d996fd64a7",
+    ".agents/skills/ai-elements/scripts/inline-citation.tsx": "0b537b3a3296564823d6d20b90d697a194dd7e1932c51affad075d21aaa134fe",
+    ".agents/skills/ai-elements/scripts/jsx-preview.tsx": "66830c03012cb58022d57afb11b2ea2a40d31a60371360d075e2a405773e4c5b",
+    ".agents/skills/ai-elements/scripts/message.tsx": "fc593a72109a32232a1f5241ec55f4bcc07c21cc44724bc4d392ea4a9d171a92",
+    ".agents/skills/ai-elements/scripts/mic-selector.tsx": "19481d53d7e3f0fd2ed18e746dc84bcb863755a8aa62ae70b62d048faba90351",
+    ".agents/skills/ai-elements/scripts/model-selector.tsx": "6f10dc6f023d0448ef4869345df2f296b436860025ddb6c63f72720767aec0d8",
     ".agents/skills/ai-elements/scripts/open-in-chat.tsx": "7ce522e30d9c031c378452ae93c788a208b962a7168bdfc55041aa0a414649b4",
-    ".agents/skills/ai-elements/scripts/package-info.tsx": "ecb4353cb7be530982386d20a5e8bc05edb03f1f82cade1ba160ff6591661dfe",
-    ".agents/skills/ai-elements/scripts/persona-command.tsx": "e2eb4db562e98234cd7effa2ef66e9b182efd32978735eeae0eaa6538627455b",
-    ".agents/skills/ai-elements/scripts/persona-glint.tsx": "90c4fba773c3a6131a5fc2781687361f32309bc01257874bc0b88972d0c82dc8",
-    ".agents/skills/ai-elements/scripts/persona-halo.tsx": "cfff11663822ba29cf17e937f559225524571177b5d5105317cd806de2d41e30",
-    ".agents/skills/ai-elements/scripts/persona-mana.tsx": "f45b03ab02c674d12bcd5e4f19d9f9ac1e00bb6dd1578b9016bc3a7ae6361c78",
-    ".agents/skills/ai-elements/scripts/persona-obsidian.tsx": "98ab8979309de064ddfc1f6c0614d7f49d44179c3c9918dd39adfd4e7b2933e2",
-    ".agents/skills/ai-elements/scripts/persona-opal.tsx": "72526c78a119012c7ff6eb1e71db38315b7564daee09b78f9afe51fc144d3286",
-    ".agents/skills/ai-elements/scripts/plan.tsx": "ae4b842a18ea0e05e609e91928a997ad72b26fde3dfbcfdc826af54009092adf",
-    ".agents/skills/ai-elements/scripts/prompt-input-cursor.tsx": "830fc1114e5f63923c2c3d1aadbcad08a3076cd9ee0c94eee3ca5e531b5f6d0a",
-    ".agents/skills/ai-elements/scripts/prompt-input-tooltip.tsx": "a2579e6732d03855b8e2a1d21dcc9be0c92ed22e2fe2dbd15313e1fe5b67b919",
-    ".agents/skills/ai-elements/scripts/prompt-input.tsx": "8745f07e5e5484c6964e501b44ded6726a84befcabf13e31e9f8bde281193b20",
-    ".agents/skills/ai-elements/scripts/queue-prompt-input.tsx": "b430e19e29555adb134bfce575be67635dfa66c37254690533b0f7164080236c",
-    ".agents/skills/ai-elements/scripts/queue.tsx": "63a3cb48bf768c2e9e65b7fed5da7c5cf2870ed4b163497f9e0a2d7a105467d2",
-    ".agents/skills/ai-elements/scripts/reasoning.tsx": "746a4518f0e97c21126bfb99ff2745efb7ee038f5fe40e0e9cb969fbb88f468c",
-    ".agents/skills/ai-elements/scripts/sandbox.tsx": "9697a45db552c4b1cfdebb84e3409fb922264617efe4011e87b2f181b6c11dab",
-    ".agents/skills/ai-elements/scripts/schema-display-basic.tsx": "f1aa3d60b116975b546ea8de536a35ea41f1131704ab18631eeee9a1f1973eb0",
+    ".agents/skills/ai-elements/scripts/package-info.tsx": "e124c4801f9dd849372178f2e67b90c6789f6ba6bf195cccaab09f2894e39ddb",
+    ".agents/skills/ai-elements/scripts/persona-command.tsx": "e2f103a0c59ba9b1b857166356391e92d0fcb5a8904c0502ba000f1ca1d7fb7b",
+    ".agents/skills/ai-elements/scripts/persona-glint.tsx": "d054afcc94c66693124a95a8d927c00a7bbc3c8ce95332caf8324b56f5f13ef2",
+    ".agents/skills/ai-elements/scripts/persona-halo.tsx": "5fb44c1b742bab472a3eed3c2e21eb88a212c92148df30794a7efd5ff8f49d26",
+    ".agents/skills/ai-elements/scripts/persona-mana.tsx": "43099fa1b607ec9e36d216c22a30538e2caa5cd6aed8e6ecbb0c7d5e932d741b",
+    ".agents/skills/ai-elements/scripts/persona-obsidian.tsx": "4eaec57216acb4aa668da0212c413336d6fad5393c4f61ee0266baf3a70052d3",
+    ".agents/skills/ai-elements/scripts/persona-opal.tsx": "3098f209dbac877f69d65e766127e270ac2c9744d9dcd73c52e393e93f2a9b7d",
+    ".agents/skills/ai-elements/scripts/plan.tsx": "415f767f866604b1a3e22e56d508ed7549ae2304c22bbc4373d7942e560f932a",
+    ".agents/skills/ai-elements/scripts/prompt-input-cursor.tsx": "d9ffb22ab7f62c24f55ffdb7c9821bad04ba6f57f521543eb90440f317f29829",
+    ".agents/skills/ai-elements/scripts/prompt-input-tooltip.tsx": "5f171175fb62439e7c69537fd95c50800b3c41d28d174777124f9b7647c8cd02",
+    ".agents/skills/ai-elements/scripts/prompt-input.tsx": "e8c82caceaf079ad8cf00597f1dd0fe922c2151a0a8d6f37ebe4feb8536fa5d4",
+    ".agents/skills/ai-elements/scripts/queue-prompt-input.tsx": "27cf35099469d378b467ee78b1969a40ee0634e7e61c77f1fa0b7f395ebbf263",
+    ".agents/skills/ai-elements/scripts/queue.tsx": "b6cc452b2279aa84835e35fc69a7f8723d23b3f5d039dfd26d8127286ed04901",
+    ".agents/skills/ai-elements/scripts/reasoning.tsx": "4e54459aefd75767037a8b0479190ba6d5f77592ac72b0722c5f7673e9450f24",
+    ".agents/skills/ai-elements/scripts/sandbox.tsx": "734f2ce21b527ca3fa4f3dad2905b2029fe76634170cc12bdfe0c8d583fa9a70",
+    ".agents/skills/ai-elements/scripts/schema-display-basic.tsx": "7043d760ff8ff2dfd1b9463effad1239bf30b2da81a06e3e3ea3fdbc8e2ace6a",
     ".agents/skills/ai-elements/scripts/schema-display-body.tsx": "941dd26ed94847bb792bb8b1f5459e344e0d820dcdc51804254d2385dd683751",
     ".agents/skills/ai-elements/scripts/schema-display-nested.tsx": "03d519460a04c9ab9d67176e8161efa5db97c786f4c53a3121eda672f31ac30c",
     ".agents/skills/ai-elements/scripts/schema-display-params.tsx": "84883f2a17f783edb9c22993da407f2e731073eddc431a15980fdcf030d64590",
     ".agents/skills/ai-elements/scripts/schema-display.tsx": "721570b85a7c425f003f1adfac4fe00356bc2e4fead6d9c16283fe3f4c85a64b",
-    ".agents/skills/ai-elements/scripts/shimmer-duration.tsx": "9516126c70e218070b27e73ccfe3a5cc897210429085e674912503f81b11453a",
-    ".agents/skills/ai-elements/scripts/shimmer-elements.tsx": "e3e140b3092da392a9d206fb05577fd52ecc7b3445e43fcd153ab665a22f893b",
+    ".agents/skills/ai-elements/scripts/shimmer-duration.tsx": "369b8b8db97715ada5e37919acc7ecf5171ffcdfc8195e8915c0bf5be0f26396",
+    ".agents/skills/ai-elements/scripts/shimmer-elements.tsx": "c0dacd5e7b8b4711a514dbba2f54b48c793e251244e2439347077908cc835884",
     ".agents/skills/ai-elements/scripts/shimmer.tsx": "5b1c83ba49bdaffecc58b8eb5fc2d1f730ea6f6872688fd6dead9d7bd53f8a4b",
     ".agents/skills/ai-elements/scripts/snippet-plain.tsx": "2b6f48a76914cd1db3ca6bfbf159d0f83f45311f4e0d0cdf1b34a235ae2db8d6",
     ".agents/skills/ai-elements/scripts/snippet.tsx": "d078c8d7b61479ea70ae078ba56839df5b455aa571b2de76e347ae428509ebe4",
-    ".agents/skills/ai-elements/scripts/sources-custom.tsx": "1950a2eef553a3a6760dc0747ee210004f5fdfce3bbd109d97314fd10f0f041c",
-    ".agents/skills/ai-elements/scripts/sources.tsx": "9d900d34186a22a86161adea4b17db6ded84c55dc7d7c959cb0c123c614c78f8",
-    ".agents/skills/ai-elements/scripts/speech-input.tsx": "62b51b9c7ff854f46de48bba724540b4499d9e234bac19823556a04d7e923462",
+    ".agents/skills/ai-elements/scripts/sources-custom.tsx": "fe5794d0b43a04821a3ec37a0f262c7e5207a0eb370d9f5d2de182cc4a984bd7",
+    ".agents/skills/ai-elements/scripts/sources.tsx": "13765ff58b4c344a0201d1ff021a560d85e759cf3c32f368824dbc0f3fc3d58c",
+    ".agents/skills/ai-elements/scripts/speech-input.tsx": "425ecd27dd9c21a9d65ffe019a69df0c1bb9c7502a1b2725d9d70eb3f03b7705",
     ".agents/skills/ai-elements/scripts/stack-trace-collapsed.tsx": "ec57c9bda182cde7a1e1b120d4fb54b6f35c94b0ec238e792dcd694fa1d4f443",
     ".agents/skills/ai-elements/scripts/stack-trace-no-internal.tsx": "2a57c6a862b5e933b0888d3f049a61391d19951274e9d9357ae09007c08cf0e4",
-    ".agents/skills/ai-elements/scripts/stack-trace.tsx": "362df6a397a1e1e39794b6d558b91424883c7b7cea2b884900c7705f9785a020",
-    ".agents/skills/ai-elements/scripts/suggestion-input.tsx": "6d7f0f71c78d30940452090d956ca0cc1bf050290695a907413638b0fa0d2ebb",
-    ".agents/skills/ai-elements/scripts/suggestion.tsx": "360fd9a71ef95092cb84457549a8d35799d69198971e010b1c6793afeed0fcdc",
+    ".agents/skills/ai-elements/scripts/stack-trace.tsx": "d0528bf422e5ceedbe2ed196234d677f90c7e8cebf1d7357dd86c87bee128e57",
+    ".agents/skills/ai-elements/scripts/suggestion-input.tsx": "a3f7f2752f78b510f8293a0d4e75f4514803192e35332688dd9d3df89a466408",
+    ".agents/skills/ai-elements/scripts/suggestion.tsx": "2a650b7682ef0992b931669337a6c8a8c842c258d51bbe8aa769837e09c6c26c",
     ".agents/skills/ai-elements/scripts/task.tsx": "07b6f65581068b0afcd5df23973f2fc72880c0f224b8817730a145fc7b175e34",
     ".agents/skills/ai-elements/scripts/terminal-basic.tsx": "573e2adf152d193e5a0b932ac185fb31d76dceec4407bfef5bf1e786c4abf92d",
     ".agents/skills/ai-elements/scripts/terminal-clear.tsx": "8e9e7724453269168c1e3c32a858b42be7dda5d3a7eaaf9c7d142240ce7f54eb",
     ".agents/skills/ai-elements/scripts/terminal-streaming.tsx": "6add64118a77cf615522b713d39c657007fb9a9b8b26eda5d3c524a5c7b13944",
-    ".agents/skills/ai-elements/scripts/terminal.tsx": "0338bcdc8a126afcab4d949b68e1f1b9dedea8d68bf6a57253f1c00303c7f44a",
+    ".agents/skills/ai-elements/scripts/terminal.tsx": "0ef7831e4fdd5dd7021d1d20815ec32b5a960f8673212216820a858037e03a89",
     ".agents/skills/ai-elements/scripts/test-results-basic.tsx": "d31b0c4922897dd092a1317dce9d73010d8780db554ede29065e8683a8d9809c",
     ".agents/skills/ai-elements/scripts/test-results-errors.tsx": "d88841b9ec3226a27c9a630ec749e292dbff4db89b8885b409b1bd681f18541b",
     ".agents/skills/ai-elements/scripts/test-results-suites.tsx": "7659130e2cb9ec20d70bdaceb30a1b020619b5bdbc4850afc16a024615c63f11",
-    ".agents/skills/ai-elements/scripts/test-results.tsx": "a05f119fde7d3628638e05ec0263b3a3c3ed58122071308d94f4c6872e388649",
+    ".agents/skills/ai-elements/scripts/test-results.tsx": "77d749db28c4cb20ccd10ba22da6895fce32b39f36513db36009a7fc6d9d92e9",
     ".agents/skills/ai-elements/scripts/tool-input-available.tsx": "28496f812bc4706c28d11fd9abd0baca199585f98334488db3b9f6bea815fd68",
     ".agents/skills/ai-elements/scripts/tool-input-streaming.tsx": "2a6d469911ddaef5eebbec445574c2a81d1c9e77b2264acd8f1fb1f34b732ffb",
-    ".agents/skills/ai-elements/scripts/tool-output-available.tsx": "c12fdf8c979c2787354f31cecfcb256b48ee3ba1a998ca4f492e1436e02e8199",
-    ".agents/skills/ai-elements/scripts/tool-output-error.tsx": "ce9dd43f57838bf6695cb103eea94bfbca631a4f304eaa6090bcd237c53ac092",
-    ".agents/skills/ai-elements/scripts/tool.tsx": "fc90d270ff13394977dff59b5628007c9d6566890efaaf677840fd00ccd52575",
-    ".agents/skills/ai-elements/scripts/transcription.tsx": "cbf190132b6d882875c85b92b39431cb2f3b31f10f2fba9218fda9336dad0158",
-    ".agents/skills/ai-elements/scripts/voice-selector.tsx": "055b96858f543a94acf07c4e4497bdad574cb21bc5d10f74eb363ee59a1dc083",
-    ".agents/skills/ai-elements/scripts/web-preview.tsx": "0e26bf5587a9fdbf07ecb1d08ab236c81ab94378bfdf7d5a45a0e910ee7e9bbd",
-    ".agents/skills/ai-elements/SKILL.md": "fcb3e87c9521cb956943de7531318dd0761bd31c04fca12099ce30021471c6f7",
-    ".agents/skills/dogfood/references/issue-taxonomy.md": "fa3eaceec546c2918e5a0d5c861bb61f9fb47cfb44dde31a16c98e16f8f143e6",
-    ".agents/skills/dogfood/SKILL.md": "984bd5aa263aa91c818394459f90d46477ddfad07c49cc2f61db2ece3f626564",
-    ".agents/skills/dogfood/templates/dogfood-report-template.md": "8b5c1672e32354c10c045f68f59f1103891fdf6e1410ed7d3c8220a00d8f9465",
-    ".agents/skills/electron/SKILL.md": "989a15a88409e079d3dff3f9b7d41bf653e565a4f1e46854dac6669c116aecb4",
+    ".agents/skills/ai-elements/scripts/tool-output-available.tsx": "a80a0aff9fbee1843d58b13a2b81e4ed5faa299bf83f8d5f632f7f6396e5d744",
+    ".agents/skills/ai-elements/scripts/tool-output-error.tsx": "744fe914225b379746d736791ba0d8ae673c0c88b74cb9328127110cfd4d4cd5",
+    ".agents/skills/ai-elements/scripts/tool.tsx": "72afcbf9489e8b3a5d26d291ce0edd0776e435a1364bb400988b114874ea65d6",
+    ".agents/skills/ai-elements/scripts/transcription.tsx": "ecf0d520dd8ff218286a72ff32f2e1bc0758ed519b29d0a22387fe054a058493",
+    ".agents/skills/ai-elements/scripts/voice-selector.tsx": "89c0145296c1f7314911dbb03e0845664eb5ad8143bbe766c860546466ef5e10",
+    ".agents/skills/ai-elements/scripts/web-preview.tsx": "f8c781daf576f7cecc81bf4d80871528d7901aa720faa7f438e756070091eec2",
+    ".agents/skills/ai-elements/SKILL.md": "96b4158b39b40f1a81061c71cb5ea4bcff8eb4b9215ad3b56f79b3bee4b43cb7",
+    ".agents/skills/dogfood/references/issue-taxonomy.md": "dc2ce522111006d7b3ec64ce57ad7ecaa9d0fa1df174c4ab3ddae0cd95dce3e9",
+    ".agents/skills/dogfood/SKILL.md": "b59b121df884c57389b05f9d454d9c375b10cbca04b9c7b6fe380e4fb0a209ab",
+    ".agents/skills/dogfood/templates/dogfood-report-template.md": "80dba0af407efa716f220825bb8f910b7067ccab3955b2c59f45d93df31bea43",
+    ".agents/skills/electron/SKILL.md": "8f41ff75c86c3bca84ee323a149e39d2eadd98ec8c9f5d98e4d9deec66f71f53",
     ".agents/skills/react-best-practices/AGENTS.md": "fc93e7421177bbf869cce892bc60a6c83a4517d974bc3bf65c4e2c1e58a6ccf6",
     ".agents/skills/react-best-practices/metadata.json": "c4e18bac3290fbe1b471a605867d4df68b03144ea26b8befdbe8f9d8fd124354",
     ".agents/skills/react-best-practices/README.md": "9eafb2123d3b8b2aef41fba0db2648a3f4f49996f8c7c8bb2c86263befd8b48a",
@@ -228,9 +228,9 @@
     "apps/zcode-cli/package.json": "8c11b1ddbbcc5c98bc17dac8d61c7840be1d67d237e4b952d707e31884129317",
     "apps/zcode-cli/packages/adapters/package.json": "12316ccf002e19a4fbc6536007b2e89ded5704a8f757baeec4dc83d47c0ea345",
     "apps/zcode-cli/packages/android-emulator-plugin/package.json": "96ecaa9ce091e13f7e508b0aed8ab116360b40ba21dc1be78c906b2eebbf5571",
-    "apps/zcode-cli/packages/bootstrap/package.json": "554ddd3fc3a017e1bde9af23477d7cff16d4e86b63f3faeda19ce3af7f1edee8",
-    "apps/zcode-cli/packages/browser-use-plugin/package.json": "53a2c64811fbb85a8a88bf22ac2b42dbca7a283e3c83f0ebd24601889223741d",
-    "apps/zcode-cli/packages/cli/package.json": "11f1caaad677756c511a3c8a159441f41ea09c90960cedcae92e767987b624a4",
+    "apps/zcode-cli/packages/bootstrap/package.json": "13b3d6e860217aa68d5be7ab4bda75f158adacf94572e9445e4e75e279cfaa99",
+    "apps/zcode-cli/packages/browser-use-plugin/package.json": "be8dba895f382978295cbc0bbec9df59d61e72dab2f7f41456f63f0fabc61cb5",
+    "apps/zcode-cli/packages/cli/package.json": "f2c7c7b675412661bb2fd6f7bb86a454871a15f9e1d6857179bf1455cf3d2558",
     "apps/zcode-cli/packages/contracts/package.json": "d71e04825072c7407dcc3e1fcca3d8b9221cfac411ea58a024998a57cb579029",
     "apps/zcode-cli/packages/core/package.json": "e70205607c75f7fb51cd1815ff3d411d7ea63bef6a0148f3a698229c30189d32",
     "apps/zcode-cli/packages/core/src/tool/handlers/generated/bash-command-registry.ts": "60fa5acd9f5c357f4e51b1d1e944ee39da92680e4bc5e98dd708f1457fcf612b",
@@ -252,11 +252,10 @@
     "apps/zcode-cli/packages/superpowers-plugin/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "apps/zcode-cli/packages/superpowers-plugin/package.json": "003495dd8441f4a9b017931e081770a157fa48b895752d0cfe7487d437507685",
     "apps/zcode-cli/packages/swift-bridge/package.json": "958674fcd44c789564ee672b0e6c687f1f900f4286174280700ddfb442d23906",
-    "apps/zcode-cli/packages/telemetry/package.json": "2c7efa1d5b42700400b971fff61314c7277f5e05b5f96f48b7d50c9ccf11772e",
     "apps/zcode-cli/packages/tui/package.json": "303b8c2f0eb3f8ea0476935f452dd0d2c620ac52587ebb08b24a193f3e3658e0",
     "apps/zcode-cli/packages/visualize-plugin/package.json": "f38e0334cd743a4ca15cf8884ca563aaf0b37bccbdfca63505f56f84f5576971",
     "apps/zcode-cli/packages/zcode-cua-plugin/package.json": "ecc5640181e2273ef04ad741e7ff25fd36326410386a58c60b61fb704277732a",
-    "apps/zcode-cli/packages/zcode-guide-plugin/package.json": "b6b6c4a0097496f5bf8848ad4fecea1c2e9f8a94d4a3b962217a74a6253deacf",
+    "apps/zcode-cli/packages/zcode-guide-plugin/package.json": "e01743b32c70ba20032cb7b18158df45b1b8495c977fdb323be33cc4b29d6323",
     "apps/zcode-cli/tools/prompt-trajectory/package.json": "a8374fef7b1f1814d91dfe5ef5f3d369de8d12f73601dbed6e026f2b12bcca0d",
     "apps/zcode-cli/tools/typescript/package.json": "23d7e50d2089d205ce3022c5bafbb6b3e31d000e41ac678a5934e0b72627cf3a",
     "docs/knip/docs/.gitignore": "ceb40af0a4929eda8eb4d8e9562783000df06dd09ef7a4de9f170b7c1b79aaac",
@@ -432,9 +431,9 @@
     "docs/knip/docs/src/styles/theme-light.css": "e2e85900fd43b5b563f56b9ce7e2a09f07d7420a78e80f0133efffeb8fce2aa0",
     "docs/knip/docs/src/util/post.ts": "6d7c45bd29035a73f1b67d24524760c7e317f367d32216de2c9a240dda7a40d1",
     "docs/knip/docs/tsconfig.json": "662b1f10a5e572b49a45669e4be9ee46c22f987dcf277c204948777b367df1cd",
-    "package.json": "aa5c2171f1240a90d5013db4ffc38695da8629485167c726ef12f79dd5bdcc32",
+    "package.json": "11bb63341e75f11cc07fdb126d3345ac81bec5027aa35c2d9529803281c54fa3",
     "packages/client/package.json": "e76f441549130dc3e5e68072a36b6cb9044e19a6625f1e813f19a4def2b1b689",
-    "packages/desktop/package.json": "f748cb6e1b7db2813153290b8b25aba67badee60de2393169fe78f144de6880b",
+    "packages/desktop/package.json": "97f563643b20d1154b56948801707a4312193998a2c25c2176a224e63b64321f",
     "packages/desktop/src/renderer/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
     "packages/desktop/src/renderer/public/material-icons/abap.svg": "1335bd7eb9a0ed49deb622330d680c2e97731726a7a5eee8e4f46dc1e5db4de4",
     "packages/desktop/src/renderer/public/material-icons/abc.svg": "d1a68020e8f020ef29dca5f94dc8613b7ae8fb5b212d8b1cc23b0f975ac7acda",
@@ -1586,10 +1585,11 @@
     "packages/model-option-map/package.json": "9ba8537bca94b388eca39307ebb3ab85c473f01fa51368162be5b3bc303315ee",
     "packages/provider-node/package.json": "b9b475a0f8cd0822980e64013f8b41139082ede376868051480702ead2913cb8",
     "packages/provider/package.json": "0f52edde6ef9712efc10dfccf12a918255f5be4a0379b5c8693fab79abacf2fc",
+    "packages/relay/package.json": "5ca19e768efd89842d5705421c3122c011bf5c822aff42b91e155727505a03ad",
     "packages/rpc/examples/01-basic-ipc.ts": "bb4423c1642918846010f9307262c379536ca9541d79df6ebba120b5cf792f3e",
     "packages/rpc/examples/02-proxy-channel.ts": "66dda9aec12cd46da8a56560cb765a3de590917bbc40f329185e6fd05a388fff",
     "packages/rpc/examples/03-ipc-server-client.ts": "9b873f565b4a3426ee3a5338a975cb6ab76e29af094cf6bbee4f7030f872f758",
-    "packages/rpc/examples/04-remote-connection.ts": "fe43a2d631ba54a1cf63a86e344b6e2e58d83c2e8c95f2f8b7371f63e6442541",
+    "packages/rpc/examples/04-remote-connection.ts": "a0f16a220b9054541ea9300e1c312326d7d005e121a9a3b6431a61ac70f77289",
     "packages/rpc/package.json": "096520229295f4efc4d8bea1d184484cd2f7289af17472d80847c7db1ac26dd0",
     "packages/rpc/src/buffer.ts": "6bc6a44e6abd088f72d57616d9556d78ce078b6f3813bf75402dde386781492c",
     "packages/rpc/src/channelClient.ts": "d2504929253ebb18f020e6f35e51a3741190558875d18a47192f9af78ca3f8ac",
@@ -1604,38 +1604,37 @@
     "packages/rpc/src/network-telemetry-middleware.ts": "18a7cde46e6c65e0138af0623d07bf883ce278acf44654bc5144ecaadd36a536",
     "packages/rpc/src/persistent-protocol.ts": "80609595b89188272d743e557502c6cad3858f828acae31c2ef64206bb3c8978",
     "packages/rpc/src/protocol.ts": "aafc0c098c75fcba4519fad2ecbee7e025d5d8a27c15c87e5ccb4ca6ce554670",
-    "packages/rpc/src/proxy-channel.ts": "ec5b43e6a3a622a88a8aaa6af9cb37dbfe517932ee7f4a337019ec138bb2d513",
+    "packages/rpc/src/proxy-channel.ts": "67dc42c2550a79e4772cb06d5f3c1b8521c91602b04cb7a842f077e3263318ef",
     "packages/rpc/src/remote.ts": "a11e072d5df7e1c1ce64814a68f72afc081246b364f0da409b5c9d22bc815957",
     "packages/rpc/src/serialization.ts": "e949418e1cd17cc863c147fc8d1ff15237e1b5f0cb8e3344fd2a9ccfae9d54e7",
-    "packages/server/package.json": "0a6119239c88af79bc766e3c023eb4437105a0d35b03ecca1137d1e688e60a90",
+    "packages/server/package.json": "a461c6ebe7ecd46c1b8bcd77087bc19d18a088f5f12d026c89329de6b3337dfa",
     "packages/services/package.json": "d37da5cbc5458eb1f20768c5c8473aef428a3b609a4c7d389b179aa1a9293de3",
-    "packages/share-ui/package.json": "bf4e08759bc010d24d2559aa82a538832bee7c749c07c230158ee8d810cfdf41",
-    "packages/shared/package.json": "c11d49fc3d0f22483b3e9859c54c53a5c080a7f4a1a2fc1e6e535ec41ca95023",
+    "packages/shared/package.json": "647632546c1c7725954eabd3f461c395d366b06fa2c4005a23a2e24496f0ac8f",
     "packages/shared/src/zcode-protocol-v4/wire-codec.ts": "ac2494a3acc795c809c94ee9393f50271a9c2a0fd33813459e5ab93842ceef75",
     "packages/stream-animate/package.json": "31cb25ed87e64dbcd695bbc932729ac30499107d45f747b96a5c3de832afdc28",
-    "packages/ui/package.json": "981f0047fa0bc00d20368fc4f7af9500d8906f3d825ff9cf00dfe95e17d61c5e",
-    "packages/ui/src/components/ai-elements/agent.tsx": "830e7ea9e927de1524851337f1d35bda0e5690e3e4fa307fff854b60006b16c7",
-    "packages/ui/src/components/ai-elements/artifact.tsx": "7d73f08864d6280ac86c77d32e56d0e702f8aa6208e5910820139d0fb08ce64c",
-    "packages/ui/src/components/ai-elements/attachments.tsx": "7a847ce6c8ac9dc630481a82dd20a5e9e00949bf710a41fea1d32a18123011d8",
+    "packages/ui/package.json": "2d15c5090a5c2567618e9e243b4bbb293a22723b9e388ff94d93357070c2bffa",
+    "packages/ui/src/components/ai-elements/agent.tsx": "220b3b3ad1b546b8268b134954832e63ace53b103799b94edb9556e70619cd9f",
+    "packages/ui/src/components/ai-elements/artifact.tsx": "30e1771d24fb0cd18edcd9f0afe76424b831b520a2bf3eeb8eeda2a177409573",
+    "packages/ui/src/components/ai-elements/attachments.tsx": "cd86b650dffddd0d2497be025372232feb0cd0e5be673144ed23acf09efcbaf8",
     "packages/ui/src/components/ai-elements/audio-player.tsx": "3ed28af16b3a49123ac19b27763188d1087bdb8919d52263c00c761326d0a15a",
     "packages/ui/src/components/ai-elements/canvas.tsx": "7bc92905e97c182c9a2f52b421a4d70414c8700a66039af9a4466587f74d2687",
     "packages/ui/src/components/ai-elements/chain-of-thought.tsx": "d9755d90e2949137f03bb603ed34a1e1893a83fdc3cae321a02814af307400e3",
     "packages/ui/src/components/ai-elements/chat-loading.tsx": "b75d4398d778179f78209debde63547410d76e01cdaf3887f60b13ef9a35331f",
-    "packages/ui/src/components/ai-elements/checkpoint.tsx": "72459f6fb8668e9245ec32542f92c7de809cc9b5a366bb44ab08f91ea4e1255b",
-    "packages/ui/src/components/ai-elements/code-block.tsx": "ae4f975537ebb9c8ef905b7b9de39bc37180f81511bffc027dc4da1929037f18",
-    "packages/ui/src/components/ai-elements/commit.tsx": "e9f5dcffac4ec7702b6d77b41cfc28fab54f0595375dd2c992dc972c0a9e74d2",
-    "packages/ui/src/components/ai-elements/confirmation.tsx": "bb39ae89d5550f4ffcbb36e73dc8b75d1c9930f0fdba28cc8ff135d753b65a9b",
-    "packages/ui/src/components/ai-elements/connection.tsx": "6e6cf65efcef612a3d14f5fda69e27009bc06046d1f7aa842a1a93b9142a7f81",
-    "packages/ui/src/components/ai-elements/context.tsx": "9f9a766dcab0010b1483b5276f9d5f4b4c3b31bd85434731fc7ce4d8bf9913f7",
-    "packages/ui/src/components/ai-elements/controls.tsx": "3123e9cb668171780944fb91632c68977617ae4ef46312540c1f7ddecc3fc568",
-    "packages/ui/src/components/ai-elements/conversation.tsx": "1fda6a3c198ae104e8736b70992e9ce8549f667a942246d9a9762be8f4431e3a",
+    "packages/ui/src/components/ai-elements/checkpoint.tsx": "e8efbce587c5ad545dc58ee47ed76820ec6ee188b816e94ade4e9320d28fb7f3",
+    "packages/ui/src/components/ai-elements/code-block.tsx": "956cc860deadd9c3c9af9d445969b302aa7c454e13d01e5dcb146633509d18dc",
+    "packages/ui/src/components/ai-elements/commit.tsx": "2697b315c4b70e95ac6b473db0bc2fc06983efdb22e0b24ce124c748932434ea",
+    "packages/ui/src/components/ai-elements/confirmation.tsx": "932a355572e7507b853fde910dbf761f2601f6b37a6f24202191bd01fd9ed98f",
+    "packages/ui/src/components/ai-elements/connection.tsx": "b3c864abc893d31a32bfa307d6274c63ebd6a4c930ed62427771a39506e3f3ef",
+    "packages/ui/src/components/ai-elements/context.tsx": "3ec27303a3d41dd5dc41ee4a0b3a47c3e59fe8c8894667f48089a14d8fea820e",
+    "packages/ui/src/components/ai-elements/controls.tsx": "50b191aceb3f4b2c500c5b466e081f0905baf97e846ba9397f3bb6ce1721d6f2",
+    "packages/ui/src/components/ai-elements/conversation.tsx": "bf26bd6100ef33d38d1f567c658848fd0c94dddf2b757559a3277d08c6922115",
     "packages/ui/src/components/ai-elements/diagram-preview-dialog.tsx": "cc142f8808370897dfc40cd7aea3f1aa42fd07ce471a7fbb284d9ae728b1299a",
-    "packages/ui/src/components/ai-elements/edge.tsx": "661a25632f0879b8363f22e6b99198a6d37ad622781c798c090fcad9b591b181",
+    "packages/ui/src/components/ai-elements/edge.tsx": "d4241040f5070e4ccaaf37c59d8af645133475ef7ad25f9e659606b78ccd032b",
     "packages/ui/src/components/ai-elements/environment-variables.tsx": "397931dbf3496ad98df1f5e044410b87030e37c245e1299bc774c294fb08c047",
     "packages/ui/src/components/ai-elements/file-tree.tsx": "55386da0f5d2f453dd88fa84716e02cd0ea36a2f3822d93e717102ca8247b15f",
     "packages/ui/src/components/ai-elements/image-preview-dialog.tsx": "47d4ecdefc84d39f2deda93119ce400b36224276bb6c7dab6a914868914ac8de",
     "packages/ui/src/components/ai-elements/image-thumbnail-gallery.tsx": "185766c039c6c4852ae12360360f7cf29e844a1463358b8cc2c6de972dcdaf43",
-    "packages/ui/src/components/ai-elements/image.tsx": "1c6f9595ef814c4ef9648607562fa77a3007f7d857571f8e107a24022fe83e24",
+    "packages/ui/src/components/ai-elements/image.tsx": "71d3b5335de1fe2d9c1d28a15ca1dbd576e67e7a7ef1ad38768691ad680df8b6",
     "packages/ui/src/components/ai-elements/inline-citation.tsx": "f7221c9ed75860944f1eee97df52edb95f822acdafa94852a1ba2bee4f97725c",
     "packages/ui/src/components/ai-elements/jsx-preview.tsx": "11a93d14c32bfd883436fc7942babd892e430f9fe986d7b4804e06f48987cee3",
     "packages/ui/src/components/ai-elements/markdown-blockquote.tsx": "0c76599780a464136703d40d07172dcc62730dee1ce01a155100cf4712440a7f",
@@ -1643,36 +1642,36 @@
     "packages/ui/src/components/ai-elements/markdown-list.tsx": "ecf50ad4f48cd460ddcf90db7b463671f915d8c22c7cb8e7760ff3b02282c7f1",
     "packages/ui/src/components/ai-elements/markdown-table.tsx": "612d78092eaeb950931070fff2a194a244e84c5c2d63c6df645e6b91391953da",
     "packages/ui/src/components/ai-elements/mermaid-block.tsx": "4cc6783097a6ecbb1896ee1f3dd1d89115ca81f3efb15d9fbabcf448063818ae",
-    "packages/ui/src/components/ai-elements/message.tsx": "6c35829ed11321e850cd59e20c1c88fdd452e8e2d9b5da45f808371021aabf99",
+    "packages/ui/src/components/ai-elements/message.tsx": "036d763b16606c493c35f9d61e445fd99155e43ba0e74da1b9a69240d8e23867",
     "packages/ui/src/components/ai-elements/mic-selector.tsx": "e6249c6380a9aa768a411b7fc05e57388b7dc8a6e2afae687250d33ce9bb54db",
     "packages/ui/src/components/ai-elements/model-selector.tsx": "745414195be63160ab61efadc8352c2c6a28d3ba53107896c146a499c0847b99",
-    "packages/ui/src/components/ai-elements/node.tsx": "d7b68c41717a509bd9063f0a9fc0c4525ceb2b23bae4028bcd49ec949fc6268f",
+    "packages/ui/src/components/ai-elements/node.tsx": "00eb205ef4fe438032d75a740684b80f633ee63f5774edf7ff5eadb55499af63",
     "packages/ui/src/components/ai-elements/open-in-chat.tsx": "10b9bec180ccb749ca0c02c10520f9dbc8370ad2a3a169ad139707f2c1db93fa",
     "packages/ui/src/components/ai-elements/package-info.tsx": "d8fd7a36b69575934f39e51fc0c94f032b59edde117f312628c69434ad91c392",
-    "packages/ui/src/components/ai-elements/panel.tsx": "9c345ecb217fbb6a3a2b49b93ca81b746f249d18b9223470fbf511c0a9a37bb7",
-    "packages/ui/src/components/ai-elements/persona.tsx": "c796e1aa0f85395138eda5e4c7ffc7dac5321690b3f6949f73c7b3ebe8d52808",
-    "packages/ui/src/components/ai-elements/plan.tsx": "576b2ee1a9546f9e30f2512bb2e097babca71ca35a2820c0be4c93caef600622",
-    "packages/ui/src/components/ai-elements/prompt-input-actions.tsx": "198df66e5883016d542b4dfbfb12d050992febf53ccdcd712a289fbdd7a48a56",
-    "packages/ui/src/components/ai-elements/prompt-input-buttons.tsx": "b1c2a6ded9a2866946d08691072a4dacb59ecdce761baba7ee06f02e1e117185",
-    "packages/ui/src/components/ai-elements/prompt-input-primitives.tsx": "2412c8a868445a649264724ef8c6b75a97eb87aa3f790ca012c8e6a8b460a632",
-    "packages/ui/src/components/ai-elements/prompt-input-textarea.tsx": "4798574a8f2fc8584a1c5585d9dd878dd19d76bd05603e77948ec12180649def",
-    "packages/ui/src/components/ai-elements/prompt-input.tsx": "68a92e07c27774e9c1d63bccd12ec3ff38b4f89dd245b20bfffbbd052e6101c4",
-    "packages/ui/src/components/ai-elements/queue.tsx": "9d84f6e15708519ec65e258d9843dc5f4d76f106fc85155f7dcf51f89474b695",
-    "packages/ui/src/components/ai-elements/reasoning.tsx": "a10a38c7b3ca633e9b5480ad94f9c7a1fdd52bc5526ae0801e3e6ed141f2b604",
-    "packages/ui/src/components/ai-elements/sandbox.tsx": "f521400dbaebe4c2a2fbcdcb8c18f98980c566169233beb137b22a093b44bbf0",
+    "packages/ui/src/components/ai-elements/panel.tsx": "068a63576e655646cd58bde95d95ffc253163ff8eed35aa4397239c78df4b10e",
+    "packages/ui/src/components/ai-elements/persona.tsx": "991317f69c198854d16d05f891657c9f08f9caa9607330a53161f934839594ec",
+    "packages/ui/src/components/ai-elements/plan.tsx": "70eab0332fa7f8d3bb21a022169f08aac4536d999134705aa81cf1e248a51abc",
+    "packages/ui/src/components/ai-elements/prompt-input-actions.tsx": "e7a134cf697222e706dc676db46b4381d68596e84f7312f21995bf7eeb16cf3b",
+    "packages/ui/src/components/ai-elements/prompt-input-buttons.tsx": "ffcfdb6a7e966384ed78e1882d611d694bc02e22f47051657cf8bf002663961d",
+    "packages/ui/src/components/ai-elements/prompt-input-primitives.tsx": "d75061c5fbf98e031553ef4f329055c806bb746e0460e0a209e0cd94bada5284",
+    "packages/ui/src/components/ai-elements/prompt-input-textarea.tsx": "870e0a972436d73ff5113ada62c2dfbf170a87a4b526009cd3ec94326fa1f92c",
+    "packages/ui/src/components/ai-elements/prompt-input.tsx": "a98bfeb59b773fcf10a4930823ca9718e7056fcb633cb00b09a858548964ce5b",
+    "packages/ui/src/components/ai-elements/queue.tsx": "76aa116b85b2676f7768e977aa278a88fa2d392d241f4884d01d9da80ce76061",
+    "packages/ui/src/components/ai-elements/reasoning.tsx": "0589a0007bbe3ade11a08850082d29849c265ea04647c9bb83d0d4acbebad91d",
+    "packages/ui/src/components/ai-elements/sandbox.tsx": "5a5000bffbe5673809175a6d30be96957690fb97642876058803c46c1b57eee6",
     "packages/ui/src/components/ai-elements/schema-display.tsx": "826d2e11423ee3bc0295c31936c347f06361335aa849626031aa0885e3530cdd",
-    "packages/ui/src/components/ai-elements/shimmer.tsx": "5d06ffdff80a13453a0b61b67f588c48d838a20d9be2cd319ca2a97d441b3127",
-    "packages/ui/src/components/ai-elements/snippet.tsx": "6f369f0bb3308166ccd55f39dd542f7315873c5bd6de2491ffccc26b0700edfe",
-    "packages/ui/src/components/ai-elements/sources.tsx": "cd5a9a20dc50b66f9d114b9a0ced1dd2eb8815040cccd4c577b386ef18bed435",
+    "packages/ui/src/components/ai-elements/shimmer.tsx": "1978af51aa7fbead934873046fd73091f66a872c1e895a46a6bc15bc54301a43",
+    "packages/ui/src/components/ai-elements/snippet.tsx": "b460b9349a88620e123569e75b0d27b973300b238dcf120515cbb6b9d8af96d5",
+    "packages/ui/src/components/ai-elements/sources.tsx": "cda65c74a6931ecf168e4e3e97a3cb72bcd18974e93737c5b2de1d40146d7147",
     "packages/ui/src/components/ai-elements/speech-input.tsx": "9ff986d88bfdac54c0d67c9dc54a41cf4cfcc63266970057ec155f901145f36a",
     "packages/ui/src/components/ai-elements/stack-trace.tsx": "85206d908f090ab099ca336255643f9a93e1397e57c711e4769bf876ade2a2ef",
     "packages/ui/src/components/ai-elements/streamdown-controls.ts": "13dc740d133c75a9d6eec6e23e673b29d0361a87ba4ee0e7d44a4b7ad047984a",
-    "packages/ui/src/components/ai-elements/suggestion.tsx": "e92b5cdbf1a7868a42f4cb00d172cd8558543dbeb59ebdd192598c6333ea635f",
-    "packages/ui/src/components/ai-elements/task.tsx": "89f8110b326bd86afd71d17db79c36d86ada09d9f58401cc01aa47e16667926d",
-    "packages/ui/src/components/ai-elements/terminal.tsx": "da19fdbdeaaf682b50db23ccd8ba2a5fc6fa43dc2337bd1a3a0c4b8f52677f44",
-    "packages/ui/src/components/ai-elements/test-results.tsx": "8e12e551516048a877ca94c92c4979ecd6e4f2eb0042e465a3a23fc805ae7449",
-    "packages/ui/src/components/ai-elements/tool.tsx": "c4ca6fee5ecb3cfa597e8e99a2786c1bca28a6af36c4e8d05626b979e0f5963c",
-    "packages/ui/src/components/ai-elements/toolbar.tsx": "4bf1d6677248001166eb640a264ea7dc8750d609a01119e6aaf161ef74c0a245",
+    "packages/ui/src/components/ai-elements/suggestion.tsx": "56c042a4c51c80be6ea1b20d576eae2bf6d7703c9b5ff9d1fc392cebb0b4445c",
+    "packages/ui/src/components/ai-elements/task.tsx": "c62c780cb1e136d1cdc442be3c1cb9b9a4d33c014bfd873b39b2c7a87209c2f8",
+    "packages/ui/src/components/ai-elements/terminal.tsx": "6668c631c4ea19ad87100365a24169900aa87398287ae91c5870fc24b4dc8c67",
+    "packages/ui/src/components/ai-elements/test-results.tsx": "a41add6a7da18ad15fa86e45c6b481e5cbb3c7256814a95b768caf9d9733c9bb",
+    "packages/ui/src/components/ai-elements/tool.tsx": "dc721717ce9ece497ac88422cc90842672085156338936c131efbd7b55ca6dcb",
+    "packages/ui/src/components/ai-elements/toolbar.tsx": "ab381d81fc3c8ab7f6d9b47eb45e916a711c46550aa70a919a21584f3d3de847",
     "packages/ui/src/components/ai-elements/transcription.tsx": "66f7bcdb6c4859804e088f0fa30bf20bf20a4cff969f44da8f30db62bd8a51db",
     "packages/ui/src/components/ai-elements/voice-selector.tsx": "3ae6d7c94cfdede860dbba67066492085405f9e4f8d13363e0fa289bb4726d4a",
     "packages/ui/src/components/ai-elements/web-preview.tsx": "3df26b9bc7c55034a148f67e2a899f15b1a592a6fcf7cccd54e469c0aeb5b9ec",
@@ -1687,6 +1686,7 @@
     "packages/ui/src/components/ui/carousel.tsx": "75966a0c51114fb00e21a1d9a481008306055f2811c8fd744c889b1fb7924677",
     "packages/ui/src/components/ui/chart.tsx": "272efec5aa60d34665104b45341d9f2b8cad4480070bca91e9d5409713b6fecd",
     "packages/ui/src/components/ui/checkbox.tsx": "5b3cb5612ed7654218e1cdd86fc41c7b490475721948d50a603996133245bace",
+    "packages/ui/src/components/ui/code-editor.tsx": "d74b3290e5716713288b4fb1cae2c5433f980c0a857806312bfefb25f4c57cb4",
     "packages/ui/src/components/ui/code-viewer.tsx": "dfccd2feaccc62af84f3e92dc5b8e25e7025b6c64cbd16f177586b1dc763affe",
     "packages/ui/src/components/ui/collapsible.tsx": "e00f7ad26cc4c168f8c6b20e6078512807ddca05e375e47b6c9dbbd50fcbef52",
     "packages/ui/src/components/ui/command.tsx": "7c754bc80704163ce505d08d961a5a4b3e57107e7d53ea319483a896d448cbdb",
@@ -1724,10 +1724,9 @@
     "packages/ui/src/components/ui/toast.tsx": "0f8894c6fc30e4cec44caa4cffe70e111f9c41ff9bf3699ec8e91696ea631671",
     "packages/ui/src/components/ui/tooltip.tsx": "301dbf3a6f8b1bc496f9bdc6fbc5fe6202ed373182897f39cd1ecd19b00fdfbe",
     "packages/ui/src/components/ui/usePdfZoomOverlay.ts": "c8c91b003ce2fded32c7a2369dc6eac43aa4b9dc9c830a0f5ceccb21d366b610",
-    "packages/ui/src/components/ui/ZCodeAboutLogo.tsx": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a",
-    "packages/ui/src/lib/builtinSkillI18n.ts": "f16952aa99cd281f02fa5af170d7cf4653559b82a50c27de2157aed74ce9bc96",
-    "packages/ui/src/styles.css": "793515ed9a255acb0a954446d579d15030d206fe41bbd3c67a7aac857a6f65ef",
-    "packages/web-share/package.json": "4865c14968b96d355c45c2edf612443f79d6d05cfbe433a28374e19b1b0c9d88",
+    "packages/ui/src/components/ui/ZCodeAboutLogo.tsx": "8989ee68418e043dbdf5170ab8124c0db48fb6e85270941f1e26f57b0fb81859",
+    "packages/ui/src/lib/builtinSkillI18n.ts": "7896e740ee5a38fcded94949ff141063b9d3d8f5e5009252f3457f807838e2bb",
+    "packages/ui/src/styles.css": "97cf7ed2bb6799dfe9d2163dca369cdd31d339cc7925ca2b838dd87ff7f977ec",
     "packages/web/package.json": "0810e762bf1d6641d5f73ab642b81953e183e53fd963a1d405ffc65b206e5ce6",
     "packages/web/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
     "packages/web/public/material-icons/abap.svg": "1335bd7eb9a0ed49deb622330d680c2e97731726a7a5eee8e4f46dc1e5db4de4",
@@ -2876,13 +2875,12 @@
     "packages/web/public/material-icons/zig.svg": "37be0ce02cf471b18d86150b3c38e80caa7c16c49a15078e7db6f1f41788d101",
     "packages/web/public/material-icons/zip.svg": "dad79a45f756542d37abd422502ecfbea15720b92ea1c9d80ef0439ab6b9448a",
     "packages/zcode-cua/package.json": "e71948820aafebeac7ec92879adf344011d0f310ed954eb7204be7320f08ebef",
-    "packages/zcode-server-cli/package.json": "1dfc113333cda0bc06f7c2eb22b5b1fdd7e9e4049368c8f0d4ef1becbf85c1c5",
+    "packages/zcode-server-cli/package.json": "5445fbd485554affbc5425bf57c321a7738b665e54a2ef892c4c3e2c79a55b45",
     "patches/@ai-sdk__anthropic@3.0.81.patch": "d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18",
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
-    "patches/@arms__rum-electron@0.0.3.patch": "36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97",
     "patches/vitest@4.1.7.patch": "11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0",
     "patches/wdio-electron-service@9.2.1.patch": "52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f",
-    "pnpm-lock.yaml": "763b3f63bccf174fea66b0c2e950970d5928e8eb55fbe478e19ccbd1635d65e5",
+    "pnpm-lock.yaml": "cc516632c236a29617a582701220a4cbee3cfdebd00c42cac7ec99e05862d987",
     "pnpm-workspace.yaml": "ddf4d195a433a1fae0a991462b9b19281435d7055d768d2a2942de8f4aff89f3",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "scripts/native-search-tools-config.mjs": "06e9d2b066a22f4bb731fb7356d786b52cf08e20dd6faf91e1a82b167d7462e8",
@@ -3004,7 +3002,7 @@
     "third-party/native-search/licenses/f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af.txt": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
     "third-party/native-search/licenses/f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505.txt": "f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505",
     "third-party/native-search/sources.json": "5e1aedef96227f4deefe6f07cda644bd25e638443e86e93ddb2e9578a73d9609",
-    "third-party/npm-overrides.json": "7218355ca434ddaa1ec9d97af813e82d222ccba61ab00f12d7194c49ceeeaa1f",
+    "third-party/npm-overrides.json": "6a882c6540d9babd0aa74cfa02100abc641382c80c24802694952ab05efa4aaf",
     "third-party/runtime/node-22.16.0-LICENSE.txt": "1ae62e2015784ba438db7b04ebd33f3c4ff3efdb824c111c4ececd99945fd52d",
     "third-party/runtime/node-24.14.0-LICENSE.txt": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
     "third-party/runtime/sources.json": "b27bc8d81aeb71108e523602364ffbb6a1b19c2d5d47733fd43094b769006741",
@@ -3022,14 +3020,11 @@
     "third-party/upstream/268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5.txt": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5",
     "third-party/upstream/2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a.txt": "2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a",
     "third-party/upstream/2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e.txt": "2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e",
-    "third-party/upstream/2c976d327b293bd74c257cd53e9b4ecef97a06b1651baa3b24327c97192cb3de.txt": "2c976d327b293bd74c257cd53e9b4ecef97a06b1651baa3b24327c97192cb3de",
     "third-party/upstream/2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d.txt": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d",
     "third-party/upstream/3007cd45c9afdf93812c0c8a7643ea32a7db0b24e495dc0f2312c8a43990b0dd.txt": "3007cd45c9afdf93812c0c8a7643ea32a7db0b24e495dc0f2312c8a43990b0dd",
     "third-party/upstream/31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87.txt": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
-    "third-party/upstream/328eb7864c20ab77607b26ee1913b65a9b880f6300eea9e667b890da896a2f40.txt": "328eb7864c20ab77607b26ee1913b65a9b880f6300eea9e667b890da896a2f40",
     "third-party/upstream/34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4.txt": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
     "third-party/upstream/37398454f23ddeb02f0b81113fef9ebdc4571b7297cb6e18376c1ccb9bb1453e.txt": "37398454f23ddeb02f0b81113fef9ebdc4571b7297cb6e18376c1ccb9bb1453e",
-    "third-party/upstream/38b6f63a0aa422b5c329e75f1aeecd2b02e83caab1747644c00810870d77bacb.txt": "38b6f63a0aa422b5c329e75f1aeecd2b02e83caab1747644c00810870d77bacb",
     "third-party/upstream/3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94.txt": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
     "third-party/upstream/417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6.txt": "417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6",
     "third-party/upstream/43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1.txt": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
@@ -3047,7 +3042,6 @@
     "third-party/upstream/5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd.txt": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
     "third-party/upstream/66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101.txt": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101",
     "third-party/upstream/6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469.txt": "6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469",
-    "third-party/upstream/6f7e6eae2a2afbaa67b266650f7342e7bf8e82cb57f6ab98148b3d6e0fb4450a.txt": "6f7e6eae2a2afbaa67b266650f7342e7bf8e82cb57f6ab98148b3d6e0fb4450a",
     "third-party/upstream/75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6.txt": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
     "third-party/upstream/8405932022a556380c2d8c272eff154a923feb197233f348ce5f7334fb0a5ede.txt": "8405932022a556380c2d8c272eff154a923feb197233f348ce5f7334fb0a5ede",
     "third-party/upstream/8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6.txt": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6",
@@ -3079,10 +3073,8 @@
     "third-party/upstream/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
     "third-party/upstream/e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c.txt": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
     "third-party/upstream/e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c.txt": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c",
-    "third-party/upstream/e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c.txt": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c",
     "third-party/upstream/ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855.txt": "ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855",
     "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
-    "third-party/upstream/f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a.txt": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a",
     "third-party/upstream/f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452.txt": "f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452",
     "third-party/upstream/f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af.txt": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
     "third-party/upstream/fc7d762e0ebf8720d0a03cf00058aaa3a198347e9651be2f50a25e3b3ec13985.txt": "fc7d762e0ebf8720d0a03cf00058aaa3a198347e9651be2f50a25e3b3ec13985"
@@ -3277,39 +3269,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "6209542eca0c56db0322ad9a8f307b85b8fad89ce601810e00987d4a94e55738"
-        }
-      ]
-    },
-    {
-      "name": "@arms/rum-browser",
-      "version": "0.1.8",
-      "license": "ISC",
-      "notices": [
-        {
-          "member": "https://registry.npmjs.org/%40arms%2frum-browser%400.1.8",
-          "sha256": "2c976d327b293bd74c257cd53e9b4ecef97a06b1651baa3b24327c97192cb3de"
-        }
-      ]
-    },
-    {
-      "name": "@arms/rum-core",
-      "version": "0.1.4",
-      "license": "ISC",
-      "notices": [
-        {
-          "member": "https://registry.npmjs.org/%40arms%2frum-core%400.1.4",
-          "sha256": "328eb7864c20ab77607b26ee1913b65a9b880f6300eea9e667b890da896a2f40"
-        }
-      ]
-    },
-    {
-      "name": "@arms/rum-electron",
-      "version": "0.0.3",
-      "license": "MIT",
-      "notices": [
-        {
-          "member": "https://registry.npmjs.org/%40arms%2frum-electron%400.0.3",
-          "sha256": "38b6f63a0aa422b5c329e75f1aeecd2b02e83caab1747644c00810870d77bacb"
         }
       ]
     },
@@ -3758,6 +3717,258 @@
       ]
     },
     {
+      "name": "@codemirror/autocomplete",
+      "version": "6.20.3",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/autocomplete.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/commands",
+      "version": "6.11.1",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/commands.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-cpp",
+      "version": "6.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-cpp.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-css",
+      "version": "6.3.1",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-css.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-html",
+      "version": "6.4.12",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/lang-html.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-java",
+      "version": "6.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-java.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-javascript",
+      "version": "6.2.5",
+      "license": "MIT",
+      "repository": "git+https://github.com/codemirror/lang-javascript.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-json",
+      "version": "6.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-json.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-markdown",
+      "version": "6.5.2",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/lang-markdown.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-python",
+      "version": "6.2.1",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-python.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-rust",
+      "version": "6.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-rust.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-sql",
+      "version": "6.10.0",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-sql.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-xml",
+      "version": "6.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/codemirror/lang-xml.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lang-yaml",
+      "version": "6.1.3",
+      "license": "MIT",
+      "repository": "git+https://github.com/codemirror/lang-yaml.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "8ac9cfc9c82c397298c2139028d2474d8e0470f2092a97edddccf353bc5d4d36"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/language",
+      "version": "6.13.1",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/language.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/legacy-modes",
+      "version": "6.5.5",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/legacy-modes.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/lint",
+      "version": "6.9.7",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/lint.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/search",
+      "version": "6.7.2",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/search.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/state",
+      "version": "6.7.6",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/state.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/streamparser",
+      "version": "6.0.0",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/streamparser.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/view",
+      "version": "6.43.14",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/view.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
       "name": "@dnd-kit/abstract",
       "version": "0.4.0",
       "license": "MIT",
@@ -3942,18 +4153,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "24601581852c22ee64603c980589723298f3a10fe52e1279bec400f7fd9a4d22"
-        }
-      ]
-    },
-    {
-      "name": "@electron/get",
-      "version": "2.0.3",
-      "license": "MIT",
-      "repository": "https://github.com/electron/get",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "edab8abb78d9c5b36944c3e00aebf6a90eb32378993f49ac8a3904007029c629"
         }
       ]
     },
@@ -4928,6 +5127,174 @@
       ]
     },
     {
+      "name": "@lezer/common",
+      "version": "1.5.3",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/common.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/cpp",
+      "version": "1.1.6",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/cpp.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "54bd812a6d334e0c438b78a43cea74b67e882739fd3450115ddc7c52be5706c1"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/css",
+      "version": "1.3.9",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/css.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/highlight",
+      "version": "1.2.5",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/highlight.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/html",
+      "version": "1.3.13",
+      "license": "MIT",
+      "repository": "https://github.com/lezer-parser/html.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/java",
+      "version": "1.1.5",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/java.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "54bd812a6d334e0c438b78a43cea74b67e882739fd3450115ddc7c52be5706c1"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/javascript",
+      "version": "1.5.6",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/javascript.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/json",
+      "version": "1.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/lezer-parser/json.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "7e744ae18ef84389d576469a5781172b0d50b7981111109f6da7cbc6b4188288"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/lr",
+      "version": "1.4.11",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/lr.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/markdown",
+      "version": "1.8.0",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/markdown.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "54bd812a6d334e0c438b78a43cea74b67e882739fd3450115ddc7c52be5706c1"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/python",
+      "version": "1.1.19",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/python.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "54bd812a6d334e0c438b78a43cea74b67e882739fd3450115ddc7c52be5706c1"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/rust",
+      "version": "1.0.3",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/lezer/rust.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/xml",
+      "version": "1.0.6",
+      "license": "MIT",
+      "repository": "https://github.com/lezer-parser/xml.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "568902fb66eaf1f11750e966b33fd7b5d7c618e65af09f35ef843635bcf5f1ba"
+        }
+      ]
+    },
+    {
+      "name": "@lezer/yaml",
+      "version": "1.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/lezer-parser/yaml.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "8cb910abd2a5463466b7c31958b39d6787ebf9e9f299598266b814bc90dd076b"
+        }
+      ]
+    },
+    {
       "name": "@lydell/node-pty-darwin-arm64",
       "version": "1.2.0-beta.10",
       "license": "MIT",
@@ -4972,6 +5339,18 @@
         {
           "member": "LICENSE",
           "sha256": "a3d60eaf32d2fb09c9d82ef39f14bd6e2c0f3ca7de30daa827486c0d6f8b6e9f"
+        }
+      ]
+    },
+    {
+      "name": "@marijn/find-cluster-break",
+      "version": "1.0.4",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/marijn/find-cluster-break.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "9360b00fdd091f05c783b568bdd46c679c41b72415599252de98949462ea1acb"
         }
       ]
     },
@@ -5400,22 +5779,6 @@
       ]
     },
     {
-      "name": "@opentelemetry/api-logs",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "bd58f2a90815dfc0589075fab5af424dedc7415266765f48ae59b3de98d5e1be"
-        }
-      ]
-    },
-    {
       "name": "@opentelemetry/api",
       "version": "1.9.0",
       "license": "Apache-2.0",
@@ -5428,214 +5791,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "9cfa86899ccd67b76331431bbff57cbe15ceabb2e393aeb5a56c7a958dabd595"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/api",
-      "version": "1.9.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "9cfa86899ccd67b76331431bbff57cbe15ceabb2e393aeb5a56c7a958dabd595"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/context-async-hooks",
-      "version": "2.6.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "fc58ccbf60cdd4a212be673e7f1278dd1a3e49f1b1ddc21a7d70724bc8b3044a"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/core",
-      "version": "2.6.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "998b885208a7e72f854bca1a9fcb439c7665671dcbc77a9b6ca5fae5a15982dc"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/exporter-metrics-otlp-http",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "f60c6f5ed7777891fdb00c840a9328db068f279da72aee211f1648d28a93be36"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/exporter-metrics-otlp-proto",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "1b28b52d5dc4fa05b087ba53e75f1f95c11731ed07218fcdc992ad8bcddd93e1"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/exporter-trace-otlp-proto",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "e1acb133327575513e723320b5c42d7705bfe95dfdf0da1879239824ec5f8496"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/otlp-exporter-base",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "0b8732770b293090db6e4ec732b98a2b3b199c927dfafcbc23e51c5b724306b7"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/otlp-transformer",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "df4b0aa1ded638f520ed7ca841161c27677d0678671e98ffc02917fdb0c0ff3b"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/resources",
-      "version": "2.6.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "9cb96eeeccf177dd2579c21e2376f52ce4fa90861cc2dda9f14842542da7a3f9"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/sdk-logs",
-      "version": "0.214.0",
-      "license": "Apache-2.0",
-      "repository": "git+https://github.com/open-telemetry/opentelemetry-js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "a194d66e0c5bd6dc8927f5806bd9c5fd1df7c582eb8518d980a612cee902d632"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/sdk-metrics",
-      "version": "2.6.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "1c6a18bba0437d60bb18fa58bf055eb32c51c791837ac0ad375b529bcf245f94"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/sdk-trace-base",
-      "version": "2.6.1",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "8375f12da0f472679e1eeee52bf58ea289c9806b8a7605f80a1f8865b01908f1"
-        }
-      ]
-    },
-    {
-      "name": "@opentelemetry/semantic-conventions",
-      "version": "1.43.0",
-      "license": "Apache-2.0",
-      "repository": "open-telemetry/opentelemetry-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "ac32ccc44843f58e28c56d475e1e8687a3eeae4aa003c9225b40e9603b5f9c73"
         }
       ]
     },
@@ -6579,30 +6734,6 @@
       ]
     },
     {
-      "name": "@rrweb/types",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/rrweb-io/rrweb.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/rrweb-io/rrweb/%40rrweb%2Ftypes%402.0.0/LICENSE",
-          "sha256": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c"
-        }
-      ]
-    },
-    {
-      "name": "@rrweb/utils",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/rrweb-io/rrweb.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/rrweb-io/rrweb/%40rrweb%2Futils%402.0.0/LICENSE",
-          "sha256": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c"
-        }
-      ]
-    },
-    {
       "name": "@sec-ant/readable-stream",
       "version": "0.4.1",
       "license": "MIT",
@@ -6947,18 +7078,6 @@
       ]
     },
     {
-      "name": "@sindresorhus/is",
-      "version": "4.6.0",
-      "license": "MIT",
-      "repository": "sindresorhus/is",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
       "name": "@sindresorhus/merge-streams",
       "version": "4.0.0",
       "license": "MIT",
@@ -7039,46 +7158,6 @@
         {
           "member": "LICENSE",
           "sha256": "b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529"
-        }
-      ]
-    },
-    {
-      "name": "@stripe/react-stripe-js",
-      "version": "6.4.0",
-      "license": "MIT",
-      "repository": "https://github.com/stripe/react-stripe-js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f5ecc63f26b1bf790f68fd8e4a84376385b19b9246100dc93a5b6ba9bf17f964"
-        }
-      ]
-    },
-    {
-      "name": "@stripe/stripe-js",
-      "version": "9.6.0",
-      "license": "MIT",
-      "repository": "github:stripe/stripe-js",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f5ecc63f26b1bf790f68fd8e4a84376385b19b9246100dc93a5b6ba9bf17f964"
-        }
-      ]
-    },
-    {
-      "name": "@szmarczak/http-timer",
-      "version": "4.0.6",
-      "license": "MIT",
-      "repository": "git+https://github.com/szmarczak/http-timer.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "0194571d45a06ea2a22ceb51f981e3be92525966d28847dbc0d9982603bf90de"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -7195,30 +7274,6 @@
         {
           "member": "LICENSE",
           "sha256": "c2a4cfb69592431f4b3a179c114909bb76a979d5748c19ca595c94133c623b12"
-        }
-      ]
-    },
-    {
-      "name": "@types/cacheable-request",
-      "version": "6.0.3",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
-      "name": "@types/css-font-loading-module",
-      "version": "0.0.7",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
         }
       ]
     },
@@ -7667,32 +7722,8 @@
       ]
     },
     {
-      "name": "@types/http-cache-semantics",
-      "version": "4.2.0",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
       "name": "@types/katex",
       "version": "0.16.8",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
-      "name": "@types/keyv",
-      "version": "3.1.4",
       "license": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
       "notices": [
@@ -7729,18 +7760,6 @@
     {
       "name": "@types/node",
       "version": "16.9.1",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
-      "name": "@types/node",
-      "version": "24.12.2",
       "license": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
       "notices": [
@@ -7823,18 +7842,6 @@
       ]
     },
     {
-      "name": "@types/responselike",
-      "version": "1.0.3",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
       "name": "@types/statuses",
       "version": "2.0.6",
       "license": "MIT",
@@ -7907,18 +7914,6 @@
       ]
     },
     {
-      "name": "@types/yauzl",
-      "version": "2.10.3",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
       "name": "@ungap/structured-clone",
       "version": "1.3.0",
       "license": "ISC",
@@ -7967,18 +7962,6 @@
         {
           "member": "LICENSE",
           "sha256": "b070d77bfb2c52a1dd6996de0ce5f64c49a0ca55c889b163a963ddf5cb001ee2"
-        }
-      ]
-    },
-    {
-      "name": "@xstate/fsm",
-      "version": "1.6.5",
-      "license": "MIT",
-      "repository": "git+ssh://git@github.com/statelyai/xstate.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "542d926d7bbb099785e322d1d5574c539d51942e52ec8adce2be4629ba81fc7f"
         }
       ]
     },
@@ -8435,22 +8418,6 @@
       ]
     },
     {
-      "name": "base64-arraybuffer",
-      "version": "1.0.2",
-      "license": "MIT",
-      "repository": "https://github.com/niklasvh/base64-arraybuffer",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f3eca6ff762533fa5a77caf954a143e48afa204668cf97dce758c45a9e006be3"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "62235643db61d20e8e4c58d160e906fc168941207adbc96a80ba87b491570067"
-        }
-      ]
-    },
-    {
       "name": "baseline-browser-mapping",
       "version": "2.10.18",
       "license": "Apache-2.0",
@@ -8527,18 +8494,6 @@
         {
           "member": "https://registry.npmjs.org/boolbase/1.0.0",
           "sha256": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d"
-        }
-      ]
-    },
-    {
-      "name": "boolean",
-      "version": "3.2.0",
-      "license": "MIT",
-      "repository": "git://github.com/thenativeweb/boolean.git",
-      "notices": [
-        {
-          "member": "LICENSE.txt",
-          "sha256": "8e4aa1aef825c37d6f74d4b867dccb7b059b66c75ecdedc74834e2f403568a27"
         }
       ]
     },
@@ -8643,18 +8598,6 @@
       ]
     },
     {
-      "name": "builder-util-runtime",
-      "version": "9.5.1",
-      "license": "MIT",
-      "repository": "git+https://github.com/electron-userland/electron-builder.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "bed8d0ab3e6031817f775a641ff37313b0f5591bc8ba0ed79b978dafbd4231ce"
-        }
-      ]
-    },
-    {
       "name": "bun-ffi-structs",
       "version": "0.2.2",
       "license": "MIT",
@@ -8691,38 +8634,6 @@
         {
           "member": "Readme.md (license section)",
           "sha256": "084adb10b5fc6c48ed64780d1fe8ef625aca43532bafed6762d96ac3ec03cec5"
-        }
-      ]
-    },
-    {
-      "name": "cacheable-lookup",
-      "version": "5.0.4",
-      "license": "MIT",
-      "repository": "git+https://github.com/szmarczak/cacheable-lookup.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "b35de79efc88b23c73dd431df6075bed0890db0db1544ee3d57b046aa7a8e72b"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
-      "name": "cacheable-request",
-      "version": "7.0.4",
-      "license": "MIT",
-      "repository": "lukechilds/cacheable-request",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "861908ec818ff6142fdd6c4b66d6264c206d3d5a46003b1342e1853a9a85abac"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "4f6bff47d23de042c99fb8f97a4a4193390d0f7fef2443b6aef8945aa8147b79"
         }
       ]
     },
@@ -9067,22 +8978,6 @@
         {
           "member": "LICENSE.txt",
           "sha256": "2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149"
-        }
-      ]
-    },
-    {
-      "name": "clone-response",
-      "version": "1.0.3",
-      "license": "MIT",
-      "repository": "git+https://github.com/sindresorhus/clone-response.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "861908ec818ff6142fdd6c4b66d6264c206d3d5a46003b1342e1853a9a85abac"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "4f6bff47d23de042c99fb8f97a4a4193390d0f7fef2443b6aef8945aa8147b79"
         }
       ]
     },
@@ -9455,6 +9350,22 @@
         {
           "member": "LICENSE",
           "sha256": "7c28463b739e2e73a49bf127d0bda427f8c55f0b37365a044c3c3f254716118b"
+        }
+      ]
+    },
+    {
+      "name": "crelt",
+      "version": "1.0.7",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/marijn/crelt.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "23852ebf6aef7fadffc92514b3c5df163a8651f2c3ed0dbb494cb49d93bd5de5"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "a2c2a0dce4afadc4f90d8860b6d42734a5e4279c2ce7ec2b18e6aa8a01b2ede1"
         }
       ]
     },
@@ -10119,18 +10030,6 @@
       ]
     },
     {
-      "name": "decompress-response",
-      "version": "6.0.0",
-      "license": "MIT",
-      "repository": "sindresorhus/decompress-response",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
       "name": "dedent",
       "version": "1.7.2",
       "license": "MIT",
@@ -10187,34 +10086,6 @@
       ]
     },
     {
-      "name": "defer-to-connect",
-      "version": "2.0.1",
-      "license": "MIT",
-      "repository": "git+https://github.com/szmarczak/defer-to-connect.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "0194571d45a06ea2a22ceb51f981e3be92525966d28847dbc0d9982603bf90de"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
-      "name": "define-data-property",
-      "version": "1.1.4",
-      "license": "MIT",
-      "repository": "git+https://github.com/ljharb/define-data-property.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "b41d08bc3624d8c436fc80237d73ebb361985a67f4504bbcd703e5ca2b27254c"
-        }
-      ]
-    },
-    {
       "name": "define-lazy-prop",
       "version": "3.0.0",
       "license": "MIT",
@@ -10223,18 +10094,6 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
-      "name": "define-properties",
-      "version": "1.2.1",
-      "license": "MIT",
-      "repository": "git://github.com/ljharb/define-properties.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "00d402c2bbe7c67369bd01ce2c16b8ed46ccc949a1ee2d6bb8f9606afa8c7434"
         }
       ]
     },
@@ -10315,18 +10174,6 @@
       "version": "1.1.0",
       "license": "MIT",
       "repository": "https://github.com/thekashey/detect-node",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "54b32293ea560d22cd9b62af9b2cda1a030d910a48c6601d227c5ff2338d95f8"
-        }
-      ]
-    },
-    {
-      "name": "detect-node",
-      "version": "2.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/iliakan/detect-node",
       "notices": [
         {
           "member": "LICENSE",
@@ -10571,34 +10418,6 @@
       ]
     },
     {
-      "name": "electron-updater",
-      "version": "6.8.3",
-      "license": "MIT",
-      "repository": "git+https://github.com/electron-userland/electron-builder.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "bed8d0ab3e6031817f775a641ff37313b0f5591bc8ba0ed79b978dafbd4231ce"
-        }
-      ]
-    },
-    {
-      "name": "electron",
-      "version": "41.0.3",
-      "license": "MIT",
-      "repository": "https://github.com/electron/electron",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "56a37896ff6edec2b75b41465b66dd768f2d294c315255164898ca3e685bbd30"
-        }
-      ]
-    },
-    {
       "name": "elkjs",
       "version": "0.12.0",
       "license": "EPL-2.0 OR GPL-3.0-or-later",
@@ -10707,22 +10526,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "7c59ffc1bdc8ebb3145afe526c0afb0d63e2b1a3233ce239eb3f62a6a79b0e2e"
-        }
-      ]
-    },
-    {
-      "name": "end-of-stream",
-      "version": "1.4.5",
-      "license": "MIT",
-      "repository": "git://github.com/mafintosh/end-of-stream.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3fe8d55a98dbf260eace67c00cf9bc53edb46234e840098a0b93df3096b97fb6"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -10855,18 +10658,6 @@
       ]
     },
     {
-      "name": "es6-error",
-      "version": "4.1.1",
-      "license": "MIT",
-      "repository": "https://github.com/bjyoungblood/es6-error.git",
-      "notices": [
-        {
-          "member": "LICENSE.md",
-          "sha256": "9f655c5baa5a6f254d1e87f27e14d04acaff4bd0b489ea3c2f33723919da2f44"
-        }
-      ]
-    },
-    {
       "name": "escalade",
       "version": "3.2.0",
       "license": "MIT",
@@ -10907,18 +10698,6 @@
         {
           "member": "Readme.md (license section)",
           "sha256": "ab27fc045f7a02ee0f02640e290b14a849a6a9d3dac2c5e6a4f986d303543809"
-        }
-      ]
-    },
-    {
-      "name": "escape-string-regexp",
-      "version": "4.0.0",
-      "license": "MIT",
-      "repository": "sindresorhus/escape-string-regexp",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
         }
       ]
     },
@@ -11159,18 +10938,6 @@
       ]
     },
     {
-      "name": "extract-zip",
-      "version": "2.0.1",
-      "license": "BSD-2-Clause",
-      "repository": "maxogden/extract-zip",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "77b2de947c65f3062fb347118ca198ca50898ead84a8509d8153fa65741f029b"
-        }
-      ]
-    },
-    {
       "name": "fast-deep-equal",
       "version": "3.1.3",
       "license": "MIT",
@@ -11247,18 +11014,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "ba9493d367402925a7705f85f597583fd894561efb8717ab6ad56d9ebc17ba14"
-        }
-      ]
-    },
-    {
-      "name": "fd-slicer",
-      "version": "1.1.0",
-      "license": "MIT",
-      "repository": "git://github.com/andrewrk/node-fd-slicer.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "176d95320d565cb034d8323797b6cd6160238f625453687f98aad2085c46c3b3"
         }
       ]
     },
@@ -11460,22 +11215,6 @@
     },
     {
       "name": "fs-extra",
-      "version": "10.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/jprichardson/node-fs-extra",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "1e76029602ae9b21cc4e612db2496d92febed882ba13ba745f8b3309e85f9d39"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "99418da6b0279959da793d62433978847d00236e852c4be780f384b7f506d425"
-        }
-      ]
-    },
-    {
-      "name": "fs-extra",
       "version": "11.3.4",
       "license": "MIT",
       "repository": "git+https://github.com/jprichardson/node-fs-extra.git",
@@ -11487,22 +11226,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "17f7fa5a10a40e614e14342fa1b18046fee2edcdfb9528bf67f4593ef2ff61fd"
-        }
-      ]
-    },
-    {
-      "name": "fs-extra",
-      "version": "8.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/jprichardson/node-fs-extra",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "1e76029602ae9b21cc4e612db2496d92febed882ba13ba745f8b3309e85f9d39"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "99418da6b0279959da793d62433978847d00236e852c4be780f384b7f506d425"
         }
       ]
     },
@@ -11620,18 +11343,6 @@
     },
     {
       "name": "get-stream",
-      "version": "5.2.0",
-      "license": "MIT",
-      "repository": "sindresorhus/get-stream",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
-      "name": "get-stream",
       "version": "6.0.1",
       "license": "MIT",
       "repository": "sindresorhus/get-stream",
@@ -11703,30 +11414,6 @@
       ]
     },
     {
-      "name": "global-agent",
-      "version": "3.0.0",
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/gajus/global-agent",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ba98e94118579117505f6f11fd9a4354c5e65ece03b4898d8b8f7785efcd25c1"
-        }
-      ]
-    },
-    {
-      "name": "globalthis",
-      "version": "1.0.4",
-      "license": "MIT",
-      "repository": "git://github.com/ljharb/System.global.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "acfaf437865d82f0fa9b9cdcae8b550bed8d011adaa5b42d973191caf99f62a8"
-        }
-      ]
-    },
-    {
       "name": "gopd",
       "version": "1.2.0",
       "license": "MIT",
@@ -11735,18 +11422,6 @@
         {
           "member": "LICENSE",
           "sha256": "d90bf0a089da4cf43d644ed240a0b3825dcdb705e64e38371d56995a4cc9e4c5"
-        }
-      ]
-    },
-    {
-      "name": "got",
-      "version": "11.8.6",
-      "license": "MIT",
-      "repository": "sindresorhus/got",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
         }
       ]
     },
@@ -11803,18 +11478,6 @@
         {
           "member": "readme.md (license section)",
           "sha256": "0b8c7c0c5579b689ab841976b473ebe9269aa46347fc1295431e0fc3f2452d36"
-        }
-      ]
-    },
-    {
-      "name": "has-property-descriptors",
-      "version": "1.0.2",
-      "license": "MIT",
-      "repository": "git+https://github.com/inspect-js/has-property-descriptors.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf"
         }
       ]
     },
@@ -12167,18 +11830,6 @@
       ]
     },
     {
-      "name": "http-cache-semantics",
-      "version": "4.2.0",
-      "license": "BSD-2-Clause",
-      "repository": "git+https://github.com/kornelski/http-cache-semantics.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ab868ad5a2ef5068560d9cd3b2180ec63c140bb4c5cae1ba779d300a0ac74fa3"
-        }
-      ]
-    },
-    {
       "name": "http-errors",
       "version": "2.0.1",
       "license": "MIT",
@@ -12219,22 +11870,6 @@
         {
           "member": "LICENSE",
           "sha256": "71368fd0f5b4129191e9afcd1e1ef2dc89a9090d3e4d80bbab92dafd032b3bef"
-        }
-      ]
-    },
-    {
-      "name": "http2-wrapper",
-      "version": "1.0.3",
-      "license": "MIT",
-      "repository": "git+https://github.com/szmarczak/http2-wrapper.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "0194571d45a06ea2a22ceb51f981e3be92525966d28847dbc0d9982603bf90de"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -12959,22 +12594,6 @@
       ]
     },
     {
-      "name": "json-buffer",
-      "version": "3.0.1",
-      "license": "MIT",
-      "repository": "git://github.com/dominictarr/json-buffer.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "715f1f0f2eb7688e53e4e958acdc7fc9e365ae3eaf26efc2604b93cc65fdc3f5"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "json-parse-even-better-errors",
       "version": "2.3.1",
       "license": "MIT",
@@ -13031,18 +12650,6 @@
       ]
     },
     {
-      "name": "json-stringify-safe",
-      "version": "5.0.1",
-      "license": "ISC",
-      "repository": "git://github.com/isaacs/json-stringify-safe",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
-        }
-      ]
-    },
-    {
       "name": "json5",
       "version": "2.2.3",
       "license": "MIT",
@@ -13055,22 +12662,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "09ebd9927f40b8b47880fa9ad15bd2e09ca95a6d52668767c2b0f01550920357"
-        }
-      ]
-    },
-    {
-      "name": "jsonfile",
-      "version": "4.0.0",
-      "license": "MIT",
-      "repository": "git@github.com:jprichardson/node-jsonfile.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "e61af02e143359d84791b8386297b57a0739d9f545e253757bec1ef00952ca23"
         }
       ]
     },
@@ -13147,22 +12738,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "1a7471ca96e17d08d390ff3b0c23ccbbff29390483add7577ae75c799d494b59"
-        }
-      ]
-    },
-    {
-      "name": "keyv",
-      "version": "4.5.4",
-      "license": "MIT",
-      "repository": "git+https://github.com/jaredwray/keyv.git",
-      "notices": [
-        {
-          "member": "README.md (license section)",
-          "sha256": "7c52c9115673b3e47e2a78c9c911558b7b2f23b144a3927e5fa862e1409727ba"
-        },
-        {
-          "member": "https://registry.npmjs.org/keyv/4.5.4",
-          "sha256": "6f7e6eae2a2afbaa67b266650f7342e7bf8e82cb57f6ab98148b3d6e0fb4450a"
         }
       ]
     },
@@ -13287,18 +12862,6 @@
       ]
     },
     {
-      "name": "lazy-val",
-      "version": "1.0.5",
-      "license": "MIT",
-      "repository": "develar/lazy-val",
-      "notices": [
-        {
-          "member": "https://registry.npmjs.org/lazy-val/1.0.5",
-          "sha256": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a"
-        }
-      ]
-    },
-    {
       "name": "lexical",
       "version": "0.42.0",
       "license": "MIT",
@@ -13399,18 +12962,6 @@
       ]
     },
     {
-      "name": "lodash.escaperegexp",
-      "version": "4.1.2",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
       "name": "lodash.identity",
       "version": "3.0.0",
       "license": "MIT",
@@ -13419,18 +12970,6 @@
         {
           "member": "LICENSE.txt",
           "sha256": "2b61a34ef17beffb1e555efa8b46110d25398d47f2e88b2cacc46f8bd382c639"
-        }
-      ]
-    },
-    {
-      "name": "lodash.isequal",
-      "version": "4.5.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "e159c6d48c989185448658f276375bfb2300362ec6d4ae5525a2d49c4bcb947d"
         }
       ]
     },
@@ -13519,22 +13058,6 @@
         {
           "member": "LICENSE.md",
           "sha256": "9d8d4d8b4bb99572ee8b51025a30b8493d949798cac465c6c15b1b29420bcb06"
-        }
-      ]
-    },
-    {
-      "name": "lowercase-keys",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "sindresorhus/lowercase-keys",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "0b8c7c0c5579b689ab841976b473ebe9269aa46347fc1295431e0fc3f2452d36"
         }
       ]
     },
@@ -13691,18 +13214,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "9432aa108cccae3962e4d284c49478ba528fb74e0fb68c4af719e8a338bb15da"
-        }
-      ]
-    },
-    {
-      "name": "matcher",
-      "version": "3.0.0",
-      "license": "MIT",
-      "repository": "sindresorhus/matcher",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
         }
       ]
     },
@@ -14699,34 +14210,6 @@
       ]
     },
     {
-      "name": "mimic-response",
-      "version": "1.0.1",
-      "license": "MIT",
-      "repository": "sindresorhus/mimic-response",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "0b8c7c0c5579b689ab841976b473ebe9269aa46347fc1295431e0fc3f2452d36"
-        }
-      ]
-    },
-    {
-      "name": "mimic-response",
-      "version": "3.1.0",
-      "license": "MIT",
-      "repository": "sindresorhus/mimic-response",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
       "name": "minimatch",
       "version": "10.2.5",
       "license": "BlueOak-1.0.0",
@@ -14751,22 +14234,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "cc15cc37a1fb93f68ce0b84d0333571b35870e10fb441e7b8c2cc93c11e2829d"
-        }
-      ]
-    },
-    {
-      "name": "mitt",
-      "version": "3.0.1",
-      "license": "MIT",
-      "repository": "developit/mitt",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "1cab22f196264195a4caec8ca5630170fdde76ee8f43346e47021d087332d3b0"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "23f29ca7271409b35761a333311e24dd1dc6b62bea91fd7c80b2bc753f3b1b8f"
         }
       ]
     },
@@ -15079,18 +14546,6 @@
       ]
     },
     {
-      "name": "normalize-url",
-      "version": "6.1.0",
-      "license": "MIT",
-      "repository": "sindresorhus/normalize-url",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
-        }
-      ]
-    },
-    {
       "name": "npm-run-path",
       "version": "4.0.1",
       "license": "MIT",
@@ -15155,18 +14610,6 @@
         {
           "member": "readme.markdown (license section)",
           "sha256": "04694eacd112f4a979f1dd1c7a1c365ea2d721f505eb0464bd05838d80933c34"
-        }
-      ]
-    },
-    {
-      "name": "object-keys",
-      "version": "1.1.1",
-      "license": "MIT",
-      "repository": "git://github.com/ljharb/object-keys.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "5640e5cbe2e9f57f6ccfdd8dbfbeadb875495bdbcb69d2666ce3177ccd0942e4"
         }
       ]
     },
@@ -15327,18 +14770,6 @@
         {
           "member": "LICENSE",
           "sha256": "d06a69cefbdd9135436ff8e36ea5c32f07fc27c629063aa411f811efe7c30359"
-        }
-      ]
-    },
-    {
-      "name": "p-cancelable",
-      "version": "2.1.1",
-      "license": "MIT",
-      "repository": "sindresorhus/p-cancelable",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
         }
       ]
     },
@@ -16027,22 +15458,6 @@
       ]
     },
     {
-      "name": "progress",
-      "version": "2.0.3",
-      "license": "MIT",
-      "repository": "git://github.com/visionmedia/node-progress",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "d7d2a7786de7c7cfd96f920c6f12927d74e1d2a861ca4498bf465c3bc3f4c21c"
-        },
-        {
-          "member": "Readme.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "prompts",
       "version": "2.4.2",
       "license": "MIT",
@@ -16051,22 +15466,6 @@
         {
           "member": "license",
           "sha256": "ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d"
-        }
-      ]
-    },
-    {
-      "name": "prop-types",
-      "version": "15.8.1",
-      "license": "MIT",
-      "repository": "facebook/prop-types",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "ca980af9aad75880631440fc14082e1a217b1ea3e615cf715469468bee6a8ef4"
         }
       ]
     },
@@ -16171,22 +15570,6 @@
       ]
     },
     {
-      "name": "pump",
-      "version": "3.0.4",
-      "license": "MIT",
-      "repository": "git://github.com/mafintosh/pump.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3fe8d55a98dbf260eace67c00cf9bc53edb46234e840098a0b93df3096b97fb6"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "qrcode",
       "version": "1.5.4",
       "license": "MIT",
@@ -16227,18 +15610,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "a3c7d5b41af742dce5b55e0b2cb165c39b857e3d48e51ed2ee1e66afe3b82887"
-        }
-      ]
-    },
-    {
-      "name": "quick-lru",
-      "version": "5.1.1",
-      "license": "MIT",
-      "repository": "sindresorhus/quick-lru",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
         }
       ]
     },
@@ -16355,18 +15726,6 @@
         {
           "member": "LICENSE",
           "sha256": "2cdb493db15b320c5787535f9dadd37b13cae6fe0a1cdd7849ccfbce70c389fd"
-        }
-      ]
-    },
-    {
-      "name": "react-is",
-      "version": "16.13.1",
-      "license": "MIT",
-      "repository": "https://github.com/facebook/react.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
         }
       ]
     },
@@ -16895,22 +16254,6 @@
       ]
     },
     {
-      "name": "resolve-alpn",
-      "version": "1.2.1",
-      "license": "MIT",
-      "repository": "git+https://github.com/szmarczak/resolve-alpn.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "03b347a3d13b0e5bdb8fc5edeed0286b1be51441c6490a90710692d227136e0d"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "resolve-from",
       "version": "4.0.0",
       "license": "MIT",
@@ -16923,22 +16266,6 @@
         {
           "member": "readme.md (license section)",
           "sha256": "0b8c7c0c5579b689ab841976b473ebe9269aa46347fc1295431e0fc3f2452d36"
-        }
-      ]
-    },
-    {
-      "name": "responselike",
-      "version": "2.0.1",
-      "license": "MIT",
-      "repository": "https://github.com/sindresorhus/responselike.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "2c4e066228dbca96c8c6e8bef5377306f227ffa1d87a18a218b230e13ac5d39e"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "4f6bff47d23de042c99fb8f97a4a4193390d0f7fef2443b6aef8945aa8147b79"
         }
       ]
     },
@@ -16999,18 +16326,6 @@
       ]
     },
     {
-      "name": "roarr",
-      "version": "2.15.4",
-      "license": "BSD-3-Clause",
-      "repository": "git@github.com:gajus/roarr.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ba98e94118579117505f6f11fd9a4354c5e65ece03b4898d8b8f7785efcd25c1"
-        }
-      ]
-    },
-    {
       "name": "robust-predicates",
       "version": "3.0.3",
       "license": "Unlicense",
@@ -17055,42 +16370,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "5ca52667d17b1f17d424c5dcc5564d9783f6c8e88cb38d4a1628132fcf22d57e"
-        }
-      ]
-    },
-    {
-      "name": "rrdom",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/rrweb-io/rrweb.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/rrweb-io/rrweb/rrdom%402.0.0/LICENSE",
-          "sha256": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c"
-        }
-      ]
-    },
-    {
-      "name": "rrweb-snapshot",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/rrweb-io/rrweb.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/rrweb-io/rrweb/rrweb-snapshot%402.0.0/LICENSE",
-          "sha256": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c"
-        }
-      ]
-    },
-    {
-      "name": "rrweb",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git+ssh://git@github.com/rrweb-io/rrweb.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/rrweb-io/rrweb/rrweb%402.0.0/LICENSE",
-          "sha256": "e49e62397b603438476e0d6b5ca3b6e6d4f23a80594e596aff29ac04fa3e1b1c"
         }
       ]
     },
@@ -17203,22 +16482,6 @@
       ]
     },
     {
-      "name": "semver-compare",
-      "version": "1.0.0",
-      "license": "MIT",
-      "repository": "git://github.com/substack/semver-compare.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b"
-        },
-        {
-          "member": "readme.markdown (license section)",
-          "sha256": "4d8a73c1024e09c8b323a225d3a7880156ba5a4b9a8d56c9f4fd4202384b110f"
-        }
-      ]
-    },
-    {
       "name": "semver",
       "version": "6.3.1",
       "license": "ISC",
@@ -17255,18 +16518,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "6acb5236fdb284e239fdd9aa3e939067b28373d09c241ce7aab38d2d01f0e495"
-        }
-      ]
-    },
-    {
-      "name": "serialize-error",
-      "version": "7.0.1",
-      "license": "MIT",
-      "repository": "sindresorhus/serialize-error",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
         }
       ]
     },
@@ -17631,22 +16882,6 @@
       ]
     },
     {
-      "name": "sprintf-js",
-      "version": "1.1.3",
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/alexei/sprintf.js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f8287e4dd9480be58c56aca4a55c23b782c43a86e69aabad78fff4df0d29edef"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "b0103765a1ddbb08ac290cf214f00caabac645d7f8702d22677d0b766f7b7729"
-        }
-      ]
-    },
-    {
       "name": "ssh2",
       "version": "1.17.0",
       "license": "MIT",
@@ -17875,6 +17110,18 @@
       ]
     },
     {
+      "name": "style-mod",
+      "version": "4.1.4",
+      "license": "MIT",
+      "repository": "git+https://code.haverbeke.berlin/marijn/style-mod.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "cb4474e26547397169061d3586c00022cda5330a1b64fa13e872319f3b63aff1"
+        }
+      ]
+    },
+    {
       "name": "style-to-js",
       "version": "1.1.21",
       "license": "MIT",
@@ -17919,18 +17166,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "0ce5ffaadf384c9e64046fffa70faec61ac66c66af562682b16566a99be9e228"
-        }
-      ]
-    },
-    {
-      "name": "sumchecker",
-      "version": "3.0.1",
-      "license": "Apache-2.0",
-      "repository": "git+https://github.com/malept/sumchecker.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
         }
       ]
     },
@@ -18035,18 +17270,6 @@
         {
           "member": "LICENSE",
           "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f"
-        }
-      ]
-    },
-    {
-      "name": "tiny-typed-emitter",
-      "version": "2.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/binier/tiny-typed-emitter.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "4b3faf884ee71eec3df920b66c98fc6618af28e824cf3a32ef3d8774048cc76d"
         }
       ]
     },
@@ -18312,22 +17535,6 @@
     },
     {
       "name": "type-fest",
-      "version": "0.13.1",
-      "license": "(MIT OR CC0-1.0)",
-      "repository": "sindresorhus/type-fest",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "64a93ffc0a06a2266dbb57ed7ebe3b56ba66ab337b6347fabdbf86c76819fbae"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "ee8ce2b628da002780228222081dd7353fb050ca452de937983a369a1d80c418"
-        }
-      ]
-    },
-    {
-      "name": "type-fest",
       "version": "5.5.0",
       "license": "(MIT OR CC0-1.0)",
       "repository": "sindresorhus/type-fest",
@@ -18439,18 +17646,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "d274cc11a7f8b98caff978f6b5acdfd72de3ba6a2c3c20ea3bd984fcde194201"
-        }
-      ]
-    },
-    {
-      "name": "undici-types",
-      "version": "7.16.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/nodejs/undici.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
         }
       ]
     },
@@ -18643,22 +17838,6 @@
         {
           "member": "readme.md (license section)",
           "sha256": "3d0339f36ada73cc5c1832994ec0be2c9e77e3a91afad459af826df73a82616a"
-        }
-      ]
-    },
-    {
-      "name": "universalify",
-      "version": "0.1.2",
-      "license": "MIT",
-      "repository": "git+https://github.com/RyanZim/universalify.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -19163,6 +18342,18 @@
       ]
     },
     {
+      "name": "w3c-keyname",
+      "version": "2.2.8",
+      "license": "MIT",
+      "repository": "git+https://github.com/marijnh/w3c-keyname.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "869c30f368eb08735e779027b9f4bc9fea2f39624351856aebe42741f0bc0884"
+        }
+      ]
+    },
+    {
       "name": "warning",
       "version": "4.0.3",
       "license": "MIT",
@@ -19211,22 +18402,6 @@
         {
           "member": "LICENSE",
           "sha256": "5f9cf9fb6acb1972b35ae29119ce563bb60ec097656bc4b69b9bac2d04c7a147"
-        }
-      ]
-    },
-    {
-      "name": "web-vitals",
-      "version": "3.5.2",
-      "license": "Apache-2.0",
-      "repository": "https://github.com/GoogleChrome/web-vitals.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "bfdeded4040e05da31ca9b6239dc83bd23fa26ac8db87342a7ca4363f68916ff"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "43aaa4efe24cac3b61a9626d2ec1316b634457f90919fff757c299c090d6595f"
         }
       ]
     },
@@ -19572,18 +18747,6 @@
     },
     {
       "name": "yauzl",
-      "version": "2.10.0",
-      "license": "MIT",
-      "repository": "https://github.com/thejoshwolfe/yauzl.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "b303783d5eb7ca50b853ffa5f145e4e7998fab339831d848f507ca6cd970577a"
-        }
-      ]
-    },
-    {
-      "name": "yauzl",
       "version": "3.3.0",
       "license": "MIT",
       "repository": "git+https://github.com/thejoshwolfe/yauzl.git",
@@ -19790,7 +18953,7 @@
         },
         {
           "file": "packages/ui/src/components/ui/ZCodeAboutLogo.tsx",
-          "sha256": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a"
+          "sha256": "8989ee68418e043dbdf5170ab8124c0db48fb6e85270941f1e26f57b0fb81859"
         },
         {
           "file": "packages/ui/src/components/ui/accordion.tsx",
@@ -19835,6 +18998,10 @@
         {
           "file": "packages/ui/src/components/ui/checkbox.tsx",
           "sha256": "5b3cb5612ed7654218e1cdd86fc41c7b490475721948d50a603996133245bace"
+        },
+        {
+          "file": "packages/ui/src/components/ui/code-editor.tsx",
+          "sha256": "d74b3290e5716713288b4fb1cae2c5433f980c0a857806312bfefb25f4c57cb4"
         },
         {
           "file": "packages/ui/src/components/ui/code-viewer.tsx",
@@ -19978,7 +19145,7 @@
         },
         {
           "file": "packages/ui/src/styles.css",
-          "sha256": "793515ed9a255acb0a954446d579d15030d206fe41bbd3c67a7aac857a6f65ef"
+          "sha256": "97cf7ed2bb6799dfe9d2163dca369cdd31d339cc7925ca2b838dd87ff7f977ec"
         }
       ]
     },
@@ -20140,15 +19307,15 @@
       "files": [
         {
           "file": "packages/ui/src/components/ai-elements/agent.tsx",
-          "sha256": "830e7ea9e927de1524851337f1d35bda0e5690e3e4fa307fff854b60006b16c7"
+          "sha256": "220b3b3ad1b546b8268b134954832e63ace53b103799b94edb9556e70619cd9f"
         },
         {
           "file": "packages/ui/src/components/ai-elements/artifact.tsx",
-          "sha256": "7d73f08864d6280ac86c77d32e56d0e702f8aa6208e5910820139d0fb08ce64c"
+          "sha256": "30e1771d24fb0cd18edcd9f0afe76424b831b520a2bf3eeb8eeda2a177409573"
         },
         {
           "file": "packages/ui/src/components/ai-elements/attachments.tsx",
-          "sha256": "7a847ce6c8ac9dc630481a82dd20a5e9e00949bf710a41fea1d32a18123011d8"
+          "sha256": "cd86b650dffddd0d2497be025372232feb0cd0e5be673144ed23acf09efcbaf8"
         },
         {
           "file": "packages/ui/src/components/ai-elements/audio-player.tsx",
@@ -20168,35 +19335,35 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/checkpoint.tsx",
-          "sha256": "72459f6fb8668e9245ec32542f92c7de809cc9b5a366bb44ab08f91ea4e1255b"
+          "sha256": "e8efbce587c5ad545dc58ee47ed76820ec6ee188b816e94ade4e9320d28fb7f3"
         },
         {
           "file": "packages/ui/src/components/ai-elements/code-block.tsx",
-          "sha256": "ae4f975537ebb9c8ef905b7b9de39bc37180f81511bffc027dc4da1929037f18"
+          "sha256": "956cc860deadd9c3c9af9d445969b302aa7c454e13d01e5dcb146633509d18dc"
         },
         {
           "file": "packages/ui/src/components/ai-elements/commit.tsx",
-          "sha256": "e9f5dcffac4ec7702b6d77b41cfc28fab54f0595375dd2c992dc972c0a9e74d2"
+          "sha256": "2697b315c4b70e95ac6b473db0bc2fc06983efdb22e0b24ce124c748932434ea"
         },
         {
           "file": "packages/ui/src/components/ai-elements/confirmation.tsx",
-          "sha256": "bb39ae89d5550f4ffcbb36e73dc8b75d1c9930f0fdba28cc8ff135d753b65a9b"
+          "sha256": "932a355572e7507b853fde910dbf761f2601f6b37a6f24202191bd01fd9ed98f"
         },
         {
           "file": "packages/ui/src/components/ai-elements/connection.tsx",
-          "sha256": "6e6cf65efcef612a3d14f5fda69e27009bc06046d1f7aa842a1a93b9142a7f81"
+          "sha256": "b3c864abc893d31a32bfa307d6274c63ebd6a4c930ed62427771a39506e3f3ef"
         },
         {
           "file": "packages/ui/src/components/ai-elements/context.tsx",
-          "sha256": "9f9a766dcab0010b1483b5276f9d5f4b4c3b31bd85434731fc7ce4d8bf9913f7"
+          "sha256": "3ec27303a3d41dd5dc41ee4a0b3a47c3e59fe8c8894667f48089a14d8fea820e"
         },
         {
           "file": "packages/ui/src/components/ai-elements/controls.tsx",
-          "sha256": "3123e9cb668171780944fb91632c68977617ae4ef46312540c1f7ddecc3fc568"
+          "sha256": "50b191aceb3f4b2c500c5b466e081f0905baf97e846ba9397f3bb6ce1721d6f2"
         },
         {
           "file": "packages/ui/src/components/ai-elements/conversation.tsx",
-          "sha256": "1fda6a3c198ae104e8736b70992e9ce8549f667a942246d9a9762be8f4431e3a"
+          "sha256": "bf26bd6100ef33d38d1f567c658848fd0c94dddf2b757559a3277d08c6922115"
         },
         {
           "file": "packages/ui/src/components/ai-elements/diagram-preview-dialog.tsx",
@@ -20204,7 +19371,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/edge.tsx",
-          "sha256": "661a25632f0879b8363f22e6b99198a6d37ad622781c798c090fcad9b591b181"
+          "sha256": "d4241040f5070e4ccaaf37c59d8af645133475ef7ad25f9e659606b78ccd032b"
         },
         {
           "file": "packages/ui/src/components/ai-elements/environment-variables.tsx",
@@ -20224,7 +19391,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/image.tsx",
-          "sha256": "1c6f9595ef814c4ef9648607562fa77a3007f7d857571f8e107a24022fe83e24"
+          "sha256": "71d3b5335de1fe2d9c1d28a15ca1dbd576e67e7a7ef1ad38768691ad680df8b6"
         },
         {
           "file": "packages/ui/src/components/ai-elements/inline-citation.tsx",
@@ -20256,7 +19423,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/message.tsx",
-          "sha256": "6c35829ed11321e850cd59e20c1c88fdd452e8e2d9b5da45f808371021aabf99"
+          "sha256": "036d763b16606c493c35f9d61e445fd99155e43ba0e74da1b9a69240d8e23867"
         },
         {
           "file": "packages/ui/src/components/ai-elements/mic-selector.tsx",
@@ -20268,7 +19435,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/node.tsx",
-          "sha256": "d7b68c41717a509bd9063f0a9fc0c4525ceb2b23bae4028bcd49ec949fc6268f"
+          "sha256": "00eb205ef4fe438032d75a740684b80f633ee63f5774edf7ff5eadb55499af63"
         },
         {
           "file": "packages/ui/src/components/ai-elements/open-in-chat.tsx",
@@ -20280,47 +19447,47 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/panel.tsx",
-          "sha256": "9c345ecb217fbb6a3a2b49b93ca81b746f249d18b9223470fbf511c0a9a37bb7"
+          "sha256": "068a63576e655646cd58bde95d95ffc253163ff8eed35aa4397239c78df4b10e"
         },
         {
           "file": "packages/ui/src/components/ai-elements/persona.tsx",
-          "sha256": "c796e1aa0f85395138eda5e4c7ffc7dac5321690b3f6949f73c7b3ebe8d52808"
+          "sha256": "991317f69c198854d16d05f891657c9f08f9caa9607330a53161f934839594ec"
         },
         {
           "file": "packages/ui/src/components/ai-elements/plan.tsx",
-          "sha256": "576b2ee1a9546f9e30f2512bb2e097babca71ca35a2820c0be4c93caef600622"
+          "sha256": "70eab0332fa7f8d3bb21a022169f08aac4536d999134705aa81cf1e248a51abc"
         },
         {
           "file": "packages/ui/src/components/ai-elements/prompt-input-actions.tsx",
-          "sha256": "198df66e5883016d542b4dfbfb12d050992febf53ccdcd712a289fbdd7a48a56"
+          "sha256": "e7a134cf697222e706dc676db46b4381d68596e84f7312f21995bf7eeb16cf3b"
         },
         {
           "file": "packages/ui/src/components/ai-elements/prompt-input-buttons.tsx",
-          "sha256": "b1c2a6ded9a2866946d08691072a4dacb59ecdce761baba7ee06f02e1e117185"
+          "sha256": "ffcfdb6a7e966384ed78e1882d611d694bc02e22f47051657cf8bf002663961d"
         },
         {
           "file": "packages/ui/src/components/ai-elements/prompt-input-primitives.tsx",
-          "sha256": "2412c8a868445a649264724ef8c6b75a97eb87aa3f790ca012c8e6a8b460a632"
+          "sha256": "d75061c5fbf98e031553ef4f329055c806bb746e0460e0a209e0cd94bada5284"
         },
         {
           "file": "packages/ui/src/components/ai-elements/prompt-input-textarea.tsx",
-          "sha256": "4798574a8f2fc8584a1c5585d9dd878dd19d76bd05603e77948ec12180649def"
+          "sha256": "870e0a972436d73ff5113ada62c2dfbf170a87a4b526009cd3ec94326fa1f92c"
         },
         {
           "file": "packages/ui/src/components/ai-elements/prompt-input.tsx",
-          "sha256": "68a92e07c27774e9c1d63bccd12ec3ff38b4f89dd245b20bfffbbd052e6101c4"
+          "sha256": "a98bfeb59b773fcf10a4930823ca9718e7056fcb633cb00b09a858548964ce5b"
         },
         {
           "file": "packages/ui/src/components/ai-elements/queue.tsx",
-          "sha256": "9d84f6e15708519ec65e258d9843dc5f4d76f106fc85155f7dcf51f89474b695"
+          "sha256": "76aa116b85b2676f7768e977aa278a88fa2d392d241f4884d01d9da80ce76061"
         },
         {
           "file": "packages/ui/src/components/ai-elements/reasoning.tsx",
-          "sha256": "a10a38c7b3ca633e9b5480ad94f9c7a1fdd52bc5526ae0801e3e6ed141f2b604"
+          "sha256": "0589a0007bbe3ade11a08850082d29849c265ea04647c9bb83d0d4acbebad91d"
         },
         {
           "file": "packages/ui/src/components/ai-elements/sandbox.tsx",
-          "sha256": "f521400dbaebe4c2a2fbcdcb8c18f98980c566169233beb137b22a093b44bbf0"
+          "sha256": "5a5000bffbe5673809175a6d30be96957690fb97642876058803c46c1b57eee6"
         },
         {
           "file": "packages/ui/src/components/ai-elements/schema-display.tsx",
@@ -20328,15 +19495,15 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/shimmer.tsx",
-          "sha256": "5d06ffdff80a13453a0b61b67f588c48d838a20d9be2cd319ca2a97d441b3127"
+          "sha256": "1978af51aa7fbead934873046fd73091f66a872c1e895a46a6bc15bc54301a43"
         },
         {
           "file": "packages/ui/src/components/ai-elements/snippet.tsx",
-          "sha256": "6f369f0bb3308166ccd55f39dd542f7315873c5bd6de2491ffccc26b0700edfe"
+          "sha256": "b460b9349a88620e123569e75b0d27b973300b238dcf120515cbb6b9d8af96d5"
         },
         {
           "file": "packages/ui/src/components/ai-elements/sources.tsx",
-          "sha256": "cd5a9a20dc50b66f9d114b9a0ced1dd2eb8815040cccd4c577b386ef18bed435"
+          "sha256": "cda65c74a6931ecf168e4e3e97a3cb72bcd18974e93737c5b2de1d40146d7147"
         },
         {
           "file": "packages/ui/src/components/ai-elements/speech-input.tsx",
@@ -20352,27 +19519,27 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/suggestion.tsx",
-          "sha256": "e92b5cdbf1a7868a42f4cb00d172cd8558543dbeb59ebdd192598c6333ea635f"
+          "sha256": "56c042a4c51c80be6ea1b20d576eae2bf6d7703c9b5ff9d1fc392cebb0b4445c"
         },
         {
           "file": "packages/ui/src/components/ai-elements/task.tsx",
-          "sha256": "89f8110b326bd86afd71d17db79c36d86ada09d9f58401cc01aa47e16667926d"
+          "sha256": "c62c780cb1e136d1cdc442be3c1cb9b9a4d33c014bfd873b39b2c7a87209c2f8"
         },
         {
           "file": "packages/ui/src/components/ai-elements/terminal.tsx",
-          "sha256": "da19fdbdeaaf682b50db23ccd8ba2a5fc6fa43dc2337bd1a3a0c4b8f52677f44"
+          "sha256": "6668c631c4ea19ad87100365a24169900aa87398287ae91c5870fc24b4dc8c67"
         },
         {
           "file": "packages/ui/src/components/ai-elements/test-results.tsx",
-          "sha256": "8e12e551516048a877ca94c92c4979ecd6e4f2eb0042e465a3a23fc805ae7449"
+          "sha256": "a41add6a7da18ad15fa86e45c6b481e5cbb3c7256814a95b768caf9d9733c9bb"
         },
         {
           "file": "packages/ui/src/components/ai-elements/tool.tsx",
-          "sha256": "c4ca6fee5ecb3cfa597e8e99a2786c1bca28a6af36c4e8d05626b979e0f5963c"
+          "sha256": "dc721717ce9ece497ac88422cc90842672085156338936c131efbd7b55ca6dcb"
         },
         {
           "file": "packages/ui/src/components/ai-elements/toolbar.tsx",
-          "sha256": "4bf1d6677248001166eb640a264ea7dc8750d609a01119e6aaf161ef74c0a245"
+          "sha256": "ab381d81fc3c8ab7f6d9b47eb45e916a711c46550aa70a919a21584f3d3de847"
         },
         {
           "file": "packages/ui/src/components/ai-elements/transcription.tsx",
@@ -20388,219 +19555,219 @@
         },
         {
           "file": ".agents/skills/ai-elements/SKILL.md",
-          "sha256": "fcb3e87c9521cb956943de7531318dd0761bd31c04fca12099ce30021471c6f7"
+          "sha256": "96b4158b39b40f1a81061c71cb5ea4bcff8eb4b9215ad3b56f79b3bee4b43cb7"
         },
         {
           "file": ".agents/skills/ai-elements/references/agent.md",
-          "sha256": "55e0b5e1c5459112da444cd5d5b315a3be87827d209dc91d85a9fdb7204d1de1"
+          "sha256": "3d568c5124763ec368725e2620a27905f3da21d168aab448c456e69affe78455"
         },
         {
           "file": ".agents/skills/ai-elements/references/artifact.md",
-          "sha256": "b8e2c9c5c9803828b30f6df2eb0e3b7ac8a0e287d96688e48bccf57525c2747b"
+          "sha256": "ea80e4abb4f3d7044eaadc076e89b7ce33d350e4d1fdbeaa266c3aeb1cfbc868"
         },
         {
           "file": ".agents/skills/ai-elements/references/attachments.md",
-          "sha256": "5cadca1e185fcc1adc31b913da602e0b5d2a038430e8262fe743edd14475213e"
+          "sha256": "b27228bc23fe412f52904d451895540897aa0369537cbc5ce704706c788fff7b"
         },
         {
           "file": ".agents/skills/ai-elements/references/audio-player.md",
-          "sha256": "7f5eb5d35c2a20032a748293009629db5257b70e32e567c63fdfd8c7bab1e561"
+          "sha256": "32d39a73b9617e137b38cc00dc321130cdb21bc6c1169922258c0f26d82d3c18"
         },
         {
           "file": ".agents/skills/ai-elements/references/canvas.md",
-          "sha256": "cea6d3031128b12b093aa7773ac186b276420d962af34daf1be7789b8899fe48"
+          "sha256": "79010f71f7774f2f77a29d3238dfab6aba159b273fe8b4eda33179b3b974e158"
         },
         {
           "file": ".agents/skills/ai-elements/references/chain-of-thought.md",
-          "sha256": "7649426315c55f59471412d28a08eafe3f52677b553b2bf96b8f015e5f8cb813"
+          "sha256": "b9f3f1db67c6a766dd5bf23b62ea10d4bbf4bca600995f98e391e002e0f092c6"
         },
         {
           "file": ".agents/skills/ai-elements/references/checkpoint.md",
-          "sha256": "7da3a4eef21694b65470f32cea1bff863088d53cb0ede4071571784d792e25df"
+          "sha256": "a609978f89f53e1af9083a635dcbe40eeea544a24e5c7963045c55be449eb6ea"
         },
         {
           "file": ".agents/skills/ai-elements/references/code-block.md",
-          "sha256": "8d8408b93ecc9083bf15c759cc10635981ea340ea9b6689db5bd091fc091282a"
+          "sha256": "f1e004b189b990621c44949af7c189d7c130200c9ea2306870f10ddf16343c61"
         },
         {
           "file": ".agents/skills/ai-elements/references/commit.md",
-          "sha256": "674ca01a36c2b7213067fd4d74b70ced07d1459783da84d520c8cc67d247c927"
+          "sha256": "2918f192466916295e9c2cfa66282e92726e7da5e4ebf73ed94e5844bb71f224"
         },
         {
           "file": ".agents/skills/ai-elements/references/confirmation.md",
-          "sha256": "d6823cbbfe1c8ec71866638619d9a90301e592f7d9dfd2d2fd3267e670ac3738"
+          "sha256": "a80cb2c527c0aa1bda4b3c3b99c2f9cc7a43a192886b97434b9e0124103f97da"
         },
         {
           "file": ".agents/skills/ai-elements/references/connection.md",
-          "sha256": "d2666a168ae4c2e05ca867607efd7786a018ddc2e0329f57e5375f20ed8b9eed"
+          "sha256": "cd26ebd2fc4ab5bf1d05d3f127009950465521319b9a5e66a5560651e7a2deaa"
         },
         {
           "file": ".agents/skills/ai-elements/references/context.md",
-          "sha256": "a245c6102256f27404fdd1ced85fd97b18dd44898824b120ef0f16a1c732de82"
+          "sha256": "199ced0b7c25c1470f23e54148768ff943c3d6767c8d2dccf01141204fd98902"
         },
         {
           "file": ".agents/skills/ai-elements/references/controls.md",
-          "sha256": "e43c81c434651982e852844d79d8e43689e97ec62fd78a91d3c6f126d5b88f1b"
+          "sha256": "5954c819f72bfa37ac40ae2e77a9637bee08db7fbe4cd2727b89340ccc847f12"
         },
         {
           "file": ".agents/skills/ai-elements/references/conversation.md",
-          "sha256": "c3a42ea296a5874182228f6764f48467457aaac62ac1b7e10338d7643c42d434"
+          "sha256": "3df4c49537ab03cbaa10a40212efe8b30434959c3c7346999d2723fe3436e00e"
         },
         {
           "file": ".agents/skills/ai-elements/references/edge.md",
-          "sha256": "382fb053cb7474c7dbb728ed60b99f47b87940c3c4082dc0168268ba5883b27d"
+          "sha256": "4eda3f41cf8b2b129ae18cfe9348f883f1d2026dc334c2800b74112b3dd6861c"
         },
         {
           "file": ".agents/skills/ai-elements/references/environment-variables.md",
-          "sha256": "609daaa219dba9e1988348d402334096e2ab97830744cc741adaf4f4bcde130c"
+          "sha256": "c1702f69fca1c33434dbdf5382145e9cc706cd8122fe64cd56702973a8a0a823"
         },
         {
           "file": ".agents/skills/ai-elements/references/file-tree.md",
-          "sha256": "d1cf5189774e94c6719a3a53d3fe2e046e4e94008d696bf06770605584128364"
+          "sha256": "5bbb52619e946a80244491dbedfb7b1586746be133bb570ba1a79d7a944e285d"
         },
         {
           "file": ".agents/skills/ai-elements/references/image.md",
-          "sha256": "aa6797edee3227e5947dc9de023ce82a06a09f2c293d1aeacb706ad526e3e258"
+          "sha256": "486dbfc886624715bc9662f9cbba862ae008dd00963177d9301ea8c906e2c190"
         },
         {
           "file": ".agents/skills/ai-elements/references/inline-citation.md",
-          "sha256": "d1e08b9d8467f8c9a3ec371a16dad6435376706ff1ad73114350d5c258ee5ae5"
+          "sha256": "5663713253108c6863eddcaa93e122e60e4be6755a2410aa1eb284f6170e86c1"
         },
         {
           "file": ".agents/skills/ai-elements/references/jsx-preview.md",
-          "sha256": "aa612d450ff40a586564fc0d00eb9ba55234418fab43e526b76b6792704f9997"
+          "sha256": "601fb9a6fc1177470097d9a98d4df5169a8ddc371f39e7db0ce05b64cf9af735"
         },
         {
           "file": ".agents/skills/ai-elements/references/message.md",
-          "sha256": "ee59bc150672f3c6e9e92501d4ed316efd18e63da6c6166b2b510a3e46d7af9d"
+          "sha256": "ea0be95b29de41f14ca42732ebd63f623d1230ecdcb0f6d7fb07fcf311057314"
         },
         {
           "file": ".agents/skills/ai-elements/references/mic-selector.md",
-          "sha256": "77e85e5275e84fc7dca66ac5921239c90da76d27eec220705745642b7f4370f5"
+          "sha256": "1d5475e6f2f55a94d841b2c0edb7c7b15843ce9c747ddd9571d46432c2ad79f1"
         },
         {
           "file": ".agents/skills/ai-elements/references/model-selector.md",
-          "sha256": "1f19d651fe082793c8e58f0898be4a2d1dd20406fce7c943c5619e97c4706916"
+          "sha256": "72695a481fd57c872897338030f6ad6345756bfe1189104b2c3bbac41a9f7897"
         },
         {
           "file": ".agents/skills/ai-elements/references/node.md",
-          "sha256": "b8b5398b8baff3310c8828db698c28c1c83b2e346dc484d8fcb41597572f6859"
+          "sha256": "1b87d4e229ea87e33ca0be0abbd42747c0c0ff282e16c7b406345d15874cfcae"
         },
         {
           "file": ".agents/skills/ai-elements/references/open-in-chat.md",
-          "sha256": "9f0bb1d24b47ee1f59201ef1f2ebf1b8c766c8ae0e029c362d652b09b85050f9"
+          "sha256": "95d99d08d25a60c3af0a83ab90883a2748ec86f3ff972ef19a6a02f9641e4cfc"
         },
         {
           "file": ".agents/skills/ai-elements/references/package-info.md",
-          "sha256": "56072a983268a57fd44a3f7a8353be62f9c1be88e0c2dee2fc06826119f93e4e"
+          "sha256": "57a51e764155d3028fab4c60b8260b0cec5046fa8b6864d018ac722fa3ed9308"
         },
         {
           "file": ".agents/skills/ai-elements/references/panel.md",
-          "sha256": "ed6e8fe5398c95af5e2247b1367dbc56cf7c34071d7217c56324d7259dae607c"
+          "sha256": "525e452670fc9f70f247633404bbba52733e907bf451109feb169ce9a0063bcb"
         },
         {
           "file": ".agents/skills/ai-elements/references/persona.md",
-          "sha256": "59fb2bd9ae826056e113ccdc97e5bcb6e559993e9eef53f4b1af86ae3c8764f1"
+          "sha256": "7eee03ce529418633f3165f777085d4887bee72c0eeb2382277d7aaf3d7b6e47"
         },
         {
           "file": ".agents/skills/ai-elements/references/plan.md",
-          "sha256": "cfaef136b64a185efb3a59e6207c4f58061e96370b5e0930be537e202163a0c1"
+          "sha256": "6abb1838ec2102a6ed41238fc5869f677c746a7d9bd20a86ad2fd616a595e63d"
         },
         {
           "file": ".agents/skills/ai-elements/references/prompt-input.md",
-          "sha256": "468924ec8800eafa5c19960874540b8ef762bd42ab9cb39f85d3b9af4fbd1a3c"
+          "sha256": "400b23be34c41b93c69145bb02bfb6e802e0f87a582b99397d24687972291397"
         },
         {
           "file": ".agents/skills/ai-elements/references/queue.md",
-          "sha256": "0455f224d9224cc2fa8002441cd5728809c1c5508b8c33b4aaec474be3808d6c"
+          "sha256": "e22929b0c61992ce84ecbee4c302977d5c53bb05e597f851edff00659954fa03"
         },
         {
           "file": ".agents/skills/ai-elements/references/reasoning.md",
-          "sha256": "ef40f6f88e7c4d6131b4864adc89bfd9caa70d9e9ca418a0804140ebf3c82172"
+          "sha256": "8dce4de1806c298beae795b2f1b1e1e14db58c8b3966f8a7d532368035a7e521"
         },
         {
           "file": ".agents/skills/ai-elements/references/sandbox.md",
-          "sha256": "e614b816e98bc042954afe13fd02fa62438460fd558ef4e4208144962366f032"
+          "sha256": "873d751aff106dc6710386f18d5ae50b9148579ae0430411e4c1d4d21f36aa19"
         },
         {
           "file": ".agents/skills/ai-elements/references/schema-display.md",
-          "sha256": "43e823786db5881ad2c5a52109521d28c018e3bc46fafdc60266b1f82263d4e0"
+          "sha256": "795d181381b9b8eacf04032dbf6dfc04b4358eb86c892d4eeb18a512f479fcb9"
         },
         {
           "file": ".agents/skills/ai-elements/references/shimmer.md",
-          "sha256": "b690886d94fe379535f49d8601c68dc3581b46876afe72e49b2d55e357a24639"
+          "sha256": "9bfc5341f8f41b5e99c250ef618cabdeaf96d5b47340fd152172bb21e581dc7f"
         },
         {
           "file": ".agents/skills/ai-elements/references/snippet.md",
-          "sha256": "a6d9093ae3a3e84f35d050cb1856b063071d6e0528624685f39f39549d176501"
+          "sha256": "2e2653a5d2ce65bb4867e21d7ebff1a714cff327eaf9b2da9484083d7ece395f"
         },
         {
           "file": ".agents/skills/ai-elements/references/sources.md",
-          "sha256": "5798e7d8a6ebc375645d292144a9fb720df236fb5bb4b4a6900213617c857063"
+          "sha256": "97acbc4ff962593e0109c6799e3b25d6c7db65f911addb8ea32c4dd17c5059c7"
         },
         {
           "file": ".agents/skills/ai-elements/references/speech-input.md",
-          "sha256": "6fb09689337bf7512d5ee8048710ea2b6989e32e4b6bfaf6175461ddace65baf"
+          "sha256": "c3bd6d135a6550e2a09a8bf7856faa953cdb2ffe4673b66b7d0db872d54f55f5"
         },
         {
           "file": ".agents/skills/ai-elements/references/stack-trace.md",
-          "sha256": "c1ad3d63333bfea1d04d7b5a640688bb48d8de2464850a1fd83047e2c0e8c373"
+          "sha256": "4429878e7694af3a17bf1ff467a9ecfb3de4a873aa5f0325deb0be42cc3c91ba"
         },
         {
           "file": ".agents/skills/ai-elements/references/suggestion.md",
-          "sha256": "ebc3e1cf885d4a6d81ca1bd897ff962b7a04ae5a84572cfa5a1cf4f4c950782e"
+          "sha256": "5155141c11aea6b9654722baed01cfc0bde8b670aa147166e2d6b63962f2ea9b"
         },
         {
           "file": ".agents/skills/ai-elements/references/task.md",
-          "sha256": "7c070e6b6ea9cfb668e9b69659b0391b38538bc8ec70a79ed5c279bd3dcdd6ef"
+          "sha256": "a48d5b7ac2d8bbd80e049491c2c7397b72471203110644713302026af1df33fc"
         },
         {
           "file": ".agents/skills/ai-elements/references/terminal.md",
-          "sha256": "1f514b8e910d55890fba1dede3dc77e1e97b0d0bc8bade8854f76480cc8b67a0"
+          "sha256": "26a9f70a2436119437cf4c00ee2d27c7c4342494d7cf87b71c9c920fe2d2559f"
         },
         {
           "file": ".agents/skills/ai-elements/references/test-results.md",
-          "sha256": "fd5972d0e665b637c24814495a4f8b5dc6b6ff4068f0d77e3634d45e47664416"
+          "sha256": "de1f5545bcf21566c3cfb1ffdfea9e69957931c1e725c8fe2cc52ec1f8c0beeb"
         },
         {
           "file": ".agents/skills/ai-elements/references/tool.md",
-          "sha256": "e7a5ca2665f1ddd25fb0d2addaa1c9d527075ed1bbd574a2ebb467ec84867953"
+          "sha256": "f320717f5ed5e8bf928c0ba3dd99b81adc9e44257dccd79cf83a2dba5ffd0f07"
         },
         {
           "file": ".agents/skills/ai-elements/references/toolbar.md",
-          "sha256": "8d6a86dc4a5a8ff3600cd9a6f4d2d81a262e830620bcb94f6dd8d9d789600bc6"
+          "sha256": "df69059007d39eec9341df8ee5c8f5fca1e730b81d61857080304f9b4929883f"
         },
         {
           "file": ".agents/skills/ai-elements/references/transcription.md",
-          "sha256": "3e389546669d515a8e1a08dcc132167b881a024eeaf71fb4259ddb500c68384e"
+          "sha256": "28876e1b82dc942a544111f0d21b0dd43de456d873e42471ca741f7d6c0412c5"
         },
         {
           "file": ".agents/skills/ai-elements/references/voice-selector.md",
-          "sha256": "b014b61c028b126db733c1e7e535bf4f3eb2d472c023a181faa2a7e136f2a83e"
+          "sha256": "7c9b8094b5990b9fc5afd4260d2016e2465f4d6c296020885e90564602822f82"
         },
         {
           "file": ".agents/skills/ai-elements/references/web-preview.md",
-          "sha256": "8f62f25ad412c461ed185d8d70baffabf93b97714caa3c66bf7432d1007df947"
+          "sha256": "8b91b1fa549e2ed9d41a27163df360e3ea3eb18fcfc5f0e8d2bb3404951fad5c"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/agent.tsx",
-          "sha256": "4652bca8c438d6c2714da6e13f42fe0f7a0a8ac9d99f52e02a4dd3e3efb2a2b8"
+          "sha256": "4e744c0f57587a733199c810fd29035f582a89aa7bd6f5bee323f4d9c3a4992c"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/artifact.tsx",
-          "sha256": "6eb6b05e469c7457eaee524d8b79c1eb68f8fbbcfbbcd54b5f96c32daf2f9f28"
+          "sha256": "3f7045bfb81d575ef0b1a6e14cb9129ea34b673172c7a7f972d47c6dca95a497"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/attachments-inline.tsx",
-          "sha256": "91a3ce9cfb1db246b9e6dc624dc9779e41c3a9ba73b18796df2955a342bf1b6a"
+          "sha256": "ee11cc4d3563d6f977743e9af5d1e4c9e23786ca867510bd0837f18e97b790c0"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/attachments-list.tsx",
-          "sha256": "d31b2696b7543d13b26f2c2b4884a7bcf44f07607d5c83b3c463373433603617"
+          "sha256": "14bb5668f3a9d47ed8e32863afb5d8b2752570e5914384603c7c95a95db1bfb2"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/attachments.tsx",
-          "sha256": "302c8f23a8a84fc596cee83f74901d541e425af1c375127a8a1cb77e71f44f6c"
+          "sha256": "cbb9de377398c274d2ed0bb69be5d36206f7aadbdd126d12196b929c73010e05"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/audio-player-remote.tsx",
@@ -20608,15 +19775,15 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/audio-player.tsx",
-          "sha256": "4260e7e1385607cc64cb5bad56862c9b674d9c872a71fcd67d8f98e2c4f24e57"
+          "sha256": "9a7d9445ef58c8e2b6a6df14e6424952bdfc4918ef28c0418cbb0489575c1965"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/chain-of-thought.tsx",
-          "sha256": "bb57dc04e298197fc3c29265244d37b761a42b47c414a1cfc9347b15bca6ab1a"
+          "sha256": "58ee623517d90e1bdd8b1ac4a49e2914fcde5a82f40018f5451448e1a2bdfd47"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/checkpoint.tsx",
-          "sha256": "cce86147dbb00aedac1bd53ae03889a2a781f19e22680247400bccdd5179f004"
+          "sha256": "049ca87c7eedaf67e12467d9e9a1ea67cf5a21ac916172c02c51aa448e0895a0"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/code-block-dark.tsx",
@@ -20624,7 +19791,7 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/code-block.tsx",
-          "sha256": "f075b34dda31ff10fe0311e72f4b4f86fa7bcda41daa3b0fc33fac06a0997340"
+          "sha256": "98f55ea3c94c0f800073e226fd6545177b3172c45eb4aa8792591ef26d139883"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/commit.tsx",
@@ -20632,11 +19799,11 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/confirmation-accepted.tsx",
-          "sha256": "3f9a05a286f3dd5c1abcdf58a3246e851e5b864f5124f91a78722ae8dfb5ffe2"
+          "sha256": "4cdc5ab64018f8ead91cd32ae1df39a21fa83ef10f54ff6687da7ce4693fe50e"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/confirmation-rejected.tsx",
-          "sha256": "9714c9e0e793f72a999a6b204e62a61e212b6953b4fde5ccc08b40d42d58eefe"
+          "sha256": "18b1eeaa7fd2176337de5fb5c88ded5866ef47f6834f4352da2c40863672f370"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/confirmation-request.tsx",
@@ -20644,7 +19811,7 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/confirmation.tsx",
-          "sha256": "86b2c0591239aba027968994c8dcead4f7c39c9e887c30e086794c5addaf50b8"
+          "sha256": "b045bd404096794bd444c4b364e7879ada789b24e6017aec572200b67a5cf96f"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/context.tsx",
@@ -20652,27 +19819,27 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/conversation.tsx",
-          "sha256": "4cbf2ee7c20d0cdbcaa3651571e48c71093f843ee961c2aed7976f1b5c90adea"
+          "sha256": "93e3d9bd47ea31d80e411788af36b7ab4ccb8dd75a9cb22e4661420de4d1ff6c"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/environment-variables.tsx",
-          "sha256": "ea300510455f0c7796bcb73aa63ddb5b92471e56cdff5218e64705af9e43649a"
+          "sha256": "d12490f8bfccf8c3c200564d7e550446212bb64aa78202ef857b45625eb79fdf"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/file-tree-basic.tsx",
-          "sha256": "a4d73b01a0c702cf2dcfeb70eb44ee3fd7a3eaded0c8e18cecf7d4a1949a7c0c"
+          "sha256": "61a7c225bbb5d12f528fc97b56eff7e9e6a318627b917f0cc8d8a4dd607c056a"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/file-tree-expanded.tsx",
-          "sha256": "b306a5e2a322bbf9819068af868d35b2eec6a4a4a7d4621631ba7cef6ce9a7fd"
+          "sha256": "6dc016df1803cde03b9f6abde1b1b809fa15cd5e0b37a6ec8f8f4516de713c94"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/file-tree-selection.tsx",
-          "sha256": "e44d4a9c8f927de42fc45973670bc57968649e41b6180959870eb7b673410b2a"
+          "sha256": "854dda6cb080eaa1c0766cc5a82e2fd245d152cab1e7115d7ccfaf74a2790667"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/file-tree.tsx",
-          "sha256": "b9a93b001df3e2277d7ec5f3656e134c56a0b9e6bd717516578fe5e2c763ae55"
+          "sha256": "0330e83991eead0129e6385b0b82e3506e929725a81a3d4148dc25e3775c434a"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/image.tsx",
@@ -20680,23 +19847,23 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/inline-citation.tsx",
-          "sha256": "138f25f95e8755f7ca9c6dee771de3b456497d0f1a3bdcffca739e32f6ebe61e"
+          "sha256": "0b537b3a3296564823d6d20b90d697a194dd7e1932c51affad075d21aaa134fe"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/jsx-preview.tsx",
-          "sha256": "cd12d68a3b1d3829f12344b0e0dbf2dd530efc290b739bd4a1db8de53812001e"
+          "sha256": "66830c03012cb58022d57afb11b2ea2a40d31a60371360d075e2a405773e4c5b"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/message.tsx",
-          "sha256": "5fb8c27ce87118c01321b503d08584e34865e670fdc97b108025a9801eb52cd7"
+          "sha256": "fc593a72109a32232a1f5241ec55f4bcc07c21cc44724bc4d392ea4a9d171a92"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/mic-selector.tsx",
-          "sha256": "d6f3286e964b56974da76fbf59a5e2fd57c73664a13c15b1a89c0245c1f98a97"
+          "sha256": "19481d53d7e3f0fd2ed18e746dc84bcb863755a8aa62ae70b62d048faba90351"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/model-selector.tsx",
-          "sha256": "eb9288a81beb8f796fff55fcfdd50dce65f3310724d6655c701b01d996fd64a7"
+          "sha256": "6f10dc6f023d0448ef4869345df2f296b436860025ddb6c63f72720767aec0d8"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/open-in-chat.tsx",
@@ -20704,67 +19871,67 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/package-info.tsx",
-          "sha256": "ecb4353cb7be530982386d20a5e8bc05edb03f1f82cade1ba160ff6591661dfe"
+          "sha256": "e124c4801f9dd849372178f2e67b90c6789f6ba6bf195cccaab09f2894e39ddb"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-command.tsx",
-          "sha256": "e2eb4db562e98234cd7effa2ef66e9b182efd32978735eeae0eaa6538627455b"
+          "sha256": "e2f103a0c59ba9b1b857166356391e92d0fcb5a8904c0502ba000f1ca1d7fb7b"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-glint.tsx",
-          "sha256": "90c4fba773c3a6131a5fc2781687361f32309bc01257874bc0b88972d0c82dc8"
+          "sha256": "d054afcc94c66693124a95a8d927c00a7bbc3c8ce95332caf8324b56f5f13ef2"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-halo.tsx",
-          "sha256": "cfff11663822ba29cf17e937f559225524571177b5d5105317cd806de2d41e30"
+          "sha256": "5fb44c1b742bab472a3eed3c2e21eb88a212c92148df30794a7efd5ff8f49d26"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-mana.tsx",
-          "sha256": "f45b03ab02c674d12bcd5e4f19d9f9ac1e00bb6dd1578b9016bc3a7ae6361c78"
+          "sha256": "43099fa1b607ec9e36d216c22a30538e2caa5cd6aed8e6ecbb0c7d5e932d741b"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-obsidian.tsx",
-          "sha256": "98ab8979309de064ddfc1f6c0614d7f49d44179c3c9918dd39adfd4e7b2933e2"
+          "sha256": "4eaec57216acb4aa668da0212c413336d6fad5393c4f61ee0266baf3a70052d3"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/persona-opal.tsx",
-          "sha256": "72526c78a119012c7ff6eb1e71db38315b7564daee09b78f9afe51fc144d3286"
+          "sha256": "3098f209dbac877f69d65e766127e270ac2c9744d9dcd73c52e393e93f2a9b7d"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/plan.tsx",
-          "sha256": "ae4b842a18ea0e05e609e91928a997ad72b26fde3dfbcfdc826af54009092adf"
+          "sha256": "415f767f866604b1a3e22e56d508ed7549ae2304c22bbc4373d7942e560f932a"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/prompt-input-cursor.tsx",
-          "sha256": "830fc1114e5f63923c2c3d1aadbcad08a3076cd9ee0c94eee3ca5e531b5f6d0a"
+          "sha256": "d9ffb22ab7f62c24f55ffdb7c9821bad04ba6f57f521543eb90440f317f29829"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/prompt-input-tooltip.tsx",
-          "sha256": "a2579e6732d03855b8e2a1d21dcc9be0c92ed22e2fe2dbd15313e1fe5b67b919"
+          "sha256": "5f171175fb62439e7c69537fd95c50800b3c41d28d174777124f9b7647c8cd02"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/prompt-input.tsx",
-          "sha256": "8745f07e5e5484c6964e501b44ded6726a84befcabf13e31e9f8bde281193b20"
+          "sha256": "e8c82caceaf079ad8cf00597f1dd0fe922c2151a0a8d6f37ebe4feb8536fa5d4"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/queue-prompt-input.tsx",
-          "sha256": "b430e19e29555adb134bfce575be67635dfa66c37254690533b0f7164080236c"
+          "sha256": "27cf35099469d378b467ee78b1969a40ee0634e7e61c77f1fa0b7f395ebbf263"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/queue.tsx",
-          "sha256": "63a3cb48bf768c2e9e65b7fed5da7c5cf2870ed4b163497f9e0a2d7a105467d2"
+          "sha256": "b6cc452b2279aa84835e35fc69a7f8723d23b3f5d039dfd26d8127286ed04901"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/reasoning.tsx",
-          "sha256": "746a4518f0e97c21126bfb99ff2745efb7ee038f5fe40e0e9cb969fbb88f468c"
+          "sha256": "4e54459aefd75767037a8b0479190ba6d5f77592ac72b0722c5f7673e9450f24"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/sandbox.tsx",
-          "sha256": "9697a45db552c4b1cfdebb84e3409fb922264617efe4011e87b2f181b6c11dab"
+          "sha256": "734f2ce21b527ca3fa4f3dad2905b2029fe76634170cc12bdfe0c8d583fa9a70"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/schema-display-basic.tsx",
-          "sha256": "f1aa3d60b116975b546ea8de536a35ea41f1131704ab18631eeee9a1f1973eb0"
+          "sha256": "7043d760ff8ff2dfd1b9463effad1239bf30b2da81a06e3e3ea3fdbc8e2ace6a"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/schema-display-body.tsx",
@@ -20784,11 +19951,11 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/shimmer-duration.tsx",
-          "sha256": "9516126c70e218070b27e73ccfe3a5cc897210429085e674912503f81b11453a"
+          "sha256": "369b8b8db97715ada5e37919acc7ecf5171ffcdfc8195e8915c0bf5be0f26396"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/shimmer-elements.tsx",
-          "sha256": "e3e140b3092da392a9d206fb05577fd52ecc7b3445e43fcd153ab665a22f893b"
+          "sha256": "c0dacd5e7b8b4711a514dbba2f54b48c793e251244e2439347077908cc835884"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/shimmer.tsx",
@@ -20804,15 +19971,15 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/sources-custom.tsx",
-          "sha256": "1950a2eef553a3a6760dc0747ee210004f5fdfce3bbd109d97314fd10f0f041c"
+          "sha256": "fe5794d0b43a04821a3ec37a0f262c7e5207a0eb370d9f5d2de182cc4a984bd7"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/sources.tsx",
-          "sha256": "9d900d34186a22a86161adea4b17db6ded84c55dc7d7c959cb0c123c614c78f8"
+          "sha256": "13765ff58b4c344a0201d1ff021a560d85e759cf3c32f368824dbc0f3fc3d58c"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/speech-input.tsx",
-          "sha256": "62b51b9c7ff854f46de48bba724540b4499d9e234bac19823556a04d7e923462"
+          "sha256": "425ecd27dd9c21a9d65ffe019a69df0c1bb9c7502a1b2725d9d70eb3f03b7705"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/stack-trace-collapsed.tsx",
@@ -20824,15 +19991,15 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/stack-trace.tsx",
-          "sha256": "362df6a397a1e1e39794b6d558b91424883c7b7cea2b884900c7705f9785a020"
+          "sha256": "d0528bf422e5ceedbe2ed196234d677f90c7e8cebf1d7357dd86c87bee128e57"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/suggestion-input.tsx",
-          "sha256": "6d7f0f71c78d30940452090d956ca0cc1bf050290695a907413638b0fa0d2ebb"
+          "sha256": "a3f7f2752f78b510f8293a0d4e75f4514803192e35332688dd9d3df89a466408"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/suggestion.tsx",
-          "sha256": "360fd9a71ef95092cb84457549a8d35799d69198971e010b1c6793afeed0fcdc"
+          "sha256": "2a650b7682ef0992b931669337a6c8a8c842c258d51bbe8aa769837e09c6c26c"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/task.tsx",
@@ -20852,7 +20019,7 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/terminal.tsx",
-          "sha256": "0338bcdc8a126afcab4d949b68e1f1b9dedea8d68bf6a57253f1c00303c7f44a"
+          "sha256": "0ef7831e4fdd5dd7021d1d20815ec32b5a960f8673212216820a858037e03a89"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/test-results-basic.tsx",
@@ -20868,7 +20035,7 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/test-results.tsx",
-          "sha256": "a05f119fde7d3628638e05ec0263b3a3c3ed58122071308d94f4c6872e388649"
+          "sha256": "77d749db28c4cb20ccd10ba22da6895fce32b39f36513db36009a7fc6d9d92e9"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/tool-input-available.tsx",
@@ -20880,27 +20047,27 @@
         },
         {
           "file": ".agents/skills/ai-elements/scripts/tool-output-available.tsx",
-          "sha256": "c12fdf8c979c2787354f31cecfcb256b48ee3ba1a998ca4f492e1436e02e8199"
+          "sha256": "a80a0aff9fbee1843d58b13a2b81e4ed5faa299bf83f8d5f632f7f6396e5d744"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/tool-output-error.tsx",
-          "sha256": "ce9dd43f57838bf6695cb103eea94bfbca631a4f304eaa6090bcd237c53ac092"
+          "sha256": "744fe914225b379746d736791ba0d8ae673c0c88b74cb9328127110cfd4d4cd5"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/tool.tsx",
-          "sha256": "fc90d270ff13394977dff59b5628007c9d6566890efaaf677840fd00ccd52575"
+          "sha256": "72afcbf9489e8b3a5d26d291ce0edd0776e435a1364bb400988b114874ea65d6"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/transcription.tsx",
-          "sha256": "cbf190132b6d882875c85b92b39431cb2f3b31f10f2fba9218fda9336dad0158"
+          "sha256": "ecf0d520dd8ff218286a72ff32f2e1bc0758ed519b29d0a22387fe054a058493"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/voice-selector.tsx",
-          "sha256": "055b96858f543a94acf07c4e4497bdad574cb21bc5d10f74eb363ee59a1dc083"
+          "sha256": "89c0145296c1f7314911dbb03e0845664eb5ad8143bbe766c860546466ef5e10"
         },
         {
           "file": ".agents/skills/ai-elements/scripts/web-preview.tsx",
-          "sha256": "0e26bf5587a9fdbf07ecb1d08ab236c81ab94378bfdf7d5a45a0e910ee7e9bbd"
+          "sha256": "f8c781daf576f7cecc81bf4d80871528d7901aa720faa7f438e756070091eec2"
         }
       ]
     },
@@ -30134,15 +29301,15 @@
       "files": [
         {
           "file": ".agents/skills/agent-browser/SKILL.md",
-          "sha256": "c0428aedede3e47001cf520c939ba565be9d3e4020d4300446e794da253311ee"
+          "sha256": "0cc7bcbdd85495eff6ed868830b865c86ff3a4c6b4072db543d720cd9c739089"
         },
         {
           "file": ".agents/skills/agent-browser/references/authentication.md",
-          "sha256": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b"
+          "sha256": "fa3533cf0b9702a746578ab6932546e1a9080a711cf7be9f999fb685f4d44a74"
         },
         {
           "file": ".agents/skills/agent-browser/references/commands.md",
-          "sha256": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909"
+          "sha256": "5dcf063a83d06674dbdaae646d410f0330301d68594a211abd628902fa9b4979"
         },
         {
           "file": ".agents/skills/agent-browser/references/profiling.md",
@@ -30154,11 +29321,11 @@
         },
         {
           "file": ".agents/skills/agent-browser/references/session-management.md",
-          "sha256": "b3bb0ed32a893f44aeeae761a85353f5341dd1dd49ebb534dd3db204e3fcf280"
+          "sha256": "81bb339da278828424e15bbfe8c49616eb000ee039f2681b2cbc53440863dba4"
         },
         {
           "file": ".agents/skills/agent-browser/references/snapshot-refs.md",
-          "sha256": "2cdef4267f5a2875dc5d1be62708e84f10339640a975a4e8339204604185b061"
+          "sha256": "d14f08662f999c95dc057546991c1249802f52447a25838338cda4ddddfee00a"
         },
         {
           "file": ".agents/skills/agent-browser/references/video-recording.md",
@@ -30178,19 +29345,19 @@
         },
         {
           "file": ".agents/skills/dogfood/SKILL.md",
-          "sha256": "984bd5aa263aa91c818394459f90d46477ddfad07c49cc2f61db2ece3f626564"
+          "sha256": "b59b121df884c57389b05f9d454d9c375b10cbca04b9c7b6fe380e4fb0a209ab"
         },
         {
           "file": ".agents/skills/dogfood/references/issue-taxonomy.md",
-          "sha256": "fa3eaceec546c2918e5a0d5c861bb61f9fb47cfb44dde31a16c98e16f8f143e6"
+          "sha256": "dc2ce522111006d7b3ec64ce57ad7ecaa9d0fa1df174c4ab3ddae0cd95dce3e9"
         },
         {
           "file": ".agents/skills/dogfood/templates/dogfood-report-template.md",
-          "sha256": "8b5c1672e32354c10c045f68f59f1103891fdf6e1410ed7d3c8220a00d8f9465"
+          "sha256": "80dba0af407efa716f220825bb8f910b7067ccab3955b2c59f45d93df31bea43"
         },
         {
           "file": ".agents/skills/electron/SKILL.md",
-          "sha256": "989a15a88409e079d3dff3f9b7d41bf653e565a4f1e46854dac6669c116aecb4"
+          "sha256": "8f41ff75c86c3bca84ee323a149e39d2eadd98ec8c9f5d98e4d9deec66f71f53"
         }
       ]
     },
@@ -30264,7 +29431,7 @@
         },
         {
           "file": "packages/rpc/src/proxy-channel.ts",
-          "sha256": "ec5b43e6a3a622a88a8aaa6af9cb37dbfe517932ee7f4a337019ec138bb2d513"
+          "sha256": "67dc42c2550a79e4772cb06d5f3c1b8521c91602b04cb7a842f077e3263318ef"
         },
         {
           "file": "packages/rpc/src/remote.ts",
@@ -30288,7 +29455,7 @@
         },
         {
           "file": "packages/rpc/examples/04-remote-connection.ts",
-          "sha256": "fe43a2d631ba54a1cf63a86e344b6e2e58d83c2e8c95f2f8b7371f63e6442541"
+          "sha256": "a0f16a220b9054541ea9300e1c312326d7d005e121a9a3b6431a61ac70f77289"
         },
         {
           "file": "packages/shared/src/zcode-protocol-v4/wire-codec.ts",
@@ -30313,7 +29480,7 @@
       "files": [
         {
           "file": "packages/ui/src/lib/builtinSkillI18n.ts",
-          "sha256": "f16952aa99cd281f02fa5af170d7cf4653559b82a50c27de2157aed74ce9bc96"
+          "sha256": "7896e740ee5a38fcded94949ff141063b9d3d8f5e5009252f3457f807838e2bb"
         },
         {
           "file": "apps/zcode-cli/packages/superpowers-plugin/LICENSE",
@@ -31432,11 +30599,6 @@
       "sha256": "52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f"
     },
     {
-      "package": "@arms/rum-electron@0.0.3",
-      "file": "patches/@arms__rum-electron@0.0.3.patch",
-      "sha256": "36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97"
-    },
-    {
       "package": "@ai-sdk/openai-compatible@2.0.60",
       "file": "patches/@ai-sdk__openai-compatible@2.0.60.patch",
       "sha256": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b"
@@ -31549,26 +30711,6 @@
       }
     },
     {
-      "package": "lazy-val@1.0.5",
-      "repo": "develar/lazy-val",
-      "refs": [
-        "b69ad4119f1b19bdab13c61ee2fcc88d46b89071"
-      ],
-      "file": "third-party/upstream/f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a.txt",
-      "sha256": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a",
-      "source": "https://registry.npmjs.org/lazy-val/1.0.5",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
-      "license": "MIT",
-      "reviewEvidence": {
-        "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; existing publisher declaration and original README license sections remain preserved. Upstream authorization/copyright material is still required to close this review.",
-        "npmArchiveSha256": "7d8602ad98db3d19fbd5b46fbf3831dd996197a013ef1ff7badc205e41435372",
-        "sourceRevision": "b69ad4119f1b19bdab13c61ee2fcc88d46b89071",
-        "sourceTreeUrl": "https://api.github.com/repos/develar/lazy-val/git/trees/b69ad4119f1b19bdab13c61ee2fcc88d46b89071?recursive=1",
-        "upstreamLicenseFiles": []
-      }
-    },
-    {
       "package": "semaphore@1.1.0",
       "repo": "abrkn/semaphore.js",
       "refs": [
@@ -31668,38 +30810,6 @@
         "sourceTreeUrl": "https://api.github.com/repos/nteract/ansi-to-react/git/trees/145140971e9d83ccac32265f24b1c55dea437896?recursive=1",
         "upstreamLicenseFiles": []
       }
-    },
-    {
-      "package": "keyv@4.5.4",
-      "file": "third-party/upstream/6f7e6eae2a2afbaa67b266650f7342e7bf8e82cb57f6ab98148b3d6e0fb4450a.txt",
-      "sha256": "6f7e6eae2a2afbaa67b266650f7342e7bf8e82cb57f6ab98148b3d6e0fb4450a",
-      "source": "https://registry.npmjs.org/keyv/4.5.4",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
-      "license": "MIT"
-    },
-    {
-      "package": "@arms/rum-browser@0.1.8",
-      "file": "third-party/upstream/2c976d327b293bd74c257cd53e9b4ecef97a06b1651baa3b24327c97192cb3de.txt",
-      "sha256": "2c976d327b293bd74c257cd53e9b4ecef97a06b1651baa3b24327c97192cb3de",
-      "source": "https://registry.npmjs.org/%40arms%2frum-browser%400.1.8",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
-      "license": "ISC"
-    },
-    {
-      "package": "@arms/rum-core@0.1.4",
-      "file": "third-party/upstream/328eb7864c20ab77607b26ee1913b65a9b880f6300eea9e667b890da896a2f40.txt",
-      "sha256": "328eb7864c20ab77607b26ee1913b65a9b880f6300eea9e667b890da896a2f40",
-      "source": "https://registry.npmjs.org/%40arms%2frum-core%400.1.4",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
-      "license": "ISC"
-    },
-    {
-      "package": "@arms/rum-electron@0.0.3",
-      "file": "third-party/upstream/38b6f63a0aa422b5c329e75f1aeecd2b02e83caab1747644c00810870d77bacb.txt",
-      "sha256": "38b6f63a0aa422b5c329e75f1aeecd2b02e83caab1747644c00810870d77bacb",
-      "source": "https://registry.npmjs.org/%40arms%2frum-electron%400.0.3",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
-      "license": "MIT"
     }
   ],
   "embedded": [
@@ -31993,10 +31103,6 @@
       "reason": "Original version-specific publisher copyright/license material remains incomplete."
     },
     {
-      "id": "lazy-val@1.0.5",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
       "id": "semaphore@1.1.0",
       "reason": "Original version-specific publisher copyright/license material remains incomplete."
     },
@@ -32014,22 +31120,6 @@
     },
     {
       "id": "ansi-to-react@6.2.6",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "keyv@4.5.4",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@arms/rum-browser@0.1.8",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@arms/rum-core@0.1.4",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@arms/rum-electron@0.0.3",
       "reason": "Original version-specific publisher copyright/license material remains incomplete."
     },
     {

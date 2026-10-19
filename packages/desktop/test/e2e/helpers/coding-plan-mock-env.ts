@@ -4,8 +4,8 @@ export const CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV = "ZCODE_CODING_PLAN_UPGRADE_
 type MutableEnvironment = Record<string, string | undefined>;
 
 const CODING_PLAN_COMMON_ENV_KEYS = [
-  "ZCODE_BASE_URL",
-  "ZCODE_ENDPOINT_ORIGIN",
+  "ZXCODE_BASE_URL",
+  "ZXCODE_ENDPOINT_ORIGIN",
   "ZCODE_TEST_BASE_URL",
   "BIGMODEL_API_BASE_URL",
   "ZCODE_E2E_CODING_PLAN_MOCK_URL",
@@ -59,7 +59,7 @@ export function shouldPrepareCodingPlanTeamMock(specs: readonly string[]) {
 
 export function applyCodingPlanTeamMockEnv(environment: MutableEnvironment, baseUrl: string) {
   environment[CODING_PLAN_TEAM_MOCK_BASE_URL_ENV] = baseUrl;
-  environment.ZCODE_ENV = "test";
+  environment.ZXCODE_ENV = "test";
   for (const key of CODING_PLAN_COMMON_ENV_KEYS) {
     environment[key] = baseUrl;
   }

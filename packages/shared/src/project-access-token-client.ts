@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { projectTokenSuccessCodeSchema } from "./project-access-token-response.js";
 import { API_KEY_USAGE_SCENE } from "./api-key-usage-scene.js";
-import { ProjectAccessTokenCache, ProjectAccessTokenError } from "./project-access-token.js";
-import { ZCODE_VERSION } from "./version.js";
+import {
+  ProjectAccessTokenCache,
+  ProjectAccessTokenError,
+} from "./project-access-token.js";
+import { ZXCODE_VERSION } from "./version.js";
 
 const DEFAULT_ORGANIZATION_NAME = "默认机构";
 const DEFAULT_PROJECT_NAME = "默认项目";
@@ -93,10 +96,13 @@ export class ProjectAccessTokenClient {
     this.#sessions.clear();
   }
 
-  async resolve(input: ProjectAccessTokenInput): Promise<ProjectAccessTokenMaterial> {
+  async resolve(
+    input: ProjectAccessTokenInput,
+  ): Promise<ProjectAccessTokenMaterial> {
     const origin = new URL(input.origin).origin;
     const loginToken = input.loginToken.trim().replace(/^Bearer\s+/i, "");
-    if (!loginToken || !input.accountId.trim()) throw new Error("project_token_login_required");
+    if (!loginToken || !input.accountId.trim())
+      throw new Error("project_token_login_required");
     const sessionKey = JSON.stringify([origin, input.family]);
     let session = this.#sessions.get(sessionKey);
     if (!session || session.token !== loginToken) {
@@ -134,8 +140,14 @@ export class ProjectAccessTokenClient {
       return result;
     };
     try {
-      const selection = input.team ? null : (input.personalProjectSelection ?? "non-team");
-      const locationKey = JSON.stringify([input.accountId, input.team ?? null, selection]);
+      const selection = input.team
+        ? null
+        : (input.personalProjectSelection ?? "non-team");
+      const locationKey = JSON.stringify([
+        input.accountId,
+        input.team ?? null,
+        selection,
+      ]);
       const storageKey = `project-key-location:v1:${encodeURIComponent(JSON.stringify([origin, input.family, input.accountId, input.team ?? null, API_KEY_USAGE_SCENE.CODING_PLAN, selection]))}`;
       let pending = current.locations.get(locationKey);
       if (!pending) {
@@ -158,15 +170,24 @@ export class ProjectAccessTokenClient {
             )
               return value.data;
           }
-          const result = await this.#resolveLocation(input, origin, loginToken, request);
+          const result = await this.#resolveLocation(
+            input,
+            origin,
+            loginToken,
+            request,
+          );
           assertCurrent();
-          await this.options.locationStore?.save(storageKey, JSON.stringify(result));
+          await this.options.locationStore?.save(
+            storageKey,
+            JSON.stringify(result),
+          );
           assertCurrent();
           return result;
         })();
         current.locations.set(locationKey, pending);
         void pending.catch(() => {
-          if (current.locations.get(locationKey) === pending) current.locations.delete(locationKey);
+          if (current.locations.get(locationKey) === pending)
+            current.locations.delete(locationKey);
         });
       }
       const location = await pending;
@@ -188,12 +209,17 @@ export class ProjectAccessTokenClient {
               headers,
               body: JSON.stringify({
                 clientType: "zcode",
-                clientVersion: ZCODE_VERSION,
+                clientVersion: ZXCODE_VERSION,
               }),
             },
           );
           // 仅明确不存在才废弃 ID；权限/网络/开关错误不能触发创建或 Key 回退。
-          if (raw && typeof raw === "object" && "code" in raw && raw.code === 404) {
+          if (
+            raw &&
+            typeof raw === "object" &&
+            "code" in raw &&
+            raw.code === 404
+          ) {
             current.locations.delete(locationKey);
             await this.options.locationStore?.delete(storageKey);
           }
@@ -230,7 +256,8 @@ export class ProjectAccessTokenClient {
   ): Promise<KeyLocation> {
     // 管理接口沿用旧鉴权格式；不能把签发端的 Bearer 约定扩散到所有端点。
     const headers = {
-      Authorization: input.family === "zai" ? `Bearer ${loginToken}` : loginToken,
+      Authorization:
+        input.family === "zai" ? `Bearer ${loginToken}` : loginToken,
       "Content-Type": "application/json",
     };
     const customer = customerSchema.safeParse(
@@ -249,7 +276,9 @@ export class ProjectAccessTokenClient {
         !organizations.some(
           (org) =>
             org.organizationId.trim() === location!.organizationId.trim() &&
-            org.projects.some((p) => p.projectId.trim() === location!.projectId.trim()),
+            org.projects.some(
+              (p) => p.projectId.trim() === location!.projectId.trim(),
+            ),
         )
       )
         throw new Error("project_token_project_unavailable");
@@ -260,15 +289,19 @@ export class ProjectAccessTokenClient {
           : organizations
               .map((org) => ({
                 ...org,
-                projects: org.projects.filter((p) => String(p.projectType ?? "").trim() !== "2"),
+                projects: org.projects.filter(
+                  (p) => String(p.projectType ?? "").trim() !== "2",
+                ),
               }))
               .filter((org) => org.organizationId && org.projects.length);
       const org =
-        personal.find((org) => org.organizationName?.includes(DEFAULT_ORGANIZATION_NAME)) ??
-        personal[0];
+        personal.find((org) =>
+          org.organizationName?.includes(DEFAULT_ORGANIZATION_NAME),
+        ) ?? personal[0];
       const project =
-        org?.projects.find((p) => p.projectName?.includes(DEFAULT_PROJECT_NAME)) ??
-        org?.projects[0];
+        org?.projects.find((p) =>
+          p.projectName?.includes(DEFAULT_PROJECT_NAME),
+        ) ?? org?.projects[0];
       if (!org?.organizationId || !project?.projectId)
         throw new Error("project_token_project_unavailable");
       location = {
@@ -288,11 +321,18 @@ export class ProjectAccessTokenClient {
       : headers;
     const list = z
       .array(z.unknown())
-      .safeParse(readData(await request(url, { method: "GET", headers: keyHeaders })));
+      .safeParse(
+        readData(await request(url, { method: "GET", headers: keyHeaders })),
+      );
     if (!list.success) throw new Error("project_token_invalid_response");
     // 列表可能含无关坏条目。个人同名条目缺 ID 时禁止重复创建；团队只复用有效条目。
     const candidate = list.data.find((entry) => {
-      if (!entry || typeof entry !== "object" || !("name" in entry) || entry.name !== name)
+      if (
+        !entry ||
+        typeof entry !== "object" ||
+        !("name" in entry) ||
+        entry.name !== name
+      )
         return false;
       if (!input.team) return true;
       const parsed = keySchema.safeParse(entry);
@@ -312,7 +352,10 @@ export class ProjectAccessTokenClient {
         }),
       );
     const key = keySchema.safeParse(rawKey);
-    if (!key.success || (input.team && (key.data.name !== name || key.data.keyType !== 2)))
+    if (
+      !key.success ||
+      (input.team && (key.data.name !== name || key.data.keyType !== 2))
+    )
       throw new Error("project_token_invalid_response");
     return { ...location, apiKeyId: key.data.apiKey };
   }

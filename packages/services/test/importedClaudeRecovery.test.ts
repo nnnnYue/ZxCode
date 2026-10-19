@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import test from "node:test";
+import { it as test } from "vitest";
 import {
   ZXCODE_PROTOCOL_NAME,
   ZXCODE_PROTOCOL_VERSION,

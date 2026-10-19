@@ -58,53 +58,6 @@ describe("ChatContextUsage mobile interaction", () => {
     vi.unstubAllGlobals();
   });
 
-  it("opens the context panel from a touch pointer on a device without hover", () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query === "(hover: none)",
-      media: query,
-    }));
-
-    renderContextUsage();
-
-    const trigger = screen.getByRole("button", { name: "chat.contextUsage" });
-    fireEvent.pointerDown(trigger, { pointerType: "touch" });
-    fireEvent.touchStart(trigger);
-    fireEvent.pointerUp(trigger, { pointerType: "touch" });
-
-    expect(screen.getByText("chat.contextUsage.title")).toBeTruthy();
-  });
-
-  it("refreshes plan usage through the normal open handler on touch", () => {
-    const onAccess = vi.fn();
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query === "(hover: none)",
-      media: query,
-    }));
-
-    render(
-      createElement(ChatContextUsage, {
-        intl: {
-          formatMessage: ({ id }: { id: string }) => id,
-        } as never,
-        locale: "en-US",
-        selectedProvider: "glm",
-        startPlanBalance: {
-          loading: false,
-          onAccess,
-          snapshot: null,
-        },
-        taskUsage: null,
-      }),
-    );
-
-    const trigger = screen.getByRole("button", {
-      name: "settings.modelProvider.startPlan.balance.title",
-    });
-    fireEvent.pointerDown(trigger, { pointerType: "touch" });
-
-    expect(onAccess).toHaveBeenCalledTimes(1);
-  });
-
   it("keeps a desktop pointer from changing the hover card contract", () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: false,

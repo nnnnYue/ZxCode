@@ -3,7 +3,6 @@ import {
   ApiKeyAccessConfig,
   ProviderApiConfig,
   ProviderConfig,
-  ZhipuAccountAccessConfig,
   createRegistryProviderConfig,
   parseProviderConfig,
   serializeRegistryProviderConfig,
@@ -17,18 +16,8 @@ const api = new ProviderApiConfig({
   baseUrl: "https://api.example/v1",
 });
 const access = new ApiKeyAccessConfig({ apiKey: "test-key" });
-const cases = [
-  { name: "key", access: access.toJSON(), paths: [["access", "apiKey"]] },
-  {
-    name: "account",
-    access: { type: "zhipu-account", accountType: "zai", mode: "off-peak", entitled: false },
-    paths: [
-      ["access", "accountType"],
-      ["access", "mode"],
-      ["access", "entitled"],
-    ],
-  },
-];
+// fork：zhipu-account Access 已下线，完整性与缺省用例仅保留 api-key 形态。
+const cases = [{ name: "key", access: access.toJSON(), paths: [["access", "apiKey"]] }];
 
 describe("Provider 数据校验与完整性使用同一合同", () => {
   it("Todo104：新成员/endpoint字段唯一，null清除保留，旧未发布拼写拒绝", () => {
@@ -135,30 +124,5 @@ describe("Provider 数据校验与完整性使用同一合同", () => {
     });
     expect(createRegistryProviderConfig(config).ok).toBe(true);
     expect(parseProviderConfig(config.toJSON()).toJSON()).toEqual(config.toJSON());
-  });
-
-  it("Account 的 false 权益完整，清空必填值不完整，切换 Access 不保留旧 Key", () => {
-    const original = new ProviderConfig({ group: "zai-family", access, api });
-    const replaced = original.overlay(
-      new ProviderConfig({
-        access: new ZhipuAccountAccessConfig({
-          accountType: "zai",
-          mode: "off-peak",
-          entitled: false,
-        }),
-      }),
-    );
-    expect(createRegistryProviderConfig(replaced).ok).toBe(true);
-    expect(replaced.access?.toJSON()).toEqual({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "off-peak",
-      entitled: false,
-    });
-    const cleared = replaced.overlay(
-      new ProviderConfig({ access: new ZhipuAccountAccessConfig({ mode: null }) }),
-    );
-    expect(createRegistryProviderConfig(cleared).ok).toBe(false);
-    expect(original.access?.toJSON()).toEqual(access.toJSON());
   });
 });

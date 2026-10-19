@@ -199,11 +199,6 @@ export const resolveBuildAliases = ({
   // 插件 UI（MCP Apps）协议子路径：adapters/core/contracts 的 dist 引用它，同样要先于通用入口声明。
   "@zcode/shared/mcp-apps": resolve(rootDirectory, "../../packages/shared/src/mcp-apps/index.ts"),
   "@zcode/shared/node": resolve(rootDirectory, "../../packages/shared/src/node.ts"),
-  // 通用 alias 会把子入口拼到 index.ts 后，发行实现必须独立解析。
-  "@zcode/shared/request-security": resolve(
-    rootDirectory,
-    "../../packages/shared/src/request-security-edition/index.ts",
-  ),
   "@zcode/shared": resolve(rootDirectory, "../../packages/shared/src/index.ts"),
   "@zcode/core": resolve(cliDirectory, "../core/dist/index.js"),
 });

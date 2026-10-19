@@ -13,11 +13,9 @@ async function readSource(url: URL): Promise<string> {
   return (await readFile(url, "utf8")).replaceAll("\r\n", "\n");
 }
 
+// fork：闲时任务（Off-Peak）域已剔除，仅保留存活自动化编辑视图的交互契约。
 const editViewSource = await readSource(
   new URL("../src/settings/AutomationEditView.tsx", import.meta.url),
-);
-const offPeakEditViewSource = await readSource(
-  new URL("../src/settings/OffPeakEditView.tsx", import.meta.url),
 );
 const primitivesSource = await readSource(
   new URL("../src/settings/AutomationDesignPrimitives.tsx", import.meta.url),
@@ -40,7 +38,6 @@ describe("automation new-task history interaction", () => {
 
   it("shares the Hooks pill tabs style and uses 设置 / 历史 labels", () => {
     expect(editViewSource).toContain("<AutomationSettingsHistoryTabs");
-    expect(offPeakEditViewSource).toContain("<AutomationSettingsHistoryTabs");
     expect(primitivesSource).toContain("<SettingsSegmentedTabs");
     expect(segmentedTabsSource).toContain(
       'className="flex h-8 rounded-full bg-surface p-0.5 group-data-horizontal/tabs:h-8"',

@@ -21,7 +21,8 @@ import {
 let tempRoot = "";
 
 function artifactsRoot(): string {
-  return join(tempRoot, ".zcode", "tmp", "workflow-artifacts");
+  // fork 使用 .zxcode 数据目录（上游为 .zcode）
+  return join(tempRoot, ".zxcode", "tmp", "workflow-artifacts");
 }
 
 /** run / 产物目录名：清洗后的 id 加原始 id 的 sha256 前 8 位（与实现同一规则）。 */
@@ -247,6 +248,6 @@ describe("materializeWorkflowArtifactFile", () => {
         /invalid/u,
       );
     }
-    await expect(readdir(join(tempRoot, ".zcode"))).rejects.toThrow();
+    await expect(readdir(join(tempRoot, ".zxcode"))).rejects.toThrow();
   });
 });

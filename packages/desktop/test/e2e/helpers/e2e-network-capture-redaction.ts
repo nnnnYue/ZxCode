@@ -1,8 +1,8 @@
-import { requestSecuritySensitiveHeaders } from "@zcode/shared";
+// fork：request-security-edition 域已删除，requestSecuritySensitiveHeaders 在删除前已是空列表，
+// 这里直接以内置敏感头集合为准。
 export const E2E_NETWORK_CAPTURE_REDACTION_VALUE = "[redacted]";
 
 const REDACTED_HEADER_NAMES = new Set([
-  ...requestSecuritySensitiveHeaders,
   "authorization",
   "proxy-authorization",
   "cookie",
@@ -64,7 +64,8 @@ export function shouldRecordE2ENetworkResponseChunkTimeline(
     enabled &&
     Object.entries(responseHeaders).some(
       ([name, value]) =>
-        name.toLowerCase() === "content-type" && value.toLowerCase().includes("text/event-stream"),
+        name.toLowerCase() === "content-type" &&
+        value.toLowerCase().includes("text/event-stream"),
     )
   );
 }
@@ -79,7 +80,9 @@ function headerToString(value: HeaderValue): string {
 function shouldRedactJsonKey(key: string): boolean {
   const normalizedKey = key.replaceAll(/[-_]/gu, "").toLowerCase();
   return (
-    /api[-_]?key|authorization|access[-_]?token|refresh[-_]?token|secret/i.test(key) ||
+    /api[-_]?key|authorization|access[-_]?token|refresh[-_]?token|secret/i.test(
+      key,
+    ) ||
     normalizedKey === "sig" ||
     normalizedKey === "signature" ||
     // 密文字段（如私钥密文）一律按密钥材料脱敏。

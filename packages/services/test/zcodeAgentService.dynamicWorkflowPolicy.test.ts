@@ -7,7 +7,48 @@ import {
   type DynamicWorkflowMode,
 } from "@zcode/shared";
 import { V4_METHODS } from "@zcode/shared/zcode-protocol-v4";
-import { offPeakSelectionView } from "./fixtures/offPeakSelection.js";
+import type { ModelSelectionView } from "@zcode/provider";
+
+/** 最小可见 Provider 选择视图；替代已剔除的 offPeakSelection fixture（fork 无账号域 Provider）。 */
+function plainSelectionView(): ModelSelectionView {
+  return {
+    revision: 1,
+    providers: [
+      {
+        providerId: "zai-api",
+        config: { visibility: "visible" },
+        models: [
+          {
+            modelId: "GLM-5.3",
+            config: {
+              enabled: true,
+              properties: {
+                requiresMfjsToolSchema: false,
+                contextWindow: 200000,
+                inputFormat: {
+                  supportsText: true,
+                  supportsImage: false,
+                  supportsVideo: false,
+                  supportsAudio: false,
+                  supportsPdf: false,
+                },
+                outputFormat: { supportsText: true },
+                supportsToolCall: true,
+                supportsJsonSchemaOutput: false,
+                supportsNativeWebSearch: false,
+                supportsMidConversationSystem: false,
+              },
+              optionSpecs: {
+                reasoningLevel: { values: ["high"], map: "{}" },
+                maxOutputTokens: { max: 32000, map: "{}" },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
 
 // DWG-02（docs/dynamic-workflow/launch.md「Gray release」）：Host 是灰度的唯一裁决者。
 // 判定在 workspace client 就绪时做一次：开启才下发 workspace/updateDynamicWorkflowPolicy，
@@ -88,7 +129,7 @@ async function setup(params: {
   }));
   const { createZCodeAgentService } = await import("../src/zcode-agent/zcodeAgentService.js");
   const service = createZCodeAgentService({
-    modelSelectionReadinessSource: { getView: async () => offPeakSelectionView() },
+    modelSelectionReadinessSource: { getView: async () => plainSelectionView() },
     ...(params.enabled === undefined && !params.configResolver
       ? {}
       : { resolveDynamicWorkflowClientConfig: resolveConfig }),

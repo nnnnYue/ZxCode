@@ -12,17 +12,17 @@ import {
 
 describe("MCP Settings Shared", () => {
   describe("SOURCE_META", () => {
-    it("应包含 zcodeagentmcp 的元数据", () => {
-      expect(SOURCE_META.zcodeagentmcp).toBeDefined();
-      expect(SOURCE_META.zcodeagentmcp.label).toBe("ZCode Agent");
-      expect(SOURCE_META.zcodeagentmcp.section).toBe("ZCode Agent");
-      expect(SOURCE_META.zcodeagentmcp.badgeClass).toContain("cyan");
+    it("应包含 zxcodeagentmcp 的元数据", () => {
+      expect(SOURCE_META.zxcodeagentmcp).toBeDefined();
+      expect(SOURCE_META.zxcodeagentmcp.label).toBe("ZCode Agent");
+      expect(SOURCE_META.zxcodeagentmcp.section).toBe("ZCode Agent");
+      expect(SOURCE_META.zxcodeagentmcp.badgeClass).toContain("cyan");
     });
   });
 
   describe("MCP_SECTIONS", () => {
     it("只展示 ZCode Agent MCP scope", () => {
-      expect(MCP_SECTIONS).toEqual(["zcodeagentmcp"]);
+      expect(MCP_SECTIONS).toEqual(["zxcodeagentmcp"]);
       expect([...MCP_SECTIONS]).not.toContain("codexclimcp");
       expect([...MCP_SECTIONS]).not.toContain("geminiclimcp");
       expect([...MCP_SECTIONS]).not.toContain("opencodemcp");
@@ -34,7 +34,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "user",
         enabled: true,
         config: {
@@ -54,7 +54,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "workspace",
         projectPath: "/workspace",
         enabled: true,
@@ -71,7 +71,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "user",
         enabled: true,
         config: {
@@ -90,7 +90,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "user",
         enabled: true,
         config: {
@@ -109,7 +109,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "user",
         enabled: true,
         config: {
@@ -130,7 +130,7 @@ describe("MCP Settings Shared", () => {
       const server: ZCodeMcpServer = {
         id: "test-id",
         name: "test-server",
-        source: "zcodeagentmcp",
+        source: "zxcodeagentmcp",
         scope: "user",
         enabled: true,
         config: {
@@ -148,7 +148,7 @@ describe("MCP Settings Shared", () => {
     it("应正确转换 streamableHttp 表单", () => {
       const form: FormState = {
         name: "test-server",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "streamableHttp",
         command: "",
@@ -169,7 +169,7 @@ describe("MCP Settings Shared", () => {
     it("应正确转换 http 表单", () => {
       const form: FormState = {
         name: "test-server",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "http",
         command: "",
@@ -189,7 +189,7 @@ describe("MCP Settings Shared", () => {
     it("应正确转换 sse 表单", () => {
       const form: FormState = {
         name: "test-server",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "sse",
         command: "",
@@ -209,7 +209,7 @@ describe("MCP Settings Shared", () => {
     it("应正确转换 stdio 表单", () => {
       const form: FormState = {
         name: "test-server",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "stdio",
         command: "npx",
@@ -232,7 +232,7 @@ describe("MCP Settings Shared", () => {
     it("应忽略无效 timeoutMs", () => {
       const form: FormState = {
         name: "test-server",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "http",
         command: "",
@@ -260,7 +260,7 @@ describe("MCP Settings Shared", () => {
         }),
         {
           name: "",
-          scope: "zcodeagentmcp",
+          scope: "zxcodeagentmcp",
           storageLevel: "user",
           type: "stdio",
           command: "",
@@ -290,7 +290,7 @@ describe("MCP Settings Shared", () => {
         }),
         {
           name: "",
-          scope: "zcodeagentmcp",
+          scope: "zxcodeagentmcp",
           storageLevel: "user",
           type: "http",
           command: "",
@@ -314,7 +314,7 @@ describe("MCP Settings Shared", () => {
     it("全新 HTTP URL 配置不应自动写入 OAuth 草稿", () => {
       const draft = formToJsonDraft({
         name: "notion",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "http",
         command: "",
@@ -338,7 +338,7 @@ describe("MCP Settings Shared", () => {
     it("从表单生成 JSON 草稿时应写出 timeoutMs", () => {
       const draft = formToJsonDraft({
         name: "slow",
-        scope: "zcodeagentmcp",
+        scope: "zxcodeagentmcp",
         storageLevel: "user",
         type: "stdio",
         command: "node",

@@ -3,7 +3,7 @@ import {
   isOpenCodeRuntimeCrashError,
   isZCodeFileLockTimeoutError,
   normalizeUnknownError,
-  ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE,
+  ZXCODE_FILE_LOCK_TIMEOUT_ERROR_CODE,
 } from "../src/errors.js";
 
 describe("normalizeUnknownError", () => {
@@ -48,10 +48,10 @@ describe("isOpenCodeRuntimeCrashError", () => {
 
 describe("isZCodeFileLockTimeoutError", () => {
   it("matches direct and RPC-wrapped timeout codes", () => {
-    expect(isZCodeFileLockTimeoutError({ code: ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE })).toBe(true);
+    expect(isZCodeFileLockTimeoutError({ code: ZXCODE_FILE_LOCK_TIMEOUT_ERROR_CODE })).toBe(true);
     expect(
       isZCodeFileLockTimeoutError({
-        error: { code: ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE, message: "lock timeout" },
+        error: { code: ZXCODE_FILE_LOCK_TIMEOUT_ERROR_CODE, message: "lock timeout" },
       }),
     ).toBe(true);
   });

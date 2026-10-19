@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
+  DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  ZXCODE_PROTOCOL_NAME,
+  ZXCODE_PROTOCOL_VERSION,
   zcodeComputerUseOperationEventSchema,
-  zcodeProviderRuntimeHeadersRequestParamsSchema,
-  zcodeProviderRuntimeHeadersResponseSchema,
   zcodeProtocolMethods,
   zcodeProtocolMessageSchema,
   zcodeProcessResourceSampleSchema,
@@ -969,97 +967,9 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
-  it("models provider runtime header refresh as a strict interaction request", () => {
-    const params = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-      requestId: "header-refresh-1",
-      sessionId: "sess_1",
-      turnId: "turn_1",
-      workspace,
-      modelSelection: model,
-      providerId: "account:zai-individual-coding-plan",
-      reason: "model-request",
-    });
-    // 当前请求期鉴权材料承接请求级 header；不能恢复旧 Registry revision 或裸 headers 协议。
-    const runtimeProviderHeaders = {
-      "X-Request-Scoped-Param": "request-token",
-      "X-Request-Scoped-Region": "cn",
-    };
-    const response = zcodeProviderRuntimeHeadersResponseSchema.parse({
-      headersApplied: true,
-      requestAuth: {
-        apiKey: "request-key",
-        headers: { "X-Request": "request-header", ...runtimeProviderHeaders },
-      },
-    });
-    expect(response).toMatchObject({ requestAuth: { headers: runtimeProviderHeaders } });
-    expect(() =>
-      zcodeProviderRuntimeHeadersResponseSchema.parse({
-        headersApplied: true,
-      }),
-    ).toThrow();
-    expect(() =>
-      zcodeProviderRuntimeHeadersResponseSchema.parse({
-        headersApplied: true,
-        runtimeProviderHeaders,
-        providerRevision: "rev-2",
-      }),
-    ).toThrow();
-
-    expect(zcodeProtocolMethods.interactionRequestProviderRuntimeHeaders).toBe(
-      "interaction/requestProviderRuntimeHeaders",
-    );
-    expect(() =>
-      zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-        ...params,
-        staleHeader: "must-not-pass-through",
-      }),
-    ).toThrow();
-  });
-
-  it.each(["start-plan", "individual-coding-plan", "team-coding-plan", "off-peak"] as const)(
-    "runtime headers 直接接受 Registry zhipu access mode: %s",
-    (mode) => {
-      const parsed = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-        requestId: `request-${mode}`,
-        sessionId: "sess_1",
-        workspace,
-        modelSelection: model,
-        providerId: `account:${mode}`,
-        accountAccess: {
-          type: "zhipu-account",
-          accountType: "bigmodel",
-          mode,
-          entitled: true,
-        },
-        reason: "model-request",
-      });
-
-      expect(parsed.accountAccess).toEqual({
-        type: "zhipu-account",
-        accountType: "bigmodel",
-        mode,
-        entitled: true,
-      });
-    },
-  );
-
-  it("runtime headers 拒绝已经退出 Registry 的旧 planKind Access 形状", () => {
-    expect(() =>
-      zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-        requestId: "request-legacy",
-        sessionId: "sess_1",
-        workspace,
-        modelSelection: model,
-        providerId: "account:legacy",
-        accountAccess: {
-          type: "zhipu-account",
-          accountType: "bigmodel",
-          planKind: "team-coding-plan",
-        },
-        reason: "model-request",
-      }),
-    ).toThrow();
-  });
+  // fork 已剔除 provider runtime header refresh 交互（账号请求期鉴权链路随 OAuth/账号 provider
+  // 一并移除）：zcodeProviderRuntimeHeaders* schema 与 interaction/requestProviderRuntimeHeaders
+  // method 不再存在，上游对应用例随之删除。
 
   it("parses subagent mirrored tool updates with explicit protocol metadata", () => {
     const scheduled = zcodeSessionEventSchema.parse({
@@ -1268,8 +1178,8 @@ describe("ZCode Protocol", () => {
   it("parses a server-authoritative session state snapshot", () => {
     const snapshot = zcodeSessionStateSnapshotSchema.parse({
       protocol: {
-        name: ZCODE_PROTOCOL_NAME,
-        version: ZCODE_PROTOCOL_VERSION,
+        name: ZXCODE_PROTOCOL_NAME,
+        version: ZXCODE_PROTOCOL_VERSION,
       },
       session: {
         sessionId: "sess_1",
@@ -2728,7 +2638,7 @@ describe("ZCode Protocol", () => {
   });
 
   it("keeps runtime preference compatibility by defaulting missing fields", () => {
-    expect(DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
+    expect(DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({
         nativeSearchEnhancementsEnabled: true,
@@ -2736,7 +2646,7 @@ describe("ZCode Protocol", () => {
     ).toMatchObject({
       askUserQuestionAutoResolutionEnabled: true,
       memoryEnabled: false,
-      modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      modelContextBudgetStrategy: DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     });
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({

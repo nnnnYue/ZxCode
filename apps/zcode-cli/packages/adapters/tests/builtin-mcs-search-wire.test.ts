@@ -18,41 +18,14 @@ import { AiSdkModelAdapter } from "../src/model/runner.js";
 
 describe("Published MCS and search final Anthropic wire", () => {
   it.each([
-    [
-      "account:zai-start-plan",
-      "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
-    [
-      "account:bigmodel-start-plan",
-      "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
-    [
-      "account:zai-offpeak-idle-plan",
-      "https://zcode.z.ai/api/v1/off-peak/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
-    [
-      "account:bigmodel-offpeak-idle-plan",
-      "https://zcode.z.ai/api/v1/off-peak/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
     ["fixture", "https://api.anthropic.com/v1", "claude-sonnet-5", false, true],
     ["fixture", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", true, false],
     ["personal-off", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", false, false],
   ] as const)("%s / %s / %s", async (providerId, baseUrl, modelId, mcs, search) => {
     const release = JSON.parse(
       await readFile(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        // fork 生产配置改名为 zxcode-builtin.json（coding plan 账号规则已剔除）。
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );

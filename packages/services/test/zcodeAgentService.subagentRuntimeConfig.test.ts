@@ -4,7 +4,48 @@ import {
   zcodeProtocolMethods,
   type SubagentRuntimeConfig,
 } from "@zcode/shared";
-import { offPeakSelectionView } from "./fixtures/offPeakSelection.js";
+import type { ModelSelectionView } from "@zcode/provider";
+
+/** 最小可见 Provider 选择视图；替代已剔除的 offPeakSelection fixture（fork 无账号域 Provider）。 */
+function plainSelectionView(): ModelSelectionView {
+  return {
+    revision: 1,
+    providers: [
+      {
+        providerId: "zai-api",
+        config: { visibility: "visible" },
+        models: [
+          {
+            modelId: "GLM-5.3",
+            config: {
+              enabled: true,
+              properties: {
+                requiresMfjsToolSchema: false,
+                contextWindow: 200000,
+                inputFormat: {
+                  supportsText: true,
+                  supportsImage: false,
+                  supportsVideo: false,
+                  supportsAudio: false,
+                  supportsPdf: false,
+                },
+                outputFormat: { supportsText: true },
+                supportsToolCall: true,
+                supportsJsonSchemaOutput: false,
+                supportsNativeWebSearch: false,
+                supportsMidConversationSystem: false,
+              },
+              optionSpecs: {
+                reasoningLevel: { values: ["high"], map: "{}" },
+                maxOutputTokens: { max: 32000, map: "{}" },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
 
 afterEach(() => {
   vi.doUnmock("../src/zcode-agent/zcodeAgentProcessManager.js");
@@ -67,7 +108,7 @@ describe("subagent runtime config reverse RPC", () => {
     const { createZCodeAgentService } = await import("../src/zcode-agent/zcodeAgentService.js");
     const service = createZCodeAgentService({
       readSubagentRuntimeConfig: read,
-      modelSelectionReadinessSource: { getView: async () => offPeakSelectionView() },
+      modelSelectionReadinessSource: { getView: async () => plainSelectionView() },
     });
     const workspace = { workspacePath: "/workspace/a", workspaceIdentity: "test:a" };
     try {

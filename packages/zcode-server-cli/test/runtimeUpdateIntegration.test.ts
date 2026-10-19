@@ -67,15 +67,15 @@ async function waitForHttpClosed(port: number): Promise<boolean> {
 describe.skipIf(process.platform === "win32")("runtime update integration", () => {
   it("收口 Supervisor IPC 断连后的 Core，避免遗留孤儿监听进程", async () => {
     const root = await mkdtemp(join("/tmp", "zcode-orphan-"));
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     await new ReleaseManager(layout).ensure();
     const coreEntry = fileURLToPath(new URL("../src/server-core/entry.ts", import.meta.url));
     const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
-      new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+      new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
     );
     const harness = [
       "import { fork } from 'node:child_process';",
-      `const core = fork(${JSON.stringify(coreEntry)}, ['1'], { execArgv: ['--import', 'tsx'], env: { ...process.env, ZCODE_SERVER_ROOT: ${JSON.stringify(layout.serverRoot)}, ZCODE_DATA_BASE_DIR: ${JSON.stringify(layout.dataBaseDir)}, ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: ${JSON.stringify(zcodeBuiltinProviderConfigFilePath)} }, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });`,
+      `const core = fork(${JSON.stringify(coreEntry)}, ['1'], { execArgv: ['--import', 'tsx'], env: { ...process.env, ZXCODE_SERVER_ROOT: ${JSON.stringify(layout.serverRoot)}, ZXCODE_DATA_BASE_DIR: ${JSON.stringify(layout.dataBaseDir)}, ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE: ${JSON.stringify(zcodeBuiltinProviderConfigFilePath)} }, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });`,
       "core.on('message', (message) => { if (message && message.type === 'ready') process.stdout.write(JSON.stringify(message)); });",
     ].join("\n");
     const supervisor = spawn(process.execPath, ["--input-type=module", "-e", harness], {
@@ -127,7 +127,7 @@ describe.skipIf(process.platform === "win32")("runtime update integration", () =
     const root = await mkdtemp(
       join(process.platform === "win32" ? tmpdir() : "/tmp", "zcode-runtime-"),
     );
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     const canonicalLayout = await resolveCanonicalServerLayout(layout.serverRoot);
     const releases = new ReleaseManager(layout);
     await releases.ensure();
@@ -137,7 +137,7 @@ describe.skipIf(process.platform === "win32")("runtime update integration", () =
       await mkdir(runtimeRoot, { recursive: true });
       await symlink(process.execPath, join(runtimeRoot, "node"));
       await symlink(fixture, join(runtimeRoot, "server-core.js"));
-      await writeFile(join(runtimeRoot, "zcode.cjs"), "", "utf8");
+      await writeFile(join(runtimeRoot, "zxcode.cjs"), "", "utf8");
     }
     await releases.writePending({ version: "old", releaseDir: join(layout.releasesDir, "old") });
     await releases.applyPending();
@@ -159,7 +159,7 @@ describe.skipIf(process.platform === "win32")("runtime update integration", () =
       {
         env: {
           ...process.env,
-          ZCODE_TEST_WIRING_OUTPUT: wiringOutput,
+          ZXCODE_TEST_WIRING_OUTPUT: wiringOutput,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -213,7 +213,7 @@ describe.skipIf(process.platform === "win32")("runtime update integration", () =
     for (const [index, version] of ["old", "new"].entries()) {
       const runtimeRoot = join(layout.releasesDir, version, "runtime");
       expect(records[index]).toMatchObject({
-        agentArgs: [join(runtimeRoot, "zcode.cjs"), "app-server", "--stdio"],
+        agentArgs: [join(runtimeRoot, "zxcode.cjs"), "app-server", "--stdio"],
         agentCommand: join(runtimeRoot, "node"),
         dataBaseDir: canonicalLayout.dataBaseDir,
         runtimeRoot,

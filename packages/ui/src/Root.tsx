@@ -1,8 +1,3 @@
-import {
-  RequestSecurityHost,
-  RequestSecurityWorkspaceBridge,
-  setRequestSecurityReporter,
-} from "@/request-security-edition/index.js";
 /* eslint-disable max-lines -- Root 当前集中编排启动和 workspace shell wiring，先保持入口收口避免跨层状态拆散。 */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideProvider, RefreshCw } from "lucide-react";
@@ -33,8 +28,16 @@ import {
 import { StoreProvider, useZCodeStore } from "@/store/StoreProvider.js";
 import { setMcpStorePlatform } from "@/store/mcpStore.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import { TabStoreProvider, useTabStore, useTabStoreApi } from "@/store/TabStoreProvider.js";
-import { isSettingsTab, isWorkspaceTab } from "@/store/tabStore.js";
+import {
+  TabStoreProvider,
+  useTabStore,
+  useTabStoreApi,
+} from "@/store/TabStoreProvider.js";
+import {
+  isSettingsTab,
+  isWorkspaceTab,
+  type WorkspaceTabState,
+} from "@/store/tabStore.js";
 import { logger } from "@/logger.js";
 import { RootShell } from "@/root/RootShell.js";
 import { RootWorkspaceContent } from "@/root/RootWorkspaceContent.js";
@@ -94,7 +97,9 @@ function WebRemoteControlTaskSync({
   syncWebRemoteControlTasks,
   workspaceTabs,
 }: {
-  syncWebRemoteControlTasks: NonNullable<RootProps["platform"]["syncWebRemoteControlTasks"]>;
+  syncWebRemoteControlTasks: NonNullable<
+    RootProps["platform"]["syncWebRemoteControlTasks"]
+  >;
   workspaceTabs: WorkspaceTabState[];
 }) {
   const workspaceStates = useZCodeSessionStore((state) => state.workspaces);
@@ -123,7 +128,8 @@ function WebRemoteControlTaskSync({
     collapsedLimit: 100,
   });
   const taskTargets = useMemo(() => {
-    const runtimeByWorkspaceKey = buildWebRemoteControlTaskRuntimeByWorkspaceKey(workspaceStates);
+    const runtimeByWorkspaceKey =
+      buildWebRemoteControlTaskRuntimeByWorkspaceKey(workspaceStates);
     // Bugfix: Web remote 未开启时不应让 Root 订阅整张 workspace 表。
     // 远控 task 索引只在该组件挂载后运行，避免桌面 continuous 流式更新唤醒 Root/App/Shell 主链路。
     // Bugfix: 手机远控首页之前只同步 timeline，而 timeline 查询会过滤 pinned=1。
@@ -148,15 +154,17 @@ function WebRemoteControlTaskSync({
       archived: true,
     });
 
-    return [...pinnedTargets, ...timelineTargets, ...archivedTargets].sort((left, right) => {
-      if (right.updatedAt !== left.updatedAt) {
-        return right.updatedAt - left.updatedAt;
-      }
-      if (right.createdAt !== left.createdAt) {
-        return right.createdAt - left.createdAt;
-      }
-      return right.taskId.localeCompare(left.taskId);
-    });
+    return [...pinnedTargets, ...timelineTargets, ...archivedTargets].sort(
+      (left, right) => {
+        if (right.updatedAt !== left.updatedAt) {
+          return right.updatedAt - left.updatedAt;
+        }
+        if (right.createdAt !== left.createdAt) {
+          return right.createdAt - left.createdAt;
+        }
+        return right.taskId.localeCompare(left.taskId);
+      },
+    );
   }, [
     archivedTaskList.items,
     pinnedTaskList.items,
@@ -218,11 +226,12 @@ export function Root(props: RootProps) {
             <StoreProvider broadcastService={props.services.broadcastService}>
               <TabStoreProvider>
                 <DiffsWorkerPoolProvider>
-                  <WebRemoteControlFeatureProvider enabled={props.webRemoteControlFeatureEnabled}>
+                  <WebRemoteControlFeatureProvider
+                    enabled={props.webRemoteControlFeatureEnabled}
+                  >
                     <AssistantCodeCommentFeatureProvider
                       enabled={props.assistantCodeCommentCardsEnabled}
                     >
-                      <RequestSecurityHost />
                       <RootInner {...props} />
                     </AssistantCodeCommentFeatureProvider>
                   </WebRemoteControlFeatureProvider>
@@ -260,10 +269,8 @@ function RootInner({
   initialWorkspaceLoadingFallback,
 }: RootProps) {
   useEffect(() => {
-    setRequestSecurityReporter(platform);
     setMcpStorePlatform(platform);
     return () => {
-      setRequestSecurityReporter(null);
       setMcpStorePlatform(null);
     };
   }, [platform]);
@@ -282,35 +289,51 @@ function RootInner({
     zcodeAgentService: services.zcodeAgentService,
     configSource: services.zcodeAgentService,
   });
-  const rootModelSelectionRead = useModelSelectionServiceView(services.modelSelectionService);
+  const rootModelSelectionRead = useModelSelectionServiceView(
+    services.modelSelectionService,
+  );
   const rootModelSelectionErrorNode =
     rootModelSelectionRead.state.status === "error" ? (
       <div className="fixed right-4 bottom-4 z-50 flex max-w-sm items-center gap-3 rounded-lg border border-destructive/30 bg-surface-raised px-3 py-2 text-ui-base text-foreground shadow-lg">
         <span className="min-w-0 flex-1">
           {intl.formatMessage({ id: "root.modelSelection.loadFailed" })}
         </span>
-        <Button type="button" variant="ghost" size="sm" onClick={rootModelSelectionRead.reload}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={rootModelSelectionRead.reload}
+        >
           <RefreshCw className="size-3.5" aria-hidden="true" />
           {intl.formatMessage({ id: "common.retry" })}
         </Button>
       </div>
     ) : null;
-  const [remoteConnectionDialogOpen, setRemoteConnectionDialogOpen] = useState(false);
+  const [remoteConnectionDialogOpen, setRemoteConnectionDialogOpen] =
+    useState(false);
   const [remoteConnectionOpenPreference, setRemoteConnectionOpenPreference] =
     useState<RemoteConnectionOpenPreference | null>(null);
   const [directoryBrowserOpen, setDirectoryBrowserOpen] = useState(false);
-  const [remoteConnectionInProgress, setRemoteConnectionInProgress] = useState(false);
-  const [remoteConnectionRequestId, setRemoteConnectionRequestId] = useState<string | null>(null);
-  const [isCreatingFallbackWorkspace, setIsCreatingFallbackWorkspace] = useState(false);
-  const { connectionLogs: remoteConnectionLogs, resetConnectionLogs: resetRemoteConnectionLogs } =
-    useRemoteConnectionLogs(remoteConnectionRequestId);
-  const [isBootstrappingInitialWorkspace, setIsBootstrappingInitialWorkspace] = useState(
-    Boolean(initialWorkspaceAbsPath),
-  );
+  const [remoteConnectionInProgress, setRemoteConnectionInProgress] =
+    useState(false);
+  const [remoteConnectionRequestId, setRemoteConnectionRequestId] = useState<
+    string | null
+  >(null);
+  const [isCreatingFallbackWorkspace, setIsCreatingFallbackWorkspace] =
+    useState(false);
+  const {
+    connectionLogs: remoteConnectionLogs,
+    resetConnectionLogs: resetRemoteConnectionLogs,
+  } = useRemoteConnectionLogs(remoteConnectionRequestId);
+  const [isBootstrappingInitialWorkspace, setIsBootstrappingInitialWorkspace] =
+    useState(Boolean(initialWorkspaceAbsPath));
   const previousRemoteConnectionInProgressRef = useRef(false);
   const didRequestFallbackWorkspaceRef = useRef(false);
   const rootInnerMountedRef = useRef(true);
-  const [hasEnteredNativeThemeSyncSurface, setHasEnteredNativeThemeSyncSurface] = useState(false);
+  const [
+    hasEnteredNativeThemeSyncSurface,
+    setHasEnteredNativeThemeSyncSurface,
+  ] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -320,10 +343,13 @@ function RootInner({
 
   useEffect(() => {
     const disposable = services.broadcastService.onMessage((message) => {
-      if (message.channel === APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL) {
-        const parsed = appRuntimePreferencesChangedBroadcastPayloadSchema.safeParse(
-          message.payload,
-        );
+      if (
+        message.channel === APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL
+      ) {
+        const parsed =
+          appRuntimePreferencesChangedBroadcastPayloadSchema.safeParse(
+            message.payload,
+          );
         if (!parsed.success) {
           logger.warn("[settings] 丢弃无效的运行时偏好广播", {
             issues: parsed.error.issues,
@@ -331,12 +357,16 @@ function RootInner({
           return;
         }
         void refreshAppSettings();
-        void services.zcodeAgentService.syncAppRuntimePreferences(parsed.data).catch((error) => {
-          logger.warn("[settings] 同步跨窗口运行时偏好失败", error);
-        });
-        void services.botsService.syncAppRuntimePreferences(parsed.data).catch((error) => {
-          logger.warn("[settings] 同步跨窗口 Bot 运行时偏好失败", error);
-        });
+        void services.zcodeAgentService
+          .syncAppRuntimePreferences(parsed.data)
+          .catch((error) => {
+            logger.warn("[settings] 同步跨窗口运行时偏好失败", error);
+          });
+        void services.botsService
+          .syncAppRuntimePreferences(parsed.data)
+          .catch((error) => {
+            logger.warn("[settings] 同步跨窗口 Bot 运行时偏好失败", error);
+          });
         return;
       }
 
@@ -362,7 +392,9 @@ function RootInner({
       // 关闭文件 tab 后 PreviewPane 会卸载，不能再依赖 PreviewPane 自己监听跨窗口清理事件。
       // 这里在 Root 生命周期内同步清理 renderer 级 preview store，避免发送后重新打开文件又恢复旧 comment。
       markCodeCommentRemoved(message.payload);
-      useCodeCommentPreviewStore.getState().removeCommentBySource(message.payload);
+      useCodeCommentPreviewStore
+        .getState()
+        .removeCommentBySource(message.payload);
     });
 
     return () => {
@@ -383,7 +415,8 @@ function RootInner({
       .syncAppRuntimePreferences({
         askUserQuestionAutoResolutionEnabled:
           appSettings.askUserQuestionAutoResolutionEnabled !== false,
-        modelIoFullRetentionEnabled: appSettings.modelIoFullRetentionEnabled === true,
+        modelIoFullRetentionEnabled:
+          appSettings.modelIoFullRetentionEnabled === true,
       })
       .catch((error) => {
         logger.warn("[settings] 初始化运行时偏好失败", error);
@@ -392,7 +425,8 @@ function RootInner({
       .syncAppRuntimePreferences({
         askUserQuestionAutoResolutionEnabled:
           appSettings.askUserQuestionAutoResolutionEnabled !== false,
-        modelIoFullRetentionEnabled: appSettings.modelIoFullRetentionEnabled === true,
+        modelIoFullRetentionEnabled:
+          appSettings.modelIoFullRetentionEnabled === true,
       })
       .catch((error) => {
         logger.warn("[settings] 初始化 Bot 运行时偏好失败", error);
@@ -405,12 +439,20 @@ function RootInner({
   ]);
 
   const tabs = useTabStore((state) => state.tabs);
-  const windowWorkspaceTabs = useMemo(() => tabs.filter(isWorkspaceTab), [tabs]);
+  const windowWorkspaceTabs = useMemo(
+    () => tabs.filter(isWorkspaceTab),
+    [tabs],
+  );
   const activeTabId = useTabStore((state) => state.activeTabId);
   const activeWorkspacePath = useTabStore((state) => state.activeWorkspacePath);
-  const activeWorkspaceIdentity = useTabStore((state) => state.activeWorkspaceIdentity);
-  const activeTab = activeTabId ? (tabs.find((tab) => tab.id === activeTabId) ?? null) : null;
-  const activeWorkspaceTab = activeTab && isWorkspaceTab(activeTab) ? activeTab : null;
+  const activeWorkspaceIdentity = useTabStore(
+    (state) => state.activeWorkspaceIdentity,
+  );
+  const activeTab = activeTabId
+    ? (tabs.find((tab) => tab.id === activeTabId) ?? null)
+    : null;
+  const activeWorkspaceTab =
+    activeTab && isWorkspaceTab(activeTab) ? activeTab : null;
   const isSettingsTabActive = activeTab ? isSettingsTab(activeTab) : false;
   const {
     workspaceShellPath,
@@ -456,11 +498,14 @@ function RootInner({
   // Root 直接轮询 main 进程状态，确保任务快照同步只跟真实远控会话 running/active 绑定。
   const webRemoteControlStatus = useWebRemoteControlStatus({
     enabled: Boolean(
-      webRemoteControlFeatureEnabled && isDesktop && platform.syncWebRemoteControlTasks,
+      webRemoteControlFeatureEnabled &&
+      isDesktop &&
+      platform.syncWebRemoteControlTasks,
     ),
   });
   const webRemoteControlSessionActive =
-    webRemoteControlStatus.status === "running" || webRemoteControlStatus.status === "active";
+    webRemoteControlStatus.status === "running" ||
+    webRemoteControlStatus.status === "active";
   const webRemoteControlTaskSyncEnabled = Boolean(
     webRemoteControlFeatureEnabled &&
     webRemoteControlSessionActive &&
@@ -499,7 +544,8 @@ function RootInner({
   }, [refreshAppSettings, refreshProviderState, services]);
 
   const shouldPreferDirectoryBrowser = Boolean(preferDirectoryBrowser);
-  const supportsEmbeddedBrowser = explicitSupportsEmbeddedBrowser ?? Boolean(isDesktop);
+  const supportsEmbeddedBrowser =
+    explicitSupportsEmbeddedBrowser ?? Boolean(isDesktop);
   // 手机远控 Root 与桌面 Root 走不同的 workbench 链路语义（AGENTS.md：desktop-continuous
   // 与 web-remote-replayable 必须区分）。
   const isWebRemoteControlRoot = Boolean(webRemoteControlWorkspaceSwitcher);
@@ -513,10 +559,13 @@ function RootInner({
 
   useBotBroadcastEffects(services, tabStoreApi);
 
-  const handleOpenRemoteConnection = useCallback((preference?: RemoteConnectionOpenPreference) => {
-    setRemoteConnectionOpenPreference(preference ?? null);
-    setRemoteConnectionDialogOpen(true);
-  }, []);
+  const handleOpenRemoteConnection = useCallback(
+    (preference?: RemoteConnectionOpenPreference) => {
+      setRemoteConnectionOpenPreference(preference ?? null);
+      setRemoteConnectionDialogOpen(true);
+    },
+    [],
+  );
   const handleOpenDirectoryBrowser = useCallback(() => {
     setDirectoryBrowserOpen(true);
   }, []);
@@ -544,7 +593,9 @@ function RootInner({
     allowOpenWorkspace,
     preferDirectoryBrowser: shouldPreferDirectoryBrowser,
     openDirectoryBrowser: handleOpenDirectoryBrowser,
-    onOpenRemoteConnection: allowRemoteWorkspace ? handleOpenRemoteConnection : undefined,
+    onOpenRemoteConnection: allowRemoteWorkspace
+      ? handleOpenRemoteConnection
+      : undefined,
     workbenchGroupClientMode: isWebRemoteControlRoot
       ? "web-remote-replayable"
       : "desktop-continuous",
@@ -582,8 +633,10 @@ function RootInner({
     allowRemoteWorkspace,
     // conversation backing workspace 只属于本地桌面主恢复链路；远程窗口和手机
     // shared-host attachment 不能因此创建独立本地 runtime 或改变 replayable 边界。
-    ensureConversationWorkspaceOnRestore: isDesktop && restoreSession && !initialWorkspaceIdentity,
-    deferInactiveWorkspaceRestore: isDesktop && restoreSession && !initialWorkspaceIdentity,
+    ensureConversationWorkspaceOnRestore:
+      isDesktop && restoreSession && !initialWorkspaceIdentity,
+    deferInactiveWorkspaceRestore:
+      isDesktop && restoreSession && !initialWorkspaceIdentity,
     unavailableWorkspacePath,
     tabStoreApi,
     activateTabByPath,
@@ -634,13 +687,14 @@ function RootInner({
     setWorkspaceActionError(null);
   }, [activeWorkspacePath, setWorkspaceActionError]);
 
-  const { isRestoring, hasCompletedInitialRestore, hasCompletedFullRestore } = useTabPersistence({
-    settingService: supportsSettings ? services.settingService : undefined,
-    restoreSession,
-    persistSession: restoreSession,
-    restorePersistedSession,
-    buildPersistPatch: buildPersistedTabPatch,
-  });
+  const { isRestoring, hasCompletedInitialRestore, hasCompletedFullRestore } =
+    useTabPersistence({
+      settingService: supportsSettings ? services.settingService : undefined,
+      restoreSession,
+      persistSession: restoreSession,
+      restorePersistedSession,
+      buildPersistPatch: buildPersistedTabPatch,
+    });
 
   const webRemoteControlTaskSyncNode =
     hasCompletedFullRestore &&
@@ -652,20 +706,13 @@ function RootInner({
       />
     ) : null;
 
-  // Bug 原因（2026-08-16 web 远控卡死）：Start Plan 请求校验应答方曾只随桌面正在展示的
-  // session pane 挂载，web 远控新建会话时桌面没有对应 pane、web 端无应答方，
-  // headers 请求永远滞留 pending，任务永久「工作中」。应答方必须常驻桌面窗口、
-  // 覆盖每个打开的 workspace tab，与展示状态解耦；Web 端保持零订阅，桌面仍是唯一权威。
-  const requestSecurityBridgeNode = isDesktop ? (
-    <RequestSecurityWorkspaceBridge workspaceTabs={windowWorkspaceTabs} />
-  ) : null;
-
   // 启动阻塞是桌面窗口保护期，手机 Web 远控在进入 Root 前已有配对/加载页。
   // Web 端继续使用该 gate 会在 workspace tab 注入前渲染空 RootShell，露出浏览器白底。
   const isStartupRenderBlocked = shouldShowRootStartupLoading({
     isDesktop,
     isRestoring,
-    isBootstrappingInitialWorkspace: isBootstrappingInitialWorkspace || isCreatingFallbackWorkspace,
+    isBootstrappingInitialWorkspace:
+      isBootstrappingInitialWorkspace || isCreatingFallbackWorkspace,
   });
 
   useRootPlatformEffects({
@@ -696,6 +743,8 @@ function RootInner({
     webRemoteControlFeatureEnabled,
     webRemoteControlSessionActive,
     hasCompletedFullTabRestore: hasCompletedFullRestore,
+    reconnectingRemoteWorkspaceKeys,
+    remoteWorkspaceErrorByWorkspaceKey,
   });
 
   useEffect(() => {
@@ -704,7 +753,9 @@ function RootInner({
     }
 
     return platform.onCloseActiveContextRequest(() => {
-      const event = new Event(CLOSE_ACTIVE_CONTEXT_REQUEST_EVENT, { cancelable: true });
+      const event = new Event(CLOSE_ACTIVE_CONTEXT_REQUEST_EVENT, {
+        cancelable: true,
+      });
       window.dispatchEvent(event);
       if (event.defaultPrevented) {
         return;
@@ -786,7 +837,9 @@ function RootInner({
           return;
         }
         logger.error("[Root] 启动兜底创建默认 workspace 失败", { error });
-        setWorkspaceActionError(error instanceof Error ? error.message : String(error));
+        setWorkspaceActionError(
+          error instanceof Error ? error.message : String(error),
+        );
       })
       .finally(() => {
         if (rootInnerMountedRef.current) {
@@ -815,12 +868,15 @@ function RootInner({
     );
   }, [isSettingsTabActive, workspaceShellPath]);
 
-  const handleRemoteConnectionDialogOpenChange = useCallback((open: boolean) => {
-    setRemoteConnectionDialogOpen(open);
-    if (!open) {
-      setRemoteConnectionOpenPreference(null);
-    }
-  }, []);
+  const handleRemoteConnectionDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setRemoteConnectionDialogOpen(open);
+      if (!open) {
+        setRemoteConnectionOpenPreference(null);
+      }
+    },
+    [],
+  );
 
   const remoteConnectionDialog = allowRemoteWorkspace ? (
     <SSHDialog
@@ -882,7 +938,6 @@ function RootInner({
       <RootShell>
         {rootModelSelectionErrorNode}
         {webRemoteControlTaskSyncNode}
-        {requestSecurityBridgeNode}
         {remoteConnectionDialog}
         {directoryBrowserDialog}
         {/* HTML 启动壳已经展示 ZxCode SVG，但 React 接管 root 后旧壳会被整棵替换。
@@ -905,7 +960,6 @@ function RootInner({
       <RootShell>
         {rootModelSelectionErrorNode}
         {webRemoteControlTaskSyncNode}
-        {requestSecurityBridgeNode}
         {initialWorkspaceLoadingFallback}
         {directoryBrowserDialog}
       </RootShell>
@@ -916,11 +970,12 @@ function RootInner({
     <RootShell>
       {rootModelSelectionErrorNode}
       {webRemoteControlTaskSyncNode}
-      {requestSecurityBridgeNode}
       {remoteConnectionDialog}
       {directoryBrowserDialog}
       <OccupationOnboarding
-        showWindowControls={Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop))}
+        showWindowControls={Boolean(
+          isWindowsDesktop || (isDesktop && !isMacDesktop),
+        )}
         showChildrenWhileLoading={!workspaceShellPath && isSettingsTabActive}
         isMacDesktop={isMacDesktop}
         isWindowsDesktop={isWindowsDesktop}
@@ -951,9 +1006,13 @@ function RootInner({
             handleReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
             handleCreateTask={handleCreateTask}
             handleCreateConversationTask={handleCreateConversationTask}
-            handleResolveConversationWorkspace={handleResolveConversationWorkspace}
+            handleResolveConversationWorkspace={
+              handleResolveConversationWorkspace
+            }
             handleOpenWorkspace={handleOpenWorkspace}
-            handleOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
+            handleOpenFolderFromWorkspaceMenu={
+              handleOpenFolderFromWorkspaceMenu
+            }
             handleOpenRemoteWorkspace={
               allowRemoteWorkspace ? handleOpenRemoteConnection : undefined
             }
@@ -962,18 +1021,26 @@ function RootInner({
             allowRemoteWorkspace={allowRemoteWorkspace}
             handleBackFromSettings={handleBackFromSettings}
             reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
-            remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
+            remoteWorkspaceErrorByWorkspaceKey={
+              remoteWorkspaceErrorByWorkspaceKey
+            }
             reconnectingRemoteWorkspaceLogsByWorkspaceKey={
               reconnectingRemoteWorkspaceLogsByWorkspaceKey
             }
             remoteConnectionLogs={remoteConnectionLogs}
             allowOpenWorkspace={allowOpenWorkspace}
-            webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
+            webRemoteControlWorkspaceSwitcher={
+              webRemoteControlWorkspaceSwitcher
+            }
             initialWebRemoteControlMobileNavigationIntent={
               initialWebRemoteControlMobileNavigationIntent
             }
-            initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
-            webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
+            initialWebRemoteControlWorkspaceList={
+              initialWebRemoteControlWorkspaceList
+            }
+            webRemoteControlTerminalTransportState={
+              webRemoteControlTerminalTransportState
+            }
             isDesktop={isDesktop}
             isMacDesktop={isMacDesktop}
             isWindowsDesktop={isWindowsDesktop}

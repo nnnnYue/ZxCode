@@ -300,7 +300,8 @@ describe("native search build", () => {
     ).toBe("https://example.test/ripgrep");
     expect(
       resolveNativeSearchRipgrepDownloadBaseUrl({
-        ZCODE_DEPS_BASE_URL: "https://deps.example.test/zcode/deps/",
+        // fork 内网依赖源 env 为 ZXCODE_DEPS_BASE_URL（上游为 ZCODE_DEPS_BASE_URL）
+        ZXCODE_DEPS_BASE_URL: "https://deps.example.test/zcode/deps/",
       }),
     ).toBe("https://deps.example.test/zcode/deps/native-search-tools/ripgrep-v14.1.1-1");
   });

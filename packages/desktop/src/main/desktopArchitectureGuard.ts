@@ -45,7 +45,8 @@ export function detectArchitectureMismatch(
   return { binaryArch, nativeArch: "arm64" };
 }
 
-function resolveArchitectureDownloadUrl(): string {
+// 导出供单测断言下载外链（与更新日志一致固定 GitHub Releases；见 specs/desktop-external-links.md）。
+export function resolveArchitectureDownloadUrl(): string {
   // 与更新日志入口一致，固定跳转 GitHub Releases（见 specs/desktop-external-links.md），
   // 不再按语言/endpoint 分流到官网。
   return ZXCODE_RELEASES_URL;

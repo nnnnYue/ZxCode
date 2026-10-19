@@ -197,7 +197,10 @@ export function createSubagentRuntimeConfigCache(reader: ConfigReader) {
       if (workspace) {
         const workspaceKey = key(workspace);
         workspaces.get(workspaceKey)?.dispose();
-        const project = documentScope(join(workspace.workspacePath, ".zcode", "agents"), "project");
+        // 修复原因：fork 目录更名时此行漏改（全仓 src 唯一残留的 ".zcode"）。
+        // watcher 监听 .zcode/agents 而 subagentStorage 从 .zxcode/agents 读取，
+        // 导致工作区 subagent 配置的变更事件永远对应不上读取目录，Host 观察不到更新。
+        const project = documentScope(join(workspace.workspacePath, ".zxcode", "agents"), "project");
         workspaces.set(workspaceKey, project);
         initializing.push(project);
       }

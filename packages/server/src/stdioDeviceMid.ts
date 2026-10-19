@@ -1,7 +1,9 @@
-import { ensureTelemetryDeviceMid } from "@zcode/services/node";
+// 去平台化：原 ensureTelemetryDeviceMid 随 telemetry 域删除，设备身份统一走 services 的
+// ensureDeviceMid（同一文件、字段与锁，与同机 zcode-cli 共享同一个设备身份）。
+import { ensureDeviceMid as ensureDeviceMidDefault } from "@zcode/services/node";
 
 export interface EnsureRemoteServerDeviceMidOptions {
-  /** 仅测试注入；生产固定使用 services 的 ensureTelemetryDeviceMid。 */
+  /** 仅测试注入；生产固定使用 services 的 ensureDeviceMid。 */
   ensureDeviceMid?: () => Promise<string>;
   log: (...args: unknown[]) => void;
 }
@@ -21,7 +23,7 @@ export interface EnsureRemoteServerDeviceMidOptions {
 export async function ensureRemoteServerDeviceMid(
   options: EnsureRemoteServerDeviceMidOptions,
 ): Promise<string | undefined> {
-  const ensureDeviceMid = options.ensureDeviceMid ?? ensureTelemetryDeviceMid;
+  const ensureDeviceMid = options.ensureDeviceMid ?? ensureDeviceMidDefault;
   try {
     return await ensureDeviceMid();
   } catch (error) {

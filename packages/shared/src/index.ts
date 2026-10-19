@@ -1,10 +1,4 @@
-export { cloudContentPayloadSchema, contentBundleSchema } from "./cloudContent.js";
 export * from "./networkCapture.js";
-export type {
-  CloudContentPayload,
-  CloudContentBundle,
-  CloudContentHeroType,
-} from "./cloudContent.js";
 export type {
   FileBinaryPreview,
   FileEntry,
@@ -142,8 +136,13 @@ export {
   isCustomEditorInfo,
 } from "./platform.js";
 export * from "./remoteUsageTelemetry.js";
+export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
-export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
+export {
+  LAUNCH_MARKS_QUERY_KEY,
+  parseLaunchMarks,
+  serializeLaunchMarks,
+} from "./launchMarks.js";
 export type {
   CancelPendingRemoteConnectionRequest,
   BindRemoteWorkspaceSessionContextRequest,
@@ -297,12 +296,12 @@ export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
 
 export * from "./localTtft.js";
 export * from "./pluginStoreOrdering.js";
-export * from "./marketingTouch.js";
-export * from "./rewardsEmbedded.js";
-export * from "./rewardsBridge.js";
 export * from "./session-debug.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
-export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
+export {
+  API_KEY_USAGE_SCENE,
+  type ApiKeyCreationUsageScene,
+} from "./api-key-usage-scene.js";
 export {
   projectAccessTokenFingerprint,
   ProjectAccessTokenTransientError,
@@ -317,9 +316,3 @@ export * from "./conversationSelection.js";
 export * from "./attachment-source.js";
 
 export * from "./channel-mention.js";
-
-export {
-  requestSecuritySensitiveHeaders,
-  isRequestSecurityFailure,
-} from "./request-security-edition/policy.js";
-export * from "./request-security-edition/verification-policy.js";

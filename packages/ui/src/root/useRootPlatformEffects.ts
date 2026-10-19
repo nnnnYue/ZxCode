@@ -2,7 +2,11 @@
 import { useEffect, useRef } from "react";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import type { IPlatformService } from "@zcode/shared";
-import { isWorkspaceTab, type TabStoreState, type WindowTabState } from "@/store/tabStore.js";
+import {
+  isWorkspaceTab,
+  type TabStoreState,
+  type WindowTabState,
+} from "@/store/tabStore.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { logger } from "@/logger.js";
 import { matchesPrimaryShortcut } from "@/lib/keyboardShortcuts.js";
@@ -37,6 +41,8 @@ export function useRootPlatformEffects({
   webRemoteControlFeatureEnabled = false,
   webRemoteControlSessionActive = false,
   hasCompletedFullTabRestore = true,
+  reconnectingRemoteWorkspaceKeys = [],
+  remoteWorkspaceErrorByWorkspaceKey = {},
 }: {
   initialWorkspaceAbsPath?: string;
   initialWorkspaceIdentity?: string;
@@ -52,27 +58,40 @@ export function useRootPlatformEffects({
   ) => void;
   setIsBootstrappingInitialWorkspace: (value: boolean) => void;
   platform: IPlatformService;
-  activateTabByPath: (workspacePath: string, options?: { workspaceIdentity?: string }) => boolean;
-  startDraftInWorkspace: (workspacePath: string, workspaceIdentity?: string) => void;
+  activateTabByPath: (
+    workspacePath: string,
+    options?: { workspaceIdentity?: string },
+  ) => boolean;
+  startDraftInWorkspace: (
+    workspacePath: string,
+    workspaceIdentity?: string,
+  ) => void;
   startNewTaskFromActiveWorkspace: (source: string) => void;
   openWorkspace: () => void;
   openWorkspacePath: (workspacePath: string) => void;
   setWorkspaceActionError: (message: string | null) => void;
   allowOpenWorkspace?: boolean;
   isDesktop?: boolean;
-  locale: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["locale"];
+  locale: ReturnType<
+    typeof import("@/i18n/IntlProvider.js").useZCodeIntl
+  >["locale"];
   tabs: WindowTabState[];
   totalUnreadTaskCount: number;
   webRemoteControlFeatureEnabled?: boolean;
   webRemoteControlSessionActive?: boolean;
   hasCompletedFullTabRestore?: boolean;
+  reconnectingRemoteWorkspaceKeys?: string[];
+  remoteWorkspaceErrorByWorkspaceKey?: Record<string, string>;
 }) {
   const didBootstrapInitialWorkspaceRef = useRef(false);
 
   useEffect(() => {
     // 启动时必须先完成本地会话状态判定，再恢复历史/初始 workspace。
     // 如果这里抢先 addTab，未登录用户会先看到主界面，之后才被登录页覆盖。
-    if (!canBootstrapInitialWorkspace || didBootstrapInitialWorkspaceRef.current) {
+    if (
+      !canBootstrapInitialWorkspace ||
+      didBootstrapInitialWorkspaceRef.current
+    ) {
       return;
     }
 
@@ -82,20 +101,31 @@ export function useRootPlatformEffects({
         initialWorkspaceAbsPath,
         initialWorkspaceIdentity || initialWorkspacePurpose
           ? {
-              ...(initialWorkspaceIdentity ? { workspaceIdentity: initialWorkspaceIdentity } : {}),
-              ...(initialWorkspacePurpose ? { workspacePurpose: initialWorkspacePurpose } : {}),
+              ...(initialWorkspaceIdentity
+                ? { workspaceIdentity: initialWorkspaceIdentity }
+                : {}),
+              ...(initialWorkspacePurpose
+                ? { workspacePurpose: initialWorkspacePurpose }
+                : {}),
             }
           : undefined,
       );
       if (initialTaskId) {
         useZCodeSessionStore
           .getState()
-          .setActiveTaskId(initialWorkspaceAbsPath, initialTaskId, initialWorkspaceIdentity);
+          .setActiveTaskId(
+            initialWorkspaceAbsPath,
+            initialTaskId,
+            initialWorkspaceIdentity,
+          );
       } else if (!isRendererReloadNavigation()) {
         // main 注入 initial workspace 只表达工作区入口；没有显式 taskId
         // 的 app 冷启动必须进入草稿，不能让 renderer-local last-session/group/pane
         // 抢回历史会话；同一 renderer reload 则保留当前 session 续流资格。
-        startDraftInWorkspace(initialWorkspaceAbsPath, initialWorkspaceIdentity);
+        startDraftInWorkspace(
+          initialWorkspaceAbsPath,
+          initialWorkspaceIdentity,
+        );
       }
     }
     // Dock 最近项目会通过 initialWorkspaceAbsPath 直达工作区。
@@ -140,7 +170,9 @@ export function useRootPlatformEffects({
     const disposeOpenWorkspacePath = platform.onOpenWorkspacePath
       ? platform.onOpenWorkspacePath((path: string) => {
           if (!allowOpenWorkspace) {
-            logger.info("[Root] 当前模式不支持通过 deep link 打开文件夹，已忽略请求");
+            logger.info(
+              "[Root] 当前模式不支持通过 deep link 打开文件夹，已忽略请求",
+            );
             return;
           }
 
@@ -151,30 +183,47 @@ export function useRootPlatformEffects({
           openWorkspacePath(path);
         })
       : () => {};
-    const disposeNotificationClick = platform.onTaskNotificationClick((taskId: string) => {
-      logger.info("[Root] onTaskNotificationClick:", taskId);
-      // 遍历所有 workspace 找到 taskId 所属的 workspace，然后激活对应 tab 并切换任务
-      const workspaces = useZCodeSessionStore.getState().workspaces;
-      for (const [workspacePath, workspaceState] of Object.entries(workspaces)) {
-        const taskMeta = workspaceState.taskListCache?.find((task) => task.taskId === taskId);
-        const hasTask = workspaceState.activeTaskId === taskId || Boolean(taskMeta);
-        if (hasTask) {
-          const targetWorkspacePath = taskMeta?.workspacePath ?? workspacePath;
-          const targetWorkspaceIdentity = taskMeta?.workspaceIdentity;
-          // 通知点击会从全局 workspace store 反查 task。
-          // 远端任务必须用 task meta 自带的 workspaceIdentity 激活和选中，否则会落到 path-only 桶。
-          activateTabByPath(
-            targetWorkspacePath,
-            targetWorkspaceIdentity ? { workspaceIdentity: targetWorkspaceIdentity } : undefined,
+    const disposeNotificationClick = platform.onTaskNotificationClick(
+      (taskId: string) => {
+        logger.info("[Root] onTaskNotificationClick:", taskId);
+        // 遍历所有 workspace 找到 taskId 所属的 workspace，然后激活对应 tab 并切换任务
+        const workspaces = useZCodeSessionStore.getState().workspaces;
+        for (const [workspacePath, workspaceState] of Object.entries(
+          workspaces,
+        )) {
+          const taskMeta = workspaceState.taskListCache?.find(
+            (task) => task.taskId === taskId,
           );
-          useZCodeSessionStore
-            .getState()
-            .setActiveTaskId(targetWorkspacePath, taskId, targetWorkspaceIdentity);
-          return;
+          const hasTask =
+            workspaceState.activeTaskId === taskId || Boolean(taskMeta);
+          if (hasTask) {
+            const targetWorkspacePath =
+              taskMeta?.workspacePath ?? workspacePath;
+            const targetWorkspaceIdentity = taskMeta?.workspaceIdentity;
+            // 通知点击会从全局 workspace store 反查 task。
+            // 远端任务必须用 task meta 自带的 workspaceIdentity 激活和选中，否则会落到 path-only 桶。
+            activateTabByPath(
+              targetWorkspacePath,
+              targetWorkspaceIdentity
+                ? { workspaceIdentity: targetWorkspaceIdentity }
+                : undefined,
+            );
+            useZCodeSessionStore
+              .getState()
+              .setActiveTaskId(
+                targetWorkspacePath,
+                taskId,
+                targetWorkspaceIdentity,
+              );
+            return;
+          }
         }
-      }
-      logger.warn("[Root] onTaskNotificationClick: task not found in any workspace:", taskId);
-    });
+        logger.warn(
+          "[Root] onTaskNotificationClick: task not found in any workspace:",
+          taskId,
+        );
+      },
+    );
     return () => {
       disposeFocusTab();
       disposeNewTab();
@@ -186,7 +235,10 @@ export function useRootPlatformEffects({
   }, [platform]);
 
   useEffect(() => {
-    if (!isDesktop || !shouldPublishCompleteWorkspaceSnapshot(hasCompletedFullTabRestore)) {
+    if (
+      !isDesktop ||
+      !shouldPublishCompleteWorkspaceSnapshot(hasCompletedFullTabRestore)
+    ) {
       return;
     }
 
@@ -195,7 +247,10 @@ export function useRootPlatformEffects({
       // 启动期远程 workspace 现在会先以“断开占位 tab”恢复，
       // 这些 tab 没有 remoteSessionId，但本质仍是远程会话，不能当成本地路径同步给主进程窗口列表。
       // 这里改成按完整远程身份字段过滤，避免把远程路径误同步到本地窗口标签。
-      .filter((tab) => !tab.remoteSessionId && !tab.workspaceIdentity && !tab.remoteTarget)
+      .filter(
+        (tab) =>
+          !tab.remoteSessionId && !tab.workspaceIdentity && !tab.remoteTarget,
+      )
       .map((tab) => tab.workspacePath);
     platform.syncWindowTabs(paths);
   }, [hasCompletedFullTabRestore, isDesktop, platform, tabs]);
@@ -209,7 +264,8 @@ export function useRootPlatformEffects({
       return;
     }
 
-    const connectedRemoteWorkspaces = buildConnectedRemoteWorkspaceSessionTargets({ tabs });
+    const connectedRemoteWorkspaces =
+      buildConnectedRemoteWorkspaceSessionTargets({ tabs });
     if (connectedRemoteWorkspaces.length > 0) {
       // Bugfix: Bot 远端连接状态查询依赖 main 进程里 remoteSessionId -> workspaceIdentity 的绑定。
       // 之前这条绑定复用 Web 远控 workspace 同步，Web 远控未开启时不会执行，导致 UI 已连接但 Bot 误判未连接。
@@ -308,7 +364,9 @@ export function useRootPlatformEffects({
     state.tabs.find((tab: WindowTabState) => tab.id === state.activeTabId),
   );
   const activeTab =
-    activeTabCandidate && isWorkspaceTab(activeTabCandidate) ? activeTabCandidate : undefined;
+    activeTabCandidate && isWorkspaceTab(activeTabCandidate)
+      ? activeTabCandidate
+      : undefined;
   const lastSyncedSessionIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     // 手机远控 relay 的 presence 数据源：active workspace 切换即上报三元组。
@@ -330,8 +388,10 @@ export function useRootPlatformEffects({
     const workspaceIdentity = activeTab?.workspaceIdentity;
     const syncActiveSession = (): void => {
       const nextSessionId = workspacePath
-        ? (useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-            .activeTaskId ?? null)
+        ? (useZCodeSessionStore
+            .getState()
+            .getWorkspaceState(workspacePath, workspaceIdentity).activeTaskId ??
+          null)
         : null;
       if (nextSessionId === lastSyncedSessionIdRef.current) return;
       lastSyncedSessionIdRef.current = nextSessionId;

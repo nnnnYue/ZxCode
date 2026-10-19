@@ -98,7 +98,8 @@ describe("desktop tsup chunk isolation", () => {
     expect(
       resolveDesktopTsupBundleSecurityOptions({
         NODE_ENV: "production",
-        ZCODE_E2E_COVERAGE: "1",
+        // fork：E2E coverage env 为 ZXCODE_E2E_COVERAGE（上游为 ZCODE_E2E_COVERAGE）
+        ZXCODE_E2E_COVERAGE: "1",
       }),
     ).toEqual({
       keepNames: false,
@@ -110,19 +111,20 @@ describe("desktop tsup chunk isolation", () => {
   it("remote runtime CDN 根应可由 CI 的 CDN_DOMAIN/OSS_PATH_PREFIX 多值注入", () => {
     expect(
       resolveBuildRemoteCdnReleaseRoots({
-        CDN_DOMAIN: "cdn-zcode.z.ai,cdn.zcode-ai.com",
+        CDN_DOMAIN: "cdn.a-release.example,cdn.b-release.example",
         OSS_PATH_PREFIX: "zcode/electron/releases",
       }),
     ).toEqual([
-      "https://cdn-zcode.z.ai/zcode/electron/releases",
-      "https://cdn.zcode-ai.com/zcode/electron/releases",
+      "https://cdn.a-release.example/zcode/electron/releases",
+      // fork 域名脱敏：与入参 CDN_DOMAIN 第二个条目保持一致（原上游为 cdn.zcode-ai.com）
+      "https://cdn.b-release.example/zcode/electron/releases",
     ]);
   });
 
   it("remote runtime CDN 根的路径前缀数量不匹配时应失败", () => {
     expect(() =>
       resolveBuildRemoteCdnReleaseRoots({
-        CDN_DOMAIN: "cdn-zcode.z.ai,cdn.zcode-ai.com",
+        CDN_DOMAIN: "cdn.a-release.example,cdn.b-release.example",
         OSS_PATH_PREFIX: "new-prefix,old-prefix,extra-prefix",
       }),
     ).toThrow("OSS_PATH_PREFIX must contain one value or match CDN_DOMAIN count");
@@ -131,7 +133,7 @@ describe("desktop tsup chunk isolation", () => {
   it("正式安装包 Agent OTLP 配置应映射为 Main 使用的标准环境字段", () => {
     expect(
       resolveBuildPackagedAgentTelemetryEnv({
-        ZCODE_ENV: "production",
+        ZXCODE_ENV: "production",
         ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT: "https://arms.example.com/otlp",
         ZCODE_PACKAGED_AGENT_OTEL_HEADERS: "x-arms-license-key=write-only",
         ZCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME: "zcode-cli-agent",
@@ -147,13 +149,13 @@ describe("desktop tsup chunk isolation", () => {
   it("正式安装包 Agent OTLP 配置不完整或生产环境使用 HTTP 时应阻止构建", () => {
     expect(() =>
       resolveBuildPackagedAgentTelemetryEnv({
-        ZCODE_ENV: "production",
+        ZXCODE_ENV: "production",
         ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT: "https://arms.example.com/otlp",
       }),
     ).toThrow("must be configured together");
     expect(() =>
       resolveBuildPackagedAgentTelemetryEnv({
-        ZCODE_ENV: "production",
+        ZXCODE_ENV: "production",
         ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT: "http://arms.example.com/otlp",
         ZCODE_PACKAGED_AGENT_OTEL_HEADERS: "x-arms-license-key=write-only",
       }),
@@ -177,20 +179,18 @@ describe("desktop tsup chunk isolation", () => {
   });
 
   it("安装包身份与后端环境作为两个编译期常量注入每个 bundle", () => {
-    // 打包后的应用不能依赖机器环境变量：ZCODE_PREVIEW_IDENTITY 在构建时折叠成 __ZCODE_PRODUCT_FLAVOR__。
+    // fork：编译期常量为 __ZXCODE_ENV__ / __ZXCODE_PRODUCT_FLAVOR__（上游为 __ZCODE_*）；
+    // 打包后的应用不能依赖机器环境变量，环境在构建时折叠成 define。
     for (const entry of ["main", "host", "preload"] as const) {
       const defines = getDefines(entry);
-      expect(defines).toHaveProperty("__ZCODE_ENV__");
-      expect(defines).toHaveProperty("__ZCODE_PRODUCT_FLAVOR__");
-      expect(["\"production\"", "\"preview\""]).toContain(defines.__ZCODE_PRODUCT_FLAVOR__);
+      expect(defines).toHaveProperty("__ZXCODE_ENV__");
+      expect(defines).toHaveProperty("__ZXCODE_PRODUCT_FLAVOR__");
+      expect(["\"production\"", "\"preview\""]).toContain(defines.__ZXCODE_PRODUCT_FLAVOR__);
     }
   });
 
-  it("Agent OTLP 部署默认值只应编译进 Main bundle", () => {
-    expect(getDefines("main")).toHaveProperty("__ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__");
-    expect(getDefines("host")).not.toHaveProperty("__ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__");
-    expect(getDefines("preload")).not.toHaveProperty("__ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__");
-  });
+  // fork：__ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__ define 已随打包 Agent 遥测注入链路移除，
+  // 「OTLP 部署默认值只编译进 Main bundle」用例不再适用。
 
   it("所有 tsup 子构建都应关闭 esbuild legal comments 输出", () => {
     for (const configName of ["main", "host", "preload"]) {

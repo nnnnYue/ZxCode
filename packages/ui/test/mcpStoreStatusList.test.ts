@@ -5,10 +5,10 @@ import { mergeMcpServerStatusSnapshots } from "../src/store/mcpStoreStatusList.j
 const server: ZCodeMcpServer = {
   config: { command: "node" },
   enabled: true,
-  id: "zcodeagentmcp:demo",
+  id: "zxcodeagentmcp:demo",
   name: "demo",
   scope: "user",
-  source: "zcodeagentmcp",
+  source: "zxcodeagentmcp",
   status: "connecting",
 };
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ZXCODE_RELEASES_URL } from "../src/main/desktopExternalLinks.js";
 import {
   detectArchitectureMismatch,
   formatArchitectureMismatchDialogText,
@@ -48,9 +49,9 @@ describe("detectArchitectureMismatch", () => {
 });
 
 describe("resolveArchitectureDownloadUrl", () => {
-  it("按语言分流到官网下载页", () => {
-    expect(resolveArchitectureDownloadUrl("zh-CN")).toBe("https://zcode.z.ai/cn");
-    expect(resolveArchitectureDownloadUrl("en-US")).toBe("https://zcode.z.ai/en");
+  it("固定跳转 GitHub Releases 下载页，不再按语言分流官网", () => {
+    // fork 与更新日志入口对齐（specs/desktop-external-links.md），删除 z.ai 官网分流。
+    expect(resolveArchitectureDownloadUrl()).toBe(ZXCODE_RELEASES_URL);
   });
 });
 

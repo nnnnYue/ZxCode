@@ -30,7 +30,6 @@ import {
 import { closeSessionStore, getSessionDbPath } from "./app/session-store.js";
 import { startProcessProviderRegistryRuntime } from "./app/process-provider-registry-runtime.js";
 import { scheduleStartupLogRetentionCleanup } from "./log-retention.js";
-import { resolveProcessProviderEndpointRoutingPort } from "./provider-endpoint-routing.js";
 import { StartupTimer, startupNow } from "./startup-logging.js";
 import { installZCodeProtocolAiSdkWarningLogger } from "./zcode-protocol/ai-sdk-warning-logger.js";
 import {
@@ -167,7 +166,7 @@ export async function runZCodeProtocolAgent(
       configResult.config.features.mcp === false
         ? undefined
         : createMcpTelemetryTracker({
-            idSalt: telemetryDeviceMid ?? traceContext.traceId,
+            idSalt: traceContext.traceId,
             onEvent: (event) => mcpTelemetrySink?.(event),
             onResourceSamples: (samples) => mcpResourceSink?.(samples),
           });
@@ -249,7 +248,6 @@ export async function runZCodeProtocolAgent(
                   }),
               }
             : {}),
-          providerEndpointRoutingPort,
           sourceTitle: "electron",
           onToolExecResource: (params) =>
             connection.send({ method: zcodeProtocolNotifications.toolExecResource, params }),

@@ -384,7 +384,7 @@ function resolveElectronRecordingOutputPath(value: string | undefined): string {
   return resolve(
     value?.trim() ||
       process.env.CODEX_E2E_VIDEO_PATH?.trim() ||
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR?.trim() || process.cwd(), "electron-repro.webm"),
+      join(process.env.ZXCODE_E2E_ARTIFACT_DIR?.trim() || process.cwd(), "electron-repro.webm"),
   );
 }
 

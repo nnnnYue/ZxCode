@@ -56,11 +56,20 @@ export function resolvePluginCdnZipMarketplaceLastUpdated(specs: string[] = []):
   return PLUGIN_CDN_ZIP_OFFLINE_LAST_UPDATED;
 }
 
+// fixture 服务器同时承接 known_marketplaces 记录的 marketplace.json 请求，
+// 让 url source 指向本地确定性地址（fork 门禁禁止测试代码出现 z.ai CDN 字面量）。
+let fixtureManifestJson: string | null = null;
+
 export async function startPluginCdnZipFixtureServer(): Promise<PluginCdnZipFixtureServer> {
   const zipBuffer = createPluginCdnZipArchive();
   const sha256 = hashBytes(zipBuffer);
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+    if (pathname === "/marketplace.json" && fixtureManifestJson !== null) {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(fixtureManifestJson);
+      return;
+    }
     if (pathname !== PLUGIN_CDN_ZIP_ARCHIVE_PATH) {
       response.writeHead(404);
       response.end("not found");
@@ -136,7 +145,7 @@ export function seedPluginCdnZipMarketplaceFixture(input: {
         id: PLUGIN_CDN_ZIP_MARKETPLACE_ID,
         source: {
           source: "url",
-          url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
+          url: `${input.server.baseUrl}/marketplace.json`,
         },
         name: PLUGIN_CDN_ZIP_MARKETPLACE_NAME,
         description: manifest.description,
@@ -159,6 +168,8 @@ export function seedPluginCdnZipMarketplaceFixture(input: {
   };
 
   writeJsonFileSync(join(marketplaceSourceRoot, ".claude-plugin", "marketplace.json"), manifest);
+  // 注册到 fixture 服务器，known 记录的 url source 刷新请求也走本地确定性数据。
+  fixtureManifestJson = `${JSON.stringify(manifest, null, 2)}\n`;
   // 官方市场由 bundled/CDN 两个分片重建。把确定性条目写入 CDN 分片，应用启动 seed
   // bundled 分片时才不会覆盖本地 fixture；lastUpdated 则阻止 UI 自动访问公网。
   writeJsonFileSync(

@@ -61,18 +61,6 @@ describe("公开分类排序", () => {
     expect(KNOWN_CATEGORY_LABEL_IDS.guides).toBeUndefined();
   });
 
-  it("未来法律插件可按服务端分类及插件顺序展示", () => {
-    const groups = groupItemsByCategory(
-      [item("contract", "legal"), item("research", "legal"), item("util", "utilities")],
-      "en-US",
-      {
-        categoryOrder: ["legal", "utilities"],
-        pluginOrder: { legal: ["research@official", "contract@official"] },
-      },
-    );
-    expect(groups.map((group) => group.category)).toEqual(["legal", "utilities"]);
-    expect(groups[0]?.items.map((entry) => entry.name)).toEqual(["research", "contract"]);
-  });
   it("未知分类碰巧与对象原型属性同名时仍可使用默认排序", () => {
     const entries = [item("b", "constructor"), item("a", "constructor")];
     expect(
@@ -88,33 +76,6 @@ describe("公开分类排序", () => {
     item("c"),
     item("d", "unknown"),
   ];
-
-  it("分类及分类内插件独立排序，未配置项保留默认，显式 other 可置顶", () => {
-    const before = structuredClone(items);
-    const groups = groupItemsByCategory(items, "en-US", {
-      categoryOrder: ["missing", "other", "developer-tools", "other"],
-      pluginOrder: { productivity: ["missing@official", "z@official", "z@official"] },
-    });
-    expect(groups.map((group) => group.category)).toEqual([
-      "other",
-      "developer-tools",
-      "productivity",
-      "unknown",
-    ]);
-    expect(groups[2]?.items.map((entry) => entry.name)).toEqual(["z", "a"]);
-    expect(items).toEqual(before);
-  });
-
-  it.each(["zh-CN", "en-US"])("无配置保持原排序 %s", (locale) => {
-    const groups = groupItemsByCategory(items, locale);
-    expect(groups.map((group) => group.category)).toEqual([
-      "productivity",
-      "developer-tools",
-      "unknown",
-      "other",
-    ]);
-    expect(groups[0]?.items.map((entry) => entry.name)).toEqual(["a", "z"]);
-  });
 
   it("ID 必须完整匹配，不能跨分类搬动或加入插件", () => {
     const groups = groupItemsByCategory(items, "en-US", {

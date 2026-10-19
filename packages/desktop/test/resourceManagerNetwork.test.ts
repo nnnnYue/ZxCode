@@ -26,7 +26,7 @@ it("默认无捕获；窗口拥有权限及启停，新 Host 继承，关窗清�
   const capture = await import("../src/main/resourceManagerNetwork.js");
   const host = { postMessage: vi.fn() } as unknown as UtilityProcess;
   capture.registerResourceManagerNetworkIpc();
-  const get = state.handlers.get("zcode:get-network-capture-snapshot")!;
+  const get = state.handlers.get("zxcode:get-network-capture-snapshot")!;
   capture.configureNetworkCaptureHost(host);
   expect(host.postMessage).not.toHaveBeenCalled();
   expect(channel("undici:request:create").hasSubscribers).toBe(before);
@@ -63,7 +63,7 @@ it("默认无捕获；窗口拥有权限及启停，新 Host 继承，关窗清�
       42,
     );
     expect(get({ sender: { id: 7 } }).records[0].pid).toBe(42);
-    state.handlers.get("zcode:clear-network-capture")!({ sender: { id: 7 } });
+    state.handlers.get("zxcode:clear-network-capture")!({ sender: { id: 7 } });
     const clearedId = get({ sender: { id: 7 } }).captureId;
     expect(clearedId).not.toBe(id);
     capture.ingestHostNetworkCapture({ captureId: id, records: [], dropped: 50 }, 42);

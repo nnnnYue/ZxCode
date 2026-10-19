@@ -4,6 +4,9 @@ import { pathToFileURL } from "node:url";
 import { defineConfig } from "tsup";
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
 import { resolveDesktopProductFlavor } from "./scripts/desktop-product-identity.mjs";
+// 修复原因：pass 剔除时误删了 pickProductEndpointEnv 的 import，导致 tsup 配置加载即抛
+// ReferenceError；函数本体仍在 @zcode/shared/zcodeEndpoint，按 main 分支原样补回 import。
+import { pickProductEndpointEnv } from "@zcode/shared/zcodeEndpoint";
 const { copyGenUiRuntimeAssets } = await import(
   pathToFileURL(resolve(import.meta.dirname, "scripts/gen-ui-runtime-assets.mjs")).href
 );
@@ -134,7 +137,9 @@ export function resolveBuildPackagedAgentTelemetryEnv(
     throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT must be a valid HTTP(S) URL");
   }
   if (
-    resolveZCodeEnv(runtimeEnv.ZCODE_ENV) === "production" &&
+    // 修复原因：fork 的构建环境变量为 ZXCODE_ENV（本文件其余入口与 builtin provider 配置
+    // 均按 ZXCODE_ENV 解析）；此处残留上游 ZCODE_ENV 读取，导致生产环境 HTTP 端点校验失效。
+    resolveZCodeEnv(runtimeEnv.ZXCODE_ENV) === "production" &&
     parsedEndpoint.protocol !== "https:"
   ) {
     throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT must use HTTPS in production");

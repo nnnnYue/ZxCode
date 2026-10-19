@@ -438,7 +438,6 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         noProxy: configResult.config.network.noProxy,
         caCertFile: configResult.config.network.caCertFile,
       });
-    const providerEndpointRoutingPort = options.providerEndpointRoutingPort;
     markMcpAdapterInitialized({
       configuredMcpServers,
       hasInjectedMcpPort: options.mcpPort !== undefined,
@@ -558,7 +557,6 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
 
     const modelExecutionConfig = createRuntimeAiSdkModelExecutionConfig(options.env, {
       appVersion,
-      endpointRoutingPort: providerEndpointRoutingPort,
       network: configResult.config.network,
       sourceTitle: options.sourceTitle,
     });

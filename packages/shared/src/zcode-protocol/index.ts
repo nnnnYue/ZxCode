@@ -1,4 +1,3 @@
-import { requestVerificationReasons } from "../request-security-edition/verification-policy.js";
 import { zcodeProtocolTraceSchema } from "./trace.js";
 // Bot 反向回复的名字解析/待澄清结果与 App、CLI 使用同一严格 schema。
 export { channelReplyRequestSchema, channelReplyResultSchema } from "../channel-mention.js";
@@ -45,12 +44,9 @@ import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
 // 后台详情共享精简的只读响应 schema，不携带命令或计时元数据。
 export * from "../background-bash-output.js";
 export * from "../process-diagnostic.js";
-import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
-import { modelSelectionSchema } from "../model-selection.js";
-import { completeModelPropertiesDataSchema } from "../model-config.js";
-import { modelExecutionSchema } from "../model-execution.js";
-import { APP_USAGE_RANGES, appUsageSnapshotSchema } from "../usage-stats.js";
-import { zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
+// 修复：上游 v3.15.1 合并在这一段重复粘贴了一组 import（bots/model-config/
+// model-execution/model-selection/usage-stats/snapshot 各两份），属语法级冲突，
+// 导致 oxc/tsc 解析失败、bootstrap 全部测试与 shared 类型检查被阻断；这里只保留一份。
 export { attachmentSourceKindSchema, type AttachmentSourceKind } from "../attachment-source.js";
 import { PROTOCOL_V4_LIMITS } from "../zcode-protocol-v4/core.js";
 
@@ -111,7 +107,6 @@ import {
   zcodeToolStateSchema,
   zcodeWorkspaceRefSchema,
 } from "../zcode-protocol-legacy-types.js";
-import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
 
 export * from "../localTtft.js";
 export {

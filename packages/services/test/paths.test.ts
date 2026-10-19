@@ -38,7 +38,7 @@ describe("paths", () => {
     vi.resetModules();
 
     const { copyDataDirectory } = await import("../src/paths.js");
-    const oldV2Dir = join(oldBase, ".zcode", "v2");
+    const oldV2Dir = join(oldBase, ".zxcode", "v2");
     const oldSharedSkillRoot = join(oldV2Dir, "agent-config", "claude", "skills");
     const oldSharedPluginRoot = join(oldV2Dir, "agent-config", "claude", "plugins");
     const oldWorkspaceRoot = join(oldV2Dir, "agent-config", "claude", "workspace-hash-1");
@@ -54,7 +54,7 @@ describe("paths", () => {
 
     await copyDataDirectory(oldBase, newBase);
 
-    const newV2Dir = join(newBase, ".zcode", "v2");
+    const newV2Dir = join(newBase, ".zxcode", "v2");
     const newWorkspaceRoot = join(newV2Dir, "agent-config", "claude", "workspace-hash-1");
     const newSkillLink = join(newWorkspaceRoot, "skills");
     const newPluginLink = join(newWorkspaceRoot, "plugins");
@@ -67,8 +67,8 @@ describe("paths", () => {
   it("copyDataDirectory 会跳过 setting.json 及其原子写入瞬时文件", async () => {
     const oldBase = makeTempHome();
     const newBase = makeTempHome();
-    const oldV2Dir = join(oldBase, ".zcode", "v2");
-    const newV2Dir = join(newBase, ".zcode", "v2");
+    const oldV2Dir = join(oldBase, ".zxcode", "v2");
+    const newV2Dir = join(newBase, ".zxcode", "v2");
     mkdirSync(oldV2Dir, { recursive: true });
     writeFileSync(join(oldV2Dir, "setting.json"), '{"dataBaseDir":"/old"}', "utf-8");
     writeFileSync(join(oldV2Dir, "setting.json.lock"), "lock", "utf-8");
@@ -92,17 +92,17 @@ describe("paths", () => {
     const env = {
       ProgramFiles: "C:\\Program Files",
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode",
+      ZXCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZxCode",
     };
 
     expect(
-      validateDataBaseDirTarget("c:\\program files\\zcode", {
+      validateDataBaseDirTarget("c:\\program files\\zxcode", {
         platform: "win32",
         env,
       }),
     ).toMatchObject({ ok: false });
     expect(
-      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode\\data", {
+      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZxCode\\data", {
         platform: "win32",
         env,
       }),
@@ -115,11 +115,11 @@ describe("paths", () => {
     const { validateDataBaseDirTarget } = await import("../src/paths.js");
     const env = {
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode",
+      ZXCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZxCode",
     };
 
     expect(
-      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZCodeData", {
+      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZxCodeData", {
         platform: "win32",
         env,
       }),

@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+// PreviewPane 读取 tab store 判断 workspace 只读态；测试需在真实 TabStoreProvider 内渲染。
+import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({
@@ -56,17 +58,21 @@ async function renderPreviewPane(renderHeavyContent: boolean) {
     createElement(
       ZCodeIntlProvider,
       { initialLocale: "en-US" },
-      createElement(PreviewPane, {
-        onClose: vi.fn(),
-        renderHeavyContent,
-        source: {
-          type: "text",
-          title: "demo.ts",
-          content: "const value = 1;",
-          language: "typescript",
-        },
-        workspacePath: "/workspace",
-      }),
+      createElement(
+        TabStoreProvider,
+        null,
+        createElement(PreviewPane, {
+          onClose: vi.fn(),
+          renderHeavyContent,
+          source: {
+            type: "text",
+            title: "demo.ts",
+            content: "const value = 1;",
+            language: "typescript",
+          },
+          workspacePath: "/workspace",
+        }),
+      ),
     ),
   );
 }

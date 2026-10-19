@@ -39,8 +39,8 @@ import {
 
 const PLUGIN_STABLE_ID = "skill-creator@zcode-plugins-official";
 const STORE_TRY_PLUGIN_STABLE_ID = "zcode-guide@zcode-plugins-official";
-const STORE_TRY_PLUGIN_ICON =
-  "https://cdn-zcode.z.ai/zcode/official-plugin/assets/zcode-guide/icon.png";
+// fork：官方插件图标改为 UI 侧随包快照（officialPluginIcons.generated），
+// 图标 src 是本地资源地址，不再断言远端 CDN URL，只断言存在。
 const PROMPT_MARKER = "E2E_PLUGIN_REFERENCE";
 const REPLY_MARKER = "PLUGIN_REFERENCE_REPLY_OK";
 const NOTE_RELATIVE_PATH = "plugin-reference-e2e/note.md";
@@ -116,7 +116,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
           ?.querySelector<HTMLImageElement>("img")?.src ?? null,
       testId(TID_PROMPT_SUGGESTION_OPTION, pluginOptionId),
     );
-    expect(pickerIcon).toBe(STORE_TRY_PLUGIN_ICON);
+    expect(pickerIcon).toBeTruthy();
     await captureEvidence("01-picker-plugins-group");
 
     expect(await clickV4SlashOption(pluginOptionId)).toBe(true);
@@ -133,7 +133,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     });
     expect(await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID)).toEqual({
       found: true,
-      iconSrc: STORE_TRY_PLUGIN_ICON,
+      iconSrc: expect.any(String),
       label: "zcode-guide",
     });
     await captureEvidence("02-composer-plugin-chip");
@@ -178,7 +178,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     }
     const tryNowMention = await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID);
     expect(tryNowMention.found).toBe(true);
-    expect(tryNowMention.iconSrc).toBe(STORE_TRY_PLUGIN_ICON);
+    expect(tryNowMention.iconSrc).toBeTruthy();
     expect(["ZCode Guide", "ZCode 使用指南"]).toContain(tryNowMention.label);
     await captureEvidence("04-plugin-store-try-now-draft");
 
@@ -232,7 +232,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     );
     const storeMention = await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID);
     expect(storeMention.found).toBe(true);
-    expect(storeMention.iconSrc).toBe(STORE_TRY_PLUGIN_ICON);
+    expect(storeMention.iconSrc).toBeTruthy();
     expect(["ZCode Guide", "ZCode 使用指南"]).toContain(storeMention.label);
     await captureEvidence("03-plugin-store-try-draft");
 

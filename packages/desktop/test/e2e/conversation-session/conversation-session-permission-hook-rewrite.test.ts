@@ -31,7 +31,7 @@ const CASE = "conversation-session-permission-hook-rewrite";
 const MARKER = "E2E_PERMISSION_HOOK_REWRITE";
 const TOOL_ID = "toolu_e2e_permission_hook_rewrite";
 const ROOT = resolveE2ERuntimePath(CASE);
-const ARTIFACT = join(process.env.ZCODE_E2E_ARTIFACT_DIR ?? process.cwd(), CASE);
+const ARTIFACT = join(process.env.ZXCODE_E2E_ARTIFACT_DIR ?? process.cwd(), CASE);
 const DIALOG =
   '[role="listbox"][aria-label="Permission required"], [role="listbox"][aria-label="需要权限"]';
 const ALLOW = '[role="listbox"] [data-permission-option-kind="allowOnce"]';

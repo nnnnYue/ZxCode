@@ -179,7 +179,7 @@ describe("后台 Bash 实时输出详情", () => {
       await contains(`${name}_THIRD_no_newline`);
       if (name === "EXPLICIT")
         await browser.saveScreenshot(
-          join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "background-bash-live.png"),
+          join(process.env.ZXCODE_E2E_ARTIFACT_DIR!, "background-bash-live.png"),
         );
       expect(await alive(name!)).toBe(true);
       expect(await details().getAttribute("data-status")).toBe("running");
@@ -325,7 +325,7 @@ describe("后台 Bash 实时输出详情", () => {
       }),
     ).toBe(true);
     await browser.saveScreenshot(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "background-bash-paused.png"),
+      join(process.env.ZXCODE_E2E_ARTIFACT_DIR!, "background-bash-paused.png"),
     );
     expect(await viewport.getAttribute("data-scroll-mask")).toBe("bottom");
     const frozen = await text();
@@ -421,7 +421,7 @@ describe("后台 Bash 实时输出详情", () => {
     });
     expect(await alive("CHILD")).toBe(true);
     await browser.saveScreenshot(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "background-bash-child-released.png"),
+      join(process.env.ZXCODE_E2E_ARTIFACT_DIR!, "background-bash-child-released.png"),
     );
     // Agent 摘要在已折叠的执行历史中；先展开历史，再从真实摘要入口重新订阅 child。
     const history = await $(
@@ -449,7 +449,7 @@ describe("后台 Bash 实时输出详情", () => {
     expect(await alive("CHILD")).toBe(true);
     expect(await countUpstreamRequests({ includes: ["E2E_BGV_CHILD_WORK:"] })).toBe(requests);
     await writeFile(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "background-bash-cold-resume.json"),
+      join(process.env.ZXCODE_E2E_ARTIFACT_DIR!, "background-bash-cold-resume.json"),
       JSON.stringify(
         {
           childSessionId,

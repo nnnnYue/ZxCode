@@ -54,7 +54,8 @@ describe("about", () => {
     const options = createSystemAboutPanelOptions(appleSiliconSnapshot, 2026, "en-US");
 
     expect(options).toMatchObject({
-      applicationName: "ZCode Desktop App",
+      // fork 品牌：应用名为 ZxCode Desktop App（about.ts 的 ABOUT_APPLICATION_NAME）；版权文案沿用 ZCode。
+      applicationName: "ZxCode Desktop App",
       applicationVersion: "version 0.1.7",
       copyright: "Copyright © 2026 ZCode.",
       credits: "Optimized for Apple Silicon.",
@@ -65,7 +66,7 @@ describe("about", () => {
     const options = createSystemAboutPanelOptions(appleSiliconSnapshot, 2026, "zh-CN");
 
     expect(options).toMatchObject({
-      applicationName: "ZCode Desktop App",
+      applicationName: "ZxCode Desktop App",
       applicationVersion: "版本 0.1.7",
       copyright: "版权所有 © 2026 ZCode。",
       credits: "已针对 Apple Silicon 优化。",
@@ -89,7 +90,8 @@ describe("about", () => {
     expect(html).toContain("class=\"ok-button\"");
     expect(html).toContain(">OK</button>");
     expect(html).toContain("class=\"app-logo\"");
-    expect(html).toContain("viewBox=\"0 0 256 218\"");
+    // fork 关于窗口 logo 为劈裂 Z 品牌 PNG data URI（aboutWindowLogoDataUri.ts），不再内联 SVG。
+    expect(html).toContain("<img src=\"data:image/png;base64,");
     expect(html).toContain("linear-gradient(180deg, #000000 0%, #151718 100%)");
     expect(html).toContain("class=\"about-window\"");
     expect(html).toContain("border-radius: 0");

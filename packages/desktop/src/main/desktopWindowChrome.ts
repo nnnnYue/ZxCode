@@ -447,9 +447,10 @@ export function createBrowserWindow(options: {
   win.on("unmaximize", () => syncDesktopWindowChromeState(win));
   attachWindowsWindowRepaint(win);
   // will-attach 与 did-attach 按顺序配对；队列元素记录 guest 种类，did-attach 据此分派策略。
-  // fork 移除了 Coding Plan / Rewards 官网 guest，队列只承载内置浏览器与插件沙箱两类。
+  // fork 移除了 Coding Plan / Rewards 官网 guest，队列只承载内置浏览器与插件沙箱两类；
+  // 上游用于区分 Rewards 官网 guest 的 isRewards 判别字段随 Rewards 链路一并剔除。
   const pendingWebviewGuestKinds: Array<
-    | { kind: "browser"; isRewards: boolean }
+    | { kind: "browser" }
     | { kind: "pluginSandbox"; sandboxId: string }
   > = [];
 
@@ -526,14 +527,11 @@ export function createBrowserWindow(options: {
       return;
     }
 
-    pendingWebviewGuestKinds.push({ kind: "browser", isRewards: false });
+    pendingWebviewGuestKinds.push({ kind: "browser" });
   });
 
   win.webContents.on("did-attach-webview", (_event, guestWebContents) => {
-    const guestKind = pendingWebviewGuestKinds.shift() ?? {
-      kind: "browser" as const,
-      isRewards: false,
-    };
+    const guestKind = pendingWebviewGuestKinds.shift() ?? { kind: "browser" as const };
     if (guestKind.kind === "pluginSandbox") {
       getPluginSandboxHost()?.attachGuest({
         guest: guestWebContents,

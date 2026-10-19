@@ -1,5 +1,11 @@
 /* oxlint-disable eslint(max-lines) -- V4WorkspaceChatArea 是分屏 workbench 宿主，集中管理 pane layout/focus/session binding；拆散会让 store action 和 shell binding 链路跨文件跳转。 */
-import { useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import type {
   GitChangeSourceId,
   GitRepositorySummary,
@@ -28,13 +34,21 @@ import {
   effectiveFocusedPaneId,
   MAX_WORKBENCH_PANES,
   paneWorkspaceKey,
+  PRIMARY_LEAF,
   usePaneLayoutStore,
   V4_PRIMARY_PANE_ID,
   type PaneSplitSide,
   type PaneWorkspaceScope,
 } from "@/v4/paneLayoutStore.js";
-import { collectWorkbenchLayout, dividerStyle, SPLIT_VAR_PREFIX } from "@/v4/workbenchLayout.js";
-import { WorkbenchLeafPane, type WorkbenchShellBinding } from "@/v4/WorkbenchPane.js";
+import {
+  collectWorkbenchLayout,
+  dividerStyle,
+  SPLIT_VAR_PREFIX,
+} from "@/v4/workbenchLayout.js";
+import {
+  WorkbenchLeafPane,
+  type WorkbenchShellBinding,
+} from "@/v4/WorkbenchPane.js";
 import { WorkbenchSplitDivider } from "@/v4/WorkbenchSplitDivider.js";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import type {
@@ -56,11 +70,17 @@ import {
   type WorkbenchSessionTarget,
 } from "@/v4/workbenchSessionPlacement.js";
 
-function dragPayloadSessionTarget(payload: WorkbenchSessionDragPayload): WorkbenchSessionTarget {
+function dragPayloadSessionTarget(
+  payload: WorkbenchSessionDragPayload,
+): WorkbenchSessionTarget {
   return {
     workspacePath: payload.workspacePath,
-    ...(payload.workspaceIdentity?.trim() ? { workspaceIdentity: payload.workspaceIdentity } : {}),
-    ...(payload.remoteSessionId ? { remoteSessionId: payload.remoteSessionId } : {}),
+    ...(payload.workspaceIdentity?.trim()
+      ? { workspaceIdentity: payload.workspaceIdentity }
+      : {}),
+    ...(payload.remoteSessionId
+      ? { remoteSessionId: payload.remoteSessionId }
+      : {}),
     sessionId: payload.sessionId,
   };
 }
@@ -98,30 +118,49 @@ export interface V4WorkspaceChatAreaProps {
   gitWorktreeChangeSummary?: { added: number; removed: number } | null;
   activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
   summaryPanelVariantOverride?: ChatViewSummaryPanelVariant | null;
-  onSummaryPanelVariantOverrideChange?: (variant: ChatViewSummaryPanelVariant | null) => void;
+  onSummaryPanelVariantOverrideChange?: (
+    variant: ChatViewSummaryPanelVariant | null,
+  ) => void;
   onRefreshGit?: () => void;
   onOpenGitReview?: (sourceId?: GitChangeSourceId) => void;
-  onPaneActiveSessionChange?: (scope: PaneWorkspaceScope, sessionId: string) => void;
+  onPaneActiveSessionChange?: (
+    scope: PaneWorkspaceScope,
+    sessionId: string,
+  ) => void;
   onOpenBrowserUrl?: (url: string) => void;
   onOpenAutomationsMain?: OpenAutomationsMain;
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
-  onAutoOpenAssistantPptx?: (request: AssistantPreviewCardsAutoOpenRequest) => void;
+  onAutoOpenAssistantPptx?: (
+    request: AssistantPreviewCardsAutoOpenRequest,
+  ) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
   onOpenBackgroundBash?: (request: OpenBackgroundBashSideTabRequest) => void;
   onOpenSubagentSession?: (request: OpenScopedSubagentSideTabRequest) => void;
-  onOpenSubagentDirectory?: (request: OpenScopedSubagentDirectorySideTabRequest) => void;
+  onOpenSubagentDirectory?: (
+    request: OpenScopedSubagentDirectorySideTabRequest,
+  ) => void;
   onSyncSubagentSessionTabs?: (request: SyncSubagentSessionTabsRequest) => void;
   onOpenSelectionSideChat?: (request: OpenSelectionSideChatRequest) => void;
   onOpenPlanDetail?: (request: OpenScopedPlanDetailSideTabRequest) => void;
   onOpenWorkflowRun?: (request: OpenScopedWorkflowRunSideTabRequest) => void;
-  onOpenWorkflowArtifact?: (request: OpenScopedWorkflowArtifactSideTabRequest) => void;
-  onOpenWorkflowRunDirectory?: (request: OpenScopedWorkflowRunDirectorySideTabRequest) => void;
-  onOpenWorkflowActorSession?: (request: OpenScopedWorkflowActorSessionSideTabRequest) => void;
-  onOpenWorkflowWorkspace?: (request: OpenScopedWorkflowWorkspaceSideTabRequest) => void;
+  onOpenWorkflowArtifact?: (
+    request: OpenScopedWorkflowArtifactSideTabRequest,
+  ) => void;
+  onOpenWorkflowRunDirectory?: (
+    request: OpenScopedWorkflowRunDirectorySideTabRequest,
+  ) => void;
+  onOpenWorkflowActorSession?: (
+    request: OpenScopedWorkflowActorSessionSideTabRequest,
+  ) => void;
+  onOpenWorkflowWorkspace?: (
+    request: OpenScopedWorkflowWorkspaceSideTabRequest,
+  ) => void;
   conversationFindQuery?: string;
   conversationFindActiveIndex?: number;
   conversationFindNavigationRequestId?: number;
-  onConversationFindMatchStateChange?: (state: ConversationFindMatchState) => void;
+  onConversationFindMatchStateChange?: (
+    state: ConversationFindMatchState,
+  ) => void;
   searchResultHighlightRequest?: ChatSearchResultHighlightRequest | null;
   onSearchResultHighlightDone?: (requestId: number) => void;
 }
@@ -191,7 +230,9 @@ export function V4WorkspaceChatArea({
   // selector 返回 store 内既有引用/派生原语，未变化不触发重渲染。
   const paneRoot = usePaneLayoutStore((state) => state.root);
   const paneBindings = usePaneLayoutStore((state) => state.panes);
-  const paneFocusedPaneId = usePaneLayoutStore((state) => effectiveFocusedPaneId(state));
+  const paneFocusedPaneId = usePaneLayoutStore((state) =>
+    effectiveFocusedPaneId(state),
+  );
   // zustand action 引用稳定。
   const splitPaneAction = usePaneLayoutStore((state) => state.splitPane);
   const closePaneAction = usePaneLayoutStore((state) => state.closePane);
@@ -199,29 +240,47 @@ export function V4WorkspaceChatArea({
     (state) => state.confirmRestoredPaneSession,
   );
   const focusPaneAction = usePaneLayoutStore((state) => state.focusPane);
-  const bindPaneSessionAction = usePaneLayoutStore((state) => state.bindPaneSession);
-  const setSplitRatioAction = usePaneLayoutStore((state) => state.setSplitRatio);
-  const resetPaneLayoutAction = usePaneLayoutStore((state) => state.resetToPrimaryPane);
+  const bindPaneSessionAction = usePaneLayoutStore(
+    (state) => state.bindPaneSession,
+  );
+  const setSplitRatioAction = usePaneLayoutStore(
+    (state) => state.setSplitRatio,
+  );
+  const resetPaneLayoutAction = usePaneLayoutStore(
+    (state) => state.resetToPrimaryPane,
+  );
   const activeGroup = useWorkbenchGroupStore((state) =>
     compactForRemoteControl || !state.activeGroupId
       ? null
       : (state.groups[state.activeGroupId] ?? null),
   );
-  const focusGroupPaneAction = useWorkbenchGroupStore((state) => state.focusPane);
-  const closeGroupPaneAction = useWorkbenchGroupStore((state) => state.closePane);
+  const focusGroupPaneAction = useWorkbenchGroupStore(
+    (state) => state.focusPane,
+  );
+  const closeGroupPaneAction = useWorkbenchGroupStore(
+    (state) => state.closePane,
+  );
   const confirmRestoredGroupPaneSessionAction = useWorkbenchGroupStore(
     (state) => state.confirmRestoredPaneSession,
   );
-  const bindGroupPaneSessionAction = useWorkbenchGroupStore((state) => state.bindPaneSession);
-  const setGroupSplitRatioAction = useWorkbenchGroupStore((state) => state.setSplitRatio);
+  const bindGroupPaneSessionAction = useWorkbenchGroupStore(
+    (state) => state.bindPaneSession,
+  );
+  const setGroupSplitRatioAction = useWorkbenchGroupStore(
+    (state) => state.setSplitRatio,
+  );
   const promotePaneLayoutToGroupAction = useWorkbenchGroupStore(
     (state) => state.promotePaneLayoutToGroup,
   );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const root = compactForRemoteControl ? PRIMARY_LEAF : (activeGroup?.root ?? paneRoot);
-  const panes = compactForRemoteControl ? {} : (activeGroup?.panes ?? paneBindings);
+  const root = compactForRemoteControl
+    ? PRIMARY_LEAF
+    : (activeGroup?.root ?? paneRoot);
+  const panes = compactForRemoteControl
+    ? {}
+    : (activeGroup?.panes ?? paneBindings);
   const focusedPaneId = compactForRemoteControl
     ? V4_PRIMARY_PANE_ID
     : (activeGroup?.focusedPaneId ?? paneFocusedPaneId);
@@ -235,7 +294,13 @@ export function V4WorkspaceChatArea({
         binding.sessionId === sessionId &&
         paneWorkspaceKey(binding.workspaceScope) === shellWorkspaceKey,
     );
-  }, [activeGroup, compactForRemoteControl, paneBindings, sessionId, shellWorkspaceKey]);
+  }, [
+    activeGroup,
+    compactForRemoteControl,
+    paneBindings,
+    sessionId,
+    shellWorkspaceKey,
+  ]);
   // 修复原因：primary draft 没有自己的 sessionId；拖入 session 时 shell active
   // 可能已经切到右侧 pane 的 session，不能再把这个 sessionId 下发给 primary。
   const primaryPaneSessionId = shellSessionOwnedBySplitPane ? null : sessionId;
@@ -263,7 +328,9 @@ export function V4WorkspaceChatArea({
   );
   const placementShellBinding = useMemo<WorkbenchSessionBinding | null>(
     () =>
-      primaryPaneSessionId ? { workspaceScope: shellScope, sessionId: primaryPaneSessionId } : null,
+      primaryPaneSessionId
+        ? { workspaceScope: shellScope, sessionId: primaryPaneSessionId }
+        : null,
     [primaryPaneSessionId, shellScope],
   );
 
@@ -289,7 +356,9 @@ export function V4WorkspaceChatArea({
       gitDirtyFileCount,
       gitWorktreeReviewSourceId,
       gitWorktreeChangeSummary,
-      activeTaskChangeSummary: primaryPaneSessionId ? activeTaskChangeSummary : null,
+      activeTaskChangeSummary: primaryPaneSessionId
+        ? activeTaskChangeSummary
+        : null,
       summaryPanelVariantOverride,
       onSummaryPanelVariantOverrideChange,
       onRefreshGit,
@@ -462,7 +531,11 @@ export function V4WorkspaceChatArea({
         confirmRestoredPaneSessionAction(paneId);
       }
     },
-    [activeGroup, confirmRestoredGroupPaneSessionAction, confirmRestoredPaneSessionAction],
+    [
+      activeGroup,
+      confirmRestoredGroupPaneSessionAction,
+      confirmRestoredPaneSessionAction,
+    ],
   );
 
   const handleCommitSplitRatio = useMemo(
@@ -495,10 +568,13 @@ export function V4WorkspaceChatArea({
           );
           if (promoted) {
             resetPaneLayoutAction();
-            logger.info("[v4-workbench] primary draft promoted to session group", {
-              createdSessionId,
-              workspaceKey: paneWorkspaceKey(shellScope),
-            });
+            logger.info(
+              "[v4-workbench] primary draft promoted to session group",
+              {
+                createdSessionId,
+                workspaceKey: paneWorkspaceKey(shellScope),
+              },
+            );
           }
         }
         return true;
@@ -545,18 +621,30 @@ export function V4WorkspaceChatArea({
   );
 
   const handleDropSession = useCallback(
-    (paneId: string, side: PaneSplitSide, payload: WorkbenchSessionDragPayload) => {
-      placeWorkbenchSessionInSplit(placementShellBinding, dragPayloadSessionTarget(payload), {
-        anchorPaneId: paneId,
-        mode: "drag",
-        side,
-      });
+    (
+      paneId: string,
+      side: PaneSplitSide,
+      payload: WorkbenchSessionDragPayload,
+    ) => {
+      placeWorkbenchSessionInSplit(
+        placementShellBinding,
+        dragPayloadSessionTarget(payload),
+        {
+          anchorPaneId: paneId,
+          mode: "drag",
+          side,
+        },
+      );
     },
     [placementShellBinding],
   );
 
   return (
-    <div ref={containerRef} style={containerStyle} className="relative h-full min-h-0 w-full">
+    <div
+      ref={containerRef}
+      style={containerStyle}
+      className="relative h-full min-h-0 w-full"
+    >
       {layout.leaves.map((leaf) => (
         <WorkbenchLeafPane
           key={leaf.paneId}
@@ -569,19 +657,29 @@ export function V4WorkspaceChatArea({
           showFocusIndicator={showFocusIndicator}
           canSplit={canSplit}
           shellWorkspaceKey={shellWorkspaceKey}
-          binding={leaf.paneId === V4_PRIMARY_PANE_ID ? null : (panes[leaf.paneId] ?? null)}
+          binding={
+            leaf.paneId === V4_PRIMARY_PANE_ID
+              ? null
+              : (panes[leaf.paneId] ?? null)
+          }
           primaryBinding={
-            leaf.paneId === V4_PRIMARY_PANE_ID ? (activeGroup?.primaryBinding ?? null) : null
+            leaf.paneId === V4_PRIMARY_PANE_ID
+              ? (activeGroup?.primaryBinding ?? null)
+              : null
           }
           shell={shell}
           onFocusRequest={handleFocusRequest}
-          onSplit={compactForRemoteControl || activeGroup ? undefined : splitPaneAction}
+          onSplit={
+            compactForRemoteControl || activeGroup ? undefined : splitPaneAction
+          }
           onClosePane={handleClosePane}
           onConfirmRestoredSession={handleConfirmRestoredSession}
           onBindSession={handleBindSession}
           onPaneActiveSessionChange={onPaneActiveSessionChange}
           canDropSession={compactForRemoteControl ? undefined : canDropSession}
-          onDropSession={compactForRemoteControl ? undefined : handleDropSession}
+          onDropSession={
+            compactForRemoteControl ? undefined : handleDropSession
+          }
         />
       ))}
       {layout.dividers.map((divider) => (

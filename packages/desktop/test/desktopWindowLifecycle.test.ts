@@ -59,7 +59,7 @@ describe("desktopWindowLifecycle createWindow", () => {
     vi.mocked(createBrowserWindow).mockReturnValue(win as never);
     const child = { pid: 1234 };
     const spawnHostProcess = vi.fn(() => child as never);
-    const fallbackCwd = "/Users/demo/.zcode/workspace/default";
+    const fallbackCwd = "/Users/demo/.zxcode/workspace/default";
 
     createWindow({
       iconPath: "/tmp/icon.png",
@@ -141,7 +141,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       webRemoteControlManager: { disposeWindow: vi.fn(async () => undefined) },
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.zxcode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise,
       runtimeProcessEnvFallbackPatch: {},
@@ -203,7 +203,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       webRemoteControlManager: { disposeWindow: vi.fn(async () => undefined) },
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow,
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.zxcode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise: new Promise(() => {}),
       runtimeProcessEnvFallbackPatch: {},
@@ -216,12 +216,12 @@ describe("desktopWindowLifecycle createWindow", () => {
       [expect.objectContaining({ id: "port-2" })],
     );
     expect(webContents.postMessage).toHaveBeenCalledWith(
-      "zcode:service-port",
+      "zxcode:service-port",
       { databaseStartupId: "window-host-test" },
       [expect.objectContaining({ id: "port-1" })],
     );
     expect(spawnHostProcess).not.toHaveBeenCalled();
-    expect(syncAutoUpdaterStateToWindow).toHaveBeenCalledWith(win);
+    // fork 已剔除 autoUpdater，reload 复用 Host 时不再向窗口同步更新状态。
     expect(reattachRemoteWorkspaceSessionsForWindow).toHaveBeenCalledWith(
       win,
       "local-44:renderer-reload",
@@ -267,7 +267,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       webRemoteControlManager: { disposeWindow: vi.fn(async () => undefined) },
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.zxcode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise,
       runtimeProcessEnvFallbackPatch: fallbackPatch,
@@ -325,7 +325,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       webRemoteControlManager: { disposeWindow: vi.fn(async () => undefined) },
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.zxcode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise: Promise.reject(new Error("profile failed")),
       runtimeProcessEnvFallbackPatch: fallbackPatch,
@@ -343,70 +343,9 @@ describe("desktopWindowLifecycle createWindow", () => {
     );
   });
 
-  it("首个 Local Host 创建前等待灰度裁决门，resolve 后才 spawn", async () => {
-    // CR-01 Local 路径回归：dom-ready 触发后，spawnHostProcess 必须等到
-    // awaitFirstHostSpawnDecision resolve 之后才被调用，确保首个 Host env 写入的是
-    // 服务端裁决真值而非冷启动默认 false。
-    let handleDomReady: (() => void) | undefined;
-    let resolveGate!: () => void;
-    const gatePromise = new Promise<void>((resolve) => {
-      resolveGate = resolve;
-    });
-    const awaitFirstHostSpawnDecision = vi.fn(() => gatePromise);
-    const webContents = {
-      id: 47,
-      on: vi.fn((event: string, listener: () => void) => {
-        if (event === "dom-ready") handleDomReady = listener;
-      }),
-    };
-    const win = {
-      id: 12,
-      webContents,
-      on: vi.fn(),
-      isDestroyed: vi.fn(() => false),
-      show: vi.fn(),
-      focus: vi.fn(),
-    };
-    vi.mocked(createBrowserWindow).mockReturnValue(win as never);
-    const spawnHostProcess = vi.fn(() => ({ pid: 1239 }) as never);
-
-    createWindow({
-      iconPath: "/tmp/icon.png",
-      preloadPath: "/tmp/preload.js",
-      logger: { info: vi.fn(), warn: vi.fn() },
-      forceQuitRef: { current: false },
-      windowHostProcessMap: new Map(),
-      spawnHostProcess,
-      disposeHostProcess: vi.fn(),
-      syncAutoUpdaterStateToWindow: vi.fn(),
-      syncReadyUpdateToWindow: vi.fn(),
-      syncPostUpdateReleaseNotesToWindow: vi.fn(),
-      webRemoteControlManager: { disposeWindow: vi.fn(async () => undefined) },
-      disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
-      reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
-      deviceMid: "device-mid",
-      runtimeProcessEnvFallbackPatch: {},
-      awaitFirstHostSpawnDecision,
-    });
-
-    handleDomReady?.();
-    // 裁决门未 resolve 前，dom-ready handler 在 await 处挂起，绝不创建 Host。
-    expect(awaitFirstHostSpawnDecision).toHaveBeenCalledOnce();
-    expect(spawnHostProcess).not.toHaveBeenCalled();
-
-    resolveGate();
-    // flush microtasks：handler 越过 await，走 sync fallback 路径 spawn。
-    await new Promise((resolve) => {
-      setTimeout(resolve, 0);
-    });
-
-    expect(spawnHostProcess).toHaveBeenCalledWith(
-      win,
-      "local-47",
-      expect.objectContaining({ type: "init-local" }),
-    );
-  });
+  // fork 无 awaitFirstHostSpawnDecision（服务端灰度裁决门）依赖：首个 Local Host 的等待语义
+  // 由 runtimeProcessEnvPatchPromise（prewarm 门）承担，上面 prewarm 用例已覆盖
+  // 「promise resolve 前不 spawn、resolve 后按 patch spawn」的时序，上游裁决门用例不再保留。
 });
 
 describe("desktopWindowLifecycle handleDarwinWindowCloseRequest", () => {

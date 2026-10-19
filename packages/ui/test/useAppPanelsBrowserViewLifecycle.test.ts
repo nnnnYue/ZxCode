@@ -1,14 +1,20 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IPlatformService } from "@zcode/shared";
 import { useAppPanels } from "@/hooks/useAppPanels.js";
+// fork 的 useAppPanels 需要 intl；renderHook 统一包 ZCodeIntlProvider。
+import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import {
   buildTaskSidePaneMemoryKey,
   clearTaskSidePaneMemoryStateForTest,
   getSidePaneCollapsedPreference,
   readTaskSidePaneMemoryState,
 } from "@/lib/taskSidePaneMemory.js";
+
+const intlWrapper = ({ children }: { children: ReactNode }) =>
+  createElement(ZCodeIntlProvider, { initialLocale: "en-US" }, children);
 
 const { closeSessionMock } = vi.hoisted(() => ({
   closeSessionMock: vi.fn(async () => {}),
@@ -116,19 +122,21 @@ function readyPayload(tabId: string, overrides: Partial<ReadyPayload> = {}): Rea
 
 function renderBrowserViewLifecycleHook() {
   const harness = createBrowserViewPlatformHarness();
-  const rendered = renderHook(() =>
-    useAppPanels({
-      workspaceAbsPath: "/repo",
-      workspaceIdentity: "ssh://host/repo",
-      workspaceRemoteSessionId: "remote-a",
-      activeTaskId: "sess-a",
-      sidePaneOwnerId: "sess-a",
-      isDesktop: true,
-      isWorkspaceVisible: true,
-      supportsEmbeddedBrowser: true,
-      defaultWhiteboardNamePrefix: "Whiteboard",
-      platform: harness.platform,
-    }),
+  const rendered = renderHook(
+    () =>
+      useAppPanels({
+        workspaceAbsPath: "/repo",
+        workspaceIdentity: "ssh://host/repo",
+        workspaceRemoteSessionId: "remote-a",
+        activeTaskId: "sess-a",
+        sidePaneOwnerId: "sess-a",
+        isDesktop: true,
+        isWorkspaceVisible: true,
+        supportsEmbeddedBrowser: true,
+        defaultWhiteboardNamePrefix: "Whiteboard",
+        platform: harness.platform,
+      }),
+    { wrapper: intlWrapper },
   );
   return { ...harness, ...rendered };
 }
@@ -156,7 +164,10 @@ function renderSettingsOverlayHook(initialIsWorkspaceVisible: boolean) {
         defaultWhiteboardNamePrefix: "Whiteboard",
         platform: harness.platform,
       }),
-    { initialProps: { isWorkspaceVisible: initialIsWorkspaceVisible } },
+    {
+      initialProps: { isWorkspaceVisible: initialIsWorkspaceVisible },
+      wrapper: intlWrapper,
+    },
   );
   return { ...harness, ...rendered };
 }
@@ -178,7 +189,7 @@ function renderCrossWorkspaceHook() {
         defaultWhiteboardNamePrefix: "Whiteboard",
         platform: harness.platform,
       }),
-    { initialProps: { workspaceIdentity: WORKSPACE_KEY } },
+    { initialProps: { workspaceIdentity: WORKSPACE_KEY }, wrapper: intlWrapper },
   );
   return { ...harness, ...rendered };
 }

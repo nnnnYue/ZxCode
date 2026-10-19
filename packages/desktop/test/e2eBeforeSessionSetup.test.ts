@@ -30,17 +30,11 @@ describe("desktop e2e beforeSession setup", () => {
         events.push("coding-plan-team");
       },
       configureCodingPlanTeamMockForSpecs,
-      startCodingPlanUpgradeMockIfNeeded: async () => {
-        events.push("coding-plan-upgrade");
-      },
       startUpstreamHttpIfNeeded: async () => {
         events.push("upstream-http");
       },
       startPluginCdnZipFixtureIfNeeded: async () => {
         events.push("plugin-cdn");
-      },
-      startOffPeakMockIfNeeded: async () => {
-        events.push("off-peak-mock");
       },
     }).then(() => {
       events.push("setup-resolved");
@@ -48,15 +42,14 @@ describe("desktop e2e beforeSession setup", () => {
 
     await waitForResetStarted(resetHome);
 
+    // fork：coding-plan-upgrade 与 off-peak mock 步骤已随对应功能剔除，hook 不再调用。
     expect(events).toEqual([
       "record-before-session",
       "configure-env",
       "coding-plan-team",
       "coding-plan-case-mode",
       "upstream-http",
-      "coding-plan-upgrade",
       "plugin-cdn",
-      "off-peak-mock",
       "reset-started",
     ]);
     expect(configureCodingPlanTeamMockForSpecs).toHaveBeenCalledWith([

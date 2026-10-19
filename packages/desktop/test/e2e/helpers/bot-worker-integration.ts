@@ -28,13 +28,18 @@ import {
 } from "../bots/helpers/bots-service-harness.js";
 
 /** 真实 Host/CLI，只有模型 HTTP、飞书 HTTP 和 Bot 配置存储使用隔离夹具。 */
-export async function createBotWorkerIntegration(baseUrl: string, dropTextContaining?: string) {
+export async function createBotWorkerIntegration(
+  baseUrl: string,
+  dropTextContaining?: string,
+) {
   const home = await mkdtemp(join(getE2EAppDataPaths().homeDir, "bot-worker-"));
   const workspacePath = join(home, "workspace");
   await mkdir(workspacePath, { recursive: true });
   const previousDataDir = getDataBaseDir();
   setDataBaseDir(home);
-  const cleanup: Array<() => void | Promise<void>> = [() => setDataBaseDir(previousDataDir)];
+  const cleanup: Array<() => void | Promise<void>> = [
+    () => setDataBaseDir(previousDataDir),
+  ];
   const dispose = async () => {
     const errors: unknown[] = [];
     for (const release of cleanup.splice(0).reverse()) {
@@ -44,7 +49,8 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
         errors.push(error);
       }
     }
-    if (errors.length) throw new AggregateError(errors, "Bot worker fixture cleanup failed");
+    if (errors.length)
+      throw new AggregateError(errors, "Bot worker fixture cleanup failed");
   };
   try {
     const personalFilePath = join(home, ".zcode/v2/provider_config.json");
@@ -87,10 +93,10 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
     }));
     personal.dispose();
     const builtin = resolve("../../config/provider/zcode-builtin.json");
+    // fork：NodeProviderRegistryRuntimeOptions 已无 watch 选项（内置目录不再远端刷新）。
     const runtime = new NodeProviderRegistryRuntime({
       personalFilePath,
       zcodeBuiltinFilePath: builtin,
-      watch: false,
       personalPollingIntervalMs: false,
     });
     cleanup.push(() => runtime.dispose());
@@ -100,7 +106,9 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
       getView: async (input?: ModelSelectionViewInput) =>
         facade.getView(modelSelection, undefined, input),
     };
-    const selected = await modelSelectionService.getView({ selection: modelSelection });
+    const selected = await modelSelectionService.getView({
+      selection: modelSelection,
+    });
     if (!selected.preferredSelection || !selected.effectiveSelection) {
       throw new Error(
         JSON.stringify({
@@ -145,9 +153,9 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
         env: {
           HOME: home,
           USERPROFILE: home,
-          ZCODE_DATA_BASE_DIR: home,
+          ZXCODE_DATA_BASE_DIR: home,
           ZCODE_RUNTIME_ENV: "development",
-          ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
+          ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
           ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalFilePath,
         },
       }),
@@ -181,8 +189,14 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
               if (event.type === "session.event") {
                 if (event.event.type === "permission.requested")
                   permissionRequests.push(event.event.payload);
-                const payload = event.event.payload as { kind?: string; delta?: unknown };
-                if (payload.kind === "text_delta" && typeof payload.delta === "string")
+                const payload = event.event.payload as {
+                  kind?: string;
+                  delta?: unknown;
+                };
+                if (
+                  payload.kind === "text_delta" &&
+                  typeof payload.delta === "string"
+                )
                   observedTextEvents.push(payload.delta);
                 if (
                   dropTextContaining &&
@@ -201,7 +215,10 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
     }
     const repo = new TaskIndexRepo();
     cleanup.push(() => repo.close());
-    const syncer = createZCodeTaskIndexSyncer({ agentService: agent, taskIndexRepo: repo });
+    const syncer = createZCodeTaskIndexSyncer({
+      agentService: agent,
+      taskIndexRepo: repo,
+    });
     cleanup.push(() => syncer.disposeAll());
     cleanup.push(() => bot.service.disposeAllAndWait());
     const task = createZCodeTaskServiceAdapter({

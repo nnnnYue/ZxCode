@@ -3,7 +3,7 @@ import { Emitter } from "@zcode/rpc";
 import type { ZCodeProtocolMessage } from "@zcode/shared";
 import { zcodeSessionStateSnapshotSchema } from "@zcode/shared";
 import {
-  DEFAULT_ZCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
+  DEFAULT_ZXCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
   ZCodeProtocolClient,
 } from "../src/zcode-agent/zcodeProtocolClient.js";
 import type {
@@ -47,7 +47,7 @@ class FakeZCodeTransport implements ZCodeProtocolTransport {
 }
 
 const snapshot = {
-  protocol: { name: "ZCode Protocol", version: 1 },
+  protocol: { name: "ZxCode Protocol", version: 1 },
   session: {
     sessionId: "sess_1",
     workspace: {
@@ -363,7 +363,7 @@ describe("ZCodeProtocolClient", () => {
           settled = true;
         });
 
-      await vi.advanceTimersByTimeAsync(DEFAULT_ZCODE_PROTOCOL_REQUEST_TIMEOUT_MS - 1);
+      await vi.advanceTimersByTimeAsync(DEFAULT_ZXCODE_PROTOCOL_REQUEST_TIMEOUT_MS - 1);
       expect(settled).toBe(false);
       expect(timeouts).toEqual([]);
 
@@ -371,14 +371,14 @@ describe("ZCodeProtocolClient", () => {
       await expect(request).resolves.toMatchObject({
         error: {
           method: "session/read",
-          timeoutMs: DEFAULT_ZCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
+          timeoutMs: DEFAULT_ZXCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
         },
         status: "rejected",
       });
       expect(timeouts).toMatchObject([
         {
           method: "session/read",
-          timeoutMs: DEFAULT_ZCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
+          timeoutMs: DEFAULT_ZXCODE_PROTOCOL_REQUEST_TIMEOUT_MS,
         },
       ]);
     } finally {

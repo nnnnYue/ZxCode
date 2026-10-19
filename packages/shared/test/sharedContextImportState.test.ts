@@ -8,13 +8,13 @@ describe("shared context import state", () => {
       sharedContextImportStateSchema.parse({
         contextId: "context-1",
         title: "分享标题",
-        shareUrl: "https://zcode.z.ai/cn/share/code-1",
+        shareUrl: "https://share.example.test/cn/share/code-1",
         status: "reserved",
       }),
     ).toEqual({
       contextId: "context-1",
       title: "分享标题",
-      shareUrl: "https://zcode.z.ai/cn/share/code-1",
+      shareUrl: "https://share.example.test/cn/share/code-1",
       status: "reserved",
     });
   });
@@ -24,7 +24,7 @@ describe("shared context import state", () => {
       sharedContextImportStateSchema.safeParse({
         contextId: "context-1",
         title: "分享标题",
-        shareUrl: "https://zcode.z.ai/cn/share/code-1",
+        shareUrl: "https://share.example.test/cn/share/code-1",
         status,
       }).success,
     ).toBe(true);
@@ -43,7 +43,7 @@ describe("shared context import state", () => {
       sharedContextImportStateSchema.safeParse({
         contextId: "context-1",
         title: "分享标题",
-        shareUrl: "https://zcode.z.ai/cn/share/code-1",
+        shareUrl: "https://share.example.test/cn/share/code-1",
         status: "pending",
         markdown: "must-not-cross-projection",
       }).success,

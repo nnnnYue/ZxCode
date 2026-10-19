@@ -106,7 +106,8 @@ describe("renderer main.tsx 防重复 createRoot", () => {
       "utf-8",
     );
 
-    expect(source).toContain("window.zcode.onOpenWorkspace?.(handler) ?? (() => {})");
+    // fork：renderer 经 window.zxcode 访问 preload bridge（上游为 window.zcode）
+    expect(source).toContain("window.zxcode.onOpenWorkspace?.(handler) ?? (() => {})");
   });
 
   it("remote workspace service port 早于 base ServicePort 时会暂存并在 base ready 后 flush", () => {

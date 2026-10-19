@@ -676,9 +676,10 @@ describe("zcodeSessionProjection", () => {
     });
 
     expect(snapshot.messages).toHaveLength(2);
+    // fork 命名：task notification 元数据挂在 _meta.zxcode 命名空间（fork 协议命名）。
     expect(snapshot.messages[1]?.tools?.[0]?.raw).toMatchObject({
       _meta: {
-        zcode: {
+        zxcode: {
           taskNotification: {
             outputFile: "/tmp/background-agent.output",
             result: "Background agent result & summary",
@@ -791,7 +792,7 @@ describe("zcodeSessionProjection", () => {
         output: "Async agent launched successfully.\noutput_file: /tmp/background-agent.output",
         raw: {
           _meta: {
-            zcode: {
+            zxcode: {
               taskNotification: {
                 status: notificationStatus,
                 summary: `Agent general-purpose task "Review" ${notificationStatus}.`,
@@ -3856,7 +3857,7 @@ describe("zcodeSessionProjection", () => {
         content: "Background Agent live result",
         raw: expect.objectContaining({
           _meta: expect.objectContaining({
-            zcode: expect.objectContaining({
+            zxcode: expect.objectContaining({
               taskNotification: {
                 outputFile: "/tmp/background-agent.output",
                 result: "Background Agent live result",
@@ -3914,7 +3915,7 @@ describe("zcodeSessionProjection", () => {
         error: backgroundAgentProviderError,
         raw: expect.objectContaining({
           _meta: expect.objectContaining({
-            zcode: expect.objectContaining({
+            zxcode: expect.objectContaining({
               taskNotification: expect.objectContaining({
                 error: backgroundAgentProviderError,
                 status: "failed",
@@ -3969,7 +3970,7 @@ describe("zcodeSessionProjection", () => {
         content: "Agent task was stopped.",
         raw: expect.objectContaining({
           _meta: expect.objectContaining({
-            zcode: expect.objectContaining({
+            zxcode: expect.objectContaining({
               taskNotification: expect.objectContaining({
                 status: "killed",
                 summary: "Agent task was stopped.",

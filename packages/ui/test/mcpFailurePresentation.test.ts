@@ -51,8 +51,12 @@ describe("MCP failure presentation", () => {
   });
 
   it.each([
-    ["zh-CN" as const, "当前未登录，请先登录 ZCode。"],
-    ["en-US" as const, "You are not signed in. Sign in to ZCode to use this MCP server."],
+    // fork 无账号登录链路，not_authenticated 展示通用鉴权失败文案。
+    ["zh-CN" as const, "MCP 服务端要求身份验证，当前请求未通过。"],
+    [
+      "en-US" as const,
+      "The MCP server requires authentication and the current request was not accepted.",
+    ],
   ])("localizes the not-authenticated diagnosis for %s", (locale, message) => {
     const html = renderToStaticMarkup(
       createElement(
@@ -65,10 +69,11 @@ describe("MCP failure presentation", () => {
   });
 
   it.each([
-    ["zh-CN" as const, "当前账号没有 Coding Plan，请先购买或配置 Coding Plan。"],
+    // fork 无 Coding Plan 购买链路，coding_plan_required 展示通用权限拒绝文案。
+    ["zh-CN" as const, "MCP 服务端拒绝了当前访问权限，请检查该服务的可用性。"],
     [
       "en-US" as const,
-      "This account has no Coding Plan. Purchase or configure a Coding Plan to use this MCP server.",
+      "The MCP server denied the current access. Check the availability of this service.",
     ],
   ])("localizes the coding-plan diagnosis for %s", (locale, message) => {
     const html = renderToStaticMarkup(

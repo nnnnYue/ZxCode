@@ -31,11 +31,9 @@ export const SERVER_HTTP_EXTERNAL_DEPENDENCIES = [
   "ssh2",
   "node-pty",
   "undici",
-  "axios",
-  "form-data",
-  "combined-stream",
-  "proxy-from-env",
-  "follow-redirects",
+  // 修复原因：axios/form-data/combined-stream/proxy-from-env/follow-redirects 只被
+  // fork 已剔除的云内容/反馈链路引用，源码不再 import；保留在 external 会让
+  // “外置依赖必须是 server 直接依赖”的契约测试失败（pnpm 不暴露传递依赖）。
   "yazl",
   // Bugfix: node-forge 内部用动态 require("crypto")，内联进 server ESM bundle 后 Node 会报
   // Dynamic require of "crypto" is not supported；这里和 desktop main/host 构建保持同一外置策略。

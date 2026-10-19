@@ -55,7 +55,7 @@ function lifecycleEvent(state: "available" | "unavailable", generation: number):
 }
 
 /** workspace-dispose 打断在途 subscribe 时，ZCodeProtocolClient.rejectAll 抛出的真实文案。 */
-const TRANSPORT_CLOSED = "ZCode agent transport closed";
+const TRANSPORT_CLOSED = "ZxCode agent transport closed";
 
 /** 与实现的 RUNTIME_RECYCLE_RETRY_DELAYS_MS 长度一致（250/1000/3000ms）。 */
 const RUNTIME_RECYCLE_RETRY_ATTEMPTS = 3;
@@ -354,7 +354,7 @@ describe("conversation projection 在 CUA Helper 回收 agent runtime 后自愈"
       const { store } = createStore(base, "conn-retry");
 
       await store.connect();
-      // 修复前：这里已是 status="error" + lastError="ZCode agent transport closed"，
+      // 修复前：这里已是 status="error" + lastError="ZxCode agent transport closed"，
       // 且没有任何 timer——面板从此只能靠用户点「重新连接」。
       expect(store.getState().status).not.toBe("error");
       expect(mocks.subscribeConversationV4).toHaveBeenCalledTimes(1);

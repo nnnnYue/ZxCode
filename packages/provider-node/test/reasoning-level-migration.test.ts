@@ -7,7 +7,9 @@ import {
   ProviderConfigMap,
   ProviderConfigResolver,
   ProviderConfig,
-  ZhipuAccountAccessConfig,
+  ProviderApiConfig,
+  ApiKeyAccessConfig,
+  createAccountProviderConfigSnapshot,
   createRegistryModelConfig,
   createRegistryProviderConfig,
   type ModelSelection,
@@ -19,7 +21,7 @@ import { legacyReasoningLevelRenames } from "../src/legacy-reasoning-level-renam
 
 const source = new NodeZCodeBuiltinProviderConfigSource({
   bundledFilePath: fileURLToPath(
-    new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+    new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
   ),
   watch: false,
 });
@@ -29,6 +31,9 @@ beforeAll(async () => {
 });
 afterAll(() => source.dispose());
 
+// fork：账号型（zhipu-account）Provider 已下线；改名迁移的输入改为 Personal Provider，
+// 仍覆盖同一 Resolver / Registry / Facade 链路，断言逻辑不变。
+const providerId = "personal-reasoning-migration";
 function view(modelId: string, level: string, personalModels = ModelConfigRules.empty()) {
   const config = {
     revision: "c",
@@ -36,34 +41,30 @@ function view(modelId: string, level: string, personalModels = ModelConfigRules.
     personalRevision: "p",
     zcodeBuiltinProviders: builtin.providers,
     zcodeBuiltinProviderTemplates: builtin.templates,
-    personalProviders: ProviderConfigMap.empty(),
+    personalProviders: new ProviderConfigMap([
+      [
+        providerId,
+        new ProviderConfig({
+          group: "standard-personal",
+          api: new ProviderApiConfig({
+            type: "openai-chat-completions",
+            baseUrl: "https://test.invalid/v1",
+          }),
+          access: new ApiKeyAccessConfig({ apiKey: "test-only" }),
+          personalModelIds: [modelId],
+        }),
+      ],
+    ]),
     zcodeBuiltinModelRules: builtin.models,
     personalModels,
   };
-  const account = {
-    revision: "a",
-    basedOnZCodeBuiltinRevision: "b",
-    providers: new ProviderConfigMap([
-      [
-        "account:bigmodel-individual-coding-plan",
-        new ProviderConfig({ access: new ZhipuAccountAccessConfig({ entitled: true }) }),
-      ],
-    ]),
-    states: {
-      "account:bigmodel-individual-coding-plan": {
-        availability: "available" as const,
-        entitled: true,
-        current: true,
-      },
-    },
-  };
+  const account = createAccountProviderConfigSnapshot("b", ProviderConfigMap.empty());
   // 真实 Built-in 规则和 Resolver；补入模型成员用于独立覆盖 GLM 的不同代际。
   const resolution = new ProviderConfigResolver().resolve({
     ...config,
     accountProviders: account.providers,
     accountStates: account.states,
   });
-  const providerId = "account:bigmodel-individual-coding-plan";
   const providerConfig = resolution.effectiveProviders.get(providerId)!;
   const modelConfig = ModelConfigRules.composeEffective(builtin.models, personalModels).resolve({
     providerId,
@@ -163,7 +164,7 @@ describe("Todo95C 来源限定的只读关闭档位改名", () => {
       new ModelConfigRules([
         {
           type: "provider-model",
-          providerId: "account:bigmodel-individual-coding-plan",
+          providerId,
           modelId: "GLM-5.2",
           config: new ModelConfig({
             optionSpecs: new ModelOptionSpecsConfig({ reasoningLevel: { values } }),

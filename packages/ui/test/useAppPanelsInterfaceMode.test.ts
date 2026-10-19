@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppPanels } from "@/hooks/useAppPanels.js";
+// fork 的 useAppPanels 需要 intl；renderHook 统一包 ZCodeIntlProvider。
+import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { clearTaskSidePaneMemoryStateForTest } from "@/lib/taskSidePaneMemory.js";
+
+const intlWrapper = ({ children }: { children: ReactNode }) =>
+  createElement(ZCodeIntlProvider, { initialLocale: "en-US" }, children);
 
 const mode = vi.hoisted(() => ({ general: false }));
 vi.mock("@/hooks/useInterfaceMode.js", () => ({ useIsOfficeMode: () => mode.general }));
@@ -11,18 +17,20 @@ vi.mock("@/hooks/useServices.js", () => ({
 }));
 
 function renderPanels() {
-  return renderHook(() =>
-    useAppPanels({
-      workspaceAbsPath: "/repo",
-      workspaceIdentity: "ssh://mode-test/repo",
-      workspaceRemoteSessionId: "remote-mode-test",
-      activeTaskId: "mode-task",
-      sidePaneOwnerId: "mode-task",
-      isDesktop: true,
-      isWorkspaceVisible: true,
-      supportsEmbeddedBrowser: true,
-      defaultWhiteboardNamePrefix: "Whiteboard",
-    }),
+  return renderHook(
+    () =>
+      useAppPanels({
+        workspaceAbsPath: "/repo",
+        workspaceIdentity: "ssh://mode-test/repo",
+        workspaceRemoteSessionId: "remote-mode-test",
+        activeTaskId: "mode-task",
+        sidePaneOwnerId: "mode-task",
+        isDesktop: true,
+        isWorkspaceVisible: true,
+        supportsEmbeddedBrowser: true,
+        defaultWhiteboardNamePrefix: "Whiteboard",
+      }),
+    { wrapper: intlWrapper },
   );
 }
 

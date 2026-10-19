@@ -31,7 +31,6 @@ function setup() {
     resumeTask: vi.fn(async () => {}),
     sendPrompt: vi.fn(async () => {}),
   };
-  const report = vi.fn();
   const taskKey = Symbol(),
     modelKey = Symbol(),
     botsKey = Symbol();
@@ -53,7 +52,6 @@ function setup() {
     trackCronRunOutcome: vi.fn(),
     disposeCronRunSubscription: vi.fn(),
     markCronRunOutcome: vi.fn(),
-    reportHostSessionCreate: report,
     parentPort: {},
   });
   const request = {
@@ -63,10 +61,12 @@ function setup() {
     workspaceIdentity: "remote:ssh:host:/private",
     prompt: "prompt",
   };
-  return { service, report, dispatch, request };
+  return { service, dispatch, request };
 }
 describe("定时任务的 Session 创建口径", () => {
-  it.each(["a1:1000", "a1:manual:1000"])("新建会话 %s 首发 accepted 后才报告", async (runId) => {
+  // fork 已剔除 reportHostSessionCreate 遥测：保留的时序断言是
+  // sendPrompt 未 accepted 前派发不完成，accepted 后返回新会话 id。
+  it.each(["a1:1000", "a1:manual:1000"])("新建会话 %s 首发 accepted 后才完成派发", async (runId) => {
     const state = setup();
     let accept!: () => void;
     state.service.sendPrompt.mockImplementation(
@@ -77,18 +77,17 @@ describe("定时任务的 Session 创建口径", () => {
     );
     const dispatched = state.dispatch({ ...state.request, runId });
     await vi.waitFor(() => expect(state.service.sendPrompt).toHaveBeenCalledOnce());
-    expect(state.report).not.toHaveBeenCalled();
+    let settled = false;
+    void dispatched.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
     accept();
-    await dispatched;
-    expect(state.report).toHaveBeenCalledExactlyOnceWith(
-      {},
-      {
-        sessionId: "new-session",
-        messageId: runId,
-        source: "automation_scheduled",
-        workspaceIdentity: state.request.workspaceIdentity,
-      },
-    );
+    await expect(dispatched).resolves.toEqual({
+      taskId: "new-session",
+      sessionId: "new-session",
+    });
   });
   it("prompt 创建的任务绑定原会话，多次追加都不报告", async () => {
     const state = setup();
@@ -97,12 +96,10 @@ describe("定时任务的 Session 创建口径", () => {
     expect(state.service.createTask).not.toHaveBeenCalled();
     expect(state.service.resumeTask).toHaveBeenCalledTimes(2);
     expect(state.service.sendPrompt).toHaveBeenCalledTimes(2);
-    expect(state.report).not.toHaveBeenCalled();
   });
   it("新建后首发拒绝不报告", async () => {
     const state = setup();
     state.service.sendPrompt.mockRejectedValue(new Error("rejected"));
     await expect(state.dispatch(state.request)).rejects.toThrow("rejected");
-    expect(state.report).not.toHaveBeenCalled();
   });
 });

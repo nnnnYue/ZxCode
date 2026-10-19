@@ -39,7 +39,8 @@ export function WorkspaceHelpMenuButton({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    // fork 移除了漏洞上报入口后无需受控 open 状态，改回非受控下拉。
+    <DropdownMenu>
       <ControlHintTooltip title={helpMenuLabel} side="bottom">
         <DropdownMenuTrigger asChild>
           <Button

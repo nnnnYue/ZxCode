@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { ZCODE_VERSION } from "@zcode/shared";
+import { ZXCODE_VERSION } from "@zcode/shared";
 import { clearAppData, seedSettings } from "../../../helpers/desktop-app.js";
 import { prepareV4ConversationE2E } from "../../../helpers/v4-conversation.js";
 import {
@@ -97,15 +97,17 @@ describe(`${CASE_MARKER}: SSH 本地下载遵循应用代理`, () => {
     expect(
       proxy.requestPaths.some(
         (path) =>
-          path.endsWith(`/${ZCODE_VERSION}/manifest-linux-x64.json`) ||
-          path.endsWith(`/${ZCODE_VERSION}/manifest-linux-arm64.json`),
+          path.endsWith(`/${ZXCODE_VERSION}/manifest-linux-x64.json`) ||
+          path.endsWith(`/${ZXCODE_VERSION}/manifest-linux-arm64.json`),
       ),
     ).toBe(true);
     expect(await readHostProcesses()).toEqual(initialHosts);
   });
 });
 
-function restoreRemoteAssetEnv(originalEnv: ReadonlyMap<string, string | undefined>): void {
+function restoreRemoteAssetEnv(
+  originalEnv: ReadonlyMap<string, string | undefined>,
+): void {
   for (const [key, value] of originalEnv) {
     if (value === undefined) {
       delete process.env[key];

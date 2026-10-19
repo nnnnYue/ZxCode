@@ -253,7 +253,8 @@ describe("SessionPane error banner wiring", () => {
     );
   });
 
-  it("renders the feedback shortcut in the subscription error state", () => {
+  it("renders the reconnect shortcut in the subscription error state", () => {
+    // 反馈入口（反馈问题）已随反馈功能剔除；订阅错误态只保留错误信息与重新连接。
     projectionState.current = {
       status: "error",
       snapshot: null,
@@ -266,7 +267,6 @@ describe("SessionPane error banner wiring", () => {
     const html = renderPane();
 
     expect(html).toContain("EPERM: operation not permitted");
-    expect(html).toContain("反馈问题");
     expect(html).toContain("重新连接");
   });
 });

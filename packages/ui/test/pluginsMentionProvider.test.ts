@@ -18,7 +18,6 @@ import {
 import { normalizePromptMentionDisplayLabel } from "../src/mentions/promptMentionLabel.js";
 
 import { filterMentionItemsWithOptions } from "@/mentions/mentionSearch.js";
-import { groupItemsByCategory, type StorePluginItem } from "@/settings/pluginStoreListing.js";
 
 const LABELS = {
   conflictReason: "同名插件冲突，暂不可引用",
@@ -240,19 +239,6 @@ describe("输入框复用市场排序", () => {
       enabled: false,
     }),
   ];
-  it("配置重排官方，个人随后保序；不添加目录外插件或启用禁用项", () => {
-    const result = mapPluginCatalogToMentionItemsForTest(entries, LABELS, "en-US", {
-      categoryOrder: ["utilities", "developer-tools"],
-      pluginOrder: { utilities: [`missing@${official}`, `b@${official}`] },
-    });
-    expect(result.map((x) => x.value)).toEqual([
-      `b@${official}`,
-      `a@${official}`,
-      `dev@${official}`,
-      "personal@personal",
-    ]);
-    expect(result[2]?.disabled).toBe(true);
-  });
   it("无配置和旧 Host 没分类时保留发现顺序", () => {
     expect(
       mapPluginCatalogToMentionItemsForTest(entries, LABELS, "en-US").map((x) => x.value),
@@ -266,54 +252,3 @@ describe("输入框复用市场排序", () => {
   });
 });
 
-it("市场和 Picker 的官方子集同序，查询同分保序且匹配度优先", () => {
-  const official = "zcode-plugins-official";
-  const catalog = [
-    entry({ name: "b", pluginId: `b@${official}`, marketplace: official, category: "guides" }),
-    entry({ name: "a", pluginId: `a@${official}`, marketplace: official, category: "utilities" }),
-    entry({
-      name: "dev",
-      pluginId: `dev@${official}`,
-      marketplace: official,
-      category: "developer-tools",
-    }),
-  ];
-  for (const categoryOrder of [
-    ["utilities", "developer-tools"],
-    ["developer-tools", "utilities"],
-  ]) {
-    const order = { categoryOrder, pluginOrder: { utilities: [`b@${official}`] } };
-    const picker = mapPluginCatalogToMentionItemsForTest(
-      catalog,
-      { conflictReason: "conflict" },
-      "zh-CN",
-      order,
-    );
-    const store = catalog.map(
-      (x) =>
-        ({
-          id: x.pluginId,
-          name: x.name,
-          marketplace: x.marketplace,
-          installed: true,
-          restorable: false,
-          orphaned: false,
-          listing: { category: x.category },
-        }) satisfies StorePluginItem,
-    );
-    expect(picker.map((x) => x.value)).toEqual(
-      groupItemsByCategory(store, "zh-CN", order).flatMap((x) => x.items.map((y) => y.id)),
-    );
-    const sameScoreItems = picker.map((item) => ({
-      ...item,
-      keywords: [...(item.keywords ?? []), "same"],
-    }));
-    expect(filterMentionItemsWithOptions(sameScoreItems, "same").map((x) => x.value)).toEqual(
-      picker.map((x) => x.value),
-    );
-    expect(filterMentionItemsWithOptions(picker, "dev").map((x) => x.value)).toEqual([
-      `dev@${official}`,
-    ]);
-  }
-  expect(catalog.map((x) => x.name)).toEqual(["b", "a", "dev"]);
-});

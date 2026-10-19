@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import test from "node:test";
+import { it as test } from "vitest";
 import { fileURLToPath } from "node:url";
 import {
   ZXCODE_PROTOCOL_NAME,
@@ -64,7 +64,7 @@ test("current Project Memory catalog and files remain readable", async () => {
   }
 });
 
-test("opening the task index leaves retired ACP IDs and user rows untouched", async () => {
+test("opening the task index migrates legacy ACP rows to ZCode session ids", async () => {
   const dir = await mkdtemp(join(tmpdir(), "zxcode-acp-index-"));
   const path = join(dir, "tasks.sqlite");
   const repo = new TaskIndexRepo(path);
@@ -84,9 +84,9 @@ test("opening the task index leaves retired ACP IDs and user rows untouched", as
     repo.close();
     const reopened = new DatabaseSync(path);
     try {
-      const row = reopened.prepare("SELECT task_id, acp_session_id FROM tasks").get();
-      assert.equal(row?.task_id, meta.taskId);
-      assert.equal(row?.acp_session_id, "session-example");
+      // 上游 v3.15.1 起 ensureReady 会把 legacy ACP 行迁移为 ZCode session id（task_id ← acp_session_id）。
+      const row = reopened.prepare("SELECT task_id FROM tasks").get();
+      assert.equal(row?.task_id, "session-example");
     } finally {
       reopened.close();
     }
@@ -96,7 +96,7 @@ test("opening the task index leaves retired ACP IDs and user rows untouched", as
   }
 });
 
-test("missing sessions report the owner error even when a valid ACP snapshot exists", async () => {
+test("missing sessions recover read-only from the legacy snapshot even when resume fails", async () => {
   const dir = await mkdtemp(join(tmpdir(), "zxcode-acp-snapshot-"));
   setDataBaseDir(dir);
   const path = getLegacyTaskSessionSnapshotPath(meta.workspacePath, meta.taskId);
@@ -127,11 +127,12 @@ test("missing sessions report the owner error even when a valid ACP snapshot exi
     } as unknown as Options["taskIndexSyncer"],
   });
   try {
+    // 上游 v3.15.1 起 resume 失败不再把 owner error 抛给调用方，而是按 legacy 快照只读恢复。
     for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as const) {
-      await assert.rejects(
-        service.getTaskSnapshot({ ...meta, clientMode }),
-        (error) => error === ownerError,
-      );
+      const snapshot = await service.getTaskSnapshot({ ...meta, clientMode });
+      assert.ok(snapshot);
+      assert.equal(snapshot.meta.taskId, meta.taskId);
+      assert.deepEqual(snapshot.messages, []);
     }
     assert.equal(await readFile(path, "utf8"), content);
   } finally {

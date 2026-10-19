@@ -33,14 +33,14 @@ describe("developerToolsPreference", () => {
     expect(
       readDeveloperToolsEnabled(
         createStorage({
-          "zcode:developer-tools:enabled": "1",
+          "zxcode:developer-tools:enabled": "1",
         }),
       ),
     ).toBe(true);
     expect(
       readDeveloperToolsEnabled(
         createStorage({
-          "zcode:token-debug:enabled": "debug",
+          "zxcode:token-debug:enabled": "debug",
         }),
       ),
     ).toBe(true);

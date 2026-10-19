@@ -31,26 +31,13 @@ describe("settings secondary navigation", () => {
     }
   });
 
-  it("自动化、闲时任务、模型购买与升级返回入口保持独立", async () => {
+  it("自动化任务返回入口保持独立", async () => {
+    // fork 已移除闲时任务与 Coding Plan 购买/升级面板，返回入口契约只保留自动化编辑视图。
     const automation = await readFile(
       new URL("../src/settings/AutomationEditView.tsx", import.meta.url),
       "utf8",
     );
-    const offPeak = await readFile(
-      new URL("../src/settings/OffPeakEditView.tsx", import.meta.url),
-      "utf8",
-    );
-    // 原生购买面板已下线（购买走 webview 弹窗），返回入口契约只保留闲时任务与升级按钮。
-    const upgrade = await readFile(
-      new URL(
-        "../src/settings/model-provider-section/CodingPlanStatusActions.tsx",
-        import.meta.url,
-      ),
-      "utf8",
-    );
     expect(automation).not.toContain("SettingsBackButton");
-    expect(offPeak).not.toContain("SettingsBackButton");
-    expect(upgrade).not.toContain("SettingsBackButton");
   });
 
   it("所有二级设置页返回文案不附带业务对象", () => {

@@ -450,35 +450,6 @@ async function sendThroughEdit(): Promise<void> {
 }
 
 /**
- * 走 Composer sendText 路径，并让发送停在 prepare 之前的 Start 套餐推荐 await；
- * 返回的 release 放行后才会进入 Highspeed prepare。
- */
-async function sendTextHeldBeforePrepare(): Promise<{
-  release: () => void;
-  sending: Promise<unknown>;
-}> {
-  let release: () => void = () => {};
-  startPlanRecommendation.state.hold = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  let sending: Promise<unknown> = Promise.resolve();
-  await act(async () => {
-    sending =
-      latestComposer().onSendText?.("加速一轮", {
-        submission: {
-          mode: "build",
-          planEnabled: false,
-          modelSelection: { providerId: "builtin:bigmodel-coding-plan", modelId: "GLM-5.3" },
-        },
-      }) ?? Promise.reject(new Error("composer 未提供 onSendText"));
-    await flushMicrotasks();
-  });
-  expect(startPlanRecommendation.recommend).toHaveBeenCalledTimes(1);
-  expect(servicesMock.highspeedCardService.prepareTurn).not.toHaveBeenCalled();
-  return { release, sending };
-}
-
-/**
  * 截获到期清退 timer（挂载时刻 + 延时恰为 expiresAt）改由用例手动触发，其余 timer 照常执行。
  * 需配合固定的 Date.now，才能按挂载时刻精确识别。
  */
@@ -731,58 +702,6 @@ describe("SessionPane Highspeed 激活动效请求", () => {
       await renderPane(root, "session-a");
       expect(latestComposer().highspeedCard?.cardId).toBe("card-late");
       expect(latestComposer().highspeedActivationCardId).toBeNull();
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("prepare 开始前已切到其他 Task 时，旧 Task 的卡同样不呈现到当前 Task", async () => {
-    // 回归（CR-01）：发送起点曾在 prepare 入口才读取；配置屏障、套餐推荐、建会话等前置 await
-    // 期间切到 B 后，起点已被读成 B，A 的卡会呈现到 B 的输入框并播放激活。
-    const card = makeCard("card-pre-prepare", "session-a");
-    const root = createRoot(installMinimalDom());
-    try {
-      await renderPane(root, "session-a");
-      const { release, sending } = await sendTextHeldBeforePrepare();
-
-      await renderPane(root, "session-b");
-      mockDrawHit(card);
-      await act(async () => {
-        release();
-        await sending;
-        await flushMicrotasks();
-      });
-      // 卡仍用于 A 的本轮发送。
-      expect(servicesMock.highspeedCardService.prepareTurn).toHaveBeenCalledWith(
-        expect.objectContaining({ taskId: "session-a" }),
-      );
-      expect(sendCommandMock).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "sendText", sessionId: "session-a" }),
-      );
-      expect(latestComposer().highspeedCard).toBeNull();
-      expect(latestComposer().highspeedActivationCardId).toBeNull();
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("A → B → A 后结果才返回时，按本端发送路径的首次呈现播放激活", async () => {
-    const card = makeCard("card-round-trip", "session-a");
-    const root = createRoot(installMinimalDom());
-    try {
-      await renderPane(root, "session-a");
-      const { release, sending } = await sendTextHeldBeforePrepare();
-
-      await renderPane(root, "session-b");
-      await renderPane(root, "session-a");
-      mockDrawHit(card);
-      await act(async () => {
-        release();
-        await sending;
-        await flushMicrotasks();
-      });
-      expect(latestComposer().highspeedCard?.cardId).toBe("card-round-trip");
-      expect(latestComposer().highspeedActivationCardId).toBe("card-round-trip");
     } finally {
       await act(async () => root.unmount());
     }

@@ -1055,11 +1055,9 @@ describe("ZCode legacy task compat task index", () => {
           payload: {
             text: "run off-peak prompt",
             heldQueueDisposition: "keepQueueAndSend",
-            offPeakTaskId: "offpeak-stable-1",
-            offPeakRunType: "init",
-            // D49-2：闲时派发轮在调用方 CronCreate 之外，纵深补 OffPeakCreate
-            // （免费池自我放大）；OffPeakList 只读保留。
-            toolDisallowlist: ["CronCreate", "OffPeakCreate"],
+            // fork：off-peak 派发已下线，payload 不再携带 offPeak 标记，
+            // 也不自动追加 OffPeakCreate 禁用；仅保留调用方 CronCreate denylist。
+            toolDisallowlist: ["CronCreate"],
           },
         }),
       }),
@@ -1095,10 +1093,8 @@ describe("ZCode legacy task compat task index", () => {
           payload: {
             text: "continue off-peak prompt",
             heldQueueDisposition: "keepQueueAndSend",
-            offPeakTaskId: "offpeak-stable-1",
-            offPeakRunType: "resume",
-            // D49-2：续跑段与首跑同语义。
-            toolDisallowlist: ["CronCreate", "OffPeakCreate"],
+            // fork：同首跑，off-peak 字段不再下发。
+            toolDisallowlist: ["CronCreate"],
           },
         }),
       }),
@@ -3537,7 +3533,7 @@ describe("ZCode legacy task compat task index", () => {
     expect(snapshot?.messages).toHaveLength(2);
     expect(snapshot?.messages[1]?.tools?.[0]?.raw).toMatchObject({
       _meta: {
-        zcode: {
+        zxcode: {
           taskNotification: {
             outputFile: "/tmp/background-agent.output",
             result: "Background Agent restored result",
@@ -3648,7 +3644,7 @@ describe("ZCode legacy task compat task index", () => {
         status: expectedStatus,
         raw: {
           _meta: {
-            zcode: {
+            zxcode: {
               taskNotification: {
                 status: notificationStatus,
                 summary: notificationSummary,
@@ -3710,7 +3706,7 @@ describe("ZCode legacy task compat task index", () => {
           content: "Background Agent live result",
           raw: expect.objectContaining({
             _meta: expect.objectContaining({
-              zcode: expect.objectContaining({
+              zxcode: expect.objectContaining({
                 taskNotification: {
                   outputFile: "/tmp/background-agent.output",
                   result: "Background Agent live result",
@@ -3783,7 +3779,7 @@ describe("ZCode legacy task compat task index", () => {
       error: BACKGROUND_AGENT_PROVIDER_ERROR,
       raw: {
         _meta: {
-          zcode: {
+          zxcode: {
             taskNotification: {
               error: BACKGROUND_AGENT_PROVIDER_ERROR,
               status: "failed",
@@ -4347,9 +4343,9 @@ describe("ZCode legacy task compat task index", () => {
     );
   });
 
-  it("stamps offPeakTaskId on normal snapshot resume (D48)", async () => {
-    // SG-01：legacy 分支已补写闲时标记，正常 snapshot 续跑路径必须同语义，
-    // 否则 pre-D48 会话被闲时续跑后月亮标识与系统分组归属不会出现。
+  it("does not stamp offPeakTaskId on normal snapshot resume (fork)", async () => {
+    // fork：off-peak 派发已下线；offPeakTaskId 仅在 legacy 快照恢复分支保留补写，
+    // 正常 snapshot 续跑路径不再盖闲时标记。
     const { agent, service, taskIndexRepo } = createService();
     const taskId = "resume_offpeak_stamp_task";
     const workspacePath = "/repo";
@@ -4367,9 +4363,9 @@ describe("ZCode legacy task compat task index", () => {
       offPeakTaskId: "offpeak-resume-stamp",
     });
 
-    expect(meta.offPeakTaskId).toBe("offpeak-resume-stamp");
+    expect(meta.offPeakTaskId).toBeUndefined();
     const indexed = await taskIndexRepo.getTaskMeta({ workspacePath, taskId });
-    expect(indexed?.offPeakTaskId).toBe("offpeak-resume-stamp");
+    expect(indexed?.offPeakTaskId).toBeUndefined();
   });
 
   it("backfills indexed thought level when resumeTask omits thought level", async () => {

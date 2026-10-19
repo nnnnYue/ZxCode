@@ -1,6 +1,5 @@
 import type { ZCodeError, ZCodeTaskMeta, TraceId } from "@zcode/shared";
 import { errorAttributionSchema, type ErrorAttribution } from "@zcode/shared/zcode-protocol-v4";
-import { resolveRequestVerificationBusinessCode } from "@/lib/providerBusinessError.js";
 
 export interface ZCodeUiError extends ZCodeError {
   attribution?: ErrorAttribution;
@@ -234,10 +233,6 @@ export function normalizeZCodeUiError(
     ["data", "zxcode", "error", "underlyingErrorDetail"],
   ]);
   const providerCodeFromDetail = detailFromError?.match(/provider_code=([0-9]+)/)?.[1];
-  const verificationRejectedCode = resolveRequestVerificationBusinessCode(
-    codeFromError ?? providerCodeFromDetail,
-    primaryMessage,
-  );
   const traceIdFromError = readFirstStringFromPaths(error, [
     ["traceId"],
     ["data", "traceId"],
@@ -256,12 +251,7 @@ export function normalizeZCodeUiError(
     // 部分上游错误外层 code 只是 PROVIDER_BUSINESS_ERROR，
     // 真实 GLM / zcode-plan 业务码只保存在 detail 的 provider_code=xxxx。
     // 业务码需要进入统一错误分类层，否则 ChatView quota 横幅无法命中。
-    code:
-      verificationRejectedCode ??
-      providerCodeFromDetail ??
-      codeFromError ??
-      options.fallbackCode ??
-      "UNKNOWN",
+    code: providerCodeFromDetail ?? codeFromError ?? options.fallbackCode ?? "UNKNOWN",
     message: primaryMessage,
     detail: detailMessage,
     ...(underlyingErrorMessage ? { underlyingErrorMessage } : {}),

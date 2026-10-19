@@ -66,9 +66,12 @@ async function createService(): Promise<ProviderRegistryService> {
     zcodeBuiltinProviders: new ProviderConfigMap([
       [
         "account",
-        createAccountProviderConfig({
+        // fork：账号型 Access 已下线；此 Provider 仅保留 id 与家族分组语义。
+        createApiKeyProviderConfig({
+          group: "zai-family",
           apiFormat: "anthropic-messages",
           baseURL: "https://account.example.com",
+          apiKey: "account-key",
           models: ["m1", "m2"],
         }),
       ],
@@ -125,7 +128,7 @@ async function createService(): Promise<ProviderRegistryService> {
     states: { account: { availability: "available", entitled: true, current: true } },
     basedOnZCodeBuiltinRevision: "builtin-1",
     providers: new ProviderConfigMap([
-      ["account", createAccountProviderConfig({ models: ["m1"], entitled: true })],
+      ["account", createAccountProviderConfig({ models: ["m1"] })],
     ]),
   };
   const service = new ProviderRegistryService({
@@ -150,7 +153,6 @@ describe("Provider Facades", () => {
       providerId: "account",
       executable: true,
       effectiveBuiltinConfig: {
-        access: { type: "zhipu-account" },
         api: {
           type: "anthropic-messages",
           baseUrl: "https://account.example.com",
@@ -158,7 +160,6 @@ describe("Provider Facades", () => {
         builtinModelIds: ["m1"],
       },
       effectiveConfig: {
-        access: { type: "zhipu-account" },
         api: {
           type: "anthropic-messages",
           baseUrl: "https://account.example.com",

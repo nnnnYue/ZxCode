@@ -1,4 +1,3 @@
-import { installRequestSecurityDiagnostics } from "./request-security-edition/index.js";
 // fork：合并 v3.15.1 采纳上游 webRemoteControlManager（IPC 面见 desktopMainIpcPlatform/Remote），
 // 但遥测与自动更新链路保持移除；hostname/createCredentialService 为其依赖，common 区 import 块不可改，故置于此。
 import { hostname } from "node:os";
@@ -1442,7 +1441,6 @@ app.on("second-instance", (_event, argv, _workingDirectory, additionalData) => {
 
 app.whenReady().then(async () => {
   markMainLaunchAppReady();
-  installRequestSecurityDiagnostics(session.defaultSession.webRequest, logger);
   installLocalMediaPreviewProtocol(session.defaultSession.protocol, {
     isPathAuthorized: localMediaPreviewPathRegistry.isAuthorized,
   });
@@ -1457,7 +1455,8 @@ app.whenReady().then(async () => {
       : {}),
     logger: console,
     // e2e L05（配额）：只在 e2e run 里允许缩小注册表容量。
-    ...(process.env.ZCODE_E2E_RUN_ID?.trim() &&
+    // fork 环境变量统一为 ZXCODE_ 前缀（wdio 与 shared e2e-test-bridge 均写 ZXCODE_E2E_RUN_ID）。
+    ...(process.env.ZXCODE_E2E_RUN_ID?.trim() &&
     Number.isInteger(Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
     Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
       ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }

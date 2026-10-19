@@ -1,4 +1,3 @@
-import { withoutRequestVerificationHeaders } from "@zcode/shared";
 /* eslint-disable max-lines -- AI SDK 模型执行装配集中维护 provider factory、鉴权和网络错误适配，拆分会让状态同步更脆弱。 */
 // ============================================================
 // Vercel AI SDK model execution
@@ -23,8 +22,7 @@ import {
 import type { RegistryProviderConfig } from "@zcode/provider";
 import { withOpenRouterAttributionHeaders } from "@zcode/shared";
 import { createAnthropicCompatFetch } from "./anthropic-stream-compat.js";
-import { createModelRequestSecurityState } from "./request-security-edition/index.js";
-import type { ModelRequestSecurityState, ModelRequestSecurityPort } from "./request-security.js";
+import { createProviderEndpointRoutingFetch } from "./provider-endpoint-routing-fetch.js";
 import { createOpenAIResponsesJsonCompatFetch } from "./openai-responses-json-compat.js";
 import { createModelOptionMapFetch, type RawRequestBodyCapture } from "./model-option-map-fetch.js";
 import { createNetworkProxyFetch } from "../network/proxy-fetch.js";
@@ -58,7 +56,6 @@ export interface AiSdkModelExecutionConfig {
 }
 
 export interface AiSdkModelExecutionOptions {
-  requestSecurityState?: ModelRequestSecurityState;
   logger?: Logger;
   transport?: ProviderFetch;
 }
@@ -78,7 +75,6 @@ export interface AiSdkResolvedModel {
   providerKind: AiSdkProviderKind;
   providerOptions?: Record<string, unknown>;
   rawRequestBodyCapture?: RawRequestBodyCapture;
-  requestObservations?: ModelRequestSecurityPort;
 }
 
 export interface AiSdkBoundModelResolution {
@@ -170,7 +166,6 @@ export class AiSdkModelExecution {
   private readonly logger?: Logger;
   private readonly baseTransport?: ProviderFetch;
   private readonly providerTransports = new Map<string, ProviderFetch>();
-  private readonly requestSecurity: ModelRequestSecurityPort;
 
   constructor(config: AiSdkModelExecutionConfig = {}, options: AiSdkModelExecutionOptions = {}) {
     this.env = config.env ?? process.env;
@@ -179,9 +174,6 @@ export class AiSdkModelExecution {
     this.endpointRoutingPort = config.endpointRoutingPort;
     this.logger = options.logger;
     this.baseTransport = options.transport;
-    this.requestSecurity = (
-      options.requestSecurityState ?? createModelRequestSecurityState()
-    ).createExecution({ logger: options.logger });
   }
 
   /**
@@ -256,7 +248,7 @@ export class AiSdkModelExecution {
       optionValues,
       rawRequestBodyCapture,
       snapshot.supportsJsonSchemaOutput,
-      snapshot.providerConfig.access?.type === "zhipu-account" ? requestAuth?.apiKeyId : undefined,
+      requestAuth?.apiKeyId,
     );
     return {
       baseURL: providerConfig.baseURL,
@@ -267,7 +259,6 @@ export class AiSdkModelExecution {
       providerKind: providerConfig.kind,
       providerOptions: providerConfig.providerOptions,
       rawRequestBodyCapture,
-      requestObservations: this.requestSecurity,
     };
   }
 
@@ -292,11 +283,7 @@ export class AiSdkModelExecution {
           apiKeyId,
         })
       : networkTransport;
-    const requestTransport = this.requestSecurity.protectTransport({
-      providerId,
-      providerConfig,
-      transport: providerTransport,
-    });
+    const requestTransport = providerTransport;
     const fetch = createProviderBusinessErrorFetch({
       fetch: requestTransport,
       providerId,
@@ -406,16 +393,12 @@ function applyModelRequestAuth(
   requestAuth: ModelRequestAuth | undefined,
 ): AiSdkProviderConfig {
   if (!requestAuth) return providerConfig;
-  const staticHeaders = withoutRequestVerificationHeaders(providerConfig.headers);
-  // 账号动态身份头必须先清理静态认证头，避免 SDK 优先使用旧凭据。
-  const headers =
-    providerConfig.access.type === "zhipu-account"
-      ? withoutModelAuthHeaders(staticHeaders)
-      : staticHeaders;
   return {
     ...providerConfig,
     ...(requestAuth.apiKey ? { apiKey: requestAuth.apiKey } : {}),
-    headers: mergeModelRequestHeaders(headers, requestAuth.headers),
+    ...(requestAuth.headers
+      ? { headers: mergeModelRequestHeaders(providerConfig.headers, requestAuth.headers) }
+      : {}),
   };
 }
 

@@ -28,7 +28,7 @@ vi.mock("electron", () => ({
 }));
 
 // Bugfix: 这个用例只验证菜单模板，不能通过 importActual 拉完整 shared/services/main 依赖。
-// 全量 pre-push 并发时真实依赖加载会撞 5s 超时，并让 ZCODE_ENV 的模块缓存污染后续断言。
+// 全量 pre-push 并发时真实依赖加载会撞 5s 超时，并让 ZXCODE_ENV 的模块缓存污染后续断言。
 vi.mock("@zcode/shared", () => ({
   DesktopCommandIds: {
     NewTask: "newTask",
@@ -95,7 +95,7 @@ vi.mock("@zcode/shared", () => ({
     helpExportLogs: "titleBar.menu.help.exportLogs",
     helpClearAllData: "titleBar.menu.help.clearAllData",
   },
-  get ZCODE_ENV() {
+  get ZXCODE_ENV() {
     return envMock.value;
   },
   // 身份跟随后端环境的旧单轴语义：test → preview，production → production。
@@ -135,18 +135,6 @@ vi.mock("@zcode/shared", () => ({
   },
 }));
 
-vi.mock("electron-updater", () => ({
-  default: {
-    autoUpdater: {
-      autoDownload: false,
-      autoInstallOnAppQuit: false,
-      logger: undefined,
-      on: vi.fn(),
-      checkForUpdates: vi.fn(() => Promise.resolve()),
-      quitAndInstall: vi.fn(),
-    },
-  },
-}));
 
 vi.mock("../src/main/autoUpdater.js", () => ({
   CHECK_FOR_UPDATE_MENU_ID: "check-for-update",
@@ -155,7 +143,7 @@ vi.mock("../src/main/autoUpdater.js", () => ({
 
 vi.mock("../src/main/desktopCommandHandlers.js", () => ({
   HELP_TOGGLE_DEV_TOOLS_MENU_ID: "help.toggle-dev-tools",
-  HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID: "help.toggle-zcode-stdio-tap",
+  HELP_TOGGLE_ZXCODE_STDIO_TAP_MENU_ID: "help.toggle-zxcode-stdio-tap",
   PERF_START_MENU_ID: "help.performance.start-recording",
   PERF_STOP_MENU_ID: "help.performance.stop-recording",
 }));
@@ -219,7 +207,7 @@ describe("desktopApplicationMenu endpoint submenu", () => {
     expect(findMenuItem(template, "ZCode Endpoint")).toBeUndefined();
   });
 
-  it("Preview 隐藏更新入口，生产版继续显示", async () => {
+  it("fork 各环境均不显示已移除的更新入口", async () => {
     const { rebuildApplicationMenu } = await import("../src/main/desktopApplicationMenu.js");
 
     envMock.value = "test";
@@ -240,7 +228,8 @@ describe("desktopApplicationMenu endpoint submenu", () => {
     template = buildFromTemplateMock.mock.calls.at(
       -1,
     )?.[0] as Electron.MenuItemConstructorOptions[];
-    expect(findMenuItem(template, undefined, "check-for-update")).toBeTruthy();
+    // fork 已移除自动更新链路：生产版菜单同样不出现 check-for-update。
+    expect(findMenuItem(template, undefined, "check-for-update")).toBeUndefined();
   });
 
   it("开发运行形态也隐藏已下线的压测开关", async () => {

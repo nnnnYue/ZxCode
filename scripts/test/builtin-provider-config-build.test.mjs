@@ -16,11 +16,11 @@ import {
 import { buildCli } from "../../apps/zcode-cli/packages/cli/scripts/build.mjs";
 import {
   collectSeaProviderConfigAssets,
-  SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
+  SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
 } from "../../apps/zcode-cli/packages/cli/scripts/sea-provider-config-assets.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
-const productionFile = "config/provider/zcode-builtin.json";
+const productionFile = "config/provider/zxcode-builtin.json";
 const testFile = "config/provider/zcode-builtin.test.json";
 const baseline = JSON.parse(await readFile(resolve(repositoryRoot, productionFile), "utf8"));
 
@@ -46,7 +46,7 @@ test("both environments load the decoder through a portable file URL", async () 
       }});
       const { loadBuiltinProviderConfig } = await import("./scripts/builtin-provider-config.mjs");
       for (const environment of ["production", "test"]) {
-        await loadBuiltinProviderConfig({ env: { ZCODE_ENV: environment } });
+        await loadBuiltinProviderConfig({ env: { ZXCODE_ENV: environment } });
       }
       assert.equal(calls, 2);
     `,
@@ -74,16 +74,16 @@ for (const [environment, file, revision] of [
     const result = await stageBuiltinProviderConfig({
       root,
       directory,
-      env: { ZCODE_ENV: environment, NODE_ENV: "production" },
+      env: { ZXCODE_ENV: environment, NODE_ENV: "production" },
     });
     assert.equal(result.environment, environment);
     assert.equal(result.sourcePath, resolve(root, file));
     assert.equal(
-      JSON.parse(await readFile(resolve(directory, "zcode-builtin.json"), "utf8")).revision,
+      JSON.parse(await readFile(resolve(directory, "zxcode-builtin.json"), "utf8")).revision,
       revision,
     );
-    const assets = await collectSeaProviderConfigAssets({ root, env: { ZCODE_ENV: environment } });
-    assert.equal(assets[SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY], resolve(root, file));
+    const assets = await collectSeaProviderConfigAssets({ root, env: { ZXCODE_ENV: environment } });
+    assert.equal(assets[SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY], resolve(root, file));
   });
 
   test(`${environment} CLI bundle and its adjacent resource agree`, async (t) => {
@@ -99,15 +99,15 @@ for (const [environment, file, revision] of [
       cliDirectory,
       version: "1.0.0",
       sourcemap: false,
-      env: { ZCODE_ENV: environment },
+      env: { ZXCODE_ENV: environment },
     });
-    assert.match(await readFile(resolve(cliDirectory, "dist/zcode.cjs"), "utf8"), /fixture CLI/);
+    assert.match(await readFile(resolve(cliDirectory, "dist/zxcode.cjs"), "utf8"), /fixture CLI/);
     assert.equal(
       await readFile(resolve(cliDirectory, "dist/THIRD-PARTY-NOTICES.md"), "utf8"),
       "fixture notices\n",
     );
     assert.equal(
-      JSON.parse(await readFile(resolve(cliDirectory, "dist/provider/zcode-builtin.json"), "utf8"))
+      JSON.parse(await readFile(resolve(cliDirectory, "dist/provider/zxcode-builtin.json"), "utf8"))
         .revision,
       revision,
     );
@@ -120,9 +120,9 @@ test("environment precedence is explicit env > env files > test; NODE_ENV alone 
     await resolveBuiltinProviderBuildEnvironment({ root, env: { NODE_ENV: "production" } }),
     "test",
   );
-  await writeFile(resolve(root, ".env"), "ZCODE_ENV=production\n");
+  await writeFile(resolve(root, ".env"), "ZXCODE_ENV=production\n");
   assert.equal(await resolveBuiltinProviderBuildEnvironment({ root, env: {} }), "production");
-  await writeFile(resolve(root, ".env.production"), "ZCODE_ENV=test\n");
+  await writeFile(resolve(root, ".env.production"), "ZXCODE_ENV=test\n");
   assert.equal(
     await resolveBuiltinProviderBuildEnvironment({ root, env: { NODE_ENV: "production" } }),
     "test",
@@ -130,13 +130,13 @@ test("environment precedence is explicit env > env files > test; NODE_ENV alone 
   assert.equal(
     await resolveBuiltinProviderBuildEnvironment({
       root,
-      env: { ZCODE_ENV: " production ", NODE_ENV: "production" },
+      env: { ZXCODE_ENV: " production ", NODE_ENV: "production" },
     }),
     "production",
   );
   await assert.rejects(
-    loadBuiltinProviderConfig({ root, env: { ZCODE_ENV: "staging" } }),
-    /ZCODE_ENV/,
+    loadBuiltinProviderConfig({ root, env: { ZXCODE_ENV: "staging" } }),
+    /ZXCODE_ENV/,
   );
 });
 
@@ -144,7 +144,7 @@ test("reused JS still gets fresh config after switching environment or updating 
   const root = await fixture(t);
   const directory = resolve(root, "dist/provider");
   await mkdir(resolve(root, "dist"));
-  const js = resolve(root, "dist/zcode.cjs");
+  const js = resolve(root, "dist/zxcode.cjs");
   await writeFile(js, "existing CLI JS");
   for (const [environment, revision] of [
     ["production", 101],
@@ -153,9 +153,9 @@ test("reused JS still gets fresh config after switching environment or updating 
   ]) {
     if (revision === 203)
       await writeFile(resolve(root, testFile), JSON.stringify({ ...baseline, revision }));
-    await stageBuiltinProviderConfig({ root, directory, env: { ZCODE_ENV: environment } });
+    await stageBuiltinProviderConfig({ root, directory, env: { ZXCODE_ENV: environment } });
     assert.equal(
-      JSON.parse(await readFile(resolve(directory, "zcode-builtin.json"), "utf8")).revision,
+      JSON.parse(await readFile(resolve(directory, "zxcode-builtin.json"), "utf8")).revision,
       revision,
     );
     assert.equal(await readFile(js, "utf8"), "existing CLI JS");
@@ -168,13 +168,13 @@ for (const invalid of [null, "{broken", "{}", JSON.stringify({ ...baseline, conf
     if (invalid === null) await rm(resolve(root, testFile));
     else await writeFile(resolve(root, testFile), invalid);
     await assert.rejects(
-      loadBuiltinProviderConfig({ root, env: { ZCODE_ENV: "test" } }),
+      loadBuiltinProviderConfig({ root, env: { ZXCODE_ENV: "test" } }),
       /zcode-builtin.test.json/,
     );
-    await assert.rejects(collectSeaProviderConfigAssets({ root, env: { ZCODE_ENV: "test" } }));
+    await assert.rejects(collectSeaProviderConfigAssets({ root, env: { ZXCODE_ENV: "test" } }));
     assert.equal(
       JSON.parse(
-        (await loadBuiltinProviderConfig({ root, env: { ZCODE_ENV: "production" } })).content,
+        (await loadBuiltinProviderConfig({ root, env: { ZXCODE_ENV: "production" } })).content,
       ).revision,
       101,
     );
@@ -184,7 +184,7 @@ for (const invalid of [null, "{broken", "{}", JSON.stringify({ ...baseline, conf
 test("both repository configurations pass the runtime release decoder", async () => {
   for (const environment of ["test", "production"]) {
     assert.ok(
-      (await loadBuiltinProviderConfig({ root: repositoryRoot, env: { ZCODE_ENV: environment } }))
+      (await loadBuiltinProviderConfig({ root: repositoryRoot, env: { ZXCODE_ENV: environment } }))
         .content.length > 0,
     );
   }
@@ -196,7 +196,7 @@ test("Turbo and bootstrap include the out-of-workspace configuration inputs", as
   );
   for (const taskName of ["@zcode/cli#build", "build:desktop-agent"]) {
     const task = turbo.tasks[taskName];
-    assert.ok(task.env.includes("ZCODE_ENV"));
+    assert.ok(task.env.includes("ZXCODE_ENV"));
     assert.ok(task.env.includes("NODE_ENV"));
     for (const input of [
       productionFile,
@@ -216,26 +216,26 @@ test("Turbo and bootstrap include the out-of-workspace configuration inputs", as
 });
 
 test("real tsup config bundling retains helper location and embeds selected release", async (t) => {
-  const originalEnvironment = process.env.ZCODE_ENV;
+  const originalEnvironment = process.env.ZXCODE_ENV;
   t.after(() => {
-    if (originalEnvironment === undefined) delete process.env.ZCODE_ENV;
-    else process.env.ZCODE_ENV = originalEnvironment;
+    if (originalEnvironment === undefined) delete process.env.ZXCODE_ENV;
+    else process.env.ZXCODE_ENV = originalEnvironment;
   });
   // 使用 tsup 自己依赖的配置加载器，覆盖其先 bundle 配置文件再执行的真实路径。
   const { bundleRequire } = createRequire(import.meta.resolve("tsup"))("bundle-require");
   for (const environment of ["test", "production"]) {
-    process.env.ZCODE_ENV = environment;
+    process.env.ZXCODE_ENV = environment;
     const expected = await loadBuiltinProviderConfig();
     for (const packageName of ["server", "zcode-server-cli", "desktop"]) {
       const filepath = resolve(repositoryRoot, "packages", packageName, "tsup.config.ts");
       const { mod } = await bundleRequire({ filepath, cwd: dirname(filepath), format: "esm" });
       if (packageName === "desktop") {
-        assert.equal(JSON.parse(mod.default[0].define.__ZCODE_ENV__), environment);
+        assert.equal(JSON.parse(mod.default[0].define.__ZXCODE_ENV__), environment);
         continue;
       }
       const defines = mod.SERVER_HTTP_DEFINES ?? mod.SERVER_CLI_DEFINES;
       const result = await build({
-        stdin: { contents: "export default __ZCODE_BUILTIN_PROVIDER_CONFIG_JSON__;" },
+        stdin: { contents: "export default __ZXCODE_BUILTIN_PROVIDER_CONFIG_JSON__;" },
         define: defines,
         write: false,
         format: "esm",
@@ -249,7 +249,7 @@ test("real tsup config bundling retains helper location and embeds selected rele
       `${pathToFileURL(resolve(repositoryRoot, "packages/desktop/electron-builder.config.js")).href}?env=${environment}`
     );
     const resource = builder.extraResources.find(
-      (entry) => entry.to === "config/provider/zcode-builtin.json",
+      (entry) => entry.to === "config/provider/zxcode-builtin.json",
     );
     assert.equal(resource.from, expected.sourcePath);
   }

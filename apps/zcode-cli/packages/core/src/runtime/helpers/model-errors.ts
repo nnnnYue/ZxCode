@@ -1,4 +1,3 @@
-import { requestVerificationDiagnostics } from "@zcode/shared";
 import { CoreErrorType, ModelErrorCode, createCoreError, isCoreError } from "../deps.js";
 import type { ModelUsage } from "../deps.js";
 import { isPlainRecord, stringProperty } from "./data.js";
@@ -104,20 +103,17 @@ export function createSuspiciousEmptyModelResultError(
 }
 
 /** 空流终态诊断：供 core/adapters 日志与 UI 错误归因对照。 */
-export function buildSuspiciousEmptyDiagnostics(
-  input: {
-    finishReason: string | undefined;
-    providerMetadata: Record<string, unknown> | undefined;
-    rawFinishReason: string | undefined;
-    outboundHeaderKeys?: string[];
-  } & Record<string, unknown>,
-): Record<string, unknown> {
+export function buildSuspiciousEmptyDiagnostics(input: {
+  finishReason: string | undefined;
+  providerMetadata: Record<string, unknown> | undefined;
+  rawFinishReason: string | undefined;
+  outboundHeaderKeys?: string[];
+}): Record<string, unknown> {
   const businessFailure = findProviderBusinessFailureInMetadata(input.providerMetadata);
   return {
     finishReason: input.finishReason ?? null,
     rawFinishReason: input.rawFinishReason ?? null,
     outboundHeaderKeys: input.outboundHeaderKeys ?? [],
-    ...requestVerificationDiagnostics(input),
     providerMetadataKeys: input.providerMetadata
       ? Object.keys(input.providerMetadata).slice(0, 20)
       : [],

@@ -30,6 +30,7 @@ const SKIP_DIR_NAMES = new Set([
 const ZCODE_ORIGIN_ALLOWED_FILES = new Set([
   "packages/shared/src/zcodeEndpoint.ts", // 默认 origin 常量，仅用于身份标识与 URL 重写
   "packages/shared/test/zcode-source-headers.test.ts", // 模型请求 Referer 测试
+  "packages/shared/test/pluginMarketplaces.test.ts", // 插件市场 CDN（cdn-zcode.z.ai）保留项的来源 fixture
   "packages/web/src/communityUrl.ts", // 注释记录：原 /api/v1/client/configs 拉取链路已删
   "packages/desktop/src/main/remoteCdn.ts", // cdn-zcode.z.ai 子串，CDN 保留项
   "scripts/update-builtin-provider-config.mjs", // 构建脚本默认基址

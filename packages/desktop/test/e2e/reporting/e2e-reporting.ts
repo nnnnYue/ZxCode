@@ -197,14 +197,14 @@ const DEFAULT_PROCESS_SAMPLE_INTERVAL_MS = 3000;
 
 export function createE2EReporter(options: E2EReporterOptions) {
   const startedAt = new Date();
-  const runId = sanitizeFilePart(process.env.ZCODE_E2E_RUN_ID?.trim() || formatRunId(startedAt));
-  process.env.ZCODE_E2E_RUN_ID = runId;
+  const runId = sanitizeFilePart(process.env.ZXCODE_E2E_RUN_ID?.trim() || formatRunId(startedAt));
+  process.env.ZXCODE_E2E_RUN_ID = runId;
 
   const artifactDir = resolve(
-    process.env.ZCODE_E2E_ARTIFACT_DIR?.trim() ||
+    process.env.ZXCODE_E2E_ARTIFACT_DIR?.trim() ||
       resolve(options.desktopDir, ".e2e-artifacts", runId),
   );
-  process.env.ZCODE_E2E_ARTIFACT_DIR = artifactDir;
+  process.env.ZXCODE_E2E_ARTIFACT_DIR = artifactDir;
 
   const perfDir = resolve(artifactDir, "perf");
   const testsPath = resolve(artifactDir, "test-results.ndjson");

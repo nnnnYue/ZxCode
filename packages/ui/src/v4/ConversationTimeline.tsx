@@ -538,8 +538,8 @@ function ConversationTimelineImpl({
     // 单独订阅最近的卡片到期边界，避免为了等待倒计时持续刷新整个历史列表。
     // spec §9.3：到期唤醒基于 renderer setTimeout，窗口隐藏/被遮挡时会被 Chromium 冻结停摆；
     // helper 额外监听窗口恢复可见/获得焦点并即时追平 liveNowMs，footer 才能不依赖用户再发
-    // 消息就出现。与 SessionPane 的 highspeedAutoShareClock 窗口唤醒补偿分工：那条刷新分享
-    // 入口/查看按钮的完成态数据，这条刷新组尾 footer 的显隐时钟。
+    // 消息就出现。与 SessionPane 的 highspeedAggregationClock 窗口唤醒补偿分工：那条刷新
+    // 卡级 TPS 采样与完成态持久化，这条刷新组尾 footer 的显隐时钟。
     return armHighspeedFooterExpiryClock(nextHighspeedExpiryMs, () => setLiveNowMs(Date.now()));
   }, [nextHighspeedExpiryMs]);
 

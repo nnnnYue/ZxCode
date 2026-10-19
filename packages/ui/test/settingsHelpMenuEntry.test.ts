@@ -45,6 +45,6 @@ describe("settings help menu entry", () => {
 
     expect(footerIndex).toBeGreaterThan(-1);
     expect(footerUsage).toContain("isDesktop={isDesktop}");
-    expect(footerUsage).toContain("头像菜单是 WorkspaceSidebarFooter 的共享菜单");
+    expect(footerUsage).toContain("偏好菜单是 WorkspaceSidebarFooter 的共享菜单");
   });
 });

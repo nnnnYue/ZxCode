@@ -3,10 +3,11 @@ import { resolveRpcLogLevel } from "../src/host/rpcLogLevel.js";
 
 describe("host RPC 日志级别映射", () => {
   it("后台 Bash 成功轮询仅记 debug，失败仍记 warn", () => {
-    expect(resolveRpcLogLevel("[rpc:call] zcode-agent.backgroundBashOutputV4 OK (1.5ms)")).toBe(
+    // fork：RPC 前缀为 zxcode-agent（上游为 zcode-agent）
+    expect(resolveRpcLogLevel("[rpc:call] zxcode-agent.backgroundBashOutputV4 OK (1.5ms)")).toBe(
       "debug",
     );
-    expect(resolveRpcLogLevel("[rpc:call] zcode-agent.backgroundBashOutputV4 FAIL (1.5ms)")).toBe(
+    expect(resolveRpcLogLevel("[rpc:call] zxcode-agent.backgroundBashOutputV4 FAIL (1.5ms)")).toBe(
       "warn",
     );
     expect(
@@ -23,8 +24,9 @@ describe("host RPC 日志级别映射", () => {
   });
 
   it("provider registry 尚未就绪的 runtime identity 查询应记为 info", () => {
+    // fork：错误码常量为 ZXCODE_AGENT_PROVIDER_NOT_READY（上游为 ZCODE_ 前缀）
     const error = Object.assign(new Error("provider not ready"), {
-      code: "ZCODE_AGENT_PROVIDER_NOT_READY",
+      code: "ZXCODE_AGENT_PROVIDER_NOT_READY",
     });
 
     expect(

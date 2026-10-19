@@ -20,15 +20,16 @@ SilentInstall silent
 !define UNINSTALL_FILENAME "uninstaller.exe"
 ; This fixture invokes the cleanup macro from a normal section; electron-builder's real uninstaller uses un.*.
 !ifdef BUILD_UNINSTALLER
-  !define ZCODE_UNINSTALLER_FUNCTION_PREFIX ""
+  ; fork：installer.nsh 的函数前缀 define 为 ZXCODE_UNINSTALLER_FUNCTION_PREFIX（上游为 ZCODE_ 前缀）
+  !define ZXCODE_UNINSTALLER_FUNCTION_PREFIX ""
 !endif
 ; Simulate a manually launched overwrite installer without --updated.
 !define isUpdated `1 == 0`
 !define allowToChangeInstallationDirectory
-!define ZCODE_INSTALLER_DEFAULT_LOG_PATH "${DEFAULT_LOG_PATH}"
-!define ZCODE_INSTALLER_ELEVATED_LOG_PATH "${ELEVATED_LOG_PATH}"
+!define ZXCODE_INSTALLER_DEFAULT_LOG_PATH "${DEFAULT_LOG_PATH}"
+!define ZXCODE_INSTALLER_ELEVATED_LOG_PATH "${ELEVATED_LOG_PATH}"
 !ifdef FORCE_ELEVATED_INNER
-  !define ZCODE_INSTALLER_IS_ELEVATED_INNER `1 == 1`
+  !define ZXCODE_INSTALLER_IS_ELEVATED_INNER `1 == 1`
 !endif
 
 Var appExe

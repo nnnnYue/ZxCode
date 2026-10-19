@@ -106,50 +106,23 @@ const sshTarget: RemoteTarget = {
 function createManager(
   windowHostProcessMap: Map<number, MockUtilityProcess>,
   options?: {
-    rendererAttachmentReadyTimeoutMs?: number;
-    reportRemoteConnectionStateChanged?: (params: {
-      rendererId: number;
-      remoteKind: RemoteTarget["kind"];
-      transition:
-        | "connected"
-        | "connection-closed"
-        | "disposed"
-        | "window-closed"
-        | "host-exit"
-        | "app-shutdown";
-    }) => void;
-    reportRemoteDisconnect?: (params: {
-      rendererId: number;
-      remoteKind: RemoteTarget["kind"];
-      disconnectReason:
-        | "connection-closed"
-        | "disposed"
-        | "window-closed"
-        | "host-exit"
-        | "app-shutdown";
-      durationMs: number;
-    }) => void;
-    monotonicNowMs?: () => number;
-    resolveWslTarget?: (
-      target: Extract<RemoteTarget, { kind: "wsl" }>,
-    ) => Promise<Extract<RemoteTarget, { kind: "wsl" }>>;
     logger?: {
-      info: ReturnType<typeof vi.fn>;
-      warn: ReturnType<typeof vi.fn>;
-      error: ReturnType<typeof vi.fn>;
+      info: (...args: unknown[]) => void;
+      warn: (...args: unknown[]) => void;
+      error: (...args: unknown[]) => void;
     };
+    rendererAttachmentReadyTimeoutMs?: number;
+    resolveWslTarget?: (target: Extract<RemoteTarget, { kind: "wsl" }>) =>
+      Promise<Extract<RemoteTarget, { kind: "wsl" }>>;
   },
 ) {
   return createRemoteWorkspaceSessionManager({
-    logger: options?.logger ?? { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    logger: options?.logger ?? { info: () => undefined, warn: () => undefined, error: () => undefined },
     windowHostProcessMap: windowHostProcessMap as never,
-    resolveRemoteAssetDirs: () => ({}),
-    resolveWslTarget: options?.resolveWslTarget,
-    rendererAttachmentReadyTimeoutMs: options?.rendererAttachmentReadyTimeoutMs,
-    reportRemoteConnectionStateChanged: options?.reportRemoteConnectionStateChanged,
-    reportRemoteDisconnect: options?.reportRemoteDisconnect,
-    monotonicNowMs: options?.monotonicNowMs,
+    resolveRemoteAssetDirs: () =>
+      ({ mockCdnDir: "/mock/cdn", remoteCdnBaseUrl: "https://cdn.example.test" }) as never,
     webRemoteControlManagerRef: { current: null },
+    ...options,
   });
 }
 
@@ -308,8 +281,6 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
       win as never,
       sshTarget,
       "connect-1",
-      undefined,
-      { remoteUsageTelemetryEligible: true },
     );
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
@@ -331,10 +302,6 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
       }),
     );
     expect(logger.warn.mock.calls.at(-1)?.[1]).not.toHaveProperty("errorSummary");
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 1,
-      activeTargetCount: 1,
-    });
   });
 
   it.each([undefined, "source-read-failed"])(
@@ -384,44 +351,25 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     },
   );
 
-  it("只在 eligible 连接完成 renderer ACK 后计入并发并上报 connected gauge", async () => {
+  // fork 已剔除 remote usage 遥测（connected gauge / 并发计数）：保留
+  // renderer ACK 建立会话与 dispose 不重复的流程断言。
+  it("连接完成 renderer ACK 后会话建立，dispose 不重复上报", async () => {
     const child = new MockUtilityProcess(1001);
     const win = createWindow(1, 101);
-    const reportRemoteConnectionStateChanged = vi.fn();
-    const reportRemoteDisconnect = vi.fn();
-    const manager = createManager(new Map([[101, child]]), {
-      reportRemoteConnectionStateChanged,
-      reportRemoteDisconnect,
-    });
+    const manager = createManager(new Map([[101, child]]));
 
     const eligible = manager.createRemoteWorkspaceSession(
       win as never,
       sshTarget,
       "connect-eligible",
-      undefined,
-      { remoteUsageTelemetryEligible: true },
     );
     await emitConnected({
       child,
       requestId: "connect-eligible",
       remoteSessionId: "remote-eligible",
     });
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 0,
-      activeTargetCount: 0,
-    });
     confirmLatestScopedAttachment(manager, win);
-    await eligible;
-
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 1,
-      activeTargetCount: 1,
-    });
-    expect(reportRemoteConnectionStateChanged).toHaveBeenCalledWith({
-      rendererId: 101,
-      remoteKind: "ssh",
-      transition: "connected",
-    });
+    await expect(eligible).resolves.toBe("remote-eligible");
 
     const internal = manager.createRemoteWorkspaceSession(
       win as never,
@@ -437,38 +385,25 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     confirmLatestScopedAttachment(manager, win);
     await internal;
 
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 1,
-      activeTargetCount: 1,
-    });
-    manager.disposeRemoteWorkspaceSession("remote-internal", "internal-finished");
-    expect(reportRemoteConnectionStateChanged).toHaveBeenCalledOnce();
-    expect(reportRemoteDisconnect).not.toHaveBeenCalled();
+    expect(() =>
+      manager.disposeRemoteWorkspaceSession("remote-internal", "internal-finished"),
+    ).not.toThrow();
   });
 
-  it("连接异常关闭后上报一次 after-state gauge 与时长，随后 dispose 不重复", async () => {
+  // fork 已剔除 disconnect 遥测；保留「连接关闭后路由回收、再次 dispose 幂等」的行为断言。
+  it("连接异常关闭后路由回收，随后 dispose 幂等不重复", async () => {
     const child = new MockUtilityProcess(1001);
     const win = createWindow(1, 101);
-    let now = 100;
-    const reportRemoteConnectionStateChanged = vi.fn();
-    const reportRemoteDisconnect = vi.fn();
-    const manager = createManager(new Map([[101, child]]), {
-      monotonicNowMs: () => now,
-      reportRemoteConnectionStateChanged,
-      reportRemoteDisconnect,
-    });
+    const manager = createManager(new Map([[101, child]]));
     const connecting = manager.createRemoteWorkspaceSession(
       win as never,
       sshTarget,
       "connect-1",
-      undefined,
-      { remoteUsageTelemetryEligible: true },
     );
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
     await connecting;
 
-    now = 600;
     child.emit("message", {
       type: HostResponseTypes.RemoteWorkspaceClosed,
       remoteSessionId: "remote-session-1",
@@ -477,139 +412,41 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
       signal: null,
     });
 
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 0,
-      activeTargetCount: 0,
-    });
-    expect(reportRemoteConnectionStateChanged).toHaveBeenNthCalledWith(2, {
-      rendererId: 101,
-      remoteKind: "ssh",
-      transition: "connection-closed",
-    });
-    expect(reportRemoteDisconnect).toHaveBeenCalledWith({
-      rendererId: 101,
-      remoteKind: "ssh",
-      disconnectReason: "connection-closed",
-      durationMs: 500,
-    });
-
-    manager.disposeRemoteWorkspaceSession("remote-session-1", "tab-closed");
-    expect(reportRemoteConnectionStateChanged).toHaveBeenCalledTimes(2);
-    expect(reportRemoteDisconnect).toHaveBeenCalledOnce();
+    expect(() =>
+      manager.disposeRemoteWorkspaceSession("remote-session-1", "tab-closed"),
+    ).not.toThrow();
   });
 
+  // fork 已剔除终态遥测上报；保留三种退出路径（window/host/app）能安全回收路由的行为。
   it.each([
     ["window-closed", "window"],
     ["host-exit", "host"],
     ["app-shutdown", "app"],
-  ] as const)("%s 退出 eligible route 时上报对应终态", async (reason, owner) => {
+  ] as const)("%s 退出 eligible route 时安全回收路由", async (_reason, owner) => {
     const child = new MockUtilityProcess(1001);
     const win = createWindow(1, 101);
-    let now = 10;
-    const reportRemoteConnectionStateChanged = vi.fn();
-    const reportRemoteDisconnect = vi.fn();
-    const manager = createManager(new Map([[101, child]]), {
-      monotonicNowMs: () => now,
-      reportRemoteConnectionStateChanged,
-      reportRemoteDisconnect,
-    });
+    const manager = createManager(new Map([[101, child]]));
     const connecting = manager.createRemoteWorkspaceSession(
       win as never,
       sshTarget,
       "connect-1",
-      undefined,
-      { remoteUsageTelemetryEligible: true },
     );
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
     await connecting;
-    now = 210;
 
     if (owner === "window") manager.disposeRemoteWorkspaceSessionsForWindow(101);
     else if (owner === "host") child.emit("exit");
     else await manager.disposeAllAndWaitForAppShutdown("app-quit");
 
-    expect(reportRemoteConnectionStateChanged).toHaveBeenLastCalledWith({
-      rendererId: 101,
-      remoteKind: "ssh",
-      transition: reason,
-    });
-    expect(reportRemoteDisconnect).toHaveBeenCalledWith({
-      rendererId: 101,
-      remoteKind: "ssh",
-      disconnectReason: reason,
-      durationMs: 200,
-    });
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 0,
-      activeTargetCount: 0,
-    });
-  });
-
-  it("按脱敏 target identity 去重诊断计数，但保留每个逻辑 session", async () => {
-    const child = new MockUtilityProcess(1001);
-    const win = createWindow(1, 101);
-    const manager = createManager(new Map([[101, child]]));
-    const targets: RemoteTarget[] = [
-      sshTarget,
-      sshTarget,
-      { kind: "server", url: "ws://studio.example.com/ws" },
-      { kind: "server", url: "http://studio.example.com" },
-      { kind: "server", url: "wss://studio.example.com/ws" },
-      { kind: "server", url: "https://studio.example.com" },
-    ];
-
-    for (const [index, target] of targets.entries()) {
-      const requestId = `connect-${index}`;
-      const remoteSessionId = `remote-${index}`;
-      const connecting = manager.createRemoteWorkspaceSession(
-        win as never,
-        target,
-        requestId,
-        undefined,
-        { remoteUsageTelemetryEligible: true },
-      );
-      await emitConnected({ child, requestId, remoteSessionId, target });
-      confirmLatestScopedAttachment(manager, win);
-      await connecting;
-    }
-
-    expect(manager.getRemoteConnectionStats()).toEqual({
-      activeSessionCount: 6,
-      activeTargetCount: 3,
-    });
-  });
-
-  it("telemetry callback 抛错不改变连接成功或 dispose 结果", async () => {
-    const child = new MockUtilityProcess(1001);
-    const win = createWindow(1, 101);
-    const reportRemoteConnectionStateChanged = vi.fn(() => {
-      throw new Error("gauge reporter unavailable");
-    });
-    const reportRemoteDisconnect = vi.fn(() => {
-      throw new Error("disconnect reporter unavailable");
-    });
-    const manager = createManager(new Map([[101, child]]), {
-      reportRemoteConnectionStateChanged,
-      reportRemoteDisconnect,
-    });
-    const connecting = manager.createRemoteWorkspaceSession(
-      win as never,
-      sshTarget,
-      "connect-1",
-      undefined,
-      { remoteUsageTelemetryEligible: true },
-    );
-    await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
-
-    expect(() => confirmLatestScopedAttachment(manager, win)).not.toThrow();
-    await expect(connecting).resolves.toBe("remote-session-1");
     expect(() =>
       manager.disposeRemoteWorkspaceSession("remote-session-1", "tab-closed"),
     ).not.toThrow();
-    expect(reportRemoteConnectionStateChanged).toHaveBeenCalledTimes(2);
-    expect(reportRemoteDisconnect).toHaveBeenCalledOnce();
   });
+
+  // fork 无 getRemoteConnectionStats（remote usage 遥测已剔除），去重计数用例不再保留。
+
+  // fork 已剔除 telemetry callback（reportRemoteConnectionStateChanged / reportRemoteDisconnect）。
 
   it("WSL target 解析期间进入 app shutdown 后不发送迟到连接", async () => {
     const child = new MockUtilityProcess(1001);

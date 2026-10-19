@@ -1,10 +1,12 @@
 import {
   decodeCustomModelValue,
-  ZCODE_MODEL_REASONING_SEPARATOR,
+  ZXCODE_MODEL_REASONING_SEPARATOR,
   type ZCodeConfigOption,
 } from "@zcode/shared";
 
-function normalizeModelIdentity(value: string | null | undefined): string | null {
+function normalizeModelIdentity(
+  value: string | null | undefined,
+): string | null {
   const trimmed = value?.trim();
   if (!trimmed) {
     return null;
@@ -23,9 +25,13 @@ function normalizeModelIdentity(value: string | null | undefined): string | null
   const providerId = trimmed.slice(0, separatorIndex).trim();
   const rawModelId = trimmed.slice(separatorIndex + 1).trim();
   // Bugfix：冒号可能属于 OpenRouter modelId，模型身份 guard 只忽略 `$variant`。
-  const reasoningSeparatorIndex = rawModelId.indexOf(ZCODE_MODEL_REASONING_SEPARATOR);
+  const reasoningSeparatorIndex = rawModelId.indexOf(
+    ZXCODE_MODEL_REASONING_SEPARATOR,
+  );
   const modelId =
-    reasoningSeparatorIndex > 0 ? rawModelId.slice(0, reasoningSeparatorIndex).trim() : rawModelId;
+    reasoningSeparatorIndex > 0
+      ? rawModelId.slice(0, reasoningSeparatorIndex).trim()
+      : rawModelId;
   return providerId && modelId ? `${providerId}/${modelId}` : trimmed;
 }
 
@@ -35,7 +41,9 @@ export function readModelCurrentValueForModelStateGuard(
   const modelOption = configOptions.find(
     (option) => option.category === "model" && option.type === "select",
   );
-  return typeof modelOption?.currentValue === "string" ? modelOption.currentValue : null;
+  return typeof modelOption?.currentValue === "string"
+    ? modelOption.currentValue
+    : null;
 }
 
 export function shouldApplyModelStateUpdateForTaskModel(params: {

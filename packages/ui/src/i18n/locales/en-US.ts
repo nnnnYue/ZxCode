@@ -1,4 +1,3 @@
-import { requestSecurityMessagesEnUS } from "@/request-security-edition/messages.js";
 /** English translations */
 const enUS: Record<string, string> = {
   "occupationOnboarding.stepMode": "UI mode",
@@ -115,11 +114,6 @@ const enUS: Record<string, string> = {
   "startup.database.elapsed": "Elapsed: {minutes} min {seconds} sec",
   "startup.database.longRunning":
     "Large histories can take longer. The app is still waiting for the database to finish.",
-  "rewards.title": "Rewards",
-  "rewards.menuTitle": "Refer a friend",
-  "rewards.menuBadge": "Rewards",
-  "rewards.loadFailed": "Unable to load this page. Please retry.",
-  "rewards.openWebsite": "Open website",
   "bashOutput.open": "View output for {title}",
   "bashOutput.fullFile": "Full output file",
   "bashOutput.retry": "Retry",
@@ -160,14 +154,6 @@ const enUS: Record<string, string> = {
     "The selected connection is unavailable. Please choose another connection.",
   "settings.modelProvider.navigationUnavailable":
     "The requested provider is unavailable. Please choose another provider.",
-  "marketingTouch.idle": "Ready",
-  "marketingTouch.verifying": "Verifying…",
-  "marketingTouch.submitting": "Processing…",
-  "marketingTouch.preparing": "Succeeded. Preparing the result…",
-  "marketingTouch.failed": "The action failed. Please try again later.",
-  "marketingTouch.uncertain":
-    "The result could not be confirmed. Check your benefits later. This action will not be retried this session to avoid duplicate submissions.",
-  "marketingTouch.succeeded": "Action succeeded",
   "workspace.context.lastActivity": "Last active {time}",
   "bots.privateDelivery.retry": "Resend reply",
   "bots.privateDelivery.retryHint":
@@ -468,6 +454,9 @@ const enUS: Record<string, string> = {
     "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
   "bots.add": "Add",
   "bots.channel.telegram": "Telegram",
+  // BotsDialog/mobile remote-control entries still reference these keys (see botsUi.getBotProviderRegionTagLabelId).
+  "login.oauth.regionTag.zai": "Global",
+  "login.oauth.regionTag.bigmodel": "CN",
   "bots.channel.weixin": "Weixin",
   "bots.channel.feishu": "Feishu",
   "bots.channel.lark": "Lark",
@@ -1599,7 +1588,7 @@ const enUS: Record<string, string> = {
   "webRemoteControl.taskStatus.running": "Running",
   "webRemoteControl.taskStatus.completed": "Done",
   "webRemoteControl.taskStatus.error": "Error",
-  "webRemoteControl.mobileHome.title": "ZCode remote control",
+  "webRemoteControl.mobileHome.title": "ZxCode remote control",
   "webRemoteControl.mobileHome.connected": "Connected to this desktop window",
   "webRemoteControl.mobileHome.notice":
     "This connection can view the projects, tasks, and sessions currently open on this device. If the QR code expires, return to desktop and connect again.",
@@ -1644,7 +1633,7 @@ const enUS: Record<string, string> = {
   "remote.kind.wsl": "WSL",
   "remote.kind.docker": "Docker",
   "remote.kind.ssh.wizardDescription": "Remote host",
-  "remote.kind.server.wizardDescription": "Running ZCode service",
+  "remote.kind.server.wizardDescription": "Running ZxCode service",
   "remote.kind.wsl.wizardDescription": "Windows Subsystem for Linux",
   "remote.kind.docker.wizardDescription": "Local container",
   "remote.connect": "Connect",
@@ -1672,7 +1661,7 @@ const enUS: Record<string, string> = {
   "remote.log.requestingSession": "Requesting the host process to create a remote session...",
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
-  "server.description": "Connect to an already running ZCode server.",
+  "server.description": "Connect to an already running ZxCode server.",
   "server.url": "Server URL",
   "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
   "server.name": "Display name",
@@ -2170,9 +2159,6 @@ const enUS: Record<string, string> = {
   "settings.askUserQuestionAutoResolution": "Automatically continue questions",
   "settings.askUserQuestionAutoResolutionDescription":
     "When enabled, Agent questions automatically continue after 5 minutes without an answer. When disabled, current and future questions wait for your response.",
-  "settings.dynamicWorkflow": "Dynamic workflows",
-  "settings.dynamicWorkflowDescription":
-    "Let the model orchestrate many subagents working in parallel, so it can take on complex tasks and deliver polished results.",
   "settings.dynamicWorkflow.option.disabled": "Off",
   "settings.dynamicWorkflow.option.disabled.description":
     "Turn workflows off. The model cannot start new ones, and the Workflows tab leaves the Automations page. Workflows already in your conversations stay readable.",
@@ -5727,37 +5713,12 @@ const enUS: Record<string, string> = {
   "chat.highspeed.originalModel": "Original model: {model}",
   "chat.highspeed.remainingTime": "Time remaining: {time}",
   "chat.highspeed.generatedBy": "Generated by Highspeed",
-  "chat.highspeed.shareAction": "Share",
-  "chat.highspeed.viewAction": "View",
-  "chat.highspeed.share": "Share this accelerated run",
-  "chat.highspeed.shareFailed": "Could not share. Try again later.",
   "chat.highspeed.savedDuration": "About {duration} saved",
   "chat.highspeed.statusTag": "HighSpeed",
   "chat.highspeed.cardExpiredFallback":
     "The Highspeed card has expired. The rest of this turn will continue with the original model.",
   "chat.highspeed.requestFailedFallback":
     "Highspeed is temporarily unavailable. The rest of this turn will continue with the original model.",
-  "globalNotice.highspeed.title": "Highspeed run completed",
-  "globalNotice.highspeed.summary": "{tokens} output tokens · {duration}s",
-  "globalNotice.highspeed.tagline": "Share a Highspeed moment",
-  "globalNotice.highspeed.sidebarTagline": "Share your speedup",
-  "globalNotice.highspeed.share": "Share",
-  "globalNotice.highspeed.view": "View",
-  "globalNotice.highspeed.imageCopied": "Acceleration stats copied",
-  "globalNotice.highspeed.imageCopyFailed": "Could not copy image. Try again.",
-  "globalNotice.highspeed.textCopied": "Share text copied",
-  "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
-  "globalNotice.highspeed.copyImage": "Copy image",
-  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
-  "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
-  "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
-  "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
-  "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
-  "globalNotice.highspeed.copySummary":
-    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
-  "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
-  "globalNotice.highspeed.close": "Close Highspeed share card",
-  ...requestSecurityMessagesEnUS,
 };
 
 export default enUS;

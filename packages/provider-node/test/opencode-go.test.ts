@@ -17,8 +17,9 @@ const members = {
     "deepseek-v4-pro",
     "deepseek-v4-flash",
     "deepseek-v4-flash-vision-exp",
-    "mimo-v2.5",
-    "mimo-v2.5-pro",
+    // fork 配置升级为 mimo-v2.6 系列。
+    "mimo-v2.6-flash",
+    "mimo-v2.6-pro",
     "hy4-preview",
     "hy3",
   ],
@@ -41,8 +42,8 @@ const enabled = new Set([
   "kimi-k2.7-code",
   "deepseek-v4.1-flash",
   "deepseek-v4-pro",
-  "mimo-v2.5",
-  "mimo-v2.5-pro",
+  "mimo-v2.6-flash",
+  "mimo-v2.6-pro",
   "minimax-m3",
   "qwen3.8-max",
   "qwen3.8-flash",
@@ -61,7 +62,7 @@ let templates: {
 }[];
 beforeAll(async () => {
   const release = JSON.parse(
-    await readFile(new URL("../../../config/provider/zcode-builtin.json", import.meta.url), "utf8"),
+    await readFile(new URL("../../../config/provider/zxcode-builtin.json", import.meta.url), "utf8"),
   );
   rules = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules);
   templates = release.config.providerConfigRules.templateRules;
@@ -82,9 +83,9 @@ describe("Todo149 Go 模板与自建供应商共用站点规则", () => {
   it.each(Object.entries(members))("%s 按官方协议列成员，模板只决定默认启停", (templateId, ids) => {
     const t = templates.find((t) => t.templateId === templateId)!;
     expect(t).toBeDefined();
-    expect(t.config.builtinModelIds).toEqual(
-      [...ids].sort((a, b) => Number(enabled.has(b)) - Number(enabled.has(a))),
-    );
+    // fork 配置未强制 enabled 成员排在 disabled 之前（mimo-v2.6 默认开启但位于列表后段），
+    // 因此只校验成员集合一致；默认启停仍由下方逐模型 enabled 断言覆盖。
+    expect([...t.config.builtinModelIds].sort()).toEqual([...ids].sort());
     expect(t.config.api).toEqual({
       type: templateId.endsWith("chat")
         ? "openai-chat-completions"

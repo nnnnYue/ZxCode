@@ -251,12 +251,7 @@ describe("ProviderRuntime", () => {
                 providerId: "account-plan",
                 config: {
                   group: "zai-family",
-                  access: {
-                    type: "zhipu-account",
-                    accountType: "zai",
-                    mode: "individual-coding-plan",
-                    entitled: false,
-                  },
+                  access: { type: "api-key", apiKey: "plan-key" },
                   api: {
                     type: "anthropic-messages",
                     baseUrl: "https://plan.example.com",
@@ -344,7 +339,7 @@ describe("ProviderRuntime", () => {
       providerId: "account-plan",
       config: {
         access: {
-          type: "zhipu-account",
+          type: "api-key",
         },
         builtinModelIds: ["model-a"],
       },
@@ -361,10 +356,8 @@ describe("ProviderRuntime", () => {
           providerId: "account-plan",
           config: {
             access: {
-              type: "zhipu-account",
-              accountType: "zai",
-              mode: "individual-coding-plan",
-              entitled: true,
+              apiKey: "plan-key",
+              type: "api-key",
             },
             api: {
               type: "anthropic-messages",
@@ -379,6 +372,8 @@ describe("ProviderRuntime", () => {
               config: expect.any(Object),
             },
           ],
+          providerName: undefined,
+          templateId: undefined,
         },
       ],
     });
@@ -412,12 +407,7 @@ describe("ProviderRuntime", () => {
                 providerId: "account-plan",
                 config: {
                   group: "zai-family",
-                  access: {
-                    type: "zhipu-account",
-                    accountType: "zai",
-                    mode: "individual-coding-plan",
-                    entitled: false,
-                  },
+                  access: { type: "api-key", apiKey: "plan-key" },
                   api: {
                     type: "anthropic-messages",
                     baseUrl: "https://plan.example.com",

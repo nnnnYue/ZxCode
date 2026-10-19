@@ -15,8 +15,8 @@ export function resolveE2EHomeDir({
 }: ResolveE2EHomeDirOptions = {}): string {
   const configuredHome =
     env.ZCODE_E2E_HOME_DIR?.trim() ||
-    env.ZCODE_DATA_BASE_DIR?.trim() ||
-    env.ZCODE_DESKTOP_HOME_DIR?.trim();
+    env.ZXCODE_DATA_BASE_DIR?.trim() ||
+    env.ZXCODE_DESKTOP_HOME_DIR?.trim();
   return resolve(cwd, configuredHome || ".e2e-home");
 }
 

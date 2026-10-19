@@ -2,18 +2,29 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings2 } from "lucide-react";
 import type { ZCodeTaskMeta } from "@zcode/shared";
-import { TID_TASK_LIST, TID_TASK_EMPTY, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared";
+import {
+  TID_TASK_LIST,
+  TID_TASK_EMPTY,
+  TID_TASK_SETTINGS_BUTTON,
+} from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
-import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu.js";
 import { toast } from "@/components/ui/toast.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { NewTaskButtonGroup } from "@/NewTaskButtonGroup.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
-import { MemoTaskItem, TaskListItemContextMenuContent } from "@/TaskListItem.js";
+import {
+  MemoTaskItem,
+  TaskListItemContextMenuContent,
+} from "@/TaskListItem.js";
 import { TaskListLoadingHint } from "@/TaskListLoadingHint.js";
 import { TaskRenameDialog } from "@/TaskRenameDialog.js";
 import { compareZCodeTaskListItems } from "@/lib/taskListOrdering.js";
+import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
 import { logger } from "@/logger.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 
@@ -63,10 +74,19 @@ export const TaskList = memo(function TaskList({
   loading?: boolean;
   hasMore?: boolean;
   onShowMore?: () => void;
-  onRenameTask: (taskId: string, title: string) => Promise<ZCodeTaskMeta | null>;
-  onSetTaskPinned: (taskId: string, pinned: boolean) => Promise<ZCodeTaskMeta | null>;
+  onRenameTask: (
+    taskId: string,
+    title: string,
+  ) => Promise<ZCodeTaskMeta | null>;
+  onSetTaskPinned: (
+    taskId: string,
+    pinned: boolean,
+  ) => Promise<ZCodeTaskMeta | null>;
   onArchiveTask: (taskId: string) => Promise<ZCodeTaskMeta | null>;
-  onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
+  onSetTaskUnread: (
+    taskId: string,
+    unread: boolean,
+  ) => Promise<ZCodeTaskMeta | null>;
   mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
 }) {
@@ -75,12 +95,19 @@ export const TaskList = memo(function TaskList({
     () => new Set(pinnedTasks.map((task) => task.taskId)),
     [pinnedTasks],
   );
-  const taskLookup = useMemo(() => [...tasks, ...pinnedTasks], [pinnedTasks, tasks]);
+  const taskLookup = useMemo(
+    () => [...tasks, ...pinnedTasks],
+    [pinnedTasks, tasks],
+  );
   const startDraft = useZCodeSessionStore((state) => state.startDraft);
   const openSettingsTab = useTabStore((state) => state.openSettingsTab);
-  const [pendingArchiveTaskId, setPendingArchiveTaskId] = useState<string | null>(null);
+  const [pendingArchiveTaskId, setPendingArchiveTaskId] = useState<
+    string | null
+  >(null);
   const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
-  const [contextMenuTaskId, setContextMenuTaskId] = useState<string | null>(null);
+  const [contextMenuTaskId, setContextMenuTaskId] = useState<string | null>(
+    null,
+  );
   const [renameDraft, setRenameDraft] = useState("");
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const pendingArchiveTaskIdRef = useRef<string | null>(pendingArchiveTaskId);
@@ -123,7 +150,9 @@ export const TaskList = memo(function TaskList({
     // 新建会话如果在按钮点击时就立即 createTask，会把"空任务"也持久化到列表里，
     // 用户只是想先打开输入框，侧边栏却会平白多出一条没有任何消息的记录。
     // 这里改成进入 workspace 级草稿态，等用户真正发送首条消息时再自动创建 task。
-    startDraft(workspacePath, undefined, workspaceIdentity, { createSource: "project" });
+    startDraft(workspacePath, undefined, workspaceIdentity, {
+      createSource: "project",
+    });
   }, [readOnlyReason, startDraft, workspaceIdentity, workspacePath]);
 
   const handleArchiveTaskFromInline = useCallback(
@@ -309,7 +338,9 @@ export const TaskList = memo(function TaskList({
     const orderedTasks =
       sortBy === "manual"
         ? tasks
-        : [...tasks].sort((left, right) => compareZCodeTaskListItems(left, right, sortBy));
+        : [...tasks].sort((left, right) =>
+            compareZCodeTaskListItems(left, right, sortBy),
+          );
     return orderedTasks;
   }, [sortBy, tasks]);
   useEffect(() => {
@@ -317,7 +348,9 @@ export const TaskList = memo(function TaskList({
       return;
     }
 
-    const stillExists = visibleSourceTasks.some((task) => task.taskId === pendingArchiveTaskId);
+    const stillExists = visibleSourceTasks.some(
+      (task) => task.taskId === pendingArchiveTaskId,
+    );
     if (!stillExists) {
       setPendingArchiveTaskId(null);
     }
@@ -328,7 +361,9 @@ export const TaskList = memo(function TaskList({
       return;
     }
 
-    const stillExists = visibleSourceTasks.some((task) => task.taskId === renamingTaskId);
+    const stillExists = visibleSourceTasks.some(
+      (task) => task.taskId === renamingTaskId,
+    );
     if (!stillExists) {
       handleCancelRenameTask();
     }
@@ -339,7 +374,9 @@ export const TaskList = memo(function TaskList({
       return;
     }
 
-    const stillExists = visibleSourceTasks.some((task) => task.taskId === contextMenuTaskId);
+    const stillExists = visibleSourceTasks.some(
+      (task) => task.taskId === contextMenuTaskId,
+    );
     if (!stillExists) {
       setContextMenuTaskId(null);
     }
@@ -416,7 +453,9 @@ export const TaskList = memo(function TaskList({
       {showCreateButton ? (
         <div className="border-b p-3">
           <ControlHintTooltip
-            title={readOnlyReason ?? intl.formatMessage({ id: "taskList.newThread" })}
+            title={
+              readOnlyReason ?? intl.formatMessage({ id: "taskList.newThread" })
+            }
           >
             <div>
               <NewTaskButtonGroup
@@ -451,7 +490,9 @@ export const TaskList = memo(function TaskList({
               }}
             >
               <ContextMenuTrigger asChild>
-                <ul className="space-y-0.5">{visibleSourceTasks.map(renderTaskItem)}</ul>
+                <ul className="space-y-0.5">
+                  {visibleSourceTasks.map(renderTaskItem)}
+                </ul>
               </ContextMenuTrigger>
               {contextMenuTask ? (
                 <TaskListItemContextMenuContent

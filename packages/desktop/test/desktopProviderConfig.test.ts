@@ -15,12 +15,12 @@ describe("resolveZCodeBuiltinProviderConfigFilePath", () => {
           isPackaged: true,
           resourcesPath: "/Applications/ZCode.app/Contents/Resources",
           appPath: "/Applications/ZCode.app/Contents/Resources/app.asar",
-          // 隔离宿主环境变量：ZCode 开发运行时会注入 ZCODE_BUILTIN_PROVIDER_CONFIG_FILE，
+          // 隔离宿主环境变量：ZCode 开发运行时会注入 ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE，
           // 不显式清空会让本机跑单测时短路进 explicitPath 分支（CI 无此变量所以一直是绿的）。
           env: {},
         }),
       ),
-    ).toBe("/Applications/ZCode.app/Contents/Resources/config/provider/zcode-builtin.json");
+    ).toBe("/Applications/ZCode.app/Contents/Resources/config/provider/zxcode-builtin.json");
 
     expect(
       toPosixPath(
@@ -30,13 +30,14 @@ describe("resolveZCodeBuiltinProviderConfigFilePath", () => {
           env: {},
         }),
       ),
-    ).toBe("/repo/config/provider/zcode-builtin.test.json");
+    // fork 收敛为唯一线上配置源 zxcode-builtin.json（desktopProviderConfig.ts）。
+    ).toBe("/repo/config/provider/zxcode-builtin.json");
   });
 
   it("显式 ZCode Built-in Config Source 优先于安装布局", () => {
     expect(
       resolveZCodeBuiltinProviderConfigFilePath({
-        env: { ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: "/fixtures/zcode-builtin.json" },
+        env: { ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE: "/fixtures/zcode-builtin.json" },
         isPackaged: true,
         resourcesPath: "/Applications/ZCode.app/Contents/Resources",
       }),
@@ -59,11 +60,11 @@ describe("开发态按编译环境选取配置", () => {
         resolvePath({
           isPackaged: false,
           appPath: "/repo/packages/desktop",
-          env: { ZCODE_ENV: environment === "test" ? "production" : "test" },
+          env: { ZXCODE_ENV: environment === "test" ? "production" : "test" },
         }),
       ),
-    ).toBe(
-      `/repo/config/provider/${environment === "production" ? "zcode-builtin.json" : "zcode-builtin.test.json"}`,
-    );
+    // fork 开发态与打包共用唯一配置源，不再按编译环境切换 test 变体；
+    // 环境变量也不反向覆盖文件选择。
+    ).toBe("/repo/config/provider/zxcode-builtin.json");
   });
 });

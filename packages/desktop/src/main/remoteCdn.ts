@@ -1,7 +1,9 @@
 import { ZXCODE_VERSION, type ZCodeEnv } from "@zcode/shared";
 
 declare const __ZXCODE_CDN_BASE_URL__: string | undefined;
-const DEFAULT_CDN_BASE_URL = "https://cdn-zcode.z.ai";
+// 导出默认海外 CDN 基址供测试引用：门禁禁止 zcode.z.ai 字面量散落测试文件，
+// 断言值必须与这里的单一事实源一致（本文件在门禁允许清单内）。
+export const DEFAULT_CDN_BASE_URL = "https://cdn-zcode.z.ai";
 
 export interface ResolveRemoteCdnOptions {
   env?: ZCodeEnv;

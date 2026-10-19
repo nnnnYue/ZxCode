@@ -142,14 +142,9 @@ function isLegacyAgentTool(
   const rawClaude = normalizeLegacyToken(rawNames.claudeCode);
 
   return (
-    rawClaude === "agent" ||
-    rawClaude === "task" ||
     rawZCode === "agent" ||
-    rawZCode === "spawn_agent" ||
     rawDirect === "agent" ||
-    rawDirect === "spawn_agent" ||
     kind === "agent" ||
-    kind === "spawn_agent" ||
     (kind === "think" && (title === "agent" || title === "task")) ||
     (kind === "think" &&
       isRecord(toolCall.input) &&

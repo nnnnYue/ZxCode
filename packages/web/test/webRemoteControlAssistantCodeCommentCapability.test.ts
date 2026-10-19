@@ -27,10 +27,12 @@ describe("web remote control Assistant code-comment capability", () => {
       "const renderExternalRelayRoot =",
       "const renderExternalRelayHomeOnlyRoot =",
     );
+    // fork 重排后 token bridge 的 renderBridgeRoot 位于 openWorkspaceBridge 定义之后，
+    // 以 workspace 选择语句作为收尾边界。
     const tokenBridgeRoot = sliceBetween(
       source,
       "const renderBridgeRoot =",
-      "const openWorkspaceBridge =",
+      "const selectedWorkspace = selectInitialWebRemoteControlWorkspace(snapshot);",
     );
     const externalRelayHomeOnlyRoot = sliceBetween(
       source,
@@ -39,7 +41,7 @@ describe("web remote control Assistant code-comment capability", () => {
     );
     const ordinaryWebServerRoot = sliceBetween(
       source,
-      'document.title = "ZCode - Web + Server";',
+      'document.title = "ZxCode - Web + Server";',
       "} catch (error) {",
     );
 

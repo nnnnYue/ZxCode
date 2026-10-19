@@ -364,60 +364,6 @@ function renderUnit(
 }
 
 describe("ConversationTurnGroup layout", () => {
-  it("shows a checked share toggle before a selectable conversation turn", () => {
-    const [unit] = buildConversationTurnRenderUnits([turnHeader(), userInputRow(2)]);
-    const html = renderUnit(unit!, {
-      shareSelection: {
-        eligibleRowIds: new Set([2]),
-        selectedRowIds: new Set([2]),
-        onToggle: vi.fn(),
-      },
-    });
-
-    expect(html).toContain('data-conversation-share-turn-toggle="true"');
-    expect(html).toContain('data-conversation-share-turn-toggle-state="selected"');
-    expect(html).toContain("top-1/2");
-    expect(html).toContain("-translate-y-1/2");
-    expect(html).toContain('data-state="checked"');
-  });
-
-  it("marks the share toggle indeterminate when a steered turn is only partially selected", () => {
-    const [unit] = buildConversationTurnRenderUnits([
-      turnHeader(),
-      userInputRow(2),
-      userInputRow(3, { text: "顺便看看测试" }),
-    ]);
-    const html = renderUnit(unit!, {
-      shareSelection: {
-        eligibleRowIds: new Set([2, 3]),
-        selectedRowIds: new Set([2]),
-        onToggle: vi.fn(),
-      },
-    });
-
-    expect(html).toContain('data-conversation-share-turn-toggle-state="partial"');
-    expect(html).toContain('data-state="indeterminate"');
-    expect(html).not.toContain('data-conversation-share-turn-toggle-state="unselected"');
-  });
-
-  it("keeps the share toggle unselected when no row of a steered turn is selected", () => {
-    const [unit] = buildConversationTurnRenderUnits([
-      turnHeader(),
-      userInputRow(2),
-      userInputRow(3, { text: "顺便看看测试" }),
-    ]);
-    const html = renderUnit(unit!, {
-      shareSelection: {
-        eligibleRowIds: new Set([2, 3]),
-        selectedRowIds: new Set(),
-        onToggle: vi.fn(),
-      },
-    });
-
-    expect(html).toContain('data-conversation-share-turn-toggle-state="unselected"');
-    expect(html).not.toContain('data-state="indeterminate"');
-  });
-
   it("uses the conversation container for narrow horizontal padding", () => {
     const [unit] = buildConversationTurnRenderUnits([turnHeader(), userInputRow(2)]);
     const html = renderUnit(unit!);
@@ -772,14 +718,6 @@ describe("ConversationTurnGroup message stream display settings", () => {
 });
 
 describe("ConversationTurnGroup assistant history status", () => {
-  it("会话内分享只打开本地卡片，不再调用后端分享接口", () => {
-    const source = readFileSync("packages/ui/src/v4/ConversationTurnGroup.tsx", "utf8");
-
-    expect(source).toContain("setHighspeedShareDialogOpen(true)");
-    expect(source).toContain("<HighspeedShareDialog");
-    expect(source).not.toContain("highspeedCardService.share");
-  });
-
   it("冷恢复后从 userInput metadata 保留 accelerated output 的紫色工时", () => {
     const input = userInputRow(2, {
       sourceCommandId: "command-highspeed-cold-history",
@@ -821,56 +759,9 @@ describe("ConversationTurnGroup assistant history status", () => {
     expect(html).toContain("HighSpeed");
     expect(html).toContain('data-highspeed-output-footer="true"');
     expect(html).toContain("以上由 Highspeed 生成");
-    expect(html).toContain('data-highspeed-output-share="true"');
-    expect(html).toContain("查看");
-    const shareButton = html.match(/<button[^>]*data-highspeed-output-share="true"[^>]*>/)?.[0];
-    expect(shareButton).toBeDefined();
-    expect(shareButton).not.toMatch(/\sdisabled(?:=""|(?=[\s>]))/);
-    expect(shareButton).toContain("h-7");
-    expect(shareButton).toContain("gap-1");
-    expect(shareButton).toContain("rounded-[8px]");
-    expect(shareButton).toContain("px-2");
-    expect(shareButton).toContain("py-1");
-    expect(shareButton).toContain("font-medium");
-    expect(html).toContain('data-highspeed-output-share-icon="true"');
+    // fork 已删除 Highspeed 分享面，视觉 footer 保留但不再有分享入口。
+    expect(html).not.toContain('data-highspeed-output-share="true"');
     expect(html).not.toContain('data-highspeed="true"');
-  });
-
-  it("卡失效降级后仍允许分享当前 Turn 的完整统计", () => {
-    const input = userInputRow(2, {
-      sourceCommandId: "command-highspeed-fallback-share",
-      highspeed: {
-        schemaVersion: 1,
-        cardId: "hsc-fallback-share",
-        taskId: "session-fallback-share",
-        provider: "zai",
-        model: "glm-5",
-        issuedAt: 1_000,
-        expiresAt: 10_000,
-        regularTps: 73,
-        highspeedTps: 136,
-        outputTokens: 120_000,
-        durationMs: 881_000,
-        savedDurationMs: 763_000,
-        fallbackAt: 10_001,
-      },
-    });
-    const work = reasoningRow();
-
-    const html = renderUnit(
-      baseUnit({
-        visibleUserInputs: [input],
-        workStatus: { state: "completed", durationMs: 881_000 },
-        assistantWorkRows: [work],
-        assistantHistoryRows: [work],
-        renderRows: [input, work],
-        showHighspeedOutputFooter: true,
-      }),
-    );
-
-    const shareButton = html.match(/<button[^>]*data-highspeed-output-share="true"[^>]*>/)?.[0];
-    expect(shareButton).toBeDefined();
-    expect(shareButton).not.toMatch(/\sdisabled(?:=""|(?=[\s>]))/);
   });
 
   it("缺少 durationMs 仍允许按 token 与 TPS 分享", () => {
@@ -1051,49 +942,6 @@ describe("ConversationTurnGroup assistant history status", () => {
     expect(runningHtml).toContain('data-highspeed-gradient="true"');
   });
 
-  it.each([
-    { label: "中断", workStatus: { state: "interrupted" as const, durationMs: 100 } },
-    { label: "异常", workStatus: undefined },
-  ])("Highspeed 组尾$label且自身无输出时仍展示可用分享入口", ({ workStatus }) => {
-    const input = userInputRow(2, {
-      sourceCommandId: "command-highspeed-terminal-footer",
-      highspeed: {
-        schemaVersion: 1,
-        cardId: "hsc-terminal-footer",
-        taskId: "session-terminal-footer",
-        provider: "zai",
-        model: "glm-5",
-        issuedAt: 1_000,
-        expiresAt: 10_000,
-        regularTps: 20,
-        highspeedTps: 50,
-        outputTokens: 0,
-        durationMs: 100,
-      },
-    });
-    const html = renderUnit(
-      baseUnit({
-        visibleUserInputs: [input],
-        ...(workStatus ? { workStatus } : {}),
-        showHighspeedOutputFooter: true,
-        highspeedOutputFooterTarget: {
-          cardId: "hsc-terminal-footer",
-          metrics: {
-            outputTokens: 10,
-            durationMs: 300,
-            regularTps: 20,
-            highspeedTps: 50,
-          },
-        },
-      }),
-    );
-
-    expect(html).toContain('data-highspeed-output-footer="true"');
-    const shareButton = html.match(/<button[^>]*data-highspeed-output-share="true"[^>]*>/)?.[0];
-    expect(shareButton).toBeDefined();
-    expect(shareButton).not.toMatch(/\sdisabled(?:=""|(?=[\s>]))/);
-  });
-
   it("只用紫色工时标识 accelerated output，input 保持普通样式", () => {
     const sourceCommandId = "command-highspeed-output-duration";
     const input = userInputRow(2, { sourceCommandId });
@@ -1137,9 +985,8 @@ describe("ConversationTurnGroup assistant history status", () => {
     expect(html).toContain("text-icon-purple");
     expect(html).toContain('data-highspeed-status-tag="true"');
     expect(html).toContain("HighSpeed");
-    const shareButton = html.match(/<button[^>]*data-highspeed-output-share="true"[^>]*>/)?.[0];
-    expect(shareButton).toBeDefined();
-    expect(shareButton).not.toMatch(/\sdisabled(?:=""|(?=[\s>]))/);
+    // fork 已删除 Highspeed 分享面。
+    expect(html).not.toContain('data-highspeed-output-share="true"');
     expect(html).not.toContain('data-highspeed="true"');
   });
 

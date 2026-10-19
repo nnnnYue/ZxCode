@@ -44,7 +44,7 @@ export const DEFAULT_PLUGIN_MARKETPLACES: DefaultPluginMarketplace[] = [
   // seed），不再向 known_marketplaces 写入任何 CDN url source，运行时因此不存在
   // 官方目录的 fetch 路径；官方目录概要由 bootstrap 在 known 缺失时从本地快照合成。
   // 这里仅保留用户显式添加的自定义市场入口与上游新增的 Claude 官方市场（GitHub 源，
-  // 非 zcode.z.ai 平台链路）；ZxCode 官方市场不写 CDN source。
+  // 非智谱平台链路）；ZxCode 官方市场不写 CDN source。
   {
     id: CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
     source: "anthropics/claude-plugins-official",

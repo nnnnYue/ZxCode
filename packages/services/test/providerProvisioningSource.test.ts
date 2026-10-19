@@ -30,22 +30,18 @@ function personalRepository(root: string) {
 }
 
 describe("Provider Provisioning Source", () => {
-  it("exports sparse Personal Config, default, account settings and only provider credentials", async () => {
+  it("exports sparse Personal Config, default and account settings; 去平台化后不再导出 oauth 凭据", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-provider-provisioning-source-"));
     const credentialsPath = join(root, "credentials.json");
-    const cipher = createCredentialCipherProvider({ env: { ZCODE_CREDENTIAL_SECRET: "source" } });
+    const cipher = createCredentialCipherProvider({ env: { ZXCODE_CREDENTIAL_SECRET: "source" } });
     await writeFile(
       credentialsPath,
       JSON.stringify({
+        // fork：OAuth 登录剔除后 allowlist 为空，残留的历史 oauth 凭据不被导出同步。
         "oauth:active_provider": cipher.encrypt("zai"),
         "oauth:zai:access_token": cipher.encrypt("oauth-token"),
-        "account-provider:individual-coding-plan:provider:account:user:api-key":
-          cipher.encrypt("coding-plan-key"),
-        "account-provider:custom-provider:identity": cipher.encrypt("account-user-id"),
         "ssh:password": cipher.encrypt("must-not-export"),
         "ssh:malformed": { unexpected: true },
-        "account-provider:coding-plan:legacy:account:user:api-key": "enc:v1:broken",
-        "account-provider:coding-plan:malformed:account:user:api-key": { invalid: true },
       }),
       "utf8",
     );
@@ -82,10 +78,7 @@ describe("Provider Provisioning Source", () => {
     });
 
     const snapshot = await source.read("sync-source");
-    expect(await listProviderProvisioningCredentialKeys(credentialsPath)).toEqual([
-      "oauth:active_provider",
-      "oauth:zai:access_token",
-    ]);
+    expect(await listProviderProvisioningCredentialKeys(credentialsPath)).toEqual([]);
     expect(snapshot.schemaVersion).toBe(2);
     expect(snapshot.personalConfig).toEqual(
       encodeProviderConfigFile(await repository.read()).config,
@@ -94,10 +87,7 @@ describe("Provider Provisioning Source", () => {
       providerId: "custom",
       modelId: "model-a",
     });
-    expect(snapshot.credentials).toEqual([
-      { scope: "oauth-session", key: "oauth:active_provider", value: "zai" },
-      { scope: "oauth-session", key: "oauth:zai:access_token", value: "oauth-token" },
-    ]);
+    expect(snapshot.credentials).toEqual([]);
     expect(snapshot.credentials.some((entry) => entry.key === "ssh:password")).toBe(false);
     expect(snapshot.credentials.some((entry) => entry.key.endsWith(":identity"))).toBe(false);
     expect(snapshot).not.toHaveProperty("sourceRevision");
@@ -107,7 +97,7 @@ describe("Provider Provisioning Source", () => {
   it("does not let malformed non-allowlist credential records block sync", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-provider-provisioning-source-"));
     const credentialsPath = join(root, "credentials.json");
-    const cipher = createCredentialCipherProvider({ env: { ZCODE_CREDENTIAL_SECRET: "source" } });
+    const cipher = createCredentialCipherProvider({ env: { ZXCODE_CREDENTIAL_SECRET: "source" } });
     await writeFile(
       credentialsPath,
       JSON.stringify({
@@ -126,28 +116,12 @@ describe("Provider Provisioning Source", () => {
       cipherProvider: cipher,
     });
 
+    // fork：allowlist 为空，历史 malformed 记录一律不在同步面内，read 正常完成。
     await expect(source.read("sync-malformed-unrelated")).resolves.toMatchObject({
-      credentials: [{ scope: "oauth-session", key: "oauth:active_provider", value: "zai" }],
+      credentials: [],
     });
   });
 
-  it("still rejects malformed allowlist credential records", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-provider-provisioning-source-"));
-    const credentialsPath = join(root, "credentials.json");
-    await writeFile(
-      credentialsPath,
-      JSON.stringify({ "oauth:active_provider": { malformed: true } }),
-      "utf8",
-    );
-    const source = createProviderProvisioningSource({
-      personalRepository: personalRepository(root),
-      settingService: { get: vi.fn(async () => ({})) } as never,
-      credentialFilePath: credentialsPath,
-      personalConfigFilePath: join(root, "provider_config.json"),
-    });
-
-    await expect(source.read("sync-malformed-allowlist")).rejects.toThrow(
-      "Credential allowlist value must be a string",
-    );
-  });
+  // fork 已剔除 oauth-session 凭据 allowlist（PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS 为空），
+  // 上游「malformed allowlist 记录必须让 read 失败」的用例不再有输入面，随之删除。
 });

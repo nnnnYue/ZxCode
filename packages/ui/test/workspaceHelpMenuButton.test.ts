@@ -2,7 +2,10 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { DesktopCommandIds, TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER } from "@zcode/shared";
+import {
+  DesktopCommandIds,
+  TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER,
+} from "@zcode/shared";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({
@@ -14,29 +17,19 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
 }));
 
 const captured = vi.hoisted(() => ({
-  zsrcUrl: null as string | null,
-  loading: false,
   openExternal: vi.fn(),
-  exportLogs: vi.fn(async () => ({ success: true })),
-  toast: vi.fn(() => 7),
-  dismissToast: vi.fn(),
   menuItems: [] as Array<{
     label: string;
     testId?: string;
     disabled?: boolean;
     onSelect: (() => void | Promise<void>) | undefined;
   }>,
-  updateMenu: {
-    visible: true,
-    disabled: false,
-    labelId: "titleBar.menu.help.checkForUpdates",
-    labelValues: undefined,
-  },
   executeDesktopCommand: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/components/ui/dropdown-menu.js", () => ({
-  DropdownMenu: ({ children }: { children: ReactNode }) => createElement("div", null, children),
+  DropdownMenu: ({ children }: { children: ReactNode }) =>
+    createElement("div", null, children),
   DropdownMenuContent: ({ children }: { children: ReactNode }) =>
     createElement("div", null, children),
   DropdownMenuItem: ({
@@ -69,96 +62,29 @@ vi.mock("@/ControlHintTooltip.js", () => ({
 }));
 
 vi.mock("@/components/ui/toast.js", () => ({
-  toast: captured.toast,
-  dismissToast: captured.dismissToast,
-}));
-
-vi.mock("@/feedback/feedbackStore.js", () => ({
-  useFeedbackStore: (
-    selector: (state: {
-      openSubmit: (draft?: unknown) => void;
-      openFeatureRequest: () => void;
-    }) => unknown,
-  ) => selector({ openSubmit: vi.fn(), openFeatureRequest: vi.fn() }),
-}));
-
-vi.mock("@/hooks/useDesktopUpdateMenu.js", () => ({
-  useDesktopUpdateMenu: (isDesktop: boolean) => ({
-    ...captured.updateMenu,
-    visible: isDesktop && captured.updateMenu.visible,
-    checkForUpdates: () => captured.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
-  }),
+  toast: vi.fn(),
+  dismissToast: vi.fn(),
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({
     captureWindowScreenshot: vi.fn(async () => null),
     executeDesktopCommand: captured.executeDesktopCommand,
-    exportLogs: captured.exportLogs,
     openCommunity: vi.fn(async () => undefined),
     openExternal: captured.openExternal,
   }),
-}));
-
-vi.mock("@/hooks/useVulnerabilityReportUrl.js", () => ({
-  useVulnerabilityReportUrl: () => ({ url: captured.zsrcUrl, loading: captured.loading }),
 }));
 
 describe("WorkspaceHelpMenuButton", () => {
   async function render(isDesktop: boolean | undefined) {
     captured.menuItems = [];
     captured.executeDesktopCommand.mockClear();
-    captured.exportLogs.mockClear();
-    captured.toast.mockClear();
-    captured.dismissToast.mockClear();
-    const { WorkspaceHelpMenuButton } = await import("@/WorkspaceHelpMenuButton.js");
-    return renderToStaticMarkup(createElement(WorkspaceHelpMenuButton, { isDesktop }));
+    const { WorkspaceHelpMenuButton } =
+      await import("@/WorkspaceHelpMenuButton.js");
+    return renderToStaticMarkup(
+      createElement(WorkspaceHelpMenuButton, { isDesktop }),
+    );
   }
-
-  it("桌面和 Web 的漏洞入口紧跟问题上报，打开配置地址；缺失时隐藏", async () => {
-    for (const desktop of [true, false]) {
-      captured.zsrcUrl = "https://security.example.test/report";
-      captured.openExternal.mockClear();
-      try {
-        await render(desktop);
-        const index = captured.menuItems.findIndex(
-          (item) => item.label === "workspaceHeader.help.reportVulnerability",
-        );
-        expect(index).toBeGreaterThan(0);
-        expect(captured.menuItems[index - 1]?.label).toBe("workspaceHeader.help.issueReport");
-        await captured.menuItems[index]?.onSelect?.();
-        expect(captured.openExternal).toHaveBeenCalledExactlyOnceWith(captured.zsrcUrl);
-      } finally {
-        captured.zsrcUrl = null;
-      }
-      expect(await render(desktop)).not.toContain("workspaceHeader.help.reportVulnerability");
-    }
-  });
-
-  it("冷缓存加载项不可触发外链，有效配置到达时保留原位置与文案", async () => {
-    captured.loading = true;
-    captured.openExternal.mockClear();
-    try {
-      await render(true);
-      const before = captured.menuItems.map((item) => item.label);
-      const item = captured.menuItems.find(
-        (item) => item.label === "workspaceHeader.help.reportVulnerability",
-      );
-      expect(item).toMatchObject({ disabled: true, onSelect: undefined });
-      captured.loading = false;
-      captured.zsrcUrl = "https://security.example.test/report";
-      await render(true);
-      expect(captured.menuItems.map((item) => item.label)).toEqual(before);
-      expect(
-        captured.menuItems.find((item) => item.label === "workspaceHeader.help.reportVulnerability")
-          ?.disabled,
-      ).toBe(false);
-      expect(captured.openExternal).not.toHaveBeenCalled();
-    } finally {
-      captured.loading = false;
-      captured.zsrcUrl = null;
-    }
-  });
 
   it("桌面端渲染资源管理器项，点击走 OpenResourceManager 命令", async () => {
     // 原因：Windows/Linux 没有原生菜单栏，自绘箭头菜单也已下线，问号菜单是资源管理器唯一入口。
@@ -206,82 +132,19 @@ describe("WorkspaceHelpMenuButton", () => {
     }
   });
 
-  it("资源管理器之后显示检查更新，点击执行已有命令", async () => {
-    await render(true);
-    const index = captured.menuItems.findIndex(
-      (entry) => entry.label === "titleBar.menu.help.checkForUpdates",
-    );
-    expect(index).toBeGreaterThan(0);
-    expect(captured.menuItems[index - 1]?.testId).toBe(TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER);
-    await captured.menuItems[index]?.onSelect?.();
-    expect(captured.executeDesktopCommand).toHaveBeenCalledExactlyOnceWith(
-      DesktopCommandIds.CheckForUpdates,
-    );
-  });
+  // 检查更新、导出日志与 docs/community/issueReport/productRequest 帮助项
+  // 已随自动更新、导出日志与营销/反馈功能剔除；fork 菜单只保留资源管理器与关于。
+  it("桌面菜单只有资源管理器与关于两项，Web 不渲染任何菜单项", async () => {
+    const html = await render(true);
+    expect(captured.menuItems.map((item) => item.label)).toEqual([
+      "titleBar.menu.help.resourceManager",
+      "titleBar.menu.help.about",
+    ]);
+    // 顶部不得残留分隔线：菜单项上方已无内容，分隔线会渲染成空行。
+    expect((html.match(/<hr/g) ?? []).length).toBe(0);
 
-  it("Web 与 Preview 不显示检查更新", async () => {
-    expect(await render(false)).not.toContain("titleBar.menu.help.checkForUpdates");
-    captured.updateMenu.visible = false;
-    try {
-      expect(await render(true)).not.toContain("titleBar.menu.help.checkForUpdates");
-    } finally {
-      captured.updateMenu.visible = true;
-    }
-  });
-
-  it("桌面导出日志复用平台导出及共享提示", async () => {
-    await render(true);
-    const item = captured.menuItems.find(
-      (entry) => entry.label === "titleBar.menu.help.exportLogs",
-    );
-    expect(item).toBeDefined();
-    await item!.onSelect?.();
-    expect(captured.exportLogs).toHaveBeenCalledExactlyOnceWith();
-    expect(captured.toast).toHaveBeenCalledWith("sidebar.exportLogs.pending", {
-      durationMs: Number.POSITIVE_INFINITY,
-    });
-    expect(captured.dismissToast).toHaveBeenCalledWith(7);
-  });
-
-  it("Web 和手机远控不显示本地导出日志入口", async () => {
-    for (const isDesktop of [undefined, false]) {
-      expect(await render(isDesktop)).not.toContain("titleBar.menu.help.exportLogs");
-      expect(captured.exportLogs).not.toHaveBeenCalled();
-    }
-  });
-
-  it("桌面两组一条分隔线，导出日志位于桌面组首项，Web 仅帮助组", async () => {
-    for (const desktop of [true, false]) {
-      const html = await render(desktop);
-      expect(captured.menuItems.map((item) => item.label)).toEqual([
-        "workspaceHeader.help.docs",
-        "workspaceHeader.help.community",
-        "workspaceHeader.help.issueReport",
-        "workspaceHeader.help.productRequest",
-        ...(desktop
-          ? [
-              "titleBar.menu.help.exportLogs",
-              "titleBar.menu.help.resourceManager",
-              "titleBar.menu.help.checkForUpdates",
-              "titleBar.menu.help.about",
-            ]
-          : []),
-      ]);
-      expect((html.match(/<hr/g) ?? []).length).toBe(desktop ? 1 : 0);
-    }
-  });
-
-  it("桌面端与 Web 端都保留原有帮助项", async () => {
-    for (const isDesktop of [true, false]) {
-      const html = await render(isDesktop);
-      for (const id of [
-        "workspaceHeader.help.issueReport",
-        "workspaceHeader.help.productRequest",
-        "workspaceHeader.help.community",
-        "workspaceHeader.help.docs",
-      ]) {
-        expect(html).toContain(id);
-      }
-    }
+    const webHtml = await render(false);
+    expect(captured.menuItems.map((item) => item.label)).toEqual([]);
+    expect((webHtml.match(/<hr/g) ?? []).length).toBe(0);
   });
 });

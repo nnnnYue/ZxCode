@@ -5,9 +5,10 @@ describe("Web home-only media preview service", () => {
   it("declares an explicit unsupported service before a workspace bridge exists", () => {
     const source = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
     expect(source).toContain("mediaPreviewService:");
-    expect(source).toContain(
-      'createUnsupportedHomeOnlyService<NonNullable<RootServices["mediaPreviewService"]>>',
+    // fork 格式化把泛型折成多行；断言按去空白后的紧凑形态比较。
+    const compact = source.replace(/\s+/g, "");
+    expect(compact).toContain(
+      'createUnsupportedHomeOnlyService<NonNullable<RootServices["mediaPreviewService"]>>("mediaPreviewService")',
     );
-    expect(source).toContain('"mediaPreviewService"');
   });
 });

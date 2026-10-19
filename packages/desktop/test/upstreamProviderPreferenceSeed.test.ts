@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ZCODE_AGENT_PROVIDER } from "@zcode/shared";
+// fork：Agent 默认 provider 常量为 ZXCODE_AGENT_PROVIDER（上游为 ZCODE_AGENT_PROVIDER）
+import { ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
@@ -66,6 +67,6 @@ describe("Upstream E2E 工具栏偏好种子", () => {
           : {}),
       }),
     );
-    expect(storage.getItem("zcode-last-agent-provider")).toBe(ZCODE_AGENT_PROVIDER);
+    expect(storage.getItem("zcode-last-agent-provider")).toBe(ZXCODE_AGENT_PROVIDER);
   });
 });

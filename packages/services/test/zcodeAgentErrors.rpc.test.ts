@@ -2,7 +2,7 @@ import { ChannelClient, ChannelServer, createQueuePair, ProxyChannel } from "@zc
 import { describe, expect, it } from "vitest";
 import { IZCodeAgentService } from "#src/zcode-agent/zcodeAgent.js";
 import {
-  ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+  ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
   ZCodeAgentMcpStatusModeUnsupportedError,
 } from "#src/zcode-agent/zcodeAgentErrors.js";
 
@@ -31,7 +31,7 @@ describe("ZCode Agent RPC errors", () => {
           workspacePath: "/tmp/workspace",
         }),
       ).rejects.toMatchObject({
-        code: ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+        code: ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
         name: "ZCodeAgentMcpStatusModeUnsupportedError",
       });
     } finally {

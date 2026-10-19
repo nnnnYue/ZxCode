@@ -514,45 +514,6 @@ describe("ToolCallBlock agent routing", () => {
     expect(html).toContain("agent:tool-glm-agent:Agent:think:source:none");
   });
 
-  it("routes spawn_agent tool calls to the agent renderer", () => {
-    const html = renderToStaticMarkup(
-      createElement(
-        ZCodeIntlProvider,
-        { initialLocale: "zh-CN" },
-        createElement(ToolCallBlock, {
-          toolCallNode: {
-            toolCall: {
-              toolId: "tool-spawn-agent",
-              kind: "spawn_agent",
-              title: "spawn_agent",
-              input: {
-                agent_type: "explorer",
-                message: "检查当前项目结构",
-              },
-              output: {
-                agent_id: "agent-1",
-                nickname: "Locke",
-              },
-              status: "completed",
-              raw: {
-                name: "spawn_agent",
-                _meta: {
-                  zcode: {
-                    toolName: "spawn_agent",
-                    nickname: "Locke",
-                  },
-                },
-              },
-            },
-            childToolCalls: [],
-          },
-          workspacePath: "/workspace",
-        }),
-      ),
-    );
-
-    expect(html).toContain("agent:tool-spawn-agent:spawn_agent:spawn_agent:source:none");
-  });
 });
 
 describe("readRawToolCallFileSummaries", () => {

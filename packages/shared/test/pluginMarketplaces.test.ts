@@ -2,14 +2,9 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_PLUGIN_MARKETPLACES, isPublicStoreMarketplaceId } from "../src/index.js";
 
 describe("DEFAULT_PLUGIN_MARKETPLACES", () => {
-  it("includes the official CDN marketplace and the Claude official marketplace", () => {
+  it("只内置 Claude 官方市场（GitHub 源）；ZxCode 官方目录走编译期分发，不写 CDN source", () => {
+    // fork 去平台化：官方市场目录随包分发，DEFAULT 不再包含任何 CDN url source。
     expect(DEFAULT_PLUGIN_MARKETPLACES).toEqual([
-      expect.objectContaining({
-        id: "zcode-plugins-official",
-        name: "zcode-plugins-official",
-        pluginCount: 0,
-        source: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
-      }),
       expect.objectContaining({
         id: "claude-plugins-official",
         name: "claude-plugins-official",

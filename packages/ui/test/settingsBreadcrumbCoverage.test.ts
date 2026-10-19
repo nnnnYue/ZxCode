@@ -20,7 +20,8 @@ describe("Settings breadcrumb coverage", () => {
   });
 
   it("projects automation edit navigation from the views that own dirty-state back handling", () => {
-    for (const section of ["AutomationEditView", "OffPeakEditView"]) {
+    // fork 已移除闲时任务设置视图，仅自动化编辑视图持有脏状态返回处理。
+    for (const section of ["AutomationEditView"]) {
       const source = readSettingsSection(section);
       expect(source).toContain("SettingsBreadcrumbReporter");
       expect(source).toContain("onSectionSelect");
@@ -81,7 +82,7 @@ describe("Settings breadcrumb coverage", () => {
     "MemorySettingsSection",
     "BrowserSettingsSection",
     "ModelProviderSection",
-    "UsageStatsSection",
+    "usage-stats/AppUsagePanel",
   ])("does not promote dialog or flat state from %s", (section) => {
     expect(readSettingsSection(section)).not.toContain("SettingsBreadcrumbReporter");
   });

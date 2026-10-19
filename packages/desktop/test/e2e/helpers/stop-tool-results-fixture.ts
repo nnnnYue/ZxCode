@@ -237,7 +237,7 @@ export async function writeStopToolEvidence(
   evidence: Record<string, unknown>,
 ): Promise<void> {
   const directory = join(
-    process.env.ZCODE_E2E_ARTIFACT_DIR?.trim() || resolve(".e2e-artifacts"),
+    process.env.ZXCODE_E2E_ARTIFACT_DIR?.trim() || resolve(".e2e-artifacts"),
     CASE_NAME,
   );
   await mkdir(directory, { recursive: true });

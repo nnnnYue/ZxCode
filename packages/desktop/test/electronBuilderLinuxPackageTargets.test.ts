@@ -2,14 +2,10 @@ import { describe, expect, it } from "vitest";
 import desktopBuilderConfig from "../electron-builder.config.js";
 import { resolveDesktopProductIdentity } from "../scripts/desktop-product-identity.mjs";
 
-// Linux 打包目标契约：rpm 是 deb 之外的安装分发格式，不能改变既有更新链路。
-// latest.yml / electron-updater 在 Linux 上固定以 AppImage 作为更新产物，
-// scripts/upload-oss.sh 也按 AppImage 解析更新元数据，因此 AppImage 必须保留。
+// Linux 打包目标契约：rpm 是 deb 之外的安装分发格式，不能改变既有分发链路。
+// fork 已移除应用内自动更新：detectUpdateChannel/latest.yml 更新元数据配置随发布链路
+// 一并移除，对应「prerelease 也生成统一的 latest.yml」用例删除；AppImage 仍保留为分发产物。
 describe("electron-builder Linux 打包目标", () => {
-  it("prerelease 也生成统一的 latest.yml", () => {
-    expect(desktopBuilderConfig.detectUpdateChannel).toBe(false);
-  });
-
   it("Linux 同时产出 AppImage、deb、rpm 与 pacman 安装包", () => {
     const targets = desktopBuilderConfig.linux?.target ?? [];
 

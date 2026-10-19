@@ -106,8 +106,9 @@ describe("startNewTaskFromActiveWorkspace 接线契约", () => {
     // 证明守卫按 targetWorkspace 短路。契约：先算 hasTargetWorkspace，再 `!hasTargetWorkspace &&
     // workspaceReadOnlyReason` 才 return，随后 showChatMainView() + onCreateTask(request)。
     const shell = source("../src/app-shell/WorkspaceShellLayout.tsx");
+    // fork 侧由 prettier 折行，语义一致即可。
     expect(shell).toMatch(
-      /const hasTargetWorkspace\s*=\s*typeof request === "object" && request !== null && Boolean\(request\.targetWorkspace\);/,
+      /const hasTargetWorkspace\s*=\s*typeof request === "object" &&\s*request !== null &&\s*Boolean\(request\.targetWorkspace\);/,
     );
     expect(shell).toMatch(
       /if \(!hasTargetWorkspace && workspaceReadOnlyReason\) \{\s*return;\s*\}\s*showChatMainView\(\);\s*onCreateTask\(request\);/,

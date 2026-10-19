@@ -20,21 +20,21 @@ import { ReleaseManager } from "../src/runtime/releaseManager.js";
 import { DataRootLock } from "../src/runtime/lock.js";
 
 async function createTestReleaseArchive(root: string, version: string): Promise<{ archivePath: string; archiveSha256: string }> {
-  const archiveRoot = join(root, `zcode-server-${currentServerTarget()}`);
+  const archiveRoot = join(root, `zxcode-server-${currentServerTarget()}`);
   await mkdir(join(archiveRoot, "runtime"), { recursive: true });
   await writeFile(join(archiveRoot, "runtime", "node"), "node", "utf8");
   await writeFile(join(archiveRoot, "runtime", "server-cli.js"), "", "utf8");
   await writeFile(join(archiveRoot, "runtime", "server-core.js"), "", "utf8");
-  await writeFile(join(archiveRoot, "runtime", "zcode.cjs"), "", "utf8");
+  await writeFile(join(archiveRoot, "runtime", "zxcode.cjs"), "", "utf8");
   await writeFile(join(archiveRoot, "runtime", "package.json"), JSON.stringify({ type: "module" }), "utf8");
   await writeFile(
     join(archiveRoot, "manifest.json"),
     JSON.stringify({
-      product: "zcode-server",
+      product: "zxcode-server",
       target: currentServerTarget(),
       appVersion: version,
       nodeVersion: "22.16.0",
-      entrypoints: { cli: "runtime/server-cli.js", core: "runtime/server-core.js", agent: "runtime/zcode.cjs" },
+      entrypoints: { cli: "runtime/server-cli.js", core: "runtime/server-core.js", agent: "runtime/zxcode.cjs" },
       native: [],
     }),
     "utf8",
@@ -61,7 +61,7 @@ describe("Server CLI routing", () => {
   });
 
   it("honors the explicit service-registration opt-out", () => {
-    vi.stubEnv("ZCODE_SERVER_SKIP_SERVICE_REGISTRATION", "1");
+    vi.stubEnv("ZXCODE_SERVER_SKIP_SERVICE_REGISTRATION", "1");
     try {
       expect(serviceRegistrationEnabled()).toBe(false);
     } finally {
@@ -73,7 +73,7 @@ describe("Server CLI routing", () => {
     expect(SERVER_SERVICE_ARGS).toEqual(["serve", "--supervisor"]);
     expect(isRegisteredServiceEntry(SERVER_SERVICE_ARGS.slice(1))).toBe(false);
     expect(isRegisteredServiceEntry(["--supervisor", "--service-entry"])).toBe(true);
-    expect(daemonStartupMode({ ZCODE_SERVER_SKIP_SERVICE_REGISTRATION: "1" })).toBe("fallback");
+    expect(daemonStartupMode({ ZXCODE_SERVER_SKIP_SERVICE_REGISTRATION: "1" })).toBe("fallback");
     expect(daemonStartupMode({})).toBe("service");
     expect(shouldRegisterService(true, false)).toBe(true);
     expect(shouldRegisterService(true, true)).toBe(false);
@@ -96,7 +96,7 @@ describe("Server CLI routing", () => {
 
   it("treats stop as an idempotent no-op after the supervisor socket is gone", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-stop-"));
-    vi.stubEnv("ZCODE_DATA_BASE_DIR", root);
+    vi.stubEnv("ZXCODE_DATA_BASE_DIR", root);
     const layout = resolveServerLayout();
     await mkdir(layout.runDir, { recursive: true });
     await writeFile(layout.statusFile, `${JSON.stringify({
@@ -128,7 +128,7 @@ describe("Server CLI routing", () => {
 
   it("uses an explicit absolute --server-root for status instead of the process default", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-explicit-root-"));
-    const serverRoot = join(root, ".zcode", "server");
+    const serverRoot = join(root, ".zxcode", "server");
     const layout = resolveServerLayout(serverRoot);
     await mkdir(layout.runDir, { recursive: true });
     await writeFile(layout.statusFile, `${JSON.stringify({
@@ -167,7 +167,7 @@ describe("Server CLI routing", () => {
 
   it("rejects update before fetching or installing when tasks are running", async () => {
     const root = await mkdtemp(join(process.platform === "win32" ? tmpdir() : "/tmp", "zcode-r2-cli-update-guard-"));
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     const commands: string[] = [];
     const control = await createControlServer(layout.controlEndpoint, async (request) => {
       commands.push(request.command);
@@ -193,7 +193,7 @@ describe("Server CLI routing", () => {
     await new Promise<void>((resolve) => catalogServer.listen(0, "127.0.0.1", resolve));
     const address = catalogServer.address();
     if (!address || typeof address === "string") throw new Error("catalog server is not listening");
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
     const errors: string[] = [];
     try {
       const exit = await runServerCli(["update", "--server-root", layout.serverRoot], {
@@ -248,7 +248,7 @@ describe("Server CLI routing", () => {
     await new Promise<void>((resolve) => catalogServer.listen(0, "127.0.0.1", resolve));
     const address = catalogServer.address();
     if (!address || typeof address === "string") throw new Error("catalog server is not listening");
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
     const errors: string[] = [];
     try {
       const exit = await runServerCli(["update", "--server-root", layout.serverRoot], {
@@ -299,7 +299,7 @@ describe("Server CLI routing", () => {
     await new Promise<void>((resolve) => catalogServer.listen(0, "127.0.0.1", resolve));
     const address = catalogServer.address();
     if (!address || typeof address === "string") throw new Error("catalog server is not listening");
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
     const errors: string[] = [];
     try {
       const exit = await runServerCli(["update", "--server-root", layout.serverRoot], {
@@ -320,7 +320,7 @@ describe("Server CLI routing", () => {
 
   it("returns a successful up-to-date outcome without sending apply-update", async () => {
     const root = await mkdtemp(join(process.platform === "win32" ? tmpdir() : "/tmp", "zcode-r2-cli-up-to-date-"));
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     const releases = new ReleaseManager(layout);
     await releases.ensure();
     const releaseDir = join(layout.releasesDir, "current");
@@ -357,7 +357,7 @@ describe("Server CLI routing", () => {
     await new Promise<void>((resolve) => catalogServer.listen(0, "127.0.0.1", resolve));
     const address = catalogServer.address();
     if (!address || typeof address === "string") throw new Error("catalog server is not listening");
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", `http://127.0.0.1:${address.port}/catalog.json`);
     const commands: string[] = [];
     const control = await createControlServer(layout.controlEndpoint, async (request) => {
       commands.push(request.command);
@@ -395,9 +395,9 @@ describe("Server CLI routing", () => {
 
   it("reports a clear source error when neither catalog nor pending release exists", async () => {
     const root = await mkdtemp(join(process.platform === "win32" ? tmpdir() : "/tmp", "zcode-r2-cli-no-source-"));
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     const errors: string[] = [];
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", "");
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", "");
     const control = await createControlServer(layout.controlEndpoint, async (request) => {
       if (request.command === "prepare-update") return { status: "ready", runningTaskCount: 0 };
       throw new Error(`Unexpected control command: ${request.command}`);
@@ -416,7 +416,7 @@ describe("Server CLI routing", () => {
 
   it("applies an offline pending release when no catalog is configured", async () => {
     const root = await mkdtemp(join(process.platform === "win32" ? tmpdir() : "/tmp", "zcode-r2-offline-"));
-    const layout = resolveServerLayout(join(root, ".zcode", "server"));
+    const layout = resolveServerLayout(join(root, ".zxcode", "server"));
     const releases = new ReleaseManager(layout);
     await releases.ensure();
     const releaseDir = join(layout.releasesDir, "offline");
@@ -429,7 +429,7 @@ describe("Server CLI routing", () => {
       return { applied: true, version: "3.1.0" };
     });
     const output: string[] = [];
-    vi.stubEnv("ZCODE_SERVER_RELEASE_MANIFEST_URL", "");
+    vi.stubEnv("ZXCODE_SERVER_RELEASE_MANIFEST_URL", "");
     try {
       const exit = await runServerCli(["update", "--server-root", layout.serverRoot, "--json"], {
         stdout: { write: (value) => output.push(value) },
@@ -454,7 +454,7 @@ describe("Server CLI routing", () => {
 
   it("cancels uninstall unless both confirmations are exactly DELETE (R2-CLI-10)", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-uninstall-cancel-"));
-    vi.stubEnv("ZCODE_DATA_BASE_DIR", root);
+    vi.stubEnv("ZXCODE_DATA_BASE_DIR", root);
     const errors: string[] = [];
     try {
       const layout = resolveServerLayout();
@@ -493,7 +493,7 @@ describe("Server CLI routing", () => {
 
   it("uninstalls offline data, writes the uninstalled marker and keeps user files (R2-CLI-11)", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-uninstall-"));
-    vi.stubEnv("ZCODE_DATA_BASE_DIR", root);
+    vi.stubEnv("ZXCODE_DATA_BASE_DIR", root);
     try {
       const layout = resolveServerLayout();
       await new ReleaseManager(layout).ensure();
@@ -532,7 +532,7 @@ describe("Server CLI routing", () => {
 
   it("fails closed when control is unavailable and the lock is malformed", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-uninstall-corrupt-lock-"));
-    vi.stubEnv("ZCODE_DATA_BASE_DIR", root);
+    vi.stubEnv("ZXCODE_DATA_BASE_DIR", root);
     try {
       const layout = resolveServerLayout();
       await new ReleaseManager(layout).ensure();
@@ -553,7 +553,7 @@ describe("Server CLI routing", () => {
 
   it("fails closed when a live lock owner is present even if status is corrupt", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-r2-cli-uninstall-live-lock-"));
-    vi.stubEnv("ZCODE_DATA_BASE_DIR", root);
+    vi.stubEnv("ZXCODE_DATA_BASE_DIR", root);
     const layout = resolveServerLayout();
     const lock = new DataRootLock(layout.lockFile);
     try {

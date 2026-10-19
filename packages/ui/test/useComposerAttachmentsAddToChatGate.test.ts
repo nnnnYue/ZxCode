@@ -176,6 +176,6 @@ describe("useComposerAttachments add-to-chat 门控", () => {
   });
 
   it("事件常量与监听名保持稳定", () => {
-    expect(WHITEBOARD_ADD_TO_CHAT_EVENT).toBe("zcode:add-whiteboard-to-chat");
+    expect(WHITEBOARD_ADD_TO_CHAT_EVENT).toBe("zxcode:add-whiteboard-to-chat");
   });
 });

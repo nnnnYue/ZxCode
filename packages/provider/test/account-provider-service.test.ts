@@ -4,7 +4,6 @@ import {
   ModelConfigRules,
   ProviderConfig,
   ProviderConfigMap,
-  ZhipuAccountAccessConfig,
   type AccountProviderResolver,
   type AccountProviderResolveInput,
   type ProviderConfigSnapshot,
@@ -108,12 +107,7 @@ describe("AccountProviderService", () => {
       expect(reasons).toEqual(["start"]);
       expect(configuredProviders.get("api-provider")?.access?.type).toBe("api-key");
       return new ProviderConfigMap([
-        [
-          "account-plan",
-          new ProviderConfig({
-            access: new ZhipuAccountAccessConfig({ entitled: true }),
-          }),
-        ],
+        ["account-plan", createAccountProviderConfig({ models: ["model-a"] })],
       ]);
     });
     const service = new AccountProviderService({
@@ -130,9 +124,7 @@ describe("AccountProviderService", () => {
     expect(
       Object.fromEntries(snapshot.providers.entries().map(([id, config]) => [id, config.toJSON()])),
     ).toEqual({
-      "account-plan": {
-        access: { type: "zhipu-account", entitled: true },
-      },
+      "account-plan": { group: "zai-family", builtinModelIds: ["model-a"] },
     });
     expect(snapshot.basedOnZCodeBuiltinRevision).toBe("config-1");
     service.dispose();
@@ -339,7 +331,6 @@ describe("AccountProviderService", () => {
         offPeakProviderId,
         new ProviderConfig({
           group: "zai-family",
-          access: new ZhipuAccountAccessConfig({ accountType: "zai", mode: "off-peak" }),
           builtinModelIds: ["model-a"],
           visibility: "hidden",
         }),
@@ -359,14 +350,8 @@ describe("AccountProviderService", () => {
       basedOnZCodeBuiltinRevision: "config-1",
       providers: expect.any(ProviderConfigMap),
     });
-    expect((await service.read()).providers.get("account-plan")?.access).toMatchObject({
-      type: "zhipu-account",
-      entitled: false,
-    });
-    expect((await service.read()).providers.get(offPeakProviderId)?.access).toMatchObject({
-      type: "zhipu-account",
-      entitled: false,
-    });
+    // fork：fail-closed Overlay 不再投影 entitled=false 的账号成员，直接为空集合。
+    expect((await service.read()).providers.keys()).toEqual([]);
     expect((await service.read()).providers.has("api-provider")).toBe(false);
     expect(refreshError).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.any(Error), reasons: ["start"] }),
@@ -383,7 +368,6 @@ describe("AccountProviderService", () => {
         offPeakProviderId,
         new ProviderConfig({
           group: "zai-family",
-          access: new ZhipuAccountAccessConfig({ accountType: "zai", mode: "off-peak" }),
           builtinModelIds: ["model-a"],
           visibility: "hidden",
         }),
@@ -391,16 +375,10 @@ describe("AccountProviderService", () => {
     });
     const service = new AccountProviderService({
       configSource,
-      resolve: configOnlyResolver(
-        async () =>
-          new ProviderConfigMap([
-            [
-              offPeakProviderId,
-              new ProviderConfig({
-                access: new ZhipuAccountAccessConfig({ entitled: true }),
-              }),
-            ],
-          ]),
+      resolve: configOnlyResolver(async () =>
+        new ProviderConfigMap([
+          [offPeakProviderId, createAccountProviderConfig({ models: ["model-a"] })],
+        ]),
       ),
     });
 
@@ -412,7 +390,7 @@ describe("AccountProviderService", () => {
         (await service.read()).providers.entries().map(([id, config]) => [id, config.toJSON()]),
       ),
     ).toEqual({
-      [offPeakProviderId]: { access: { type: "zhipu-account", entitled: true } },
+      [offPeakProviderId]: { group: "zai-family", builtinModelIds: ["model-a"] },
     });
     service.dispose();
   });

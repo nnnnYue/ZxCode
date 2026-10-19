@@ -10,6 +10,10 @@ interface ImportMetaEnv {
   readonly VITE_DEV_ORIGIN?: string;
   readonly VITE_CONVERSATION_SHARE_PREVIEW_MOCK?: string;
   readonly VITE_WEB_REMOTE_ALLOW_DEV_RETURN_TO?: string;
+  // web 远控 relay 接入：endpoint/relay 地址由部署期注入，缺席时走默认解析。
+  readonly VITE_ZCODE_BASE_URL?: string;
+  readonly VITE_ZCODE_ENDPOINT_ORIGIN?: string;
+  readonly VITE_ZCODE_WEB_REMOTE_CONTROL_RELAY_WS_URL?: string;
 }
 
 interface ImportMeta {

@@ -50,7 +50,8 @@ describe("hostResourceUsage", () => {
           pid: 100,
           category: "base",
           groupKey: "cli",
-          name: "zcode-agent-glm-demo",
+          // fork：Agent 进程名前缀为 zxcode-（上游为 zcode-）
+          name: "zxcode-agent-glm-demo",
         }),
         expect.objectContaining({
           pid: 120,

@@ -54,7 +54,6 @@ import {
 import { toModelStreamEvent } from "./runner-normalization.js";
 import type { EnvRecord } from "./model-execution.js";
 import { detectProviderBusinessFinishError } from "./provider-finish-business-error.js";
-import { createRequestVerificationEmptyStreamError } from "./request-security-edition/recovery.js";
 import {
   calculateRetryDelay,
   logRetryDelayDecision,
@@ -77,8 +76,6 @@ import type {
   AiSdkModelTextRequest,
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { isRequestVerificationRejection } from "./request-security-edition/recovery.js";
-import { AccountRequestRetry } from "./account-request-retry.js";
 import { resolveModelForAttempt } from "./runner-runtime-headers.js";
 import { retryAllowedByFailurePolicy } from "./workflow-model-failure-policy.js";
 import {
@@ -120,7 +117,6 @@ export async function* runStreamText(input: {
   const isDev = isDevelopmentModelIOEnv(input.env);
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
-  const authRetry = new AccountRequestRetry(input.request, input.resolved, input.logger);
   let emptyCompletionRetryCount = 0;
 
   for (
@@ -128,11 +124,11 @@ export async function* runStreamText(input: {
     retryAttemptLoopContinues(
       retryBudget,
       attempt,
-      input.retry.maxAttempts + Number(signatureRepairAttempted) + authRetry.extraAttempts,
+      input.retry.maxAttempts + Number(signatureRepairAttempted),
     );
     attempt += 1
   ) {
-    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted) - authRetry.extraAttempts;
+    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted);
     const startedAt = Date.now();
     // SSE idle timeout 后的重试如果仍固定首请求窗口，容易被同一段 provider 静默窗口反复打断；
     // core recovery 和 adapter 内部 retry 都统一按重试次数每次增加 30s。
@@ -155,7 +151,7 @@ export async function* runStreamText(input: {
     let statusContext = createAttemptStatusContext(
       {
         ...baseStatusContext,
-        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted) + authRetry.extraAttempts),
+        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted)),
       },
       attempt,
     );
@@ -195,7 +191,7 @@ export async function* runStreamText(input: {
       input.logger?.warn("Retrying model stream after thinking signature rejection", {
         attempt,
         event: "model.reasoning_signature_repair.retry",
-        maxAttempts: input.retry.maxAttempts + 1 + authRetry.extraAttempts,
+        maxAttempts: input.retry.maxAttempts + 1,
         nextAttempt: attempt + 1,
         requestId: statusContext.requestId,
         status: "waiting",
@@ -277,8 +273,7 @@ export async function* runStreamText(input: {
     try {
       resolved = await resolveModelForAttempt({
         attempt,
-        reason: authRetry.takeReason(),
-        request: authRetry.prepareRequest(attemptRequest),
+        request: attemptRequest,
         resolveModel: input.resolveModel,
       });
       const anthropicMetadataUserId = await resolveAnthropicRequestMetadataUserId({
@@ -365,7 +360,6 @@ export async function* runStreamText(input: {
             requestHeaderCount,
             requestHeaders,
             repairThinkingSignatureRejection,
-            canRecoverProjectToken: (error) => authRetry.canRecoverProjectToken(error),
             retryBudgetAttempt,
             startedAt,
             statusContext,
@@ -483,8 +477,6 @@ export async function* runStreamText(input: {
             } satisfies Record<string, unknown>),
         });
         if (hiddenProviderBusinessError) {
-          if (isRequestVerificationRejection(hiddenProviderBusinessError))
-            throw hiddenProviderBusinessError;
           const failure = classifyModelFailure(
             hiddenProviderBusinessError,
             input.request.abortSignal,
@@ -503,21 +495,12 @@ export async function* runStreamText(input: {
         if (isSuspiciousStreamDiagnostics(diagnostics)) {
           // 403 JSON 等业务错误有时不会让 AI SDK 抛出 error chunk，流会以空 completion 结束；
           // 若不在 adapter 层终止，core 会误报 “Model returned no text...”。
-          const streamEndedWithoutOutputError =
-            detectProviderBusinessFinishError({
-              providerId: String(statusContext.providerId),
-              providerKind: statusContext.providerKind,
-              source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
-            }) ??
-            createRequestVerificationEmptyStreamError({
-              accountMode: resolved.accountAccess?.mode,
-              headers: resolved.headers,
-              providerId: String(statusContext.providerId),
-              providerKind: resolved.providerKind,
-            });
+          const streamEndedWithoutOutputError = detectProviderBusinessFinishError({
+            providerId: String(statusContext.providerId),
+            providerKind: statusContext.providerKind,
+            source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
+          });
           if (streamEndedWithoutOutputError) {
-            if (isRequestVerificationRejection(streamEndedWithoutOutputError))
-              throw streamEndedWithoutOutputError;
             const failure = classifyModelFailure(
               streamEndedWithoutOutputError,
               input.request.abortSignal,
@@ -678,7 +661,7 @@ export async function* runStreamText(input: {
       if (retryWithRepairedHistory) {
         statusContext = {
           ...statusContext,
-          maxAttempts: statusMaxAttempts(1 + authRetry.extraAttempts),
+          maxAttempts: statusMaxAttempts(1),
         };
       }
       const classified = classifyModelFailure(error, input.request.abortSignal);
@@ -745,18 +728,6 @@ export async function* runStreamText(input: {
       );
       terminalStatusPublished = true;
 
-      if (retryWithAuth) {
-        await publishRetryScheduledStatus(
-          input,
-          statusContext,
-          attempt,
-          0,
-          { ...failure, retryReason: ModelRetryReason.AuthRefresh },
-          requestHeaders,
-          responseHeaders,
-        );
-        continue;
-      }
       if (retryWithRepairedHistory) {
         await publishRetryScheduledStatus(
           input,
@@ -988,7 +959,6 @@ async function handleStreamChunk(input: {
   };
   pendingRetrySafeEvents: ModelStreamEvent[];
   repairThinkingSignatureRejection: (error: unknown) => boolean;
-  canRecoverProjectToken: (error: unknown) => boolean;
   retryBudgetAttempt: number;
   requestHeaderCount: number;
   requestHeaders: Record<string, string>;
@@ -1180,7 +1150,6 @@ async function handleStreamErrorEvent(
   input: Parameters<typeof handleStreamChunk>[0],
   error: unknown,
 ): Promise<Awaited<ReturnType<typeof handleStreamChunk>>> {
-  if (isRequestVerificationRejection(error) || input.canRecoverProjectToken(error)) throw error;
   const retryWithRepairedHistory =
     !input.emittedRetryBoundaryEvent && input.repairThinkingSignatureRejection(error);
   const statusContext = retryWithRepairedHistory
@@ -1521,13 +1490,11 @@ function statusPublishOptions(
   input: {
     logger?: Logger;
     request: AiSdkModelTextRequest;
-    resolved?: Pick<ResolvedAiSdkModel, "requestObservations">;
     statusSink?: ModelStatusSink;
   },
   admission?: AttemptAdmission,
 ) {
   return {
-    requestObservations: input.resolved?.requestObservations,
     logger: input.logger,
     requestStatusSink: input.request.statusSink,
     statusSink: input.statusSink,

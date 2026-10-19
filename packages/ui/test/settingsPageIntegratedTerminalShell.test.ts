@@ -35,9 +35,6 @@ const localSystemInfo = vi.fn(async () => ({
 const localListIntegratedTerminalShells = vi.fn(async () => []);
 
 const remoteServices = {
-  codingPlanSubscriptionService: {
-    getEnterprisePricing: vi.fn(async () => ({ productList: [] })),
-  },
   settingService: {
     get: vi.fn(async () => ({})),
     update: vi.fn(async () => {}),
@@ -145,14 +142,6 @@ vi.mock("@/hooks/useSettingService.js", () => ({
 
 vi.mock("@/hooks/useModelProviders.js", () => ({
   useModelProviders: () => ({ loading: false, modelProviders: [] }),
-}));
-
-vi.mock("@/hooks/useUsageEntitlement.js", () => ({
-  useUsageEntitlement: () => ({
-    loading: false,
-    snapshot: undefined,
-    error: undefined,
-  }),
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({

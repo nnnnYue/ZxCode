@@ -40,6 +40,7 @@ it.each([false, true])(
       env: {
         ...process.env,
         NODE_OPTIONS: `--import=${JSON.stringify(proxy)}`,
+        // e2e helpers 读 ZCODE_E2E_ARTIFACT_DIR（helpers 目录按边界不改，测试侧对齐其命名）
         ZCODE_E2E_ARTIFACT_DIR: root,
       },
       stdio: ["pipe", "pipe", "pipe"],

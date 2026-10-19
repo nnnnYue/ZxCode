@@ -4,7 +4,8 @@ import type { ZCodeProvider } from "./zcode-task-types-core.js";
 
 export const ZXCODE_AGENT_PROVIDER = "glm" satisfies ZCodeProvider;
 export const ZXCODE_AGENT_PROVIDER_LABEL = "ZxCode Agent";
-export const ZXCODE_COMMAND_AGENT_SOURCE = "zcodeAgent" satisfies CommandAgentSource;
+export const ZXCODE_COMMAND_AGENT_SOURCE =
+  "zcodeAgent" satisfies CommandAgentSource;
 
 export const zcodeAgentProviderSchema = z.literal(ZXCODE_AGENT_PROVIDER);
 
@@ -40,7 +41,7 @@ export function normalizeAgentProvidersToZCodeAgent(
 export function normalizeCommandAgentSourceToZCodeAgent(
   _agentSource?: CommandAgentSource | null,
 ): CommandAgentSource {
-  return ZCODE_COMMAND_AGENT_SOURCE;
+  return ZXCODE_COMMAND_AGENT_SOURCE;
 }
 
 export function isZCodeAgentProvider(

@@ -32,6 +32,7 @@ describe("desktopCronScheduler", () => {
         warn: vi.fn(),
         error: vi.fn(),
       },
+      resolveDynamicWorkflowUserEnabled: () => false,
       resolveDispatchHost: () => null,
     });
 
@@ -50,6 +51,7 @@ describe("desktopCronScheduler", () => {
     const scheduler = spawnCronScheduler({
       hostProcessLocalEnv: {},
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      resolveDynamicWorkflowUserEnabled: () => false,
       resolveDispatchHost: () => host as never,
     });
 
@@ -74,38 +76,6 @@ describe("desktopCronScheduler", () => {
     await disposing;
   });
 
-  it("把 scheduler 自采样本交给资源遥测来源，非法样本丢弃", async () => {
-    const { selfHeapProcessResourceSampleSource } =
-      await import("../src/main/processResourceSelfHeapSource.js");
-    selfHeapProcessResourceSampleSource.reset?.();
-    const child = new MockSchedulerProcess();
-    vi.mocked(electronUtilityProcess.fork).mockReturnValue(child as never);
-    spawnCronScheduler({
-      hostProcessLocalEnv: {},
-      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      resolveDispatchHost: () => null,
-    });
-
-    // 字段缺失的样本在 main 入口丢弃，不抛错。
-    expect(() =>
-      child.emit("message", {
-        type: "scheduler-resource-sample",
-        sample: { cpuPercent: 1, rssKb: 122_880 },
-      }),
-    ).not.toThrow();
-    child.emit("message", {
-      type: "scheduler-resource-sample",
-      sample: { cpuPercent: 1, rssKb: 122_880, heapUsedKb: 24_576 },
-    });
-
-    const heapSamples: Array<[string, number]> = [];
-    selfHeapProcessResourceSampleSource.sample?.({
-      now: 0,
-      addRoleSample: () => {},
-      addRoleHeapSample: (role, heapUsedKb) => heapSamples.push([role, heapUsedKb]),
-      addAppProcessTotals: () => {},
-    });
-
-    expect(heapSamples).toEqual([["scheduler", 24_576]]);
-  });
+  // fork 未合入 processResourceSelfHeapSource（scheduler 自采资源样本）架构，
+  // upstream 对应用例不再保留；fork 的 App Usage 采样由 processResourceExternalAppSamples 覆盖。
 });

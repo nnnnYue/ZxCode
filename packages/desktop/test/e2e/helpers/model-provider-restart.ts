@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- provider 重启 helper 集中维护本地 registry 桥与 execute 回调注入，拆分会割裂 fixture 生命周期。 */
 import { DatabaseSync } from "node:sqlite";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -6,7 +7,7 @@ import {
   BUILTIN_PROVIDER_TEMPLATE_IDS,
   TID_CHAT_MODEL_SELECT_TRIGGER,
   TID_V4_MODEL_CONFIG,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
   encodeCustomModelValue,
   type ProviderFamilyConnectionSelection,
 } from "@zcode/shared";
@@ -33,9 +34,12 @@ const MODEL_SELECTION_RECENT_KEY_PREFIX = "zcode-model-selection-recent-v1";
 
 export { seedTurboAgentStartupModel } from "./model-provider-restart-runtime.js";
 
-export const E2E_BIGMODEL_PLAN_PROVIDER_ID = BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan;
-export const E2E_BIGMODEL_START_PROVIDER_ID = BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan;
-export const E2E_BIGMODEL_API_PROVIDER_ID = BUILTIN_PROVIDER_TEMPLATE_IDS.bigmodel;
+export const E2E_BIGMODEL_PLAN_PROVIDER_ID =
+  BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan;
+export const E2E_BIGMODEL_START_PROVIDER_ID =
+  BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan;
+export const E2E_BIGMODEL_API_PROVIDER_ID =
+  BUILTIN_PROVIDER_TEMPLATE_IDS.bigmodel;
 export const E2E_PLAN_FIRST_MODEL = "GLM-5.3";
 export const E2E_PLAN_DEFAULT_MODEL = "GLM-5.2";
 export const E2E_PLAN_NON_DEFAULT_MODEL = "GLM-5.3-Flash";
@@ -58,16 +62,21 @@ export async function readBigModelConnectionSelection(): Promise<
 > {
   const settings = await readJson(SETTINGS_FILE);
   const selections = settings.providerFamilyConnectionSelections;
-  if (!selections || typeof selections !== "object" || Array.isArray(selections)) {
+  if (
+    !selections ||
+    typeof selections !== "object" ||
+    Array.isArray(selections)
+  ) {
     return undefined;
   }
-  return (selections as { bigmodel?: ProviderFamilyConnectionSelection }).bigmodel;
+  return (selections as { bigmodel?: ProviderFamilyConnectionSelection })
+    .bigmodel;
 }
 
 export async function seedBigModelOAuthCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
@@ -85,7 +94,7 @@ export async function seedBigModelOAuthCredential() {
 export async function seedBigModelStartPlanCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
@@ -105,7 +114,9 @@ export async function seedReplayProvider(params: {
 }) {
   const baseURL = params.baseURL ?? (await resolveSeededReplayBaseUrl());
   if (!baseURL) {
-    throw new Error("没有可用 replay Base URL，无法 seed model provider restart case");
+    throw new Error(
+      "没有可用 replay Base URL，无法 seed model provider restart case",
+    );
   }
   const provider: PersonalProviderConfigSeed = {
     id: params.id,
@@ -113,7 +124,9 @@ export async function seedReplayProvider(params: {
     // 内建 account provider 的模型规则按 anthropic-messages 匹配；若用 OpenAI Chat Completions
     // 格式覆盖连接配置，GLM builtin model rules 不会命中，模型在 Registry 中
     // 会因缺少完整 option/properties 被过滤，UI 菜单就看不到该计划模型。
-    apiFormat: params.id.startsWith("account:") ? "anthropic-messages" : "openai-chat-completions",
+    apiFormat: params.id.startsWith("account:")
+      ? "anthropic-messages"
+      : "openai-chat-completions",
     apiKey: params.apiKey ?? getUpstreamApiKey(),
     baseURL,
     enabled: params.enabled ?? true,
@@ -135,8 +148,18 @@ export async function seedPersistedModelSelection(params: {
   providerId: string;
   reasoningLevel: string;
 }) {
+  // fork 修复：显式标注 execute 回调参数类型（默认首参 HTMLElement）。
   await browser.execute(
-    (workspacePath, keyPrefix, selection, appProvider) => {
+    (
+      workspacePath: string,
+      keyPrefix: string,
+      selection: {
+        providerId: string;
+        modelId: string;
+        reasoningLevel: string;
+      },
+      appProvider: string,
+    ) => {
       window.localStorage.setItem(
         `${keyPrefix}:${workspacePath}`,
         JSON.stringify({
@@ -150,7 +173,7 @@ export async function seedPersistedModelSelection(params: {
     paths.workspace,
     MODEL_SELECTION_RECENT_KEY_PREFIX,
     params,
-    ZCODE_AGENT_PROVIDER,
+    ZXCODE_AGENT_PROVIDER,
   );
 }
 
@@ -161,9 +184,14 @@ export async function readLastSelectedAgentConfig() {
       if (!raw) return null;
       const recent: unknown = JSON.parse(raw);
       // Recent 扩展为模型与权限并列保存；重启断言同时兼容旧的纯模型种子。
-      const record = recent && typeof recent === "object" && !Array.isArray(recent) ? recent : null;
+      const record =
+        recent && typeof recent === "object" && !Array.isArray(recent)
+          ? recent
+          : null;
       const selection =
-        record && "modelSelection" in record ? record.modelSelection : (record ?? recent);
+        record && "modelSelection" in record
+          ? record.modelSelection
+          : (record ?? recent);
       const candidate =
         selection && typeof selection === "object" && !Array.isArray(selection)
           ? (selection as {
@@ -202,7 +230,8 @@ export async function waitForLastSelectedAgentConfig(params: {
       async () => {
         latest = await readLastSelectedAgentConfig();
         return Boolean(
-          latest?.model.includes(params.model) && latest.thoughtLevel === params.thoughtLevel,
+          latest?.model.includes(params.model) &&
+          latest.thoughtLevel === params.thoughtLevel,
         );
       },
       {
@@ -213,7 +242,9 @@ export async function waitForLastSelectedAgentConfig(params: {
   } catch {
     const storedAgentPreferences = await browser.execute(() =>
       Object.fromEntries(
-        Object.entries(window.localStorage).filter(([key]) => key.startsWith("zcode-last-agent-")),
+        Object.entries(window.localStorage).filter(([key]) =>
+          key.startsWith("zcode-last-agent-"),
+        ),
       ),
     );
     throw new Error(
@@ -235,7 +266,8 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
     // Bug 根因：同一 spec 内 Agent SQLite 会跨 case 保留上一条显式 thought，
     // 只 seed renderer localStorage 不能隔离跨模型默认值。这里固定 Agent 侧前置状态，
     // 避免 I39 的 GLM high 泄漏到 I42，让用例真正验证 Turbo enabled → GLM 默认值。
-    db.prepare(`
+    db.prepare(
+      `
       insert into local_setting (
         scope, scope_id, namespace, key, value, schema_version, time_created, time_updated
       ) values (?, ?, ?, ?, ?, ?, ?, ?)
@@ -243,7 +275,8 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
         value = excluded.value,
         schema_version = excluded.schema_version,
         time_updated = excluded.time_updated
-    `).run(
+    `,
+    ).run(
       "user",
       "default",
       "model",
@@ -278,25 +311,32 @@ export async function waitForDraftThoughtLevelState(params: {
     },
     {
       timeout: 30000,
-      timeoutMsg: params.timeoutMsg ?? `draft thought 没有收敛到 ${params.current}`,
+      timeoutMsg:
+        params.timeoutMsg ?? `draft thought 没有收敛到 ${params.current}`,
     },
   );
   return latest;
 }
 
-export async function waitForV4DraftModelConfig(params: { model: string; thought: string }) {
+export async function waitForV4DraftModelConfig(params: {
+  model: string;
+  thought: string;
+}) {
   let latest: { model: string | null; thought: string | null } | null = null;
   await browser.waitUntil(
     async () => {
       latest = await browser.execute((configTestId) => {
-        const config = document.querySelector<HTMLElement>(`[data-testid="${configTestId}"]`);
+        const config = document.querySelector<HTMLElement>(
+          `[data-testid="${configTestId}"]`,
+        );
         return {
           model: config?.dataset.model?.trim() || null,
           thought: config?.dataset.thought?.trim() || null,
         };
       }, TID_V4_MODEL_CONFIG);
       const modelMatches =
-        latest.model === params.model || latest.model?.endsWith(`/${params.model}`) === true;
+        latest.model === params.model ||
+        latest.model?.endsWith(`/${params.model}`) === true;
       return modelMatches && latest.thought === params.thought;
     },
     {
@@ -316,13 +356,17 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
       for (const file of files.filter(
         (item) => item.startsWith("model-io-") && item.endsWith(".jsonl"),
       )) {
-        const content = await readFile(join(debugDir, file), "utf-8").catch(() => "");
+        const content = await readFile(join(debugDir, file), "utf-8").catch(
+          () => "",
+        );
         for (const line of content.split("\n")) {
           if (!line.includes(expectedText)) continue;
           try {
             const record = JSON.parse(line) as {
               querySource?: string;
-              request?: { body?: { model?: string; thinking?: { type?: string } } };
+              request?: {
+                body?: { model?: string; thinking?: { type?: string } };
+              };
             };
             if (record.querySource === "main_turn" && record.request?.body) {
               matched = record.request.body;
@@ -335,12 +379,17 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
       }
       return false;
     },
-    { timeout: 30000, timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}` },
+    {
+      timeout: 30000,
+      timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}`,
+    },
   );
   return matched as { model?: string; thinking?: { type?: string } } | null;
 }
 
-export async function restartIntoWorkspace(options: ModelProviderRestartOptions = {}) {
+export async function restartIntoWorkspace(
+  options: ModelProviderRestartOptions = {},
+) {
   await restartIntoWorkspaceRestoringPreferences(paths.workspace, options);
 }
 
@@ -348,7 +397,10 @@ export async function restartIntoWorkspacePreservingProfile() {
   await restartIntoWorkspacePreservingProfileFixture(paths.workspace);
 }
 
-export async function waitForSelectedModel(providerId: string, modelId: string) {
+export async function waitForSelectedModel(
+  providerId: string,
+  modelId: string,
+) {
   const expected = encodeCustomModelValue(providerId, modelId);
   let actual: string | null = null;
   let storedConfig: string | null = null;
@@ -357,11 +409,15 @@ export async function waitForSelectedModel(providerId: string, modelId: string) 
       async () => {
         const snapshot = await browser.execute(
           (value, triggerTestId, workspacePath, keyPrefix) => {
-            const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
+            const trigger = document.querySelector<HTMLElement>(
+              `[data-testid="${triggerTestId}"]`,
+            );
             return {
               actual: trigger?.dataset.modelCurrentValue ?? null,
               matched: trigger?.dataset.modelCurrentValue === value,
-              storedConfig: window.localStorage.getItem(`${keyPrefix}:${workspacePath}`),
+              storedConfig: window.localStorage.getItem(
+                `${keyPrefix}:${workspacePath}`,
+              ),
             };
           },
           expected,
@@ -389,7 +445,11 @@ export async function waitForSelectedModel(providerId: string, modelId: string) 
 async function writeJsonPatch(file: string, patch: Record<string, unknown>) {
   const current = await readJson(file);
   await mkdir(dirname(file), { recursive: true });
-  await writeFile(file, JSON.stringify({ ...current, ...patch }, null, 2), "utf-8");
+  await writeFile(
+    file,
+    JSON.stringify({ ...current, ...patch }, null, 2),
+    "utf-8",
+  );
 }
 
 async function readJson(file: string): Promise<Record<string, unknown>> {

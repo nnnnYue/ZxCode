@@ -2,7 +2,6 @@ import {
   ApiKeyAccessConfig,
   ProviderApiConfig,
   ProviderConfig,
-  ZhipuAccountAccessConfig,
   type ModelId,
   type ProviderApiType,
   type ProviderGroup,
@@ -28,8 +27,9 @@ interface ApiKeyProviderFixtureInput extends CommonProviderFixtureInput {
 }
 
 interface AccountProviderFixtureInput extends CommonProviderFixtureInput {
+  // fork：zhipu-account Access 已下线，账号 Overlay Provider 只保留历史字段面（无 access）。
   readonly accountType?: "zai" | "bigmodel";
-  readonly mode?: "start-plan" | "individual-coding-plan" | "team-coding-plan" | "off-peak";
+  readonly mode?: string;
   readonly entitled?: boolean | null;
 }
 
@@ -57,12 +57,9 @@ export function createAccountProviderConfig(
       input.group === null
         ? undefined
         : (input.group ?? (input.accountType === "bigmodel" ? "bigmodel-family" : "zai-family")),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 兼容旧入参面
+    ...(input.mode ?? input.entitled !== undefined ? {} : {}),
     logo: input.logo,
-    access: new ZhipuAccountAccessConfig({
-      accountType: input.accountType ?? "zai",
-      mode: input.mode ?? "individual-coding-plan",
-      entitled: input.entitled,
-    }),
     api: createProviderApi(input),
     builtinModelIds: input.models,
     visibility: input.visibility,

@@ -5,8 +5,6 @@ import type { IPluginUiSamplingService } from "./plugin-ui-bridge/samplingContra
 import type { IPluginUiAppToolsService } from "./plugin-ui-bridge/appToolsContract.js";
 import type { IFileService } from "./file/file.js";
 import type { IMediaPreviewService } from "./media-preview/mediaPreview.js";
-import type { ICloudContentService } from "#src/cloud-content/cloudContent.js";
-import type { IMarketingTouchService } from "#src/marketing-touch/marketingTouch.js";
 import type { IGitService } from "./git/git.js";
 import type { IGitCheckpointService } from "./git/gitCheckpoint.js";
 import type { ISystemService } from "./system/system.js";
@@ -44,8 +42,6 @@ import type { IOnboardingRecordService } from "./onboarding/onboardingRecord.js"
 export interface IServiceAccessor {
   readonly fileService: IFileService;
   readonly mediaPreviewService?: IMediaPreviewService;
-  readonly cloudContentService?: ICloudContentService;
-  readonly marketingTouchService?: IMarketingTouchService;
   readonly gitService: IGitService;
   readonly gitCheckpointService: IGitCheckpointService;
   readonly systemService: ISystemService;
@@ -68,7 +64,9 @@ export interface IServiceAccessor {
   readonly providerSettingsService: IProviderSettingsService;
   /** 当前 Environment Registry 发布的唯一模型选择 View。 */
   readonly modelSelectionService: IModelSelectionService;
-  readonly highspeedCardService: IHighspeedCardService;
+  // Highspeed 卡服务只在本地 Desktop Host 装配；web/远端 RemoteServiceAccess 不提供，
+  // 可选化避免连锁必填（fork 修复：上游把该成员设为必填导致 4 处远端实现报错）。
+  readonly highspeedCardService?: IHighspeedCardService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;

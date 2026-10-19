@@ -6,6 +6,8 @@ import type { FileWatchEvent } from "@zcode/shared";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+// PreviewPane 读取 tab store 判断 workspace 只读态；测试需在真实 TabStoreProvider 内渲染。
+import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 
 const h = vi.hoisted(() => ({
   currentByte: 1,
@@ -113,15 +115,19 @@ describe("PreviewPane PPTX file reload", () => {
       createElement(
         ZCodeIntlProvider,
         { initialLocale: "en-US" },
-        createElement(PreviewPane, {
-          onClose: vi.fn(),
-          source: {
-            type: "file",
-            title: "deck.pptx",
-            path: "/workspace/deck.pptx",
-          },
-          workspacePath: "/workspace",
-        }),
+        createElement(
+          TabStoreProvider,
+          null,
+          createElement(PreviewPane, {
+            onClose: vi.fn(),
+            source: {
+              type: "file",
+              title: "deck.pptx",
+              path: "/workspace/deck.pptx",
+            },
+            workspacePath: "/workspace",
+          }),
+        ),
       ),
     );
 

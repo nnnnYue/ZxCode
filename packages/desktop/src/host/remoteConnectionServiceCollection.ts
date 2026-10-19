@@ -12,10 +12,6 @@ import {
   IZCodeAgentService,
   IZCodeSessionService,
   IFileWatcherService,
-  IOAuthService,
-  ICodingPlanSubscriptionService,
-  IClientConfigService,
-  IClientScenesService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
@@ -30,31 +26,20 @@ import {
 import {
   createSettingService,
   createBroadcastService,
-  createOAuthService,
-  createOAuthProviderLogoutHandler,
-  createAccountProviderCredentialStore,
-  createCodingPlanSubscriptionService,
-  createClientScenesService,
   createSettingsSyncService,
   createMediaPreviewService,
 } from "@zcode/services/node";
-import type { ApiClient } from "@zcode/shared";
 
 export function createRemoteConnectionServiceCollection(params: {
-  clientConfigService: IClientConfigService;
   connectionServices: IServiceAccessor;
   parentPort: Parameters<typeof createBroadcastService>[0];
   credentialService: ICredentialService;
-  apiClient: ApiClient;
   remoteZCodeTaskService: IZCodeTaskService;
   remoteZCodeSessionService: IZCodeSessionService;
   promptAttachmentTransferService: IPromptAttachmentTransferService;
 }): ServiceCollection {
-  const handleOAuthProviderLogout = createOAuthProviderLogoutHandler({
-    accountProviderCredentialStore: createAccountProviderCredentialStore({
-      credentialService: params.credentialService,
-    }),
-  });
+  // fork：OAuth / CodingPlan 订阅 / 在线配置与场景下发（clientConfig、clientScenes）域已删除，
+  // 远端 service 集合不再注册这些服务；其余注册保持远端文件系统语义不变。
   // 修复原因：remote connection host 直接暴露给 renderer 的 service 集合也要包含
   // 远端文件系统相关服务；否则远端 skill 同步会命中 Unknown channel 或误回落到本机。
   return (
@@ -75,31 +60,24 @@ export function createRemoteConnectionServiceCollection(params: {
       .register(IZCodeTaskService, params.remoteZCodeTaskService)
       .register(IZCodeAgentService, params.connectionServices.zcodeAgentService)
       .register(IZCodeSessionService, params.remoteZCodeSessionService)
-      .register(IPromptAttachmentTransferService, params.promptAttachmentTransferService)
-      .register(IFileWatcherService, params.connectionServices.fileWatcherService)
       .register(
-        IOAuthService,
-        createOAuthService(params.credentialService, {
-          apiClient: params.apiClient,
-          onProviderLogout: handleOAuthProviderLogout,
-        }),
+        IPromptAttachmentTransferService,
+        params.promptAttachmentTransferService,
       )
       .register(
-        ICodingPlanSubscriptionService,
-        createCodingPlanSubscriptionService({
-          apiClient: params.apiClient,
-          credentialService: params.credentialService,
-        }),
+        IFileWatcherService,
+        params.connectionServices.fileWatcherService,
       )
-      .register(IClientScenesService, createClientScenesService({ apiClient: params.apiClient }))
-      .register(IClientConfigService, params.clientConfigService)
       .register(ISkillsService, params.connectionServices.skillsService)
       .register(ISkillSyncService, params.connectionServices.skillSyncService)
       .register(IMcpSyncService, params.connectionServices.mcpSyncService)
       .register(IPluginSyncService, params.connectionServices.pluginSyncService)
       .register(IPluginsService, params.connectionServices.pluginsService)
       // M5 ③-3：远端设置页插件管理也必须打到远端 agent（插件目录在远端文件系统）。
-      .register(IPluginManagementService, params.connectionServices.pluginManagementService)
+      .register(
+        IPluginManagementService,
+        params.connectionServices.pluginManagementService,
+      )
       .register(ICommandsService, params.connectionServices.commandsService)
       .register(
         ISettingsSyncService,

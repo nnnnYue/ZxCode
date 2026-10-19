@@ -18,7 +18,7 @@ import { getAppUsageModelChartColor } from "@/settings/usage-stats/appUsageChart
 
 // XAxis 首尾刻度以绘图区边界为中心向两侧延伸，原 8px margin 小于日期文本半宽，
 // SVG 会裁掉首尾文字；左右保留 24px 安全区，让桌面端与手机 Web 端都能完整显示短日期。
-const APP_USAGE_TREND_CHART_MARGIN = {
+export const APP_USAGE_TREND_CHART_MARGIN = {
   top: 8,
   right: 24,
   left: 24,
@@ -39,7 +39,7 @@ type ModelChartKey = {
 type UsageIntl = ReturnType<typeof useZCodeIntl>["intl"];
 type ChartTooltipContentProps = ComponentProps<typeof ChartTooltipContent>;
 
-function filterDailyModelTooltipPayload<T extends { value?: unknown }>(
+export function filterDailyModelTooltipPayload<T extends { value?: unknown }>(
   payload: readonly T[] | undefined,
 ): T[] {
   // Recharts 的多序列 tooltip payload 会包含当天所有模型；
@@ -50,7 +50,7 @@ function filterDailyModelTooltipPayload<T extends { value?: unknown }>(
   });
 }
 
-function resolveDailyModelTooltipTokenParts(
+export function resolveDailyModelTooltipTokenParts(
   locale: string,
   value: unknown,
   tokenUnit: string,
@@ -122,7 +122,7 @@ function buildDailyModelChartData({
     .map(([, row]) => row);
 }
 
-function buildAppUsageDailyModelChartViewModel({
+export function buildAppUsageDailyModelChartViewModel({
   intl,
   locale,
   snapshot,

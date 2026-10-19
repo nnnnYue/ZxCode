@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { it as test } from "vitest";
 import { fileURLToPath } from "node:url";
 import { createProviderConfigRuntime } from "../src/model-provider/providerConfigRuntime.js";
 import { readLegacyZCodeConfigProviders } from "../src/model-provider/legacyZCodeConfigProviderReader.js";

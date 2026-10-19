@@ -36,8 +36,9 @@ describe("onboarding 窗口控制按钮", () => {
   it("Root 按与主界面一致的条件传入 showWindowControls", async () => {
     const root = await readFile(resolve(__dirname, "../src/Root.tsx"), "utf-8");
     const header = await readFile(resolve(__dirname, "../src/WorkspaceHeader.tsx"), "utf-8");
-    expect(root).toContain(
-      "showWindowControls={Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop))}",
+    // fork 侧 Root.tsx 由 prettier 折行，语义与主界面一致即可。
+    expect(root).toMatch(
+      /showWindowControls=\{Boolean\(\s*isWindowsDesktop \|\| \(isDesktop && !isMacDesktop\),?\s*\)\}/,
     );
     // 与主界面 WorkspaceHeader 的内联窗控判定保持同一语义
     expect(header).toContain(

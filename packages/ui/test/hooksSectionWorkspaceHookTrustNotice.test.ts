@@ -128,7 +128,7 @@ function workspaceHook(): Hook {
     enabled: true,
     editable: false,
     location: {
-      source: "zcode",
+      source: "zxcode",
       scope: "user",
       directoryPath: "/workspace-a/.zcode",
       projectPath: "/workspace-a",

@@ -11,13 +11,13 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+  ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
   type ZCodeSessionRuntimePreferencesScope,
 } from "@zcode/shared";
 import { createZCodeAgentService } from "../src/zcode-agent/zcodeAgentService.js";
 import { ZCodeAgentProcessManager } from "../src/zcode-agent/zcodeAgentProcessManager.js";
 import type { ZCodeProtocolClient } from "../src/zcode-agent/zcodeProtocolClient.js";
-import { ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE } from "../src/zcode-agent/zcodeAgentErrors.js";
+import { ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE } from "../src/zcode-agent/zcodeAgentErrors.js";
 import type { ZCodeAgentServiceEvent } from "../src/zcode-agent/zcodeAgent.js";
 import { getTasksIndexDatabasePath, setDataBaseDir } from "../src/paths.js";
 
@@ -332,7 +332,7 @@ function workspaceState(workspace) {
 }
 function snapshot(workspace, sessionId = "sess_shell_settings") {
   return {
-    protocol: { name: "ZCode Protocol", version: 1 },
+    protocol: { name: "ZxCode Protocol", version: 1 },
     session: {
       sessionId,
       workspace,
@@ -462,7 +462,7 @@ function workspaceState(workspace) {
 function snapshot(workspace) {
   const sessionId = "sess_runtime_preferences";
   return {
-    protocol: { name: "ZCode Protocol", version: 1 },
+    protocol: { name: "ZxCode Protocol", version: 1 },
     session: {
       sessionId,
       workspace,
@@ -538,7 +538,7 @@ let buf = "";
 function send(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }
 function createSnapshot(sessionId) {
   return {
-    protocol: { name: "ZCode Protocol", version: 1 },
+    protocol: { name: "ZxCode Protocol", version: 1 },
     session: {
       sessionId,
       workspace: {
@@ -610,7 +610,7 @@ let currentWorkspace = null;
 function send(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }
 function createSnapshot(workspace, thoughtLevel) {
   return {
-    protocol: { name: "ZCode Protocol", version: 1 },
+    protocol: { name: "ZxCode Protocol", version: 1 },
     session: {
       sessionId: "sess_compat",
       workspace,
@@ -1543,7 +1543,7 @@ describe("createZCodeAgentService", () => {
     ).resolves.toMatchObject({
       available: false,
       workspaceKey: "remote:ssh:dev:/workspace/app",
-      protocolName: "ZCode Protocol",
+      protocolName: "ZxCode Protocol",
       protocolVersion: 1,
     });
   });
@@ -1570,7 +1570,7 @@ describe("createZCodeAgentService", () => {
     ).resolves.toMatchObject({
       available: true,
       workspaceKey: workspacePath,
-      protocolName: "ZCode Protocol",
+      protocolName: "ZxCode Protocol",
       protocolVersion: 1,
       transportKind: "stdio",
     });
@@ -2249,7 +2249,7 @@ describe("createZCodeAgentService", () => {
       const createPromise = service.createSession({ workspacePath });
       await requestSeen;
 
-      await vi.advanceTimersByTimeAsync(ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS);
       await createPromise;
 
       const response = readFileSync(logPath, "utf8")
@@ -2266,7 +2266,7 @@ describe("createZCodeAgentService", () => {
       expect(response?.error).toEqual({
         code: -32022,
         data: {
-          timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+          timeoutMs: ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
         },
         message: "Session runtime preferences request timed out",
       });
@@ -2537,7 +2537,7 @@ describe("createZCodeAgentService", () => {
     const scriptPath = join(sandboxRoot, "plugin-cwd-agent.cjs");
     writeFileSync(scriptPath, PLUGIN_LIST_ECHO_CWD_FAKE_AGENT);
     const missingWorkspacePath = join(sandboxRoot, "deleted-workspace");
-    const pluginWorkspacePath = join(sandboxRoot, ".zcode", "plugin-workspace");
+    const pluginWorkspacePath = join(sandboxRoot, ".zxcode", "plugin-workspace");
     const commandResolver = vi.fn(({ workspacePath }) => ({
       command: process.execPath,
       args: [scriptPath],
@@ -2637,7 +2637,7 @@ describe("createZCodeAgentService", () => {
     const scriptPath = join(sandboxRoot, "mcp-cwd-agent.cjs");
     writeFileSync(scriptPath, MCP_LIST_ECHO_CWD_FAKE_AGENT);
     const missingWorkspacePath = join(sandboxRoot, "deleted-workspace");
-    const pluginWorkspacePath = join(sandboxRoot, ".zcode", "plugin-workspace");
+    const pluginWorkspacePath = join(sandboxRoot, ".zxcode", "plugin-workspace");
     const commandResolver = vi.fn(({ workspacePath }) => ({
       command: process.execPath,
       args: [scriptPath],
@@ -2960,7 +2960,7 @@ describe("createZCodeAgentService", () => {
           ],
         }),
       ).rejects.toMatchObject({
-        code: ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+        code: ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
         name: "ZCodeAgentMcpStatusModeUnsupportedError",
       });
     } finally {

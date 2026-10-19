@@ -30,7 +30,7 @@ const TEAM_SELECTION = {
 
 async function captureEvidence(label: string) {
   const directory =
-    process.env.ZCODE_E2E_ARTIFACT_DIR ||
+    process.env.ZXCODE_E2E_ARTIFACT_DIR ||
     join(process.cwd(), ".e2e-artifacts", "provider-responsive");
   await mkdir(directory, { recursive: true });
   await browser.saveScreenshot(join(directory, `provider-responsive-${label}.png`));

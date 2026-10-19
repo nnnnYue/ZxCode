@@ -574,10 +574,10 @@ describe("zcodeAgentService v4 conversation channel", () => {
 
       expect(sessionsIndex.ack.subscriptionId).toBe("sub-1");
       expect(conversation.ack.subscriptionId).toBe("sub-1");
+      // fork：账号 Provider Registry 同步已下线，openTiming 不再含 providerRegistrySyncMs。
       expect(conversation.ack.openTiming).toMatchObject({
         version: 1,
         hostPrepareMs: expect.any(Number),
-        providerRegistrySyncMs: expect.any(Number),
         taskMetaReadMs: expect.any(Number),
         cliRequestMs: expect.any(Number),
       });
@@ -586,7 +586,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
       // 修复原因：只读 topic 已经登记 active client，旧 fast path 会直接返回它并绕过
       // provider/model 门禁。createSession 必须仍在写入协议前确定性拒绝。
       await expect(service.createSession({ workspacePath })).rejects.toMatchObject({
-        code: "ZCODE_AGENT_PROVIDER_NOT_READY",
+        code: "ZXCODE_AGENT_PROVIDER_NOT_READY",
         data: expect.objectContaining({ reason: "provider_not_ready" }),
       });
 
@@ -693,7 +693,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
           workspacePath,
           runtimePolicy: "existing-only",
         }),
-      ).rejects.toMatchObject({ code: "ZCODE_AGENT_RUNTIME_UNAVAILABLE" });
+      ).rejects.toMatchObject({ code: "ZXCODE_AGENT_RUNTIME_UNAVAILABLE" });
       expect(commandResolver).not.toHaveBeenCalled();
       expect(lifecycle).toEqual([]);
 

@@ -1,110 +1,90 @@
 import { describe, expect, it } from "vitest";
 
+// fork 适配：深链 scheme 为 zxcode；OAuth 回调与 share import 辅助已随 OAuth 功能剔除，
+// 仅保留 payment / workspace open / argv 提取等仍在 src/main/desktopDeepLinkUrl.ts 的能力。
 describe("desktop deep link url helpers", () => {
-  it("recognizes only the unified OAuth callback url", async () => {
-    const { isOAuthCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
+  it("accepts Linux one-slash payment callback urls", async () => {
+    const { isPaymentCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(isOAuthCallbackUrl(new URL("zcode://oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isOAuthCallbackUrl(new URL("zcode://bigmodel-auth/callback?authCode=1&state=s"))).toBe(
-      false,
-    );
-    expect(isOAuthCallbackUrl(new URL("zcode://zai-auth/callback?code=1&state=s"))).toBe(false);
-    expect(isOAuthCallbackUrl(new URL("zcode://oauth/other?code=1&state=s"))).toBe(false);
-    expect(isOAuthCallbackUrl(new URL("https://oauth/callback?code=1&state=s"))).toBe(false);
+    expect(isPaymentCallbackUrl(new URL("zxcode:/payment/callback?status=return"))).toBe(true);
+    expect(isPaymentCallbackUrl(new URL("zxcode:payment/callback?status=cancel"))).toBe(true);
   });
 
-  it("accepts Linux one-slash callback urls", async () => {
-    const { isOAuthCallbackUrl, isPaymentCallbackUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
+  it("recognizes payment callback urls", async () => {
+    const { isPaymentCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(isOAuthCallbackUrl(new URL("zcode:/oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isOAuthCallbackUrl(new URL("zcode:oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isPaymentCallbackUrl(new URL("zcode:/payment/callback?status=return"))).toBe(true);
-    expect(isPaymentCallbackUrl(new URL("zcode:payment/callback?status=cancel"))).toBe(true);
-  });
-
-  it("recognizes payment callback urls separately from OAuth", async () => {
-    const { isOAuthCallbackUrl, isPaymentCallbackUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
-
-    const paymentUrl = new URL("zcode://payment/callback?provider=zai&channel=paypal");
+    const paymentUrl = new URL("zxcode://payment/callback?provider=zai&channel=paypal");
     expect(isPaymentCallbackUrl(paymentUrl)).toBe(true);
-    expect(isOAuthCallbackUrl(paymentUrl)).toBe(false);
-    expect(isPaymentCallbackUrl(new URL("zcode://payment/other"))).toBe(false);
+    expect(isPaymentCallbackUrl(new URL("zxcode://payment/other"))).toBe(false);
   });
 
   it("recognizes workspace open urls and extracts the encoded folder path", async () => {
     const { extractWorkspaceOpenPath, isWorkspaceOpenUrl } =
       await import("../src/main/desktopDeepLinkUrl.js");
 
-    const workspaceUrl = new URL("zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%20A%26B");
+    const workspaceUrl = new URL("zxcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%20A%26B");
     expect(isWorkspaceOpenUrl(workspaceUrl)).toBe(true);
     expect(extractWorkspaceOpenPath(workspaceUrl)).toBe("/Users/demo/Project A&B");
-    expect(isWorkspaceOpenUrl(new URL("zcode://workspace/other?path=%2Ftmp"))).toBe(false);
-    expect(extractWorkspaceOpenPath(new URL("zcode://workspace/open"))).toBeNull();
-  });
-
-  it("只接受不含额外敏感参数的 share import code", async () => {
-    const { extractShareImportCode, isShareImportUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
-    const valid = new URL("zcode://share/import?code=abc_DEF-123");
-    expect(isShareImportUrl(valid)).toBe(true);
-    expect(extractShareImportCode(valid)).toBe("abc_DEF-123");
-    expect(extractShareImportCode(new URL("zcode://share/import"))).toBeNull();
-    expect(extractShareImportCode(new URL("zcode://share/import?code=bad%2Fcode"))).toBeNull();
-    expect(isShareImportUrl(new URL("https://share/import?code=abc"))).toBe(false);
+    expect(isWorkspaceOpenUrl(new URL("zxcode://workspace/other?path=%2Ftmp"))).toBe(false);
+    expect(extractWorkspaceOpenPath(new URL("zxcode://workspace/open"))).toBeNull();
   });
 
   it("extracts protocol urls from desktop argv variants", async () => {
     const { extractDeepLinkUrlFromArgs } = await import("../src/main/desktopDeepLinkUrl.js");
+    // fork 完整性判定：payment 回调需 provider+channel+status 齐备才直接采用，否则回退首个候选。
+    const completePaymentUrl = "zxcode://payment/callback?provider=zai&channel=paypal&status=return";
 
     expect(
-      extractDeepLinkUrlFromArgs(["/opt/ZCode/zcode", "zcode://oauth/callback?code=1&state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+      extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", completePaymentUrl]),
+    ).toBe(completePaymentUrl);
+    expect(
+      extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", `--open-url=${completePaymentUrl}`]),
+    ).toBe(completePaymentUrl);
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/ZCode/zcode",
-        "--open-url=zcode://oauth/callback?code=1&state=s",
+        "/opt/ZxCode/zxcode",
+        "zxcode%3A%2F%2Fpayment%2Fcallback%3Fprovider%3Dzai%26channel%3Dpaypal%26status%3Dreturn",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe(completePaymentUrl);
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/ZCode/zcode",
-        "zcode%3A%2F%2Foauth%2Fcallback%3Fcode%3D1%26state%3Ds",
+        "/opt/ZxCode/zxcode",
+        "zxcode%253A%252F%252Fpayment%252Fcallback%253Fprovider%253Dzai%2526channel%253Dpaypal%2526status%253Dreturn",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe(completePaymentUrl);
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/ZCode/zcode",
-        "zcode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
+        "/opt/ZxCode/zxcode",
+        "zxcode://payment/callback?provider=zai&channel=paypal",
+        "&status=return",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
-    expect(
-      extractDeepLinkUrlFromArgs(["/opt/ZCode/zcode", "zcode://oauth/callback?code=1", "&state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
-    expect(
-      extractDeepLinkUrlFromArgs(["/opt/ZCode/zcode", "zcode://oauth/callback?code=1&amp;state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe(completePaymentUrl);
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/ZCode/zcode",
-        "zcode://payment/callback?provider=zai",
+        "/opt/ZxCode/zxcode",
+        "zxcode://payment/callback?provider=zai&amp;channel=paypal&amp;status=return",
+      ]),
+    ).toBe(completePaymentUrl);
+    expect(
+      extractDeepLinkUrlFromArgs([
+        "/opt/ZxCode/zxcode",
+        "zxcode://payment/callback?provider=zai",
         "&channel=paypal",
         "&status=return",
       ]),
-    ).toBe("zcode://payment/callback?provider=zai&channel=paypal&status=return");
+    ).toBe(completePaymentUrl);
     expect(
       extractDeepLinkUrlFromArgs([
-        "/Applications/ZCode.app/Contents/MacOS/ZCode",
-        "zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A",
+        "/Applications/ZxCode.app/Contents/MacOS/ZxCode",
+        "zxcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A",
       ]),
-    ).toBe("zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A");
+    ).toBe("zxcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A");
   });
 
   it("returns null when argv does not contain a deep link", async () => {
     const { extractDeepLinkUrlFromArgs } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(extractDeepLinkUrlFromArgs(["/opt/ZCode/zcode", "--no-sandbox"])).toBeNull();
+    expect(extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", "--no-sandbox"])).toBeNull();
   });
 
   it("extracts Windows open workspace argv without URL decoding", async () => {
@@ -112,22 +92,22 @@ describe("desktop deep link url helpers", () => {
 
     expect(
       extractOpenWorkspacePathFromArgs([
-        "C:\\Program Files\\ZCode\\ZCode.exe",
+        "C:\\Program Files\\ZxCode\\ZxCode.exe",
         "--open-workspace",
         "C:\\Users\\demo\\Project A&B#1",
       ]),
     ).toBe("C:\\Users\\demo\\Project A&B#1");
     expect(
       extractOpenWorkspacePathFromArgs([
-        "C:\\Program Files\\ZCode\\ZCode.exe",
+        "C:\\Program Files\\ZxCode\\ZxCode.exe",
         "--open-workspace=C:\\Users\\demo\\Project%20A",
       ]),
     ).toBe("C:\\Users\\demo\\Project%20A");
-    expect(extractOpenWorkspacePathFromArgs(["ZCode.exe", "--open-workspace", 'C:"'])).toBe("C:\\");
-    expect(extractOpenWorkspacePathFromArgs(["ZCode.exe", "--open-workspace", 'C:\\repo"'])).toBe(
-      "C:\\repo\\",
-    );
-    expect(extractOpenWorkspacePathFromArgs(["ZCode.exe", "--open-workspace"])).toBeNull();
+    expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:"'])).toBe("C:\\");
+    expect(
+      extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:\\repo"']),
+    ).toBe("C:\\repo\\");
+    expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace"])).toBeNull();
   });
 
   it("passes parsed deep links through single instance additionalData", async () => {
@@ -138,13 +118,13 @@ describe("desktop deep link url helpers", () => {
     } = await import("../src/main/desktopDeepLinkUrl.js");
 
     const additionalData = createDeepLinkSingleInstanceData([
-      "/opt/ZCode/zcode",
-      "zcode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
+      "/opt/ZxCode/zxcode",
+      "zxcode%253A%252F%252Fpayment%252Fcallback%253Fcode%253D1%2526state%253Ds",
       "--open-workspace=C:\\Users\\demo\\Project A",
     ]);
 
     expect(extractDeepLinkUrlFromSingleInstanceData(additionalData)).toBe(
-      "zcode://oauth/callback?code=1&state=s",
+      "zxcode://payment/callback?code=1&state=s",
     );
     expect(extractOpenWorkspacePathFromSingleInstanceData(additionalData)).toBe(
       "C:\\Users\\demo\\Project A",
@@ -158,35 +138,35 @@ describe("desktop deep link url helpers", () => {
     const { buildWindowsOpenFolderCommand, buildWindowsOpenFolderRegistryOperations } =
       await import("../src/main/desktopWindowsOpenFolderContextMenu.js");
 
-    expect(buildWindowsOpenFolderCommand("C:\\Program Files\\ZCode\\ZCode.exe")).toBe(
-      '"C:\\Program Files\\ZCode\\ZCode.exe" --open-workspace "%1"',
+    expect(buildWindowsOpenFolderCommand("C:\\Program Files\\ZxCode\\ZxCode.exe")).toBe(
+      '"C:\\Program Files\\ZxCode\\ZxCode.exe" --open-workspace "%1"',
     );
     expect(
       buildWindowsOpenFolderCommand("C:\\Electron\\electron.exe", ["C:\\repo\\desktop\\main.js"]),
     ).toBe('"C:\\Electron\\electron.exe" "C:\\repo\\desktop\\main.js" --open-workspace "%1"');
 
     const operations = buildWindowsOpenFolderRegistryOperations({
-      executablePath: "C:\\Program Files\\ZCode\\ZCode.exe",
+      executablePath: "C:\\Program Files\\ZxCode\\ZxCode.exe",
       locale: "en-US",
     });
 
     expect(operations).toContainEqual({
       args: [
         "add",
-        "HKCU\\Software\\Classes\\Directory\\shell\\ZCode.OpenInZCode\\command",
+        "HKCU\\Software\\Classes\\Directory\\shell\\ZxCode.OpenInZxCode\\command",
         "/ve",
         "/d",
-        '"C:\\Program Files\\ZCode\\ZCode.exe" --open-workspace "%1"',
+        '"C:\\Program Files\\ZxCode\\ZxCode.exe" --open-workspace "%1"',
         "/f",
       ],
     });
     expect(operations).toContainEqual({
       args: [
         "add",
-        "HKCU\\Software\\Classes\\Drive\\shell\\ZCode.OpenInZCode\\command",
+        "HKCU\\Software\\Classes\\Drive\\shell\\ZxCode.OpenInZxCode\\command",
         "/ve",
         "/d",
-        '"C:\\Program Files\\ZCode\\ZCode.exe" --open-workspace "%1"',
+        '"C:\\Program Files\\ZxCode\\ZxCode.exe" --open-workspace "%1"',
         "/f",
       ],
     });
@@ -196,18 +176,19 @@ describe("desktop deep link url helpers", () => {
     const { buildWindowsOpenFolderRegistryOperations, getWindowsOpenFolderMenuName } =
       await import("../src/main/desktopWindowsOpenFolderContextMenu.js");
 
+    // fork 菜单文案：中文保留「在ZCode中打开」，英文为 Open in ZxCode。
     expect(getWindowsOpenFolderMenuName("zh-CN")).toBe("在ZCode中打开");
-    expect(getWindowsOpenFolderMenuName("en-US")).toBe("Open in ZCode");
+    expect(getWindowsOpenFolderMenuName("en-US")).toBe("Open in ZxCode");
 
     const operations = buildWindowsOpenFolderRegistryOperations({
-      executablePath: "C:\\Program Files\\ZCode\\ZCode.exe",
+      executablePath: "C:\\Program Files\\ZxCode\\ZxCode.exe",
       locale: "zh-CN",
     });
 
     expect(operations).toContainEqual({
       args: [
         "add",
-        "HKCU\\Software\\Classes\\Directory\\shell\\ZCode.OpenInZCode",
+        "HKCU\\Software\\Classes\\Directory\\shell\\ZxCode.OpenInZxCode",
         "/ve",
         "/d",
         "在ZCode中打开",
@@ -217,7 +198,7 @@ describe("desktop deep link url helpers", () => {
     expect(operations).toContainEqual({
       args: [
         "add",
-        "HKCU\\Software\\Classes\\Directory\\shell\\ZCode.OpenInZCode",
+        "HKCU\\Software\\Classes\\Directory\\shell\\ZxCode.OpenInZxCode",
         "/v",
         "MUIVerb",
         "/t",

@@ -328,16 +328,14 @@ describe("ConversationComposer error banner", () => {
   });
 
   it("forwards model recovery actions to the shared error banner", () => {
+    // fork 无套餐升级入口，只校验模型设置跳转动作。
     const onOpenModelSettings = vi.fn();
-    const onOpenModelUpgrade = vi.fn();
 
     renderComposerWithError("No model", {
       onOpenModelSettings,
-      onOpenModelUpgrade,
     });
 
     expect(captured.chatErrorBannerProps?.onOpenModelSettings).toBe(onOpenModelSettings);
-    expect(captured.chatErrorBannerProps?.onOpenUpgrade).toBe(onOpenModelUpgrade);
   });
 
   it("does not render local queue behavior toggles in the composer", () => {

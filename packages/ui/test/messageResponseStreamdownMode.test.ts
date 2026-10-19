@@ -44,7 +44,7 @@ describe("resolveMessageStreamdownMode", () => {
   it("invalidates memoized artifact images when their session or reader changes", () => {
     const readAttachment = vi.fn();
     const base = {
-      children: "![CUA](zcode-artifact://session-1/shot)",
+      children: "![CUA](zxcode-artifact://session-1/shot)",
       sessionId: "session-1",
       readAttachment,
     };
@@ -175,15 +175,15 @@ describe("resolveMessageStreamdownMode", () => {
           },
           [
             "普通文件 report.pdf。",
-            ':zcode-file-citation{path="docs/年度 报告.pdf" purpose="output" page_number=2}',
-            ':::zcode-file-citation{path="docs/论文.pdf" purpose="source"}',
+            ':zxcode-file-citation{path="docs/年度 报告.pdf" purpose="output" page_number=2}',
+            ':::zxcode-file-citation{path="docs/论文.pdf" purpose="source"}',
           ].join("\n\n"),
         ),
       ),
     );
 
     expect(html).toContain("普通文件 report.pdf");
-    expect(html).not.toContain(":zcode-file-citation");
+    expect(html).not.toContain(":zxcode-file-citation");
     expect(html).toContain("<button");
     expect(html).toContain('title="/workspace/docs/年度 报告.pdf"');
     expect(html).toContain('title="/workspace/docs/论文.pdf"');
@@ -203,7 +203,7 @@ describe("resolveMessageStreamdownMode", () => {
             onOpenFileLink: vi.fn(),
           },
           [
-            '规划完成。已生成 ：:zcode-file-citation{path=“/workspace/冰岛 行程.pdf” purpose="output"}',
+            '规划完成。已生成 ：:zxcode-file-citation{path=“/workspace/冰岛 行程.pdf” purpose="output"}',
             "[说明](‘docs/说明.md’)",
           ].join("\n\n"),
         ),
@@ -284,12 +284,12 @@ describe("resolveMessageStreamdownMode", () => {
             workspacePath: "/workspace",
             onOpenFileLink: vi.fn(),
           },
-          '正文\n::zcode-file-citation{path="docs/report.pdf"',
+          '正文\n::zxcode-file-citation{path="docs/report.pdf"',
         ),
       ),
     );
     expect(html).toContain("正文");
-    expect(html).not.toContain("::zcode-file-citation");
+    expect(html).not.toContain("::zxcode-file-citation");
 
     const malformedHtml = renderToStaticMarkup(
       createElement(
@@ -303,7 +303,7 @@ describe("resolveMessageStreamdownMode", () => {
             workspacePath: "/workspace",
             onOpenFileLink: vi.fn(),
           },
-          '正文\n::zcode-file-citation{path="docs/report.pdf"\n后续说明仍然可见',
+          '正文\n::zxcode-file-citation{path="docs/report.pdf"\n后续说明仍然可见',
         ),
       ),
     );
@@ -325,7 +325,7 @@ describe("resolveMessageStreamdownMode", () => {
             workspacePath: "C:\\workspace",
             onOpenFileLink: vi.fn(),
           },
-          `::zcode-file-citation{path="${path}" purpose="output"}`,
+          `::zxcode-file-citation{path="${path}" purpose="output"}`,
         ),
       ),
     );
@@ -336,7 +336,7 @@ describe("resolveMessageStreamdownMode", () => {
   });
 
   it("越界 citation 保持原文且不生成文件链接", () => {
-    const directive = '::zcode-file-citation{path="foo/../../private.pdf"}';
+    const directive = '::zxcode-file-citation{path="foo/../../private.pdf"}';
     const html = renderToStaticMarkup(
       createElement(
         MessageResponse,
@@ -349,13 +349,13 @@ describe("resolveMessageStreamdownMode", () => {
       ),
     );
 
-    expect(html).toContain("::zcode-file-citation");
+    expect(html).toContain("::zxcode-file-citation");
     expect(html).not.toContain('title="/workspace/foo/../../private.pdf"');
   });
 
   it("citation 不解析代码节点，并保留 Streamdown 默认 GFM 表格", () => {
-    const directive = '::zcode-file-citation{path="docs/report.pdf"}';
-    const compatibilityDirective = ':zcode-file-citation{path="docs/legacy.pdf"}';
+    const directive = '::zxcode-file-citation{path="docs/report.pdf"}';
+    const compatibilityDirective = ':zxcode-file-citation{path="docs/legacy.pdf"}';
     const html = renderToStaticMarkup(
       createElement(
         ZCodeIntlProvider,
@@ -383,8 +383,8 @@ describe("resolveMessageStreamdownMode", () => {
       ),
     );
 
-    expect(html).toContain("::zcode-file-citation");
-    expect(html).toContain(":zcode-file-citation");
+    expect(html).toContain("::zxcode-file-citation");
+    expect(html).toContain(":zxcode-file-citation");
     expect(html).toContain("<table");
     expect(html).not.toContain('title="/workspace/docs/report.pdf"');
     expect(html).not.toContain('title="/workspace/docs/legacy.pdf"');
@@ -641,14 +641,14 @@ describe("resolveMessageStreamdownMode", () => {
               mediaType: "image/png",
             }),
           },
-          "![CUA](zcode-artifact://session-1/shot)",
+          "![CUA](zxcode-artifact://session-1/shot)",
         ),
       ),
     );
 
     expect(html).toContain('data-markdown-local-image="loading"');
     expect(html).not.toContain("Image blocked");
-    expect(html).not.toContain("zcode-artifact://");
+    expect(html).not.toContain("zxcode-artifact://");
   });
 
   it("keeps paired currency dollars as text", () => {

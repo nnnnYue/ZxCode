@@ -10,7 +10,8 @@ const sentPrompts: Array<{ hostWebContentsId: number | undefined; event: Record<
 vi.mock("electron", () => ({
   ipcMain: {
     on: (channel: string, listener: (event: unknown, payload: unknown) => void) => {
-      if (channel === "zcode:embedded-browser-permission-resolve") {
+      // fork：IPC 通道前缀为 zxcode:（上游为 zcode:）
+      if (channel === "zxcode:embedded-browser-permission-resolve") {
         resolveListeners.push(listener);
       }
     },
