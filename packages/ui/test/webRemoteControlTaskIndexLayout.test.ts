@@ -239,8 +239,9 @@ describe("WebRemoteControlTaskIndex layout", () => {
     );
 
     expect(source).toContain("shouldRetryWebRemoteControlTaskIndexLoad");
+    // 格式化后 useEffect 依赖数组独占一行；整行匹配保持"恰好这四个依赖"的约束强度。
     expect(source).toContain(
-      "}, [activeTaskId, activeWorkspaceIdentity, activeWorkspacePath, switcher]);",
+      "[activeTaskId, activeWorkspaceIdentity, activeWorkspacePath, switcher],",
     );
   });
 
@@ -313,7 +314,9 @@ describe("Web 归档批量删除入口", () => {
     expect(populated).toContain('aria-label="taskList.archivedActions"');
     expect(populated).not.toContain('data-testid="delete-all-archived-tasks"');
     const empty = await renderTaskIndexWithInitialArchivedTasks(false);
-    expect(empty).toMatch(/<button(?=[^>]*disabled="")(?=[^>]*data-testid="archived-tasks-actions")/);
+    expect(empty).toMatch(
+      /<button(?=[^>]*disabled="")(?=[^>]*data-testid="archived-tasks-actions")/,
+    );
     expect(await renderTaskIndex()).not.toContain('data-testid="archived-tasks-actions"');
   });
 });
