@@ -82,6 +82,10 @@ describe("createQuickPickCommands", () => {
       "switch-theme",
       "skills-settings",
       "mcp-settings",
+      "feedback",
+      "community",
+      "product-docs",
+      "login",
     ]);
     expect(commands.find((command) => command.id === "open-workspace")).toMatchObject({
       sectionId: "suggested",
@@ -93,8 +97,6 @@ describe("createQuickPickCommands", () => {
     });
     expect(commands.find((command) => command.id === "suggested-settings")).toMatchObject({
       sectionId: "suggested",
-      titleId: "quickPick.command.settings",
-      icon: "settings",
     });
     expect(commands.find((command) => command.id === "settings")).toMatchObject({
       sectionId: "configure",
@@ -106,12 +108,9 @@ describe("createQuickPickCommands", () => {
     });
     expect(commands.find((command) => command.id === "skills-settings")).toMatchObject({
       sectionId: "configure",
-      titleId: "quickPick.command.skills",
-      icon: "skills",
     });
     expect(commands.find((command) => command.id === "mcp-settings")).toMatchObject({
       sectionId: "configure",
-      titleId: "quickPick.command.mcpServers",
     });
     expect(commands.find((command) => command.id === "toggle-sidebar")).toMatchObject({
       sectionId: "panels",
@@ -123,23 +122,18 @@ describe("createQuickPickCommands", () => {
     });
     expect(commands.find((command) => command.id === "toggle-preview")).toMatchObject({
       sectionId: "panels",
-      titleId: "quickPick.command.togglePreview",
-      icon: "browser",
     });
     expect(commands.find((command) => command.id === "add-terminal-tab")).toMatchObject({
       sectionId: "panels",
-      titleId: "quickPick.command.addTerminalTab",
-      icon: "terminal",
     });
     expect(commands.find((command) => command.id === "add-browser-tab")).toMatchObject({
       sectionId: "panels",
-      titleId: "quickPick.command.addBrowserTab",
-      icon: "browser",
     });
     expect(commands.find((command) => command.id === "add-review-tab")).toMatchObject({
       sectionId: "panels",
-      titleId: "quickPick.command.addReviewTab",
-      icon: "diff",
+    });
+    expect(commands.find((command) => command.id === "product-docs")).toMatchObject({
+      sectionId: "app",
     });
   });
 
@@ -221,10 +215,10 @@ describe("createQuickPickCommands", () => {
     });
 
     commands.find((item) => item.id === "skills-settings")?.run();
-    commands.find((item) => item.id === "switch-theme")?.run();
+    commands.find((item) => item.id === "product-docs")?.run();
 
     expect(handlers.openSkillsSettings).toHaveBeenCalledTimes(1);
-    expect(handlers.switchTheme).toHaveBeenCalledTimes(1);
+    expect(handlers.openProductDocs).toHaveBeenCalledTimes(1);
   });
 
   it("has locale messages for every visible command label", () => {
@@ -266,14 +260,22 @@ describe("createQuickPickCommands", () => {
     }
   });
 
-  it("keeps the command section taxonomy stable", () => {
-    expect(QUICK_PICK_SECTION_ORDER).toEqual([
-      "suggested",
-      "chat",
-      "navigation",
-      "panels",
-      "configure",
-      "app",
-    ]);
+  it("uses logout instead of login for authenticated users", () => {
+    const commands = createQuickPickCommands({
+      allowOpenWorkspace: true,
+      canOpenCommunity: false,
+      isSidebarVisible: true,
+      isLoggedIn: true,
+      themeTarget: "dark",
+      shortcuts,
+      handlers: createHandlers(),
+    });
+
+    expect(commands.some((command) => command.id === "login")).toBe(false);
+    expect(commands.find((command) => command.id === "logout")).toMatchObject({
+      sectionId: "app",
+      titleId: "quickPick.command.logout",
+    });
+    expect(commands.some((command) => command.id === "community")).toBe(false);
   });
 });

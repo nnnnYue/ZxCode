@@ -1,4 +1,5 @@
 import { memo, useEffect } from "react";
+import { ProjectDirectoryProvider } from "@/project-sidebar/index.js";
 import { App } from "@/App.js";
 import { ScopedErrorBoundary } from "@/ErrorBoundary.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
@@ -6,12 +7,14 @@ import { logger } from "@/logger.js";
 import { WorkspaceSettingsLayer } from "@/root/WorkspaceSettingsLayer.js";
 import type { AppProps } from "@/app-shell/types.js";
 import type { RootProps } from "@/root/types.js";
-import type { IServiceAccessor } from "@zcode/services";
+import type { IFeedbackService, IServiceAccessor } from "@zcode/services";
+import { ConversationTelemetryWorkspaceAttachment } from "@/v4/telemetry/ConversationTelemetryAttachment.js";
 
 const StableWorkspaceApp = memo(App);
 
 interface RootWorkspaceContentProps {
   workspaceScopedServices: IServiceAccessor;
+  baseFeedbackService: IFeedbackService;
   workspaceShellPath: string;
   workspaceIdentity?: string;
   workspaceRemoteSessionId?: string;
@@ -31,14 +34,18 @@ interface RootWorkspaceContentProps {
   remoteWorkspaceSessions: NonNullable<AppProps["remoteWorkspaceSessions"]>;
   allowRemoteWorkspace: NonNullable<RootProps["allowRemoteWorkspace"]>;
   handleBackFromSettings: () => void;
+  handleLogout?: () => void;
+  onLogin?: () => void;
+  user: AppProps["user"];
   reconnectingRemoteWorkspaceKeys: AppProps["reconnectingRemoteWorkspaceKeys"];
+  remoteWorkspaceRecoveryByWorkspaceKey: AppProps["remoteWorkspaceRecoveryByWorkspaceKey"];
   remoteWorkspaceErrorByWorkspaceKey: AppProps["remoteWorkspaceErrorByWorkspaceKey"];
-  reconnectingRemoteWorkspaceLogsByWorkspaceKey: AppProps["reconnectingRemoteWorkspaceLogsByWorkspaceKey"];
+
   remoteConnectionLogs?: AppProps["remoteConnectionLogs"];
   allowOpenWorkspace: NonNullable<RootProps["allowOpenWorkspace"]>;
   webRemoteControlWorkspaceSwitcher?: RootProps["webRemoteControlWorkspaceSwitcher"];
+  initialSidebarFileTreeOpen?: boolean;
   initialWebRemoteControlMobileNavigationIntent?: RootProps["initialWebRemoteControlMobileNavigationIntent"];
-  initialWebRemoteControlWorkspaceList?: RootProps["initialWebRemoteControlWorkspaceList"];
   webRemoteControlTerminalTransportState?: RootProps["webRemoteControlTerminalTransportState"];
   isDesktop?: RootProps["isDesktop"];
   isMacDesktop?: RootProps["isMacDesktop"];
@@ -49,6 +56,7 @@ interface RootWorkspaceContentProps {
 
 export function RootWorkspaceContent({
   workspaceScopedServices,
+  baseFeedbackService,
   workspaceShellPath,
   workspaceIdentity,
   workspaceRemoteSessionId,
@@ -68,14 +76,18 @@ export function RootWorkspaceContent({
   remoteWorkspaceSessions,
   allowRemoteWorkspace,
   handleBackFromSettings,
+  handleLogout,
+  onLogin,
+  user,
   reconnectingRemoteWorkspaceKeys,
+  remoteWorkspaceRecoveryByWorkspaceKey,
   remoteWorkspaceErrorByWorkspaceKey,
-  reconnectingRemoteWorkspaceLogsByWorkspaceKey,
+
   remoteConnectionLogs,
   allowOpenWorkspace,
   webRemoteControlWorkspaceSwitcher,
+  initialSidebarFileTreeOpen,
   initialWebRemoteControlMobileNavigationIntent,
-  initialWebRemoteControlWorkspaceList,
   webRemoteControlTerminalTransportState,
   isDesktop,
   isMacDesktop,
@@ -94,7 +106,7 @@ export function RootWorkspaceContent({
   }, [isSettingsTabActive, workspaceShellPath]);
 
   return (
-    <>
+    <ProjectDirectoryProvider isDesktop={isDesktop}>
       <div
         className={isSettingsTabActive ? "h-full opacity-0 pointer-events-none" : "h-full"}
         aria-hidden={isSettingsTabActive}
@@ -118,53 +130,64 @@ export function RootWorkspaceContent({
             用户在设置页按 Cmd/Ctrl+K 时状态已打开却完全不可见，所以必须保持布局占位只关闭交互。
             修复原因：只用 opacity 和 pointer-events 仍会让底层权限/AskUserQuestion 卡片的 autofocus
             抢走设置表单焦点；设置页覆盖期间必须把整棵 workspace 标为 inert，等用户显式返回后再恢复交互。 */}
-        <ServiceProvider services={workspaceScopedServices}>
-          <ScopedErrorBoundary
-            scope="workspace-app"
-            resetKeys={[workspaceKey]}
-            variant="panel"
-            className="h-full"
-          >
-            <StableWorkspaceApp
-              services={workspaceScopedServices}
-              onConnectRemote={handleConnectRemote}
-              onSelectRemoteProject={handleSelectRemoteProject}
-              onCancelRemoteProject={handleCancelRemoteProject}
-              onReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
-              reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
-              remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
-              reconnectingRemoteWorkspaceLogsByWorkspaceKey={
-                reconnectingRemoteWorkspaceLogsByWorkspaceKey
-              }
-              remoteConnectionLogs={remoteConnectionLogs}
-              workspaceAbsPath={workspaceShellPath}
-              workspaceRemoteSessionId={workspaceRemoteSessionId}
-              workspaceIdentity={workspaceIdentity}
-              onCreateTask={handleCreateTask}
-              onCreateConversationTask={handleCreateConversationTask}
-              onResolveConversationWorkspace={handleResolveConversationWorkspace}
-              onOpenWorkspace={handleOpenWorkspace}
-              onOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
-              onOpenRemoteWorkspace={handleOpenRemoteWorkspace}
-              remoteConnectionInProgress={remoteConnectionInProgress}
-              onReturnToWorkspace={handleBackFromSettings}
-              allowOpenWorkspace={allowOpenWorkspace}
-              webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
-              initialWebRemoteControlMobileNavigationIntent={
-                initialWebRemoteControlMobileNavigationIntent
-              }
-              initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
-              webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
-              allowRemoteWorkspace={allowRemoteWorkspace}
-              remoteWorkspaceSessions={remoteWorkspaceSessions}
-              isWorkspaceVisible={!isSettingsTabActive}
-              isDesktop={isDesktop}
-              isMacDesktop={isMacDesktop}
-              isWindowsDesktop={isWindowsDesktop}
-              supportsEmbeddedBrowser={supportsEmbeddedBrowser}
-            />
-          </ScopedErrorBoundary>
-        </ServiceProvider>
+        <ConversationTelemetryWorkspaceAttachment
+          enabled={isDesktop === true}
+          foregroundEnabled={!isSettingsTabActive}
+          services={workspaceScopedServices}
+          workspacePath={workspaceShellPath}
+          workspaceIdentity={workspaceIdentity}
+          remoteSessionId={workspaceRemoteSessionId}
+        >
+          <ServiceProvider services={workspaceScopedServices}>
+            <ScopedErrorBoundary
+              scope="workspace-app"
+              resetKeys={[workspaceKey]}
+              variant="panel"
+              className="h-full"
+            >
+              <StableWorkspaceApp
+                services={workspaceScopedServices}
+                baseFeedbackService={baseFeedbackService}
+                onConnectRemote={handleConnectRemote}
+                onSelectRemoteProject={handleSelectRemoteProject}
+                onCancelRemoteProject={handleCancelRemoteProject}
+                onReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
+                onLogout={handleLogout}
+                onLogin={onLogin}
+                user={user}
+                reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
+                remoteWorkspaceRecoveryByWorkspaceKey={remoteWorkspaceRecoveryByWorkspaceKey}
+                remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
+                remoteConnectionLogs={remoteConnectionLogs}
+                workspaceAbsPath={workspaceShellPath}
+                workspaceRemoteSessionId={workspaceRemoteSessionId}
+                workspaceIdentity={workspaceIdentity}
+                onCreateTask={handleCreateTask}
+                onCreateConversationTask={handleCreateConversationTask}
+                onResolveConversationWorkspace={handleResolveConversationWorkspace}
+                onOpenWorkspace={handleOpenWorkspace}
+                onOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
+                onOpenRemoteWorkspace={handleOpenRemoteWorkspace}
+                remoteConnectionInProgress={remoteConnectionInProgress}
+                onReturnToWorkspace={handleBackFromSettings}
+                allowOpenWorkspace={allowOpenWorkspace}
+                webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
+                initialSidebarFileTreeOpen={initialSidebarFileTreeOpen}
+                initialWebRemoteControlMobileNavigationIntent={
+                  initialWebRemoteControlMobileNavigationIntent
+                }
+                webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
+                allowRemoteWorkspace={allowRemoteWorkspace}
+                remoteWorkspaceSessions={remoteWorkspaceSessions}
+                isWorkspaceVisible={!isSettingsTabActive}
+                isDesktop={isDesktop}
+                isMacDesktop={isMacDesktop}
+                isWindowsDesktop={isWindowsDesktop}
+                supportsEmbeddedBrowser={supportsEmbeddedBrowser}
+              />
+            </ScopedErrorBoundary>
+          </ServiceProvider>
+        </ConversationTelemetryWorkspaceAttachment>
       </div>
 
       {isSettingsTabActive ? (
@@ -184,10 +207,14 @@ export function RootWorkspaceContent({
             onBack={activeWorkspacePath ? handleBackFromSettings : undefined}
             onCreateTask={handleCreateTask}
             onOpenWorkspace={handleOpenWorkspace}
+            onOpenRemoteWorkspace={handleOpenRemoteWorkspace}
             allowOpenWorkspace={allowOpenWorkspace}
+            onLogin={onLogin}
+            onLogout={handleLogout}
+            user={user}
           />
         </ScopedErrorBoundary>
       ) : null}
-    </>
+    </ProjectDirectoryProvider>
   );
 }

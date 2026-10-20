@@ -15,12 +15,12 @@ export interface HostFaultControl {
   released?: string[];
 }
 export async function setHostFaults(control: HostFaultControl) {
-  const path = join(process.env.ZXCODE_E2E_ARTIFACT_DIR!, "host-fault-control.json");
+  const path = join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "host-fault-control.json");
   await writeFile(path + ".tmp", JSON.stringify(control));
   await rename(path + ".tmp", path);
 }
 export async function readHostBoundary() {
-  const root = process.env.ZXCODE_E2E_ARTIFACT_DIR!;
+  const root = process.env.ZCODE_E2E_ARTIFACT_DIR!;
   return (
     await Promise.all(
       (
@@ -56,10 +56,20 @@ export async function waitForHostBoundary(kind: string, id?: string) {
 }
 /** 测试侧控制 Electron 窗口发现并预加载文件/IPC 故障边界，调用产品已有 activate 路径。 */
 export async function openSubagentHostWindow() {
+  return openFaultInjectedHostWindow(
+    fileURLToPath(new URL("./subagent-host-faults.cjs", import.meta.url)),
+  );
+}
+
+/** env 只注入新窗口的 Host，例如 ZCODE_E2E_FS_FAULTS，不影响已有窗口。 */
+export async function openFaultInjectedHostWindow(
+  preloadPath: string,
+  env: Record<string, string> = {},
+) {
   await setHostFaults({});
   const handles = await browser.getWindowHandles();
   const windowId = await browser.electron.execute(
-    async (electron, preload, root) => {
+    async (electron, preload, root, extraEnv) => {
       const originalWindows = electron.BrowserWindow.getAllWindows;
       const originalFork = electron.utilityProcess.fork;
       let didFork!: () => void;
@@ -76,7 +86,7 @@ export async function openSubagentHostWindow() {
         electron.utilityProcess.fork = originalFork;
         const child = originalFork(preload, [path, ...(args ?? [])], {
           ...options,
-          env: { ...options?.env, ZCODE_E2E_HOST_FAULT_ROOT: root },
+          env: { ...options?.env, ...extraEnv, ZCODE_E2E_HOST_FAULT_ROOT: root },
         });
         didFork();
         return child;
@@ -91,8 +101,9 @@ export async function openSubagentHostWindow() {
         electron.utilityProcess.fork = originalFork;
       }
     },
-    fileURLToPath(new URL("./subagent-host-faults.cjs", import.meta.url)),
-    process.env.ZXCODE_E2E_ARTIFACT_DIR!,
+    preloadPath,
+    process.env.ZCODE_E2E_ARTIFACT_DIR!,
+    env,
   );
   let handle = "";
   await browser.waitUntil(

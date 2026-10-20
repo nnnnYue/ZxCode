@@ -12,15 +12,20 @@ const { stageThirdPartyNotices } = await import(
 
 // tsup config 可能从不同 cwd 加载，基于配置文件自身目录解析仓库根 package.json。
 const rootPackageJsonPath = resolve(import.meta.dirname, "../../package.json");
-const { version } = JSON.parse(readFileSync(rootPackageJsonPath, "utf-8"));
+const { version, zcodeCompatibility } = JSON.parse(readFileSync(rootPackageJsonPath, "utf-8")) as {
+  version: string;
+  zcodeCompatibility?: { minCompatibleVersion?: string };
+};
+const minCompatibleVersion = zcodeCompatibility?.minCompatibleVersion ?? version;
 
 const { environment: zcodeEnv, content: zcodeBuiltinProviderConfigJson } =
   await loadBuiltinProviderConfig();
 
 export const SERVER_HTTP_DEFINES = {
-  __ZXCODE_VERSION__: JSON.stringify(version),
-  __ZXCODE_ENV__: JSON.stringify(zcodeEnv),
-  __ZXCODE_BUILTIN_PROVIDER_CONFIG_JSON__: JSON.stringify(zcodeBuiltinProviderConfigJson),
+  __ZCODE_VERSION__: JSON.stringify(version),
+  __ZCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(minCompatibleVersion),
+  __ZCODE_ENV__: JSON.stringify(zcodeEnv),
+  __ZCODE_BUILTIN_PROVIDER_CONFIG_JSON__: JSON.stringify(zcodeBuiltinProviderConfigJson),
 };
 
 function createSharedDefines() {
@@ -31,9 +36,11 @@ export const SERVER_HTTP_EXTERNAL_DEPENDENCIES = [
   "ssh2",
   "node-pty",
   "undici",
-  // 修复原因：axios/form-data/combined-stream/proxy-from-env/follow-redirects 只被
-  // fork 已剔除的云内容/反馈链路引用，源码不再 import；保留在 external 会让
-  // “外置依赖必须是 server 直接依赖”的契约测试失败（pnpm 不暴露传递依赖）。
+  "axios",
+  "form-data",
+  "combined-stream",
+  "proxy-from-env",
+  "follow-redirects",
   "yazl",
   // Bugfix: node-forge 内部用动态 require("crypto")，内联进 server ESM bundle 后 Node 会报
   // Dynamic require of "crypto" is not supported；这里和 desktop main/host 构建保持同一外置策略。
@@ -59,6 +66,8 @@ export default defineConfig({
   outDir: "dist",
   format: "esm",
   platform: "node",
+  // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
+  removeNodeProtocol: false,
   target: "node22",
   // workspace 包的 exports 指向 .ts 源码，node 运行时无法直接加载，需要 bundle 进来
   noExternal: [
@@ -69,7 +78,7 @@ export default defineConfig({
     "@zcode/client",
   ],
   // ssh2 / node-pty 含 .node native addon，不能被 esbuild 处理。
-  // undici 这类 CJS 依赖被内联进 ESM bundle 后，运行时会走到
+  // undici / axios 这类 CJS 依赖被内联进 ESM bundle 后，运行时会走到
   // require("assert") / require("util") / require("url") 等动态 require，Node 的 ESM wrapper 下会直接报 Dynamic require not supported。
   // HTTP server 场景保留为外部依赖，交给 Node 原生加载；remote 单文件 bundle 仍由 build-remote.ts 负责内联。
   external: SERVER_HTTP_EXTERNAL_DEPENDENCIES,

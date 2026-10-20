@@ -20,7 +20,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { Loader2Icon } from "lucide-react";
 import { ProviderStatusIndicator } from "./ProviderStatusIndicator.js";
 
-import { TID_MODEL_PROVIDER_NAV_ITEM, testId } from "@zcode/shared";
+import {
+  resolveModelProviderFamilySpecByProviderId,
+  isStartPlanModelProviderId,
+} from "@zcode/shared";
+import { TID_MODEL_PROVIDER_NAV_ITEM, testId } from "@zcode/shared/test-ids";
 import { useCallback, useMemo, type KeyboardEvent } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import type { ModelProviderNavGroup, ModelProviderNavItem } from "./constants.js";
@@ -34,8 +38,10 @@ export function getSortableProviderId(
   item: ModelProviderNavItem,
   reorderableProviderIds?: ReadonlySet<string>,
 ): string | null {
-  if (!reorderableProviderIds || reorderableProviderIds.has(item.provider.providerId)) {
-    return item.provider.providerId;
+  if ((item.type === "custom" || item.type === "preset") && item.provider) {
+    return !reorderableProviderIds || reorderableProviderIds.has(item.provider.providerId)
+      ? item.provider.providerId
+      : null;
   }
   return null;
 }
@@ -53,6 +59,27 @@ export function resolveReorderedProviderIdsForGroup(params: {
   return arrayMove([...params.providerIds], activeIndex, overIndex);
 }
 
+export function shouldShowModelProviderGroupLoadingIndicator(params: {
+  groupId: ModelProviderNavGroup["id"];
+  presetLoading: boolean;
+  customLoading: boolean;
+}): boolean {
+  if (params.groupId === "preset") {
+    return params.presetLoading;
+  }
+  return params.customLoading;
+}
+
+export function resolveModelProviderSideNavLabel(item: ModelProviderNavItem): string {
+  if (item.type === "preset") {
+    return resolveModelProviderFamilySpecByProviderId(item.presetId)?.label ?? item.label;
+  }
+  if (item.type === "codingPlan" && isStartPlanModelProviderId(item.presetId)) {
+    return "Start Plan";
+  }
+  return item.label;
+}
+
 function ModelProviderNavigationButton({
   item,
   label,
@@ -67,17 +94,22 @@ function ModelProviderNavigationButton({
   showIcon?: boolean;
 }) {
   const isSelected = item.key === selectedNodeKey;
+  const isLoadingItem = item.type === "codingPlanLoading";
   const inactiveItemClassName = "border-transparent text-foreground hover:border-border-hover/60";
 
   return (
     <ControlHintTooltip title={label} side="right">
       <button
         type="button"
+        disabled={isLoadingItem}
         aria-label={label}
         aria-selected={isSelected}
         data-state={isSelected ? "selected" : "idle"}
         data-testid={testId(TID_MODEL_PROVIDER_NAV_ITEM, item.key)}
         onClick={() => {
+          if (isLoadingItem) {
+            return;
+          }
           onSelectNavItem(item);
         }}
         className={`relative box-border flex h-8 w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-ui-base font-medium transition-colors max-md:size-8 max-md:justify-center max-md:gap-0 max-md:px-0 ${
@@ -86,13 +118,19 @@ function ModelProviderNavigationButton({
             : inactiveItemClassName
         } disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        {showIcon ? (
+        {isLoadingItem ? (
+          <Loader2Icon className="size-4 shrink-0 animate-spin text-foreground-subtlest" />
+        ) : showIcon ? (
           <span className="shrink-0 text-current">{renderModelProviderNavIcon(item)}</span>
         ) : null}
         <span className="flex min-w-0 flex-1 items-center gap-1.5 max-md:sr-only">
           <span className="min-w-0 truncate">{label}</span>
         </span>
-        <ProviderStatusIndicator provider={item.provider} />
+        {"provider" in item ? (
+          <ProviderStatusIndicator
+            provider={item.type === "preset" ? item.statusProvider : item.provider}
+          />
+        ) : null}
       </button>
     </ControlHintTooltip>
   );
@@ -168,9 +206,37 @@ function SortableModelProviderNavigationButton({
         <span className="flex min-w-0 flex-1 items-center gap-1.5 max-md:sr-only">
           <span className="min-w-0 truncate">{label}</span>
         </span>
-        <ProviderStatusIndicator provider={item.provider} />
+        {"provider" in item ? (
+          <ProviderStatusIndicator
+            provider={item.type === "preset" ? item.statusProvider : item.provider}
+          />
+        ) : null}
       </div>
     </ControlHintTooltip>
+  );
+}
+
+function PresetProviderCardNavigation({
+  group,
+  selectedNodeKey,
+  onSelectNavItem,
+}: {
+  group: ModelProviderNavGroup;
+  selectedNodeKey: string | null;
+  onSelectNavItem: (item: ModelProviderNavItem) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 max-md:items-center max-md:gap-1">
+      {group.items.map((item) => (
+        <ModelProviderNavigationButton
+          key={item.key}
+          item={item}
+          label={resolveModelProviderSideNavLabel(item)}
+          selectedNodeKey={selectedNodeKey}
+          onSelectNavItem={onSelectNavItem}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -295,6 +361,7 @@ function projectItemsToOptimisticProviderOrder({
 export function ModelProviderSectionNavigation({
   navigationGroups,
   selectedNodeKey,
+  presetLoading,
   customLoading,
   onSelectNavItem,
   onReorderProviderIds,
@@ -302,6 +369,7 @@ export function ModelProviderSectionNavigation({
 }: {
   navigationGroups: ModelProviderNavGroup[];
   selectedNodeKey: string | null;
+  presetLoading: boolean;
   customLoading: boolean;
   onSelectNavItem: (item: ModelProviderNavItem) => void;
   onReorderProviderIds?: (providerIds: string[]) => Promise<void>;
@@ -318,24 +386,36 @@ export function ModelProviderSectionNavigation({
     <aside className="px-1.5 py-3 md:py-2 md:px-2">
       <div className="flex min-h-0 flex-col gap-3 max-md:gap-1">
         {navigationGroups
-          .filter((group) => group.items.length > 0)
+          .filter((group) => group.id !== "custom" || group.items.length > 0)
           .map((group) => (
             <div key={group.id} className="flex flex-col gap-2 max-md:gap-1">
               <div className="flex h-7 items-center justify-between px-2 py-1 max-md:hidden">
                 <h3 className="text-ui-sm font-semibold text-foreground-subtlest">{group.title}</h3>
-                {customLoading ? (
+                {shouldShowModelProviderGroupLoadingIndicator({
+                  groupId: group.id,
+                  presetLoading,
+                  customLoading,
+                }) ? (
                   <Loader2Icon className="size-3 animate-spin text-foreground-subtlest" />
                 ) : null}
               </div>
 
-              <SortableProviderNavigationGroup
-                group={group}
-                selectedNodeKey={selectedNodeKey}
-                onSelectNavItem={onSelectNavItem}
-                onReorderProviderIds={onReorderProviderIds}
-                reorderableProviderIds={reorderableProviderIds}
-                sensors={sensors}
-              />
+              {group.id === "preset" ? (
+                <PresetProviderCardNavigation
+                  group={group}
+                  selectedNodeKey={selectedNodeKey}
+                  onSelectNavItem={onSelectNavItem}
+                />
+              ) : (
+                <SortableProviderNavigationGroup
+                  group={group}
+                  selectedNodeKey={selectedNodeKey}
+                  onSelectNavItem={onSelectNavItem}
+                  onReorderProviderIds={onReorderProviderIds}
+                  reorderableProviderIds={reorderableProviderIds}
+                  sensors={sensors}
+                />
+              )}
             </div>
           ))}
       </div>

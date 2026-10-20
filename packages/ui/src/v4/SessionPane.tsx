@@ -1,8 +1,18 @@
+import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
+import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
+import {
+  createRemoteWorkspaceDisconnectedError,
+  getRemoteConnectionFailureCode,
+} from "@/lib/remoteWorkspaceServiceError.js";
+import { buildConversationShareItems } from "@/v4/conversationShareItems.js";
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
-import type { LocalTtftContext, SessionCreateSource } from "@zcode/shared";
+import { useStartPlanRecommendation } from "@/hooks/useStartPlanRecommendation.js";
+import type { SessionCreateSource } from "@zcode/shared";
+import { reportSessionCreate } from "@/lib/sessionCreateTelemetry.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 import { BotGroupDeliveryProvider } from "@/v4/BotGroupDeliveryAction.js";
 /* oxlint-disable eslint(max-lines) -- SessionPane 是单 pane 竖切的命令编排收口（订阅/发送/停止/fork/edit/retry/queue/slash 全集），与旧 ChatView 同粒度；HEAD 已超限（693 行计数），拆散命令组会打散 dispatchCommand/snapshotRef 的闭包纪律。 */
+import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import {
   useCallback,
@@ -16,13 +26,15 @@ import {
 } from "react";
 import { Hand } from "lucide-react";
 import {
+  BUILTIN_MODEL_PROVIDER_IDS,
   buildCustomSupplierKey,
-  TID_CHAT_EMPTY,
-  TID_V4_SESSION_PANE,
-  testId,
-  ZXCODE_AGENT_PROVIDER,
+  isHighspeedProviderId,
+  isRemoteWorkspaceIdentity,
+  ZCODE_AGENT_PROVIDER,
 } from "@zcode/shared";
+import { TID_CHAT_EMPTY, TID_V4_SESSION_PANE, testId } from "@zcode/shared/test-ids";
 import type {
+  ConversationShareAccessMode,
   GitChangeSourceId,
   HighspeedCardSnapshot,
   HighspeedPrepareTurnResult,
@@ -45,6 +57,19 @@ import type {
 } from "@zcode/shared/zcode-protocol-v4";
 import { logger } from "@/logger.js";
 import { PluginUiSessionProvider } from "@/plugin-ui/index.js";
+import {
+  getConversationShareErrorDetails,
+  resolveConversationShareFallbackIssueCode,
+  resolveConversationSharePublishErrorMessageId,
+  sanitizeConversationShareWarnings,
+} from "@/lib/conversationShareError.js";
+import { localizeConversationShareUrl } from "@zcode/shared";
+import type {
+  ConversationShareAllowedArtifact,
+  ConversationShareTurnPreflightResult,
+  ImportedConversationShare,
+} from "@zcode/services";
+import { useCodingPlanBillingDiscountFromService } from "@/CodingPlanBillingDiscount.js";
 import { toast } from "@/components/ui/toast.js";
 import { cn } from "@/components/lib/utils.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -55,6 +80,8 @@ import { WORKSPACE_FILE_DRAG_MIME } from "@/lib/workspaceFileDrag.js";
 import { buildChatSessionScrollMemoryKey } from "@/lib/chatSessionScrollMemory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { useServices } from "@/hooks/useServices.js";
+import { useOptionalPlatform } from "@/hooks/usePlatform.js";
+import { browserGlobalNoticeStore } from "@/global-notice/globalNoticeStore.js";
 import {
   HIGHSPEED_SEND_WAIT_BUDGET_MS,
   prepareHighspeedSendContext,
@@ -63,8 +90,13 @@ import {
   type HighspeedSendContext,
   type HighspeedTurnPreparer,
 } from "@/highspeed/highspeedSend.js";
-import { calculateHighspeedSavedDurationFromMetrics } from "@/highspeed/highspeedSavedTime.js";
 import {
+  calculateHighspeedSavedDurationFromMetrics,
+  readHighspeedRegularTpsFromHealth,
+} from "@/highspeed/highspeedSavedTime.js";
+import { buildHighspeedShareNotice } from "@/highspeed/highspeedShare.js";
+import {
+  claimHighspeedCardAutoShare,
   claimHighspeedHealthyAttempt,
   completeHighspeedTurn,
   discardHighspeedTurn,
@@ -72,14 +104,26 @@ import {
   getHighspeedTurnVersion,
   hydrateHighspeedTurnsFromTranscript,
   listExpiredHighspeedCardsAwaitingTps,
+  listHighspeedCardAutoShareCandidates,
   listHighspeedTurnsAwaitingMetricsPersistence,
   listPendingHighspeedTurns,
+  markHighspeedCardAutoShared,
   markHighspeedTurnMetricsPersisted,
   recordHighspeedTurn,
+  resolveNextHighspeedAutoShareAt,
   setHighspeedCardTps,
   subscribeHighspeedTurns,
 } from "@/highspeed/highspeedTurnStore.js";
-import { claimHighspeedFallbackToast } from "@/highspeed/highspeedToastClaims.js";
+import {
+  claimHighspeedCardInvalidation,
+  claimHighspeedFallbackToast,
+  releaseHighspeedCardInvalidation,
+} from "@/highspeed/highspeedToastClaims.js";
+import {
+  collectHighspeedCardShareBlockers,
+  listHighspeedCardsAwaitingAutoShare,
+} from "@/highspeed/highspeedShareDiagnostics.js";
+import type { SessionOpenTrigger } from "@/lib/sessionOpenArmsTelemetry.js";
 import { useDynamicWorkflowAvailability } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { resolveWorkflowResumeHandler } from "@/v4/workflowResumeGate.js";
 import {
@@ -87,14 +131,27 @@ import {
   type WorkflowRunSettingsChange,
 } from "@/components/workflow-timeline/workflowRunSettings.js";
 import { useWorkflowRunJournalSummaries } from "@/hooks/useWorkflowRunJournalSummaries.js";
+import { usePlanIdentitySnapshot } from "@/hooks/usePlanIdentitySnapshot.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { buildGenUiModelContext } from "@zcode/shared/gen-ui";
 import { useWorkspaceHomePath } from "@/hooks/useWorkspaceHomePath.js";
 import { prepareWorkspaceWithZCodeSessionService } from "@/hooks/useWorkspacePrepare.js";
+import {
+  createCodingPlanFunnelContext,
+  resolveCodingPlanEntryPlanState,
+} from "@/lib/codingPlanFunnelTelemetry.js";
 import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
-import { captureComposerRecentSubmission } from "@/lib/composerRecent.js";
+import { prepareComposerRecentReceipt } from "@/lib/composerRecent.js";
+import { useComposerClientNamespace } from "@/hooks/useServices.js";
+import {
+  readPendingTaskDraft,
+  resolveComposerScope,
+  composerScopeKey,
+} from "@/v4/composer/composerDraftStore.js";
 import { resolveProviderLabel } from "@/lib/registryProviderView.js";
+import { resolveEntitledAccountProviderAccess } from "@/lib/accountProviderAccess.js";
+import { getProviderSettingsSnapshot } from "@/lib/providerSettingsSnapshot.js";
 import {
   buildDraftCreateConfigPayload,
   useDraftConfigControl,
@@ -113,7 +170,14 @@ import { useDraftModelReadinessGate } from "@/v4/composer/useDraftModelReadiness
 import { useSettings } from "@/hooks/useSettingService.js";
 import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import type { GroupedDraftTaskState } from "@/store/zcodeSessionStoreTypes.js";
+import {
+  DEFAULT_CONVERSATION_SHARE_ACCESS_MODE,
+  DEFAULT_CONVERSATION_SHARE_DOCK_STATE,
+  getConversationShareDockState,
+  getConversationShareSelectedProductTurnIds,
+  useConversationShareSelectionStore,
+  type ConversationShareDisplayWarnings,
+} from "@/store/conversationShareSelectionStore.js";
 import {
   ConversationComposer,
   type ComposerRestoreRequest,
@@ -122,6 +186,7 @@ import {
 } from "@/v4/ConversationComposer.js";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import { shouldIgnoreEscapeForStopGeneration } from "@/v4/composer/escapeStop.js";
+import { useConversationPanePresentation } from "@/side-pane-full-view/index.js";
 import { ConversationDraftEmptyState } from "@/v4/ConversationDraftEmptyState.js";
 import { ConversationDraftSuggestedPromptsContainer } from "@/v4/ConversationDraftSuggestedPromptsContainer.js";
 import { ConversationHeader, type PaneWorkspaceBadge } from "@/v4/ConversationHeader.js";
@@ -133,7 +198,32 @@ import { WorkspaceHookPendingBanner } from "@/v4/WorkspaceHookPendingBanner.js";
 import { ConversationStatusPanel } from "@/v4/ConversationStatusPanel.js";
 import { SessionSubscriptionErrorPanel } from "@/v4/SessionSubscriptionErrorPanel.js";
 import { ConversationTimeline } from "@/v4/ConversationTimeline.js";
+import type { ConversationLatestTurnSummary } from "@/v4/conversationTimelineLiveTail.js";
+import { ConversationShareImportNotice } from "@/v4/ConversationShareImportNotice.js";
+import { ConversationShareConfirmationDock } from "@/v4/ConversationShareConfirmationDock.js";
+import { ConversationShareSuccessDock } from "@/v4/ConversationShareSuccessDock.js";
+import {
+  ConversationSharePreflightStatus,
+  type ConversationSharePreflightState,
+} from "@/conversation-share-interaction/ConversationSharePreflightStatus.js";
+import { ConversationShareSelectionPanel } from "@/v4/ConversationShareSelectionPanel.js";
+import { ConversationSharePopover } from "@/conversation-share-interaction/ConversationSharePopover.js";
+import {
+  conversationSharePreflightCacheKey,
+  conversationShareTurnFingerprint,
+  dedupeConversationShareIssues,
+  aggregateConversationShareBlockingIssues,
+  getMissingConversationSharePreflightTurnIds,
+} from "@/v4/conversationSharePreflightCache.js";
+import { createConversationSharePreflightResponseHandlers } from "@/conversation-share-interaction/conversationSharePreflightResponse.js";
+import { scheduleConversationSharePreflightRequest } from "@/conversation-share-interaction/conversationSharePreflightRequest.js";
 import { ConversationBottomDockTransition } from "@/v4/ConversationBottomDockTransition.js";
+import {
+  ensureConversationShareAttempt,
+  retainConversationShareAttemptAfterFailure,
+} from "@/v4/conversationShareAttempt.js";
+import { resolveConversationSelectionTooltipEnabled } from "@/v4/conversationShareModePolicy.js";
+import { buildConversationTurnRenderUnits } from "@/v4/conversationTurnRenderUnits.js";
 import { SessionPluginReferenceIconBoundary } from "@/v4/SessionPluginReferenceIconProvider.js";
 import {
   resolveConversationStatusPanelVariant,
@@ -160,6 +250,7 @@ import {
 } from "@/v4/workflowRunDirectoryModel.js";
 import {
   hasOlderRows,
+  requiresAcceptedInputProjection,
   shouldAutoLoadIncompleteLeadingTurn,
 } from "@/v4/conversationProjectionStore.js";
 import type {
@@ -190,6 +281,14 @@ import type {
 import type { SessionLease } from "@/v4/sessionDataLayer.js";
 import { V4InteractionDialogs } from "@/v4/V4InteractionDialogs.js";
 import {
+  useScopedConversationTelemetryForegroundEnabled,
+  useScopedConversationTelemetrySupervisor,
+} from "@/v4/telemetry/ConversationTelemetryAttachment.js";
+import type { ConversationPromptTelemetrySeed } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
+import { resolveSendAckSettlement } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
+import { useSessionSubscriptionErrorTelemetry } from "@/v4/telemetry/useSessionSubscriptionErrorTelemetry.js";
+import { useSessionOpenArmsTelemetry } from "@/v4/telemetry/useSessionOpenArmsTelemetry.js";
+import {
   parseV4VisibleSlashCommand,
   parseSelectionSideSlashCommand,
   v4QueuedCommandText,
@@ -207,7 +306,9 @@ import {
   hasChatLoadingBlockingInteraction,
 } from "@/v4/chatLoadingVisibility.js";
 import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { ChatErrorBannerModelConfigTarget } from "@/ChatErrorBanner.js";
 import { isProviderNotReadyError } from "@/lib/chatPrepareError.js";
+import { useOptionalCodingPlanUpgradeDialog } from "@/settings/CodingPlanUpgradeDialogProvider.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
 import { useIsMobileTextInputViewport } from "@/lib/mobileTextInput.js";
@@ -254,6 +355,8 @@ import {
 export interface SessionPaneProps {
   paneId: string;
   sessionId: string | null;
+  /** 低基数打开入口，由 pane 宿主提供；缺省仅用于兼容旧调用。 */
+  openTrigger?: SessionOpenTrigger;
   rootSessionId?: string;
   /** subagent 右侧详情等观察视图：不显示 composer/input，也不发送行内编辑类命令。 */
   readOnly?: boolean;
@@ -267,6 +370,7 @@ export interface SessionPaneProps {
   workspaceIdentity?: string;
   remoteSessionId?: string | null;
   /** Prompt 模板埋点当前仅覆盖 Desktop；Web / 手机远控保留 UI 行为但不触发该事件。 */
+  isDesktop?: boolean;
   compactForRemoteControl?: boolean;
   provider?: ZCodeProvider;
   onSessionCreated?: (sessionId: string) => void;
@@ -279,10 +383,13 @@ export interface SessionPaneProps {
    * focused pane。单 pane 消费者（V4ChatPane）缺省 true。
    */
   focused?: boolean;
-  /** 向右拆分新 draft 窗格（叶子数达上限时宿主不下发）。 */
-  onSplitRight?: () => void;
-  /** 向下拆分新 draft 窗格。 */
-  onSplitDown?: () => void;
+  /** 右侧面板关闭时，主区 focused pane 可接收对话外的 Esc。 */
+  allowEscapeStopOutsidePane?: boolean;
+  /**
+   * pane 是否真实可见。分屏的非 focused pane 仍传 true；forceMount 的隐藏侧栏 tab 传 false。
+   * 只影响 foreground UI telemetry，不影响 live subscription 或后台 /event/report。
+   */
+  telemetryVisible?: boolean;
   /** 关闭本窗格（仅非 primary pane 下发；关 pane ≠ 停 session）。 */
   onClosePane?: () => void;
   /** 跨 workspace pane 的归属徽标（pane workspace ≠ shell 当前 workspace 时下发）。 */
@@ -420,10 +527,17 @@ export function resolveQueuedComposerRestore(
 ): QueuedComposerRestoreTarget | null {
   const item = snapshot.queue.items.find((candidate) => candidate.queueItemId === queueItemId);
   if (!item || item.kind === "compact") return null;
+  const restoresModelSelection =
+    item.modelSelection !== undefined &&
+    // Bug 根因：旧版本曾把单轮 Highspeed Provider 持久化进队列；撤回编辑若恢复它，
+    // Composer 与下一轮 fallback 都会被污染。新队列保存普通模型，这里只兼容旧快照。
+    // 旧版本的污染重发可能留下不带卡元数据的此类项，所以只按 Provider Family 判断，
+    // 与 CLI 提升迁移保持一致。
+    !isHighspeedProviderId(item.modelSelection.providerId);
   const config = {
     ...(item.mode ? { mode: item.mode } : {}),
     ...(typeof item.planEnabled === "boolean" ? { planEnabled: item.planEnabled } : {}),
-    ...(item.modelSelection ? { modelSelection: item.modelSelection } : {}),
+    ...(restoresModelSelection ? { modelSelection: item.modelSelection } : {}),
   };
   return {
     baseRevision: snapshot.revision,
@@ -451,6 +565,34 @@ interface HighspeedPaneOrigin {
   draftId: string | null;
 }
 
+interface SessionPaneLeaseBinding {
+  sessionId: string | null;
+  layer: object;
+  lease: SessionLease | null;
+}
+
+// 原始 binding 留在独立 hook 作用域，不能让 SessionPane 的事件闭包捕获失效 owner。
+export function useSessionPaneLease(sessionId: string | null, layer: object) {
+  const [binding, setBinding] = useState<SessionPaneLeaseBinding>({
+    sessionId,
+    layer,
+    lease: null,
+  });
+  if (binding.sessionId !== sessionId || binding.layer !== layer) {
+    // Bug 根因：新 session 的首帧若读取旧 lease，稳定回调会捕获旧 snapshot/store，
+    // 不同代的共享 render 闭包便会串成保留链。先收紧 owner，再让 acquire effect 接管。
+    // 草稿晋升仍复用同一预热 lease；不重挂 Composer，也不提前释放原 effect 的资源。
+    const promoted =
+      binding.layer === layer &&
+      binding.sessionId === null &&
+      binding.lease?.sessionId === sessionId;
+    const lease = promoted ? binding.lease : null;
+    setBinding({ sessionId, layer, lease });
+    return [lease, setBinding] as const;
+  }
+  return [binding.lease, setBinding] as const;
+}
+
 /**
  * 单 pane 竖切：订阅 → 渲染 rows → composer 发送 / stop（06-ui §SessionPane）。
  *
@@ -463,6 +605,7 @@ interface HighspeedPaneOrigin {
 export function SessionPane({
   paneId,
   sessionId,
+  openTrigger,
   rootSessionId,
   readOnly = false,
   allowWorkspaceFileRewind = false,
@@ -471,13 +614,14 @@ export function SessionPane({
   workspacePath,
   workspaceIdentity,
   remoteSessionId,
+  isDesktop = false,
   compactForRemoteControl = false,
   provider,
   onSessionCreated,
   onSelectionSideChatUnavailable,
   focused = true,
-  onSplitRight,
-  onSplitDown,
+  allowEscapeStopOutsidePane = false,
+  telemetryVisible = true,
   onClosePane,
   workspaceBadge,
   draftComposerHeader,
@@ -514,6 +658,8 @@ export function SessionPane({
   searchResultHighlightRequest,
   onSearchResultHighlightDone,
 }: SessionPaneProps) {
+  const paneRef = useRef<HTMLDivElement>(null);
+  const remoteAvailable = useRemoteConversationAvailable();
   const {
     layer,
     sendCommand,
@@ -525,21 +671,416 @@ export function SessionPane({
     fileChanges,
     fileRewindPreview,
   } = useV4Conversation();
-  const { highspeedCardService, modelSelectionService, zcodeSessionService, zcodeTaskService } =
-    useServices();
-  const { intl } = useZCodeIntl();
+  const platform = useOptionalPlatform();
+  const {
+    conversationShareService,
+    highspeedCardService,
+    modelSelectionService,
+    usageStatsService,
+    zcodeSessionService,
+    zcodeTaskService,
+  } = useServices();
+  const { intl, locale } = useZCodeIntl();
   const slashCommands = useSlashCommands(workspacePath, workspaceIdentity);
-  // fork 曾删除该 hook（当时仅 Coding Plan 订阅使用）；上游 gen-ui 插件上下文重新依赖它，恢复。
   const baseWorkspaceServices = useBaseWorkspaceServices();
+  const composerClientNamespace = useComposerClientNamespace();
+  const composerProjectId = useZCodeSessionStore(
+    (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).draftProjectId,
+  );
+  const newTaskComposerScope = useMemo(
+    () => resolveComposerScope(composerProjectId, workspaceIdentity, composerClientNamespace),
+    [composerProjectId, workspaceIdentity, composerClientNamespace],
+  );
+  const composerDraftGeneration = useZCodeSessionStore(
+    (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).draftFocusVersion,
+  );
+  const pendingAtEntry = useMemo(() => {
+    if (sessionId !== null || newTaskComposerScope.projectId !== null) return null;
+    const pending = readPendingTaskDraft(newTaskComposerScope);
+    return pending?.workspacePath === workspacePath && pending.commandId ? pending : null;
+  }, [sessionId, workspacePath, newTaskComposerScope, composerDraftGeneration]);
+  const [resolvedDraftCommand, setResolvedDraftCommand] = useState<string | null>(null);
+  const recoveringDraft =
+    pendingAtEntry?.commandId !== resolvedDraftCommand ? pendingAtEntry : null;
   const workspaceHomePath = useWorkspaceHomePath({
     workspacePath,
     workspaceIdentity,
     remoteSessionId,
   });
-  const [lease, setLease] = useState<SessionLease | null>(null);
+  // SessionPane 已位于目标 Workspace 的 ServiceProvider 内，直接订阅该 Host Service；
+  // 不再从展示组件二次解析 workspace/remote 路由。
+  const conversationTelemetry = useScopedConversationTelemetrySupervisor({
+    workspacePath,
+    ...(workspaceIdentity ? { workspaceIdentity } : {}),
+    ...(remoteSessionId ? { remoteSessionId } : {}),
+  });
+  const conversationTelemetryForegroundEnabled = useScopedConversationTelemetryForegroundEnabled({
+    workspacePath,
+    ...(workspaceIdentity ? { workspaceIdentity } : {}),
+    ...(remoteSessionId ? { remoteSessionId } : {}),
+  });
+  const conversationTelemetryForegroundOwnerRef = useRef<object>({});
+  useEffect(() => {
+    if (
+      !conversationTelemetry ||
+      !conversationTelemetryForegroundEnabled ||
+      !telemetryVisible ||
+      !sessionId
+    ) {
+      return undefined;
+    }
+    return conversationTelemetry.attachForeground(
+      conversationTelemetryForegroundOwnerRef.current,
+      sessionId,
+    );
+  }, [conversationTelemetry, conversationTelemetryForegroundEnabled, sessionId, telemetryVisible]);
+  const [lease, setLease] = useSessionPaneLease(sessionId, layer);
   const state = useConversationProjection(lease);
   const snapshot = state.snapshot;
+  const runtimeReady =
+    sessionId === null ||
+    (snapshot?.sessionId === sessionId &&
+      (!snapshot.runtimeInitialization || snapshot.runtimeInitialization.status === "ready"));
+  const newlyCreatedSessionIdRef = useRef<string | null>(null);
+  const shareDraft = useConversationShareSelectionStore((storeState) =>
+    sessionId ? storeState.drafts[sessionId] : undefined,
+  );
+  const shareDockState = useConversationShareSelectionStore((storeState) =>
+    sessionId ? storeState.dockStates[sessionId] : undefined,
+  );
+  const shareDock = shareDockState ?? DEFAULT_CONVERSATION_SHARE_DOCK_STATE;
+  const shareTitle = shareDock.title ?? snapshot?.meta.title?.trim() ?? sessionId ?? "";
+  const shareDisclosureAccepted = shareDock.disclosureAccepted;
+  const sharePublishing = shareDock.publishing;
+  const shareProgress = shareDock.progress;
+  const shareCompletedArtifacts = shareDock.completedArtifacts;
+  const shareTotalArtifacts = shareDock.totalArtifacts;
+  const publishedShareUrl = shareDock.publishedShareUrl;
+  const shareError = shareDock.error;
+  const shareWarnings = shareDock.warnings;
+  const shareActive = shareDraft?.open === true;
+  // pending 草稿存在即处于范围编辑，避免维护第二套 stage/view 状态。
+  const shareSelectionPanelVisible = shareActive && shareDraft?.pendingExcludedRowIds != null;
+  const closeShare = useConversationShareSelectionStore((value) => value.closeShare);
+  const updateShareDockState = useConversationShareSelectionStore((value) => value.updateDockState);
+  const confirmShareSelection = useConversationShareSelectionStore(
+    (value) => value.confirmSelectionEdit,
+  );
+  const beginShareSelection = useConversationShareSelectionStore(
+    (value) => value.beginSelectionEdit,
+  );
+  const syncAvailableTurns = useConversationShareSelectionStore(
+    (value) => value.syncAvailableTurns,
+  );
+  const toggleShareRow = useConversationShareSelectionStore((value) => value.togglePendingRow);
+  const setAllPendingShareRows = useConversationShareSelectionStore(
+    (value) => value.setAllPendingRowsSelected,
+  );
+  const deselectShareProductTurn = useConversationShareSelectionStore(
+    (value) => value.deselectProductTurn,
+  );
+  const setShareAccessMode = useConversationShareSelectionStore((value) => value.setAccessMode);
+  const cancelShareSelection = useConversationShareSelectionStore(
+    (value) => value.cancelSelectionEdit,
+  );
+  const dismissShareSelectionPanel = useCallback(() => {
+    if (sessionId) cancelShareSelection(sessionId);
+  }, [sessionId, cancelShareSelection]);
+  const pendingShareRowIds = useMemo(
+    () =>
+      new Set(
+        (shareDraft?.availableRowIds ?? []).filter(
+          (id) =>
+            !(shareDraft?.pendingExcludedRowIds ?? shareDraft?.excludedRowIds ?? []).includes(id),
+        ),
+      ),
+    [shareDraft],
+  );
+  const pendingShareTurnCount = useMemo(
+    () =>
+      new Set([...pendingShareRowIds].map((id) => shareDraft?.productTurnIdByRowId[id] ?? id)).size,
+    [pendingShareRowIds, shareDraft],
+  );
+  const shareRenderUnits = useMemo(
+    () => buildConversationTurnRenderUnits(snapshot?.rows.window ?? []),
+    [snapshot?.rows.window],
+  );
+  const shareItems = useMemo(
+    () =>
+      buildConversationShareItems(shareRenderUnits, {
+        assistantEmptyPreview: intl.formatMessage({
+          id: "chat.turnNavigator.emptyAssistant",
+        }),
+        assistantRunningPreview: intl.formatMessage({
+          id: "chat.turnNavigator.runningAssistant",
+        }),
+        userFallbackPreview: intl.formatMessage({
+          id: "chat.turnNavigator.userFallback",
+        }),
+      }),
+    [intl, shareRenderUnits],
+  );
+  const eligibleShareItems = useMemo(
+    () => shareItems.filter((item) => !item.isRunning),
+    [shareItems],
+  );
+  useEffect(() => {
+    if (!sessionId || !shareActive) return;
+    const rowsById = new Map((snapshot?.rows.window ?? []).map((row) => [row.rowId, row]));
+    syncAvailableTurns(
+      sessionId,
+      eligibleShareItems.flatMap((item) => {
+        const productTurnId = rowsById.get(item.rowId)?.productTurnId;
+        return productTurnId ? [{ rowId: item.rowId, productTurnId }] : [];
+      }),
+    );
+  }, [eligibleShareItems, sessionId, shareActive, snapshot?.rows.window, syncAvailableTurns]);
+  const selectedShareProductTurnIds = useMemo(
+    () =>
+      sessionId
+        ? getConversationShareSelectedProductTurnIds(
+            useConversationShareSelectionStore.getState(),
+            sessionId,
+          )
+        : [],
+    [sessionId, shareDraft],
+  );
+  const preflightShareProductTurnIds = useMemo(
+    // 选择器预检读取待确认草稿；取消后自动回到已确认范围，不提前提交选择。
+    () =>
+      sessionId
+        ? getConversationShareSelectedProductTurnIds(
+            useConversationShareSelectionStore.getState(),
+            sessionId,
+            "pending",
+          )
+        : [],
+    [sessionId, shareDraft],
+  );
+  const sharePreflightMetaRef = useRef<{
+    revision: number;
+    logEpoch: string;
+    capabilitiesFingerprint: string;
+    supportedArtifactTypes: readonly ConversationShareAllowedArtifact[];
+  }>({
+    revision: 0,
+    logEpoch: "",
+    capabilitiesFingerprint: "",
+    supportedArtifactTypes: [],
+  });
+  const [sharePreflightVersion, setSharePreflightVersion] = useState(0);
+  const selectedShareTurnFingerprints = useMemo(
+    () =>
+      new Map(
+        preflightShareProductTurnIds.map((productTurnId) => [
+          productTurnId,
+          conversationShareTurnFingerprint(
+            snapshot?.rows.window ?? [],
+            productTurnId,
+            workspacePath,
+            {
+              workspaceKey: workspaceIdentity?.trim() || workspacePath,
+              remoteSessionId: remoteSessionId ?? "",
+              sessionId: sessionId ?? "",
+              revision: snapshot?.revision,
+              logEpoch: snapshot?.logEpoch,
+              capabilitiesFingerprint: sharePreflightMetaRef.current.capabilitiesFingerprint,
+            },
+          ),
+        ]),
+      ),
+    [
+      remoteSessionId,
+      preflightShareProductTurnIds,
+      sessionId,
+      sharePreflightVersion,
+      snapshot?.logEpoch,
+      snapshot?.revision,
+      snapshot?.rows.window,
+      workspaceIdentity,
+      workspacePath,
+    ],
+  );
+  const eligibleShareProductTurnIds = useMemo(() => {
+    const rowsById = new Map((snapshot?.rows.window ?? []).map((row) => [row.rowId, row]));
+    const seen = new Set<string>();
+    return eligibleShareItems.flatMap((item) => {
+      const productTurnId = rowsById.get(item.rowId)?.productTurnId;
+      if (!productTurnId || seen.has(productTurnId)) return [];
+      seen.add(productTurnId);
+      return [productTurnId];
+    });
+  }, [eligibleShareItems, snapshot?.rows.window]);
+  const sharePreflightCacheRef = useRef(new Map<string, ConversationShareTurnPreflightResult>());
+  // 传输类失败会被按 turn 缓存成阻断项，仅靠选择变化无法再次触发 RPC；
+  // 重试 token 变化时清缓存并重新发起，避免一次网络抖动把用户卡死在选择阶段。
+  const [sharePreflightRetryToken, setSharePreflightRetryToken] = useState(0);
+  const sharePreflightScopeKey = `${workspaceIdentity?.trim() || workspacePath}\u0000${remoteSessionId ?? ""}\u0000${sessionId ?? ""}`;
+  const sharePreflightScopeKeyRef = useRef<string | null>(null);
+  const sharePreflightCacheKey = useCallback(
+    (productTurnId: string) =>
+      conversationSharePreflightCacheKey(sharePreflightScopeKey, productTurnId),
+    [sharePreflightScopeKey],
+  );
+  const retrySharePreflight = useCallback(() => {
+    for (const productTurnId of preflightShareProductTurnIds) {
+      sharePreflightCacheRef.current.delete(sharePreflightCacheKey(productTurnId));
+    }
+    setSharePreflightRetryToken((token) => token + 1);
+    setSharePreflightVersion((version) => version + 1);
+  }, [preflightShareProductTurnIds, sharePreflightCacheKey]);
+  const shareHydratedSessionRef = useRef<string | null>(null);
+  const sharePreflight = useMemo<ConversationSharePreflightState>(() => {
+    if (!shareActive || !sessionId || compactForRemoteControl) {
+      return { status: "idle" };
+    }
+    if (preflightShareProductTurnIds.length === 0) {
+      return { status: "idle" };
+    }
+    const entries = preflightShareProductTurnIds.map((productTurnId) => {
+      const entry = sharePreflightCacheRef.current.get(sharePreflightCacheKey(productTurnId));
+      return entry?.turnFingerprint === selectedShareTurnFingerprints.get(productTurnId)
+        ? entry
+        : undefined;
+    });
+    if (entries.some((entry) => entry === undefined)) {
+      return { status: "checking" };
+    }
+    const resolvedEntries = entries.filter(
+      (entry): entry is ConversationShareTurnPreflightResult => entry !== undefined,
+    );
+    return {
+      status: "ready",
+      ...sharePreflightMetaRef.current,
+      blockingIssues: aggregateConversationShareBlockingIssues(resolvedEntries),
+      skippableWarnings: dedupeConversationShareIssues(
+        resolvedEntries.flatMap((entry) => entry.skippableWarnings),
+      ),
+      deferredIssues: dedupeConversationShareIssues(
+        resolvedEntries.flatMap((entry) => entry.deferredIssues),
+      ),
+      turnResults: resolvedEntries,
+    };
+  }, [
+    compactForRemoteControl,
+    sessionId,
+    preflightShareProductTurnIds,
+    selectedShareTurnFingerprints,
+    sharePreflightCacheKey,
+    shareActive,
+    sharePreflightVersion,
+  ]);
 
+  useEffect(() => {
+    if (sharePreflightScopeKeyRef.current === sharePreflightScopeKey) return;
+    sharePreflightScopeKeyRef.current = sharePreflightScopeKey;
+    sharePreflightCacheRef.current.clear();
+    sharePreflightMetaRef.current = {
+      revision: 0,
+      logEpoch: "",
+      capabilitiesFingerprint: "",
+      supportedArtifactTypes: [],
+    };
+    setSharePreflightVersion((version) => version + 1);
+  }, [sharePreflightScopeKey]);
+
+  useEffect(() => {
+    if (shareActive && sessionId) return;
+    sharePreflightCacheRef.current.clear();
+    sharePreflightMetaRef.current = {
+      revision: 0,
+      logEpoch: "",
+      capabilitiesFingerprint: "",
+      supportedArtifactTypes: [],
+    };
+    setSharePreflightVersion((version) => version + 1);
+  }, [sessionId, shareActive]);
+
+  useEffect(() => {
+    // 预检结果按 turn 缓存：选择/取消只重新聚合当前选中项，只有首次加入或 turn fingerprint
+    // 变化才触发 RPC；发布阶段仍走独立的权威 stat/read/SHA 校验，不能把这里的缓存当成最终事实。
+    const requestScopeKey = sharePreflightScopeKey;
+    if (
+      !shareActive ||
+      !sessionId ||
+      compactForRemoteControl ||
+      preflightShareProductTurnIds.length === 0
+    ) {
+      return undefined;
+    }
+    const missingProductTurnIds = getMissingConversationSharePreflightTurnIds(
+      sharePreflightScopeKey,
+      preflightShareProductTurnIds,
+      sharePreflightCacheRef.current,
+      selectedShareTurnFingerprints,
+    );
+    if (missingProductTurnIds.length === 0) return undefined;
+    const requestRows = snapshot?.rows.window ?? [];
+    return scheduleConversationSharePreflightRequest({
+      request: () =>
+        conversationShareService.preflight({
+          workspacePath,
+          ...(workspaceIdentity ? { workspaceIdentity } : {}),
+          ...(remoteSessionId ? { remoteSessionId } : {}),
+          sessionId,
+          selection: {
+            kind: "productTurns",
+            productTurnIds: missingProductTurnIds,
+          },
+        }),
+      ...createConversationSharePreflightResponseHandlers({
+        sessionId,
+        workspacePath,
+        workspaceIdentity,
+        remoteSessionId,
+        missingProductTurnIds,
+        requestRows,
+        selectedShareTurnFingerprints,
+        sharePreflightCacheRef,
+        sharePreflightMetaRef,
+        sharePreflightCacheKey,
+        isCurrent: () => shareActive && requestScopeKey === sharePreflightScopeKeyRef.current,
+        onUpdated: () => setSharePreflightVersion((version) => version + 1),
+      }),
+    });
+  }, [
+    compactForRemoteControl,
+    conversationShareService,
+    remoteSessionId,
+    preflightShareProductTurnIds,
+    selectedShareTurnFingerprints,
+    sharePreflightCacheKey,
+    sharePreflightRetryToken,
+    sharePreflightScopeKey,
+    sessionId,
+    shareActive,
+    snapshot?.rows.window,
+    workspaceIdentity,
+    workspacePath,
+  ]);
+  const sessionLeaseReady = lease?.sessionId === sessionId;
+  const shouldMeasureExistingSessionOpen =
+    sessionLeaseReady && newlyCreatedSessionIdRef.current !== sessionId;
+  useSessionOpenArmsTelemetry({
+    sessionId,
+    snapshot,
+    openTiming: sessionLeaseReady ? state.openTiming : undefined,
+    rendererTiming: sessionLeaseReady ? state.rendererTiming : undefined,
+    openKind: sessionLeaseReady ? lease?.openKind : undefined,
+    openTrigger,
+    startedAt: sessionLeaseReady ? lease?.startedAt : undefined,
+    status: state.status,
+    lastError: state.lastError,
+    enabled: shouldMeasureExistingSessionOpen,
+    readOnly,
+    reporter: platform,
+  });
+  useEffect(() => {
+    const newlyCreatedSessionId = newlyCreatedSessionIdRef.current;
+    if (newlyCreatedSessionId !== null && newlyCreatedSessionId !== sessionId) {
+      newlyCreatedSessionIdRef.current = null;
+    }
+  }, [sessionId]);
   const mobilePlanInteractionReconcileTimersRef = useRef(
     new Map<string, ReturnType<typeof setTimeout>>(),
   );
@@ -579,6 +1120,21 @@ export function SessionPane({
   const pluginReferenceIconsEnabled =
     isSessionPluginCatalogReady(state.status, sessionId, snapshot?.sessionId) &&
     hasPluginReferenceUserRows(snapshot?.rows.window ?? []);
+  // send_result 的落定信号：用户消息真正画进对话历史。z-code 没有乐观渲染，
+  // 气泡必须等投影回流出 userInput row 才出现，所以 ACK accepted 不能算发送完成。
+  // 取 useEffect 而非 store 订阅回调 —— effect 在 DOM commit 之后跑，此刻气泡已在屏幕上。
+  useEffect(() => {
+    const rows = snapshot?.rows.window;
+    if (!rows || rows.length === 0) return;
+    // 不能只取最后一条 userInput：后台结果行可能紧随其后插到尾部，
+    // 只看尾部会漏掉用户自己那条，误判成 render_timeout。supervisor 侧按
+    // 待渲染表 O(1) 过滤，历史回填 / 切会话重载推来的老 row 不会误触发。
+    for (const row of rows) {
+      if (row.kind === "userInput" && row.sourceCommandId) {
+        conversationTelemetry?.notifyUserInputRendered(row.sourceCommandId);
+      }
+    }
+  }, [conversationTelemetry, snapshot]);
   const fileChangesRequestCache = useMemo(
     () => new Map<string, Promise<V4ConversationFileChangesResult>>(),
     [fileChanges, sessionId, snapshot?.logEpoch],
@@ -628,6 +1184,27 @@ export function SessionPane({
   const [activeHighspeedCard, setActiveHighspeedCard] = useState<HighspeedCardSnapshot | null>(
     null,
   );
+  const invalidateActiveHighspeedCard = useCallback(
+    (cardId: string, failureKey: string) => {
+      if (!claimHighspeedCardInvalidation(failureKey)) return;
+      void highspeedCardService
+        .invalidateCard(cardId)
+        .then(() => {
+          // Bug 根因：Highspeed 失败后若卡仍留在服务里，Composer 会继续显示加速态并锁死模型选择。
+          // Service 按 cardId 作废唯一真相，再清同一张卡的展示投影；旧失败不能清掉后来抽中的新卡。
+          setActiveHighspeedCard((current) => (current?.cardId === cardId ? null : current));
+        })
+        .catch((error) => {
+          releaseHighspeedCardInvalidation(failureKey);
+          logger.warn("[highspeed] 作废失败的加速卡失败", {
+            cardId,
+            error: error instanceof Error ? error.message : String(error),
+            sessionId,
+          });
+        });
+    },
+    [highspeedCardService, sessionId],
+  );
   // 激活动效的一次性请求：只由发送路径 draw 新命中登记，composer 锁定入场方式后消费。
   const [highspeedActivationCardId, setHighspeedActivationCardId] = useState<string | null>(null);
   // 本 pane 最近呈现过的卡片身份：恢复与复用同一张卡的发送据此判定不是新命中。
@@ -638,9 +1215,7 @@ export function SessionPane({
     getHighspeedTurnVersion,
     getHighspeedTurnVersion,
   );
-  // Highspeed 聚合链路的窗口唤醒时钟：窗口隐藏时 renderer 定时器停摆，
-  // 回到前台时 bump 一次强制重跑下方聚合 effect（卡级 TPS 采样与完成态持久化）。
-  const [highspeedAggregationClock, refreshHighspeedAggregationClock] = useState(0);
+  const [highspeedAutoShareClock, refreshHighspeedAutoShareClock] = useState(0);
   const dispatchCommandRef = useRef<
     | ((
         type: CommandType,
@@ -715,8 +1290,6 @@ export function SessionPane({
       setActiveHighspeedCard(null);
       return () => undefined;
     }
-    // highspeedCardService 已可选（web/远端 accessor 不提供）；无服务时跳过快照同步。
-    if (!highspeedCardService) return () => undefined;
     void highspeedCardService
       .getSnapshot()
       .then((serviceSnapshot) => {
@@ -781,14 +1354,27 @@ export function SessionPane({
   }, [activeHighspeedCard]);
   useEffect(() => {
     if (!sessionId) return;
+    const nextAutoShareAt = resolveNextHighspeedAutoShareAt(sessionId);
+    if (nextAutoShareAt === null) return;
+    const delayMs = Math.max(0, nextAutoShareAt - Date.now()) + 20;
+    // Bug 根因：旧逻辑以 Turn 完成为分享时钟，第一轮结束就发布卡片；这里改由整张卡
+    // 的 expiresAt 唤醒聚合流程，卡到期时若仍有 Turn 运行，则等待其完成事件再次触发。
+    const timer = window.setTimeout(
+      () => refreshHighspeedAutoShareClock((revision) => revision + 1),
+      delayMs,
+    );
+    return () => window.clearTimeout(timer);
+  }, [highspeedTurnVersion, sessionId]);
+  useEffect(() => {
+    if (!sessionId) return;
     // Bug 根因（2026-08-31）：到期唤醒依赖 renderer setTimeout；窗口隐藏/被遮挡时页面被
-    // Chromium 冻结，定时器停摆，卡级 TPS 采样与完成态持久化停在原地，直到用户再发一条
-    // 消息才被 store 版本号变化救活（违反 spec 9.3「到期边界由会话时间时钟触发重渲染，
-    // 不要求用户再发送一条消息」）。回到窗口时立即补一次时钟；聚合链路各入口均有
-    // claim/幂等保护，重复触发无副作用。
+    // Chromium 冻结，定时器停摆，卡级 TPS 采样与完成态持久化停在原地，footer 查看按钮
+    // 一直置灰，直到用户再发一条消息才被 store 版本号变化救活（违反 spec 9.3「到期边界
+    // 由会话时间时钟触发重渲染，不要求用户再发送一条消息」）。回到窗口时立即补一次
+    // 时钟；聚合链路各入口均有 claim/幂等保护，重复触发无副作用。
     const refreshFromWindowWake = () => {
       if (document.visibilityState === "hidden") return;
-      refreshHighspeedAggregationClock((revision) => revision + 1);
+      refreshHighspeedAutoShareClock((revision) => revision + 1);
     };
     document.addEventListener("visibilitychange", refreshFromWindowWake);
     window.addEventListener("focus", refreshFromWindowWake);
@@ -796,7 +1382,7 @@ export function SessionPane({
       document.removeEventListener("visibilitychange", refreshFromWindowWake);
       window.removeEventListener("focus", refreshFromWindowWake);
     };
-  }, [refreshHighspeedAggregationClock, sessionId]);
+  }, [refreshHighspeedAutoShareClock, sessionId]);
   useEffect(() => {
     if (!sessionId || snapshot?.sessionId !== sessionId) return;
     const terminalStates = new Set(["completedSuccess", "completedInterrupted", "failed"]);
@@ -858,8 +1444,8 @@ export function SessionPane({
       });
     }
 
-    const expiryCheckNow = Date.now();
-    for (const card of listExpiredHighspeedCardsAwaitingTps(sessionId, expiryCheckNow)) {
+    const autoShareNow = Date.now();
+    for (const card of listExpiredHighspeedCardsAwaitingTps(sessionId, autoShareNow)) {
       if (!claimHighspeedHealthyAttempt(card.cardId, card.allTurnsCompleted)) {
         // 诊断（debug）：每卡到期一次 + 完成后补查一次，机会用尽仍无 TPS 时分享链路必然停摆。
         logger.debug("[highspeed] 卡级 healthy 查询机会已用尽，仍无有效 TPS", {
@@ -869,7 +1455,7 @@ export function SessionPane({
         continue;
       }
       void highspeedCardService
-        ?.healthy(card.cardId)
+        .healthy(card.cardId)
         .then((usage) => {
           if (usage.completionTokens <= 0 || usage.durationSeconds <= 0) {
             logger.warn("[highspeed] 卡级 healthy 未返回有效 TPS，本轮完成后再补查", {
@@ -965,12 +1551,36 @@ export function SessionPane({
             // Bug 根因：持久化 ACK 触发的 store 更新可能先于 in-flight 清理被 React 消费，
             // 导致本轮重算被跳过；ACK 成功后显式唤醒一次，避免必须发送下一条 prompt。
             if (metricsPersisted) {
-              refreshHighspeedAggregationClock((revision) => revision + 1);
+              refreshHighspeedAutoShareClock((revision) => revision + 1);
             }
           });
       }
     }
-  }, [highspeedAggregationClock, highspeedCardService, highspeedTurnVersion, sessionId, snapshot]);
+
+    for (const candidate of listHighspeedCardAutoShareCandidates(sessionId)) {
+      if (candidate.expiresAt > autoShareNow) continue;
+      // Bug 根因：失败后只清理 in-flight 会让后续 snapshot 重复触发自动分享，最终打到 429。
+      if (!claimHighspeedCardAutoShare(candidate.cardId, autoShareNow)) continue;
+      // 分享卡片改为客户端生成，不再请求后端 share 接口；到期后直接把本地统计发布到左下角。
+      browserGlobalNoticeStore?.publish(
+        buildHighspeedShareNotice({ cardId: candidate.cardId, metrics: candidate.metrics }),
+      );
+      markHighspeedCardAutoShared(candidate.cardId);
+    }
+
+    // 诊断（debug，随 snapshot 高频触发）：卡已到期、从未尝试分享、但也没进候选时，
+    // 直接输出阻塞原因。2026-08-31 左下角分享卡停留在旧卡 36 分钟无任何日志可查，
+    // 根因就是这些门禁此前全部静默跳过。
+    for (const cardId of listHighspeedCardsAwaitingAutoShare(sessionId, autoShareNow)) {
+      const blockers = collectHighspeedCardShareBlockers(cardId);
+      if (blockers.length > 0) {
+        logger.debug("[highspeed] 卡已到期但未进入自动分享，阻塞原因", {
+          cardId,
+          blockers,
+        });
+      }
+    }
+  }, [highspeedAutoShareClock, highspeedCardService, highspeedTurnVersion, sessionId, snapshot]);
   const workspaceConfigOptions = useZCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).configOptions,
   );
@@ -1037,6 +1647,9 @@ export function SessionPane({
   const composerTextInsertRequest = useZCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).composerTextInsertRequest,
   );
+  const timelineBottomRequest = useZCodeSessionStore(
+    (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).timelineBottomRequest,
+  );
   const draftRuntimeInvalidationVersion = useZCodeSessionStore(
     (store) =>
       store.getWorkspaceState(workspacePath, workspaceIdentity).draftRuntimeInvalidationVersion,
@@ -1057,6 +1670,52 @@ export function SessionPane({
     snapshot?.pendingInteractions.find(
       (interaction) => interaction.payload.kind !== "workspaceHookReview",
     )?.interactionId ?? null;
+  const panePresentation = useConversationPanePresentation();
+  const isFloatingPresentation = panePresentation.presentation === "floating";
+  const isRunning = Boolean(snapshot?.control.canStop);
+  const { reportFloatingStatus } = panePresentation;
+  const floatingOwnerKey = sessionId ?? "__draft__";
+  // 浮窗形态下由时间线上报最后一个回合（同一个 render unit 的运行状态、时长与最终回答）；
+  // 记录带上 owner，切换会话后旧会话的摘要不会混进新会话。
+  const [floatingLatestTurn, setFloatingLatestTurn] = useState<{
+    ownerKey: string;
+    summary: ConversationLatestTurnSummary;
+  } | null>(null);
+  const handleFloatingLatestTurnSummaryChange = useCallback(
+    (summary: ConversationLatestTurnSummary) =>
+      setFloatingLatestTurn({ ownerKey: floatingOwnerKey, summary }),
+    [floatingOwnerKey],
+  );
+  const floatingLatestTurnSummary =
+    isFloatingPresentation && floatingLatestTurn?.ownerKey === floatingOwnerKey
+      ? floatingLatestTurn.summary
+      : null;
+  const floatingTurnKey = floatingLatestTurnSummary?.turnKey ?? null;
+  const floatingTurnRunning = floatingLatestTurnSummary?.running ?? false;
+  const floatingTurnAnswer = floatingLatestTurnSummary?.answer ?? null;
+  const hasFloatingLatestTurn = floatingLatestTurnSummary !== null;
+  useEffect(() => {
+    // 完整视图浮窗只展示焦点 pane 的状态；docked 时 reportFloatingStatus 为 noop。
+    if (!focused) return;
+    reportFloatingStatus({
+      running: isRunning,
+      blockingInteractionId,
+      ownerKey: floatingOwnerKey,
+      latestTurn: hasFloatingLatestTurn
+        ? { turnKey: floatingTurnKey, running: floatingTurnRunning, answer: floatingTurnAnswer }
+        : null,
+    });
+  }, [
+    blockingInteractionId,
+    floatingOwnerKey,
+    floatingTurnAnswer,
+    floatingTurnKey,
+    floatingTurnRunning,
+    focused,
+    hasFloatingLatestTurn,
+    isRunning,
+    reportFloatingStatus,
+  ]);
   const selectionSideChatKey = sessionId
     ? buildSelectionSideChatKey(workspaceKey, sessionId)
     : null;
@@ -1077,7 +1736,7 @@ export function SessionPane({
   });
 
   const {
-    agentStartupAllowed: draftAgentStartupAllowed,
+    agentStartupAllowed: providerAgentStartupAllowed,
     error: draftModelReadinessError,
     dismissError: dismissDraftModelReadinessError,
     ensureReadyForSend: ensureDraftModelReadyForSend,
@@ -1089,6 +1748,8 @@ export function SessionPane({
     sessionId,
     modelSelectionService,
   });
+
+  const draftAgentStartupAllowed = providerAgentStartupAllowed && remoteAvailable;
 
   // Composer 保存下一次 Submission 的 renderer intent；prewarm session 仅承载草稿预热。
   const {
@@ -1109,10 +1770,51 @@ export function SessionPane({
     workspaceIdentity,
     provider,
     sessionId,
-    sessionConfig: snapshot?.sessionId === sessionId ? snapshot.config : null,
+    sessionConfig: runtimeReady && snapshot?.sessionId === sessionId ? snapshot.config : null,
     agentStartupAllowed: draftAgentStartupAllowed,
     modelSelectionService,
   });
+  useEffect(() => {
+    if (
+      !sessionId ||
+      snapshot?.sessionId !== sessionId ||
+      snapshot.control.phase !== "error" ||
+      !snapshot.control.lastError ||
+      activeHighspeedCard?.taskId !== sessionId
+    ) {
+      return;
+    }
+    const lastError = snapshot.control.lastError;
+    const attribution = lastError.attribution;
+    if (attribution?.highspeedCardId !== undefined) {
+      // 新 Agent 用 string/null 明确表达本轮是否使用 Highspeed，并在创建期或请求期失败命中退回声明、
+      // 却没有任何退回目标可创建时发布 highspeedFallbackUnavailable（spec §2.2 失败即退卡）。
+      // Bug 根因：这里曾只认 provider_not_found / model_not_found 两个目录错误码。请求期 3402 或网络
+      // 失败无处可退时没有 fallback 事件，TurnError 的 code 是 provider 错误码 "3402"，白名单漏掉它，
+      // 卡一直锁住模型选择器、下一轮继续复用已失效的卡。退卡只看 Core 发布的结构化事实，不再按错误码
+      // 推断：超窗、本地 runtime 失败等不参与退回的错误不带该字段，不会误作废卡。
+      if (
+        attribution.highspeedCardId !== activeHighspeedCard.cardId ||
+        attribution.highspeedFallbackUnavailable !== true
+      ) {
+        return;
+      }
+    } else if (
+      !["provider_not_found", "model_not_found"].includes(lastError.code) ||
+      lastError.at < activeHighspeedCard.issuedAt
+    ) {
+      // 兼容旧 Agent（无 highspeedCardId 字段）：只接受模型目录错误作为恢复边界，避免工具或本地运行时
+      // 错误误作废卡；错误终态在下一轮开始前一直留在投影里，而抽卡发生在发送之前，时间下界保证上一轮的
+      // 目录错误不清掉刚抽到的新卡（claim key 含新 cardId，去重防不住）。
+      return;
+    }
+    // 仍由 Service owner 按 cardId 作废，保留 nextDrawAt 冷却。
+    invalidateActiveHighspeedCard(
+      activeHighspeedCard.cardId,
+      `turn-error:${sessionId}:${lastError.at}:${activeHighspeedCard.cardId}`,
+    );
+  }, [activeHighspeedCard, invalidateActiveHighspeedCard, sessionId, snapshot]);
+
   useEffect(() => {
     if (!sessionId || snapshot?.sessionId !== sessionId) return;
     const now = Date.now();
@@ -1124,24 +1826,46 @@ export function SessionPane({
       ) {
         continue;
       }
+      const sourceCommandId = row.sourceCommandId;
+      if (
+        !compactForRemoteControl &&
+        activeHighspeedCard?.taskId === sessionId &&
+        activeHighspeedCard.cardId === row.highspeed.cardId
+      ) {
+        // Bug 根因：历史 fallback 行曾无条件作废“当前卡”，旧卡事件会误清新卡，手机端还会调用
+        // 未开放的写 RPC。权益写操作只接受 Service 当前卡的精确身份；Toast 仍独立展示历史事实。
+        invalidateActiveHighspeedCard(
+          row.highspeed.cardId,
+          `fallback:${sourceCommandId}:${row.highspeed.cardId}`,
+        );
+      }
       if (
         focused &&
         now - row.highspeed.fallbackAt >= -5_000 &&
         now - row.highspeed.fallbackAt <= 15_000 &&
-        claimHighspeedFallbackToast(row.sourceCommandId)
+        claimHighspeedFallbackToast(sourceCommandId)
       ) {
         // 卡过期与加速服务不可用分别提示；旧数据没有 fallbackReason，按卡过期文案处理。
         toast(
           intl.formatMessage({
             id:
-              row.highspeed.fallbackReason === "highspeed_request_failed"
-                ? "chat.highspeed.requestFailedFallback"
-                : "chat.highspeed.cardExpiredFallback",
+              row.highspeed.fallbackReason === "highspeed_card_expired" ||
+              row.highspeed.fallbackReason === undefined
+                ? "chat.highspeed.cardExpiredFallback"
+                : "chat.highspeed.requestFailedFallback",
           }),
         );
       }
     }
-  }, [focused, intl, sessionId, snapshot]);
+  }, [
+    activeHighspeedCard,
+    compactForRemoteControl,
+    focused,
+    intl,
+    invalidateActiveHighspeedCard,
+    sessionId,
+    snapshot,
+  ]);
   const modelSelectionView =
     modelSelectionRead.state.status === "ready" ? modelSelectionRead.state.view : null;
   const draftModelSelectionRevisionRef = useRef<number | null>(null);
@@ -1167,6 +1891,7 @@ export function SessionPane({
     // 回收并按最新选择事实重建，已显式选择和正式会话仍保持冻结。
     useZCodeSessionStore.getState().invalidateDraftRuntime(workspacePath, workspaceIdentity);
   }, [draftConfigRef, modelSelectionView?.revision, sessionId, workspaceIdentity, workspacePath]);
+  const recommendStartPlan = useStartPlanRecommendation(modelSelectionView);
   const createSubmissionFromComposer = useCallback(
     () => createComposerSubmissionConfig(draftConfigRef.current, modelSelectionView),
     [draftConfigRef, modelSelectionView],
@@ -1175,36 +1900,133 @@ export function SessionPane({
     () => createComposerSubmissionConfig(draftConfig, modelSelectionView) !== null,
     [draftConfig, modelSelectionView],
   );
+  const codingPlanUpgradeDialog = useOptionalCodingPlanUpgradeDialog();
   const openSettingsTab = useOptionalTabStore((state) => state.openSettingsTab);
-  const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
-  const handleDraftSessionCreated = useCallback(
-    (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
-      promoteComposerDraft(createdSessionId);
-      // 只有 draft create/promote 的 accepted 边界能继承 grouped placement。
-      // fork 和普通任务导航仍复用 onSessionCreated，但不会污染已有 task 的分组排序。
-      if (groupedDraftTask) {
-        promoteGroupedDraftTask(
-          workspacePath,
-          createdSessionId,
-          groupedDraftTask,
-          workspaceIdentity,
-        );
-        logger.debug("[v4-pane] grouped draft 已显式提升", {
-          createdSessionId,
-          draftId: groupedDraftTask.draftId,
-        });
-      }
-      onSessionCreated?.(createdSessionId);
+  const billingDiscount = useCodingPlanBillingDiscountFromService(
+    baseWorkspaceServices.codingPlanSubscriptionService,
+  );
+  const projectDirectory = useOptionalProjectDirectory();
+  const commitCreatedTask = projectDirectory?.commitCreatedTask;
+  const refreshTaskGroups = projectDirectory?.groups.refresh;
+  const draftNavigation = useMemo(
+    () => ({ controller: new AbortController() }),
+    [workspaceKey, sessionId],
+  );
+  useEffect(() => {
+    // StrictMode 会重放 effect；旧 scope 的请求仍使用各自的取消信号。
+    draftNavigation.controller = new AbortController();
+    return () => draftNavigation.controller.abort();
+  }, [draftNavigation]);
+  // 首发 commandId 在 accepted 时已存在，也是 completion 的 message_id；不必等回复完成。
+  const reportDraftCreated = useCallback(
+    (createdSessionId: string, source: SessionCreateSource, messageId: string) => {
+      void reportSessionCreate(platform, {
+        sessionId: createdSessionId,
+        messageId,
+        workspacePath,
+        workspaceIdentity,
+        remoteSessionId,
+        source,
+        clientKind: isDesktop ? "desktop" : compactForRemoteControl ? "mobile" : "web",
+      });
     },
     [
+      platform,
+      workspacePath,
+      workspaceIdentity,
+      remoteSessionId,
+      isDesktop,
+      compactForRemoteControl,
+    ],
+  );
+  const handleDraftSessionCreated = useCallback(
+    async (
+      createdSessionId: string,
+      createSource?: SessionCreateSource,
+      messageId?: string,
+      taskGroupId?: string | null,
+    ) => {
+      if (messageId) reportDraftCreated(createdSessionId, createSource ?? "session", messageId);
+      const commit = () => {
+        // Bug 根因：Session 打开埋点只衡量已有 Session，但草稿首发过去会把新建/预热提升的
+        // sessionId 直接交给同一 hook。预热 lease 还保留草稿期的 startedAt 与空 snapshot timing，
+        // 因而把数小时闲置时间误记为 total/react。创建边界先标记本 pane 的首次绑定；离开后
+        // 再次显式打开同一 Session 时标记会清除，恢复正常的已有 Session 打开测量。
+        newlyCreatedSessionIdRef.current = createdSessionId;
+        promoteComposerDraft(createdSessionId);
+        onSessionCreated?.(createdSessionId);
+      };
+      const organize =
+        taskGroupId !== undefined
+          ? async () => {
+              const task = {
+                taskId: createdSessionId,
+                workspacePath,
+                ...(workspaceIdentity ? { workspaceIdentity } : {}),
+                hostId: remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "") ?? "local",
+              };
+              const attempt = async () => {
+                try {
+                  if (!baseWorkspaceServices.taskGroupService)
+                    throw new Error("task-group.service-unavailable");
+                  await baseWorkspaceServices.taskGroupService.admit({
+                    tasks: [task],
+                    placement: {
+                      task,
+                      groupId: taskGroupId,
+                      creationId: messageId ?? createdSessionId,
+                    },
+                  });
+                  // 分组结构是独立投影；重读迟滞不能延长已接受首发或组织写入的完成时间。
+                  void refreshTaskGroups?.();
+                } catch (cause) {
+                  // 会话已创建；组织失败不能向发送层抛错，否则会诱导用户再发一次。
+                  // 重试闭包只持有这次创建的地址和 placement，绝不调用 createSession。
+                  logger.error("[task-groups] 新任务归属提交失败", cause);
+                  toast(intl.formatMessage({ id: "taskGroup.failed" }), {
+                    durationMs: 0,
+                    actionLabel: intl.formatMessage({ id: "taskGroup.retryPlacement" }),
+                    onAction: () => void attempt(),
+                    dedupeKey: `task-group:${createdSessionId}`,
+                  });
+                }
+              };
+              await attempt();
+            }
+          : undefined;
+      if (commitCreatedTask) {
+        await commitCreatedTask(
+          { taskId: createdSessionId, workspacePath, workspaceIdentity },
+          commit,
+          draftNavigation.controller.signal,
+          organize,
+        );
+      } else {
+        void organize?.();
+        commit();
+      }
+    },
+    [
+      commitCreatedTask,
+      baseWorkspaceServices.taskGroupService,
+      refreshTaskGroups,
+      intl,
+      draftNavigation,
+      reportDraftCreated,
       onSessionCreated,
       promoteComposerDraft,
-      promoteGroupedDraftTask,
       workspaceIdentity,
       workspacePath,
     ],
   );
   const { settings: sharedSettings } = useSettings();
+  const readPlanIdentitySnapshot = usePlanIdentitySnapshot(
+    sharedSettings?.providerFamilyDomain,
+    sharedSettings?.providerFamilyDomain
+      ? sharedSettings.providerFamilyConnectionSelections?.[sharedSettings.providerFamilyDomain]
+      : undefined,
+    baseWorkspaceServices.usageStatsService,
+  );
   const appFollowupMode = resolveAppFollowupMode(sharedSettings);
   const messageStreamShowReasoning = sharedSettings?.messageStreamShowReasoning ?? true;
   const messageStreamShowTodos = sharedSettings?.messageStreamShowTodos ?? false;
@@ -1241,20 +2063,54 @@ export function SessionPane({
       targetSessionId: string | null,
       baseRevision?: number,
       baseLogEpoch?: string,
-      localTtft?: LocalTtftContext,
+      telemetrySeed?: ConversationPromptTelemetrySeed,
       highspeedCard?: HighspeedCardSnapshot,
       onEnvelopeCreated?: (envelope: CommandEnvelope) => void,
+      creationProjectId?: string | null,
       sessionCreateSource?: SessionCreateSource,
       recentSubmissionOverride?: ComposerSubmissionConfig | null,
+      creationTaskGroupId?: string | null,
+      submittedDraftText?: string,
     ): Promise<CommandAck> => {
+      // 离线点击/快捷键不得进入 accepted 命令恢复账本，更不能在重连后自动发送。
+      if (!remoteAvailable) throw createRemoteWorkspaceDisconnectedError();
       const submission = submissionConfigFromCommand(type, payload);
       // 加速轮 payload 的 modelSelection 会被执行材料覆盖为隐藏加速 Provider；Recent 记录的是
       // 用户在 Composer 的原始选择（新任务草稿的模型种子），加速轮必须由调用方传入发送前
-      // 冻结的 submission（spec §5.1）。captureComposerRecentSubmission 另有加速身份兜底拦截。
+      // 冻结的 submission（spec §5.1）。接纳写入另有加速身份兜底拦截。
       const recentSubmission = recentSubmissionOverride ?? submission;
-      const acceptRecent = recentSubmission
-        ? captureComposerRecentSubmission(workspacePath, recentSubmission, workspaceIdentity)
+      // 发送时固定组织归属；同 cwd 可属于多个项目，切页和迟到 ACK 不得改写目标。
+      let recentScope =
+        creationProjectId === undefined
+          ? newTaskComposerScope
+          : { ...newTaskComposerScope, projectId: creationProjectId };
+      // 在异步查询归属前冻结选择与发起顺序，避免慢查询把早发命令排成最新。
+      const recentReceipt = recentSubmission
+        ? prepareComposerRecentReceipt(recentScope, recentSubmission)
         : undefined;
+      if (recentSubmission && sessionId && targetSessionId) {
+        const projectService = baseWorkspaceServices.projectService;
+        if (!projectService) throw new Error("project.service-unavailable");
+        const directories = await projectService.resolveSessionDirectories(
+          {
+            workspacePath,
+            workspaceIdentity,
+            // 辅助 child 不进主任务索引；Recent 查所属主会话，输入仍发给 child。
+            // 普通会话和 fork 即使带 rootSessionId 也必须保留自身项目归属。
+            taskId:
+              selectionSideChat && targetSessionId === sessionId && rootSessionId
+                ? rootSessionId
+                : targetSessionId,
+          },
+          recentScope.hostId,
+        );
+        recentScope = { ...recentScope, projectId: directories.projectId };
+      }
+      if (recentReceipt) recentReceipt.scope = recentScope;
+      const pendingDraft =
+        sessionId === null && recentScope.projectId === null
+          ? readPendingTaskDraft(recentScope)
+          : null;
       const acceptSelection =
         submission && (sessionId === null || targetSessionId === sessionId)
           ? captureAcceptedModelSelection(submission.modelSelection)
@@ -1267,12 +2123,14 @@ export function SessionPane({
         ...(baseLogEpoch ? { baseLogEpoch } : {}),
       });
       onEnvelopeCreated?.(envelope);
-      // 必须早于第一次上行：transport error/renderer refresh 后仍有可查询线索。
-      const groupedDraftTask =
+      const projectId =
         type === "createSession"
-          ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-              .groupedDraftTask
-          : null;
+          ? creationProjectId !== undefined
+            ? creationProjectId
+            : useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+                .draftProjectId
+          : undefined;
+      // 必须早于第一次上行：transport error/renderer refresh 后仍有可查询线索。
       pendingCommandRegistry.record(
         envelope,
         type === "createSession"
@@ -1281,13 +2139,56 @@ export function SessionPane({
                 workspacePath,
                 ...(workspaceIdentity ? { workspaceIdentity } : {}),
               },
-              ...(groupedDraftTask ? { groupedDraftTask } : {}),
+              ...(projectId !== undefined ? { projectId } : {}),
+              ...(recentReceipt
+                ? {
+                    composer: {
+                      ...recentReceipt,
+                      submittedText: submittedDraftText,
+                      ...(pendingDraft?.workspacePath === workspacePath
+                        ? { draftId: pendingDraft.draftId }
+                        : {}),
+                    },
+                  }
+                : {}),
+              taskGroupId:
+                creationTaskGroupId !== undefined
+                  ? creationTaskGroupId
+                  : useZCodeSessionStore
+                      .getState()
+                      .getWorkspaceState(workspacePath, workspaceIdentity).draftTaskGroupId,
               sessionCreateSource:
                 sessionCreateSource ??
                 useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
                   .draftCreateSource,
             }
-          : undefined,
+          : recentReceipt
+            ? {
+                workspace: { workspacePath, ...(workspaceIdentity ? { workspaceIdentity } : {}) },
+                ...(sessionId === null
+                  ? {
+                      projectId: recentScope.projectId,
+                      taskGroupId:
+                        creationTaskGroupId ??
+                        useZCodeSessionStore
+                          .getState()
+                          .getWorkspaceState(workspacePath, workspaceIdentity).draftTaskGroupId,
+                      sessionCreateSource:
+                        sessionCreateSource ??
+                        useZCodeSessionStore
+                          .getState()
+                          .getWorkspaceState(workspacePath, workspaceIdentity).draftCreateSource,
+                    }
+                  : {}),
+                composer: {
+                  ...recentReceipt,
+                  submittedText: submittedDraftText,
+                  ...(pendingDraft?.workspacePath === workspacePath
+                    ? { draftId: pendingDraft.draftId }
+                    : {}),
+                },
+              }
+            : undefined,
       );
       if (lease?.store && type !== "createSession") {
         lease.store.markCommandPending({
@@ -1298,20 +2199,25 @@ export function SessionPane({
       }
       let ack: CommandAck;
       try {
-        if (localTtft && !workspaceIdentity?.trim()) {
+        if (telemetrySeed?.localTtft && !workspaceIdentity?.trim()) {
           envelope.ttft = getLocalTtftObserver()?.dispatch(
-            localTtft,
+            telemetrySeed.localTtft,
             workspacePath,
             envelope.commandId,
             targetSessionId,
           );
         }
-        ack = await sendCommand(envelope);
-        if (localTtft && ack.reasonCode === "guard.heldQueueConfirmationStale")
-          getLocalTtftObserver()?.confirmationRetry(localTtft);
-        else if (localTtft) getLocalTtftObserver()?.ack(localTtft, ack.status, ack.ttftExcluded);
+        ack =
+          projectId !== undefined
+            ? await sendCommand(envelope, { projectId })
+            : await sendCommand(envelope);
+        if (telemetrySeed?.localTtft && ack.reasonCode === "guard.heldQueueConfirmationStale")
+          getLocalTtftObserver()?.confirmationRetry(telemetrySeed.localTtft);
+        else if (telemetrySeed?.localTtft)
+          getLocalTtftObserver()?.ack(telemetrySeed.localTtft, ack.status, ack.ttftExcluded);
       } catch (error) {
-        if (localTtft) getLocalTtftObserver()?.exclude(localTtft, "failed");
+        if (telemetrySeed?.localTtft)
+          getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "failed");
         if (lease?.store) {
           lease.store.settleCommand(envelope.commandId);
         }
@@ -1319,7 +2225,7 @@ export function SessionPane({
           // provider_not_ready 在 Host getClient 前确定性拒绝，CLI 不可能已经
           // admission。若继续保留 renderer 恢复账本，重连 query 必然得到 unknown；即使
           // unknown 现已静默清账，也不应为确定性拒绝留下无效的恢复记录。
-          pendingCommandRegistry.settle(envelope.sessionId, envelope.commandId);
+          pendingCommandRegistry.rejectCommand(envelope.sessionId, envelope.commandId);
         }
         recordV4CommandAck({
           type,
@@ -1327,21 +2233,47 @@ export function SessionPane({
           reasonCode: String(error),
           at: Date.now(),
         });
+        // 发送漏斗落定：telemetrySeed 只有真实用户发送才携带，两步式 createSession
+        // 与后台任务无 seed，天然不会伪造 send_result。
+        if (telemetrySeed) {
+          conversationTelemetry?.settleSendResult({
+            seed: telemetrySeed,
+            sessionId: targetSessionId,
+            commandId: envelope.commandId,
+            status: "fail",
+            reasonCode: isProviderNotReadyError(error) ? "provider_not_ready" : "transport_error",
+          });
+        }
         throw error;
       }
       pendingCommandRegistry.applyAck(envelope, ack);
       if (ack.status === "accepted") {
         acceptSelection?.();
-        acceptRecent?.();
       }
       if (
         lease?.store &&
-        type === "sendText" &&
+        requiresAcceptedInputProjection(type) &&
         (ack.status === "accepted" || ack.status === "duplicate")
       ) {
-        // ACK 只代表 CLI admission；若自己的 conversation topic 随后静默，store watchdog
-        // 会在宽限期后复用同一 owned subscription 恢复权威 row/queue，不重放 command。
+        // Bug 根因：editUserQuery 会先发布 branch cut；若 replacement user row 的 topic
+        // 投影静默，UI 只剩截断结果。ACK 后必须和 sendText 一样等待权威输入投影；
+        // watchdog 只重订阅，不伪造消息、不恢复旧分支，也不重放命令。
         lease.store.expectAcceptedInputProjection(envelope.commandId);
+      }
+      if (ack.status === "accepted" && telemetrySeed) {
+        const acceptedSessionId =
+          ack.result?.type === "createSelectionSideSession"
+            ? ack.result.sessionId
+            : (targetSessionId ??
+              (ack.result?.type === "createSession" ? ack.result.sessionId : null));
+        if (acceptedSessionId) {
+          conversationTelemetry?.acceptPromptSeed({
+            ...telemetrySeed,
+            sessionId: acceptedSessionId,
+            sourceCommandId: envelope.commandId,
+            memoryEnabled: ack.memoryEnabled,
+          });
+        }
       }
       if (ack.status === "accepted" && highspeedCard && targetSessionId) {
         recordHighspeedTurn({
@@ -1350,6 +2282,36 @@ export function SessionPane({
           card: highspeedCard,
           createdAt: Date.now(),
         });
+      }
+      if (telemetrySeed) {
+        // 队列二次确认的 ACK 返回 null（非终态），落定会让 first-wins 吃掉真实结果。
+        const outcome = resolveSendAckSettlement(ack);
+        if (outcome) {
+          const settledSessionId =
+            ack.result?.type === "createSelectionSideSession"
+              ? ack.result.sessionId
+              : (targetSessionId ??
+                (ack.result?.type === "createSession" ? ack.result.sessionId : null));
+          if (outcome.kind === "awaitRender") {
+            // ACK 只代表 Host 收下了命令，用户气泡此刻还没画出来；
+            // 等投影回流出 userInput row（或 30s 超时）再落定端到端耗时。
+            conversationTelemetry?.awaitSendRender({
+              seed: telemetrySeed,
+              sessionId: settledSessionId,
+              commandId: envelope.commandId,
+              ackStatus: outcome.ackStatus,
+            });
+          } else {
+            conversationTelemetry?.settleSendResult({
+              seed: telemetrySeed,
+              sessionId: settledSessionId,
+              commandId: envelope.commandId,
+              status: outcome.status,
+              ackStatus: outcome.ackStatus,
+              reasonCode: outcome.reasonCode,
+            });
+          }
+        }
       }
       // 生产构建 renderer 日志关闭，ack 摘要写入有界调试缓冲供 e2e/现场 probe。
       recordV4CommandAck({
@@ -1377,9 +2339,15 @@ export function SessionPane({
     },
     [
       captureAcceptedModelSelection,
+      newTaskComposerScope,
+      baseWorkspaceServices.projectService,
+      conversationTelemetry,
       lease,
       provider,
       sendCommand,
+      remoteAvailable,
+      rootSessionId,
+      selectionSideChat,
       sessionId,
       workspaceIdentity,
       workspacePath,
@@ -1613,8 +2581,8 @@ export function SessionPane({
     // 无差别发这条查询等于拿子会话 id 去问一条按**父会话**建键的 journal；CLI 的冷会话前置
     // 随即为正在运行的 detached actor 会话物化第二个 runtime（幽灵），双写事件日志，
     // 直播冻结在「已工作 xx 秒」。只读 pane 也不消费 join 回退与任务列表页脚，直接关掉。
-    enabled: !readOnly,
-    live: state.status === "live",
+    enabled: !readOnly && runtimeReady,
+    live: state.status === "live" && runtimeReady,
     limit: WORKFLOW_RUN_DIRECTORY_LIMIT,
     refreshKey: workflowRunDirectoryRefreshKey(snapshot?.workflowRuns?.runs),
   });
@@ -1784,7 +2752,7 @@ export function SessionPane({
   );
 
   const handleOpenSelectionSideConversationWithPrompt = useCallback(
-    async (text: string, localTtft?: LocalTtftContext): Promise<boolean> => {
+    async (text: string, telemetrySeed?: ConversationPromptTelemetrySeed): Promise<boolean> => {
       if (!sessionId || !selectionSideChatKey || !onOpenSelectionSideChat) {
         throw new Error("selection side chat is unavailable");
       }
@@ -1792,23 +2760,20 @@ export function SessionPane({
         snapshotRef.current?.config,
         modelSelectionView,
       );
-      const modelSelection = inherited ?? undefined;
+      const chosen = inherited ? await recommendStartPlan(inherited) : undefined;
+      if (chosen === null) return false;
+      const modelSelection = chosen && chosen !== inherited ? chosen : undefined;
       // 参数命令每次都是新 child；同一条文本在 ACK 未回时重试仍复用 pending，
       // 不同文本则不能与 bare `/side` 或另一条 prompt 合并。
       const pendingKey = `${selectionSideChatKey}\u0000prompt\u0000${text}`;
       const childSessionId = await createSelectionSideChat(pendingKey, async () => {
         const ack = await dispatchCommand(
           "createSelectionSideSession",
-          {
-            firstInput: {
-              text,
-              ...(modelSelection ? { modelSelection } : {}),
-            },
-          },
+          { firstInput: { text, ...(modelSelection ? { modelSelection } : {}) } },
           sessionId,
           undefined,
           undefined,
-          localTtft,
+          telemetrySeed,
         );
         if (
           (ack.status !== "accepted" && ack.status !== "duplicate") ||
@@ -1830,6 +2795,7 @@ export function SessionPane({
     [
       dispatchCommand,
       modelSelectionView,
+      recommendStartPlan,
       onOpenSelectionSideChat,
       remoteSessionId,
       selectionSideChatKey,
@@ -1887,10 +2853,16 @@ export function SessionPane({
     [cliSlashCommandNames],
   );
 
-  // `/side` App 层斜杠命令。命令目录仍以 CLI catalog 为权威，这里只在渲染层
-  // 按门禁注入"选中即打开辅助对话"的本地命令；草稿态（无父 session 可挂 child）、
-  // 辅助对话自身、只读与手机 viewport 均不提供。
+  // Plan 选中即开启标准 Composer 开关，不能等发送时解析文本；与 /side 共用本地操作入口。
   const appSlashCommands = useMemo<AppSlashCommand[] | undefined>(() => {
+    if (readOnly) return undefined;
+    const planAction: AppSlashCommand = {
+      value: "plan",
+      label: intl.formatMessage({ id: "chat.slash.app.plan.label" }),
+      description: intl.formatMessage({ id: "chat.slash.app.plan.description" }),
+      keywords: ["plan", "计划", "计划模式"],
+      run: () => handleDraftSwitchMode("plan"),
+    };
     if (
       !sessionId ||
       !onOpenSelectionSideChat ||
@@ -1901,7 +2873,7 @@ export function SessionPane({
         isMobileViewport: isMobileTextInputViewport,
       })
     ) {
-      return undefined;
+      return [planAction];
     }
     const openNewSelectionSideChat = () => {
       void handleOpenSelectionSideConversation(undefined, true);
@@ -1909,25 +2881,17 @@ export function SessionPane({
     // 关键词固定同时包含中英文别名，任一 locale 下输入 side / btw / 辅助 都能搜到。
     // `/btw` 是 `/side` 的等价别名，适配不同用户输入习惯，面板中各自独立展示。
     const sharedKeywords = ["side", "btw", "side chat", "auxiliary", "辅助对话", "辅助", "侧边"];
-    const description = intl.formatMessage({
-      id: "chat.slash.app.side.description",
-    });
+    const description = intl.formatMessage({ id: "chat.slash.app.side.description" });
     return [
-      {
-        value: "side",
-        description,
-        keywords: sharedKeywords,
-        run: openNewSelectionSideChat,
-      },
-      {
-        value: "btw",
-        description,
-        keywords: sharedKeywords,
-        run: openNewSelectionSideChat,
-      },
-    ].filter((command) => !cliSlashCommandNames.has(command.value));
+      planAction,
+      ...[
+        { value: "side", description, keywords: sharedKeywords, run: openNewSelectionSideChat },
+        { value: "btw", description, keywords: sharedKeywords, run: openNewSelectionSideChat },
+      ].filter((command) => !cliSlashCommandNames.has(command.value)),
+    ];
   }, [
     cliSlashCommandNames,
+    handleDraftSwitchMode,
     handleOpenSelectionSideConversation,
     intl,
     isMobileTextInputViewport,
@@ -2034,39 +2998,45 @@ export function SessionPane({
       onOpenBrowserUrl,
       onOpenAutomationsMain,
       onOpenCodeViewer,
-      onAutoOpenAssistantPptx: handleAutoOpenAssistantPptx,
+      onAutoOpenAssistantPptx: runtimeReady ? handleAutoOpenAssistantPptx : undefined,
       assistantPreviewPptxAutoOpenTarget,
       onOpenFileLink,
-      onOpenSubagentSession: onOpenSubagentSession ? handleOpenSubagentSession : undefined,
-      onOpenPlanDetail: onOpenPlanDetail ? handleOpenPlanDetail : undefined,
-      onOpenWorkflowRun: onOpenWorkflowRun ? handleOpenWorkflowRun : undefined,
-      onOpenWorkflowActor: onOpenWorkflowActorSession ? handleOpenWorkflowActorSession : undefined,
-      onOpenWorkflowWorkspace: onOpenWorkflowWorkspace ? handleOpenWorkflowWorkspace : undefined,
-      onOpenWorkflowArtifact: onOpenWorkflowArtifact ? handleOpenWorkflowArtifact : undefined,
-      onCancelBackgroundWork: readOnly ? undefined : handleCancelBackgroundWork,
+      onOpenSubagentSession:
+        runtimeReady && onOpenSubagentSession ? handleOpenSubagentSession : undefined,
+      onOpenPlanDetail: runtimeReady && onOpenPlanDetail ? handleOpenPlanDetail : undefined,
+      onOpenWorkflowRun: runtimeReady && onOpenWorkflowRun ? handleOpenWorkflowRun : undefined,
+      onOpenWorkflowActor:
+        runtimeReady && onOpenWorkflowActorSession ? handleOpenWorkflowActorSession : undefined,
+      onOpenWorkflowWorkspace:
+        runtimeReady && onOpenWorkflowWorkspace ? handleOpenWorkflowWorkspace : undefined,
+      onOpenWorkflowArtifact:
+        runtimeReady && onOpenWorkflowArtifact ? handleOpenWorkflowArtifact : undefined,
+      onCancelBackgroundWork: readOnly || !runtimeReady ? undefined : handleCancelBackgroundWork,
       // Resume 进入会话上下文的唯一供给点；灰度与只读两道门都在 resolveWorkflowResumeHandler 里，
       // 断在这里等于工具卡页脚与摘要卡的按钮一起消失。
       onResumeWorkflowRun: resolveWorkflowResumeHandler({
-        readOnly,
+        readOnly: readOnly || !runtimeReady,
         dynamicWorkflowEnabled,
         handler: handleResumeWorkflowRun,
       }),
-      onAmendWorkflowRunSettings: sessionId
-        ? resolveWorkflowResumeHandler({
-            readOnly,
-            dynamicWorkflowEnabled,
-            handler: handleAmendWorkflowRunSettings,
-          })
-        : undefined,
+      onAmendWorkflowRunSettings:
+        runtimeReady && sessionId
+          ? resolveWorkflowResumeHandler({
+              readOnly,
+              dynamicWorkflowEnabled,
+              handler: handleAmendWorkflowRunSettings,
+            })
+          : undefined,
       // 保存与 Resume 同一道门、同一个供给点：写文件与起引擎都属于「Resume 被收走的地方一并收走」
       // （docs/dynamic-workflow/launch.md「Gray release」）。芯片不经这道门，它只是一条事实。
-      onSendWorkflowSaveRequest: sessionId
-        ? resolveWorkflowResumeHandler({
-            readOnly,
-            dynamicWorkflowEnabled,
-            handler: handleSendWorkflowSaveRequest,
-          })
-        : undefined,
+      onSendWorkflowSaveRequest:
+        runtimeReady && sessionId
+          ? resolveWorkflowResumeHandler({
+              readOnly,
+              dynamicWorkflowEnabled,
+              handler: handleSendWorkflowSaveRequest,
+            })
+          : undefined,
       workflowSaveCandidatesByRunId,
       ...(workflowSessionModel === undefined ? {} : { workflowSessionModel }),
       workflowRunByToolCallId,
@@ -2075,11 +3045,13 @@ export function SessionPane({
       workflowGraphByToolCallId,
       workflowFillGraphByRunId,
       workflowDraftByToolCallId,
-      fetchFileChanges: handleFetchFileChanges,
-      previewFileRewind: workspaceFileRewindEnabled ? handlePreviewFileRewind : undefined,
-      applyFileRewind: workspaceFileRewindEnabled ? handleApplyFileRewind : undefined,
-      readAttachment: attachmentRead,
-      readAttachmentRange: attachmentReadRange,
+      fetchFileChanges: runtimeReady ? handleFetchFileChanges : undefined,
+      previewFileRewind:
+        runtimeReady && workspaceFileRewindEnabled ? handlePreviewFileRewind : undefined,
+      applyFileRewind:
+        runtimeReady && workspaceFileRewindEnabled ? handleApplyFileRewind : undefined,
+      readAttachment: runtimeReady ? attachmentRead : undefined,
+      readAttachmentRange: runtimeReady ? attachmentReadRange : undefined,
     }),
     [
       workspacePath,
@@ -2120,6 +3092,7 @@ export function SessionPane({
       onOpenWorkflowArtifact,
       handleOpenWorkflowArtifact,
       readOnly,
+      runtimeReady,
       handleCancelBackgroundWork,
       dynamicWorkflowEnabled,
       handleResumeWorkflowRun,
@@ -2145,8 +3118,8 @@ export function SessionPane({
   // ── 草稿态 v4 draft session 预热（m5）──
   // pane 未绑定会话时后台建 phase=draft 会话作预热载体：配置写 CAS 直达、首发复用。
   // 对外绑定语义不变（shell activeTaskId 仍 null），预热会话只是 pane 内部 effective 订阅目标。
-  const { binding: prewarmBinding } = useDraftSessionPrewarm({
-    enabled: sessionId === null && draftAgentStartupAllowed,
+  const { binding: prewarmBinding, waitForSession: waitForDraftSession } = useDraftSessionPrewarm({
+    enabled: sessionId === null && draftAgentStartupAllowed && !recoveringDraft,
     workspaceKey,
     paneId,
     invalidationVersion: draftRuntimeInvalidationVersion,
@@ -2173,7 +3146,55 @@ export function SessionPane({
   const ensureDraftPrewarmConfigBeforeSendRef = useRef<(targetSessionId: string) => Promise<void>>(
     async () => undefined,
   );
-  const effectiveSessionId = sessionId ?? prewarmSessionId;
+  const effectiveSessionId = sessionId ?? recoveringDraft?.sessionId ?? prewarmSessionId;
+  useEffect(() => {
+    if (!recoveringDraft?.commandId || !remoteAvailable) return;
+    let current = true;
+    const commandId = recoveringDraft.commandId;
+    const off = pendingCommandRegistry.subscribeResolution(commandId, (resolution) => {
+      if (!current) return;
+      if (
+        resolution === "accepted" ||
+        resolution === "duplicate" ||
+        resolution === "authoritative"
+      ) {
+        const entry = pendingCommandRegistry.findCommand(commandId);
+        const recoveredSessionId = entry?.sessionId ?? recoveringDraft.sessionId;
+        if (recoveredSessionId)
+          void handleDraftSessionCreated(
+            recoveredSessionId,
+            entry?.clientContext?.sessionCreateSource,
+            commandId,
+            entry?.clientContext?.taskGroupId,
+          );
+      } else if (resolution === "failed" || resolution === "discarded") {
+        setResolvedDraftCommand(commandId);
+      }
+    });
+    void pendingCommandRegistry
+      .reconcileSession(
+        pendingCommandRegistry.findCommand(commandId)?.sessionId ??
+          recoveringDraft.sessionId ??
+          null,
+        (params) => layer.queryCommands(params),
+        workspaceIdentity?.trim() || workspacePath,
+      )
+      .catch((error) => {
+        logger.warn("[v4-composer] 首发结果恢复查询失败，保留草稿身份", error);
+      });
+    return () => {
+      current = false;
+      off();
+    };
+  }, [
+    recoveringDraft,
+    remoteAvailable,
+    layer,
+    handleDraftSessionCreated,
+    newTaskComposerScope,
+    workspacePath,
+    workspaceIdentity,
+  ]);
   const showModelChangeNotice = useCallback(
     (sourceModel: ModelSelectionSource | null, targetModel: ModelSelectionSource) => {
       // Bug 原因：草稿尚未形成实际会话，模型选择本身已经在 composer 中可见；
@@ -2197,8 +3218,13 @@ export function SessionPane({
 
       const fromProvider = resolveProviderLabel(fromProviderId, modelSelectionView);
       const toProvider = resolveProviderLabel(targetModel.provider, modelSelectionView);
-      const fromModel = formatModelChangeLabel(fromProviderId, fromProvider, fromModelId);
-      const toModel = formatModelChangeLabel(targetModel.provider, toProvider, targetModel.model);
+      const fromModel = formatModelChangeLabel(fromProviderId, fromProvider, fromModelId, intl);
+      const toModel = formatModelChangeLabel(
+        targetModel.provider,
+        toProvider,
+        targetModel.model,
+        intl,
+      );
       toast(intl.formatMessage({ id: "chat.modelChangeNotice.changed" }, { fromModel, toModel }));
     },
     [intl, modelSelectionView, sessionId],
@@ -2244,7 +3270,7 @@ export function SessionPane({
 
   useEffect(() => {
     if (!effectiveSessionId) {
-      setLease(null);
+      setLease({ sessionId, layer, lease: null });
       return;
     }
     const nextLease = layer.acquire(effectiveSessionId);
@@ -2253,7 +3279,7 @@ export function SessionPane({
     const offOnlineModelTransition = nextLease.store.onOnlineModelTransition((transition) => {
       onlineModelTransitionHandlerRef.current(effectiveSessionId, nextLease.store, transition);
     });
-    setLease(nextLease);
+    setLease({ sessionId, layer, lease: nextLease });
     return () => {
       offOnlineModelTransition();
       nextLease.release();
@@ -2265,10 +3291,10 @@ export function SessionPane({
     void lease.store.refreshPlans();
   }, [lease, sessionId, snapshot?.sessionId, state.planDirectoryRevision]);
 
-  // 预热会话订阅失败（CLI 重启内存会话消失等）→ 丢弃回落无预热路径，不进错误 UI。
+  // 预热会话订阅失败（CLI 重启内存会话消失等）→ 丢弃旧 binding，下一次发送由 owner 重试。
   useEffect(() => {
     if (sessionId === null && prewarmBinding && state.status === "error") {
-      logger.warn("[v4-draft-prewarm] 预热会话订阅失败，丢弃回落", {
+      logger.warn("[v4-draft-prewarm] 预热会话订阅失败，丢弃旧 binding", {
         prewarmSessionId: prewarmBinding.sessionId,
         lastError: state.lastError ?? null,
       });
@@ -2381,8 +3407,10 @@ export function SessionPane({
 
   const readGroupedDraftId = useCallback(
     () =>
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-        .groupedDraftTask?.draftId ?? null,
+      String(
+        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+          .draftFocusVersion,
+      ),
     [workspacePath, workspaceIdentity],
   );
   /**
@@ -2419,8 +3447,6 @@ export function SessionPane({
         // 不完整报 "Reasoning level is required" 让整轮发送失败。优先取提交选择的 options，
         // 再回落 thought（CLI 投影的生效档位）；空串表示该模型无档位，交给 service 省略 options。
         const { provider, model, reasoningLevel } = selection;
-        // highspeedCardService 已可选（web 远控等 accessor 不提供）：无服务时本轮不加速。
-        if (!highspeedCardService) return null;
         try {
           const sendStartedAt = Date.now();
           const result = await highspeedCardService.prepareTurn({
@@ -2437,9 +3463,21 @@ export function SessionPane({
             // 请求由 Service 层继续完成并缓存供下一轮（spec §3 规则 12、§9.4）。
             const regularTps = await readRegularTpsWithinSendBudget({
               read: async () => {
-                // 去账号化（fork 移除 zhipu-account 权益）：节省时间的基准 TPS 依赖请求期
-                // 账号访问上下文，fork 无账号登录权益可解析，本轮直接不附加 regularTps。
-                return undefined;
+                // 节省时间的基准 TPS 来自 Coding Plan 用量健康接口，请求期鉴权只能由账号访问
+                // 上下文解析。这里按当前选中的 Coding Plan Provider 现取快照，不订阅配置面
+                // （SessionPane 不需要为此重渲染）；未连接或无权益时直接不展示节省时间。
+                const providerSettingsState = getProviderSettingsSnapshot();
+                const accountAccess =
+                  providerSettingsState.status === "ready"
+                    ? resolveEntitledAccountProviderAccess(providerSettingsState.view, provider)
+                    : null;
+                if (!accountAccess) return undefined;
+                return readHighspeedRegularTpsFromHealth({
+                  usageStatsService,
+                  preferredProviderId: provider,
+                  accountAccess: accountAccess.access,
+                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                });
               },
               elapsedMs: Date.now() - sendStartedAt,
               onError: (error) =>
@@ -2502,7 +3540,13 @@ export function SessionPane({
           return null;
         }
       },
-    [draftConfigRef, highspeedCardService, readGroupedDraftId, resolveInitialDraftConfig],
+    [
+      draftConfigRef,
+      highspeedCardService,
+      readGroupedDraftId,
+      resolveInitialDraftConfig,
+      usageStatsService,
+    ],
   );
 
   const dispatchSendTextAfterConfig = useCallback(
@@ -2511,9 +3555,14 @@ export function SessionPane({
       options: ConversationComposerSendOptions | undefined,
       createSourceAtSend: SessionCreateSource,
       highspeedOriginAtSend: HighspeedPaneOrigin,
+      taskGroupIdAtSend?: string | null,
     ) => {
+      let onAcceptedSelection: (() => void) | undefined;
       const prepareHighspeedTurn = prepareHighspeedTurnFrom(highspeedOriginAtSend);
       const dispatchSubmissionCommand = async (...args: Parameters<typeof dispatchCommand>) => {
+        args[9] = createSourceAtSend;
+        args[11] = taskGroupIdAtSend;
+        args[12] = options?.submittedDraftText ?? text;
         if (
           args[0] === "sendText" &&
           args[2] &&
@@ -2534,7 +3583,11 @@ export function SessionPane({
             logger.warn("[gen-ui] Widget context unavailable");
           }
         }
-        return dispatchCommand(...args);
+        const ack = await dispatchCommand(...args);
+        // 在原 accepted 边界写回推荐选择，早于新 Session 的草稿转移；失败不改用户意图。
+        if (ack.status === "accepted" && submissionConfigFromCommand(args[0], args[1]))
+          onAcceptedSelection?.();
+        return ack;
       };
       // 进入 barrier 前已经冻结；等待配置/附件期间不再回读 Composer 或 Session。
       let submission = options?.submission ?? null;
@@ -2543,44 +3596,17 @@ export function SessionPane({
       const readyAttachments = options?.attachments ?? [];
       const sharedContextRefs = options?.sharedContextRefs;
       const contextAttachmentCount = options?.contextAttachmentCount ?? 0;
-      let slashCommand = parseV4VisibleSlashCommand(text, readyAttachments, {
+      const slashCommand = parseV4VisibleSlashCommand(text, readyAttachments, {
         contextAttachmentCount,
       });
-
-      // `/plan` 首版只消费纯文本。必须在 provider readiness 和任何 command admission 之前
-      // 拒绝附件/context，否则原始 `/plan ...` 会退化成普通 prompt，既绕过产品边界又清空草稿。
-      if (slashCommand?.kind === "unsupportedPlanShortcut") {
-        toast(intl.formatMessage({ id: "chat.plan.attachmentsBlocked" }));
-        return "blocked" as const;
-      }
-
-      // 空 /plan 与模式菜单相同，只编辑当前 Composer，不提前改写 Agent 执行状态。
-      if (slashCommand?.kind === "planShortcut") {
-        handleDraftSwitchMode("plan");
-        if (submission) submission = { ...submission, planEnabled: true };
-        if (!slashCommand.task) return "sent" as const;
-      }
 
       if (!(await ensureDraftModelReadyForSend())) {
         return "blocked" as const;
       }
 
-      let effectiveText = text;
-      if (slashCommand?.kind === "planShortcut") {
-        // 命令显式指定本次 Submission 的模式，不能靠另一条 CAS 的先后顺序保证。
-        effectiveText = slashCommand.task;
-        // 命令只负责配置 shortcut；后续必须走普通 sendText，不能进入 goal/compact command 分支。
-        slashCommand = null;
-      }
-      // create/send ACK 期间用户可能切换任务或创建另一份 draft。
-      // placement 必须绑定发送开始时的稳定 identity，不能在完成回调里读取当前 workspace 草稿。
-      const groupedDraftTaskAtSend =
-        sessionId === null
-          ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-              .groupedDraftTask
-          : null;
       const selectionSideSlashCommand =
-        sessionId && (appSlashCommands?.length ?? 0) > 0
+        sessionId &&
+        appSlashCommands?.some((command) => command.value === "side" || command.value === "btw")
           ? parseSelectionSideSlashCommand(text, readyAttachments, {
               contextAttachmentCount,
               enabledCommandNames: availableSelectionSideSlashCommandNames,
@@ -2589,7 +3615,7 @@ export function SessionPane({
       if (sessionId && selectionSideSlashCommand) {
         const created = await handleOpenSelectionSideConversationWithPrompt(
           selectionSideSlashCommand.text,
-          options?.localTtft,
+          options?.telemetrySeed,
         );
         return created ? ("sent" as const) : ("blocked" as const);
       }
@@ -2620,6 +3646,16 @@ export function SessionPane({
         // resumeGoal 等控制命令也不应被发送消息确认框截获。
         return "confirmationRequired" as const;
       }
+      // slash 命令优先：已有 session 直接消费；draft 首发 /goal 复用同一个预热会话。
+      if (slashCommand === null || slashCommand.kind === "sendGoalCommand") {
+        const original = submission.modelSelection;
+        const chosen = await recommendStartPlan(original);
+        if (!chosen) return "blocked" as const;
+        if (chosen !== original) {
+          onAcceptedSelection = captureAcceptedModelSelection(chosen, original);
+          submission = { ...submission, modelSelection: chosen };
+        }
+      }
       const prewarmTargetBeforeSend =
         sessionId === null ? prewarmBindingRef.current?.sessionId : null;
       if (prewarmTargetBeforeSend) {
@@ -2641,6 +3677,7 @@ export function SessionPane({
         );
         if (consumed === "confirmationRequired") return consumed;
         if (consumed) {
+          onAcceptedSelection?.();
           return;
         }
       }
@@ -2666,212 +3703,77 @@ export function SessionPane({
           );
           return;
         }
-        const prewarm = prewarmBindingRef.current;
-        if (prewarm?.beginPromotion()) {
-          try {
-            const consumed = await dispatchSlashCommand(
-              draftSlashCommand,
-              prewarm.sessionId,
-              0,
-              heldQueueDisposition,
-              expectedHeldQueueItemIds,
-              submission,
-            );
-            if (consumed === "confirmationRequired") return consumed;
-            if (consumed) {
-              prewarm.promote();
-              handleDraftSessionCreated(prewarm.sessionId, groupedDraftTaskAtSend);
-              return;
-            }
-          } catch (error) {
-            if (isProviderNotReadyError(error)) throw error;
-            // 与普通首发相同：slash command 写出后的 transport error 也是 admission
-            // 结果未知，不能 discard 后换 session/command 再执行一次。
-            logger.warn(
-              `[v4-draft-prewarm] 预热会话 slash 结果未知，保留原 command 禁止自动重发: ${String(error)}`,
-            );
-            throw error;
-          }
-        }
-        const draftConfigPayload = buildDraftCreateConfigPayload(
-          {
-            ...draftConfigRef.current,
-            modelSelection: submission.modelSelection,
-          },
-          appFollowupMode,
-        );
-        const createAck = await dispatchSubmissionCommand(
-          "createSession",
-          { workspaceId: workspaceKey, ...draftConfigPayload },
-          null,
-        );
-        if (createAck.status !== "accepted") {
-          throw new Error(createAck.reasonCode ?? "createSession 被拒绝");
-        }
-        const createResult = createAck.result;
-        if (!createResult || createResult.type !== "createSession") {
-          throw new Error("createSession 缺少 sessionId");
-        }
-        const newSessionId = createResult.sessionId;
-        handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
-        await dispatchSlashCommand(
+      }
+      // Bug 根因：首发曾把 binding=null 当成无预热，绕过 owner 再建一个会话。
+      // 文本、附件/context 和 goal 都等待同一创建任务，创建失败或换代直接保留草稿。
+      const draftBinding = sessionId === null ? await waitForDraftSession() : null;
+      if (draftBinding) {
+        await ensureDraftPrewarmConfigBeforeSendRef.current(draftBinding.sessionId);
+        if (!draftBinding.beginPromotion()) throw new Error("草稿会话已切换，请重新发送");
+      }
+      const targetSessionId = sessionId ?? draftBinding!.sessionId;
+      if (draftBinding && draftSlashCommand) {
+        const consumed = await dispatchSlashCommand(
           draftSlashCommand,
-          newSessionId,
+          targetSessionId,
           0,
           heldQueueDisposition,
           expectedHeldQueueItemIds,
           submission,
+          (messageId) => reportDraftCreated(targetSessionId, createSourceAtSend, messageId),
         );
-        return;
+        if (consumed === "confirmationRequired") return consumed;
+        if (consumed) {
+          draftBinding.promote();
+          await handleDraftSessionCreated(
+            targetSessionId,
+            createSourceAtSend,
+            undefined,
+            taskGroupIdAtSend,
+          );
+          return;
+        }
       }
-      if (!sessionId) {
-        // 草稿附件在 composer 中已绑定预热 session 完成预传。
-        // 这里只提交 ready ref，禁止在 send click 内再启动上传。
-        const prewarm = prewarmBindingRef.current;
-        if (prewarm?.beginPromotion()) {
-          try {
-            const highspeed = await prepareHighspeedSendContext(
-              prewarm.sessionId,
-              prepareHighspeedTurn,
-              submission.modelSelection,
-            );
-            const ack = await dispatchSubmissionCommand(
-              "sendText",
-              {
-                text: effectiveText,
-                ...submission,
-                ...(options?.requestedDelivery
-                  ? { requestedDelivery: options.requestedDelivery }
-                  : {}),
-                conversationQuotes: options?.conversationQuotes,
-                ...(readyAttachments.length > 0 ? { attachments: readyAttachments } : {}),
-                ...(sharedContextRefs?.length ? { context_refs: sharedContextRefs } : {}),
-                ...(options?.source ? { source: options.source } : {}),
-                // 加速材料必须最后展开：本轮抽到卡时，Selection 由卡决定并覆盖草稿选择。
-                ...highspeed.override,
-              },
-              prewarm.sessionId,
-              undefined,
-              undefined,
-              options?.localTtft,
-              highspeed.acceleratedCard,
-              undefined,
-              undefined,
-              // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
-              submission,
-            );
-            if (ack.status === "accepted") {
-              prewarm.promote();
-              handleDraftSessionCreated(prewarm.sessionId, groupedDraftTaskAtSend);
-              return;
-            }
-            // failed ACK 也可能发生在 runtime 已启动、但 TurnStarted projection commit
-            // 超时之后；模型工具副作用无法靠 failed ACK 回滚，不能自动换 command 重跑。
-            logger.warn(
-              `[v4-draft-prewarm] 预热会话首发未 accepted（${ack.reasonCode ?? ack.status}），禁止自动重发`,
-            );
-            throw new Error(ack.reasonCode ?? "预热会话首发未 accepted");
-          } catch (error) {
-            if (isProviderNotReadyError(error)) throw error;
-            if (readyAttachments.length > 0) throw error;
-            // Bug 原因：transport error 不能证明 Agent 没有 admission；failed ACK 也可能
-            // 晚于 runtime 启动和工具副作用。旧逻辑统一 discard 预热会话并自动
-            // createSession(firstInput)，会把同一次提交跑两遍。保留 pending 生命周期和
-            // command 对账线索，异常交给 composer 保留草稿，禁止自动换 command 重发。
-            logger.warn(
-              `[v4-draft-prewarm] 预热会话首发未确认成功，保留原 command 禁止自动重发: ${String(error)}`,
-            );
-            throw error;
-          }
-        }
-        // fallback：无预热（创建失败/已丢弃）时现场建会话。草稿已选 config 随
-        // createSession 携带（CLI 归并请求与 runtime 缺省，首发即用草稿选择）。
-        // fallback 有 prewarm 投影时必须以 Agent 当前配置为 base；只有从未拿到投影
-        // 才使用冻结的初始化元组。否则 provider fallback 后会把 localStorage 旧模型重新写回。
-        const draftConfigPayload = buildDraftCreateConfigPayload(
-          {
-            ...draftConfigRef.current,
-            modelSelection: submission.modelSelection,
-          },
-          appFollowupMode,
-        );
-        // Highspeed 卡由服务端绑定 task_id，因此首发也必须先创建空 session，拿到真实
-        // sessionId 后再抽卡并发送。走 createSession(firstInput) 会绕过“点击发送先抽卡”的
-        // 统一 admission，导致无附件首轮永远不可能加速，所以这里不再保留 firstInput 特例。
-        // 本地 desktop localPath 是零拷贝 ready，不依赖 attachment transaction；极短窗口内
-        // 预热 session 可能还未返回。此时仍可先创建空 session，再提交现成 ref，发送点击内
-        // 不做任何附件上传，也不会让非 ready 附件绕过 composer 门禁。
-        const createAck = await dispatchSubmissionCommand(
-          "createSession",
-          { workspaceId: workspaceKey, ...draftConfigPayload },
-          null,
-        );
-        if (createAck.status !== "accepted") {
-          throw new Error(createAck.reasonCode ?? "createSession 被拒绝");
-        }
-        const createResult = createAck.result;
-        if (!createResult || createResult.type !== "createSession") {
-          throw new Error("createSession 缺少 sessionId");
-        }
-        const newSessionId = createResult.sessionId;
-        const highspeed = await prepareHighspeedSendContext(
-          newSessionId,
-          prepareHighspeedTurn,
-          submission.modelSelection,
-        );
-        const sendAck = await dispatchSubmissionCommand(
-          "sendText",
-          {
-            text: effectiveText,
-            ...submission,
-            ...(options?.requestedDelivery ? { requestedDelivery: options.requestedDelivery } : {}),
-            ...(readyAttachments.length > 0 ? { attachments: readyAttachments } : {}),
-            ...(sharedContextRefs?.length ? { context_refs: sharedContextRefs } : {}),
-            ...(options?.source ? { source: options.source } : {}),
-            ...highspeed.override,
-            conversationQuotes: options?.conversationQuotes,
-          },
-          newSessionId,
-          undefined,
-          undefined,
-          options?.localTtft,
-          highspeed.acceleratedCard,
-          undefined,
-          undefined,
-          // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
-          submission,
-        );
-        if (sendAck.status !== "accepted") {
-          throw new Error(sendAck.reasonCode ?? "sendText 被拒绝");
-        }
-        handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
-        return;
-      }
+      // admission 写出后的失败或 transport error 不能证明 CLI 没有执行；保留原 binding
+      // 的 pending 生命周期，交给 Composer 保留输入，禁止自动换会话/command 重发。
       // 附件 ref 已在 composer 预传状态机中收口。
       const highspeed = await prepareHighspeedSendContext(
-        sessionId,
+        targetSessionId,
         prepareHighspeedTurn,
         submission.modelSelection,
       );
       const ack = await dispatchSubmissionCommand(
         "sendText",
         {
-          text: effectiveText,
+          text,
           ...submission,
           ...(options?.requestedDelivery ? { requestedDelivery: options.requestedDelivery } : {}),
           conversationQuotes: options?.conversationQuotes,
           ...(readyAttachments.length > 0 ? { attachments: readyAttachments } : {}),
+          ...(sessionId && options?.requestedDelivery
+            ? {
+                // Bug 根因：立即发送曾先投影 QueueItem，再等待二次
+                // sendQueuedNow，导致队列中间态外泄且输入框延迟清空。现在由
+                // CLI 原子 stop + start，accepted ACK 即是 Composer 清空边界。
+                requestedDelivery: options.requestedDelivery,
+              }
+            : {}),
           ...(heldQueueDisposition ? { heldQueueDisposition } : {}),
           ...(expectedHeldQueueItemIds ? { expectedHeldQueueItemIds } : {}),
           ...(sharedContextRefs?.length ? { context_refs: sharedContextRefs } : {}),
           ...(options?.source ? { source: options.source } : {}),
           ...highspeed.override,
         },
-        sessionId,
+        targetSessionId,
         undefined,
         undefined,
-        options?.localTtft,
+        options?.telemetrySeed,
         highspeed.acceleratedCard,
+        options?.onCommandCreated
+          ? (envelope) => {
+              if (envelope.type === "sendText") options.onCommandCreated?.(envelope.commandId);
+            }
+          : undefined,
         undefined,
         undefined,
         // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
@@ -2881,33 +3783,56 @@ export function SessionPane({
         return "confirmationRequired" as const;
       }
       if (ack.status !== "accepted") {
+        if (
+          ack.reasonCode === "modelUnavailable" &&
+          highspeed.acceleratedCard &&
+          highspeed.override.modelExecution?.selectionFallback
+        ) {
+          // Bug 根因：Highspeed 与退回模型都不可用时，准入拒绝曾按普通发送异常处理，
+          // Composer 虽保留输入，但卡仍锁住模型选择且显示无助于恢复的错误。作废 Service
+          // 持有的同一张卡，并返回 blocked，让 Composer 的提交事务恢复正文和附件。
+          setSendSubmissionError(null);
+          invalidateActiveHighspeedCard(
+            highspeed.acceleratedCard.cardId,
+            `admission:${ack.commandId}:${highspeed.acceleratedCard.cardId}`,
+          );
+          return "blocked" as const;
+        }
         throw new Error(ack.reasonCode ?? "sendText 被拒绝");
       }
-      if (heldQueueDisposition === "clearQueueAndSend") {
-        settleCurrentQueueInputs(sessionId);
+      if (draftBinding) {
+        // 合并后普通首发漏传 commandId；只在 accepted 边界统计，避免预热空创建重复计数。
+        draftBinding.promote();
+        await handleDraftSessionCreated(
+          targetSessionId,
+          createSourceAtSend,
+          ack.commandId,
+          taskGroupIdAtSend,
+        );
+      } else if (heldQueueDisposition === "clearQueueAndSend") {
+        settleCurrentQueueInputs(targetSessionId);
       }
     },
     [
       dispatchCommand,
+      recommendStartPlan,
       baseWorkspaceServices,
       captureAcceptedModelSelection,
       dispatchSlashCommand,
       ensureDraftModelReadyForSend,
       availableSelectionSideSlashCommandNames,
       appSlashCommands,
-      appFollowupMode,
       handleDraftSessionCreated,
-      handleDraftSwitchMode,
+      reportDraftCreated,
       handleOpenSelectionSideConversationWithPrompt,
+      invalidateActiveHighspeedCard,
       intl,
       prepareHighspeedTurnFrom,
       resolveInitialDraftConfig,
       createSubmissionFromComposer,
       sessionId,
       settleCurrentQueueInputs,
-      workspaceIdentity,
-      workspaceKey,
-      workspacePath,
+      waitForDraftSession,
     ],
   );
 
@@ -2923,6 +3848,11 @@ export function SessionPane({
       };
       // 进入配置屏障前冻结 Highspeed 发送起点；屏障与后续 await 期间用户可能切换 Task。
       const highspeedOrigin = captureHighspeedPaneOrigin();
+      const taskGroupId =
+        sessionId === null
+          ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+              .draftTaskGroupId
+          : undefined;
       // followupMode 仍通过 Session CAS 同步；模型和模式已封装进 Submission，不再
       // 依赖“配置命令先到、sendText 后到”的跨命令时序。
       return configCommandBarrier.enqueue(async () => {
@@ -2932,6 +3862,7 @@ export function SessionPane({
             submissionOptions,
             createSource,
             highspeedOrigin,
+            taskGroupId,
           );
         } catch (error) {
           if (sessionId === null && isProviderNotReadyError(error)) {
@@ -2990,7 +3921,9 @@ export function SessionPane({
         // 这里把 admission 前失败收口为 pane-local 错误横幅，不改变 desktop continuous 或
         // Web remote replayable 的发送/恢复语义，草稿仍由 Composer 原路径保留。
         setSendSubmissionError({
-          code: runtimeModelUnavailable ? "ZXCODE_RUNTIME_MODEL_UNAVAILABLE" : "SEND_FAILED",
+          code:
+            getRemoteConnectionFailureCode(error) ??
+            (runtimeModelUnavailable ? "ZCODE_RUNTIME_MODEL_UNAVAILABLE" : "SEND_FAILED"),
           message: runtimeModelUnavailable
             ? detail
             : intl.formatMessage({ id: "chat.error.sendFailed" }),
@@ -3263,6 +4196,7 @@ export function SessionPane({
           const refreshed = await prepareHighspeedSendContext(
             sessionId,
             prepareHighspeedTurnFrom(highspeedOrigin),
+            queueItem.modelSelection,
           );
           // Bug 原因：CLI 暂存 runtime 可能跨异步边界缺失；手动提升时补充同一张卡的
           // 新 runtime。若服务返回了不同卡，不得把原队列意图悄悄改绑到另一张卡。
@@ -3472,7 +4406,12 @@ export function SessionPane({
   // Composer 选择表达“下一次提交”。点击只更新 renderer intent；Session Selection
   // 在 Submission 真正开跑（Guide 为下一次 model-step）时由 CLI/Core 更新。
   const handleSelectModel = useCallback(
-    (modelProvider: string, model: string, sourceModel: ModelSelectionSource | null) => {
+    (
+      modelProvider: string,
+      model: string,
+      sourceModel: ModelSelectionSource | null,
+      reasoningLevel?: string,
+    ) => {
       // 加速卡在本轮已把 Selection 锁定成卡上模型，选型菜单此时不可用；仍有快捷键
       // 或竞态调用进来时明确提示，不能静默把草稿改成另一个模型。
       if (activeHighspeedCard) {
@@ -3486,7 +4425,7 @@ export function SessionPane({
         model,
         branch: "composer-submission-intent",
       });
-      handleDraftSelectModel(resolvedProvider, model);
+      handleDraftSelectModel(resolvedProvider, model, reasoningLevel);
     },
     [activeHighspeedCard, draftConfigRef, handleDraftSelectModel, intl],
   );
@@ -3504,7 +4443,7 @@ export function SessionPane({
       if (!decoded?.providerId) {
         return;
       }
-      const displayProvider = provider ?? ZXCODE_AGENT_PROVIDER;
+      const displayProvider = provider ?? ZCODE_AGENT_PROVIDER;
       let modelValue = value;
       if (!decoded.modelName) {
         const fallbackModel =
@@ -3661,22 +4600,30 @@ export function SessionPane({
     });
   }, [dispatchCommand, sessionId]);
 
-  // composer parity：Esc → stop（旧 useChatViewEffects「Escape 停止生成」语义保真：
-  // 事件路径含 dialog / defaultPrevented 时跳过；mention/slash 面板打开时 Lexical 已
-  // preventDefault，本 handler 自然让路）。仅 focused pane 监听：
-  // 「stop 等危险操作永远作用于明确的 pane，快捷键走 focused pane」。
+  // 主、辅对话可同时 focused（各自布局的可见态），不能据此争抢窗口 Esc。
+  // 面板打开时按 DOM 归属隔离；关闭时由 Shell 授权主区接收对话外 Esc，避免焦点离开输入框后无法停止。
+  // 保留窗口冒泡阶段，让 mention/slash 的 preventDefault 和 dialog 优先处理。
   useEffect(() => {
     if (!focused || readOnly) return;
     if (!sessionId || !snapshot?.control.canStop) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (!paneRef.current) return;
+      if (!allowEscapeStopOutsidePane && !event.composedPath().includes(paneRef.current)) return;
       if (shouldIgnoreEscapeForStopGeneration(event)) return;
       event.preventDefault();
       handleStop("escape");
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focused, handleStop, readOnly, sessionId, snapshot?.control.canStop]);
+  }, [
+    allowEscapeStopOutsidePane,
+    focused,
+    handleStop,
+    readOnly,
+    sessionId,
+    snapshot?.control.canStop,
+  ]);
 
   // handleStop 带 source 参数（button / escape 两个调用点），但 ConversationComposer 是 memo：
   // 直接写 onStop={() => handleStop("button")} 每次 render 都换引用，memo 白做，而 composer
@@ -3700,6 +4647,17 @@ export function SessionPane({
           logEpoch: snapshot?.logEpoch ?? "unknown",
         });
   }, [lease, snapshot?.logEpoch]);
+
+  useEffect(() => {
+    if (!shareActive || !sessionId || !hasOlderRows(snapshot)) return;
+    const key = `${sessionId}:${snapshot?.logEpoch ?? "unknown"}`;
+    if (shareHydratedSessionRef.current === key) return;
+    shareHydratedSessionRef.current = key;
+    void handleLoadAllOlder().catch((error) => {
+      shareHydratedSessionRef.current = null;
+      logger.warn("[conversation-share] 补齐分享目录失败", { error });
+    });
+  }, [handleLoadAllOlder, sessionId, shareActive, snapshot]);
 
   useEffect(() => {
     if (
@@ -3729,28 +4687,142 @@ export function SessionPane({
 
   // subscribe ACK 会先把 store 置 live，initial snapshot 稍后才到；只看
   // status 会在无投影窗口提前启用编辑器。正式 session 必须等首个 snapshot 才可输入。
-  const connecting = sessionId !== null && (state.status === "connecting" || snapshot === null);
+  const connecting =
+    sessionId !== null &&
+    (snapshot === null || (state.status === "connecting" && !snapshot.runtimeInitialization));
   const queueEditActiveForCurrentComposer =
     queueEditOperation?.sessionId === sessionId && queueEditOperation.workspaceKey === workspaceKey;
   const errored = sessionId !== null && state.status === "error";
+  useSessionSubscriptionErrorTelemetry({
+    supervisor: conversationTelemetry,
+    sessionId,
+    lastError: state.lastError,
+    visible: errored && telemetryVisible && conversationTelemetryForegroundEnabled,
+  });
   // retry 的产品裁决属于行级权威投影。这里仅提供命令能力，入口是否展示
   // 完全读取 row.actions.canRetry，禁止再用 pane phase 形成第二套 guard。
-  const retryActionsEnabled = !readOnly && !selectionSideChat && Boolean(sessionId);
+  const retryActionsEnabled = runtimeReady && !readOnly && !selectionSideChat && Boolean(sessionId);
   // fork 可用性完全由 row.actions.canFork（CLI stable resolver 投影）裁决；pane 只提供命令回调。
-  const forkActionsEnabled = !readOnly && !selectionSideChat && Boolean(sessionId);
+  const forkActionsEnabled = runtimeReady && !readOnly && !selectionSideChat && Boolean(sessionId);
   // editUserQuery 已由 command 层防御 latest real user query，并在 running
   // 提交时先 stop barrier 再 rewind/rerun；UI 不应再用 completed gate 把入口整轮隐藏。
-  const editActionsEnabled = !readOnly && !selectionSideChat && Boolean(sessionId);
+  const editActionsEnabled = runtimeReady && !readOnly && !selectionSideChat && Boolean(sessionId);
   const isDraft = sessionId === null;
   // 滚动恢复必须使用与 sessionId 匹配的 lease projection。切换 session 的 render 与
   // passive effect 不在同一时刻，旧 lease 的 rows 若提前交给 timeline，会让新记忆按旧
   // 内容高度 clamp，后续目标 rows 到达时也无法区分这次临时落点。
-  const sessionLeaseReady = lease?.sessionId === sessionId;
   const timelineSnapshot =
     !isDraft && (lease === null || sessionLeaseReady) && snapshot?.sessionId === sessionId
       ? snapshot
       : null;
+  const shareHandoverContext =
+    snapshot?.sharedContextImport && "contextId" in snapshot.sharedContextImport
+      ? snapshot.sharedContextImport
+      : null;
+  // 导入的分享对话：读取落盘的公开 rows 用于会话顶部的只读块。
+  // 分享页可能过期或未上线，所以只读本地副本，不回源。
+  const [importedShare, setImportedShare] = useState<ImportedConversationShare | null>(null);
+  const importedShareContextId =
+    shareHandoverContext && shareHandoverContext.status !== "discarded"
+      ? shareHandoverContext.contextId
+      : null;
+  useEffect(() => {
+    if (!importedShareContextId || compactForRemoteControl) {
+      setImportedShare(null);
+      return;
+    }
+    let disposed = false;
+    void conversationShareService
+      .getImportedConversation({
+        workspacePath,
+        contextId: importedShareContextId,
+      })
+      .then((imported) => {
+        if (disposed) return;
+        setImportedShare(imported);
+      })
+      .catch((error: unknown) => {
+        if (disposed) return;
+        // 只读块是增强，读不到就不渲染，不打断会话。
+        logger.warn("[conversation-share] 读取导入的分享对话失败", { error });
+        setImportedShare(null);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [compactForRemoteControl, conversationShareService, importedShareContextId, workspacePath]);
+  // normalizeConversationShareMarkdown 在 artifactNames 里找不到匹配名字时，会把正文里的
+  // 文件引用替换成空字符串（直接删掉）。不接这份映射，只读块里的文件引用会静默消失。
+  const importedShareArtifactNames = useMemo(
+    () =>
+      new Map(
+        (importedShare?.artifacts ?? []).map((artifact) => [
+          artifact.artifactId,
+          artifact.displayName,
+        ]),
+      ),
+    [importedShare],
+  );
+  const importedShareArtifactWorkspaceRelativePaths = useMemo(() => {
+    const entries: Array<[string, string]> = [];
+    for (const artifact of importedShare?.artifacts ?? []) {
+      if (artifact.workspaceRelativePath) {
+        entries.push([artifact.artifactId, artifact.workspaceRelativePath]);
+      }
+    }
+    return new Map(entries);
+  }, [importedShare]);
+  useLayoutEffect(() => {
+    if (
+      compactForRemoteControl ||
+      !timelineBottomRequest ||
+      timelineBottomRequest.taskId !== sessionId ||
+      !importedShare ||
+      importedShare.contextId !== importedShareContextId
+    ) {
+      return;
+    }
+    // 分享块是异步挂载的；请求保留到目标 task 与本地副本都就绪，再在布局稳定后消费。
+    const scrollToBottom = () => {
+      const action = timelineScrollToBottomRef.current;
+      if (!action) return false;
+      action();
+      return true;
+    };
+    let secondFrame: number | null = null;
+    const firstFrame = window.requestAnimationFrame(() => {
+      scrollToBottom();
+      secondFrame = window.requestAnimationFrame(() => {
+        if (!scrollToBottom()) return;
+        useZCodeSessionStore
+          .getState()
+          .clearTimelineBottomRequest(
+            workspacePath,
+            timelineBottomRequest.requestId,
+            workspaceIdentity,
+          );
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [
+    compactForRemoteControl,
+    importedShare,
+    importedShareContextId,
+    sessionId,
+    timelineBottomRequest,
+    workspaceIdentity,
+    workspacePath,
+  ]);
+  const handleOpenImportedShareUrl = useCallback(() => {
+    if (!shareHandoverContext || !onOpenBrowserUrl) return;
+    // 持久化的是规范 /cn/share/ 路径；展示/打开时才按界面语言本地化。
+    onOpenBrowserUrl(localizeConversationShareUrl(shareHandoverContext.shareUrl, locale));
+  }, [locale, onOpenBrowserUrl, shareHandoverContext]);
   const initialDraftConfigForDiagnostics = isDraft ? resolveInitialDraftConfig() : undefined;
+  const telemetryDraftConfig = draftConfig;
   // CLI V4 projection 是 running/count/manifest 的唯一权威；renderer 不再在 spawn
   // 事件后另发查询拼接第二份状态，避免并发 child 的 in-flight refresh 丢更新。
   const subagents = snapshot?.subagents ?? EMPTY_SUBAGENT_PROJECTION;
@@ -3900,6 +4972,7 @@ export function SessionPane({
     phase: snapshot?.control.phase ?? null,
     providerId: snapshot?.config.provider ?? null,
     modelId: snapshot?.config.model ?? null,
+    usageStatsService: baseWorkspaceServices.usageStatsService,
     mcpUnavailableNotice,
   });
   const composerError =
@@ -3930,10 +5003,344 @@ export function SessionPane({
     draftModelReadinessError,
     sendSubmissionError,
   ]);
+  // 远端 workspace 的模型目录来自远端 Registry；本机配置保存后由 Provisioning 自动下发，
+  // 因此缺模型横幅只切换措辞，配置/升级动作仍统一指向本机。
+  const modelConfigTarget: ChatErrorBannerModelConfigTarget = isRemoteWorkspaceIdentity(
+    workspaceIdentity ?? "",
+  )
+    ? "remote"
+    : "local";
   const handleOpenModelSettings = useCallback(() => {
     setPendingSettingsSectionIntent("modelProvider");
     openSettingsTab();
   }, [openSettingsTab]);
+  const handleOpenModelUpgrade = useCallback(() => {
+    if (!codingPlanUpgradeDialog) return;
+    const providerId =
+      sharedSettings?.providerFamilyDomain === "bigmodel"
+        ? BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan
+        : BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan;
+    codingPlanUpgradeDialog.openCodingPlanUpgrade({ providerId });
+  }, [codingPlanUpgradeDialog, sharedSettings?.providerFamilyDomain]);
+  const handleOpenQuotaUpgrade = useCallback(() => {
+    const providerId = quotaBanner.upgradeProviderId;
+    if (!providerId || !codingPlanUpgradeDialog) return;
+    const eventText = intl.formatMessage({
+      id: quotaBanner.upgradeActionLabelId,
+    });
+    // 横幅只建立漏斗上下文；coding_plan_upgrade_ck 仍由真实购买面板打开后统一上报。
+    codingPlanUpgradeDialog.openCodingPlanUpgrade({
+      providerId,
+      funnelContext: createCodingPlanFunnelContext({
+        providerId,
+        upgradeSource: "session_quota_alert",
+        eventRegion: "app.session",
+        eventText,
+        entryPlanState: resolveCodingPlanEntryPlanState({
+          providerId,
+          displayStatus: "purchased",
+          planLevel: "start",
+        }),
+      }),
+    });
+  }, [
+    codingPlanUpgradeDialog,
+    intl,
+    quotaBanner.upgradeActionLabelId,
+    quotaBanner.upgradeProviderId,
+  ]);
+
+  const handleConfirmShareDisclosure = useCallback(async () => {
+    if (!sessionId || !shareDraft || sharePublishing) return;
+    const productTurnIds = getConversationShareSelectedProductTurnIds(
+      useConversationShareSelectionStore.getState(),
+      sessionId,
+    );
+    if (productTurnIds.length === 0 || !shareTitle.trim()) return;
+    const attemptKey = JSON.stringify({
+      title: shareTitle.trim(),
+      accessMode: shareDraft.accessMode,
+      productTurnIds,
+      revision: snapshot?.revision ?? null,
+      logEpoch: snapshot?.logEpoch ?? null,
+    });
+    const shareAttempt = ensureConversationShareAttempt(
+      getConversationShareDockState(useConversationShareSelectionStore.getState(), sessionId)
+        .attempt,
+      attemptKey,
+      sessionId,
+      { randomUUID: () => globalThis.crypto?.randomUUID?.() },
+    );
+    const operationId = `share-operation-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+    let activePhase = "collecting";
+    let collectedWarnings: ConversationShareDisplayWarnings | null = null;
+    const progressSubscription = conversationShareService.onDynamicPublishProgress(operationId)((
+      progress,
+    ) => {
+      activePhase = progress.phase;
+      updateShareDockState(sessionId, {
+        progress: progress.phase === "complete" ? "checking" : progress.phase,
+        completedArtifacts: progress.completedArtifacts,
+        totalArtifacts: progress.totalArtifacts,
+      });
+      const warnings = sanitizeConversationShareWarnings(progress.warnings);
+      if (warnings.length > 0) {
+        collectedWarnings = {
+          issues: warnings,
+          issueCount: warnings.length,
+          ...(progress.omittedWarningCount
+            ? { omittedIssueCount: progress.omittedWarningCount }
+            : {}),
+        };
+      }
+    });
+    updateShareDockState(sessionId, {
+      attempt: shareAttempt,
+      publishing: true,
+      progress: "collecting",
+      completedArtifacts: 0,
+      totalArtifacts: 0,
+      publishedShareUrl: null,
+      error: null,
+      warnings: null,
+    });
+    try {
+      const share = await conversationShareService.publish(
+        {
+          workspacePath,
+          ...(workspaceIdentity ? { workspaceIdentity } : {}),
+          ...(remoteSessionId ? { remoteSessionId } : {}),
+          sessionId,
+          title: shareTitle.trim(),
+          accessMode: shareDraft.accessMode,
+          selection: { kind: "productTurns", productTurnIds },
+          clientRequestId: shareAttempt.clientRequestId,
+          disclosureAcceptedAt: shareAttempt.disclosureAcceptedAt,
+          locale,
+        },
+        operationId,
+      );
+      const warnings = collectedWarnings as ConversationShareDisplayWarnings | null;
+      updateShareDockState(sessionId, {
+        publishedShareUrl: share.share_url,
+        warnings,
+      });
+      // collectedWarnings 只在 progress 回调里赋值，TS 的控制流分析看不到跨闭包写入，
+      // 会把它收窄成 null，这里显式还原真实类型。
+      if (warnings) {
+        toast(
+          intl.formatMessage(
+            { id: "conversationShare.publishSucceededWithSkips" },
+            { count: warnings.issueCount },
+          ),
+        );
+      } else {
+        toast(intl.formatMessage({ id: "conversationShare.publishSucceeded" }));
+      }
+    } catch (error) {
+      const details = getConversationShareErrorDetails(error);
+      // 401 等传输错误通常没有服务端 issues，不能再降级成 collecting 阶段的通用文案。
+      const resolvedMessageId = resolveConversationSharePublishErrorMessageId(error);
+      const messageId =
+        resolvedMessageId === "conversationShare.publishFailed" ? undefined : resolvedMessageId;
+      updateShareDockState(sessionId, {
+        attempt: retainConversationShareAttemptAfterFailure(shareAttempt, details.code),
+        error:
+          details.issues && details.issues.length > 0
+            ? {
+                issues: details.issues,
+                issueCount: details.issueCount ?? details.issues.length,
+                omittedIssueCount: details.omittedIssueCount,
+                requestId: details.requestId,
+                clientRequestId: details.clientRequestId,
+                operationId,
+                status: details.status,
+                code: details.code,
+                rejection: details.rejection,
+              }
+            : {
+                issues: [
+                  {
+                    code: resolveConversationShareFallbackIssueCode(details),
+                    scope: "transport",
+                    phase: activePhase as "collecting" | "uploading" | "checking" | "complete",
+                  },
+                ],
+                issueCount: 1,
+                requestId: details.requestId,
+                clientRequestId: details.clientRequestId,
+                operationId,
+                status: details.status,
+                code: details.code,
+                rejection: details.rejection,
+                messageId,
+              },
+      });
+      logger.warn("[conversation-share] 会话发布失败", {
+        sessionId,
+        operationId,
+        phase: activePhase,
+        accessMode: shareDraft.accessMode,
+        selectedProductTurnCount: productTurnIds.length,
+        remoteWorkspace: Boolean(workspaceIdentity || remoteSessionId),
+        errorName: details.name,
+        kind: details.kind,
+        ...(details.reasonCode === undefined ? {} : { reasonCode: details.reasonCode }),
+        ...(details.diagnostics === undefined ? {} : { diagnostics: details.diagnostics }),
+        ...(details.status === undefined ? {} : { status: details.status }),
+        ...(details.code === undefined ? {} : { code: details.code }),
+        ...(details.rejection ? { rejection: details.rejection } : {}),
+        ...(details.requestId === undefined ? {} : { requestId: details.requestId }),
+      });
+    } finally {
+      progressSubscription.dispose();
+      updateShareDockState(sessionId, { publishing: false });
+    }
+  }, [
+    conversationShareService,
+    intl,
+    remoteSessionId,
+    sessionId,
+    shareDraft,
+    sharePublishing,
+    shareTitle,
+    snapshot?.logEpoch,
+    snapshot?.revision,
+    updateShareDockState,
+    workspaceIdentity,
+    workspacePath,
+  ]);
+
+  const handleCopyPublishedShare = useCallback(async () => {
+    if (!publishedShareUrl || !navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(publishedShareUrl);
+      toast(intl.formatMessage({ id: "conversationShare.copySucceeded" }));
+      return true;
+    } catch {
+      toast(intl.formatMessage({ id: "conversationShare.copyFailed" }));
+      return false;
+    }
+  }, [intl, publishedShareUrl]);
+
+  const handleOpenPublishedShare = useCallback(() => {
+    if (!publishedShareUrl || !onOpenBrowserUrl) return;
+    // 服务端保存规范 /cn/share/ 路径；打开时再按当前界面语言切换落地页路径。
+    onOpenBrowserUrl(localizeConversationShareUrl(publishedShareUrl, locale));
+  }, [locale, onOpenBrowserUrl, publishedShareUrl]);
+
+  const handleCopyShareRequestId = useCallback(() => {
+    const requestId = shareError?.requestId;
+    if (!requestId || !navigator.clipboard?.writeText) {
+      toast(intl.formatMessage({ id: "conversationShare.copyFailed" }));
+      return;
+    }
+    void navigator.clipboard.writeText(requestId).then(
+      () => toast(intl.formatMessage({ id: "conversationShare.copySucceeded" })),
+      () => toast(intl.formatMessage({ id: "conversationShare.copyFailed" })),
+    );
+  }, [intl, shareError?.requestId]);
+
+  const handleShareCancel = useCallback(() => {
+    if (sharePublishing || !sessionId) return;
+    closeShare(sessionId);
+  }, [closeShare, sessionId, sharePublishing]);
+
+  const handleConfirmShareSelection = useCallback(() => {
+    if (!sharePublishing && sessionId) confirmShareSelection(sessionId);
+  }, [confirmShareSelection, sessionId, sharePublishing]);
+
+  const handleDismissShareError = useCallback(() => {
+    if (sessionId) updateShareDockState(sessionId, { error: null });
+  }, [sessionId, updateShareDockState]);
+  const handleDismissShareWarnings = useCallback(() => {
+    if (sessionId) updateShareDockState(sessionId, { warnings: null });
+  }, [sessionId, updateShareDockState]);
+
+  const handleDeselectShareTurn = useCallback(
+    (productTurnId: string) => {
+      if (!sessionId || !productTurnId) return;
+      // 按 product turn 身份整轮移除：service 的 issue 已带 productTurnId，
+      // 不再用 turnOrdinal 索引 UI 的 per-query 列表（两套编号会错位）。
+      deselectShareProductTurn(sessionId, productTurnId);
+    },
+    [deselectShareProductTurn, sessionId],
+  );
+
+  const handleShareTitleChange = useCallback(
+    (value: string) => {
+      if (!sessionId) return;
+      updateShareDockState(sessionId, {
+        title: value,
+        disclosureAccepted: false,
+        publishedShareUrl: null,
+        error: null,
+        warnings: null,
+      });
+    },
+    [sessionId, updateShareDockState],
+  );
+
+  const handleShareAccessModeChange = useCallback(
+    (accessMode: ConversationShareAccessMode) => {
+      if (!sessionId) return;
+      setShareAccessMode(sessionId, accessMode);
+      updateShareDockState(sessionId, {
+        disclosureAccepted: false,
+        publishedShareUrl: null,
+        error: null,
+        warnings: null,
+      });
+    },
+    [sessionId, setShareAccessMode, updateShareDockState],
+  );
+
+  // 内联回调会让 memo 确认 Dock 每次重渲染；依赖当前 session，避免切换后写回旧会话。
+  const handleShareDisclosureAcceptedChange = useCallback(
+    (accepted: boolean) => {
+      if (sessionId) {
+        updateShareDockState(sessionId, { disclosureAccepted: accepted });
+      }
+    },
+    [sessionId, updateShareDockState],
+  );
+
+  const handleEditShareSelection = useCallback(() => {
+    if (sharePublishing || publishedShareUrl || !sessionId) return;
+    updateShareDockState(sessionId, { error: null });
+    beginShareSelection(sessionId);
+  }, [beginShareSelection, publishedShareUrl, sessionId, sharePublishing, updateShareDockState]);
+
+  const handleShareConfirm = useCallback(() => {
+    if (
+      !shareDisclosureAccepted ||
+      shareSelectionPanelVisible ||
+      sharePreflight.status !== "ready" ||
+      sharePreflight.blockingIssues.length > 0
+    )
+      return;
+    void handleConfirmShareDisclosure();
+  }, [
+    handleConfirmShareDisclosure,
+    shareDisclosureAccepted,
+    shareSelectionPanelVisible,
+    sharePreflight,
+  ]);
+
+  const handleShareSelectionToggle = useCallback(
+    (rowId: number) => {
+      if (sessionId) toggleShareRow(sessionId, rowId);
+    },
+    [sessionId, toggleShareRow],
+  );
+
+  const handleShareSelectionInspect = useCallback(
+    (target: { unitIndex: number; rowId: number }) => {
+      timelineScrollToQueryRef.current?.(target);
+    },
+    [],
+  );
+
   const recoverableCommand = recoverableCommands[0] ?? null;
   const handleDismissPendingRecovery = useCallback(() => {
     if (!recoverableCommand) return;
@@ -3949,7 +5356,20 @@ export function SessionPane({
       commandId: recoverableCommand.commandId,
     });
     if (!replay) return;
-    void dispatchCommand(replay.type, replay.payload, replay.sessionId, replay.baseRevision)
+    void dispatchCommand(
+      replay.type,
+      replay.payload,
+      replay.sessionId,
+      replay.baseRevision,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      replay.clientContext?.projectId,
+      replay.clientContext?.sessionCreateSource,
+      undefined,
+      replay.clientContext?.taskGroupId,
+    )
       .then((ack) => {
         if (
           replay.type === "createSession" &&
@@ -3967,7 +5387,12 @@ export function SessionPane({
             });
             return;
           }
-          handleDraftSessionCreated(ack.result.sessionId, replay.clientContext?.groupedDraftTask);
+          return handleDraftSessionCreated(
+            ack.result.sessionId,
+            replay.clientContext?.sessionCreateSource,
+            replay.payload.firstInput ? ack.commandId : undefined,
+            replay.clientContext?.taskGroupId,
+          );
         }
       })
       .catch((error) => {
@@ -3990,12 +5415,19 @@ export function SessionPane({
       draftMode={isDraft}
       draftConfig={draftConfig}
       composerDraft={composerDraft}
+      rootDraftScopeKey={composerScopeKey(newTaskComposerScope)}
       replaceComposerDraft={replaceComposerDraft}
-      submissionReady={composerSubmissionReady}
+      submissionReady={composerSubmissionReady && runtimeReady && !recoveringDraft}
       updateComposerContent={updateComposerContent}
       createSubmissionFromComposer={createSubmissionFromComposer}
-      contextHeader={isDraft ? draftComposerHeader : undefined}
+      telemetryDraftConfig={telemetryDraftConfig}
+      // 完整视图浮窗默认是一条输入框：草稿项目栏不进入浮窗，切到对话 tab 再选择项目。
+      contextHeader={isDraft && !isFloatingPresentation ? draftComposerHeader : undefined}
       centered={isDraft}
+      layout={isFloatingPresentation ? "inline" : "stacked"}
+      workingDurationMs={
+        floatingTurnRunning ? floatingLatestTurnSummary?.workDurationMs : undefined
+      }
       blockingRequestId={blockingInteractionId}
       listenAddToChatEvents={focused}
       externalTextInsertRequest={focused && sessionId === null ? composerTextInsertRequest : null}
@@ -4011,14 +5443,20 @@ export function SessionPane({
       workspacePath={workspacePath}
       workspaceIdentity={workspaceIdentity}
       remoteSessionId={remoteSessionId ?? undefined}
-      modelSelectionView={modelSelectionView}
+      modelSelectionView={
+        modelSelectionView ??
+        (modelSelectionRead.state.status === "loading" ? modelSelectionRead.state.catalog : null)
+      }
       modelSelectionState={modelSelectionRead.state}
       modelSelectionReload={modelSelectionRead.reload}
+      modelSelectionRefresh={modelSelectionRead.refresh}
       attachmentSessionId={effectiveSessionId}
       attachmentPut={attachmentPut}
       onRuntimeRestart={onRuntimeRestart}
       onRuntimeLifecycle={onRuntimeLifecycle}
       provider={provider}
+      telemetryVisible={telemetryVisible && conversationTelemetryForegroundEnabled}
+      readPlanIdentitySnapshot={readPlanIdentitySnapshot}
       onSendText={handleSendText}
       highspeedCard={activeHighspeedCard}
       highspeedActivationCardId={highspeedActivationCardId}
@@ -4042,20 +5480,104 @@ export function SessionPane({
       onSendCompressionCommand={handleSendCompressionCommand}
       error={composerError}
       onDismissError={handleDismissComposerError}
+      onRetryInitialization={handleRetrySubscribe}
       onOpenModelSettings={handleOpenModelSettings}
+      onOpenModelUpgrade={handleOpenModelUpgrade}
+      modelConfigTarget={modelConfigTarget}
       onOpenCodeViewer={onOpenCodeViewer}
       suppressGoalCommands={selectionSideChat}
       appSlashCommands={appSlashCommands}
       onDropTargetControllerChange={handleDropTargetControllerChange}
     />
   );
+  const sharePreflightContent = useMemo(
+    () => (
+      <ConversationSharePreflightStatus
+        preflight={sharePreflight}
+        onDeselectTurn={handleDeselectShareTurn}
+        onRetryPreflight={retrySharePreflight}
+      />
+    ),
+    [sharePreflight, handleDeselectShareTurn, retrySharePreflight],
+  );
+  const handleSelectAllShareRows = useCallback(
+    (selected: boolean) => {
+      if (sessionId) setAllPendingShareRows(sessionId, selected);
+    },
+    [sessionId, setAllPendingShareRows],
+  );
   const pendingGuideProjection = snapshot ? projectPendingGuideQueue(snapshot.queue) : null;
+  const sharePopoverContent =
+    readOnly || !sessionId ? null : publishedShareUrl ? (
+      <ConversationShareSuccessDock
+        url={publishedShareUrl}
+        title={shareTitle}
+        warnings={shareWarnings}
+        onOpen={handleOpenPublishedShare}
+        onCopy={handleCopyPublishedShare}
+        onDismiss={handleShareCancel}
+      />
+    ) : (
+      <ConversationShareConfirmationDock
+        preflightChecking={
+          sharePreflight.status === "checking" ||
+          sharePreflight.status === "stale" ||
+          (sharePreflight.status === "idle" && preflightShareProductTurnIds.length > 0)
+        }
+        selectionEditing={shareSelectionPanelVisible}
+        publishDisabled={
+          sharePreflight.status !== "ready" || sharePreflight.blockingIssues.length > 0
+        }
+        preflightContent={sharePreflightContent}
+        selectedCount={selectedShareProductTurnIds.length}
+        totalCount={eligibleShareProductTurnIds.length}
+        title={shareTitle}
+        accessMode={shareDraft?.accessMode ?? DEFAULT_CONVERSATION_SHARE_ACCESS_MODE}
+        progressLabel={intl.formatMessage({
+          id:
+            shareProgress === "uploading"
+              ? "conversationShare.progress.uploading"
+              : shareProgress === "checking"
+                ? "conversationShare.progress.checking"
+                : "conversationShare.progress.collecting",
+        })}
+        progressPhase={shareProgress}
+        completedArtifacts={shareCompletedArtifacts}
+        totalArtifacts={shareTotalArtifacts}
+        pending={sharePublishing}
+        error={shareError}
+        warnings={shareWarnings}
+        onDismissError={handleDismissShareError}
+        onDismissWarnings={handleDismissShareWarnings}
+        onCopyRequestId={handleCopyShareRequestId}
+        onDeselectTurn={handleDeselectShareTurn}
+        onTitleChange={handleShareTitleChange}
+        onAccessModeChange={handleShareAccessModeChange}
+        disclosureAccepted={shareDisclosureAccepted}
+        onDisclosureAcceptedChange={handleShareDisclosureAcceptedChange}
+        onCancel={handleShareCancel}
+        onEditSelection={handleEditShareSelection}
+        onConfirm={handleShareConfirm}
+      />
+    );
   const conversationBottomDockContent = readOnly ? null : (
     <>
       {quotaBanner.state.visible &&
       !quotaBanner.dismissed &&
       (!projectedComposerError || quotaBanner.takesOverError || quotaBanner.state.blocksSubmit) ? (
-        <ConversationQuotaBanner state={quotaBanner.state} onDismiss={quotaBanner.dismiss} />
+        <ConversationQuotaBanner
+          state={quotaBanner.state}
+          onShown={quotaBanner.markShown}
+          billingDiscountActive={billingDiscount.active}
+          billingDiscountConfig={billingDiscount.config}
+          upgradeActionLabelId={quotaBanner.upgradeActionLabelId}
+          onUpgrade={
+            quotaBanner.upgradeProviderId && codingPlanUpgradeDialog
+              ? handleOpenQuotaUpgrade
+              : undefined
+          }
+          onDismiss={quotaBanner.dismiss}
+        />
       ) : null}
       {recoverableCommand ? (
         <PendingCommandRecoveryBanner
@@ -4107,7 +5629,10 @@ export function SessionPane({
       ) : null}
       {composerNode}
       {/* 办公模式显示主动任务推荐；编程模式保留原有小型场景入口。 */}
-      {isDraft && (!isOfficeMode || sharedSettings?.proactiveSuggestionsEnabled === true) ? (
+      {/* 完整视图浮窗只露出输入框，草稿推荐提示不进入浮窗。 */}
+      {isDraft &&
+      !isFloatingPresentation &&
+      (!isOfficeMode || sharedSettings?.proactiveSuggestionsEnabled === true) ? (
         <ConversationDraftSuggestedPromptsContainer
           className={isOfficeMode ? "mt-4" : "mt-6"}
           proactive={isOfficeMode}
@@ -4120,6 +5645,7 @@ export function SessionPane({
           workspaceIdentity={workspaceIdentity}
           remoteSessionId={remoteSessionId ?? undefined}
           isWebRemoteControl={compactForRemoteControl}
+          isDesktop={isDesktop}
         />
       ) : null}
     </>
@@ -4139,6 +5665,7 @@ export function SessionPane({
     },
     [attachmentPut, sessionId],
   );
+  // 分享浮窗不再替换输入区，保持 Composer 与对话滚动位置稳定。
   const conversationBottomDock = conversationBottomDockContent ? (
     <ConversationBottomDockTransition mode="chat">
       {conversationBottomDockContent}
@@ -4150,13 +5677,14 @@ export function SessionPane({
       workspacePath={workspacePath}
       workspaceIdentity={workspaceIdentity}
       remoteSessionId={remoteSessionId}
-      sessionId={sessionId}
-      readOnly={readOnly}
+      sessionId={runtimeReady ? sessionId : null}
+      readOnly={readOnly || !runtimeReady}
       sendText={dispatchSendText}
       uploadAttachment={pluginUiUploadAttachment}
       projectionStore={sessionLeaseReady ? lease?.store : null}
     >
       <div
+        ref={paneRef}
         data-testid={testId(TID_V4_SESSION_PANE, paneId)}
         data-session-id={sessionId ?? "draft"}
         data-initial-draft-provider={initialDraftConfigForDiagnostics?.provider ?? ""}
@@ -4193,8 +5721,6 @@ export function SessionPane({
         ) : null}
         <ConversationHeader
           title={snapshot?.meta.title ?? ""}
-          onSplitRight={onSplitRight}
-          onSplitDown={onSplitDown}
           onClosePane={onClosePane}
           workspaceBadge={workspaceBadge}
         />
@@ -4206,6 +5732,31 @@ export function SessionPane({
             compactForRemoteControl && "min-w-0",
           )}
         >
+          {sessionId && !compactForRemoteControl ? (
+            <ConversationSharePopover
+              key={sessionId}
+              sessionId={sessionId}
+              open={shareActive}
+              publishing={sharePublishing}
+              selecting={shareSelectionPanelVisible}
+              onClose={handleShareCancel}
+              onCancelSelection={dismissShareSelectionPanel}
+            >
+              {sharePopoverContent}
+            </ConversationSharePopover>
+          ) : null}
+          <ConversationShareSelectionPanel
+            visible={shareSelectionPanelVisible}
+            items={shareItems}
+            selectedRowIds={pendingShareRowIds}
+            selectedCount={pendingShareTurnCount}
+            preflight={sharePreflight}
+            onSelectAllChange={handleSelectAllShareRows}
+            onToggle={handleShareSelectionToggle}
+            onInspect={handleShareSelectionInspect}
+            onConfirm={handleConfirmShareSelection}
+            onCancel={dismissShareSelectionPanel}
+          />
           {!isDraft ? (
             <ConversationStatusPanel
               workspacePath={workspacePath}
@@ -4291,7 +5842,7 @@ export function SessionPane({
             </div>
           ) : null}
 
-          {errored ? (
+          {errored && remoteAvailable ? (
             <SessionSubscriptionErrorPanel
               error={state.lastError ?? intl.formatMessage({ id: "chat.error.connectionLost" })}
               sessionId={sessionId}
@@ -4315,6 +5866,7 @@ export function SessionPane({
                   compactForRemoteControl={compactForRemoteControl}
                   scrollToBottomActionRef={timelineScrollToBottomRef}
                   scrollToQueryActionRef={timelineScrollToQueryRef}
+                  selectionPanelLayoutContainerRef={conversationLayoutContainerRef}
                   rows={timelineSnapshot?.rows.window ?? []}
                   pendingGuides={timelineSnapshot ? pendingGuideProjection?.pendingGuides : []}
                   apiRetry={timelineSnapshot?.control.apiRetry ?? null}
@@ -4336,8 +5888,37 @@ export function SessionPane({
                   onLoadAllOlder={handleLoadAllOlder}
                   turnNavigatorDirectoryRevision={state.turnNavigatorDirectoryRevision}
                   bottomDock={conversationBottomDock}
+                  hideTurnNavigator={shareSelectionPanelVisible && !compactForRemoteControl}
+                  backgroundScrollLocked={false}
+                  headerSlot={
+                    // unsupportedRowCount 也要开这个门：整份副本的行都被本 build 跳过时
+                    // rows 为空，但只读块必须留下来显示「需要更新 ZCode」，不能整块消失。
+                    importedShare &&
+                    (importedShare.rows.length > 0 || importedShare.unsupportedRowCount > 0) ? (
+                      <ConversationShareImportNotice
+                        rows={importedShare.rows}
+                        contentBlocks={importedShare.contentBlocks}
+                        unsupportedRowCount={importedShare.unsupportedRowCount}
+                        artifactNames={importedShareArtifactNames}
+                        artifactWorkspaceRelativePaths={importedShareArtifactWorkspaceRelativePaths}
+                        workspacePath={workspacePath}
+                        {...(workspaceIdentity ? { workspaceIdentity } : {})}
+                        {...(remoteSessionId ? { workspaceRemoteSessionId: remoteSessionId } : {})}
+                        locale={locale}
+                        theme={theme}
+                        codePreviewSettings={codePreviewSettings}
+                        onOpenShareUrl={onOpenBrowserUrl ? handleOpenImportedShareUrl : undefined}
+                        onOpenFileLink={onOpenFileLink}
+                        onOpenCodeViewer={onOpenCodeViewer}
+                      />
+                    ) : null
+                  }
                   emptyState={
-                    isDraft ? (
+                    !remoteAvailable ? (
+                      <div className="p-6 text-center text-ui-base text-foreground-subtle">
+                        {intl.formatMessage({ id: "remote.conversation.placeholder" })}
+                      </div>
+                    ) : isDraft ? (
                       <div data-testid={TID_CHAT_EMPTY} className="w-full">
                         <ConversationDraftEmptyState
                           compactForRemoteControl={compactForRemoteControl}
@@ -4345,7 +5926,19 @@ export function SessionPane({
                       </div>
                     ) : null
                   }
-                  centerEmptyStateWithDock={isDraft}
+                  // 浮窗形态只露出底部输入区，空会话也必须贴底，不能居中。
+                  centerEmptyStateWithDock={isDraft && !isFloatingPresentation}
+                  floatingComposerDock={isFloatingPresentation}
+                  onComposerDockHeightChange={
+                    isFloatingPresentation && focused
+                      ? panePresentation.reportComposerDockHeight
+                      : undefined
+                  }
+                  onLatestTurnSummaryChange={
+                    isFloatingPresentation && focused
+                      ? handleFloatingLatestTurnSummaryChange
+                      : undefined
+                  }
                   compactEmptyStateWithDock={compactForRemoteControl}
                   summaryPanelLayout={statusPanelLayout}
                   conversationFindQuery={!isDraft && focused ? conversationFindQuery : ""}
@@ -4368,7 +5961,10 @@ export function SessionPane({
                     !selectionSideChat &&
                     !isMobileTextInputViewport
                       ? {
-                          enabled: focused && !blockingInteractionId,
+                          enabled: resolveConversationSelectionTooltipEnabled({
+                            selectionActionsEnabled: focused && !blockingInteractionId,
+                            partialShareActive: shareActive,
+                          }),
                           sideActionDisabled: selectionSideActionBlocked,
                           onAddToCurrentTask: handleAddSelectionToCurrentTask,
                           onAskInSideChat: handleOpenSelectionSideConversation,

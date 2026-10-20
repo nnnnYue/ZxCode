@@ -1,21 +1,8 @@
-import { rm } from "node:fs/promises";
+import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { stablePathId, type ServerLayout } from "../runtime/paths.js";
 
 export type ServicePlatform = "darwin" | "linux" | "win32";
-
-/**
- * 去平台化改名前的退役服务名（默认名 + 按 server-root 的 per-root 名）。
- * 升级注册与卸载时都必须按这两个旧名做一次 OS 级清理：
- * 旧 plist/unit/task 可能在改名后仍被 launchd/systemd/schtasks 持有，
- * 不清理会出现新旧双注册、两个服务抢同一 server-root 锁。
- * Windows 的 schtasks 删除按任务名寻址，因此 legacy 固定文件名路径也引用本常量。
- */
-export const RETIRED_SERVICE_NAME = "com.zhipu.zxcode.server";
-
-function retiredServiceNames(layout: ServerLayout): string[] {
-  return [RETIRED_SERVICE_NAME, `${RETIRED_SERVICE_NAME}.${stablePathId(layout.serverRoot)}`];
-}
 
 export interface ServiceDescriptor {
   kind: "launchd" | "systemd" | "task-scheduler";
@@ -25,11 +12,16 @@ export interface ServiceDescriptor {
 
 export interface ServiceCommandExecutor {
   run(command: string, args: readonly string[]): Promise<void>;
-  runResult?: (command: string, args: readonly string[]) => Promise<ServiceCommandResult>;
+  runResult?: (
+    command: string,
+    args: readonly string[],
+    options?: { timeoutMs?: number },
+  ) => Promise<ServiceCommandResult>;
 }
 
 export interface ServiceCommandResult {
   exitCode: number;
+  stdout: string;
   stderr: string;
 }
 
@@ -41,10 +33,10 @@ export function createDaemonServiceDescriptor(options: {
     platform: options.platform,
     command: join(
       options.layout.stableBinDir,
-      options.platform === "win32" ? "zcode.cmd" : "zxcode",
+      options.platform === "win32" ? "zcode.cmd" : "zcode",
     ),
     args: ["serve", "--supervisor", "--service-entry", "--server-root", options.layout.serverRoot],
-    name: `com.zxcode.server.${stablePathId(options.layout.serverRoot)}`,
+    name: `com.zhipu.zcode.server.${stablePathId(options.layout.serverRoot)}`,
   });
 }
 
@@ -60,7 +52,7 @@ export function createServiceDescriptor(options: {
   args?: string[];
   name?: string;
 }): ServiceDescriptor {
-  const name = options.name ?? "com.zxcode.server";
+  const name = options.name ?? "com.zhipu.zcode.server";
   const args = options.args ?? ["serve", "--daemon"];
   if (options.platform === "darwin") {
     return {
@@ -75,7 +67,7 @@ export function createServiceDescriptor(options: {
     return {
       kind: "systemd",
       name,
-      content: `[Unit]\nDescription=ZxCode Server\n[Service]\nExecStart=${shellQuote(options.command)} ${args.map(shellQuote).join(" ")}\nRestart=on-failure\n[Install]\nWantedBy=default.target\n`,
+      content: `[Unit]\nDescription=ZCode Server\n[Service]\nExecStart=${shellQuote(options.command)} ${args.map(shellQuote).join(" ")}\nRestart=on-failure\n[Install]\nWantedBy=default.target\n`,
     };
   }
   return {
@@ -94,16 +86,34 @@ export function createServiceDescriptor(options: {
 async function defaultExecutorResult(
   command: string,
   args: readonly string[],
+  options?: { timeoutMs?: number },
 ): Promise<ServiceCommandResult> {
   const { spawn } = await import("node:child_process");
+  const env = await resolveServiceManagerEnvironment(command);
   return await new Promise<ServiceCommandResult>((resolve, reject) => {
-    const child = spawn(command, [...args], { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(command, [...args], {
+      stdio: ["ignore", "pipe", "pipe"],
+      ...(env ? { env } : {}),
+      ...(options?.timeoutMs ? { timeout: options.timeoutMs, killSignal: "SIGKILL" as const } : {}),
+    });
+    let stdout = "";
     let stderr = "";
+    child.stdout?.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
     child.stderr?.on("data", (chunk) => {
       stderr += String(chunk);
     });
     child.once("error", reject);
-    child.once("exit", (code) => resolve({ exitCode: code ?? -1, stderr }));
+    child.once("exit", (_code, signal) => {
+      // Bug 原因：超时只杀死命令本身，后代持有管道会让 close 继续等待，阻塞 detached 启动。
+      // 信号终止时关闭本端管道；正常退出仍等待 close 收齐响应，避免丢失 Version 属性。
+      if (signal !== null) {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+      }
+    });
+    child.once("close", (code) => resolve({ exitCode: code ?? -1, stdout, stderr }));
   });
 }
 
@@ -122,6 +132,67 @@ const defaultServiceCommandExecutor: ServiceCommandExecutor = {
   run: defaultExecutor,
   runResult: defaultExecutorResult,
 };
+
+async function resolveServiceManagerEnvironment(
+  command: string,
+): Promise<NodeJS.ProcessEnv | undefined> {
+  if (command !== "systemctl" || typeof process.getuid !== "function") return undefined;
+  const runtimeDir = process.env.XDG_RUNTIME_DIR?.trim() || `/run/user/${process.getuid()}`;
+  const busPath = join(runtimeDir, "bus");
+  if (
+    !(await access(busPath).then(
+      () => true,
+      () => false,
+    ))
+  )
+    return undefined;
+  const dbusAddress = process.env.DBUS_SESSION_BUS_ADDRESS?.trim() || `unix:path=${busPath}`;
+  if (
+    process.env.XDG_RUNTIME_DIR === runtimeDir &&
+    process.env.DBUS_SESSION_BUS_ADDRESS === dbusAddress
+  ) {
+    return undefined;
+  }
+  return {
+    ...process.env,
+    XDG_RUNTIME_DIR: runtimeDir,
+    DBUS_SESSION_BUS_ADDRESS: dbusAddress,
+  };
+}
+
+export async function isServiceManagerAvailable(
+  platform: ServicePlatform,
+  executor: ServiceCommandExecutor = defaultServiceCommandExecutor,
+): Promise<boolean> {
+  if (!executor.runResult) return true;
+  try {
+    // Bug 原因：非交互 SSH 可能继承一个已失效的 D-Bus 地址，systemctl/launchctl 探测会
+    // 占满连接预算。能力探测必须有界；真实 register/start 仍保留完整错误，不套该短超时。
+    if (platform === "linux") {
+      // Bug 原因：chroot/offline 会跳过 systemctl 探测但返回 0，导致无 user bus 时误入注册。
+      // 必须收到 manager 的非空属性响应才确认可用，避免依赖本地化提示或覆盖离线设置。
+      const result = await executor.runResult(
+        "systemctl",
+        ["--user", "show", "--property=Version"],
+        { timeoutMs: 2_000 },
+      );
+      return result.exitCode === 0 && /^Version=\S.*$/mu.test(result.stdout);
+    }
+    if (platform === "darwin") {
+      if (typeof process.getuid !== "function") return false;
+      return (
+        (
+          await executor.runResult("launchctl", ["print", `user/${process.getuid()}`], {
+            timeoutMs: 2_000,
+          })
+        ).exitCode === 0
+      );
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function registerService(
   descriptor: ServiceDescriptor,
@@ -232,45 +303,6 @@ async function isMissingWindowsTask(
   ) as Error & { exitCode?: number };
   error.exitCode = result.exitCode;
   throw error;
-}
-
-/**
- * 尽力而为地移除退役旧名服务（`RETIRED_SERVICE_NAME` 及其 per-root 变体）。
- *
- * 旧 descriptor 文件可能已被手动删除，但 OS 侧注册（launchd job / systemd unit /
- * 计划任务）仍按名持有，因此除按文件卸载外还按名再清一次。
- * 一切失败都吞掉：旧注册不存在是常态，且旧名清理绝不能阻断新名注册或卸载主流程。
- */
-export async function unregisterRetiredServices(
-  layout: ServerLayout,
-  executor: ServiceCommandExecutor = defaultServiceCommandExecutor,
-): Promise<void> {
-  const platform: ServicePlatform =
-    process.platform === "darwin" || process.platform === "linux" ? process.platform : "win32";
-  const kind: ServiceDescriptor["kind"] =
-    platform === "darwin" ? "launchd" : platform === "linux" ? "systemd" : "task-scheduler";
-  const extension = kind === "launchd" ? "plist" : kind === "systemd" ? "service" : "json";
-  for (const name of retiredServiceNames(layout)) {
-    const descriptorPath = join(layout.serviceDir, `${name}.${extension}`);
-    try {
-      await unregisterService({ kind, name, content: "" }, descriptorPath, executor);
-    } catch {
-      // 退役服务不存在是常态；按文件卸载失败继续走按名兜底。
-    }
-    await rm(descriptorPath, { force: true }).catch(() => undefined);
-    try {
-      if (kind === "launchd") {
-        // plist 可能已被删除但 job 仍 loaded：launchctl remove 只认 label，不认文件。
-        await executor.run("launchctl", ["remove", name]);
-      } else if (kind === "systemd") {
-        // unit 文件可能已被删除但仍 enable：按 unit 名再 disable 一次。
-        await executor.run("systemctl", ["--user", "disable", "--now", `${name}.service`]);
-      }
-      // Windows：unregisterService 内部已按任务名 Query/Delete，文件缺失不影响。
-    } catch {
-      // 按名移除只覆盖“文件不在但注册仍在”的孤儿场景，失败忽略。
-    }
-  }
 }
 
 function shellQuote(value: string): string {

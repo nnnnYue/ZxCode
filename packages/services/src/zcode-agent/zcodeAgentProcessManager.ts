@@ -12,15 +12,15 @@ import { GEN_UI_OUTPUT_DIRECTORY, GEN_UI_OUTPUT_ROOT_ENV } from "@zcode/shared/n
 import { getAppConfigDir } from "../paths.js";
 import {
   parseZCodeProcessDiagnostic,
-  ZXCODE_AGENT_LIFECYCLE_LOG_MARKER,
-  ZXCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
-  ZXCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
-  ZXCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
+  ZCODE_AGENT_LIFECYCLE_LOG_MARKER,
+  ZCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
+  ZCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
+  ZCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
 } from "@zcode/shared/process-diagnostic";
 import {
-  ZXCODE_AGENT_RUNTIME,
-  ZXCODE_AGENT_PROVIDER,
-  ZXCODE_RUNTIME_ENV_KEY,
+  ZCODE_AGENT_RUNTIME,
+  ZCODE_AGENT_PROVIDER,
+  ZCODE_RUNTIME_ENV_KEY,
   resolveWorkspaceKey,
   resolveZCodeRuntimeEnv,
   sanitizeZCodeRuntimeEnv,
@@ -111,6 +111,7 @@ interface ManagedZCodeAgentProcess {
   client: ZCodeProtocolClient;
   child: ChildProcessWithoutNullStreams;
   cleanupPromise?: Promise<void>;
+  exitDiagnosticsCompleted: Promise<void>;
   exited: boolean;
   firstCleanupReason?: AgentProcessCleanupReason;
   idleTimer?: ReturnType<typeof setTimeout>;
@@ -186,13 +187,13 @@ if (coverageDirectory) {
 export function buildE2EAgentCoverageEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  const artifactDir = env.ZXCODE_E2E_ARTIFACT_DIR?.trim();
-  if (env.ZXCODE_E2E_COVERAGE !== "1" || !artifactDir) {
+  const artifactDir = env.ZCODE_E2E_ARTIFACT_DIR?.trim();
+  if (env.ZCODE_E2E_COVERAGE !== "1" || !artifactDir) {
     return {};
   }
   const directory = resolve(artifactDir, "coverage", "raw", "cli");
   mkdirSync(directory, { recursive: true });
-  const preloadPath = resolve(directory, "zxcode-e2e-coverage-preload.cjs");
+  const preloadPath = resolve(directory, "zcode-e2e-coverage-preload.cjs");
   // CLI bundle 未压缩时解析耗时可能超过 E2E 的早退窗口，普通 shutdown
   // handler 尚未注册就收到 SIGTERM。用 NODE_OPTIONS preload 在解析 bundle 前接管落盘。
   writeFileSync(preloadPath, E2E_COVERAGE_PRELOAD_SOURCE, "utf8");
@@ -241,7 +242,7 @@ interface ZCodeAgentSpawnPreflight {
   cwdExists: boolean;
 }
 
-const serviceLog = createServiceLogger("zxcode-agent");
+const serviceLog = createServiceLogger("zcode-agent");
 
 const log = (...args: unknown[]) => serviceLog.info(undefined, ...args);
 const warnLog = (...args: unknown[]) => serviceLog.warn(undefined, ...args);
@@ -304,7 +305,7 @@ function parseArgsJson(raw: string | undefined): string[] | undefined {
   }
   const parsed = JSON.parse(trimmed) as unknown;
   if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
-    throw new Error("ZXCODE_AGENT_SERVER_ARGS_JSON must be a JSON string array");
+    throw new Error("ZCODE_AGENT_SERVER_ARGS_JSON must be a JSON string array");
   }
   return parsed;
 }
@@ -357,12 +358,12 @@ async function buildZCodeAgentSpawnPreflight(
 function resolveBundledWorkspaceZCodeAgentCommand(
   context: ZCodeAgentCommandResolverContext,
 ): ZCodeAgentCommand | null {
-  const distEntrypoint = findUpward("apps/zcode-cli/packages/cli/dist/zxcode.cjs");
+  const distEntrypoint = findUpward("apps/zcode-cli/packages/cli/dist/zcode.cjs");
   if (distEntrypoint) {
     const useBytecode =
-      process.versions.electron && process.env.ZXCODE_DESKTOP_AGENT_BYTECODE === "1";
+      process.versions.electron && process.env.ZCODE_DESKTOP_AGENT_BYTECODE === "1";
     const entrypoint = useBytecode
-      ? join(dirname(distEntrypoint), "zxcode.bytecode.cjs")
+      ? join(dirname(distEntrypoint), "zcode.bytecode.cjs")
       : distEntrypoint;
     // 此同步 command resolver 沿用既有 existsSync 契约；显式试验不能静默回退成 JS。
     if (useBytecode && !existsSync(entrypoint)) {
@@ -375,7 +376,7 @@ function resolveBundledWorkspaceZCodeAgentCommand(
       storagePreparationEntry: distEntrypoint,
       cwd: context.workspacePath,
       // 桌面端 host 运行在 Electron utility process 中，process.execPath 指向 Electron Helper。
-      // 这里显式启用 Node 运行模式，避免内置 zxcode-agent 被当成 Electron/Chromium 子进程启动并卡在 GPU 初始化。
+      // 这里显式启用 Node 运行模式，避免内置 zcode-agent 被当成 Electron/Chromium 子进程启动并卡在 GPU 初始化。
       env: { ELECTRON_RUN_AS_NODE: "1" },
     };
   }
@@ -395,12 +396,12 @@ function resolveBundledWorkspaceZCodeAgentCommand(
 function resolveDeployedZCodeAgentBinaryCommand(
   context: ZCodeAgentCommandResolverContext,
 ): ZCodeAgentCommand | null {
-  // 旧 resolver 只识别 ZXCODE_AGENT_SERVER_COMMAND env 和 monorepo 源码树。
-  // SSH 远端把 zxcode-server.cjs 单文件部署到 ~/.zxcode/server/，宿主进程的 cwd 不在仓库内、
-  // env 也不会被 ssh exec 继承，即使 zxcode-agent 已经部署到 ~/.zxcode/server/agents/glm/，
-  // resolver 也找不到，第一次 getClient 就抛 "ZxCode agent server command is not configured"。
+  // 旧 resolver 只识别 ZCODE_AGENT_SERVER_COMMAND env 和 monorepo 源码树。
+  // SSH 远端把 zcode-server.cjs 单文件部署到 ~/.zcode/server/，宿主进程的 cwd 不在仓库内、
+  // env 也不会被 ssh exec 继承，即使 zcode-agent 已经部署到 ~/.zcode/server/agents/glm/，
+  // resolver 也找不到，第一次 getClient 就抛 "ZCode agent server command is not configured"。
   // 这里复用 findZCodeAgentRuntimeBinary 的候选链（含 GLM_BINARY_PATH env、
-  // packagedResourcesPath、~/.zxcode/server/agents/glm、bundled-agents 等），
+  // packagedResourcesPath、~/.zcode/server/agents/glm、bundled-agents 等），
   // 把已部署的原生 binary 当成最终兜底，远端/桌面打包形态都能命中。
   const binaryPath = findZCodeAgentRuntimeBinary();
   if (!binaryPath) {
@@ -408,7 +409,7 @@ function resolveDeployedZCodeAgentBinaryCommand(
   }
   return {
     command: binaryPath,
-    args: ZXCODE_AGENT_RUNTIME.spawnArgs,
+    args: ZCODE_AGENT_RUNTIME.spawnArgs,
     cwd: context.workspacePath,
   };
 }
@@ -418,7 +419,7 @@ function resolveElectronRuntimeZCodeAgentCommand(
 ): ZCodeAgentCommand | null {
   // 桌面打包态：host 跑在 Electron utility process 里，process.execPath 指向 Electron Helper，
   // 它内置的 Node runtime 与 zcode-cli 目标版本一致（Electron 41 = Node 24.x）。
-  // 这里直接用 app 自带的 Electron Node 执行打进 resources/glm 的 zxcode.cjs，
+  // 这里直接用 app 自带的 Electron Node 执行打进 resources/glm 的 zcode.cjs，
   // 不再随包内置一份独立 Node 二进制（体积从 ~180MB 降到 ~16MB，且跨平台同一份 JS）。
   // 用 process.versions.electron 作为闸门：远端 SSH/WSL host 由系统 Node 运行、没有 electron，
   // 会跳过这里继续走原生二进制兜底，桌面/远端两条链路互不影响。
@@ -431,7 +432,7 @@ function resolveElectronRuntimeZCodeAgentCommand(
   }
   return {
     command: process.execPath,
-    args: [bundlePath, ...ZXCODE_AGENT_RUNTIME.spawnArgs],
+    args: [bundlePath, ...ZCODE_AGENT_RUNTIME.spawnArgs],
     storagePreparationEntry: bundlePath,
     cwd: context.workspacePath,
     // 关键：必须以纯 Node 模式启动，否则子进程会被当成 Electron/Chromium 子进程卡在 GPU 初始化。
@@ -442,20 +443,20 @@ function resolveElectronRuntimeZCodeAgentCommand(
 export function resolveDefaultZCodeAgentCommand(
   context: ZCodeAgentCommandResolverContext,
 ): ZCodeAgentCommand | null {
-  const command = process.env.ZXCODE_AGENT_SERVER_COMMAND?.trim();
+  const command = process.env.ZCODE_AGENT_SERVER_COMMAND?.trim();
   if (command) {
     return applyPresentationSurfaceToCommand(
       {
         command,
-        args: parseArgsJson(process.env.ZXCODE_AGENT_SERVER_ARGS_JSON) ?? ["app-server", "--stdio"],
-        cwd: process.env.ZXCODE_AGENT_SERVER_CWD?.trim() || context.workspacePath,
+        args: parseArgsJson(process.env.ZCODE_AGENT_SERVER_ARGS_JSON) ?? ["app-server", "--stdio"],
+        cwd: process.env.ZCODE_AGENT_SERVER_CWD?.trim() || context.workspacePath,
       },
       context.presentationSurface,
     );
   }
 
   // 顺序：env 显式覆盖 → monorepo dev 源码/dist（dev 改源码立刻生效，不会被远端历史装的 native binary
-  // 抢先匹配）→ 桌面打包态 Electron Node runtime 跑 zxcode.cjs → 已部署 native binary（远端 SSH 兜底）。
+  // 抢先匹配）→ 桌面打包态 Electron Node runtime 跑 zcode.cjs → 已部署 native binary（远端 SSH 兜底）。
   const bundled =
     resolveBundledWorkspaceZCodeAgentCommand(context) ??
     resolveElectronRuntimeZCodeAgentCommand(context);
@@ -512,7 +513,7 @@ export function wrapZCodeAgentCommandWithStdioTapDevProxy(
 
   const tapScript = findUpward("scripts/dev/zcode-stdio-tap.mjs");
   if (!tapScript) {
-    debugLog("ZxCode stdio tap proxy enabled but script not found");
+    debugLog("ZCode stdio tap proxy enabled but script not found");
     return command;
   }
 
@@ -613,7 +614,7 @@ export class ZCodeAgentProcessManager {
       callback(reporter);
     } catch (error) {
       // 进程生命周期上报是旁路观测，临时失败不得阻断 agent 启动或回收。
-      warnLog("ZxCode agent process lifecycle reporter failed", error);
+      warnLog("ZCode agent process lifecycle reporter failed", error);
     }
   }
 
@@ -649,7 +650,7 @@ export class ZCodeAgentProcessManager {
       ) {
         return;
       }
-      log("ZxCode agent process idle timeout; reclaiming", {
+      log("ZCode agent process idle timeout; reclaiming", {
         workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -724,7 +725,7 @@ export class ZCodeAgentProcessManager {
     this.reportProcessLifecycle((reporter) =>
       reporter.onReady?.({
         pid: managed.child.pid!,
-        provider: ZXCODE_AGENT_PROVIDER,
+        provider: ZCODE_AGENT_PROVIDER,
         ...(this.lane ? { lane: this.lane } : {}),
         workspacePath: managed.workspace.workspacePath,
         readyAt: managed.readyAt!,
@@ -752,9 +753,12 @@ export class ZCodeAgentProcessManager {
     let cleanupCompleted = false;
     const cleanupPromise = managed.client
       .disposeAndWait()
-      .then(() => {
+      .then(async () => {
+        // 进程树回收可能先于异步 exit 监听器返回；必须等 stderr/退出事件完成，
+        // 否则 Host 会提前释放所有权，关闭调用方看不到最后一条诊断。
+        await managed.exitDiagnosticsCompleted;
         cleanupCompleted = true;
-        log("ZxCode agent process cleanup completed", {
+        log("ZCode agent process cleanup completed", {
           workspaceKey: managed.runtimeIdentity.workspaceKey,
           pid: managed.child.pid,
           runtimeIdentity: managed.runtimeIdentity.identity,
@@ -778,7 +782,7 @@ export class ZCodeAgentProcessManager {
       if (options.reportError === false) {
         return;
       }
-      errorLog("ZxCode agent process cleanup failed", {
+      errorLog("ZCode agent process cleanup failed", {
         workspaceKey: managed.runtimeIdentity.workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -813,7 +817,7 @@ export class ZCodeAgentProcessManager {
       // 残留。restart/app quit 都不能把这种中间态暴露给调用方，需重试一次并复用
       // transport 内部快照；真实残留会在第二次 cleanup 继续抛出。
       const cleanupError = firstError as NodeJS.ErrnoException;
-      warnLog(`ZxCode agent process cleanup retrying during ${retryScope}`, {
+      warnLog(`ZCode agent process cleanup retrying during ${retryScope}`, {
         workspaceKey: managed.runtimeIdentity.workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -825,7 +829,7 @@ export class ZCodeAgentProcessManager {
       try {
         await this.cleanupManagedProcess(managed, retryReason, { reportError: false });
       } catch (finalError) {
-        errorLog("ZxCode agent process cleanup failed", {
+        errorLog("ZCode agent process cleanup failed", {
           workspaceKey: managed.runtimeIdentity.workspaceKey,
           pid: managed.child.pid,
           runtimeIdentity: managed.runtimeIdentity.identity,
@@ -843,7 +847,7 @@ export class ZCodeAgentProcessManager {
     workspaceIdentity?: string;
   }): Promise<ZCodeProtocolClient> {
     if (this.disposed) {
-      throw new Error("ZxCode agent process manager is disposed.");
+      throw new Error("ZCode agent process manager is disposed.");
     }
     const workspaceKey = resolveWorkspaceKey(params);
     const existing = this.processesByWorkspaceKey.get(workspaceKey);
@@ -854,11 +858,11 @@ export class ZCodeAgentProcessManager {
     const starting = this.startingByWorkspaceKey.get(workspaceKey);
     if (starting) {
       const waitStartedAt = Date.now();
-      log("ZxCode agent process start already in progress", {
+      log("ZCode agent process start already in progress", {
         workspaceKey,
       });
       const client = await starting;
-      log("ZxCode agent process start wait completed", {
+      log("ZCode agent process start wait completed", {
         workspaceKey,
         durationMs: Date.now() - waitStartedAt,
       });
@@ -970,14 +974,14 @@ export class ZCodeAgentProcessManager {
     const resolveCommandDurationMs = Date.now() - resolveCommandStartedAt;
     if (!command) {
       throw new Error(
-        "ZxCode agent server command is not configured. Set ZXCODE_AGENT_SERVER_COMMAND before integration.",
+        "ZCode agent server command is not configured. Set ZCODE_AGENT_SERVER_COMMAND before integration.",
       );
     }
     if (admissionSignal.aborted) {
-      throw admissionSignal.reason ?? new Error("ZxCode agent process start was cancelled.");
+      throw admissionSignal.reason ?? new Error("ZCode agent process start was cancelled.");
     }
     const effectiveCommand = wrapZCodeAgentCommandWithStdioTapDevProxy(command, workspaceKey);
-    log("ZxCode agent command resolved", {
+    log("ZCode agent command resolved", {
       workspaceKey,
       command: command.command,
       effectiveCommand: effectiveCommand.command,
@@ -994,12 +998,12 @@ export class ZCodeAgentProcessManager {
     if (this.disposed) {
       // app 正在关闭时，启动中的 warmup 可能刚完成 command/env resolve。
       // 这时继续 spawn 会绕过 disposeAllAndWait 的快照，重新制造一个无人托管的 agent 进程。
-      throw new Error("ZxCode agent process manager is disposed.");
+      throw new Error("ZCode agent process manager is disposed.");
     }
     if ((this.restartGenerationByWorkspaceKey.get(workspaceKey) ?? 0) !== startGeneration) {
       // 切模型会重启单个 workspace。旧启动请求如果在重启后才恢复，
       // 不能继续 spawn 并写回进程池，否则新配置会被旧 agent 覆盖。
-      throw new Error("ZxCode agent process start was cancelled.");
+      throw new Error("ZCode agent process start was cancelled.");
     }
     // cwd 探测也让出事件循环，必须放在最终 admission 与销毁/代际检查之前。
     const spawnPreflight = await buildZCodeAgentSpawnPreflight(
@@ -1012,15 +1016,15 @@ export class ZCodeAgentProcessManager {
     // 再等待并复查代际，不能只依赖第一次 admission。
     await this.waitForSpawnAdmission?.({ ...params, workspaceKey, signal: admissionSignal });
     if (this.disposed) {
-      throw new Error("ZxCode agent process manager is disposed.");
+      throw new Error("ZCode agent process manager is disposed.");
     }
     if ((this.restartGenerationByWorkspaceKey.get(workspaceKey) ?? 0) !== startGeneration) {
-      throw new Error("ZxCode agent process start was cancelled.");
+      throw new Error("ZCode agent process start was cancelled.");
     }
-    // app 以本地开发方式启动时，让 agent 子进程也带上 ZXCODE_RUNTIME_ENV=development；
-    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 ZxCode 运行模式或泄漏到 Bash 工具。
+    // app 以本地开发方式启动时，让 agent 子进程也带上 ZCODE_RUNTIME_ENV=development；
+    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 ZCode 运行模式或泄漏到 Bash 工具。
     const runtimeEnv = resolveZCodeRuntimeEnv(process.env);
-    log("ZxCode agent spawn preflight", {
+    log("ZCode agent spawn preflight", {
       workspaceKey,
       spawnPreflight,
     });
@@ -1032,7 +1036,7 @@ export class ZCodeAgentProcessManager {
       detached: shouldSpawnInDetachedProcessGroup(),
       env: {
         ...sanitizeZCodeRuntimeEnv(process.env),
-        [ZXCODE_RUNTIME_ENV_KEY]: runtimeEnv,
+        [ZCODE_RUNTIME_ENV_KEY]: runtimeEnv,
         ...spawnEnv,
         ...effectiveCommand.env,
         // 生成文件根目录由执行端 Host 唯一决定，保证 Agent 写入与 Host 读取授权一致。
@@ -1054,7 +1058,7 @@ export class ZCodeAgentProcessManager {
           this.reportProcessLifecycle((reporter) =>
             reporter.onException?.({
               pid: child.pid!,
-              provider: ZXCODE_AGENT_PROVIDER,
+              provider: ZCODE_AGENT_PROVIDER,
               ...(this.lane ? { lane: this.lane } : {}),
               workspacePath: params.workspacePath,
               runtimeGeneration,
@@ -1064,17 +1068,17 @@ export class ZCodeAgentProcessManager {
                 // 脱敏占位符可能比原文长，必须再次限长，避免 IPC schema 拒绝合法异常。
                 name: redactAgentDiagnostic(diagnostic.name).slice(
                   0,
-                  ZXCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
+                  ZCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
                 ),
                 message: redactAgentDiagnostic(diagnostic.message).slice(
                   0,
-                  ZXCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
+                  ZCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
                 ),
                 ...(diagnostic.stack !== undefined
                   ? {
                       stack: redactAgentDiagnostic(diagnostic.stack).slice(
                         0,
-                        ZXCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
+                        ZCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
                       ),
                     }
                   : {}),
@@ -1114,10 +1118,12 @@ export class ZCodeAgentProcessManager {
       ...(this.lane ? { lane: this.lane } : {}),
       workspaceKey,
     };
+    const exitDiagnostics = Promise.withResolvers<void>();
     const managed: ManagedZCodeAgentProcess = {
       child,
       client,
       exited: false,
+      exitDiagnosticsCompleted: exitDiagnostics.promise,
       readyReported: false,
       runtimeIdentity,
       runtimeInstanceId,
@@ -1172,7 +1178,7 @@ export class ZCodeAgentProcessManager {
         this.reportProcessLifecycle((reporter) =>
           reporter.onSpawn({
             pid: child.pid!,
-            provider: ZXCODE_AGENT_PROVIDER,
+            provider: ZCODE_AGENT_PROVIDER,
             ...(this.lane ? { lane: this.lane } : {}),
             workspacePath: params.workspacePath,
             command: effectiveCommand.command,
@@ -1184,7 +1190,7 @@ export class ZCodeAgentProcessManager {
         );
       }
       this.reportRuntimeReady(managed);
-      log("ZxCode agent process started", {
+      log("ZCode agent process started", {
         workspaceKey,
         command: effectiveCommand.command,
         cwd: spawnPreflight.cwd,
@@ -1194,7 +1200,7 @@ export class ZCodeAgentProcessManager {
     });
     child.once("error", (error) => {
       errorLog(
-        `ZxCode agent process error${this.processLifecycleReporter?.onError ? ` ${ZXCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
+        `ZCode agent process error${this.processLifecycleReporter?.onError ? ` ${ZCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
         {
           workspaceKey,
           pid: child.pid,
@@ -1209,7 +1215,7 @@ export class ZCodeAgentProcessManager {
       this.reportProcessLifecycle((reporter) =>
         reporter.onError?.({
           pid: typeof child.pid === "number" ? child.pid : null,
-          provider: ZXCODE_AGENT_PROVIDER,
+          provider: ZCODE_AGENT_PROVIDER,
           ...(this.lane ? { lane: this.lane } : {}),
           workspacePath: params.workspacePath,
           command: effectiveCommand.command,
@@ -1224,68 +1230,73 @@ export class ZCodeAgentProcessManager {
         }),
       );
       if (child.pid == null) {
+        exitDiagnostics.resolve();
         this.ownedProcesses.delete(managed);
       }
     });
     child.once("exit", async (code, signal) => {
-      managed.exited = true;
-      this.clearIdleTimer(managed);
-      const endedAt = Date.now();
-      const terminationKind = managed.terminationIntent?.kind ?? "unexpected";
-      // 协议解析/stream 故障会先触发 protocol-close，再由 Host 用 SIGTERM
-      // 回收仍存活的进程。若只透传主动 termination intent，desktop 只能看到最终信号，
-      // 无法区分协议故障与受控退出；保留首次 cleanup 原因作为结构化根因。
-      const terminationReason = managed.terminationIntent?.reason ?? managed.firstCleanupReason;
-      // 协议已立即失效，但 exit 先于 stderr EOF；保留旧 runtime 闭包身份收齐最后诊断。
-      await transport.waitForStderrDrain();
-      const stderr = stderrTail.snapshot();
-      const exitContext = {
-        workspaceKey,
-        pid: child.pid,
-        runtimeIdentity: runtimeIdentity.identity,
-        code,
-        signal,
-        terminationKind,
-        terminationReason,
-      };
-      // 之前日志只有新的 "process started"，缺少旧 pid 的退出轨迹。
-      // agent native crash 后 UI 只会看到 protocol close/Session is not active，无法判断是崩溃还是主动重启。
-      log("ZxCode agent process exited", exitContext);
-      if (terminationKind === "unexpected") {
-        // Agent 顶层异常只写 stderr 并以非零 code 退出；stderr 过去仅走开发态
-        // debug，生产日志只剩 code=1，无法还原异常。不能只按非零 code 判断：signal crash
-        // 和长期运行的 Agent 自行 exit 0 同样是非预期退出。
-        // 已有独立生命周期事件，显式标记包装日志，避免 Electron 将其再计为 JS 异常。
-        errorLog(
-          `ZxCode agent process exited unexpectedly${this.processLifecycleReporter ? ` ${ZXCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
-          {
-            ...exitContext,
-            stderr,
-          },
-        );
-      }
-      if (typeof child.pid === "number") {
-        this.reportProcessLifecycle((reporter) =>
-          reporter.onExit({
-            pid: child.pid!,
-            provider: ZXCODE_AGENT_PROVIDER,
-            ...(this.lane ? { lane: this.lane } : {}),
-            workspacePath: params.workspacePath,
-            exitCode: code,
-            signal,
-            endedAt,
-            terminationKind,
-            runtimeReady: managed.readyAt != null,
-            ...(terminationReason ? { terminationReason } : {}),
-            runtimeGeneration,
-            runtimeInstanceId,
-            uptimeMs: Math.max(0, endedAt - startedAt),
-            stderrLineCount: stderr.lineCount,
-            ...(terminationKind === "unexpected" && stderr.tail.length > 0
-              ? { stderrTail: stderr.tail }
-              : {}),
-          }),
-        );
+      try {
+        managed.exited = true;
+        this.clearIdleTimer(managed);
+        const endedAt = Date.now();
+        const terminationKind = managed.terminationIntent?.kind ?? "unexpected";
+        // 协议解析/stream 故障会先触发 protocol-close，再由 Host 用 SIGTERM
+        // 回收仍存活的进程。若只透传主动 termination intent，desktop 只能看到最终信号，
+        // 无法区分协议故障与受控退出；保留首次 cleanup 原因作为结构化根因。
+        const terminationReason = managed.terminationIntent?.reason ?? managed.firstCleanupReason;
+        // 协议已立即失效，但 exit 先于 stderr EOF；保留旧 runtime 闭包身份收齐最后诊断。
+        await transport.waitForStderrDrain();
+        const stderr = stderrTail.snapshot();
+        const exitContext = {
+          workspaceKey,
+          pid: child.pid,
+          runtimeIdentity: runtimeIdentity.identity,
+          code,
+          signal,
+          terminationKind,
+          terminationReason,
+        };
+        // 之前日志只有新的 "process started"，缺少旧 pid 的退出轨迹。
+        // agent native crash 后 UI 只会看到 protocol close/Session is not active，无法判断是崩溃还是主动重启。
+        log("ZCode agent process exited", exitContext);
+        if (terminationKind === "unexpected") {
+          // Agent 顶层异常只写 stderr 并以非零 code 退出；stderr 过去仅走开发态
+          // debug，生产日志只剩 code=1，无法还原异常。不能只按非零 code 判断：signal crash
+          // 和长期运行的 Agent 自行 exit 0 同样是非预期退出。
+          // 已有独立生命周期事件，显式标记包装日志，避免 Electron 将其再计为 JS 异常。
+          errorLog(
+            `ZCode agent process exited unexpectedly${this.processLifecycleReporter ? ` ${ZCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
+            {
+              ...exitContext,
+              stderr,
+            },
+          );
+        }
+        if (typeof child.pid === "number") {
+          this.reportProcessLifecycle((reporter) =>
+            reporter.onExit({
+              pid: child.pid!,
+              provider: ZCODE_AGENT_PROVIDER,
+              ...(this.lane ? { lane: this.lane } : {}),
+              workspacePath: params.workspacePath,
+              exitCode: code,
+              signal,
+              endedAt,
+              terminationKind,
+              runtimeReady: managed.readyAt != null,
+              ...(terminationReason ? { terminationReason } : {}),
+              runtimeGeneration,
+              runtimeInstanceId,
+              uptimeMs: Math.max(0, endedAt - startedAt),
+              stderrLineCount: stderr.lineCount,
+              ...(terminationKind === "unexpected" && stderr.tail.length > 0
+                ? { stderrTail: stderr.tail }
+                : {}),
+            }),
+          );
+        }
+      } finally {
+        exitDiagnostics.resolve();
       }
     });
     client.onRequestTimeout((event) => {
@@ -1294,7 +1305,7 @@ export class ZCodeAgentProcessManager {
       }
       if (event.method === "workspace/cancelGenerateText") {
         warnLog(
-          "ZxCode agent cancel notification timed out; keeping client (best-effort control plane)",
+          "ZCode agent cancel notification timed out; keeping client (best-effort control plane)",
           {
             workspaceKey,
             method: event.method,
@@ -1305,7 +1316,7 @@ export class ZCodeAgentProcessManager {
         );
         return;
       }
-      warnLog("ZxCode agent request timed out; disposing stale protocol client", {
+      warnLog("ZCode agent request timed out; disposing stale protocol client", {
         workspaceKey,
         method: event.method,
         requestId: event.requestId,
@@ -1326,7 +1337,7 @@ export class ZCodeAgentProcessManager {
     });
     client.onClose(() => {
       const wasActiveClient = this.processesByWorkspaceKey.get(workspaceKey) === managed;
-      log("ZxCode agent protocol client closed", {
+      log("ZCode agent protocol client closed", {
         workspaceKey,
         pid: child.pid,
         runtimeIdentity: runtimeIdentity.identity,
@@ -1359,7 +1370,7 @@ export class ZCodeAgentProcessManager {
     // runtime identity 是查询接口，旧实现却复用了启动型 getClient，
     // 导致 provider 保存等被动探测按 workspace 数量隐式 spawn Agent CLI。
     if (!managed || managed.exited || managed.child.killed) {
-      throw new Error("ZxCode agent runtime identity is unavailable.");
+      throw new Error("ZCode agent runtime identity is unavailable.");
     }
     return managed.runtimeIdentity;
   }
@@ -1380,7 +1391,7 @@ export class ZCodeAgentProcessManager {
         : {
             available: false,
             workspaceKey,
-            reason: "ZXCODE_AGENT_SERVER_COMMAND is not configured",
+            reason: "ZCODE_AGENT_SERVER_COMMAND is not configured",
           };
     } catch (error) {
       return {
@@ -1422,7 +1433,7 @@ export class ZCodeAgentProcessManager {
 
   private abortPendingStarts(
     workspaceKey: string,
-    reason = new Error("ZxCode agent process start was cancelled."),
+    reason = new Error("ZCode agent process start was cancelled."),
   ): void {
     const controllers = this.startAdmissionAbortControllersByWorkspaceKey.get(workspaceKey);
     if (!controllers) {
@@ -1434,7 +1445,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private abortAllPendingStarts(
-    reason = new Error("ZxCode agent process manager is disposed."),
+    reason = new Error("ZCode agent process manager is disposed."),
   ): void {
     for (const workspaceKey of this.startAdmissionAbortControllersByWorkspaceKey.keys()) {
       this.abortPendingStarts(workspaceKey, reason);

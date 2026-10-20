@@ -8,22 +8,12 @@ import {
 import { resolveServerLayout, stablePathId } from "../src/runtime/paths.js";
 
 describe("user service descriptors", () => {
-  it.each([
-    ["darwin", "launchd"],
-    ["linux", "systemd"],
-    ["win32", "task-scheduler"],
-  ] as const)("creates a stable %s descriptor", (platform, kind) => {
-    const descriptor = createServiceDescriptor({ platform, command: "/opt/zcode/bin/zxcode" });
-    expect(descriptor.kind).toBe(kind);
-    expect(descriptor.content).toContain("zcode");
-  });
-
   it.each(["darwin", "linux", "win32"] as const)(
     "pins the %s daemon descriptor to the data-root stable launcher and explicit server root",
     (platform) => {
-      const layout = resolveServerLayout("/var/lib/zcode-custom/.zxcode/server");
+      const layout = resolveServerLayout("/var/lib/zcode-custom/.zcode/server");
       const descriptor = createDaemonServiceDescriptor({ platform, layout });
-      const launcher = join(layout.stableBinDir, platform === "win32" ? "zcode.cmd" : "zxcode");
+      const launcher = join(layout.stableBinDir, platform === "win32" ? "zcode.cmd" : "zcode");
       if (platform === "win32") {
         const task = JSON.parse(descriptor.content) as { command: string; args: string[] };
         expect(task.command).toBe(launcher);
@@ -37,13 +27,13 @@ describe("user service descriptors", () => {
         expect(descriptor.content).toContain(layout.serverRoot);
       }
       expect(descriptor.content).not.toContain("server-cli.js");
-      expect(descriptor.name).toBe(`com.zxcode.server.${stablePathId(layout.serverRoot)}`);
+      expect(descriptor.name).toBe(`com.zhipu.zcode.server.${stablePathId(layout.serverRoot)}`);
     },
   );
 
   it("isolates service identity and descriptor filenames by server root", () => {
-    const firstLayout = resolveServerLayout("/var/lib/zcode-first/.zxcode/server");
-    const secondLayout = resolveServerLayout("/var/lib/zcode-second/.zxcode/server");
+    const firstLayout = resolveServerLayout("/var/lib/zcode-first/.zcode/server");
+    const secondLayout = resolveServerLayout("/var/lib/zcode-second/.zcode/server");
     const first = createDaemonServiceDescriptor({ platform: "linux", layout: firstLayout });
     const second = createDaemonServiceDescriptor({ platform: "linux", layout: secondLayout });
 

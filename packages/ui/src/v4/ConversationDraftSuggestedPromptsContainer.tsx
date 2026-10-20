@@ -19,13 +19,15 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
+import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { cn } from "@/components/lib/utils.js";
 import { toast } from "@/components/ui/toast.js";
+import { usePlatform } from "@/hooks/usePlatform.js";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import type { AutomationsNavigationTab } from "@/lib/taskNavigationHistory.js";
+import { reportPromptTemplateClick } from "@/lib/promptTemplateTelemetry.js";
 import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import {
@@ -46,6 +48,7 @@ import {
   type DraftSuggestedPluginOperation,
   trackDraftSuggestedPluginOperation,
 } from "@/v4/ConversationDraftSuggestedPluginFlow.js";
+import { useDraftSuggestedPromptItems } from "@/v4/useDraftSuggestedPromptItems.js";
 import { useDraftSuggestedPluginActionPopover } from "@/v4/useDraftSuggestedPluginActionPopover.js";
 import { getComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
 import { useComposerTextInsertApplied } from "@/v4/useComposerTextInsertApplied.js";
@@ -87,6 +90,7 @@ export function ConversationDraftSuggestedPromptsContainer({
   isWebRemoteControl = false,
 }: Props) {
   const { intl, locale } = useZCodeIntl();
+  const platform = usePlatform();
   const isOfficeMode = useIsOfficeMode();
   const { update } = useSettings();
   const onboardingRecordService = useOnboardingRecordService();
@@ -134,10 +138,14 @@ export function ConversationDraftSuggestedPromptsContainer({
   const activeOperationRef = useRef<DraftSuggestedPluginOperation | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
-  // 去平台化：Client Scenes 服务已删除，非 proactive 的场景推荐列表恒为空。
+  const allItems = useDraftSuggestedPromptItems({
+    clientScenesService: resolution.services.clientScenesService,
+    rpcReady: resolution.rpcReady,
+    workspaceKey,
+  });
   const items = useMemo(
     () =>
-      (proactive ? recommendedItems : []).filter(
+      (proactive ? recommendedItems : allItems).filter(
         (item) =>
           !item.actions?.some(
             (action) =>
@@ -145,7 +153,7 @@ export function ConversationDraftSuggestedPromptsContainer({
               action === DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS_OFFPEAK,
           ) || Boolean(onOpenAutomations),
       ),
-    [onOpenAutomations, proactive, recommendedItems],
+    [allItems, onOpenAutomations, proactive, recommendedItems],
   );
   const {
     clearPluginActionPopover,
@@ -282,7 +290,6 @@ export function ConversationDraftSuggestedPromptsContainer({
   const revalidateAndPrependPlugin = useCallback(
     async (current: DraftSuggestedPluginFlow, requestVersion: number) => {
       await invalidateDeferredDraftSessionForSkillChange({
-        zcodeSessionService: resolution.services.zcodeSessionService,
         workspacePath,
         workspaceIdentity,
         reason: "suggested-prompt-plugin-change",
@@ -303,7 +310,6 @@ export function ConversationDraftSuggestedPromptsContainer({
       isWebRemoteControl,
       prependResolvedPlugin,
       resolution.services.pluginManagementService,
-      resolution.services.zcodeSessionService,
       targetParams,
       workspaceIdentity,
       workspacePath,
@@ -371,7 +377,7 @@ export function ConversationDraftSuggestedPromptsContainer({
         requestVersion !== requestVersionRef.current ||
         (kind === "install" &&
           (!flow.result?.pluginName ||
-            flow.result.marketplace !== ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
+            flow.result.marketplace !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
             flow.result.sourceTrust !== "official"))
       ) {
         return;
@@ -421,6 +427,10 @@ export function ConversationDraftSuggestedPromptsContainer({
           let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
           const installRequest = resolution.services.pluginManagementService.installPlugin({
             ...targetParams(),
+            telemetry: {
+              entry: "recommended_prompt",
+              client_kind: isWebRemoteControl ? "mobile" : "desktop",
+            },
             pluginName: flow.result!.pluginName!,
             marketplace: flow.result!.marketplace!,
             scope: "user",
@@ -464,6 +474,10 @@ export function ConversationDraftSuggestedPromptsContainer({
             operation,
             resolution.services.pluginManagementService.setPluginEnabled({
               ...targetParams(),
+              telemetry: {
+                entry: "recommended_prompt",
+                client_kind: isWebRemoteControl ? "mobile" : "desktop",
+              },
               pluginId: flow.plugin.stableId,
               enabled: true,
               operationId: flow.operationId,
@@ -524,7 +538,16 @@ export function ConversationDraftSuggestedPromptsContainer({
     async (item: DraftSuggestedPromptItem) => {
       const requestVersion = requestVersionRef.current + 1;
       requestVersionRef.current = requestVersion;
+      const templateName = resolveDraftSuggestedPromptText(item.label, locale);
       const prompt = resolveDraftSuggestedPromptText(item.prompt, locale);
+      if (isDesktop) {
+        // 埋点是旁路观测，必须早于导航或异步插件解析，且不能阻塞既有交互。
+        void reportPromptTemplateClick(platform, {
+          templateId: item.id,
+          templateName,
+          templatePrompt: prompt,
+        });
+      }
       if (
         onOpenAutomations &&
         item.actions?.includes(DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS_OFFPEAK)
@@ -694,6 +717,7 @@ export function ConversationDraftSuggestedPromptsContainer({
       isWebRemoteControl,
       locale,
       onOpenAutomations,
+      platform,
       replacePlainPrompt,
       replaceWithResolvedPluginAndPrompt,
       resolution.rpcReady,

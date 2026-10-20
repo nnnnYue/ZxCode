@@ -1,20 +1,14 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
-import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IPlatformService } from "@zcode/shared";
 import { useAppPanels } from "@/hooks/useAppPanels.js";
-// fork 的 useAppPanels 需要 intl；renderHook 统一包 ZCodeIntlProvider。
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import {
   buildTaskSidePaneMemoryKey,
   clearTaskSidePaneMemoryStateForTest,
   getSidePaneCollapsedPreference,
   readTaskSidePaneMemoryState,
 } from "@/lib/taskSidePaneMemory.js";
-
-const intlWrapper = ({ children }: { children: ReactNode }) =>
-  createElement(ZCodeIntlProvider, { initialLocale: "en-US" }, children);
 
 const { closeSessionMock } = vi.hoisted(() => ({
   closeSessionMock: vi.fn(async () => {}),
@@ -122,21 +116,19 @@ function readyPayload(tabId: string, overrides: Partial<ReadyPayload> = {}): Rea
 
 function renderBrowserViewLifecycleHook() {
   const harness = createBrowserViewPlatformHarness();
-  const rendered = renderHook(
-    () =>
-      useAppPanels({
-        workspaceAbsPath: "/repo",
-        workspaceIdentity: "ssh://host/repo",
-        workspaceRemoteSessionId: "remote-a",
-        activeTaskId: "sess-a",
-        sidePaneOwnerId: "sess-a",
-        isDesktop: true,
-        isWorkspaceVisible: true,
-        supportsEmbeddedBrowser: true,
-        defaultWhiteboardNamePrefix: "Whiteboard",
-        platform: harness.platform,
-      }),
-    { wrapper: intlWrapper },
+  const rendered = renderHook(() =>
+    useAppPanels({
+      workspaceAbsPath: "/repo",
+      workspaceIdentity: "ssh://host/repo",
+      workspaceRemoteSessionId: "remote-a",
+      activeTaskId: "sess-a",
+      sidePaneOwnerId: "sess-a",
+      isDesktop: true,
+      isWorkspaceVisible: true,
+      supportsEmbeddedBrowser: true,
+      defaultWhiteboardNamePrefix: "Whiteboard",
+      platform: harness.platform,
+    }),
   );
   return { ...harness, ...rendered };
 }
@@ -164,10 +156,7 @@ function renderSettingsOverlayHook(initialIsWorkspaceVisible: boolean) {
         defaultWhiteboardNamePrefix: "Whiteboard",
         platform: harness.platform,
       }),
-    {
-      initialProps: { isWorkspaceVisible: initialIsWorkspaceVisible },
-      wrapper: intlWrapper,
-    },
+    { initialProps: { isWorkspaceVisible: initialIsWorkspaceVisible } },
   );
   return { ...harness, ...rendered };
 }
@@ -189,12 +178,38 @@ function renderCrossWorkspaceHook() {
         defaultWhiteboardNamePrefix: "Whiteboard",
         platform: harness.platform,
       }),
-    { initialProps: { workspaceIdentity: WORKSPACE_KEY }, wrapper: intlWrapper },
+    { initialProps: { workspaceIdentity: WORKSPACE_KEY } },
   );
   return { ...harness, ...rendered };
 }
 
 describe("useAppPanels BrowserView lifecycle", () => {
+  it("展开创建新标签页，工具替换入口且最后一个标签关闭后收起", async () => {
+    const { result } = renderBrowserViewLifecycleHook();
+    expect(result.current.isSidePaneCollapsed).toBe(true);
+    act(() => result.current.handleToggleSidePaneCollapse());
+    expect(result.current.sidePaneState?.tabs).toMatchObject([
+      { type: "new-tab", ownerTaskId: "sess-a" },
+    ]);
+    act(() => result.current.handleOpenBrowserTab());
+    expect(result.current.sidePaneState?.tabs).toMatchObject([{ type: "browser" }]);
+    const id = result.current.sidePaneState!.activeTabId;
+    act(() => result.current.handleToggleSidePaneCollapse());
+    act(() => result.current.handleToggleSidePaneCollapse());
+    expect(result.current.sidePaneState!.activeTabId).toBe(id);
+    await act(async () => result.current.handleCloseSidePaneTab(id));
+    expect(result.current.isSidePaneCollapsed).toBe(true);
+    expect(result.current.sidePaneState).toBeNull();
+    act(() => result.current.handleToggleSidePaneCollapse());
+    const launcherId = result.current.sidePaneState!.activeTabId;
+    await act(async () => result.current.handleCloseSidePaneTab(launcherId));
+    expect(result.current.isSidePaneCollapsed).toBe(true);
+    expect(result.current.sidePaneState).toBeNull();
+    expect(result.current.recentClosedSidePaneTabs.some(({ tab }) => tab.type === "new-tab")).toBe(
+      false,
+    );
+  });
+
   beforeEach(() => {
     clearTaskSidePaneMemoryStateForTest();
     closeSessionMock.mockClear();
@@ -516,6 +531,7 @@ describe("useAppPanels BrowserView lifecycle", () => {
     // 用户切到另一个 workspace，原 workspace 的 side pane 状态被存入 memory。
     act(() => rerender({ workspaceIdentity: OTHER_WORKSPACE_KEY }));
     expect(result.current.sidePaneState?.tabs ?? []).toEqual([]);
+    expect(result.current.isSidePaneCollapsed).toBe(true);
 
     // Bug 回归：Agent 此刻关掉 tab-a，通知只带 tabId 时 renderer 只能在“当前活跃 workspace”里找，
     // 找不到就静默丢弃；原 workspace 的持久化 memory 仍保留这个 tab，切回来就是关不掉的幽灵 tab。
@@ -529,7 +545,8 @@ describe("useAppPanels BrowserView lifecycle", () => {
     );
 
     act(() => rerender({ workspaceIdentity: WORKSPACE_KEY }));
-    expect(result.current.sidePaneState?.tabs ?? []).toEqual([]);
+    expect(result.current.sidePaneState).toBeNull();
+    expect(result.current.isSidePaneCollapsed).toBe(true);
     unmount();
   });
 
@@ -554,7 +571,8 @@ describe("useAppPanels BrowserView lifecycle", () => {
       }),
     );
 
-    expect(result.current.sidePaneState?.tabs ?? []).toEqual([]);
+    expect(result.current.sidePaneState).toBeNull();
+    expect(result.current.isSidePaneCollapsed).toBe(true);
     unmount();
   });
 
@@ -612,7 +630,7 @@ describe("useAppPanels BrowserView lifecycle", () => {
       remoteSessionId: "remote-a",
       sessionId: "sess-a",
     });
-    // 授权拿到后 UI 壳必须真的移除（tab 清空后 sidePaneState 本身会归空）。
+    // 授权拿到后 Browser 壳必须移除，展开的面板保留新标签页。
     expect(
       (result.current.sidePaneState?.tabs ?? []).filter((tab) => tab.type === "browser"),
     ).toEqual([]);

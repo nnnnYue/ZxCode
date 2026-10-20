@@ -12,7 +12,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, EyeIcon } from "lucide-react";
+import { type HighspeedMessageMeta, type ZCodeApiRetryStatus } from "@zcode/shared";
 import {
   TID_CHAT_ASSISTANT_HISTORY_CONTENT,
   TID_CHAT_ASSISTANT_HISTORY_TRIGGER,
@@ -20,19 +21,17 @@ import {
   TID_CHAT_LOADING,
   TID_V4_ROW,
   testId,
-  type HighspeedMessageMeta,
-  type ZCodeApiRetryStatus,
-} from "@zcode/shared";
+} from "@zcode/shared/test-ids";
 import type {
   ApiRetryState,
   AttachmentRef,
   CommandAck,
   ConversationRowTarget,
-  WorkflowNotificationMeta,
 } from "@zcode/shared/zcode-protocol-v4";
 import { ChatLoading } from "@/components/ai-elements/chat-loading.js";
 import { ChatApiRetryStatus } from "@/chat-input-toolbar/display.js";
 import { cn } from "@/components/lib/utils.js";
+import { Button } from "@/components/ui/button.js";
 import { MessageActions } from "@/components/ai-elements/message.js";
 import {
   Collapsible,
@@ -46,11 +45,21 @@ import {
   readCronCreateAutomationSummary,
   type CronCreateAutomationSummary,
 } from "@/ToolCallBlocks/renderers/cron-create.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
+  isOffPeakCreateToolCall,
+  OffPeakCreateTaskCard,
+  readOffPeakCreateTaskSummary,
+  type OffPeakCreateTaskSummary,
+} from "@/ToolCallBlocks/renderers/offpeak-create.js";
+import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { HighspeedShareDialog } from "@/highspeed/HighspeedShareNoticeCard.js";
+import { isHighspeedShareEligible } from "@/highspeed/highspeedShare.js";
+import {
+  aggregateHighspeedCardMetrics,
   getHighspeedTurnByCommandId,
   getHighspeedTurnVersion,
   subscribeHighspeedTurns,
+  type HighspeedShareMetrics,
 } from "@/highspeed/highspeedTurnStore.js";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
 import { useAssistantCodeCommentFeatureEnabled } from "@/AssistantCodeCommentFeatureProvider.js";
@@ -72,7 +81,11 @@ import {
 import type { ConversationCuaGroupEvent } from "@/v4/conversationCuaGroups.js";
 import { ConversationAgentToolCallRow } from "@/v4/ConversationAgentToolCallRow.js";
 import { ConversationFileSummaryPanel } from "@/v4/ConversationFileSummaryPanel.js";
-import { WorkflowNotificationToolRow } from "@/v4/WorkflowNotificationToolRow.js";
+import {
+  WorkflowNotificationToolRow,
+  workflowRowNotification,
+  type WorkflowRowNotification,
+} from "@/v4/WorkflowNotificationToolRow.js";
 import { ConversationWorkflowDigests } from "@/v4/ConversationWorkflowDigests.js";
 import { ConversationWorkflowCompletion } from "@/v4/ConversationWorkflowCompletion.js";
 import { resolveWorkflowTurnDigests } from "@/v4/workflowTurnDigests.js";
@@ -122,13 +135,31 @@ interface CronAutomationTurnCard {
   automation: CronCreateAutomationSummary;
 }
 
+interface OffPeakTurnCard {
+  rowId: number;
+  toolCallId: string;
+  task: OffPeakCreateTaskSummary;
+}
+
 const MIN_VISIBLE_API_RETRY_ATTEMPT = 3;
 
 interface HighspeedOutputFooterProps {
   generatedLabel: string;
+  shareLabel: string;
+  shareAriaLabel: string;
+  shareEnabled: boolean;
+  sharePending: boolean;
+  onShare: () => void;
 }
 
-function HighspeedOutputFooter({ generatedLabel }: HighspeedOutputFooterProps) {
+function HighspeedOutputFooter({
+  generatedLabel,
+  shareLabel,
+  shareAriaLabel,
+  shareEnabled,
+  sharePending,
+  onShare,
+}: HighspeedOutputFooterProps) {
   return (
     <div
       data-highspeed-output-footer="true"
@@ -137,6 +168,26 @@ function HighspeedOutputFooter({ generatedLabel }: HighspeedOutputFooterProps) {
       <div aria-hidden="true" className="absolute inset-x-0 top-1/2 border-t border-border" />
       <div className="relative flex items-center gap-2 bg-background px-3">
         <span className="text-ui-base text-foreground-subtle">{generatedLabel}</span>
+        {shareEnabled ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="default"
+            className="h-7 gap-1 rounded-[8px] bg-black/5 px-2 py-1 text-ui-base font-medium leading-5 text-foreground hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+            data-highspeed-output-share="true"
+            disabled={sharePending}
+            aria-label={shareAriaLabel}
+            onClick={onShare}
+          >
+            <EyeIcon
+              className="size-4 text-foreground/85"
+              strokeWidth={4 / 3}
+              aria-hidden="true"
+              data-highspeed-output-share-icon="true"
+            />
+            {shareLabel}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -475,6 +526,36 @@ function resolveCronAutomationTurnCards(
   return cards;
 }
 
+// 只收本轮 status==="success" 的 OffPeakCreate；同 id 重复输出保留最新一次。
+// 刻意不复用 resolveCronAutomationTurnCards——那套带 CronDelete 撤销过滤语义，闲时无对应工具。
+function resolveOffPeakTurnCards(rows: readonly AssistantWorkRow[]): OffPeakTurnCard[] {
+  let cards: OffPeakTurnCard[] = [];
+
+  for (const row of rows) {
+    if (row.kind !== "toolCall" || row.status !== "success") {
+      continue;
+    }
+    const node = toolCallRowToLegacyNode(row);
+    if (!isOffPeakCreateToolCall(node.toolCall)) {
+      continue;
+    }
+    const task = readOffPeakCreateTaskSummary(node.toolCall);
+    if (!task) {
+      continue;
+    }
+    if (task.offPeakTaskId) {
+      cards = cards.filter((card) => card.task.offPeakTaskId !== task.offPeakTaskId);
+    }
+    cards.push({
+      rowId: row.rowId,
+      toolCallId: row.toolCallId,
+      task,
+    });
+  }
+
+  return cards;
+}
+
 function parseJsonRecord(value: unknown): Record<string, unknown> | null {
   let candidate = value;
   if (typeof candidate === "string") {
@@ -519,6 +600,30 @@ function CronAutomationTurnCards({
         <CronCreateAutomationCard
           key={`${card.rowId}:${card.toolCallId}`}
           automation={card.automation}
+          onOpenAutomationsMain={context.onOpenAutomationsMain}
+        />
+      ))}
+    </div>
+  );
+}
+
+function OffPeakTurnCards({
+  cards,
+  context,
+}: {
+  cards: readonly OffPeakTurnCard[];
+  context: ConversationRowRenderContext;
+}) {
+  if (cards.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {cards.map((card) => (
+        <OffPeakCreateTaskCard
+          key={`${card.rowId}:${card.toolCallId}`}
+          task={card.task}
           onOpenAutomationsMain={context.onOpenAutomationsMain}
         />
       ))}
@@ -685,7 +790,7 @@ function ConversationWorkSegmentFlow({
         let content: React.ReactNode;
 
         if (item.kind === "userInput") {
-          content = (
+          const userRow = (
             <ConversationTurnRow
               row={item.row}
               context={context}
@@ -693,6 +798,7 @@ function ConversationWorkSegmentFlow({
               editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
             />
           );
+          content = userRow;
         } else if (item.kind === "cuaGroup") {
           const group = <ConversationCuaGroupRow item={item} context={context} />;
           if (item.flowKind === "assistantHistory") {
@@ -959,10 +1065,9 @@ function resolveBackgroundResultTitle(unit: ConversationTurnRenderUnit): string 
  */
 function resolveWorkflowNotification(
   unit: ConversationTurnRenderUnit,
-): WorkflowNotificationMeta | undefined {
+): WorkflowRowNotification | undefined {
   if (unit.header?.origin !== "backgroundResult") return undefined;
-  const originMeta = unit.header.originMeta;
-  return originMeta?.backgroundSource === "workflow" ? originMeta.workflowNotification : undefined;
+  return workflowRowNotification(unit.header.originMeta);
 }
 
 function ConversationBackgroundResultWork({
@@ -1139,8 +1244,8 @@ function ConversationTurnGroupImpl({
   onFeedbackChange,
   onEdit,
 }: ConversationTurnGroupProps) {
-  const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
+  const { intl } = useZCodeIntl();
   const visibleUserRows = useMemo(() => unit.visibleUserInputs, [unit.visibleUserInputs]);
   useSyncExternalStore(subscribeHighspeedTurns, getHighspeedTurnVersion, getHighspeedTurnVersion);
   const sourceCommandId = unit.header?.sourceCommandId ?? visibleUserRows[0]?.sourceCommandId;
@@ -1159,6 +1264,49 @@ function ConversationTurnGroupImpl({
   const highspeedMeta = unit.isRunning
     ? undefined
     : visibleUserRows.find((row) => row.highspeed)?.highspeed;
+  const highspeedShareTarget = useMemo(() => {
+    let target: { cardId: string; metrics: HighspeedShareMetrics } | null = null;
+    if (
+      highspeedTurn?.metrics &&
+      highspeedTurn.metricsPersistedAt !== undefined &&
+      highspeedTurn.metrics.regularTps > 0 &&
+      highspeedTurn.metrics.highspeedTps !== undefined &&
+      highspeedTurn.metrics.highspeedTps > 0
+    ) {
+      target = {
+        cardId: highspeedTurn.card.cardId,
+        metrics: aggregateHighspeedCardMetrics(highspeedTurn.card.cardId),
+      };
+    } else if (unit.highspeedOutputFooterTarget) {
+      target = unit.highspeedOutputFooterTarget;
+    } else if (
+      highspeedMeta?.outputTokens !== undefined &&
+      highspeedMeta.outputTokens > 0 &&
+      highspeedMeta.highspeedTps !== undefined &&
+      highspeedMeta.highspeedTps > 0 &&
+      highspeedMeta.regularTps !== undefined &&
+      highspeedMeta.regularTps > 0
+    ) {
+      // Bug 原因：冷恢复后 Renderer 内存记录为空，但 transcript 已持久化完整分享统计；
+      // 只依赖 highspeedTurn 会让可见的历史分享按钮永久 disabled。
+      target = {
+        cardId: highspeedMeta.cardId,
+        metrics: {
+          outputTokens: highspeedMeta.outputTokens,
+          // 分享接口不要求 durationMs；缺失时仅让本地耗时降级为 0，不阻塞分享。
+          durationMs: highspeedMeta.durationMs ?? 0,
+          regularTps: highspeedMeta.regularTps,
+          highspeedTps: highspeedMeta.highspeedTps,
+          ...(highspeedMeta.savedDurationMs !== undefined
+            ? { savedDurationMs: highspeedMeta.savedDurationMs }
+            : {}),
+        },
+      };
+    }
+    // 卡片和历史标识继续保留，但不超过 1.2x 或缺少完整耗时数据时不提供分享入口。
+    return target && isHighspeedShareEligible(target.metrics) ? target : null;
+  }, [highspeedMeta, highspeedTurn, unit.highspeedOutputFooterTarget]);
+  const [highspeedShareDialogOpen, setHighspeedShareDialogOpen] = useState(false);
   const firstReasoningRowId = useMemo(
     () => unit.assistantWorkRows.find((row) => row.kind === "reasoning")?.rowId,
     [unit.assistantWorkRows],
@@ -1201,7 +1349,7 @@ function ConversationTurnGroupImpl({
     () =>
       codeCommentCardsEnabled &&
       assistantRawCopyText !== undefined &&
-      // 卡片与 zxcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
+      // 卡片与 zcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
       // 只有终态 row 才生成卡片，避免运行中卡片先出现又因模型续写而回滚。
       (latestAssistantTextRow?.state === "complete" ||
         latestAssistantTextRow?.state === "interrupted")
@@ -1252,6 +1400,10 @@ function ConversationTurnGroupImpl({
         ? undefined
         : resolveWorkflowTurnCompletion(unit.header, { byRunId: workflowRunByRunId }),
     [unit.header, unit.isRunning, workflowRunByRunId],
+  );
+  const offPeakTurnCards = useMemo(
+    () => (unit.isRunning ? [] : resolveOffPeakTurnCards(unit.assistantWorkRows)),
+    [unit.assistantWorkRows, unit.isRunning],
   );
   const canRenderAssistantActions =
     !unit.timelineOnly &&
@@ -1399,6 +1551,7 @@ function ConversationTurnGroupImpl({
           {/* 修复原因：CronCreate/CronUpdate 工具本身仍按普通工具行展示；成功卡片属于整轮
               完成后的结果摘要，必须等回复结束再跟随最终 assistant 正文收尾。 */}
           <CronAutomationTurnCards cards={cronAutomationTurnCards} context={context} />
+          <OffPeakTurnCards cards={offPeakTurnCards} context={context} />
           {!isOfficeMode && unit.header?.fileChanges ? (
             <ConversationFileSummaryPanel
               header={unit.header}
@@ -1425,6 +1578,7 @@ function ConversationTurnGroupImpl({
               createdAt={latestAssistantTextRow.createdAt}
               compactForRemoteControl={context.compactForRemoteControl}
               feedback={readAssistantFeedback(latestAssistantTextRow)}
+              sessionId={context.sessionId}
               onFork={canForkLatestAssistant ? onFork : undefined}
               onRetry={canRetryLatestAssistant ? onRetry : undefined}
               onFeedbackChange={onFeedbackChange}
@@ -1460,6 +1614,18 @@ function ConversationTurnGroupImpl({
           {showHighspeedOutputFooter ? (
             <HighspeedOutputFooter
               generatedLabel={intl.formatMessage({ id: "chat.highspeed.generatedBy" })}
+              shareLabel={intl.formatMessage({ id: "chat.highspeed.viewAction" })}
+              shareAriaLabel={intl.formatMessage({ id: "chat.highspeed.share" })}
+              shareEnabled={highspeedShareTarget !== null}
+              sharePending={false}
+              onShare={() => setHighspeedShareDialogOpen(true)}
+            />
+          ) : null}
+          {highspeedShareTarget ? (
+            <HighspeedShareDialog
+              metrics={highspeedShareTarget.metrics}
+              open={highspeedShareDialogOpen}
+              onOpenChange={setHighspeedShareDialogOpen}
             />
           ) : null}
           {unit.assistantTailRows.length > 0 ? (

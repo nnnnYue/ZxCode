@@ -1,16 +1,14 @@
-/* eslint-disable max-lines -- provider 重启 helper 集中维护本地 registry 桥与 execute 回调注入，拆分会割裂 fixture 生命周期。 */
 import { DatabaseSync } from "node:sqlite";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
   BUILTIN_PROVIDER_TEMPLATE_IDS,
-  TID_CHAT_MODEL_SELECT_TRIGGER,
-  TID_V4_MODEL_CONFIG,
-  ZXCODE_AGENT_PROVIDER,
+  ZCODE_AGENT_PROVIDER,
   encodeCustomModelValue,
   type ProviderFamilyConnectionSelection,
 } from "@zcode/shared";
+import { TID_CHAT_MODEL_SELECT_TRIGGER, TID_V4_MODEL_CONFIG } from "@zcode/shared/test-ids";
 import { getE2EAppDataPaths } from "./desktop-app.js";
 import { getUpstreamApiKey } from "./upstream-provider.js";
 import { waitForSqliteTable } from "./e2e-sqlite-readiness.js";
@@ -68,12 +66,19 @@ export async function readBigModelConnectionSelection(): Promise<
 export async function seedBigModelOAuthCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
       username: "bigmodel-e2e-user",
     }),
+  });
+}
+
+/** 为需要经过 Highspeed 网关鉴权的 E2E 补齐登录 JWT。 */
+export async function seedHighspeedLoginCredential() {
+  await writeJsonPatch(CREDENTIALS_FILE, {
+    zcodejwttoken: "e2e-highspeed-zcode-jwt",
   });
 }
 
@@ -86,7 +91,7 @@ export async function seedBigModelOAuthCredential() {
 export async function seedBigModelStartPlanCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
@@ -125,6 +130,8 @@ export async function seedReplayProvider(params: {
             contextWindow: input.contextWindow,
             id: input.id,
             maxOutputTokens: input.maxOutputTokens ?? input.limit?.output,
+            // 保留场景声明的档位，避免退回 disabled 后拒绝已保存的 high/max 偏好。
+            reasoningLevel: input.reasoningLevel,
           },
     ),
   };
@@ -136,18 +143,8 @@ export async function seedPersistedModelSelection(params: {
   providerId: string;
   reasoningLevel: string;
 }) {
-  // fork 修复：显式标注 execute 回调参数类型（默认首参 HTMLElement）。
   await browser.execute(
-    (
-      workspacePath: string,
-      keyPrefix: string,
-      selection: {
-        providerId: string;
-        modelId: string;
-        reasoningLevel: string;
-      },
-      appProvider: string,
-    ) => {
+    (workspacePath, keyPrefix, selection, appProvider) => {
       window.localStorage.setItem(
         `${keyPrefix}:${workspacePath}`,
         JSON.stringify({
@@ -161,7 +158,7 @@ export async function seedPersistedModelSelection(params: {
     paths.workspace,
     MODEL_SELECTION_RECENT_KEY_PREFIX,
     params,
-    ZXCODE_AGENT_PROVIDER,
+    ZCODE_AGENT_PROVIDER,
   );
 }
 
@@ -246,8 +243,7 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
     // Bug 根因：同一 spec 内 Agent SQLite 会跨 case 保留上一条显式 thought，
     // 只 seed renderer localStorage 不能隔离跨模型默认值。这里固定 Agent 侧前置状态，
     // 避免 I39 的 GLM high 泄漏到 I42，让用例真正验证 Turbo enabled → GLM 默认值。
-    db.prepare(
-      `
+    db.prepare(`
       insert into local_setting (
         scope, scope_id, namespace, key, value, schema_version, time_created, time_updated
       ) values (?, ?, ?, ?, ?, ?, ?, ?)
@@ -255,8 +251,7 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
         value = excluded.value,
         schema_version = excluded.schema_version,
         time_updated = excluded.time_updated
-    `,
-    ).run(
+    `).run(
       "user",
       "default",
       "model",
@@ -335,9 +330,7 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
           try {
             const record = JSON.parse(line) as {
               querySource?: string;
-              request?: {
-                body?: { model?: string; thinking?: { type?: string } };
-              };
+              request?: { body?: { model?: string; thinking?: { type?: string } } };
             };
             if (record.querySource === "main_turn" && record.request?.body) {
               matched = record.request.body;
@@ -350,10 +343,7 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
       }
       return false;
     },
-    {
-      timeout: 30000,
-      timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}`,
-    },
+    { timeout: 30000, timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}` },
   );
   return matched as { model?: string; thinking?: { type?: string } } | null;
 }

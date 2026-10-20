@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import type { MarkdownSelectionTarget } from "@/lib/conversationSelectionReference.js";
 /* eslint-disable max-lines -- PreviewPane 当前同时承载文件读取、图片与 Office 预览、markdown/code 渲染和顶部路径面包屑；后续需按 header/body 边界继续拆分。 */
 import {
@@ -19,17 +20,13 @@ import {
   ExternalLinkIcon,
   FileCode2Icon,
   CopyIcon,
-  Pencil,
-  Save,
-  Undo2,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
-import { PreviewPaneFileEditContent } from "@/previewPaneFileEditContent.js";
 import { cn } from "@/components/lib/utils.js";
 import type { FileBinaryPreview, FileMediaPreview, FileTextSlice } from "@zcode/shared";
-import { TID_PREVIEW_PANE } from "@zcode/shared";
+import { TID_PREVIEW_PANE } from "@zcode/shared/test-ids";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { usePptxFileWatch } from "@/hooks/usePptxFileWatch.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -37,7 +34,6 @@ import { usePdfViewerLabels, usePptxViewerLabels } from "@/hooks/usePreviewViewe
 import {
   FILE_VIEWER_MAX_TEXT_BYTES,
   createDiffSourceFilePreviewSource,
-  inferCodeLanguage,
   inferImageMediaType,
   inferMediaPreview,
   isPdfPreviewPath,
@@ -53,12 +49,6 @@ import { decodeBase64ToArrayBuffer, getOfficeFilePreviewKind } from "@/lib/offic
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useFileContextActions } from "@/hooks/useFileContextActions.js";
 import { useWorkspaceOpenInEditorTarget } from "@/hooks/useWorkspaceOpenInEditorTarget.js";
-import { useTabStore } from "@/store/TabStoreProvider.js";
-import { isWorkspaceReadOnly } from "@/store/tabStore.js";
-import {
-  registerPreviewEditGuard,
-  unregisterPreviewEditGuard,
-} from "@/store/previewEditGuardStore.js";
 import { logger } from "@/logger.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { useCodeCommentPreviewStore } from "@/store/codeCommentPreviewStore.js";
@@ -83,7 +73,11 @@ import {
   type CodeCommentPreview,
   type CodeCommentRange,
 } from "@/lib/codeCommentContext.js";
-import { getWorkspaceFileRelativePath } from "@/workspace-file-tree/model.js";
+import {
+  getWorkspaceFileRelativePath,
+  isWorkspaceFilePathInside,
+} from "@/workspace-file-tree/model.js";
+import type { WorkspaceFileDragPayload } from "@/lib/workspaceFileDrag.js";
 import { resolveWorkspaceEditorSelection } from "@/lib/workspaceEditorSelection.js";
 import {
   assertPptxPreviewDataComplete,
@@ -488,14 +482,43 @@ function buildCodeViewerBreadcrumb(
   };
 }
 
+export function resolvePreviewPaneImageFileReference(
+  source: CodeViewerSource | null,
+  workspacePath?: string,
+  targetWorkspaceKey?: string,
+): WorkspaceFileDragPayload | undefined {
+  const sourceWorkspacePath = source?.workspacePath ?? workspacePath;
+  const workspaceIdentity = source?.workspaceIdentity?.trim();
+  if (!source?.path || !sourceWorkspacePath) return undefined;
+  const sourceWorkspaceKey = workspaceIdentity || sourceWorkspacePath;
+  const sourceIsRemote = Boolean(workspaceIdentity || source.workspaceRemoteSessionId);
+  const targetIsRemote = Boolean(
+    workspacePath && targetWorkspaceKey && targetWorkspaceKey !== workspacePath,
+  );
+  // 本地文件沿用文件树的跨工作区绝对引用；远端必须匹配身份，不能把另一 Host 的 path 交给当前草稿。
+  if ((sourceIsRemote || targetIsRemote) && sourceWorkspaceKey !== targetWorkspaceKey)
+    return undefined;
+  return {
+    type: "file",
+    workspacePath: sourceWorkspacePath,
+    ...(workspaceIdentity ? { workspaceIdentity } : {}),
+    path: source.path,
+    // 预览允许工作区外路径；文件树的相对路径 helper 对外部文件只返回文件名，会误指向同名文件。
+    relativePath: isWorkspaceFilePathInside(sourceWorkspacePath, source.path)
+      ? getWorkspaceFileRelativePath(sourceWorkspacePath, source.path)
+      : source.path,
+    name: getPathLeaf(source.path) || source.title,
+  };
+}
+
 export function PreviewPane({
   source: rawSource,
   workspacePath,
   onOpenBrowserUrl,
   onOpenCodeViewer,
   renderHeavyContent = true,
+  headerContainer,
   markdownSelectionTarget,
-  sidePaneTabId,
 }: {
   source: CodeViewerSource | null;
   onClose: () => void;
@@ -503,9 +526,9 @@ export function PreviewPane({
   onOpenBrowserUrl?: (url: string) => void;
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   renderHeavyContent?: boolean;
+  /** 文件管理器将面包屑与目录开关放在同一工具栏，仍由预览维护文件操作。 */
+  headerContainer?: HTMLElement | null;
   markdownSelectionTarget?: MarkdownSelectionTarget;
-  /** 所属 side pane tab id；编辑态用它登记未保存守卫，关闭/刷新 tab 前由 useAppPanels 拦截。 */
-  sidePaneTabId?: string;
 }) {
   const platform = usePlatform();
   const { intl } = useZCodeIntl();
@@ -516,6 +539,15 @@ export function PreviewPane({
     [rawSource],
   );
   const sourceWorkspacePath = source?.workspacePath ?? workspacePath;
+  const imageFileReference = useMemo(
+    () =>
+      resolvePreviewPaneImageFileReference(
+        source,
+        workspacePath,
+        markdownSelectionTarget?.workspaceKey,
+      ),
+    [source, workspacePath, markdownSelectionTarget?.workspaceKey],
+  );
   const matchedOpenContext = useWorkspaceOpenInEditorTarget({
     workspacePath: sourceWorkspacePath,
     workspaceIdentity: source?.workspaceIdentity,
@@ -533,6 +565,13 @@ export function PreviewPane({
     source?.workspaceRemoteSessionId,
     source?.workspaceIdentity,
   );
+  const sourceFilePath = source?.path;
+  const loadImageDownloadSource = useCallback(async () => {
+    if (!sourceFilePath) throw new Error("Image source path is unavailable");
+    // SVG 文本预览按 UTF-8 解码；下载必须从同一来源 Host 读取原字节，保留其他编码及 XML 声明。
+    const original = await fileService.readMediaPreview({ path: sourceFilePath });
+    return `data:${original.mediaType};base64,${original.dataBase64}`;
+  }, [fileService, sourceFilePath]);
   const [filePreview, setFilePreview] = useState<FileTextSlice | null>(null);
   const [fileTooLarge, setFileTooLarge] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(false);
@@ -560,19 +599,21 @@ export function PreviewPane({
   const [validatedPptxReferenceNavigationRequestId, setValidatedPptxReferenceNavigationRequestId] =
     useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [installedEditors, setInstalledEditors] = useState<EditorInfo[]>([]);
+  const editorFilePath = source?.type !== "code-review" ? source?.path : undefined;
+  const [installedEditorQuery, setInstalledEditorQuery] = useState<{
+    path: string | undefined;
+    editors: EditorInfo[];
+  } | null>(null);
+  // 文件类型变化后不能沿用上一份应用列表；查询结果与路径绑定，旧请求由 effect 清理失效。
+  const installedEditors = useMemo(
+    () =>
+      installedEditorQuery?.path === editorFilePath ? (installedEditorQuery?.editors ?? []) : [],
+    [installedEditorQuery, editorFilePath],
+  );
   const [preferredEditorId] = useState<string | null>(() => readLastSelectedEditorId());
   const [markdownViewMode, setMarkdownViewMode] = useState<"preview" | "code">("preview");
   const [svgViewMode, setSvgViewMode] = useState<"preview" | "code">("preview");
   const [wrapLongLinesOverride, setWrapLongLinesOverride] = useState<boolean | null>(null);
-  // 编辑态状态机：预览（只读）⇄ 编辑（draft 可写）。draft/baseline 唯一属于本组件顶层 state，
-  // 切 tab 不卸载（TabsContent forceMount），编辑内容跨 tab 切换存活；tab 被关闭由守卫拦截。
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [baseline, setBaseline] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const draftRef = useRef("");
-  const baselineRef = useRef<string | null>(null);
   const [breadcrumbMaskState, setBreadcrumbMaskState] = useState<BreadcrumbMaskState>("none");
   const breadcrumbScrollRef = useRef<HTMLDivElement | null>(null);
   const breadcrumbContentRef = useRef<HTMLDivElement | null>(null);
@@ -664,26 +705,6 @@ export function PreviewPane({
   );
   const { canToggleCodeWrap, canToggleMarkdownView, canToggleSvgView, hasMoreMenu } =
     displayOptions;
-  const workspaceTabs = useTabStore((state) => state.tabs);
-  const workspaceWritable = useMemo(
-    () =>
-      !sourceWorkspacePath ||
-      !isWorkspaceReadOnly({ tabs: workspaceTabs }, sourceWorkspacePath, source?.workspaceIdentity),
-    [source?.workspaceIdentity, sourceWorkspacePath, workspaceTabs],
-  );
-  // 可编辑 = 纯文本文件 source + 本地可写 workspace + 读取结果完整非二进制。
-  // 图片/PDF/Office/PPTX/媒体已在 fileSource 排除；截断（>256KB）与二进制保存会丢内容，必须排除。
-  const canEditFile = Boolean(
-    fileSource &&
-    source?.type === "file" &&
-    source.path &&
-    !isRemoteSource &&
-    workspaceWritable &&
-    filePreview !== null &&
-    !filePreview.isBinary &&
-    !fileTooLarge,
-  );
-  const editDirty = editing && draft !== baseline;
   const codeCommentLabels = useMemo(
     () => ({
       addComment: intl.formatMessage({ id: "codeViewer.comment.add" }),
@@ -706,90 +727,17 @@ export function PreviewPane({
   const pdfViewerLabels = usePdfViewerLabels();
   const pptxViewerLabels = usePptxViewerLabels();
 
-  const handleExitPreviewEdit = useCallback(() => {
-    draftRef.current = "";
-    baselineRef.current = null;
-    setDraft("");
-    setBaseline(null);
-    setEditing(false);
-  }, []);
-
-  const handleEnterPreviewEdit = useCallback(() => {
-    if (!filePreview || filePreview.isBinary) {
-      return;
-    }
-    draftRef.current = filePreview.content;
-    baselineRef.current = filePreview.content;
-    setDraft(filePreview.content);
-    setBaseline(filePreview.content);
-    setEditing(true);
-  }, [filePreview]);
-
-  const handleSavePreviewEdits = useCallback(async (): Promise<boolean> => {
-    const savePath = source?.type === "file" ? source.path : null;
-    if (!savePath || saving) {
-      return false;
-    }
-    const content = draftRef.current;
-    setSaving(true);
-    try {
-      await fileService.writeTextFile({ path: savePath, content });
-      const savedBytes = new TextEncoder().encode(content).length;
-      // 保存成功后用刚落盘的内容就地更新预览缓存（避免额外回读 RPC），
-      // bytesRead/totalBytes 同步为保存后的文件大小，保持 FileTextSlice 语义一致。
-      setFilePreview((prev) =>
-        prev
-          ? {
-              ...prev,
-              content,
-              bytesRead: savedBytes,
-              totalBytes: savedBytes,
-              truncated: false,
-              isBinary: false,
-            }
-          : prev,
-      );
-      handleExitPreviewEdit();
-      toast(intl.formatMessage({ id: "codeViewer.saved" }));
-      return true;
-    } catch (saveError) {
-      // 保存失败必须保持编辑态：draft 不清空，未保存守卫继续拦截关闭。
-      toast(
-        intl.formatMessage(
-          { id: "codeViewer.saveFailed" },
-          { error: getPreviewPaneSafeErrorMessage(saveError, savePath) },
-        ),
-      );
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [fileService, handleExitPreviewEdit, intl, saving, source]);
-
-  useEffect(() => {
-    if (!sidePaneTabId || !editing) {
-      return;
-    }
-    registerPreviewEditGuard(sidePaneTabId, {
-      isDirty: () => draftRef.current !== baselineRef.current,
-      save: () => handleSavePreviewEdits(),
-    });
-    return () => {
-      unregisterPreviewEditGuard(sidePaneTabId);
-    };
-  }, [editing, handleSavePreviewEdits, sidePaneTabId]);
-
   useEffect(() => {
     let disposed = false;
 
     platform
-      .getInstalledEditors()
+      .getInstalledEditors(editorFilePath)
       .then((editors) => {
         if (disposed) {
           return;
         }
 
-        setInstalledEditors(editors);
+        setInstalledEditorQuery({ path: editorFilePath, editors });
       })
       .catch((platformError) => {
         logger.warn("[PreviewPane] 获取已安装编辑器列表失败", {
@@ -800,7 +748,7 @@ export function PreviewPane({
     return () => {
       disposed = true;
     };
-  }, [platform]);
+  }, [platform, editorFilePath]);
 
   useEffect(() => {
     if (!source) {
@@ -818,9 +766,7 @@ export function PreviewPane({
         : "code",
     );
     setWrapLongLinesOverride(null);
-    // 切换 source（含同一 tab 原位刷新 source）必须退出编辑：draft 属于旧文件内容。
-    handleExitPreviewEdit();
-  }, [handleExitPreviewEdit, source]);
+  }, [source]);
 
   const handleSubmitCodeComment = useCallback(
     (params: { range: CodeCommentRange; selectedText: string; comment: string }) => {
@@ -918,7 +864,7 @@ export function PreviewPane({
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [breadcrumb]);
+  }, [breadcrumb, headerContainer]);
 
   useLayoutEffect(() => {
     const viewport = breadcrumbScrollRef.current;
@@ -985,7 +931,7 @@ export function PreviewPane({
       window.removeEventListener("resize", debouncedUpdate);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [breadcrumb]);
+  }, [breadcrumb, headerContainer]);
 
   useEffect(() => {
     let disposed = false;
@@ -1638,341 +1584,289 @@ export function PreviewPane({
         }
       : undefined;
 
+  const header = (
+    <div
+      className={cn(
+        "flex h-10 min-w-0 shrink-0 items-center gap-2",
+        !headerContainer && "bg-surface/30",
+        !headerContainer && showDocumentHeaderDivider && "border-b border-border",
+      )}
+    >
+      <div
+        ref={breadcrumbScrollRef}
+        className={cn(
+          "min-w-0 flex-1 overflow-x-auto !scrollbar-hide",
+          BREADCRUMB_MASK_CLASS_BY_STATE[breadcrumbMaskState],
+        )}
+      >
+        <div
+          ref={breadcrumbContentRef}
+          className="flex min-w-max items-center px-3 gap-0.5 text-ui-base text-foreground-subtle"
+        >
+          {breadcrumb?.rootLabel ? (
+            <span className="shrink-0 text-foreground-subtle">{breadcrumb.rootLabel}</span>
+          ) : null}
+          {breadcrumb?.rootLabel ? (
+            <ChevronRightIcon className="size-3.5 shrink-0 text-foreground-subtlest" />
+          ) : null}
+          {breadcrumb?.parentSegments.map((segment, index) => (
+            <Fragment key={`${segment}-${index}`}>
+              <span className="shrink-0">{segment}</span>
+              <ChevronRightIcon className="size-3.5 shrink-0 text-foreground-subtlest" />
+            </Fragment>
+          ))}
+
+          <span className="inline-flex min-w-0 items-center gap-1 text-foreground">
+            {breadcrumb?.fileIconSrc ? (
+              <FileDisplayIcon src={breadcrumb.fileIconSrc} size={14} className="shrink-0" />
+            ) : null}
+            <span className="truncate">{breadcrumb?.fileLabel ?? source.title}</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 pr-1.5 items-center gap-2">
+        {canOpenDiffFilePreview ? (
+          <Button
+            type="button"
+            size="default"
+            variant="ghost"
+            className="shrink-0 rounded-lg text-foreground-subtle hover:text-foreground"
+            data-diff-source-preview-trigger
+            onClick={handleOpenDiffFilePreview}
+            title={intl.formatMessage({
+              id: "codeViewer.openSourcePreview",
+            })}
+            aria-label={intl.formatMessage({
+              id: "codeViewer.openSourcePreview",
+            })}
+          >
+            <FileCode2Icon className="size-3.5" data-icon="inline-start" />
+            <span>
+              {intl.formatMessage({
+                id: "codeViewer.openSourcePreview",
+              })}
+            </span>
+          </Button>
+        ) : null}
+        {/* Bugfix: 图片和 patch 这类预览没有任何显示选项，继续渲染触发器会打开空菜单，所以只在存在菜单项时显示更多按钮。 */}
+        {hasMoreMenu || source.path ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="icon-md"
+                variant="ghost"
+                className="shrink-0 text-foreground-subtle hover:text-foreground"
+                aria-label={intl.formatMessage({ id: "common.more" })}
+                title={intl.formatMessage({ id: "common.more" })}
+              >
+                <Ellipsis className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {canToggleMarkdownView ? (
+                <>
+                  <DropdownMenuLabel>
+                    {intl.formatMessage({ id: "codeViewer.markdownMode" })}
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={markdownViewMode}
+                    onValueChange={(value) => {
+                      setMarkdownViewMode(value as "preview" | "code");
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="preview">
+                      <EyeIcon className="size-4" />
+                      {intl.formatMessage({
+                        id: "codeViewer.markdownPreview",
+                      })}
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="code">
+                      <FileCode2Icon className="size-4" />
+                      {intl.formatMessage({
+                        id: "codeViewer.markdownSource",
+                      })}
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </>
+              ) : null}
+              {canToggleSvgView ? (
+                <>
+                  {canToggleMarkdownView ? <DropdownMenuSeparator /> : null}
+                  <DropdownMenuLabel>
+                    {intl.formatMessage({ id: "codeViewer.svgMode" })}
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={svgViewMode}
+                    onValueChange={(value) => {
+                      setSvgViewMode(value as "preview" | "code");
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="preview">
+                      <EyeIcon className="size-4" />
+                      {intl.formatMessage({ id: "codeViewer.svgPreview" })}
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="code">
+                      <FileCode2Icon className="size-4" />
+                      {intl.formatMessage({ id: "codeViewer.svgSource" })}
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </>
+              ) : null}
+              {canToggleCodeWrap ? (
+                <>
+                  {canToggleMarkdownView || canToggleSvgView ? <DropdownMenuSeparator /> : null}
+                  <DropdownMenuCheckboxItem
+                    checked={wrapLongLines}
+                    onCheckedChange={(checked) => {
+                      setWrapLongLinesOverride(Boolean(checked));
+                    }}
+                  >
+                    <FileCode2Icon className="size-4" />
+                    {intl.formatMessage({ id: "codeViewer.wrapLines" })}
+                  </DropdownMenuCheckboxItem>
+                </>
+              ) : null}
+              {source.path ? (
+                <>
+                  {hasMoreMenu ? <DropdownMenuSeparator /> : null}
+                  <DropdownMenuItem
+                    onSelect={() => void fileActions.copyAbsolutePath({ path: source.path! })}
+                  >
+                    <CopyIcon className="size-4" />
+                    {intl.formatMessage({ id: "fileActions.copyAbsolutePath" })}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void fileActions.copyRelativePath({
+                        path: source.path!,
+                        relativePath: sourceWorkspacePath
+                          ? getWorkspaceFileRelativePath(sourceWorkspacePath, source.path!)
+                          : source.path!,
+                      })
+                    }
+                  >
+                    <CopyIcon className="size-4" />
+                    {intl.formatMessage({ id: "fileActions.copyRelativePath" })}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+        {/* 第一期 PPTX 明确为只读预览，不展示任何编辑入口。 */}
+        <Button
+          type="button"
+          size="icon-md"
+          variant="ghost"
+          className="shrink-0 text-foreground-subtle hover:text-foreground disabled:text-foreground-subtlest"
+          onClick={() => {
+            void handleOpenInEditor();
+          }}
+          disabled={!canOpenInEditor}
+          title={
+            selectedEditor
+              ? intl.formatMessage(
+                  { id: "appHeader.openInEditor" },
+                  { editor: selectedEditor.name },
+                )
+              : intl.formatMessage({ id: "chat.changeSummary.openInEditor" })
+          }
+          aria-label={
+            selectedEditor
+              ? intl.formatMessage(
+                  { id: "appHeader.openInEditor" },
+                  { editor: selectedEditor.name },
+                )
+              : intl.formatMessage({ id: "chat.changeSummary.openInEditor" })
+          }
+        >
+          <ExternalLinkIcon className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <aside
       data-testid={TID_PREVIEW_PANE}
       className="flex h-full flex-col overflow-hidden bg-background"
     >
-      <div
-        className={cn(
-          "flex h-10 items-center gap-8 bg-surface/30",
-          showDocumentHeaderDivider && "border-b border-border",
-        )}
-      >
-        <div
-          ref={breadcrumbScrollRef}
-          className={cn(
-            "min-w-0 flex-1 overflow-x-auto !scrollbar-hide",
-            BREADCRUMB_MASK_CLASS_BY_STATE[breadcrumbMaskState],
-          )}
-        >
-          <div
-            ref={breadcrumbContentRef}
-            className="flex min-w-max items-center px-3 gap-0.5 text-ui-base text-foreground-subtle"
-          >
-            {breadcrumb?.rootLabel ? (
-              <span className="shrink-0 text-foreground-subtle">{breadcrumb.rootLabel}</span>
-            ) : null}
-            {breadcrumb?.rootLabel ? (
-              <ChevronRightIcon className="size-3.5 shrink-0 text-foreground-subtlest" />
-            ) : null}
-            {breadcrumb?.parentSegments.map((segment, index) => (
-              <Fragment key={`${segment}-${index}`}>
-                <span className="shrink-0">{segment}</span>
-                <ChevronRightIcon className="size-3.5 shrink-0 text-foreground-subtlest" />
-              </Fragment>
-            ))}
-
-            <span className="inline-flex min-w-0 items-center gap-1 text-foreground">
-              {breadcrumb?.fileIconSrc ? (
-                <FileDisplayIcon src={breadcrumb.fileIconSrc} size={14} className="shrink-0" />
-              ) : null}
-              <span className="truncate">{breadcrumb?.fileLabel ?? source.title}</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 pr-1.5 items-center gap-2">
-          {canOpenDiffFilePreview ? (
-            <Button
-              type="button"
-              size="default"
-              variant="ghost"
-              className="shrink-0 rounded-lg text-foreground-subtle hover:text-foreground"
-              data-diff-source-preview-trigger
-              onClick={handleOpenDiffFilePreview}
-              title={intl.formatMessage({
-                id: "codeViewer.openSourcePreview",
-              })}
-              aria-label={intl.formatMessage({
-                id: "codeViewer.openSourcePreview",
-              })}
-            >
-              <FileCode2Icon className="size-3.5" data-icon="inline-start" />
-              <span>
-                {intl.formatMessage({
-                  id: "codeViewer.openSourcePreview",
-                })}
-              </span>
-            </Button>
-          ) : null}
-          {/* 编辑入口按产品规则固定在 more 按钮左侧；编辑态同一按钮切换为保存。 */}
-          {canEditFile ? (
-            <Button
-              type="button"
-              size="icon-md"
-              variant="ghost"
-              className="shrink-0 text-foreground-subtle hover:text-foreground disabled:text-foreground-subtlest"
-              disabled={saving || (editing && !editDirty)}
-              onClick={() => {
-                if (editing) {
-                  void handleSavePreviewEdits();
-                } else {
-                  handleEnterPreviewEdit();
-                }
-              }}
-              title={intl.formatMessage({ id: editing ? "codeViewer.save" : "codeViewer.edit" })}
-              aria-label={intl.formatMessage({
-                id: editing ? "codeViewer.save" : "codeViewer.edit",
-              })}
-              data-testid={editing ? "preview-pane-save" : "preview-pane-edit"}
-            >
-              {editing ? <Save className="size-3.5" /> : <Pencil className="size-3.5" />}
-            </Button>
-          ) : null}
-          {/* 图片和 patch 这类预览没有任何显示选项，继续渲染触发器会打开空菜单，所以只在存在菜单项时显示更多按钮。*/}
-          {hasMoreMenu || source.path ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon-md"
-                  variant="ghost"
-                  className="shrink-0 text-foreground-subtle hover:text-foreground"
-                  aria-label={intl.formatMessage({ id: "common.more" })}
-                  title={intl.formatMessage({ id: "common.more" })}
-                >
-                  <Ellipsis className="size-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {editing ? (
-                  <>
-                    <DropdownMenuItem onSelect={handleExitPreviewEdit} disabled={saving}>
-                      <Undo2 className="size-4" />
-                      {intl.formatMessage({ id: "codeViewer.discardChanges" })}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                ) : null}
-                {!editing && canToggleMarkdownView ? (
-                  <>
-                    <DropdownMenuLabel>
-                      {intl.formatMessage({ id: "codeViewer.markdownMode" })}
-                    </DropdownMenuLabel>
-                    <DropdownMenuRadioGroup
-                      value={markdownViewMode}
-                      onValueChange={(value) => {
-                        setMarkdownViewMode(value as "preview" | "code");
-                      }}
-                    >
-                      <DropdownMenuRadioItem value="preview">
-                        <EyeIcon className="size-4" />
-                        {intl.formatMessage({
-                          id: "codeViewer.markdownPreview",
-                        })}
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="code">
-                        <FileCode2Icon className="size-4" />
-                        {intl.formatMessage({
-                          id: "codeViewer.markdownSource",
-                        })}
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </>
-                ) : null}
-                {!editing && canToggleSvgView ? (
-                  <>
-                    {canToggleMarkdownView ? <DropdownMenuSeparator /> : null}
-                    <DropdownMenuLabel>
-                      {intl.formatMessage({ id: "codeViewer.svgMode" })}
-                    </DropdownMenuLabel>
-                    <DropdownMenuRadioGroup
-                      value={svgViewMode}
-                      onValueChange={(value) => {
-                        setSvgViewMode(value as "preview" | "code");
-                      }}
-                    >
-                      <DropdownMenuRadioItem value="preview">
-                        <EyeIcon className="size-4" />
-                        {intl.formatMessage({ id: "codeViewer.svgPreview" })}
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="code">
-                        <FileCode2Icon className="size-4" />
-                        {intl.formatMessage({ id: "codeViewer.svgSource" })}
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </>
-                ) : null}
-                {!editing && canToggleCodeWrap ? (
-                  <>
-                    {canToggleMarkdownView || canToggleSvgView ? <DropdownMenuSeparator /> : null}
-                    <DropdownMenuCheckboxItem
-                      checked={wrapLongLines}
-                      onCheckedChange={(checked) => {
-                        setWrapLongLinesOverride(Boolean(checked));
-                      }}
-                    >
-                      <FileCode2Icon className="size-4" />
-                      {intl.formatMessage({ id: "codeViewer.wrapLines" })}
-                    </DropdownMenuCheckboxItem>
-                  </>
-                ) : null}
-                {source.path ? (
-                  <>
-                    {hasMoreMenu && !editing ? <DropdownMenuSeparator /> : null}
-                    <DropdownMenuItem
-                      onSelect={() => void fileActions.copyAbsolutePath({ path: source.path! })}
-                    >
-                      <CopyIcon className="size-4" />
-                      {intl.formatMessage({ id: "fileActions.copyAbsolutePath" })}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        void fileActions.copyRelativePath({
-                          path: source.path!,
-                          relativePath: sourceWorkspacePath
-                            ? getWorkspaceFileRelativePath(sourceWorkspacePath, source.path!)
-                            : source.path!,
-                        })
-                      }
-                    >
-                      <CopyIcon className="size-4" />
-                      {intl.formatMessage({ id: "fileActions.copyRelativePath" })}
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-          {/* 第一期 PPTX 明确为只读预览，不展示任何编辑入口。 */}
-          <Button
-            type="button"
-            size="icon-md"
-            variant="ghost"
-            className="shrink-0 text-foreground-subtle hover:text-foreground disabled:text-foreground-subtlest"
-            onClick={() => {
-              void handleOpenInEditor();
-            }}
-            disabled={!canOpenInEditor}
-            title={
-              selectedEditor
-                ? intl.formatMessage(
-                    { id: "appHeader.openInEditor" },
-                    { editor: selectedEditor.name },
-                  )
-                : intl.formatMessage({ id: "chat.changeSummary.openInEditor" })
-            }
-            aria-label={
-              selectedEditor
-                ? intl.formatMessage(
-                    { id: "appHeader.openInEditor" },
-                    { editor: selectedEditor.name },
-                  )
-                : intl.formatMessage({ id: "chat.changeSummary.openInEditor" })
-            }
-          >
-            <ExternalLinkIcon className="size-3.5" />
-          </Button>
-        </div>
-      </div>
+      {headerContainer ? createPortal(header, headerContainer) : header}
       <div className="min-h-0 flex-1">
         {renderHeavyContent ? (
-          editing && filePreview !== null && !filePreview.isBinary ? (
-            <div className="h-full min-h-0 overflow-hidden bg-background p-3">
-              <PreviewPaneFileEditContent
-                initialValue={draft}
-                onChange={(value) => {
-                  // 与保存/守卫共用 draftRef 真源：先写 ref 再同步 state。
-                  draftRef.current = value;
-                  setDraft(value);
-                }}
-                onSaveShortcut={() => {
-                  // Cmd/Ctrl+S 门控与保存按钮一致（有改动且未在保存中）。
-                  if (!saving && draftRef.current !== baselineRef.current) {
-                    void handleSavePreviewEdits();
+          <PreviewPaneContent
+            source={pptxSource ?? imageSource ?? pdfSource ?? mediaSource ?? source}
+            filePreview={filePreview}
+            fileTooLarge={fileTooLarge}
+            loadingInitial={loadingInitial}
+            loadingImagePreview={loadingImagePreview}
+            imagePreview={imagePreview}
+            imageFileReference={imageFileReference}
+            loadImageDownloadSource={sourceFilePath ? loadImageDownloadSource : undefined}
+            mediaSource={mediaSource}
+            loadingMediaPreview={loadingMediaPreview}
+            mediaPreviewUrl={mediaPreviewUrl}
+            onMediaError={handleMediaError}
+            onMediaLoadedMetadata={handleMediaLoadedMetadata}
+            loadingPdfPreview={loadingPdfPreview}
+            pdfViewerSource={pdfViewerSource}
+            pdfViewerLabels={pdfViewerLabels}
+            loadingOfficePreview={loadingOfficePreview}
+            officePreview={officePreview}
+            officePreviewKind={officePreviewKind}
+            loadingPptxPreview={loadingPptxPreview}
+            pptxPreviewData={pptxPreviewData}
+            pptxViewerLabels={pptxViewerLabels}
+            pptxReferenceSource={
+              pptxSource && sourceWorkspacePath
+                ? {
+                    workspacePath: sourceWorkspacePath,
+                    ...(pptxSource.workspaceIdentity
+                      ? { workspaceIdentity: pptxSource.workspaceIdentity }
+                      : {}),
+                    ...(pptxSource.workspaceRemoteSessionId
+                      ? { remoteSessionId: pptxSource.workspaceRemoteSessionId }
+                      : {}),
+                    sourcePath: pptxSource.path,
+                    sourceTitle: pptxSource.title,
                   }
-                }}
-                readOnly={saving}
-                language={inferCodeLanguage(source.path, filePreview.content)}
-                codeTheme={codeTheme}
-                settings={codePreviewSettings}
-                aria-label={intl.formatMessage({ id: "codeViewer.edit" })}
-                data-testid="preview-pane-file-editor"
-                loadingLabel={intl.formatMessage({ id: "codeViewer.editorLoading" })}
-              />
-            </div>
-          ) : (
-            <PreviewPaneContent
-              source={pptxSource ?? imageSource ?? pdfSource ?? mediaSource ?? source}
-              filePreview={filePreview}
-              fileTooLarge={fileTooLarge}
-              loadingInitial={loadingInitial}
-              loadingImagePreview={loadingImagePreview}
-              imagePreview={imagePreview}
-              mediaSource={mediaSource}
-              loadingMediaPreview={loadingMediaPreview}
-              mediaPreviewUrl={mediaPreviewUrl}
-              onMediaError={handleMediaError}
-              onMediaLoadedMetadata={handleMediaLoadedMetadata}
-              loadingPdfPreview={loadingPdfPreview}
-              pdfViewerSource={pdfViewerSource}
-              pdfViewerLabels={pdfViewerLabels}
-              loadingOfficePreview={loadingOfficePreview}
-              officePreview={officePreview}
-              officePreviewKind={officePreviewKind}
-              loadingPptxPreview={loadingPptxPreview}
-              pptxPreviewData={pptxPreviewData}
-              pptxViewerLabels={pptxViewerLabels}
-              pptxReferenceSource={
-                pptxSource && sourceWorkspacePath
-                  ? {
-                      workspacePath: sourceWorkspacePath,
-                      ...(pptxSource.workspaceIdentity
-                        ? { workspaceIdentity: pptxSource.workspaceIdentity }
-                        : {}),
-                      ...(pptxSource.workspaceRemoteSessionId
-                        ? { remoteSessionId: pptxSource.workspaceRemoteSessionId }
-                        : {}),
-                      sourcePath: pptxSource.path,
-                      sourceTitle: pptxSource.title,
-                    }
-                  : null
-              }
-              pptxReferenceNavigation={pptxReferenceNavigation}
-              pptxReferenceNavigationReady={
-                pptxReferenceNavigation !== null &&
-                validatedPptxReferenceNavigationRequestId === pptxReferenceNavigation.requestId
-              }
-              error={error}
-              codePreviewSettings={codePreviewSettings}
-              codeTheme={codeTheme}
-              resolvedTheme={resolvedTheme}
-              theme={theme}
-              workspacePath={sourceWorkspacePath}
-              onOpenBrowserUrl={onOpenBrowserUrl}
-              markdownSelectionTarget={
-                markdownSelectionTarget &&
-                (source.workspaceIdentity?.trim() || sourceWorkspacePath) ===
-                  markdownSelectionTarget.workspaceKey
-                  ? markdownSelectionTarget
-                  : undefined
-              }
-              markdownViewMode={markdownViewMode}
-              svgViewMode={svgViewMode}
-              wrapLongLines={wrapLongLines}
-              codeComments={codeComments}
-              enableCodeLineSelection={canCreateCodeComment}
-              enableCodeGutterUtility={canCreateCodeComment}
-              codeCommentLabels={codeCommentLabels}
-              onSubmitCodeComment={handleSubmitCodeComment}
-              onDeleteCodeComment={handleDeleteCodeComment}
-              // PreviewPane 外层只是 flex 壳，真实滚动发生在具体内容组件的 overflow 容器。
-              // 折叠侧边面板卸载重内容前必须保存该容器的位置。
-              onScroll={handlePreviewContentScroll}
-              scrollContainerRef={scrollContainerRef}
-            />
-          )
+                : null
+            }
+            pptxReferenceNavigation={pptxReferenceNavigation}
+            pptxReferenceNavigationReady={
+              pptxReferenceNavigation !== null &&
+              validatedPptxReferenceNavigationRequestId === pptxReferenceNavigation.requestId
+            }
+            error={error}
+            codePreviewSettings={codePreviewSettings}
+            codeTheme={codeTheme}
+            resolvedTheme={resolvedTheme}
+            theme={theme}
+            workspacePath={sourceWorkspacePath}
+            onOpenBrowserUrl={onOpenBrowserUrl}
+            markdownSelectionTarget={
+              markdownSelectionTarget &&
+              (source.workspaceIdentity?.trim() || sourceWorkspacePath) ===
+                markdownSelectionTarget.workspaceKey
+                ? markdownSelectionTarget
+                : undefined
+            }
+            markdownViewMode={markdownViewMode}
+            svgViewMode={svgViewMode}
+            wrapLongLines={wrapLongLines}
+            codeComments={codeComments}
+            enableCodeLineSelection={canCreateCodeComment}
+            enableCodeGutterUtility={canCreateCodeComment}
+            codeCommentLabels={codeCommentLabels}
+            onSubmitCodeComment={handleSubmitCodeComment}
+            onDeleteCodeComment={handleDeleteCodeComment}
+            // PreviewPane 外层只是 flex 壳，真实滚动发生在具体内容组件的 overflow 容器。
+            // 折叠侧边面板卸载重内容前必须保存该容器的位置。
+            onScroll={handlePreviewContentScroll}
+            scrollContainerRef={scrollContainerRef}
+          />
         ) : (
           <PreviewPaneDeferredHeavyContent style={deferredBodyStyle} />
         )}

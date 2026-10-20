@@ -5,9 +5,10 @@ import type {
   EditorInfo,
   GitRepositorySummary,
   RemoteTarget,
+  UserInfo,
 } from "@zcode/shared";
 import { useState } from "react";
-import { TID_WORKSPACE_HEADER } from "@zcode/shared";
+import { TID_WORKSPACE_HEADER } from "@zcode/shared/test-ids";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import { cn } from "@/components/lib/utils.js";
 import {
@@ -16,6 +17,29 @@ import {
   WorkspaceHeaderTitleSection,
 } from "@/WorkspaceHeaderSections.js";
 import type { WorkspaceHeaderVariant } from "@/WorkspaceHeaderSections/shared.js";
+
+/**
+ * 侧栏收起时左上角浮层（侧栏开关、前进后退、新建、更新）盖在内容区顶栏上，顶栏需要让出的左侧留白。
+ * WorkspaceHeader 与 Side Pane 完整视图的 tab 栏共用这一规则。
+ */
+export function resolveTopOverlayLeadingPaddingClass({
+  isSidebarVisible,
+  isMacDesktop,
+  isMacFullscreen,
+  hasUpdateReady,
+}: {
+  isSidebarVisible: boolean;
+  isMacDesktop?: boolean;
+  isMacFullscreen?: boolean;
+  hasUpdateReady?: boolean;
+}): string | false {
+  if (isSidebarVisible) return false;
+  if (isMacDesktop) {
+    if (hasUpdateReady) return isMacFullscreen ? "pl-48" : "pl-66";
+    return isMacFullscreen ? "pl-38" : "pl-58";
+  }
+  return hasUpdateReady ? "pl-44" : "pl-38";
+}
 
 export function WorkspaceHeader({
   variant = "task",
@@ -30,7 +54,9 @@ export function WorkspaceHeader({
   projectName,
   activeTaskTitle,
   activeTaskChangeSummary,
+  hasUpdateReady,
   activeTaskId,
+  user,
   activeTraceId,
   activeSessionId,
   activeTaskProvider,
@@ -75,7 +101,9 @@ export function WorkspaceHeader({
   projectName: string;
   activeTaskTitle: string;
   activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
+  hasUpdateReady: boolean;
   activeTaskId: string | null;
+  user?: UserInfo | null;
   activeTraceId: string | null;
   activeSessionId: string | null;
   activeTaskProvider: ZCodeProvider | null;
@@ -118,19 +146,14 @@ export function WorkspaceHeader({
   allowOpenWorkspace?: boolean;
 }) {
   const [selectedEditor, setSelectedEditor] = useState<EditorInfo | null>(null);
-  const shouldOffsetHeaderForWindowControls = !isSidebarVisible;
   // Linux 与 Windows 共用内联窗控，不再预留旧悬浮窗控的标题栏区域。
   const usesInlineWindowControls = Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop));
-
-  let headerWindowControlsPaddingClass: string | false = false;
-  if (shouldOffsetHeaderForWindowControls) {
-    // 更新状态按钮已随自动更新功能删除；这里只保留常态的窗口控制区安全留白。
-    headerWindowControlsPaddingClass = isMacDesktop
-      ? isMacFullscreen
-        ? "pl-38"
-        : "pl-58"
-      : "pl-38";
-  }
+  const headerWindowControlsPaddingClass = resolveTopOverlayLeadingPaddingClass({
+    isSidebarVisible,
+    isMacDesktop,
+    isMacFullscreen,
+    hasUpdateReady,
+  });
 
   return (
     <header
@@ -159,7 +182,7 @@ export function WorkspaceHeader({
           headerWindowControlsPaddingClass,
         )}
       >
-        {variant === "task" ? (
+        {variant === "task" || remoteTarget || workspaceIdentity || remoteSessionId ? (
           <WorkspaceHeaderTitleSection
             variant={variant}
             readOnlyReason={readOnlyReason}
@@ -204,6 +227,7 @@ export function WorkspaceHeader({
         <WorkspaceHeaderActionSection
           variant={variant}
           activeTaskId={activeTaskId}
+          user={user}
           readOnlyReason={readOnlyReason}
           workspaceAbsPath={workspaceAbsPath}
           workspaceIdentity={workspaceIdentity}

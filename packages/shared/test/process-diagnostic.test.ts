@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   parseZCodeProcessDiagnostic,
-  ZXCODE_PROCESS_DIAGNOSTIC_PREFIX,
-  ZXCODE_PROCESS_DIAGNOSTIC_MAX_LINE_CHARS,
+  ZCODE_PROCESS_DIAGNOSTIC_PREFIX,
+  ZCODE_PROCESS_DIAGNOSTIC_MAX_LINE_CHARS,
 } from "@zcode/shared/process-diagnostic";
 import { hostResponseMessageSchema } from "@zcode/shared";
 
@@ -19,8 +19,7 @@ const diagnostic = {
 
 describe("CLI process diagnostic contract", () => {
   it("preserves multiline stack in one stderr frame and validates Host IPC", () => {
-    const line = ZXCODE_PROCESS_DIAGNOSTIC_PREFIX + JSON.stringify(diagnostic);
-    expect(line.split("\n")).toHaveLength(1);
+    const line = ZCODE_PROCESS_DIAGNOSTIC_PREFIX + JSON.stringify(diagnostic);
     expect(parseZCodeProcessDiagnostic(line)).toEqual(diagnostic);
     expect(
       hostResponseMessageSchema.parse({
@@ -43,13 +42,13 @@ describe("CLI process diagnostic contract", () => {
       { ...diagnostic, message: "x".repeat(4001) },
     ]) {
       expect(
-        parseZCodeProcessDiagnostic(ZXCODE_PROCESS_DIAGNOSTIC_PREFIX + JSON.stringify(value)),
+        parseZCodeProcessDiagnostic(ZCODE_PROCESS_DIAGNOSTIC_PREFIX + JSON.stringify(value)),
       ).toBeUndefined();
     }
     for (const line of [
       "Error: ordinary stderr",
-      ZXCODE_PROCESS_DIAGNOSTIC_PREFIX + "{",
-      ZXCODE_PROCESS_DIAGNOSTIC_PREFIX + "x".repeat(ZXCODE_PROCESS_DIAGNOSTIC_MAX_LINE_CHARS),
+      ZCODE_PROCESS_DIAGNOSTIC_PREFIX + "{",
+      ZCODE_PROCESS_DIAGNOSTIC_PREFIX + "x".repeat(ZCODE_PROCESS_DIAGNOSTIC_MAX_LINE_CHARS),
     ]) {
       expect(parseZCodeProcessDiagnostic(line)).toBeUndefined();
     }

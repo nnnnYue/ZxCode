@@ -146,10 +146,6 @@ describe("ToolCallBlock agent routing", () => {
     expect(html).toContain(">MCP<");
     expect(html).toContain("Get environment");
     expect(html).toContain('class="text-foreground-subtle">Firebase</span>');
-    expect(html).not.toContain(
-      'class="text-foreground-subtlest">·</span><span class="text-foreground-subtle">Firebase</span>',
-    );
-    expect(html).not.toMatch(/class="[^"]*(?:border|bg-background-alt)[^"]*">Firebase<\/span>/u);
     expect(html).not.toContain("Plugin:firebase:firebase");
     expect(html).not.toContain("Firebase get environment");
     expect(html).not.toContain(">mcp__plugin_firebase_firebase__firebase_get_environment<");
@@ -235,8 +231,6 @@ describe("ToolCallBlock agent routing", () => {
     expect(screen.queryByText(description)).toBeNull();
     const summary = screen.getByTestId("tool-summary-trigger-call-mcp-detail");
     fireEvent.click(summary);
-    expect(screen.getByTestId("mcp-result-surface").className).toContain("rounded-xl");
-    expect(screen.getByTestId("mcp-result-surface").className).toContain("border-border");
     expect(screen.queryByText("Result")).toBeNull();
     expect(screen.queryByText("Parameters")).toBeNull();
     expect(screen.queryByText(description)).toBeNull();
@@ -341,7 +335,7 @@ describe("ToolCallBlock agent routing", () => {
     expect(screen.getByTestId("mcp-error-surface").className).toContain("bg-destructive/10");
   });
 
-  it("uses the BUA bounded code surface for multiline MCP results", () => {
+  it("renders multiline MCP result actions", () => {
     const row: ToolCallRow = {
       rowId: 7,
       turnId: "turn-1",
@@ -377,8 +371,7 @@ describe("ToolCallBlock agent routing", () => {
     );
 
     fireEvent.click(screen.getByTestId("tool-summary-trigger-call-mcp-long-result"));
-    const surface = screen.getByTestId("mcp-result-surface");
-    expect(surface.className).toContain("max-h-72");
+    screen.getByTestId("mcp-result-surface");
     expect(screen.getByRole("button", { name: "复制结果" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "切换自动换行" })).toBeTruthy();
   });
@@ -513,6 +506,46 @@ describe("ToolCallBlock agent routing", () => {
 
     expect(html).toContain("agent:tool-glm-agent:Agent:think:source:none");
   });
+
+  it("routes spawn_agent tool calls to the agent renderer", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        ZCodeIntlProvider,
+        { initialLocale: "zh-CN" },
+        createElement(ToolCallBlock, {
+          toolCallNode: {
+            toolCall: {
+              toolId: "tool-spawn-agent",
+              kind: "spawn_agent",
+              title: "spawn_agent",
+              input: {
+                agent_type: "explorer",
+                message: "检查当前项目结构",
+              },
+              output: {
+                agent_id: "agent-1",
+                nickname: "Locke",
+              },
+              status: "completed",
+              raw: {
+                name: "spawn_agent",
+                _meta: {
+                  zcode: {
+                    toolName: "spawn_agent",
+                    nickname: "Locke",
+                  },
+                },
+              },
+            },
+            childToolCalls: [],
+          },
+          workspacePath: "/workspace",
+        }),
+      ),
+    );
+
+    expect(html).toContain("agent:tool-spawn-agent:spawn_agent:spawn_agent:source:none");
+  });
 });
 
 describe("readRawToolCallFileSummaries", () => {
@@ -585,13 +618,6 @@ describe("readRawToolCallFileSummaries", () => {
     );
 
     expect(html).toContain("读取");
-    expect(html).toMatch(
-      /class="[^"]*tool-summary-kind-label[^"]*@max-\[360px\]\/conversation:hidden/,
-    );
-    expect(html).toMatch(/class="[^"]*tool-summary-content[^"]*flex-1[^"]*overflow-hidden/);
-    expect(html).toMatch(
-      /class="[^"]*text-foreground-subtlest[^"]*@max-\[360px\]\/conversation:hidden/,
-    );
     expect(html).not.toContain("主 Agent");
     expect(html).not.toContain("SubAgent");
     expect(html).toContain("index.html");

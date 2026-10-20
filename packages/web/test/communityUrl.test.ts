@@ -1,31 +1,68 @@
-import { describe, expect, it } from "vitest";
-import localDefaultAppConfig from "../../../config/default.json" with { type: "json" };
+import { describe, expect, it, vi } from "vitest";
 import { resolveWebCommunityUrl, resolveWebHelpConfig } from "../src/communityUrl.js";
 
-// 去平台化后帮助入口只读仓库内置 config/default.json，不再有启动期远端请求
-// （原 /api/v1/client/configs 拉取链路已删除），因此这里只验证本地同步解析。
-const sanitized = (value: string | undefined): string | undefined =>
-  value && value.trim() !== "" ? value : undefined;
+const LOCAL_CONFIG = {
+  community_urls: {
+    "zh-CN": "https://local.example.com/feishu",
+    "en-US": "https://local.example.com/discord",
+  },
+};
 
-describe("Web 帮助入口（本地内置配置）", () => {
-  it("resolveWebHelpConfig 同步返回内置 default.json", () => {
-    const config = resolveWebHelpConfig();
-    expect(config.community_urls["en-US"]).toBe(
-      sanitized(localDefaultAppConfig.community_urls["en-US"]),
-    );
-    // 内置值为空串时按缺省处理（sanitize 为 undefined）。
-    expect(config.community_urls["zh-CN"]).toBe(
-      sanitized(localDefaultAppConfig.community_urls["zh-CN"]),
-    );
-    expect(config.feedback_url).toBe(sanitized(localDefaultAppConfig.feedback_url));
+describe("resolveWebCommunityUrl", () => {
+  it.each([404])("HTTP %i 时回退内置同语言入口", async (status) => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue({
+      ok: false,
+      status,
+    } as Response);
+
+    await expect(
+      resolveWebCommunityUrl("zh-CN", { fetchImpl, localConfig: LOCAL_CONFIG }),
+    ).resolves.toBe("https://local.example.com/feishu");
+    await expect(
+      resolveWebCommunityUrl("en-US", { fetchImpl, localConfig: LOCAL_CONFIG }),
+    ).resolves.toBe("https://local.example.com/discord");
   });
 
-  it("resolveWebCommunityUrl 同步取内置同语言入口", () => {
-    expect(resolveWebCommunityUrl("en-US")).toBe(
-      sanitized(localDefaultAppConfig.community_urls["en-US"]),
-    );
-    expect(resolveWebCommunityUrl("zh-CN")).toBe(
-      sanitized(localDefaultAppConfig.community_urls["zh-CN"]),
-    );
+  it("远端缺少当前语言时回退内置同语言入口", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        code: 0,
+        data: {
+          configs: {
+            feedbackUrl: {
+              community_urls: { "zh-CN": "https://remote.example.com/feishu" },
+            },
+          },
+        },
+      }),
+    } as Response);
+
+    await expect(
+      resolveWebCommunityUrl("en-US", { fetchImpl, localConfig: LOCAL_CONFIG }),
+    ).resolves.toBe("https://local.example.com/discord");
   });
+});
+
+it("使用部署 endpoint 的新接口并提取反馈地址", async () => {
+  const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async () =>
+    Response.json({
+      code: 0,
+      data: {
+        configs: {
+          feedbackUrl: {
+            feedback_url: "https://remote.feedback",
+            community_urls: { "zh-CN": "https://remote.community" },
+          },
+        },
+      },
+    }),
+  );
+  expect(
+    (await resolveWebHelpConfig({ fetchImpl, endpointOrigin: "https://test.example.com" }))
+      .feedback_url,
+  ).toBe("https://remote.feedback");
+  expect(new URL(String(fetchImpl.mock.calls[0][0])).searchParams.has("platform")).toBe(false);
+  expect(fetchImpl.mock.calls[0][0]).toContain("https://test.example.com/api/v1/client/configs?");
+  expect(await resolveWebCommunityUrl("zh-CN", { fetchImpl })).toBe("https://remote.community");
 });

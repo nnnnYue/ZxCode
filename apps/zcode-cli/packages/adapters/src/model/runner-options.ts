@@ -1,6 +1,7 @@
 import { Output, jsonSchema } from "ai";
 import type { ModelToolChoice } from "@zcode/contracts";
 import type { EnvRecord } from "./model-execution.js";
+import { toolSearchHeaders } from "./tool-search.js";
 import { toAiSdkMessages } from "./transform.js";
 import { toAiSdkTools } from "./tool-transform.js";
 import type {
@@ -48,12 +49,14 @@ export function createGenerateTextOptions(input: {
   return removeUndefined({
     model: input.resolved.model,
     messages: toAiSdkMessages(input.request.messages, {
+      toolSearchEnabled: input.request.toolSearchEnabled,
       apiFormat: resolveProviderApiFormat(providerOptions),
       providerOptions,
       providerKind: input.resolved.providerKind,
       inputFormat: input.resolved.properties?.inputFormat,
     }),
     tools: toAiSdkTools(input.request.tools, {
+      toolSearchEnabled: input.request.toolSearchEnabled,
       providerKind: input.resolved.providerKind,
       modelId: input.resolved.modelId,
       requiresMfjsToolSchema: input.resolved.properties.requiresMfjsToolSchema,
@@ -73,7 +76,7 @@ export function createGenerateTextOptions(input: {
     providerOptions: requestProviderOptions,
     abortSignal: input.request.abortSignal,
     headers: mergeRequestHeaders(
-      input.resolved.headers,
+      toolSearchHeaders(input.resolved.headers, input.request.toolSearchEnabled),
       createModelRequestAttributionHeaders(input.statusContext),
     ),
     // ZxCode owns system-message construction in core/context. Keep AI SDK from
@@ -109,12 +112,14 @@ export function createStreamTextOptions(input: {
   return removeUndefined({
     model: input.resolved.model,
     messages: toAiSdkMessages(input.request.messages, {
+      toolSearchEnabled: input.request.toolSearchEnabled,
       apiFormat: resolveProviderApiFormat(providerOptions),
       providerOptions,
       providerKind: input.resolved.providerKind,
       inputFormat: input.resolved.properties?.inputFormat,
     }),
     tools: toAiSdkTools(input.request.tools, {
+      toolSearchEnabled: input.request.toolSearchEnabled,
       providerKind: input.resolved.providerKind,
       modelId: input.resolved.modelId,
       requiresMfjsToolSchema: input.resolved.properties.requiresMfjsToolSchema,
@@ -131,7 +136,7 @@ export function createStreamTextOptions(input: {
     providerOptions: requestProviderOptions,
     abortSignal: input.request.abortSignal,
     headers: mergeRequestHeaders(
-      input.resolved.headers,
+      toolSearchHeaders(input.resolved.headers, input.request.toolSearchEnabled),
       createModelRequestAttributionHeaders(input.statusContext),
     ),
     // ZxCode owns system-message construction in core/context. Keep AI SDK from

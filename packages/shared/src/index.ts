@@ -1,4 +1,10 @@
+export { cloudContentPayloadSchema, contentBundleSchema } from "./cloudContent.js";
 export * from "./networkCapture.js";
+export type {
+  CloudContentPayload,
+  CloudContentBundle,
+  CloudContentHeroType,
+} from "./cloudContent.js";
 export type {
   FileBinaryPreview,
   FileEntry,
@@ -26,13 +32,12 @@ export type {
   RemoteTargetSnapshot,
   RemoteWorkspaceSessionEntry,
   PersistedWorkspaceSessionEntry,
-  MobileRelaySettings,
 } from "./protocol.js";
 export type { WorkspacePurpose } from "./workspacePurpose.js";
 export { DEFAULT_LOCALE } from "./protocol.js";
-export { ZXCODE_VERSION, ZXCODE_COMMIT, ZXCODE_BUILD_TIME } from "./version.js";
+export { ZCODE_VERSION, ZCODE_COMMIT, ZCODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
-export type { ZCodeEnv, ZCodeProductFlavor } from "./env.js";
+export type { ArmsRumEnv, ZCodeEnv, ZCodeProductFlavor } from "./env.js";
 export type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 export type {
   RemoteResourcePackageId,
@@ -63,12 +68,15 @@ export {
   serializeShortcutBinding,
 } from "./shortcutCommands.js";
 export {
-  ZXCODE_ENV,
-  ZXCODE_PRODUCT_FLAVOR,
-  ZXCODE_APP_VERSION_ENV,
-  ZXCODE_BUILD_COMMIT_ID_ENV,
-  ZXCODE_MODEL_CUSTOM_HEADERS_ENV,
-  RUNTIME_ZXCODE_DEBUG,
+  ZCODE_ENV,
+  ZCODE_PRODUCT_FLAVOR,
+  ZCODE_APP_VERSION_ENV,
+  ZCODE_BUILD_COMMIT_ID_ENV,
+  RUNTIME_ZCODE_DEBUG,
+  ZCODE_ARMS_RUM_ENDPOINT,
+  ZCODE_TELEMETRY_REPORT_ENDPOINT,
+  ZCODE_AUTO_UPDATE_ENABLED,
+  mapZCodeEnvToArmsRumEnv,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,
 } from "./env.js";
@@ -77,7 +85,6 @@ export * from "./rendererActionTrace.js";
 export * from "./validation.js";
 export * from "./api.js";
 export * from "./zcode-protocol/index.js";
-export * from "./zcode-relay-protocol/index.js";
 export * from "./account-provider-state.js";
 // re-home：旧协议承重面的幸存文件（消费者继续走 barrel，零感知）
 export * from "./zcode-protocol-legacy-types.js";
@@ -90,6 +97,8 @@ export * from "./zcode-session-visible-content.js";
 export * from "./official-mcp-auth.js";
 export * from "./official-mcp-tool-error.js";
 export * from "./conversation-message-projection-policy.js";
+export * from "./conversation-share.js";
+export * from "./conversation-share-content.js";
 export * from "./conversation-preview-artifacts.js";
 export * from "./zcode-session-task-status.js";
 export * from "./zcode-session-content-profile.js";
@@ -107,6 +116,7 @@ export * from "./dynamic-workflow-feature.js";
 export * from "./markdown-artifact-images.js";
 export * from "./serviceAuthority.js";
 export * from "./server-remote.js";
+export * from "./source-server/index.js";
 
 export interface ICredentialStore {
   get(key: string): Promise<string | null>;
@@ -114,7 +124,6 @@ export interface ICredentialStore {
   delete(key: string): Promise<void>;
 }
 
-export * from "./test-ids.js";
 export * from "./test-ids-workflow.js";
 export * from "./channels.js";
 export * from "./storage.js";
@@ -122,27 +131,64 @@ export * from "./oauth.js";
 export * from "./desktopMenu.js";
 export * from "./feedback.js";
 export * from "./e2e-test-bridge.js";
+export * from "./remoteAppConfig.js";
+export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
 export * from "./onboardingRecord.js";
 export * from "./remoteResourcePackages.js";
+export * from "./plan-identity.js";
 export {
   BROWSER_SCREENSHOT_SURFACE_PREPARE_TIMEOUT_MS,
   BROWSER_VIEW_RESTORE_BOOTSTRAP_URL,
   LOCAL_MEDIA_PREVIEW_SCHEME,
-  CUSTOM_EDITOR_ID_PREFIX,
   DesktopCommandIds,
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
-  isCustomEditorInfo,
 } from "./platform.js";
+export type {
+  ArmsCustomEventPayload,
+  ConfigureFinalArmsCustomEventE2ERequest,
+  FinalArmsCustomEventE2EEntry,
+  FinalArmsCustomEventPayload,
+  MobilePluginDiscoveryTelemetry,
+  RendererTelemetryEventPayload,
+  TelemetryEventPayload,
+  TelemetryRendererContext,
+} from "./telemetry.js";
+export {
+  PLUGIN_TELEMETRY_EVENTS,
+  mobilePluginDiscoveryTelemetrySchema,
+  sanitizePluginTelemetryDetail,
+  collectTelemetryRendererContext,
+  resolveSafeTelemetryHostname,
+  sanitizeTelemetryErrorMessage,
+  sanitizeTelemetrySkillName,
+  sanitizeTelemetryEventDetail,
+} from "./telemetry.js";
+export type {
+  RedactTelemetryTextOptions,
+  TelemetryProviderIdentity,
+  TelemetryProviderScope,
+} from "./telemetryRedaction.js";
+export {
+  TELEMETRY_SAFE_BUILTIN_MODEL_IDS,
+  TELEMETRY_TEXT_MAX_LENGTH,
+  redactTelemetryText,
+  redactTelemetryUrl,
+  resolveTelemetryModelId,
+  resolveTelemetryProviderScope,
+  sanitizeTelemetryModelValue,
+} from "./telemetryRedaction.js";
 export * from "./remoteUsageTelemetry.js";
 export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
 export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
 export type {
+  BrowserViewSurfaceScaleMode,
   CancelPendingRemoteConnectionRequest,
   BindRemoteWorkspaceSessionContextRequest,
-  BotRemoteWorkspaceReconnectedEvent,
+  BindRemoteWorkspaceSessionContextIpcResult,
+  BindRemoteWorkspaceSessionContextResult,
   BrowserTabResidencyState,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
@@ -191,19 +237,18 @@ export type {
   IPlatformService,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
+  PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
+  RemoteSessionReconnectedEvent,
   RemoteServiceSession,
   SSHConfigAliasOption,
   TaskNotificationPayload,
-  WindowControlsOverlayReadyPayload,
+  UpdateCheckResultPayload,
+  UpdateStatePayload,
   WSLDistro,
+  WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
-} from "./platform.js";
-export type {
-  MobileRelayStatus,
-  MobileRelayGrantRequest,
-  MobileRelayGrantResult,
 } from "./platform.js";
 export type {
   CuaAccessibilitySettingsResult,
@@ -214,6 +259,7 @@ export type {
 export type { ZCodeTaskCreateResult } from "./zcode-task-types.js";
 export * from "./zcode-task-types.js";
 export * from "./automation-types.js";
+export * from "./off-peak-types.js";
 export * from "./background-task-control-merge.js";
 export * from "./background-task-controls.js";
 export * from "./background-task-notifications.js";
@@ -258,11 +304,14 @@ export * from "./streaming-tool-input-preview.js";
 export * from "./tool-plan-adapter.js";
 export * from "./permission-request-preview.js";
 export * from "./web-remote-control.js";
-export * from "./web-remote-control-heartbeat.js";
+export * from "#src/web-remote-relay/index.js";
+
 export * from "./web-remote-control-rpc-transport.js";
 export * from "./settings-sync.js";
 export * from "./uuid.js";
 export * from "./usage-stats.js";
+export * from "./coding-plan-subscription.js";
+export * from "./forceUpdate.js";
 export * from "./intranetProbe.js";
 export * from "./intranetDefaults.js";
 export * from "./hooks.js";
@@ -273,6 +322,7 @@ export * from "./workspaceSessionRestore.js";
 export * from "./skill-scan-policy.js";
 export * from "./browser-use/index.js";
 
+export * from "./coding-plan-reset.js";
 export * from "./highspeed.js";
 export {
   parseSubagentMarkdownSelection,
@@ -291,7 +341,12 @@ export * from "./subagent-profile.js";
 export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
 
 export * from "./localTtft.js";
+export * from "./pluginStoreOrder.js";
+export * from "./clientConfig.js";
 export * from "./pluginStoreOrdering.js";
+export * from "./marketingTouch.js";
+export * from "./rewardsEmbedded.js";
+export * from "./rewardsBridge.js";
 export * from "./session-debug.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
 export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
@@ -309,3 +364,11 @@ export * from "./conversationSelection.js";
 export * from "./attachment-source.js";
 
 export * from "./channel-mention.js";
+
+export {
+  requestSecuritySensitiveHeaders,
+  isRequestSecurityFailure,
+} from "./request-security-edition/policy.js";
+export * from "./request-security-edition/verification-policy.js";
+
+export * from "./conversation-share-tool-presentation.js";

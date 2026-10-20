@@ -13,16 +13,22 @@ import type {
   MigrateLegacyCommonMcpResult,
   SaveCliMcpToUserDirectoryRequest,
 } from "./mcp.js";
+import type { OAuthStateRegistration } from "./oauth.js";
 import type {
+  WebRemoteControlAuthStateChange,
   WebRemoteControlContext,
   WebRemoteControlReconnectWorkspaceResult,
   WebRemoteControlStartOperationResult,
   WebRemoteControlStatus,
-  WebRemoteControlTaskTarget,
   WebRemoteControlReconnectWorkspaceRequest,
   WebRemoteControlWorkspaceTarget,
 } from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type { ArmsCustomEventPayload, RendererTelemetryEventPayload } from "./telemetry.js";
+import type {
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
+} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CuaAccessibilitySettingsResult,
@@ -30,6 +36,16 @@ import type {
   PrepareCuaHelperPermissionDragResult,
 } from "./cuaAccessibilitySettings.js";
 import type { BrowserViewportSize } from "./browser-use/command-metadata.js";
+import type {
+  PostUpdateReleaseNotesPayload,
+  UpdateCheckResultPayload,
+  UpdateStatePayload,
+} from "./update.js";
+export type {
+  PostUpdateReleaseNotesPayload,
+  UpdateCheckResultPayload,
+  UpdateStatePayload,
+} from "./update.js";
 
 export interface TaskNotificationPayload {
   taskId: string;
@@ -204,15 +220,6 @@ export interface EditorInfo {
   name: string;
   /** 图标 base64 data URL */
   iconDataUrl: string;
-}
-
-/** 自定义打开方式条目的 id 前缀。注册表所有者是 desktop main（specs/open-with-custom-apps.md），
- *  UI 只用该前缀区分条目来源，不持有注册表。 */
-export const CUSTOM_EDITOR_ID_PREFIX = "custom:";
-
-/** 判断一个 EditorInfo 是否为用户注册的自定义打开方式条目。 */
-export function isCustomEditorInfo(editor: EditorInfo): boolean {
-  return editor.id.startsWith(CUSTOM_EDITOR_ID_PREFIX);
 }
 
 export interface ApplicationIconInfo {
@@ -471,6 +478,21 @@ export interface RemoteSessionClosedEvent {
   reason: "host-exit";
   exitCode: number | null;
   signal: string | null;
+  error?: string;
+  /** true = Source transport 仍在自动恢复预算内，UI 不得做终态失败收口。 */
+  recoverable?: boolean;
+  recoveryAttempt?: number;
+  recoveryLimit?: number;
+  recoveryBudgetExhausted?: boolean;
+  reasonCode?: string;
+  retryable?: boolean;
+}
+
+export interface RemoteSessionReconnectedEvent {
+  previousSessionId: string;
+  sessionId: string;
+  workspacePath: string;
+  workspaceIdentity: string;
 }
 
 export interface EmbeddedBrowserOpenUrlRequest {
@@ -563,19 +585,13 @@ export interface EmbeddedBrowserSitePermissionResetRequest {
   origin: string;
 }
 
-export interface BotRemoteWorkspaceReconnectedEvent {
-  sessionId: string;
-  workspacePath: string;
-  workspaceIdentity: string;
-  target: RemoteTarget;
-}
-
 export interface ConnectRemoteRequest {
   target: RemoteTarget;
   requestId?: string;
   workspacePath?: string;
   workspaceIdentity?: string;
   connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+  confirmSourceServerInstall?: boolean;
 }
 
 export interface CancelPendingRemoteConnectionRequest {
@@ -586,7 +602,27 @@ export interface BindRemoteWorkspaceSessionContextRequest {
   remoteSessionId: string;
   workspacePath: string;
   workspaceIdentity?: string;
+  workspacePurpose?: import("./workspacePurpose.js").WorkspacePurpose;
 }
+
+export interface BindRemoteWorkspaceSessionContextResult {
+  sourceServerId?: string;
+  remoteSessionId: string;
+  workspacePath: string;
+  workspaceIdentity: string;
+  workspacePurpose?: import("./workspacePurpose.js").WorkspacePurpose;
+  /** Desktop 专用的 tab 原地换代提示；不是任务路由身份，手机 replayable 客户端忽略。 */
+  previousWorkspaceIdentity?: string;
+}
+
+export type BindRemoteWorkspaceSessionContextIpcResult =
+  | { success: true; result: BindRemoteWorkspaceSessionContextResult }
+  | {
+      success: false;
+      error: string;
+      reasonCode?: string;
+      retryable?: boolean;
+    };
 
 export const DesktopCommandIds = {
   NewTask: "newTask",
@@ -602,7 +638,10 @@ export const DesktopCommandIds = {
   ZoomOut: "zoomOut",
   ShowAbout: "showAbout",
   OpenChangelog: "openChangelog",
+  CheckForUpdates: "checkForUpdates",
   RelaunchApp: "relaunchApp",
+  OpenFeedback: "openFeedback",
+  OpenCommunity: "openCommunity",
   ExportLogs: "exportLogs",
   ToggleDevTools: "toggleDevTools",
   OpenResourceManager: "openResourceManager",
@@ -612,6 +651,7 @@ export const DesktopCommandIds = {
   SetZCodeEndpointCustom: "setZCodeEndpointCustom",
   ResetZCodeEndpoint: "resetZCodeEndpoint",
   ClearAllData: "clearAllData",
+  ClearCodingPlanWebviewStorage: "clearCodingPlanWebviewStorage",
   GetCuaOsSupport: "getCuaOsSupport",
 } as const;
 
@@ -630,36 +670,8 @@ export type CuaOsSupport =
   | { kind: "macos-below-minimum"; minimumMacOs: string; currentMacOs: string }
   | { kind: "not-applicable" };
 
-/** 自部署手机远控 relay 的桌面侧连接状态快照（UI 展示用）。 */
-export interface MobileRelayStatus {
-  /** 当前平台是否支持手机远控 relay（Desktop true，普通 Web false）。 */
-  supported: boolean;
-  enabled: boolean;
-  connected: boolean;
-  serverUrl?: string;
-  /** 最近一次控制连接失败原因；连上后清空。 */
-  lastError?: string;
-}
-
-/** 请求签发一次性手机远控授权链接的入参；main 侧会按窗口 workspace 映射校验。 */
-export interface MobileRelayGrantRequest {
-  workspacePath: string;
-  workspaceIdentity?: string;
-  /** 远程 workspace 的 logical session；本地工作区留空。 */
-  remoteSessionId?: string;
-}
-
-/** 授权链接签发结果；url 形如 https://<relay>/?remote=<grantId>。 */
-export interface MobileRelayGrantResult {
-  success: boolean;
-  url?: string;
-  /** epoch ms；到期后 grant 失效。 */
-  expiresAt?: number;
-  error?: string;
-}
-
 /**
- * 平台操作接口 —— 替代直接访问 window.zxcode
+ * 平台操作接口 —— 替代直接访问 window.zcode
  *
  * 定义需要宿主环境（Electron main / Web server）参与的操作。
  * Desktop 和 Web 各自提供不同的实现，UI 层通过此接口统一消费。
@@ -669,6 +681,9 @@ export interface MobileRelayGrantResult {
  * 业务服务（文件、终端、凭据等）走 IServiceAccessor 的 RPC 通道。
  */
 export interface IPlatformService {
+  /** 是否支持当前客户端本机文件的默认应用与目录操作；Web 不具备此能力。 */
+  canOpenLocalFiles?: boolean;
+
   /** 当前平台的文件选择框是否能返回 agent 可访问的本地绝对路径 */
   canSelectFilePath?: boolean;
 
@@ -680,6 +695,9 @@ export interface IPlatformService {
 
   /** 打开系统目录选择框，返回选中路径或 null */
   selectDirectory(): Promise<string | null>;
+
+  /** 打开系统多目录选择框，返回 Host 可访问的本地路径；取消返回空数组，Web 不提供 */
+  selectDirectories?(): Promise<string[]>;
 
   /** 打开系统文件选择框，返回选中文件路径或 null */
   selectFile(): Promise<string | null>;
@@ -706,7 +724,7 @@ export interface IPlatformService {
   createLocalMediaPreviewUrl?(path: string): string;
 
   /**
-   * 在宿主 ~/.zxcode 临时目录创建文本附件文件。
+   * 在宿主 ~/.zcode 临时目录创建文本附件文件。
    * 手机远控必须通过 shared-host/platform proxy 写到桌面宿主，避免大文本进入 prompt payload。
    */
   createTempTextAttachment?(
@@ -727,10 +745,8 @@ export interface IPlatformService {
   /** 订阅远程 workspace session 关闭事件，返回 disposer */
   onRemoteSessionClosed(handler: (event: RemoteSessionClosedEvent) => void): () => void;
 
-  /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
-  onBotRemoteWorkspaceReconnected(
-    handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
-  ): () => void;
+  /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
+  onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
 
   /** 检查目录是否已在其他窗口打开；如果是则激活该窗口并切到对应 tab */
   activateOrSetWorkspace(path: string): Promise<{ activated: boolean }>;
@@ -740,11 +756,27 @@ export interface IPlatformService {
     options: RemoteTarget,
     requestId?: string,
     context?: {
-      workspacePath: string;
+      workspacePath?: string;
       workspaceIdentity?: string;
       connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+      confirmSourceServerInstall?: boolean;
     },
-  ): Promise<{ success: boolean; error?: string; sessionId?: string }>;
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    reasonCode?: string;
+    retryable?: boolean;
+    sessionId?: string;
+    /** 本次直接复用的在线连接目标，凭据不参与认证也不得持久化。 */
+    reusedConnectionTarget?: RemoteTarget;
+    /** 安装/升级等待时由 Host 确认的实际连接线路。 */
+    profileId?: string;
+    /** WSL 安装/升级等待使用本次已解析身份；预览失败也不能重新选择系统默认值。 */
+    resolvedWslTarget?: Required<WSLConnectOptions>;
+  }>;
+
+  /** Desktop-only：请求在线 Source 的无 workspace 配置 attachment。 */
+  requestSourceSettingsAttachment?(sourceServerId: string): Promise<{ attachmentId: string }>;
 
   /** 取消当前窗口尚未建立完成的远程连接（可选：Web 平台可忽略） */
   cancelPendingRemoteConnection?(requestId?: string): Promise<void>;
@@ -752,15 +784,10 @@ export interface IPlatformService {
   /** 将 canonical workspace 身份绑定到已创建的远程 logical session。 */
   bindRemoteWorkspaceSessionContext?(
     context: BindRemoteWorkspaceSessionContextRequest,
-  ): Promise<void>;
+  ): Promise<BindRemoteWorkspaceSessionContextResult>;
 
   /** 为当前 workspace 开启 Web 远程控制能力 */
   startWebRemoteControl(
-    context: WebRemoteControlContext,
-  ): Promise<WebRemoteControlStartOperationResult>;
-
-  /** 清除旧配对材料并重新生成 Web 远程控制二维码 */
-  refreshWebRemoteControlPairing(
     context: WebRemoteControlContext,
   ): Promise<WebRemoteControlStartOperationResult>;
 
@@ -769,6 +796,9 @@ export interface IPlatformService {
 
   /** 查询当前窗口 Web 远程控制状态 */
   getWebRemoteControlStatus(): Promise<WebRemoteControlStatus>;
+
+  /** 桌面 OAuth 会话通知；main 独立重读凭据后决定是否恢复远控。 */
+  notifyWebRemoteControlAuthStateChanged?(change: WebRemoteControlAuthStateChange): void;
 
   /** 订阅当前窗口 Web 远程控制状态变化；旧平台可不实现，UI 会保留轮询兜底 */
   onWebRemoteControlStatusChanged?(handler: (status: WebRemoteControlStatus) => void): () => void;
@@ -806,22 +836,6 @@ export interface IPlatformService {
   /** 打开外部 URL（用于 OAuth 跳转浏览器） */
   openExternal(url: string): void;
 
-  /** 查询自部署手机远控 relay 的连接状态；普通 Web 平台返回 supported:false。 */
-  getMobileRelayStatus?(): Promise<MobileRelayStatus>;
-
-  /** 上报当前窗口 active workspace 三元组（手机远控 relay presence 数据源）。 */
-  syncWindowWorkspace?(payload: {
-    workspacePath: string;
-    workspaceIdentity?: string;
-    workspaceKey: string;
-  }): void;
-
-  /**
-   * 请求 relay 签发一次性手机远控授权链接（TTL 内单次使用）。
-   * 普通平台未实现；Desktop 由 main 的 relay 客户端经控制连接签发。
-   */
-  requestMobileRelayGrant?(payload: MobileRelayGrantRequest): Promise<MobileRelayGrantResult>;
-
   /** 按系统应用标识读取真实 App 图标；非 Desktop 平台可不实现。 */
   getApplicationIcon?(
     request: string | ApplicationIconRequest,
@@ -829,6 +843,12 @@ export interface IPlatformService {
 
   /** 打开反馈入口，由平台自行解析最终地址 */
   openFeedback(): Promise<void>;
+
+  /** 订阅 main 进程打开内置反馈对话框事件（Desktop） */
+  onOpenFeedbackDialog?(handler: () => void): () => void;
+
+  /** 订阅 main 进程打开我的工单面板事件（Desktop） */
+  onOpenTicketsPanel?(handler: () => void): () => void;
 
   /** 打开用户社群入口，由平台自行解析当前语言对应渠道 */
   openCommunity(): Promise<void>;
@@ -842,7 +862,7 @@ export interface IPlatformService {
   /** 使用系统默认应用打开本地文件；普通 Web 平台返回 unsupported。 */
   openExternalFile?(path: string): Promise<{ success: boolean; error?: string }>;
 
-  /** 打开 ZxCode Computer Use 的完整权限引导。Desktop only。 */
+  /** 打开 ZCode Computer Use 的完整权限引导。Desktop only。 */
   openCuaPermissionOnboarding?(
     options?: OpenCuaPermissionOnboardingOptions,
   ): Promise<CuaAccessibilitySettingsResult>;
@@ -857,17 +877,45 @@ export interface IPlatformService {
   /** 从权限浮窗把 Helper.app 拖进 macOS 权限列表。Desktop only。 */
   startCuaHelperPermissionDrag?(): void;
 
+  /** 上报 OAuth state 给 main process，用于 deep link 路由 */
+  registerOAuthState(payload: OAuthStateRegistration): void;
+
+  /**
+   * 注册 OAuth deep link 回调监听
+   * @returns disposer 函数，调用后只移除当前回调
+   */
+  onOAuthCallback(callback: (url: string) => void): () => void;
+
   /**
    * 注册支付 deep link 回调监听
    * @returns disposer 函数，调用后只移除当前回调
    */
   onPaymentCallback(callback: (url: string) => void): () => void;
 
+  /** 注册 `zcode://share/import?code=...` 导入意图。 */
+  onShareImport?(callback: (payload: { shareCode: string }) => void): () => void;
+
   /** 通知 main process renderer 已就绪，触发缓存的冷启动 deep link 转发 */
   notifyRendererReady(): void;
 
   /** 触发任务状态对应的系统通知，由宿主环境决定是否真正展示 */
   showTaskNotification(payload: TaskNotificationPayload): void;
+
+  /** 通过宿主环境统一上报 UI 侧 telemetry 事件 */
+  reportTelemetryEvent(payload: RendererTelemetryEventPayload): Promise<void>;
+
+  /** 通过宿主环境上报 ARMS 自定义事件；Web 端当前为空实现 */
+  reportArmsCustomEvent(payload: ArmsCustomEventPayload): Promise<void>;
+
+  /** 读取 Desktop Renderer 用户操作 Trace 的当前灰度配置；Web/手机不实现。 */
+  getRendererActionTraceConfig?(): Promise<RendererActionTraceConfigV1>;
+  /** 订阅 Main 推送的 Renderer 用户操作 Trace 配置；Web/手机不实现。 */
+  onRendererActionTraceConfigChanged?(
+    callback: (config: RendererActionTraceConfigV1) => void,
+  ): () => void;
+  /** Renderer → Main：发送已结束的 ui_action batch；严格旁路、fire-and-forget。 */
+  reportRendererActionTraceBatch?(batch: RendererActionTraceBatchV1): void;
+  reportLocalTtftBatch?(batch: import("./localTtft.js").LocalTtftBatch): void;
 
   /**
    * Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，进 `renderer_main` 角色事件。单向 send、fire-and-forget；
@@ -880,9 +928,6 @@ export interface IPlatformService {
 
   /** 同步当前窗口里 Web 远程控制允许切换的 workspace；Web fallback 可忽略 */
   syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
-
-  /** 同步当前窗口里 Web 远程控制可展示的 task 快照；Web fallback 可忽略 */
-  syncWebRemoteControlTasks?(tasks: WebRemoteControlTaskTarget[]): void;
 
   /** 注册 Web 远程控制手机端请求重连 workspace 的回调，返回 disposer */
   onWebRemoteControlReconnectWorkspace?(
@@ -1032,7 +1077,7 @@ export interface IPlatformService {
   /** 注册用户点击系统通知后跳转到对应任务的回调，返回 disposer */
   onTaskNotificationClick(handler: (taskId: string) => void): () => void;
 
-  /** 导出日志：打包 ~/.zxcode/v2 及外部 agent 日志为 zip 并在系统文件浏览器中显示 */
+  /** 导出日志：打包 ~/.zcode/v2 及外部 agent 日志为 zip 并在系统文件浏览器中显示 */
   exportLogs(): Promise<{ success: boolean; path?: string; error?: string }>;
 
   /** 截取当前窗口，用于错误反馈携带现场画面；Web fallback 可返回 null */
@@ -1084,6 +1129,38 @@ export interface IPlatformService {
   /** 清理内置浏览器持久化分区；cache 模式保留认证数据，all 模式清理全部站点数据。 */
   clearEmbeddedBrowserData?(mode: "cache" | "all"): Promise<EmbeddedBrowserDataClearResult>;
 
+  /** 注册新版本已下载完毕的回调，参数为新版本号，返回 disposer */
+  onUpdateReady(callback: (version: string) => void): () => void;
+
+  /** 注册"手动检查更新"结果的回调（用于 toast 反馈），返回 disposer */
+  onUpdateCheckResult(callback: (payload: UpdateCheckResultPayload) => void): () => void;
+
+  /** 注册自动更新持续状态变化的回调，返回 disposer */
+  onUpdateStateChanged?(callback: (payload: UpdateStatePayload) => void): () => void;
+
+  /** 主动读取当前自动更新状态，用于菜单打开时补偿异步事件丢失 */
+  getUpdateState?(): Promise<UpdateStatePayload>;
+
+  /** 用户在更新弹窗中确认开始下载当前已发现版本 */
+  downloadUpdate(): Promise<void>;
+
+  /** 用户在更新弹窗中取消当前下载中的更新 */
+  cancelUpdateDownload(): Promise<void>;
+
+  /** 打开桌面端独立更新窗口；非桌面端可不实现并回退到内嵌弹窗 */
+  openUpdateStatusWindow?(): Promise<void>;
+
+  /** 读取桌面端自动更新偏好；非桌面端可返回默认值 */
+  getAutoUpdatePreferences?(): Promise<{
+    autoDownloadAndInstallUpdates: boolean;
+  }>;
+
+  /** 写入“以后自动下载并安装更新”偏好；非桌面端可 no-op */
+  setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
+
+  /** 用户跳过当前已发现版本；main 进程负责按当前通道持久化 */
+  skipUpdateVersion(version: string): Promise<void>;
+
   /** 查询桌面端当前正在运行的会话数量；非桌面端可返回 0 */
   getDesktopSessionActivity?(): Promise<{
     runningAgentSessionCount: number;
@@ -1104,8 +1181,17 @@ export interface IPlatformService {
   /** 宿主系统语言；桌面端由 main 进程读取，Web 端可回退到 navigator.language。 */
   getSystemLocale?(): Promise<Locale>;
 
-  /** 获取系统中已安装的编辑器/终端列表（含图标） */
-  getInstalledEditors(): Promise<EditorInfo[]>;
+  /** 注册更新完成后的版本说明，返回 disposer */
+  onPostUpdateReleaseNotes(callback: (payload: PostUpdateReleaseNotesPayload) => void): () => void;
+
+  /** 标记当前版本说明已读，允许 main 进程清理持久化状态 */
+  acknowledgePostUpdateReleaseNotes(version: string): Promise<void>;
+
+  /** 用户确认重启安装更新 */
+  quitAndInstallUpdate(): Promise<void>;
+
+  /** 获取已安装编辑器/终端；传文件路径时追加匹配类型的本机应用（含图标）。 */
+  getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;
 
   /** 用指定编辑器打开路径 */
   openInEditor(
@@ -1113,13 +1199,6 @@ export interface IPlatformService {
     path: string,
     options?: OpenInEditorOptions,
   ): Promise<{ success: boolean; error?: string }>;
-
-  /** 弹出系统对话框选择一个本地应用（macOS .app / Windows .exe）注册为自定义打开方式。
-   *  仅桌面端提供；用户取消或路径非法返回 null。 */
-  selectAndAddCustomEditor?(): Promise<EditorInfo | null>;
-
-  /** 删除一个已注册的自定义打开方式（editorId 以 "custom:" 开头）。仅桌面端提供。 */
-  removeCustomEditor?(editorId: string): Promise<{ success: boolean }>;
 
   /** 执行桌面窗口级命令（标题栏菜单、缩放、窗口控制等）。
    *  返回值直通 main 进程 handler 的 return（大多数命令无返回值；

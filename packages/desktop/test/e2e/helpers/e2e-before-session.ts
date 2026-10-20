@@ -6,8 +6,11 @@ export interface E2EBeforeSessionSetupOptions {
   recordBeforeSession: (cid: string, specs: string[]) => void;
   resetHome: (specs: string[]) => Promise<void>;
   startCodingPlanTeamMockIfNeeded: (specs: string[]) => Promise<void>;
+  startCodingPlanDataPlaneProxyIfNeeded: (specs: string[]) => Promise<void>;
+  startCodingPlanUpgradeMockIfNeeded: (specs: string[]) => Promise<void>;
   startUpstreamHttpIfNeeded: (specs: string[]) => Promise<void>;
   startPluginCdnZipFixtureIfNeeded: (specs: string[]) => Promise<void>;
+  startOffPeakMockIfNeeded: (specs: string[]) => Promise<void>;
 }
 
 export async function runE2EBeforeSessionSetup(options: E2EBeforeSessionSetupOptions) {
@@ -21,7 +24,12 @@ export async function runE2EBeforeSessionSetup(options: E2EBeforeSessionSetupOpt
   // 每个 worker session 启动 Electron 前按自己的 spec 重置模式，保持 case 隔离。
   await options.configureCodingPlanTeamMockForSpecs(options.specs);
   await options.startUpstreamHttpIfNeeded(options.specs);
+  // 混合批次的 ToolSearch 不能关闭其他 worker 的账号数据面回放；代理在当前
+  // worker 的上游网络配置完成后启动，避免被通用 replay 初始化恢复成直连。
+  await options.startCodingPlanDataPlaneProxyIfNeeded(options.specs);
+  await options.startCodingPlanUpgradeMockIfNeeded(options.specs);
   await options.startPluginCdnZipFixtureIfNeeded(options.specs);
+  await options.startOffPeakMockIfNeeded(options.specs);
   // 修复原因：HOME 删除、重建和 fixture seed 是 Electron session 启动的前置事务；
   // 这里必须等待 reset 完成，否则 Windows 文件锁重试期间会用旧 HOME 启动新 Electron。
   await options.resetHome(options.specs);
