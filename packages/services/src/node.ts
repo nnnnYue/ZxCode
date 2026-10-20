@@ -330,6 +330,7 @@ import {
   createSettingService,
   createSettingServiceWithMigrations,
 } from "./setting/settingService.js";
+export { createSettingServiceWithMigrations };
 import { createOnboardingRecordService } from "./onboarding/onboardingRecordService.js";
 import { createObservableSettingService } from "./setting/observableSettingService.js";
 import { createCredentialService } from "./credential/credentialService.js";

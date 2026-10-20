@@ -30,7 +30,6 @@ import {
 import { registerHostNetworkTelemetry, stopHostNetworkTelemetry } from "./hostNetworkTelemetry.js";
 import { registerHostServiceResourceTelemetry } from "./hostServiceResourceTelemetry.js";
 import { resolveResourceTelemetryEnvironmentKey } from "./hostResourceTelemetryEnvironment.js";
-import { reportHostSessionCreate } from "./hostSessionCreateTelemetry.js";
 import { createBrowserControlMainBridge } from "./browserControlMainBridge.js";
 import { materializeBrowserRecordingArtifact } from "./browserRecordingArtifactMaterializer.js";
 import {
@@ -149,7 +148,6 @@ import { connectServerRemote, type ServerRemoteConnection } from "./serverRemote
 import { bindBotGroupTaskScope } from "./botGroupTaskScope.js";
 import { createWindowHostAttachmentRegistry } from "./windowHostAttachmentRegistry.js";
 import { exposeWindowHostAttachmentServices } from "./windowHostAttachmentRpcPolicy.js";
-import { scopeConversationShareServiceForAttachment } from "./conversationShareAttachmentService.js";
 import {
   createWindowRemoteConnectionRegistry,
   type WindowRemoteConnectionCloseEvent,
@@ -561,14 +559,21 @@ function trackCronRunOutcome(params: {
  * 把一次 cron/manual run 直接提交给当前 host 的 V4 task service。
  * 会话内 automation 可能绑定到未激活 session，必须先恢复再应用保存的运行参数。
  */
-async function dispatchCronRun(request: {
-  taskId: string;
-  traceId: string;
+interface CronRunDispatchRequest {
   automationId: string;
   runId: string;
-  scheduledAt?: number;
-  [key: string]: unknown;
-}): Promise<{
+  prompt: string;
+  targetTaskId?: string;
+  modelSelection?: ModelSelection;
+  mode?: ZCodeTaskMode;
+  workspacePath: string;
+  workspaceIdentity?: string;
+  projectId?: string | null;
+  hostId?: string;
+  additionalDirectories?: string[];
+}
+
+async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
   taskId: string;
   sessionId: string;
 }> {
@@ -683,14 +688,7 @@ async function dispatchCronRun(request: {
       automationId: request.automationId,
     });
     // prompt 创建的定时任务带 targetTaskId，追加原会话不能计成 session_create。
-    if (!request.targetTaskId) {
-      reportHostSessionCreate(parentPort, {
-        sessionId: task.taskId,
-        messageId: promptTraceId,
-        source: "automation_scheduled",
-        workspaceIdentity: request.workspaceIdentity,
-      });
-    }
+    // fork：session_create ARMS 上报已随遥测域剔除。
     return { taskId: task.taskId, sessionId: task.taskId };
   } catch (error) {
     if (trackedKey) disposeCronRunSubscription(trackedKey);
@@ -2207,20 +2205,6 @@ function exposeServicesOnMessagePort(
   }
   if (connectionScope) {
     overrides.set(IZCodeAgentService.channelName, connectionScope.service);
-  }
-  const conversationShareService = services.getOptional(IConversationShareService);
-  if (conversationShareService) {
-    // Share service 若继续持有 raw Agent，会绕过当前 MessagePort 已握手的 trusted carrier，
-    // rowsRange 会以 connection untrusted 拒绝。必须复用同一 attachment connection scope。
-    overrides.set(
-      IConversationShareService.channelName,
-      scopeConversationShareServiceForAttachment(
-        conversationShareService,
-        clientMode,
-        connectionScope?.service,
-        connectionContext,
-      ),
-    );
   }
   exposeWindowHostAttachmentServices({
     server,
