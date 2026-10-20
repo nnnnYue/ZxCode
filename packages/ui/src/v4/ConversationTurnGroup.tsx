@@ -12,8 +12,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ChevronRightIcon, EyeIcon } from "lucide-react";
-import { type HighspeedMessageMeta, type ZCodeApiRetryStatus } from "@zcode/shared";
+import { ChevronRightIcon } from "lucide-react";
 import {
   TID_CHAT_ASSISTANT_HISTORY_CONTENT,
   TID_CHAT_ASSISTANT_HISTORY_TRIGGER,
@@ -21,17 +20,19 @@ import {
   TID_CHAT_LOADING,
   TID_V4_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+  type HighspeedMessageMeta,
+  type ZCodeApiRetryStatus,
+} from "@zcode/shared";
 import type {
   ApiRetryState,
   AttachmentRef,
   CommandAck,
   ConversationRowTarget,
+  WorkflowNotificationMeta,
 } from "@zcode/shared/zcode-protocol-v4";
 import { ChatLoading } from "@/components/ai-elements/chat-loading.js";
 import { ChatApiRetryStatus } from "@/chat-input-toolbar/display.js";
 import { cn } from "@/components/lib/utils.js";
-import { Button } from "@/components/ui/button.js";
 import { MessageActions } from "@/components/ai-elements/message.js";
 import {
   Collapsible,
@@ -71,11 +72,7 @@ import {
 import type { ConversationCuaGroupEvent } from "@/v4/conversationCuaGroups.js";
 import { ConversationAgentToolCallRow } from "@/v4/ConversationAgentToolCallRow.js";
 import { ConversationFileSummaryPanel } from "@/v4/ConversationFileSummaryPanel.js";
-import {
-  WorkflowNotificationToolRow,
-  workflowRowNotification,
-  type WorkflowRowNotification,
-} from "@/v4/WorkflowNotificationToolRow.js";
+import { WorkflowNotificationToolRow } from "@/v4/WorkflowNotificationToolRow.js";
 import { ConversationWorkflowDigests } from "@/v4/ConversationWorkflowDigests.js";
 import { ConversationWorkflowCompletion } from "@/v4/ConversationWorkflowCompletion.js";
 import { resolveWorkflowTurnDigests } from "@/v4/workflowTurnDigests.js";
@@ -696,7 +693,6 @@ function ConversationWorkSegmentFlow({
               editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
             />
           );
-          content = userRow;
         } else if (item.kind === "cuaGroup") {
           const group = <ConversationCuaGroupRow item={item} context={context} />;
           if (item.flowKind === "assistantHistory") {
@@ -963,9 +959,10 @@ function resolveBackgroundResultTitle(unit: ConversationTurnRenderUnit): string 
  */
 function resolveWorkflowNotification(
   unit: ConversationTurnRenderUnit,
-): WorkflowRowNotification | undefined {
+): WorkflowNotificationMeta | undefined {
   if (unit.header?.origin !== "backgroundResult") return undefined;
-  return workflowRowNotification(unit.header.originMeta);
+  const originMeta = unit.header.originMeta;
+  return originMeta?.backgroundSource === "workflow" ? originMeta.workflowNotification : undefined;
 }
 
 function ConversationBackgroundResultWork({

@@ -8,13 +8,11 @@ import {
   MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE_ERROR_CODE,
-} from "@zcode/shared";
-import {
   TID_CHAT_ERROR_DETAILS_BUTTON,
   TID_CHAT_ERROR_BANNER,
   TID_CHAT_ERROR_HOOK_ICON,
-} from "@zcode/shared/test-ids";
-import { AnchorIcon, CopyIcon, InfoIcon, RocketIcon, SettingsIcon, X } from "lucide-react";
+} from "@zcode/shared";
+import { AnchorIcon, CopyIcon, InfoIcon, SettingsIcon, X } from "lucide-react";
 import { useZCodeIntl } from "./i18n/IntlProvider.js";
 import type { IntlInstance } from "./i18n/IntlProvider.js";
 import { Button } from "./components/ui/button.js";
@@ -81,31 +79,12 @@ function parseClaudeUnknownCommandMessage(message: string): {
   };
 }
 
-/**
- * 缺模型横幅的措辞目标。远端 workspace 的模型目录来自远端 Registry，但本机配置保存后
- * 会由 Provisioning 自动下发到远端，因此只区分措辞，配置/升级动作始终指向本机。
- */
-export type ChatErrorBannerModelConfigTarget = "local" | "remote";
-
 export function resolveChatErrorBannerDisplayMessage(
   error: ZCodeUiError,
   intl: IntlInstance,
-  modelConfigTarget: ChatErrorBannerModelConfigTarget = "local",
 ): string {
-  const remoteCode = getRemoteConnectionFailureCode(error);
-  if (remoteCode)
-    return formatRemoteConnectionError({
-      fallback: error.message,
-      reasonCode: remoteCode,
-      formatMessage: intl.formatMessage,
-    });
   if (isModelConfigMissingError(error)) {
-    return intl.formatMessage({
-      id:
-        modelConfigTarget === "remote"
-          ? "chat.error.remoteNoAvailableModel"
-          : "chat.error.noAvailableModel",
-    });
+    return intl.formatMessage({ id: "chat.error.noAvailableModel" });
   }
 
   if (error.code === "CLAUDE_UNKNOWN_COMMAND") {
@@ -159,62 +138,24 @@ export function ChatErrorBanner({
   retryDisabled,
   onDismiss,
   onOpenModelSettings,
-  onOpenUpgrade,
-  modelConfigTarget = "local",
-  onReconnect,
-  remoteKind,
 }: {
   error: ZCodeUiError;
-  onReconnect?: () => void;
-  remoteKind?: string;
   onRetry?: () => void;
   retryLabel?: string;
   retryDisabled?: boolean;
   onDismiss?: () => void;
   onOpenModelSettings?: () => void;
-  onOpenUpgrade?: () => void;
-  modelConfigTarget?: ChatErrorBannerModelConfigTarget;
 }) {
   const { intl } = useZCodeIntl();
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const actionButtonClassName = "shrink-0";
   const iconButtonClassName = "shrink-0";
-  const localizedErrorMessage = resolveChatErrorBannerDisplayMessage(
-    error,
-    intl,
-    modelConfigTarget,
-  );
-  const remoteConnectionFailure = Boolean(getRemoteConnectionFailureCode(error));
+  const localizedErrorMessage = resolveChatErrorBannerDisplayMessage(error, intl);
   const modelConfigMissing = isModelConfigMissingError(error);
   const hookBlocked = error.code === "fault.runtime.hookBlocked";
   if (shouldSuppressChatErrorBanner(error)) {
     return null;
   }
-
-  const handleOpenFeedback = async () => {
-    openFeedbackSubmit({
-      title: localizedErrorMessage.slice(0, 80),
-      type: "bug",
-      module: remoteConnectionFailure
-        ? remoteKind === "ssh"
-          ? "SSH连接失败"
-          : remoteKind === "wsl"
-            ? "WSL连接失败"
-            : "其它"
-        : "模型调用报错",
-      severity: "P2-中",
-      includeLogs: true,
-      description: buildErrorFeedbackDescription({
-        message: localizedErrorMessage,
-        detail: error.detail,
-        traceId: error.traceId,
-        formatMessage: (id: string, values?: Record<string, string>) =>
-          intl.formatMessage({ id }, values),
-      }),
-      screenshots: [],
-    });
-    toast(intl.formatMessage({ id: "chat.error.feedbackOpened" }));
-  };
 
   const handleCopyError = async () => {
     if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
@@ -333,32 +274,7 @@ export function ChatErrorBanner({
           </Button>
         ) : null}
 
-        {/* Bugfix: 错误横幅本身就是异常态，不能再经过 Radix Tooltip 的 Popper/Slot 状态链。
-            这里改成普通 Button，避免无可用模型等错误触发横幅时发生 Maximum update depth 循环。 */}
-        {!modelConfigMissing ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              void handleOpenFeedback();
-            }}
-            // ChatErrorBanner 这里之前混用了原生 button，导致按钮体系、焦点态和禁用态都绕开了设计系统。
-            // 统一收口到 Button 组件后，错误横幅里的所有操作按钮才能保持同一套交互和主题表现。
-            className={cn(actionButtonClassName)}
-            aria-label={intl.formatMessage({ id: "chat.error.feedback" })}
-            title={error.traceId}
-          >
-            {intl.formatMessage({ id: "chat.error.feedback" })}
-          </Button>
-        ) : null}
-
-        {remoteConnectionFailure && onReconnect ? (
-          <Button variant="outline" size="sm" onClick={onReconnect}>
-            {intl.formatMessage({ id: "remote.conversation.reconnect" })}
-          </Button>
-        ) : null}
-        {!remoteConnectionFailure && !modelConfigMissing && onRetry ? (
+        {!modelConfigMissing && onRetry ? (
           <Button variant="outline" size="sm" onClick={onRetry} disabled={retryDisabled}>
             {retryLabel ?? intl.formatMessage({ id: "chat.error.retry" })}
           </Button>

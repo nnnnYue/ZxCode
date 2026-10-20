@@ -3,13 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button.js";
 import type { CommandConfig, UserCommand, ZCodeCommand } from "@zcode/shared";
-import type { IServiceAccessor } from "@zcode/services";
-import { isPluginCommand, isUserCommand, ZCODE_COMMAND_AGENT_SOURCE } from "@zcode/shared";
+import { isPluginCommand, isUserCommand, ZXCODE_COMMAND_AGENT_SOURCE } from "@zcode/shared";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { toast } from "@/components/ui/toast.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useCommands } from "@/hooks/useCommands.js";
-import { useConfigWorkspaceServicesResolution as useWorkspaceServicesResolution } from "@/workspace-config-catalog/index.js";
+import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import { CommandCard, isEditableUserCommand } from "@/settings/CommandCard.js";
 import { CommandForm } from "@/settings/CommandForm.js";
 import { getPluginWorkspaceKey } from "@/settings/PluginScopeMenu.js";
@@ -32,7 +31,7 @@ import {
   selectCommandsForScope,
   selectPluginsForScope,
 } from "@/settings/pluginCapabilityProjection.js";
-import type { ConfigWorkspaceTarget } from "@/workspace-config-catalog/index.js";
+import type { WorkspaceTabState } from "@/store/tabStore.js";
 import {
   resolveCommandScopeRecovery,
   resolveCommandStorageTarget,
@@ -44,13 +43,11 @@ interface CommandsSectionProps {
   workspaceIdentity?: string;
   scopeFilter: "user" | "workspace";
   parentScopeKey: string;
-  workspaceTabs: ConfigWorkspaceTarget[];
+  workspaceTabs: WorkspaceTabState[];
   searchQuery: string;
   onVisibleCountChange?: (count: number) => void;
   onEditorOpenChange?: (open: boolean) => void;
   onFormScopeKeyChange?: (scopeKey: string | null) => void;
-  unscopedServices?: IServiceAccessor;
-  cacheAuthorityKey?: string;
 }
 
 export function CommandsSection({
@@ -63,8 +60,6 @@ export function CommandsSection({
   onVisibleCountChange,
   onEditorOpenChange,
   onFormScopeKeyChange,
-  unscopedServices,
-  cacheAuthorityKey,
 }: CommandsSectionProps) {
   const { intl, locale } = useZCodeIntl();
   const confirmDialog = useConfirmDialog();
@@ -81,7 +76,6 @@ export function CommandsSection({
     currentWorkspaceTab?.remoteSessionId,
     currentWorkspaceTab?.workspaceIdentity ?? workspaceIdentity,
     currentWorkspaceTab?.remoteTarget,
-    { unscopedServices, forceUnscoped: Boolean(cacheAuthorityKey) },
   );
   const { commandsService, pluginManagementService, settingsSyncService } =
     listServiceResolution.services;
@@ -117,10 +111,6 @@ export function CommandsSection({
     formServiceTarget?.remoteSessionId,
     formServiceTarget?.workspaceIdentity ?? workspaceIdentity,
     formServiceTarget?.remoteTarget,
-    {
-      unscopedServices: formTargetWorkspace ? undefined : unscopedServices,
-      forceUnscoped: Boolean(cacheAuthorityKey && !formTargetWorkspace),
-    },
   );
   const formServices = formServiceResolution.services;
 
@@ -153,13 +143,11 @@ export function CommandsSection({
     void initializePlugins({
       workspacePath,
       workspaceIdentity,
-      authorityKey: cacheAuthorityKey,
       configScope: scopeFilter,
       pluginService: pluginManagementService,
     });
   }, [
     initializePlugins,
-    cacheAuthorityKey,
     listServiceResolution.rpcReady,
     pluginManagementService,
     scopeFilter,
@@ -235,7 +223,6 @@ export function CommandsSection({
         return;
       }
       const confirmed = await confirmDialog({
-        confirmVariant: "destructive",
         title: intl.formatMessage({ id: "settings.commands.delete.title" }),
         description: intl.formatMessage(
           { id: "settings.commands.delete.description" },

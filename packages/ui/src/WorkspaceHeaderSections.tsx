@@ -1,31 +1,18 @@
-import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
-import { resolveWorkspaceRemoteSessionId } from "@/lib/workspaceServiceResolver.js";
-import { RemoteConnectionStateIcon } from "@/remote-connection/RemoteConnectionStateIcon.js";
-import { useRemoteProjectPresentationFacts } from "@/hooks/RemoteProjectPresentationContext.js";
-import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
-import {
-  formatRemoteDeviceName,
-  resolveRemoteConnectionPresentation,
-} from "@/lib/remoteConnectionPresentation.js";
 import { WorkspaceContextPath } from "@/WorkspaceHeaderSections/WorkspaceContextPath.js";
 import { WorkspaceLastActivity } from "@/WorkspaceHeaderSections/WorkspaceLastActivity.js";
 /* eslint-disable max-lines -- Header 标题区当前同时承载 task 菜单、路径上下文和 workspace 级状态提示，先保持单文件收口，避免菜单链路迁移时再引入回归。 */
 import {
-  parseRemoteWorkspaceIdentity,
-  remoteHostIdFromWorkspaceIdentity,
-  type RemoteTarget,
-  type ZCodeTaskMeta,
-} from "@zcode/shared";
-import {
   TID_WORKSPACE_MORE_BUTTON,
   TID_WORKSPACE_PATH,
   TID_WORKSPACE_TITLE,
-} from "@zcode/shared/test-ids";
+  type RemoteTarget,
+  type ZCodeTaskMeta,
+} from "@zcode/shared";
 import { useMemo, useRef, useState } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
-import { Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
+import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
@@ -53,6 +40,8 @@ import type {
 } from "@/WorkspaceHeaderSections/shared.js";
 import { applyTaskQueryCacheMutation } from "@/store/taskQueryCacheStore.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRemotePinnedTaskStore } from "@/store/remotePinnedTaskStore.js";
+import { useRemoteTimelineTaskStore } from "@/store/remoteTimelineTaskStore.js";
 import { TaskRenameDialog } from "@/TaskRenameDialog.js";
 import {
   RemoteSyncDialogs,
@@ -63,8 +52,6 @@ import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSk
 import { refreshSharedSkillStoreForWorkspace } from "@/lib/skillStoreRefresh.js";
 import { refreshWorkspacePluginCapabilitiesAfterRemoteSync } from "@/lib/remotePluginSyncRefresh.js";
 import { useMcpStore } from "@/store/mcpStore.js";
-import { useSourceServerDisplayNames } from "@/hooks/useSourceServerDisplayNames.js";
-import { useRemoteDevicePresentationInput } from "@/hooks/useSourceServerStatuses.js";
 
 export type { WorkspaceHeaderState, WorkspaceHeaderTitleSectionProps };
 export {
@@ -199,42 +186,13 @@ export function WorkspaceHeaderTitleSection({
   const remoteWorkspaceHostLabel = remoteTarget
     ? formatRemoteWorkspaceHeaderHostLabel(remoteTarget)
     : null;
-  const sourceServerDisplayNames = useSourceServerDisplayNames();
-  const sourceServerId = parseRemoteWorkspaceIdentity(workspaceIdentity ?? "")?.sourceServerId;
-  const sourceServerDisplayName = sourceServerId
-    ? sourceServerDisplayNames.get(sourceServerId)?.trim()
-    : undefined;
-  const deviceInput = useRemoteDevicePresentationInput(sourceServerId);
-  // 远控 tab 只携带身份，bridge 已在身份索引登记；直接读 tab sessionId 会误报断线。
-  const attached = useRemoteWorkspaceSessionStore((state) => {
-    const sessionId = resolveWorkspaceRemoteSessionId(
-      { workspacePath: workspaceAbsPath, workspaceIdentity, remoteSessionId, remoteTarget },
-      state,
-    );
-    return Boolean(sessionId && state.sessionsById[sessionId]?.services);
-  });
-  // 远控没有 Source 管理服务，设备名称复用窗口目录；精确 Host 身份避免同路径串设备。
-  const projectDirectory = useOptionalProjectDirectory();
-  const hostId = remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "");
-  const directoryTarget = projectDirectory?.directory.hosts.find(
-    (host) => host.id === hostId,
-  )?.target;
-  const projectFacts = useRemoteProjectPresentationFacts(
-    workspaceIdentity?.trim() || workspaceAbsPath,
-  );
-  const presentation = resolveRemoteConnectionPresentation({
-    ...deviceInput,
-    attached,
-    ...projectFacts,
-  });
-  const remoteStatusLabel = presentation.recovery
-    ? intl.formatMessage({ id: presentation.recovery.messageId }, presentation.recovery.values)
-    : intl.formatMessage({ id: presentation.shortMessageId });
   const workspaceDisplayLabel = formatRemoteWorkspaceDisplayLabel(projectName, remoteTarget);
-  const remoteDeviceName =
-    formatRemoteDeviceName(remoteTarget ?? directoryTarget ?? undefined, sourceServerDisplayName) ??
-    intl.formatMessage({ id: "workspaceSidebar.remoteProject" });
-  const workspaceContextLabel = workspaceDisplayLabel;
+  const showRemoteWorkspaceHostLabel = Boolean(
+    remoteWorkspaceHostLabel && workspaceDisplayLabel === projectName,
+  );
+  const workspaceContextLabel = showRemoteWorkspaceHostLabel
+    ? `${workspaceDisplayLabel} @ ${remoteWorkspaceHostLabel}`
+    : workspaceDisplayLabel;
   const workspaceBranchLabel = gitSummary.isRepository
     ? resolveGitBranchTriggerLabel({
         headRefType: gitSummary.headRefType,
@@ -263,39 +221,6 @@ export function WorkspaceHeaderTitleSection({
   // 新任务草稿还没有稳定 task 作用域，header 再展示 workspace/分支会和空态主文案重复抢焦点。
   // 草稿态继续隐藏上下文入口；已有 task 将工作区与分支收进名称前的图标提示。
   const isDraftNewTask = variant ? variant === "draft" : activeTaskId === null;
-
-  const handleOpenTaskFeedback = async () => {
-    const taskTitle =
-      activeTaskTitle ||
-      intl.formatMessage({
-        id: activeTaskMeta?.forkedFromTaskId ? "taskList.forkedUntitled" : "taskList.untitled",
-      });
-    // Header 更多菜单缺少当前任务的反馈入口，用户只能复制日志再手动新建反馈。
-    // 这里打开反馈表单时预填任务标题、路径和日志线索，截图和诊断日志由用户主动选择。
-    openFeedbackSubmit({
-      title: intl
-        .formatMessage(
-          { id: "feedback.submit.template.section.taskFeedbackTitle" },
-          { title: taskTitle },
-        )
-        .slice(0, 80),
-      type: "bug",
-      module: "Agent任务执行失败",
-      severity: "P2-中",
-      includeLogs: true,
-      description: buildTaskFeedbackDescription({
-        taskTitle,
-        taskId: resolvedTaskActionTaskId ?? undefined,
-        workspacePath: workspaceAbsPath,
-        taskSessionPath: taskSessionFile.path,
-        taskLogPath: taskNativeSessionLogFile.path,
-        formatMessage: (id: string, values?: Record<string, string>) =>
-          intl.formatMessage({ id }, values),
-      }),
-      screenshots: [],
-    });
-    toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
-  };
 
   const handleStartRenameTask = () => {
     if (!resolvedTaskActionTaskId) {
@@ -348,6 +273,13 @@ export function WorkspaceHeaderTitleSection({
         ...(workspaceIdentity ? { workspaceIdentity } : {}),
       });
       upsertOptimisticTaskListItem(workspaceAbsPath, renamedTask, workspaceIdentity);
+      if (workspaceIdentity) {
+        if (isPinned) {
+          useRemotePinnedTaskStore.getState().upsertTask(renamedTask);
+        } else {
+          useRemoteTimelineTaskStore.getState().upsertTask(renamedTask);
+        }
+      }
       applyTaskQueryCacheMutation({
         previousTask: buildHeaderTaskSnapshot(renamedTask, {
           title: currentTitle,
@@ -398,6 +330,14 @@ export function WorkspaceHeaderTitleSection({
         // Header 更多菜单不能只依赖 zcodeTaskMetaMerge：归档后只有旧列表状态被更新。
         // 这里改成和 Sidebar 一样同步清理运行态与 sqlite cache，避免 Header 操作后列表不刷新。
         removeTaskState(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+        if (workspaceIdentity) {
+          useRemotePinnedTaskStore
+            .getState()
+            .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+          useRemoteTimelineTaskStore
+            .getState()
+            .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+        }
         applyTaskQueryCacheMutation({
           previousTask: buildHeaderTaskSnapshot(meta),
           nextTask: meta,
@@ -432,7 +372,7 @@ export function WorkspaceHeaderTitleSection({
           void handleSubmitRenameTask();
         }}
       />
-      {!isDraftNewTask || isRemoteWorkspace ? (
+      {!isDraftNewTask ? (
         <ControlHintTooltip
           open={workspaceContextOpen}
           onOpenChange={setWorkspaceContextOpen}
@@ -446,7 +386,7 @@ export function WorkspaceHeaderTitleSection({
             >
               <span className="flex min-w-0 items-start gap-2">
                 {isRemoteWorkspace ? (
-                  <RemoteConnectionStateIcon presentation={presentation} project />
+                  <Cloud className="size-4 shrink-0" />
                 ) : (
                   <Folder className="size-4 shrink-0" />
                 )}
@@ -454,30 +394,7 @@ export function WorkspaceHeaderTitleSection({
                   <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                     {workspaceContextLabel}
                   </span>
-                  {isRemoteWorkspace ? (
-                    <span className="inline-flex w-fit min-w-0 max-w-full items-center gap-1 rounded-full bg-surface py-px pl-1.5 pr-2 text-ui-sm font-normal text-foreground-subtle">
-                      <span className={cn("size-1.5 shrink-0 rounded-full", presentation.dot)} />
-                      <span className="truncate">{remoteDeviceName}</span>
-                      {presentation.status !== "online" ? (
-                        <span>
-                          {presentation.recovery
-                            ? intl.formatMessage(
-                                { id: presentation.recovery.messageId },
-                                presentation.recovery.values,
-                              )
-                            : intl.formatMessage({ id: presentation.shortMessageId })}
-                    </span>
-                  ) : null}
-                    </span>
-                  ) : null}
-                  {workspaceContextOpen && isRemoteWorkspace ? (
-                    <span
-                      data-workspace-context-path=""
-                      className="break-all font-mono text-ui-sm text-foreground-subtle"
-                    >
-                      {workspaceAbsPath}
-                    </span>
-                  ) : workspaceContextOpen ? (
+                  {workspaceContextOpen ? (
                     <WorkspaceContextPath
                       workspacePath={workspaceAbsPath}
                       workspaceIdentity={workspaceIdentity}
@@ -505,35 +422,19 @@ export function WorkspaceHeaderTitleSection({
           <Button
             type="button"
             variant="ghost"
-            size={isRemoteWorkspace ? "sm" : compact ? "icon-sm" : "icon-md"}
-            className={
-              isRemoteWorkspace
-                ? "min-w-0 max-w-40 gap-1.5 px-1.5 text-foreground-subtle"
-                : undefined
-            }
+            size={compact ? "icon-sm" : "icon-md"}
             data-testid={TID_WORKSPACE_PATH}
-            // 上下文信息改为 tooltip 承载后，这个按钮不再有 DOM title；工作区绝对路径
-            // 是 e2e 判定“header 属于哪个工作区”的唯一锚点（aria-label 只有显示名），
-            // 因此单独用数据属性暴露，避免和 tooltip 争抢原生提示。
-            data-workspace-abs-path={workspaceAbsPath}
-            aria-description={isRemoteWorkspace ? remoteStatusLabel : undefined}
             aria-label={[workspaceContextLabel, workspaceBranchLabel].filter(Boolean).join(" · ")}
             onClick={() => setWorkspaceContextOpen(true)}
           >
             {isRemoteWorkspace ? (
-              <>
-                <RemoteConnectionStateIcon presentation={presentation} project />
-                <span data-workspace-device-name="" className="min-w-0 truncate text-ui-sm">
-                  {remoteDeviceName}
-                </span>
-              </>
+              <Cloud className="size-4 text-foreground-subtle" />
             ) : (
               <Folder className="size-4 text-foreground-subtle" />
             )}
           </Button>
         </ControlHintTooltip>
       ) : null}
-      {!isDraftNewTask ? (
       <h1
         data-testid={TID_WORKSPACE_TITLE}
         className={cn(
@@ -559,7 +460,6 @@ export function WorkspaceHeaderTitleSection({
           </>
         ) : null} */}
       </h1>
-      ) : null}
       <div className="flex min-w-0 shrink-0 items-center gap-1">
         {!isDraftNewTask ? (
           <DropdownMenu open={taskMenuOpen} onOpenChange={setTaskMenuOpen}>
@@ -609,6 +509,20 @@ export function WorkspaceHeaderTitleSection({
                   }
                   const optimisticTask = activeTaskMeta ?? null;
                   if (optimisticTask) {
+                    // Bugfix: Header 里切换 pin 以前只等 RPC 成功后更新列表缓存，
+                    // pinned 区会在请求期间被旧查询结果覆盖。先乐观切换，失败再回滚。
+                    if (workspaceIdentity && !isPinned) {
+                      useRemotePinnedTaskStore.getState().upsertTask(optimisticTask);
+                      useRemoteTimelineTaskStore
+                        .getState()
+                        .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+                    }
+                    if (workspaceIdentity && isPinned) {
+                      useRemotePinnedTaskStore
+                        .getState()
+                        .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+                      useRemoteTimelineTaskStore.getState().upsertTask(optimisticTask);
+                    }
                     applyTaskQueryCacheMutation({
                       previousTask: optimisticTask,
                       nextTask: optimisticTask,
@@ -629,6 +543,26 @@ export function WorkspaceHeaderTitleSection({
                         resolvedTaskActionTaskId,
                         workspaceIdentity,
                       );
+                      if (workspaceIdentity && !isPinned) {
+                        useRemotePinnedTaskStore.getState().upsertTask(meta);
+                        useRemoteTimelineTaskStore
+                          .getState()
+                          .removeTask(
+                            workspaceAbsPath,
+                            resolvedTaskActionTaskId,
+                            workspaceIdentity,
+                          );
+                      }
+                      if (workspaceIdentity && isPinned) {
+                        useRemotePinnedTaskStore
+                          .getState()
+                          .removeTask(
+                            workspaceAbsPath,
+                            resolvedTaskActionTaskId,
+                            workspaceIdentity,
+                          );
+                        useRemoteTimelineTaskStore.getState().upsertTask(meta);
+                      }
                       applyTaskQueryCacheMutation({
                         previousTask: buildHeaderTaskSnapshot(meta),
                         nextTask: meta,
@@ -638,6 +572,26 @@ export function WorkspaceHeaderTitleSection({
                     })
                     .catch(() => {
                       if (optimisticTask) {
+                        if (workspaceIdentity && !isPinned) {
+                          useRemotePinnedTaskStore
+                            .getState()
+                            .removeTask(
+                              workspaceAbsPath,
+                              resolvedTaskActionTaskId,
+                              workspaceIdentity,
+                            );
+                          useRemoteTimelineTaskStore.getState().upsertTask(optimisticTask);
+                        }
+                        if (workspaceIdentity && isPinned) {
+                          useRemotePinnedTaskStore.getState().upsertTask(optimisticTask);
+                          useRemoteTimelineTaskStore
+                            .getState()
+                            .removeTask(
+                              workspaceAbsPath,
+                              resolvedTaskActionTaskId,
+                              workspaceIdentity,
+                            );
+                        }
                         applyTaskQueryCacheMutation({
                           previousTask: optimisticTask,
                           nextTask: optimisticTask,
@@ -671,6 +625,13 @@ export function WorkspaceHeaderTitleSection({
                         workspaceIdentity,
                       );
                       upsertOptimisticTaskListItem(workspaceAbsPath, meta, workspaceIdentity);
+                      if (workspaceIdentity) {
+                        if (isPinned) {
+                          useRemotePinnedTaskStore.getState().upsertTask(meta);
+                        } else {
+                          useRemoteTimelineTaskStore.getState().upsertTask(meta);
+                        }
+                      }
                       applyTaskQueryCacheMutation({
                         previousTask: buildHeaderTaskSnapshot(meta),
                         nextTask: meta,
@@ -678,9 +639,6 @@ export function WorkspaceHeaderTitleSection({
                         nextState: { pinned: isPinned, archived: false },
                       });
                     });
-                }}
-                onOpenTaskFeedback={() => {
-                  void handleOpenTaskFeedback();
                 }}
                 onOpenTaskPathInFileManager={() => {
                   void handleOpenTaskPathInFileManager();
@@ -754,6 +712,7 @@ export function WorkspaceHeaderTitleSection({
           workspaceIdentity={workspaceIdentity}
           onSkillsSynced={async () => {
             await invalidateDeferredDraftSessionForSkillChange({
+              zcodeSessionService: services.zcodeSessionService,
               workspacePath: workspaceAbsPath,
               workspaceIdentity,
               reason: "header-remote-skill-sync",
@@ -782,6 +741,7 @@ export function WorkspaceHeaderTitleSection({
               workspaceIdentity,
               workspacePath: workspaceAbsPath,
               zcodeAgentService: services.zcodeAgentService,
+              zcodeSessionService: services.zcodeSessionService,
             });
           }}
         />

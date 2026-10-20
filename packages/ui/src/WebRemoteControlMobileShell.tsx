@@ -150,7 +150,7 @@ export function WebRemoteControlMobileShell({
   // 让 subagent 输出、进程面板和正文在抽屉内换行。
   return (
     <>
-      {/* fork：设备端 task 曝光遥测（upstream web-remote-control v2）已随遥测域剔除。 */}
+      
       {isMobileViewport ? (
         <div className="relative flex h-full min-h-0 min-w-0 flex-col bg-background">
           {currentPage === "home" ? (

@@ -9,9 +9,10 @@ import {
   TID_AUTOMATION_CARD_MENU,
   TID_AUTOMATIONS_LIST,
   TID_AUTOMATIONS_STATUS_FILTER,
-  TID_OFFPEAK_CREATE_BUTTON,
-  TID_OFFPEAK_TAB,
-} from "@zcode/shared/test-ids";
+  isAutomationCreateLimitError,
+  resolveWorkspaceKey,
+  type ZCodeAutomation,
+} from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import {
   DropdownMenu,
