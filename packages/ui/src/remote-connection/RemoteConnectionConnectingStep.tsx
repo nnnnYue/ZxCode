@@ -31,6 +31,7 @@ import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import {
   formatRemoteLinkRailTarget,
   formatRemoteLinkRailDevice,
@@ -218,6 +219,7 @@ export function resolveRemoteConnectionPhaseSub(
 }
 
 export function RemoteConnectionConnectingStep({
+  kind,
   logs,
   errorMessage,
   errorCode,

@@ -17,6 +17,8 @@ import type {
   RemoteConnectionOpenPreference,
 } from "@/app-shell/types.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
+import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
+import { resolveLogoutProviderFamilyDomain } from "@/lib/providerFamilyDomainSettings.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { parseWslUncWorkspacePath } from "@/lib/wslUncWorkspace.js";
 import { logger } from "@/logger.js";
@@ -92,6 +94,12 @@ export function useRootWorkspaceActions({
   allowOpenWorkspace,
   preferDirectoryBrowser,
   openDirectoryBrowser,
+  refreshProviderState,
+  updateAppSettings,
+  setOAuthError,
+  setUser,
+  onProviderFamilyDomainClearedAfterLogout,
+  userId,
   onOpenRemoteConnection,
   openRemoteProjectWorkspace,
   openMobileProjectDraft,
@@ -108,7 +116,22 @@ export function useRootWorkspaceActions({
   allowOpenWorkspace: NonNullable<RootProps["allowOpenWorkspace"]>;
   preferDirectoryBrowser: boolean;
   openDirectoryBrowser?: () => void;
-  onOpenRemoteConnection?: (preference?: OpenRemoteConnectionPreference) => void;
+  refreshProviderState: () => Promise<void>;
+  updateAppSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  setOAuthError: (error: string | null) => void;
+  setUser: (user: UserInfo | null) => void;
+  onProviderFamilyDomainClearedAfterLogout?: () => void;
+  userId?: string;
+  onOpenRemoteConnection?: (preference?: RemoteConnectionOpenPreference) => void;
+  openRemoteProjectWorkspace?: (target: {
+    hostId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    expectedMembershipId?: string;
+    projectId: string | null;
+    isCurrent?: () => boolean;
+  }) => Promise<void>;
+  openMobileProjectDraft?: (request: CreateTaskOptions) => Promise<void>;
   workbenchGroupClientMode?: ZCodeTaskClientMode;
 }) {
   const navigationSequence = useRef(0);
@@ -221,6 +244,267 @@ export function useRootWorkspaceActions({
     },
     [workbenchGroupClientMode, composerClientNamespace],
   );
+
+  const startNewTaskFromActiveWorkspace = useCallback(
+    async (source: string, request?: CreateTaskRequest) => {
+      const openRemoteProjectWorkspace = remoteProjectOpener.current;
+      const sequence = ++navigationSequence.current;
+      const originTab = tabStoreApi.getState().activeTabId;
+      const originWorkspace = activeWorkspacePath
+        ? useZCodeSessionStore
+            .getState()
+            .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined)
+        : null;
+      const isCurrent = () =>
+        (typeof request !== "object" || request.isCurrent?.() !== false) &&
+        sequence === navigationSequence.current &&
+        tabStoreApi.getState().activeTabId === originTab &&
+        (!activeWorkspacePath ||
+          (() => {
+            const state = useZCodeSessionStore
+              .getState()
+              .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined);
+            return (
+              state.activeTaskId === originWorkspace?.activeTaskId &&
+              state.draftFocusVersion === originWorkspace?.draftFocusVersion
+            );
+          })());
+      try {
+        // 在第一次 await 前捕获活动任务/草稿；快捷键和侧栏新建共用同一组织意图。
+        const requestOptions = typeof request === "string" ? { provider: request } : { ...request };
+        if (
+          requestOptions.taskGroupId === undefined &&
+          requestOptions.projectId === undefined &&
+          readProjectSidebarView() === "grouped" &&
+          activeWorkspacePath
+        ) {
+          const taskId = originWorkspace?.activeTaskId;
+          const draftGroupId = originWorkspace?.draftTaskGroupId;
+          const structure = taskId ? await services.taskGroupService?.read() : undefined;
+          if (!isCurrent()) return;
+          requestOptions.taskGroupId = taskId
+            ? (structure?.members.find(
+                (member) =>
+                  member.taskId === taskId &&
+                  member.workspaceKey === (activeWorkspaceIdentity?.trim() || activeWorkspacePath),
+              )?.groupId ?? null)
+            : (draftGroupId ?? null);
+        }
+        request = requestOptions;
+        let projectId =
+          typeof request === "string"
+            ? undefined
+            : (request?.projectId ?? request?.targetWorkspace?.projectId);
+        let hostId =
+          typeof request === "string"
+            ? undefined
+            : (request?.hostId ?? request?.targetWorkspace?.hostId);
+        const hasExplicitProject =
+          typeof request === "object" &&
+          request !== null &&
+          ("projectId" in request || Boolean(request.targetWorkspace?.projectId));
+        const newTaskTarget = resolveNewTaskTargetFromRequest(request, () =>
+          resolveWorkbenchNewTaskTarget({
+            activeWorkspacePath,
+            activeWorkspaceIdentity,
+            activeGroup: useWorkbenchGroupStore.getState().activeGroupId
+              ? (useWorkbenchGroupStore.getState().groups[
+                  useWorkbenchGroupStore.getState().activeGroupId!
+                ] ?? null)
+              : null,
+            paneLayout: usePaneLayoutStore.getState(),
+          }),
+        );
+        if (!hasExplicitProject && newTaskTarget) {
+          // 原因：仅远程继承项目会让本地快捷键落入未归类。按任务完整身份读取归属，不能由 cwd 猜项目。
+          if (newTaskTarget.workspaceIdentity) {
+            hostId =
+              remoteHostIdFromWorkspaceIdentity(newTaskTarget.workspaceIdentity) ?? undefined;
+            if (!hostId) throw new Error("project.host-identity-required");
+          }
+          const workspace = useZCodeSessionStore
+            .getState()
+            .getWorkspaceState(
+              newTaskTarget.workspacePath,
+              newTaskTarget.workspaceIdentity ?? undefined,
+            );
+          const tree = workspace.activeTaskId
+            ? await services.projectService?.readTree(hostId ? { hostId } : undefined)
+            : undefined;
+          if (workspace.activeTaskId && !tree) throw new Error("project.service-unavailable");
+          projectId = workspace.activeTaskId
+            ? (tree?.tasks.find(
+                (task) =>
+                  task.taskId === workspace.activeTaskId &&
+                  (task.workspaceIdentity?.trim() || task.workspacePath) ===
+                    (newTaskTarget.workspaceIdentity?.trim() || newTaskTarget.workspacePath),
+              )?.projectId ?? undefined)
+            : (workspace.draftProjectId ?? undefined);
+          if (hostId && !projectId) throw new Error("project.remote-project-required");
+        }
+        if (!isCurrent()) return;
+        if (workbenchGroupClientMode === "web-remote-replayable") {
+          if (!openMobileProjectDraft) throw new Error("project.remote-navigation-unavailable");
+          // 归属先在共享入口解析，目录仍只由 bridge owner 准备；旧 Root 不写交接后的草稿。
+          await openMobileProjectDraft({
+            ...requestOptions,
+            ...(projectId ? { projectId } : {}),
+            ...(hostId ? { hostId } : {}),
+          });
+          return;
+        }
+        if (!services.projectService) throw new Error("project.service-unavailable");
+        const pendingDraft =
+          !projectId && (!hostId || hostId === "local")
+            ? ensurePendingTaskDraft(resolveComposerScope(null, undefined, composerClientNamespace))
+            : null;
+        const target = await services.projectService.prepareSession({
+          ...(projectId ? { projectId } : {}),
+          ...(hostId ? { hostId } : {}),
+          // 显式 local 与省略 Host 是同一入口，不能漏掉待发送身份而另建目录。
+          ...(pendingDraft
+            ? { draftId: pendingDraft.draftId, reuseDraft: Boolean(pendingDraft.workspacePath) }
+            : {}),
+        });
+        if (!isCurrent()) return;
+        if (hostId && hostId !== "local") {
+          if (!target.workspaceIdentity || !openRemoteProjectWorkspace)
+            throw new Error("project.remote-navigation-unavailable");
+          await openRemoteProjectWorkspace({
+            ...target,
+            hostId,
+            isCurrent,
+            ...(typeof request === "object" && request.remoteProjectMembershipId
+              ? { expectedMembershipId: request.remoteProjectMembershipId }
+              : {}),
+          });
+        }
+        // 目录准备成功才提交导航；失败保留当前会话和分屏。
+        if (!hostId || hostId === "local")
+          addTab(target.workspacePath, {
+            workspacePurpose: target.projectId ? "project" : "conversation",
+            ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
+          });
+        startDraftInWorkspace(target.workspacePath, target.workspaceIdentity, {
+          ...(typeof request === "string" ? { provider: request } : request),
+          ...(pendingDraft ? { draftId: pendingDraft.draftId } : {}),
+          projectId: target.projectId,
+        });
+        if (typeof request === "object") request.onComplete?.();
+        setWorkspaceActionError(null);
+        logger.info(`[Root] ${source}`, {
+          workspacePath: target.workspacePath,
+          projectId: target.projectId,
+        });
+      } catch (error) {
+        if (!isCurrent()) return;
+        logger.error("[Root] 准备新任务失败", error);
+        if (typeof request === "object") request.onError?.(error);
+        setWorkspaceActionError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [
+      services.projectService,
+      composerClientNamespace,
+      activeWorkspacePath,
+      activeWorkspaceIdentity,
+      tabStoreApi,
+      addTab,
+      openMobileProjectDraft,
+      workbenchGroupClientMode,
+      startDraftInWorkspace,
+    ],
+  );
+
+  const {
+    handleSelectConversationWorkspace,
+    handleResolveConversationWorkspace,
+    handleEnsureConversationWorkspace,
+    handleCreateConversationTask,
+  } = useConversationWorkspaceActions({
+    services,
+    addTab,
+    createTask: startNewTaskFromActiveWorkspace,
+    setWorkspaceActionError,
+  });
+
+  const handleLogout = useCallback(async () => {
+    let runningAgentSessionCount: number | null = null;
+    try {
+      const sessionActivity = await platform.getDesktopSessionActivity?.();
+      runningAgentSessionCount =
+        typeof sessionActivity?.runningAgentSessionCount === "number"
+          ? sessionActivity.runningAgentSessionCount
+          : null;
+    } catch (error) {
+      logger.warn("[Root] 查询桌面运行中会话数量失败，使用保守退出登录文案", { error });
+    }
+
+    const confirmed = await requestConfirmation({
+      title: intl.formatMessage({ id: "logout.confirm.title" }),
+      description:
+        runningAgentSessionCount !== null && runningAgentSessionCount > 0
+          ? intl.formatMessage(
+              { id: "logout.confirm.descriptionWithRunningSessions" },
+              { count: String(runningAgentSessionCount) },
+            )
+          : intl.formatMessage({ id: "logout.confirm.descriptionDefault" }),
+      confirmLabel: intl.formatMessage({ id: "logout.confirm.ok" }),
+      cancelLabel: intl.formatMessage({ id: "logout.confirm.cancel" }),
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    // Bug 原因：telemetry 是辅助链路；等待网络重试会延迟退出登录，甚至在旧的无超时实现里
+    // 无限阻塞主流程。这里只调度事件，Main 侧负责有界重试与退出 drain。
+    void reportAppTelemetryEvent(
+      platform,
+      {
+        elementName: "app_user_logout",
+        eventRegion: "app_profile",
+        eventType: "ck",
+        eventExtraDetail: {},
+        userId,
+      },
+      "Root",
+    );
+    const settingsBeforeLogout = await services.settingService.get();
+    const nextProviderFamilyDomain = resolveLogoutProviderFamilyDomain({
+      currentDomain: settingsBeforeLogout.providerFamilyDomain,
+    });
+    await services.oauthService.logout();
+    await updateAppSettings({
+      providerFamilyDomain: (nextProviderFamilyDomain ?? "") as AppSettings["providerFamilyDomain"],
+      providerFamilyDomainUpdatedAt: Date.now(),
+      providerFamilyDomainMigrated: true,
+    });
+    if (!nextProviderFamilyDomain) {
+      onProviderFamilyDomainClearedAfterLogout?.();
+    }
+    // ZAI/BigModel provider 已恢复为 App 登录镜像。
+    // 派生 Coding/Start key 由 OAuth logout 的 host hook 统一清理，Root 只负责刷新展示态。
+    setOAuthError(null);
+    setUser(null);
+    // 退出登录后刷新 Account Source 与 Registry，避免继续展示退出前的 Provider 状态。
+    await refreshProviderState();
+    // Coding Plan 官网 webview 使用独立持久 partition，App logout 必须同步清理。
+    await platform.executeDesktopCommand(DesktopCommandIds.ClearCodingPlanWebviewStorage);
+    await platform.executeDesktopCommand(DesktopCommandIds.RelaunchApp);
+  }, [
+    intl,
+    requestConfirmation,
+    refreshProviderState,
+    onProviderFamilyDomainClearedAfterLogout,
+    platform,
+    services.oauthService,
+    services.modelSelectionService,
+    services.settingService,
+    setOAuthError,
+    setUser,
+    updateAppSettings,
+    userId,
+  ]);
 
   const handleSelectProject = useCallback(
     async (path: string) => {
@@ -410,6 +694,7 @@ export function useRootWorkspaceActions({
     setWorkspaceActionError,
     startDraftInWorkspace,
     startNewTaskFromActiveWorkspace,
+    handleLogout,
     handleSelectProject,
     handleSelectConversationWorkspace,
     handleResolveConversationWorkspace,

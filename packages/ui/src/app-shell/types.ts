@@ -157,6 +157,14 @@ export interface AppProps {
   ) => Promise<void>;
   onCancelRemoteProject: (sessionId: string) => Promise<void>;
   onReconnectRemoteWorkspace: (workspaceKey: string) => Promise<void>;
+  onLogout?: () => void;
+  onLogin?: () => void;
+  user?: UserInfo | null;
+  /** fork：自动更新域已剔除；保留类型占位避免上游 Shell 布局合同漂移。 */
+  updateReadyVersion?: string | null;
+  platform?: import("@zcode/shared").IPlatformService;
+  appLogoUrl?: string;
+  reloadSessionDisabled?: boolean;
   reconnectingRemoteWorkspaceKeys: string[];
   remoteWorkspaceRecoveryByWorkspaceKey?: Record<string, RemoteWorkspaceRecoveryStatus>;
   remoteWorkspaceErrorByWorkspaceKey: Record<string, string>;

@@ -134,6 +134,7 @@ import {
   isWorkspaceFileAddToChatEvent,
 } from "@/lib/workspaceFileDrag.js";
 import { appendWorkspaceFileMentionToComposer } from "@/lib/workspaceFileComposer.js";
+import { resolveProviderBaseURL } from "@/lib/registryProviderView.js";
 import type { ModelSelectionView } from "@zcode/services";
 import type {
   ModelSelectionState,
@@ -192,6 +193,8 @@ import {
 import { WebElementContextAttachmentChip } from "@/v4/composer/WebElementContextAttachmentChip.js";
 import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSelectionReferenceChip.js";
 import type { AttachmentPutFn } from "@/v4/composer/attachmentUpload.js";
+import { useScopedConversationTelemetrySupervisor } from "@/v4/telemetry/ConversationTelemetryAttachment.js";
+import type { ConversationPromptTelemetrySeed } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
 import type { ComposerSubmissionConfig } from "@/v4/composer/composerSubmissionConfig.js";
 import { buildV4ConversationPromptTelemetryExtraDetail } from "@/v4/telemetry/conversationPromptTelemetry.js";
 import { pendingCommandRegistry } from "@/v4/pendingCommandRegistry.js";
@@ -216,8 +219,8 @@ export interface ConversationComposerSendOptions {
   /** Prompt 文本内携带的上下文附件数量；用于阻止 /goal 等本地命令误消费。 */
   contextAttachmentCount?: number;
   conversationQuotes?: import("@zcode/shared").ConversationSelectionText[];
-  /** renderer-only：本地 TTFT 观测上下文，发送链路沿途喂给 LocalTtftObserver。 */
-  localTtft?: LocalTtftContext;
+  /** renderer-only：ACK accepted 后由 SessionPane 绑定真实 commandId/sessionId。 */
+  telemetrySeed?: ConversationPromptTelemetrySeed;
   /** 本次 busy input 的一次性投递覆盖，不改 session 偏好。 */
   requestedDelivery?: "startNow" | "queue" | "guide";
   /** 提交命令创建后由 Composer 订阅权威 projection，覆盖 ACK 丢失后的收口。 */
@@ -410,6 +413,8 @@ export interface ConversationComposerProps {
   /** 当前 Composer 是否能构造完整 Submission；空模型或空 Reasoning 时为 false。 */
   submissionReady?: boolean;
   createSubmissionFromComposer?: () => ComposerSubmissionConfig | null;
+  /** 仅供发送埋点冻结模型维度；包含草稿初始化 config 与显式 intent 的合并值。 */
+  telemetryDraftConfig?: Partial<SessionConfigState>;
   /**
    * 空态 contextHeader（m5-composer-parity）：workspace 切换菜单 + Git 分支
    * 切换器，渲染在编辑器上方（旧 ChatViewComposer contextHeaderContent 同位）。
@@ -462,6 +467,10 @@ export interface ConversationComposerProps {
   /** 承载 transport 暴露 runtime 存活态时优先用它，替代 onRuntimeRestart。 */
   onRuntimeLifecycle?: (listener: (state: "available" | "unavailable") => void) => () => void;
   provider?: ZCodeProvider;
+  /** 宿主 pane 与 workspace 遮罩共同裁决的真实可见性，仅用于 visible-only telemetry。 */
+  telemetryVisible?: boolean;
+  /** 点击发送时读取套餐身份；二次确认会继续复用同一份冻结 seed。 */
+  readPlanIdentitySnapshot?: () => PlanIdentitySnapshot;
   onSendText: (
     text: string,
     options?: ConversationComposerSendOptions,
@@ -546,6 +555,7 @@ function ConversationComposerImpl({
   replaceComposerDraft,
   submissionReady = true,
   createSubmissionFromComposer,
+  telemetryDraftConfig,
   contextHeader,
   centered = false,
   layout = "stacked",
@@ -570,6 +580,8 @@ function ConversationComposerImpl({
   onRuntimeRestart,
   onRuntimeLifecycle,
   provider,
+  telemetryVisible = true,
+  readPlanIdentitySnapshot,
   onSendText,
   onTextChange,
   onDraftStateChange,
@@ -692,7 +704,7 @@ function ConversationComposerImpl({
   );
   const [heldQueueConfirmation, setHeldQueueConfirmation] = useState<{
     queueItemIds: readonly string[];
-    localTtft?: LocalTtftContext;
+    telemetrySeed: ConversationPromptTelemetrySeed;
     requestedDelivery?: "startNow" | "queue" | "guide";
   } | null>(null);
   const [sendTooltipOpen, setSendTooltipOpen] = useState(false);
@@ -963,8 +975,10 @@ function ConversationComposerImpl({
     if (attachments) attachmentsApi.restoreDraftAttachments(attachments);
   }, [draftFocusVersion, draftScopeId, workspaceKey, attachmentsApi.restoreDraftAttachments]);
   const pendingFocusRef = useRef(false);
+  // 本次 focus 是否由程序触发（见 flushPendingFocus），供 send_input_focus 过滤非用户动作。
+  const programmaticFocusRef = useRef(false);
   // 发送键与 Enter 共用同一个 form submit；按钮 onClick 早于 submit 触发，
-  // 借此区分本次发送动作的触发来源，读取后立刻复位回默认的 shortcut。
+  // 借此区分 send_click 的 send_trigger，读取后立刻复位回默认的 shortcut。
   const sendTriggerRef = useRef<"button" | "shortcut">("shortcut");
   // 修饰键点击先于 form submit；这里只保存这一拍的 delivery 反转意图，submit 消费后清零。
   const reversePointerDeliveryRef = useRef(false);
@@ -987,6 +1001,9 @@ function ConversationComposerImpl({
     if (resolveComposerAutoFocus(focusOptsRef.current) !== "focus-now") return;
     if (!inputApiRef.current) return;
     pendingFocusRef.current = false;
+    // 程序性聚焦与用户点击输入框会触发同一个 DOM focus 事件；置位后由 handleEditorFocus
+    // 消费，避免把「切会话 / 挂载回焦 / 上下文块移除后回焦」误报成 send_input_focus。
+    programmaticFocusRef.current = true;
     // Lexical root 可能晚一帧就绪，聚焦排到下一帧（与草稿回填同款时序）。
     if (typeof requestAnimationFrame === "function") {
       requestAnimationFrame(() => inputApiRef.current?.focus());
@@ -1327,7 +1344,7 @@ function ConversationComposerImpl({
     async (
       heldQueueDisposition?: "clearQueueAndSend" | "keepQueueAndSend",
       expectedHeldQueueItemIds?: readonly string[],
-      existingLocalTtft?: LocalTtftContext,
+      existingTelemetrySeed?: ConversationPromptTelemetrySeed,
       requestedDelivery?: "startNow" | "queue" | "guide",
     ) => {
       const trimmed = textRef.current.trim();
@@ -1380,24 +1397,47 @@ function ConversationComposerImpl({
       });
       pendingRef.current = true;
       setPending(true);
-      // 本地 TTFT 观测上下文：首发点击时开一次观测；队列二次确认复用首次点击的
-      // 上下文并结束其确认分段，保证同一条消息只有一份观测账本。
-      let localTtft: LocalTtftContext | undefined;
-      if (existingLocalTtft) {
-        localTtft = existingLocalTtft;
-        getLocalTtftObserver()?.confirmation(localTtft, false);
+      // Bug 根因：草稿 intent 只保存用户显式改动，正常继承模型位于冻结初始化 config。
+      // prewarm snapshot 尚未到达时若只读 draftConfig，send_btn 会错误落成空模型/glm。
+      const telemetryConfig = telemetryDraftConfig ?? snapshotRef.current?.config ?? draftConfig;
+      let telemetrySeed: ConversationPromptTelemetrySeed;
+      if (existingTelemetrySeed) {
+        // 队列二次确认复用首次点击的 seed：不重报 send_click，也不重置发送触发来源，
+        // 保证 send_click 与 send_result 严格 1:1。
+        telemetrySeed = existingTelemetrySeed;
+        if (telemetrySeed.localTtft)
+          getLocalTtftObserver()?.confirmation(telemetrySeed.localTtft, false);
       } else {
-        localTtft = !workspaceIdentity?.trim()
-          ? getLocalTtftObserver()?.start(
-              workspacePath,
-              (snapshotRef.current !== null &&
-                snapshotRef.current.inputRouting.mode !== "startNow") ||
-                false,
-              trimmed.startsWith("/"),
-            )
-          : undefined;
-        // 一次点击只算 button 触发一次；消费后复位，后续 Enter 发送回到 shortcut。
+        const freshSeed: ConversationPromptTelemetrySeed = {
+          sendTime: Date.now(),
+          localTtft: !workspaceIdentity?.trim()
+            ? getLocalTtftObserver()?.start(
+                workspacePath,
+                (snapshotRef.current !== null &&
+                  snapshotRef.current.inputRouting.mode !== "startNow") ||
+                  false,
+                trimmed.startsWith("/"),
+              )
+            : undefined,
+          extraDetail: buildV4ConversationPromptTelemetryExtraDetail({
+            askMode: telemetryConfig?.mode,
+            modelName: telemetryConfig?.model,
+            configProvider: telemetryConfig?.provider,
+            agentProvider: provider,
+            providerBaseURL: resolveProviderBaseURL(telemetryConfig?.provider, modelSelectionView),
+            planIdentitySnapshot: readPlanIdentitySnapshot?.(),
+          }),
+        };
+        const sendTrigger = sendTriggerRef.current;
         sendTriggerRef.current = "shortcut";
+        // recordSendClick 回填 sendClickId，必须用它的返回值作为后续 seed，
+        // 否则落定时拿不到关联键，send_result 会被当成后台任务跳过。
+        telemetrySeed =
+          conversationTelemetry?.recordSendClick({
+            sessionId: sessionId ?? null,
+            seed: freshSeed,
+            trigger: sendTrigger,
+          }) ?? freshSeed;
       }
       let promptHistoryBeforeSend: readonly string[] | null = null;
       let promptHistoryAfterAppend: readonly string[] | null = null;
@@ -1513,7 +1553,15 @@ function ConversationComposerImpl({
         // 二次门禁：只消费预传完成的 ref，不在点击发送时回落上传。
         const readyAttachmentRefs = await attachmentsApi.prepareForSend();
         if (readyAttachmentRefs === null) {
-          if (localTtft) getLocalTtftObserver()?.exclude(localTtft, "rejected");
+          if (telemetrySeed.localTtft)
+            getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "rejected");
+          // send_click 已上报，此处不落定会留下无配对的悬空样本，污染成功率分母。
+          conversationTelemetry?.settleSendResult({
+            seed: telemetrySeed,
+            sessionId: sessionId ?? null,
+            status: "fail",
+            reasonCode: "attachment_not_ready",
+          });
           sendAction.fail({ failureStage: "attachment_not_ready" });
           return;
         }
@@ -1598,23 +1646,32 @@ function ConversationComposerImpl({
             : {}),
         });
         if (sendResult === "blocked") {
-          if (localTtft) getLocalTtftObserver()?.exclude(localTtft, "rejected");
+          if (telemetrySeed.localTtft)
+            getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "rejected");
           // 产品 guard 是一次正常拒绝，不应借异常路径表达；回滚发送前暂记的 history，
           // 同时不 clear editor/draft/附件，让用户切换模式后可以直接重试。
           rollbackPromptHistory();
           restoreSubmittedDraft();
+          conversationTelemetry?.settleSendResult({
+            seed: telemetrySeed,
+            sessionId: sessionId ?? null,
+            status: "fail",
+            reasonCode: "blocked",
+          });
           sendAction.reject({ resultSource: "authority_ack", admissionResult: "rejected" });
           return;
         }
         if (sendResult === "confirmationRequired") {
-          if (localTtft) getLocalTtftObserver()?.confirmation(localTtft, true);
+          if (telemetrySeed.localTtft)
+            getLocalTtftObserver()?.confirmation(telemetrySeed.localTtft, true);
           rollbackPromptHistory();
           restoreSubmittedDraft();
           const latestQueueItemIds =
             snapshotRef.current?.queue.items.map((item) => item.queueItemId) ?? [];
           // 首次提交冻结当前队列；跨端 stale 后用最新投影替换，要求用户重新确认。
           setHeldQueueConfirmation({
-            localTtft,
+            // 标记 queueConfirmed：确认后复用该 seed 落定，send_cost_ms 含用户在弹窗上的停留。
+            telemetrySeed: { ...telemetrySeed, queueConfirmed: true },
             ...(requestedDelivery ? { requestedDelivery } : {}),
             queueItemIds:
               latestQueueItemIds.length > 0 ? latestQueueItemIds : submittedQueueItemIds,
@@ -1635,6 +1692,13 @@ function ConversationComposerImpl({
           getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "failed");
         // 发送失败草稿保留在输入框（不清空），仅记录原因。
         logger.warn(`[v4-composer] 发送失败: ${String(error)}`);
+        // ACK 侧失败已由 SessionPane 落定；能走到这里的是 composer 自身链路异常。
+        conversationTelemetry?.settleSendResult({
+          seed: telemetrySeed,
+          sessionId: sessionId ?? null,
+          status: "fail",
+          reasonCode: "composer_error",
+        });
         sendAction.fail({ failureStage: "composer_send" });
       } finally {
         pendingRef.current = false;
@@ -1644,14 +1708,19 @@ function ConversationComposerImpl({
     [
       attachmentsApi,
       conversationSelectionReferences,
+      conversationTelemetry,
       draftConfig,
       createSubmissionFromComposer,
       submissionReady,
       remoteAvailable,
       runtimeBlocked,
       getCodeCommentContexts,
+      telemetryDraftConfig,
+      modelSelectionView,
       onSendText,
       pendingShareContext,
+      provider,
+      readPlanIdentitySnapshot,
       removeCodeCommentContext,
       removeConversationSelectionReference,
       removePptxElementReference,
@@ -1672,13 +1741,26 @@ function ConversationComposerImpl({
   // Lexical onChange（首字符也稳定回传，见 LexicalChatInput.TextContentPlugin）。
   const handleEditorChange = useCallback(
     (value: string) => {
+      conversationTelemetry?.recordComposerTextChange(value);
       updateText(value);
       // 正文先进入与 mode/model 相同的内存 Draft；防抖只负责补充最新 Lexical JSON。
       updateComposerContent({ text: value });
       scheduleDraftPersist();
     },
-    [scheduleDraftPersist, updateComposerContent, updateText],
+    [conversationTelemetry, scheduleDraftPersist, updateComposerContent, updateText],
   );
+
+  const handleEditorFocus = useCallback(() => {
+    conversationTelemetry?.recordComposerFocus();
+    // 程序性聚焦不算「点击输入框」；标记一次性消费，之后的手动 focus 照常上报。
+    if (programmaticFocusRef.current) {
+      programmaticFocusRef.current = false;
+      return;
+    }
+    conversationTelemetry?.recordComposerFocusClick({
+      sessionId: sessionId ?? null,
+    });
+  }, [conversationTelemetry, sessionId]);
 
   // 编辑器提交（Enter / 发送键 form submit 同路径）。返回 false：编辑器不自行 reset，
   // 由 submit 成功后经 inputApiRef.clear() 清空——失败时草稿留在输入框。
@@ -1721,7 +1803,7 @@ function ConversationComposerImpl({
     void submit(
       "clearQueueAndSend",
       heldQueueConfirmation.queueItemIds,
-      heldQueueConfirmation.localTtft,
+      heldQueueConfirmation.telemetrySeed,
       heldQueueConfirmation.requestedDelivery,
     );
   }, [heldQueueConfirmation, submit]);
@@ -1731,7 +1813,7 @@ function ConversationComposerImpl({
     void submit(
       "keepQueueAndSend",
       heldQueueConfirmation.queueItemIds,
-      heldQueueConfirmation.localTtft,
+      heldQueueConfirmation.telemetrySeed,
       heldQueueConfirmation.requestedDelivery,
     );
   }, [heldQueueConfirmation, submit]);
@@ -1818,6 +1900,24 @@ function ConversationComposerImpl({
   const resolvedSendTooltipShortcut = modifierTooltip?.shortcut ?? sendShortcut;
   const stopTooltipTitle = intl.formatMessage({ id: "chat.stop" });
   const visibleError = error && !shouldSuppressChatErrorBanner(error) ? error : null;
+
+  useEffect(() => {
+    if (!visibleError || !conversationTelemetry || !telemetryVisible) return;
+    const telemetryKey = [
+      visibleError.taskId ?? sessionId ?? "",
+      visibleError.code ?? "",
+      visibleError.traceId ?? "",
+      visibleError.message,
+    ].join(":");
+    if (reportedErrorKeysRef.current.has(telemetryKey)) return;
+    reportedErrorKeysRef.current.add(telemetryKey);
+    // 错误只有经过 suppression 后真实进入 render 才曝光；同一 composer mount 相同 key 一次。
+    conversationTelemetry.reportVisibleChatError({
+      errorKey: telemetryKey,
+      displayMessage: resolveChatErrorBannerDisplayMessage(visibleError, intl),
+      error: visibleError,
+    });
+  }, [conversationTelemetry, intl, sessionId, telemetryVisible, visibleError]);
 
   const attachmentAction = useMemo(
     () => ({
@@ -2588,6 +2688,7 @@ function ConversationComposerImpl({
               : undefined
           }
           onChange={handleEditorChange}
+          onFocus={handleEditorFocus}
           onSubmit={handleEditorSubmit}
           onWhiteboardMentionSelected={attachmentsApi.handleWhiteboardMentionSelected}
           onPaste={attachmentsApi.handlePaste}
@@ -2617,8 +2718,11 @@ function ConversationComposerImpl({
         open={heldQueueConfirmation !== null}
         onOpenChange={(open) => {
           if (!open && !pendingRef.current) {
-            if (heldQueueConfirmation?.localTtft)
-              getLocalTtftObserver()?.exclude(heldQueueConfirmation.localTtft, "cancelled");
+            if (heldQueueConfirmation?.telemetrySeed.localTtft)
+              getLocalTtftObserver()?.exclude(
+                heldQueueConfirmation.telemetrySeed.localTtft,
+                "cancelled",
+              );
             setHeldQueueConfirmation(null);
           }
         }}
