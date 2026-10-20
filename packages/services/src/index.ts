@@ -70,14 +70,28 @@ export type {
   ZCodeModelTrajectoryMessage,
   ZCodeModelTrajectoryRecord,
   ZCodeModelTrajectoryUsage,
-  ZCodeTaskListKind,
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-  ZCodeTaskListSortBy,
-  ZCodeTaskListWorkspaceScope,
   ZCodeTaskReadyOutcome,
 } from "./session/zcodeTaskService.js";
-export type { ZCodeTaskListItem } from "./session/zcodeTaskListTypes.js";
+// fork：分组任务视图类型仍由 session/zcodeTaskListTypes 承载（上游 3.16 已删，fork UI 继续使用）。
+export type {
+  ZCodeTaskGroup,
+  ZCodeTaskGroupColor,
+  ZCodeGroupedTaskRef,
+  ZCodeGroupedTaskViewNode,
+  ZCodeGroupedTaskView,
+  ZCodeGroupedTaskViewQuery,
+  ZCodeGroupedTaskViewStructureMember,
+  ZCodeGroupedTaskViewStructureTopOrder,
+  ZCodeGroupedTaskViewStructure,
+  ZCodeGroupedTaskViewOrderInput,
+  ZCodeGroupedTaskViewTopLevelNodeRef,
+  ZCodeTaskListKind,
+  ZCodeTaskListSortBy,
+  ZCodeTaskListWorkspaceScope,
+  ZCodeTaskListQuery,
+  ZCodeTaskListItem,
+  ZCodeTaskListResult,
+} from "./session/zcodeTaskListTypes.js";
 
 export { IWindowControllerService } from "./window-controller/windowController.js";
 export type {

@@ -669,8 +669,35 @@ export interface WebRemoteControlTaskTarget {
   unreadAt?: number;
 }
 
+// fork：手机任务列表仍走任务快照投影；上游 3.16 已删任务面，这里保留类型供 fork UI 合同。
+export type WebRemoteControlTaskDisplayStatus = "idle" | "running" | "completed" | "error";
+
+export interface WebRemoteControlTaskTarget {
+  taskId: string;
+  title: string;
+  workspacePath: string;
+  workspaceIdentity?: string;
+  remoteSessionId?: string;
+  workspaceLabel: string;
+  workspaceKind: "local" | "remote";
+  createdAt: number;
+  updatedAt: number;
+  provider?: ZCodeProvider;
+  unreadAt?: number;
+  displayStatus?: WebRemoteControlTaskDisplayStatus;
+  // 会话挂着后台工作（动态工作流 run / 后台 bash / 分离子代理）。只参与列表运行层排序，
+  // 不影响 displayStatus 图标；缺省视为 false，旧 desktop 快照照常解析。
+  hasBackgroundWork?: boolean;
+  // 工作流运行摘要（docs/dynamic-workflow/presentation.md「The sidebar run line」）：手机行在标题下
+  // 画与桌面一致的运行行。只绘制，不参与排序或状态 pill；无 run 时缺席，旧 desktop 快照照常解析。
+  workflowActivity?: SessionWorkflowActivity;
+  pinned?: boolean;
+  archived?: boolean;
+}
+
 export interface WebRemoteControlWorkspaceListResult {
   workspaces: WebRemoteControlWorkspaceTarget[];
+  tasks?: WebRemoteControlTaskTarget[];
   activeWorkspaceKey?: string;
   activeTaskId?: string;
 }
