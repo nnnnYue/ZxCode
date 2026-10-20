@@ -10,7 +10,6 @@ import {
   buildRegistryModelSelectGroups,
   type ModelProviderGroupLabelOptions,
 } from "@/lib/modelSelectionGroups.js";
-import { formatTeamPlanDisplayName } from "@/lib/teamPlanDisplayName.js";
 export interface ComposerConnection {
   key: string;
   label: string;
@@ -133,9 +132,8 @@ export function buildComposerPlanGroups(
       for (const project of product.teamProjects?.length ? product.teamProjects : [product]) {
         const organizationId = project.organizationId?.trim();
         const projectId = project.projectId?.trim();
-        const label = formatTeamPlanDisplayName({
-          organizationName: project.organizationName ?? product.organizationName,
-        });
+        // fork：套餐展示名模块已随域剔除；直接用组织名做中性标注。
+        const label = (project.organizationName ?? product.organizationName ?? "").trim();
         // 不可用是明确的凭据事实；unknown 仅表示尚未确认，不能误当不可用隐藏。
         if (
           !organizationId ||
