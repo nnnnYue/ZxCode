@@ -49,12 +49,10 @@ import { ProjectSidebarListHeader } from "@/project-sidebar/ProjectSidebarListHe
 import { ProjectSidebarNavigation } from "@/project-sidebar/ProjectSidebarNavigation.js";
 import { HomeOnlyWorkspaceRows } from "@/project-sidebar/HomeOnlyWorkspaceRows.js";
 import { WorkspaceSidebarFooter } from "@/WorkspaceSidebarFooter.js";
-import { SidebarBottomActivity } from "@/sidebar-activity/SidebarBottomActivity.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useTabStoreApi } from "@/store/TabStoreProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
-import { useCodingPlanUpgradeDialog } from "@/settings/CodingPlanUpgradeDialogProvider.js";
 export { attachRemoteProjectWorkspace } from "@/project-sidebar/remote-navigation.js";
 export { resolveEntryProject } from "@/project-sidebar/view.js";
 export type {
@@ -84,7 +82,6 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   const { intl, localePreference, setLocalePreference } = useZCodeIntl();
   const tabStore = useTabStoreApi();
   const setTheme = useZCodeStore((state) => state.setTheme);
-  const { openCodingPlanUpgrade } = useCodingPlanUpgradeDialog();
   const { view, setView } = preferences;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [groupedToolbar, setGroupedToolbar] = useState<HTMLDivElement | null>(null);
@@ -205,13 +202,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
     [setLocalePreference],
   );
   const changeTheme = useCallback((value: string) => setTheme(value as Theme), [setTheme]);
-  const upgrade = useCallback<
-    NonNullable<Parameters<typeof WorkspaceSidebarFooter>[0]["onUpgradeClick"]>
-  >(
-    (providerId, funnelContext) => openCodingPlanUpgrade({ providerId, funnelContext }),
-    [openCodingPlanUpgrade],
-  );
-  const banner = useMemo(() => <SidebarBottomActivity />, []);
+  // fork：套餐升级入口与营销活动横幅已随域剔除；页脚不再注入这两项。
   // 手机远控 home-only 没有 base attachment，也就没有项目契约；改用 relay 层工作区列表与重连入口。
   const homeOnlySwitcher = service ? undefined : props.webRemoteControlWorkspaceSwitcher;
   return (
@@ -332,16 +323,11 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                 onThemeChange={changeTheme}
                 onSettingsButtonClick={openSettings}
                 onUsageClick={openSettings}
-                onUpgradeClick={upgrade}
-                onLogin={props.onLogin}
-                onLogout={props.onLogout}
-                user={props.user}
                 workspacePath={props.workspacePath}
                 // 项目侧栏不再从 tab 反推身份；远控入口必须沿用当前 attachment 的精确 scope。
                 workspaceIdentity={props.workspaceIdentity}
                 workspaceRemoteSessionId={props.workspaceRemoteSessionId}
                 isDesktop={props.isDesktop}
-                banner={banner}
               />
             </div>
           </div>

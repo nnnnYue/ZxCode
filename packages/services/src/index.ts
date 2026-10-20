@@ -94,6 +94,7 @@ export type {
 } from "./session/zcodeTaskListTypes.js";
 
 export { IWindowControllerService } from "./window-controller/windowController.js";
+export type { WindowHostTaskUnreadSignal } from "#src/window-controller/windowController.js";
 export type {
   WindowHostControllerFrame,
   WindowHostControllerMutation,

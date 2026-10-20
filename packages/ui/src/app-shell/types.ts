@@ -84,6 +84,16 @@ export interface CreateTaskOptions {
 }
 
 export type CreateTaskRequest = ZCodeProvider | CreateTaskOptions;
+export interface RemoteWorkspaceRecoveryStatus {
+  mode: "automatic" | "manual";
+  attempt?: number;
+  limit?: number;
+}
+
+/** 仅用于 Renderer 连接反馈，不传入 Host 的恢复/遥测协议。 */
+export interface RemoteConnectionFeedbackOptions {
+  announceReusedConnection?: boolean;
+}
 
 export interface AppProps {
   services: IServiceAccessor;
