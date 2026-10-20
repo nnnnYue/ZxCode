@@ -273,6 +273,12 @@ export interface SessionPaneProps {
   /** deleteSession：删除当前会话后回到 draft（shell 起新草稿）。 */
   onSessionDeleted?: () => void;
   /** 隐藏副屏的 child 已不存在时，由宿主移除对应 tab。 */
+  /** 低基数打开入口（上游 3.16 透传；fork 无 ARMS 打开遥测，仅接收）。 */
+  openTrigger?: string;
+  /** 上游 3.16 透传；fork 无 ARMS 会话遥测，仅接收不消费。 */
+  telemetryVisible?: boolean;
+  /** 上游 3.16：右侧面板关闭时主区 focused pane 可接收对话外 Esc。 */
+  allowEscapeStopOutsidePane?: boolean;
   onSelectionSideChatUnavailable?: () => void;
   /** 上游 3.16 透传；fork 无 ARMS 会话遥测，仅接收不消费。 */
   telemetryVisible?: boolean;

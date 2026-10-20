@@ -569,20 +569,7 @@ function createWebPlatform(options?: {
     openExternal: (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    // Fork 已移除 web 反馈入口配置；platform 接口仍要求该方法，保留空实现。
-    openFeedback: async () => {},
-    openCommunity: async () => {
-      const locale = document.documentElement.lang === "en-US" ? "en-US" : "zh-CN";
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      if (!communityUrl) {
-        return;
-      }
-      window.open(communityUrl, "_blank", "noopener,noreferrer");
-    },
-    canOpenCommunity: async (locale) => {
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      return typeof communityUrl === "string" && communityUrl.length > 0;
-    },
+    // fork：openFeedback/openCommunity 已从平台合同剔除。
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
@@ -1103,6 +1090,7 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       listStyles: async () => ({ styles: [] }),
       getUserStylesDirectory: async () => ({ path: "" }),
     }),
+    sourceServerWorkspaceService: createEmptyHomeOnlyService<RootServices["sourceServerWorkspaceService"]>({}),
     settingsSyncService:
       createUnsupportedHomeOnlyService<RootServices["settingsSyncService"]>("settingsSyncService"),
   };
