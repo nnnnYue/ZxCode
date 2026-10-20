@@ -96,6 +96,12 @@ export interface RootProps {
   initialWorkspaceLoadingFallback?: ReactNode;
   /** Web 远程控制入口能力开关；默认只在 development 启用 */
   webRemoteControlFeatureEnabled?: boolean;
+  /** fork：手机首屏任务快照（desktop main 经 bootstrap 带入）；上游 3.16 改走 sessions-index。 */
+  initialWebRemoteControlWorkspaceList?: import("@zcode/shared").WebRemoteControlWorkspaceListResult;
+  reconnectingRemoteWorkspaceLogsByWorkspaceKey?: Record<
+    string,
+    import("@zcode/shared").RemoteConnectionLogEntry[]
+  >;
   /** Assistant code-comment 卡片灰度；默认关闭，关闭时保留原始 directive。 */
   assistantCodeCommentCardsEnabled?: boolean;
 }

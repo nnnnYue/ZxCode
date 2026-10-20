@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- 通信频道和请求响应映射必须集中定义，避免跨进程 channel 字符串散落。 */
-import type { WebRemoteControlAuthStateChange } from "./web-remote-control.js";
+import type { WebRemoteControlAuthStateChange, WebRemoteControlTaskTarget } from "./web-remote-control.js";
 import type {
   ResourceUsageSnapshot,
   LoadCliMcpFromUserDirectoryRequest,
@@ -242,6 +242,8 @@ export const PlatformChannels = {
   SyncWindowTabs: "zxcode:sync-window-tabs",
   /** Renderer → Main：同步当前窗口可供 Web 远程控制切换的 workspace */
   SyncWebRemoteControlWorkspaces: "zxcode:sync-web-remote-control-workspaces",
+  /** fork：Renderer → Main：同步当前窗口可供 Web 远程控制展示的 task 快照（手机任务列表）。 */
+  SyncWebRemoteControlTasks: "zxcode:sync-web-remote-control-tasks",
   /** Main → Renderer：手机端请求重连当前窗口里的远程 workspace */
   WebRemoteControlReconnectWorkspace: "zxcode:web-remote-control-reconnect-workspace",
   /** Renderer → Main：同步当前窗口的未读 task 数 */
@@ -798,6 +800,10 @@ export interface PlatformChannelMap {
   };
   [PlatformChannels.SyncWebRemoteControlWorkspaces]: {
     request: WebRemoteControlWorkspaceTarget[];
+    response: void;
+  };
+  [PlatformChannels.SyncWebRemoteControlTasks]: {
+    request: WebRemoteControlTaskTarget[];
     response: void;
   };
   [PlatformChannels.WebRemoteControlReconnectWorkspace]: {

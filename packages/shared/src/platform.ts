@@ -916,6 +916,9 @@ export interface IPlatformService {
   /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程（用于跨窗口去重） */
   syncWindowTabs(paths: string[]): void;
 
+  /** fork：同步当前窗口可供 Web 远程控制展示的 task 快照（手机任务列表）；Web 不实现。 */
+  syncWebRemoteControlTasks?(tasks: import("./web-remote-control.js").WebRemoteControlTaskTarget[]): void;
+
   /** 同步当前窗口里 Web 远程控制允许切换的 workspace；Web fallback 可忽略 */
   syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
 
