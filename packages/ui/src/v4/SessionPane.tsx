@@ -274,6 +274,10 @@ export interface SessionPaneProps {
   onSessionDeleted?: () => void;
   /** 隐藏副屏的 child 已不存在时，由宿主移除对应 tab。 */
   onSelectionSideChatUnavailable?: () => void;
+  /** 上游 3.16 透传；fork 无 ARMS 会话遥测，仅接收不消费。 */
+  telemetryVisible?: boolean;
+  /** 上游 3.16：右侧面板关闭时主区 focused pane 可接收对话外 Esc。 */
+  allowEscapeStopOutsidePane?: boolean;
   /**
    * Focus 层：全局快捷键（Esc stop）与 add-to-chat 事件只路由到
    * focused pane。单 pane 消费者（V4ChatPane）缺省 true。

@@ -120,9 +120,149 @@ export interface WebRemoteControlV2QrParams {
   appVersion?: string;
 }
 
-export type BuildWebRemoteControlExternalQrUrlOptions = WebRemoteControlV2QrParams & {
+// ============================================================================
+// fork：自部署手机远控 relay 的 v1 协议类型（upstream 3.16 只保留 v2 登录门控协议）。
+// packages/relay 为 v1 单进程实现，desktop transport 仍按 v1 说话；类型从 fork
+// 3.15.1-ce.1 原样回填，保持与 relay 服务端逐字段一致。
+// ============================================================================
+
+
+/** fork：relay v1 心跳参数（desktop transport 使用）。 */
+export const WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS = 30_000;
+export const WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS = 10_000;
+export type WebRemoteControlRelayRole = "device" | "terminal";
+// Bugfix: zcode-remote-hub 当前只会把配对状态表示为 waiting/matched；
+// KICKED、WRONG_PARAM 等是 error code，不是 pair_status。这里收窄共享类型，
+// 避免客户端把不存在的 rejected/kicked 配对状态误判成桌面端 WS 需要关闭。
+export type WebRemoteControlRelayPairStatus = "waiting" | "matched";
+export type WebRemoteControlRelayErrorCode =
+  | "AUTH_FAILED"
+  | "DEVICE_OFFLINE"
+  | "KICKED"
+  | "WRONG_PARAM"
+  | "INTERNAL";
+
+export interface WebRemoteControlRelayOutgoingBase {
+  client_ts?: number;
+}
+
+export interface WebRemoteControlRelayIncomingBase {
+  server_ts?: number;
+}
+
+export interface WebRemoteControlRelayDeviceRegisterInit extends WebRemoteControlRelayOutgoingBase {
+  type: "device_register_init";
+  device_mid: string;
+  pass_hash: string;
+  meta: WebRemoteControlRelayDeviceMeta;
+}
+
+export interface WebRemoteControlRelayDeviceRegisterAck extends WebRemoteControlRelayIncomingBase {
+  type: "device_register_ack";
+  device_sid: string;
+}
+
+export interface WebRemoteControlRelayAuthInit extends WebRemoteControlRelayOutgoingBase {
+  type: "auth_init";
+  role: WebRemoteControlRelayRole;
+  device_sid: string;
+  meta: WebRemoteControlRelayDeviceMeta;
+}
+
+export interface WebRemoteControlRelayAuthChallenge extends WebRemoteControlRelayIncomingBase {
+  type: "auth_challenge";
+  nonce: string;
+}
+
+export interface WebRemoteControlRelayAuthResponse extends WebRemoteControlRelayOutgoingBase {
+  type: "auth_response";
+  device_sid: string;
+  proof: string;
+}
+
+export interface WebRemoteControlRelayAuthAck extends WebRemoteControlRelayIncomingBase {
+  type: "auth_ack";
+  device_sid: string;
+  terminal_sid?: string;
+  pair_status: WebRemoteControlRelayPairStatus;
+}
+
+export interface WebRemoteControlRelayPairStatusQuery extends WebRemoteControlRelayOutgoingBase {
+  type: "pair_status_query";
+  device_sid: string;
+}
+
+export interface WebRemoteControlRelayPairStatusAck extends WebRemoteControlRelayIncomingBase {
+  type: "pair_status_ack";
+  terminal_sid?: string;
+  pair_status: WebRemoteControlRelayPairStatus;
+}
+
+export interface WebRemoteControlRelayDataMessage<TPayload = unknown>
+  extends WebRemoteControlRelayOutgoingBase, WebRemoteControlRelayIncomingBase {
+  type: "data";
+  payload: TPayload;
+}
+
+export interface WebRemoteControlRelayError extends WebRemoteControlRelayIncomingBase {
+  type: "error";
+  code: WebRemoteControlRelayErrorCode;
+  message: string;
+}
+
+export type WebRemoteControlRelayOutgoingMessage =
+  | WebRemoteControlRelayDeviceRegisterInit
+  | WebRemoteControlRelayAuthInit
+  | WebRemoteControlRelayAuthResponse
+  | WebRemoteControlRelayPairStatusQuery
+  | WebRemoteControlRelayDataMessage<WebRemoteControlAppPayload>;
+
+export type WebRemoteControlRelayIncomingMessage =
+  | WebRemoteControlRelayDeviceRegisterAck
+  | WebRemoteControlRelayAuthChallenge
+  | WebRemoteControlRelayAuthAck
+  | WebRemoteControlRelayPairStatusAck
+  | WebRemoteControlRelayDataMessage<WebRemoteControlAppPayload>
+  | WebRemoteControlRelayError;
+
+export interface WebRemoteControlRelayAuthProofVector {
+  passHash: string;
+  nonce: string;
+  role: WebRemoteControlRelayRole;
+  deviceSid: string;
+  proof: string;
+}
+
+export const WEB_REMOTE_CONTROL_RELAY_AUTH_PROOF_VECTORS: WebRemoteControlRelayAuthProofVector[] = [
+  {
+    passHash: "dGVzdF9oYXNo",
+    nonce: "nonce-1",
+    role: "device",
+    deviceSid: "device-1",
+    proof: "XK0m7u-26VS88uk7ISAX5Z_9pjzq8jqyP77N-HkCsPE",
+  },
+  {
+    passHash: "dGVzdF9oYXNo",
+    nonce: "nonce-1",
+    role: "terminal",
+    deviceSid: "device-1",
+    proof: "YkqkJy-p-iZK1g1AcoGd0Q83REOggX1EygWkcxW4oLU",
+  },
+];
+
+export interface WebRemoteControlExternalQrParams {
+  deviceSid: string;
+  passHash: string;
+  timestamp: number;
+  deviceMid?: string;
+  deviceName?: string;
+  appVersion?: string;
+  theme?: WebRemoteControlThemeSeed;
+}
+
+export interface BuildWebRemoteControlExternalQrUrlOptions extends WebRemoteControlExternalQrParams {
   baseUrl: string;
-};
+}
 
 function readNonEmptySearchParam(params: URLSearchParams, name: string): string | undefined {
   const value = params.get(name)?.trim();

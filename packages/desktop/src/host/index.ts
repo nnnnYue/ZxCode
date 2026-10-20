@@ -38,7 +38,6 @@ import {
   IBotsService,
   ICredentialService,
   IFileService,
-  IClientConfigService,
   IMediaPreviewService,
   IRemoteProjectService,
   type RemoteProjectHost,
@@ -49,7 +48,6 @@ import {
   ISettingService,
   ISourceServerManagementService,
   IWindowControllerService,
-  IConversationShareService,
   IPromptAttachmentTransferService,
   IZCodeAgentService,
   IZCodeTaskService,
@@ -563,7 +561,14 @@ function trackCronRunOutcome(params: {
  * 把一次 cron/manual run 直接提交给当前 host 的 V4 task service。
  * 会话内 automation 可能绑定到未激活 session，必须先恢复再应用保存的运行参数。
  */
-async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
+async function dispatchCronRun(request: {
+  taskId: string;
+  traceId: string;
+  automationId: string;
+  runId: string;
+  scheduledAt?: number;
+  [key: string]: unknown;
+}): Promise<{
   taskId: string;
   sessionId: string;
 }> {
@@ -1442,7 +1447,6 @@ async function createWindowRemoteConnectionHandle(params: {
   confirmSourceServerInstall?: boolean;
 }): Promise<WindowRemoteConnectionHandle<ServiceCollection, HostRemoteConnectionCapabilities>> {
   if (!activeServices) throw new Error("Local Host services are not initialized.");
-  const clientConfigService = activeServices.get(IClientConfigService);
   if (params.signal.aborted) {
     throw new Error("远程连接已取消");
   }
@@ -1620,7 +1624,6 @@ async function createWindowRemoteConnectionHandle(params: {
         },
       };
       services = createServerRemoteWorkspaceServiceCollection({
-        clientConfigService,
         connectionServices: reconnected.services,
         virtualProjects: reconnected.serverInfo.capabilities.virtualProjects,
         serverId: reconnected.serverInfo.serverId,
@@ -1640,7 +1643,6 @@ async function createWindowRemoteConnectionHandle(params: {
   }
 
   services = createServerRemoteWorkspaceServiceCollection({
-    clientConfigService,
     connectionServices: connection.services,
     virtualProjects: connection.serverInfo.capabilities.virtualProjects,
     serverId: connection.serverInfo.serverId,
@@ -3257,9 +3259,9 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
         activeSessionRealtimePort = createTaskRealtimeBridgeForHostInit(msg, parentPort);
         // 旧 Team 补组织必须与网络代理读取共用同一个 Setting 实例及写队列。
         // 只注入 service 会跳过默认装配分支，导致缺组织的升级用户永远无法恢复连接。
+        // fork：prepareLegacyAccountConnections（账号组织迁移）已随域剔除，仅取 service 与投影。
         const {
           service: settingService,
-          prepareLegacyAccountConnections,
           setWorkspaceProjection,
         } = createSettingServiceWithMigrations();
         const hostApiNetworkTransport = createHostApiNetworkTransport(async () => {
@@ -3444,7 +3446,6 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
               },
               parentPort,
               settingService,
-              prepareLegacyAccountConnections,
               hostApiNetworkTransport,
               resolveClientLanguage: () => applicationLocale,
               authorizeLocalMediaPreviewPath,
