@@ -1,336 +1,8 @@
-import { requestSecurityMessagesEnUS } from "@/request-security-edition/messages.js";
 /** English translations */
 const enUS: Record<string, string> = {
-  "preview.image.copy": "Copy image",
-  "preview.image.actions": "Image actions",
-  "preview.image.added": "Added to chat",
-  "preview.image.addFailed":
-    "Could not add the image. Open an editable chat in this workspace first.",
-  "preview.image.copied": "Image copied",
-  "preview.image.copyFailed": "Could not copy image. Check clipboard access and try again.",
-  "archives.nav": "Archive management",
-  "archives.title": "Archived sessions",
-  "archives.deleteAll": "Delete all",
-  "archives.search": "Search archived sessions",
-  "archives.clearSearch": "Clear search",
-  "archives.sortLabel": "Sort by",
-  "archives.sort.updated": "Updated time",
-  "archives.sort.created": "Created time",
-  "archives.projectLabel": "Project",
-  "archives.allProjects": "All projects",
-  "archives.unclassified": "Unclassified",
-  "archives.removedProject": "Removed project",
-  "archives.removed": "Removed",
-  "archives.count": "{count} sessions",
-  "archives.groupActions": "Archive actions for {name}",
-  "archives.delete": "Delete",
-  "archives.deleteTask": "Delete “{title}”",
-  "archives.unarchive": "Unarchive",
-  "archives.unarchiveAll": "Unarchive all",
-  "archives.showMore": "Show more",
-  "archives.deleteTitle": "Delete {count} archived sessions?",
-  "archives.deleteDescription":
-    "Only the sessions in this confirmed selection will be deleted. You cannot restore them in the app.",
-  "archives.working": "Processing…",
-  "archives.result": "Succeeded: {succeeded}; failed: {failed}; skipped after changes: {skipped}",
-  "archives.loadFailed": "Could not load archived sessions",
-  "archives.retry": "Retry",
-  "archives.loading": "Loading archived sessions…",
-  "archives.empty": "No archived sessions",
-  "archives.noResults": "No matching archived sessions",
-  "project.switchDevice": "Switch device?",
-  "project.switchDeviceDescription":
-    "The selected folders will be cleared. The project name will be kept.",
-  "project.connectAndBrowse": "Connect and choose folder",
-  "project.hostRemoved": "This device was removed from the project list. Select a device again.",
-  "project.connectionUnavailable": "This device is unavailable. Reconnect it in settings.",
-  "project.addRemoteDevice": "Add remote device…",
-  "project.deviceStatus.online": "Online",
-  "project.deviceStatus.offline": "Offline",
-  "project.deviceStatus.connecting": "Connecting",
-  "project.deviceStatus.pending": "Needs attention",
-  "project.deviceStatus.failed": "Failed",
-  "project.device": "Device",
-  "project.thisComputer": "This computer",
-  "project.hasUnread": "Project has unread tasks",
-  "project.projectOrder": "Project order",
-  "project.taskOrder": "Task order",
-  "project.browseHint": "ZCode can read and edit these folders",
-  "project.connectAndBrowseHint": "Device status: {status}. ZCode connects first.",
-  "project.selectHost": "Choose a remote connection",
-  "project.back": "Back",
-  "project.next": "Next",
-  "project.remoteDescription": "Choose folders on a connected computer",
-  "project.localDescription": "Edit, run, and test files on your computer",
-  "project.remote": "Remote",
-  "project.local": "Local",
-  "project.type": "Project type",
-  "project.create": "Create project",
-  "project.trustFolderTitle": "Trust this folder?",
-  "project.trustFoldersTitle": "Trust these folders?",
-  "project.trustFoldersDescription":
-    "ZCode can read and edit files in these folders and run commands within your current permission settings. Continue only if you trust every folder listed.",
-  "project.trustFoldersAndCreate": "Trust folders and create",
-  "project.trustFoldersAndRestore": "Trust folders and restore",
-  "project.existingOnDeviceHint": "Already have projects on this device?",
-  "project.existingOnDeviceAction": "Add to sidebar",
-  "project.backToCreate": "Back to new project",
-  "project.noExistingProjects": "No existing projects on this device",
-  "project.addRemoteProject": "Add remote project",
-  "project.connect": "Connect",
-  "project.removeHost": "Remove connection",
-  "project.addHost": "Add connection",
-  "project.offline": "Offline",
-  "project.legacySingleRoot": "Single folder",
-  "project.legacyUpgradeRequired": "Upgrade the server to create and edit projects",
-  "project.unresolved": "Select a project",
-  "project.removeEntry": "Remove from this device",
-  "project.addFolder": "Add folder to project",
-  "project.projects": "Projects",
-  "project.timeline": "Timeline",
-  "project.view": "Filter view",
-  "taskGroup.newGroup": "New group",
-  "taskGroup.emptyDropZoneAction": "New task, or drag here.",
-  "taskGroup.renameAction": "Rename",
-  "taskGroup.color": "Group color",
-  "taskGroup.changeColor": "Change color",
-  "taskGroup.moveToGroup": "Move to group",
-  "taskGroup.moveToTop": "Move to top",
-  "taskGroup.removeFromGroup": "Remove from group",
-  "taskGroup.createFailed": "Could not create group",
-  "taskGroup.renameFailed": "Could not rename group",
-  "taskGroup.colorFailed": "Could not update group color",
-  "taskGroup.ungroupFailed": "Could not ungroup tasks",
-  "taskGroup.updateFailed": "Could not update group order",
-  "taskGroup.view": "By group",
-  "taskGroup.add": "New group",
-  "taskGroup.defaultTitle": "New group",
-  "taskGroup.move": "Move to group",
-  "taskGroup.remove": "Remove from group",
-  "taskGroup.noGroups": "No groups",
-  "taskGroup.failed": "Group action failed. Please retry.",
-  "taskGroup.retryPlacement": "Retry group placement",
-  "taskGroup.expandAll": "Expand all groups",
-  "taskGroup.collapseAll": "Collapse all groups",
-  "taskGroup.expand": "Expand group",
-  "taskGroup.collapse": "Collapse group",
-  "taskGroup.reorder": "Drag to reorder",
-  "taskGroup.newTask": "New task in group",
-  "taskGroup.menu": "Group actions",
-  "taskGroup.rename": "Rename group",
-  "taskGroup.ungroup": "Ungroup",
-  "taskGroup.empty": "Drag tasks into this group",
-  "taskGroup.cron": "Scheduled tasks",
-  "taskGroup.offPeak": "Off-peak tasks",
-  "taskGroup.color.gray": "Gray",
-  "taskGroup.color.red": "Red",
-  "taskGroup.color.orange": "Orange",
-  "taskGroup.color.yellow": "Yellow",
-  "taskGroup.color.green": "Green",
-  "taskGroup.color.blue": "Blue",
-  "taskGroup.color.purple": "Purple",
-  "project.viewByProject": "By project",
-  "project.viewRecentlyUpdated": "Recently updated",
-  "project.archived": "Archived",
-  "project.sort": "Sort projects",
-  "project.manual": "Project order",
-  "project.recent": "Recent activity",
-  "project.expandAll": "Expand all projects",
-  "project.collapseAll": "Collapse all projects",
-  "project.new": "New project",
-  "project.tasks": "Tasks",
-  "project.createTask": "New task",
-  "project.showMore": "Show more",
-  "project.restore": "Restore project",
-  "project.edit": "Edit project",
-  "project.deviceSettings": "Remote device settings",
-  "project.description":
-    "Group folders on the same host. Existing tasks keep their working directory.",
-  "project.name": "Project name",
-  "project.folders": "Source folders",
-  "project.primary": "Primary folder",
-  "project.primaryBadge": "Primary",
-  "project.setPrimary": "Set as primary",
-  "project.addSourceFolder": "Add folder",
-  "project.removeFolder": "Remove folder",
-  "project.folderPath": "Folder path",
-  "project.add": "Add",
-  "project.browse": "Choose folder",
-  "project.noFolders": "No source folders in this project",
-  "project.primaryRootMissing": "This project's main folder has been deleted or moved",
-  "project.primaryRootUnavailable": "This project's main folder cannot be accessed",
-  "project.cancel": "Cancel",
-  "project.save": "Save",
-  "project.restoreDescription": "A deleted project {name} uses the same folders. Restore it?",
-  "project.actions": "Project actions",
-  "project.unpin": "Unpin",
-  "project.pin": "Pin",
-  "project.delete": "Delete project",
-  "settings.source.currentProfile": "Current",
-  "settings.source.info.version": "Version",
-  "settings.source.info.hostname": "Hostname",
-  "settings.source.info.osUser": "System user",
-  "settings.source.info.deviceId": "Device ID",
-  "settings.source.unfinishedConnections": "Unfinished connections",
-  "settings.source.clearUnfinished": "Clear all",
-  "settings.source.clearUnfinishedDescription":
-    "Delete all unfinished connection records. Previously connected devices are kept.",
-  "remote.chooseLater": "Choose later",
-  "remote.conversation.unavailable": "Reconnect to continue working.",
-  "remote.conversation.tasksContinue": "Tasks already running on the device will continue.",
-  "remote.conversation.reconnect": "Reconnect",
-  "remote.conversation.placeholder":
-    "Device disconnected. Reconnect to continue this conversation.",
-  "remote.conversation.sendUnavailable": "Device disconnected. Sending is unavailable.",
-  "remote.conversation.draft": "Unsent draft",
-  "remote.status.online": "Connected",
-  "remote.status.connecting": "Connecting",
-  "remote.status.offline": "Not connected",
-  "remote.status.pending": "Needs attention",
-  "remote.status.failed": "Connection failed",
-  "remote.status.updating": "Updating",
-  "remote.status.needsInstall": "Installation required",
-  "remote.status.needsUpdate": "Update required",
-  "remote.status.needsIdentity": "Confirm new device",
-  "remote.status.needsCredentials": "Password required",
-  "remote.action.connect": "Connect",
-  "remote.action.disconnect": "Disconnect",
-  "remote.action.cancel": "Cancel connection",
-  "remote.action.update-server": "Update remote device",
-  "remote.action.update-desktop": "Update desktop app",
-  "remote.action.install": "Install and connect",
-  "remote.action.confirm-identity": "Use as a new device",
-  "remote.reusedConnection":
-    "This device is already connected through {connection}. The existing connection is now in use.",
-  "remote.connectionCancelled": "Cancelled",
-  "remote.cancelConnection": "Cancel connection",
-  "remote.action.credentials": "Enter password",
-  "remote.action.edit-auth": "Edit password or key",
-  "remote.action.edit-host": "Edit host",
-  "remote.action.security": "View security information",
-  "remote.action.details": "View details",
-  "remote.action.retry": "Retry",
-  "remote.action.none": "",
-  "remote.error.authentication": "SSH authentication failed",
-  "remote.error.details": "Details",
-  "remote.error.hostUnreachable.reason":
-    "Check the device address and port, and make sure it is running and reachable.",
-  "remote.error.connectionTimeout.reason":
-    "The device did not respond in time. Check your connection and retry.",
-  "remote.error.hostNotFound.reason": "Check the hostname or try an IP address.",
-  "remote.error.hostKeyChanged.reason":
-    "The device identity differs from the saved record. Verify it with your administrator before updating your known hosts.",
-  "remote.error.downloadFailed.reason":
-    "The installation package could not be downloaded. Check your connection and retry.",
-  "remote.error.uploadFailed.reason":
-    "The installation package could not be sent to the device. Check your connection and retry.",
-  "remote.error.preflightFailed.reason":
-    "The device does not meet the installation requirements. View details.",
-  "remote.error.installFailed.reason": "Installation did not complete. View details and retry.",
-  "remote.error.spaceInsufficient.reason": "Free up disk space on the device and retry.",
-  "remote.error.permissionDenied.reason":
-    "The current user cannot write to the installation directory. Check its permissions.",
-  "remote.error.connectionCanceled.reason":
-    "The connection was canceled. You can reconnect at any time.",
-  "remote.error.credentialsRequired.reason":
-    "Enter the password or key passphrase for this connection.",
-  "remote.error.authentication.reason":
-    "Check your SSH username, password or private key and retry.",
-  "remote.error.unknown.reason": "Unable to connect. Retry or view details.",
-  "remote.error.hostUnreachable.wsl": "Cannot access WSL distribution",
-  "remote.error.hostUnreachable.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.hostUnreachable.docker": "Cannot access container",
-  "remote.error.hostUnreachable.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.connectionTimeout.wsl": "WSL connection timed out",
-  "remote.error.connectionTimeout.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.connectionTimeout.docker": "Container connection timed out",
-  "remote.error.connectionTimeout.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.hostNotFound.wsl": "Distribution not found",
-  "remote.error.hostNotFound.wsl.reason": "Make sure the distribution is installed and can start.",
-  "remote.error.hostNotFound.docker": "Container not found",
-  "remote.error.hostNotFound.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.preflightFailed.wsl": "Distribution environment check failed",
-  "remote.error.preflightFailed.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.preflightFailed.docker": "Container environment check failed",
-  "remote.error.preflightFailed.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.installFailed.wsl": "Distribution installation failed",
-  "remote.error.installFailed.wsl.reason": "Make sure the distribution is installed and can start.",
-  "remote.error.installFailed.docker": "Container installation failed",
-  "remote.error.installFailed.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.spaceInsufficient.wsl": "Distribution is out of space",
-  "remote.error.spaceInsufficient.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.spaceInsufficient.docker": "Container is out of space",
-  "remote.error.spaceInsufficient.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.permissionDenied.wsl": "No write permission in distribution",
-  "remote.error.permissionDenied.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.permissionDenied.docker": "No write permission in container",
-  "remote.error.permissionDenied.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.sourceServerInstallRequired.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerIdentityChangePending.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerUpgradeRequired.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerRunningTasks.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceTaskIdentityConflict.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceConfigConflict.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.bindCanceled.reason": "View details, follow the instructions, and retry.",
-  "remote.error.bindSessionMissing.reason": "View details, follow the instructions, and retry.",
-  "remote.error.workspaceDirectoryUnavailable.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.recoveryBudgetExhausted.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceMigrationPlanDiverged.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceSessionGenerationChanged.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.retryableHint.reason": "View details, follow the instructions, and retry.",
-  "remote.error.connectionClosed.reason": "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-callback-missing.reason":
-    "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-callback-failed.reason":
-    "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-persist-failed.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.continueInBackground": "Continue in background",
-  "remote.copyLog": "Copy logs",
-  "remote.phaseSub.downloading": "Downloading installation package",
-  "remote.renameSaved": "Saved",
-  "remote.renameFailed": "Could not save. Try again.",
-  "remote.boundaryHint": "Remote tasks keep running when this computer is offline.",
-  "remote.dismissBoundaryHint": "Dismiss hint",
-  "remote.recentDirectories": "Recent",
-  "remote.status.connected": "Connected",
-  "remote.infoUnavailable": "Unavailable",
-  "remote.installSize": "Installation package size",
-  "remote.runningTasksUnavailable":
-    "The device did not provide a task list. Forcing the update will interrupt running tasks.",
-  "remote.transferTimeUnknown": "Estimating remaining time",
-  "remote.transferTimeRemaining": "About {seconds} s remaining",
-  "remote.phase.channel.ssh": "Connecting to SSH host",
-  "remote.phase.channel.wsl": "Starting and connecting to distribution",
-  "remote.phase.channel.docker": "Connecting to container",
-  "startPlan.recommendation.subagentDescription":
-    "Your Start Plan has quota available for {model}. Switch this subagent’s model to the Start Plan?",
-  "startPlan.recommendation.preferenceSaveFailed":
-    "Could not save “Don’t ask again”. Continuing with your choice for this operation.",
-  "startPlan.recommendation.title": "Start Plan quota available",
-  "startPlan.recommendation.description":
-    "Your Start Plan still has quota for {model}. Would you like to use it?",
-  "startPlan.recommendation.switch": "Switch plan",
-  "startPlan.recommendation.decline": "Not now",
-  "startPlan.recommendation.dismiss": "Don’t show again",
   "occupationOnboarding.stepMode": "UI mode",
   "occupationOnboarding.modeTitle": "Choose your UI mode",
-  "occupationOnboarding.modeDescription": "How would you like ZCode to show its work?",
+  "occupationOnboarding.modeDescription": "How would you like ZxCode to show its work?",
   "occupationOnboarding.coding": "Coding mode",
   "occupationOnboarding.codingDescription":
     "I want to see code, command output, and change details throughout the development process.",
@@ -381,27 +53,28 @@ const enUS: Record<string, string> = {
   "occupationOnboarding.migration": "Migrate conversations",
   "occupationOnboarding.migrationDescription": "Migrate conversation history from Claude Code",
   "occupationOnboarding.memory": "Enable Workspace Memory",
-  "occupationOnboarding.memoryDescription": "Let ZCode remember your preferences and work context.",
+  "occupationOnboarding.memoryDescription":
+    "Let ZxCode remember your preferences and work context.",
   "occupationOnboarding.suggestions": "Enable proactive task suggestions",
   "occupationOnboarding.suggestionsDescription":
     "Show suggestions in new conversations. Click to fill the composer.",
   "occupationOnboarding.close": "Exit onboarding",
-  "startup.global.silent": "Starting ZCode",
+  "startup.global.silent": "Starting ZxCode",
   "startup.global.upgrading": "Upgrading local data",
   "startup.global.initializing": "Initializing local data",
   "startup.global.waiting": "Waiting for database preparation",
   "startup.global.saving": "Saving updates",
   "startup.global.finishing": "Finishing startup",
   "startup.global.servicesFailed":
-    "Local data is ready, but app services failed to start. Copy the diagnostics, then exit and reopen ZCode.",
+    "Local data is ready, but app services failed to start. Copy the diagnostics, then exit and reopen ZxCode.",
   "startup.global.starting": "Preparing local data",
   "startup.global.preparing_host_storage": "Preparing task index",
   "startup.global.preparing_session_storage": "Preparing chat history",
-  "startup.global.starting_services": "Starting ZCode",
+  "startup.global.starting_services": "Starting ZxCode",
   "startup.global.ready": "Local data is ready",
   "startup.global.failed": "Startup preparation failed",
   "startup.global.help":
-    "ZCode will open when preparation finishes. Large histories may take longer. Please keep the app running.",
+    "ZxCode will open when preparation finishes. Large histories may take longer. Please keep the app running.",
   "startup.global.diagnostic": "Diagnostic ID",
   "startup.global.copy": "Copy diagnostics",
   "startup.global.exit": "Exit",
@@ -422,16 +95,15 @@ const enUS: Record<string, string> = {
   "startup.global.error.open_failed":
     "The database could not be opened. Check that the data directory exists and is accessible, then retry.",
   "startup.global.error.lock_timeout":
-    "Waiting for the database write lock timed out. Another ZCode or CLI process may be updating data. Retry after it finishes.",
+    "Waiting for the database write lock timed out. Another ZxCode or CLI process may be updating data. Retry after it finishes.",
   "startup.global.error.sql_failed":
     "Preparation did not finish. Copy the diagnostics and check the logs. Resolve the issue, then retry manually. The app will not retry automatically.",
   "startup.global.error.startup_status_timeout":
-    "No startup status was received. Exit and reopen ZCode. If it fails again, provide the diagnostics to support.",
+    "No startup status was received. Exit and reopen ZxCode. If it fails again, provide the diagnostics to support.",
   "startup.global.error.transport_closed":
-    "The preparation process exited or disconnected. Exit and reopen ZCode to check the migration records again.",
+    "The preparation process exited or disconnected. Exit and reopen ZxCode to check the migration records again.",
   "startup.global.error.unsupported_runtime":
-    "The configured Agent does not support storage preparation. Restore the bundled Agent, then reopen ZCode.",
-
+    "The configured Agent does not support storage preparation. Restore the bundled Agent, then reopen ZxCode.",
   "startup.database.checking": "Checking history",
   "startup.database.waiting_for_lock": "Waiting for another window to prepare data",
   "startup.database.migrating": "Upgrading history",
@@ -444,11 +116,6 @@ const enUS: Record<string, string> = {
   "startup.database.elapsed": "Elapsed: {minutes} min {seconds} sec",
   "startup.database.longRunning":
     "Large histories can take longer. The app is still waiting for the database to finish.",
-  "rewards.title": "Rewards",
-  "rewards.menuTitle": "Refer a friend",
-  "rewards.menuBadge": "Rewards",
-  "rewards.loadFailed": "Unable to load this page. Please retry.",
-  "rewards.openWebsite": "Open website",
   "bashOutput.open": "View output for {title}",
   "bashOutput.fullFile": "Full output file",
   "bashOutput.retry": "Retry",
@@ -458,9 +125,6 @@ const enUS: Record<string, string> = {
   "bashOutput.error.unsupported": "This runtime does not support background output",
   "bashOutput.error.read_failed": "Could not read the output file",
   "bashOutput.error.query_failed": "Could not connect to the task runtime",
-
-  "purchase.entry.loading": "Loading plans…",
-  "purchase.entry.retry": "Could not load plans. Retry",
   "bots.runtime.deliveryFailed": "Bot reply delivery failed",
   "bots.runtime.deliveryFailedDescription":
     "The message could not be delivered. Share the details below for troubleshooting. This notice clears after the next successful send.",
@@ -471,7 +135,6 @@ const enUS: Record<string, string> = {
   "chat.selections.file": "{name} · Selection",
   "chat.selections.mixedCount": "{count} selections",
   "chat.previewCards.openExternalFailed": "Could not open this file in the browser",
-  "settings.modelProvider.connectionMode.switchToStartPlan": "Switch to Start Plan",
   "chat.composer.contextSearchHint": "Type to search plugins, files, and chats",
   "chat.composer.contextShortcut": "Add context",
   "chat.composer.capabilityShortcut": "Choose capabilities",
@@ -481,12 +144,8 @@ const enUS: Record<string, string> = {
   "chat.composer.attachment": "Attachments",
   "chat.permission.feedback.ariaLabel": "Optional feedback for the model when denying",
   "chat.permission.feedback.placeholder": "Tell the model what to do instead...",
-  "offPeak.chatCreated.defaultTitle": "Idle-time task",
-  "offPeak.chatCreated.queued": "Queued for idle-time compute",
-  "offPeak.chatCreated.queuedAt": "#{position} in queue",
-  "offPeak.chatCreated.open": "Go to idle-time tasks",
   "settings.computerUse.disabledToast":
-    "Computer Use is disabled. Existing conversations require a ZCode restart to take effect.",
+    "Computer Use is disabled. Existing conversations require a ZxCode restart to take effect.",
   "settings.modelProvider.connectionUnavailableNotice": "The current plan is unavailable.",
   "settings.modelProvider.switchConnection": "Switch to “{connection}”",
   "settings.modelProvider.connectionSuggestionStale":
@@ -497,14 +156,6 @@ const enUS: Record<string, string> = {
     "The selected connection is unavailable. Please choose another connection.",
   "settings.modelProvider.navigationUnavailable":
     "The requested provider is unavailable. Please choose another provider.",
-  "marketingTouch.idle": "Ready",
-  "marketingTouch.verifying": "Verifying…",
-  "marketingTouch.submitting": "Processing…",
-  "marketingTouch.preparing": "Succeeded. Preparing the result…",
-  "marketingTouch.failed": "The action failed. Please try again later.",
-  "marketingTouch.uncertain":
-    "The result could not be confirmed. Check your benefits later. This action will not be retried this session to avoid duplicate submissions.",
-  "marketingTouch.succeeded": "Action succeeded",
   "workspace.context.lastActivity": "Last active {time}",
   "bots.privateDelivery.retry": "Resend reply",
   "bots.privateDelivery.retryHint":
@@ -542,65 +193,6 @@ const enUS: Record<string, string> = {
   "bots.group.resend": "Resend result",
 
   "bots.group.provider.feishu": "Feishu",
-  "manualClaimPlan.banner.aria": "Claimable trial plan",
-  "manualClaimPlan.banner.tag": "Limited-time offer",
-  "manualClaimPlan.banner.unit.tokens": "TOKENS",
-  "manualClaimPlan.banner.subtitle.daily": "{model} daily bonus",
-  "manualClaimPlan.banner.subtitle.oneTime": "{model} one-time bonus",
-  "manualClaimPlan.claim.ticket.benefit": "{model} {amount} {unit}",
-  "manualClaimPlan.claim.ticket.benefit.daily": "{model} daily {amount} {unit}",
-  "manualClaimPlan.banner.period.daily": "Daily",
-  "manualClaimPlan.banner.period.oneTime": "One-time",
-  "manualClaimPlan.banner.bonus": "bonus",
-  "manualClaimPlan.banner.close": "Close offer",
-  "manualClaimPlan.banner.claim": "Claim",
-  "manualClaimPlan.banner.dismissConfirm.title": "You’ll miss a claim opportunity",
-  "manualClaimPlan.banner.dismissConfirm.description":
-    "Claim opportunities for this offer are limited. If you close it, you may miss this opportunity. Would you like to claim it now?",
-  "manualClaimPlan.banner.dismissConfirm.claim": "Claim now",
-  "manualClaimPlan.banner.dismissConfirm.close": "Close anyway",
-  "manualClaimPlan.claim.success.title": "You now have access to {plan}",
-  "manualClaimPlan.claim.success.description": "Start Plan is ready to use.",
-  "manualClaimPlan.claim.success.description.prefix": "",
-  "manualClaimPlan.claim.success.description.suffix": " is ready to use.",
-  "manualClaimPlan.claim.success.pending.description.prefix": "",
-  "manualClaimPlan.claim.success.pending.description.beforeTime": " will be available on ",
-  "manualClaimPlan.claim.success.pending.description.afterTime": ".",
-  "manualClaimPlan.claim.failure.title": "Claim failed",
-  "manualClaimPlan.claim.failure.notFound": "This plan does not exist.",
-  "manualClaimPlan.claim.failure.unavailable": "This offer has ended or is unavailable.",
-  "manualClaimPlan.claim.failure.alreadyClaimed": "You have already claimed this plan.",
-  "manualClaimPlan.claim.failure.ineligible":
-    "Your account or app version is not eligible for this offer.",
-  "manualClaimPlan.claim.failure.quotaExhausted": "Today's claim quota has been exhausted.",
-  "manualClaimPlan.claim.failure.quotaExhausted.nextTime":
-    "Today's claim quota has been exhausted. Please check back next time.",
-  "manualClaimPlan.claim.failure.quotaExhausted.tomorrow":
-    "Today's claim quota has been exhausted. Please try again tomorrow.",
-  "manualClaimPlan.claim.failure.invalidRequest": "Invalid claim request. Refresh and try again.",
-  "manualClaimPlan.claim.failure.loginRequired": "Sign in before claiming this plan.",
-  "manualClaimPlan.claim.failure.generic": "Claim failed. Please try again later.",
-  "manualClaimPlan.claim.startUsingUnavailable":
-    "Start Plan is not ready yet. Your model settings were not changed; refresh and try again later.",
-  "manualClaimPlan.claim.dialog.confirm": "Start using",
-  "manualClaimPlan.claim.dialog.modelSettings": "View plan",
-  "manualClaimPlan.claim.dialog.acknowledge": "Got it",
-  "manualClaimPlan.claim.dialog.startsAt": "Starts",
-  "manualClaimPlan.claim.dialog.endsAt": "Valid until",
-  "manualClaimPlan.claim.dialog.replay": "Replay ticket animation",
-  "manualClaimPlan.claim.share.label": "Copy & share",
-  "manualClaimPlan.claim.share.close": "Close sharing",
-  "manualClaimPlan.claim.share.getImage": "Get image",
-  "manualClaimPlan.claim.share.saveImage": "Save image",
-  "manualClaimPlan.claim.share.copyImage": "Copy image",
-  "manualClaimPlan.claim.share.copyText": "Copy text",
-  "manualClaimPlan.claim.share.copyTextSucceeded": "Text copied",
-  "manualClaimPlan.claim.share.copyImageSucceeded": "Image copied",
-  "manualClaimPlan.claim.share.actionFailed": "Share action failed. Please try again.",
-  "manualClaimPlan.claim.share.twitterText":
-    "I claimed {subtitle} on ZCode. Download and install ZCode to claim yours. https://zcode.z.ai",
-  "manualClaimPlan.claim.share.twitterTextLabel": "Twitter/X post text",
-  // Common
   "common.loading": "Loading...",
   "common.listSeparator": ", ",
   "common.generating": "Generating...",
@@ -618,301 +210,6 @@ const enUS: Record<string, string> = {
   "common.saveChanges": "Save changes",
   "common.saving": "Saving...",
   "common.delete": "Delete",
-  "conversationShare.popover.title": "Share conversation",
-  "conversationShare.range.label": "Shared content",
-  "conversationShare.range.all": "All completed turns · {count}",
-  "conversationShare.range.selected": "{count} selected",
-  "conversationShare.range.exceeded": "{count} rows over limit",
-  "conversationShare.range.locate": "Locate conversation",
-  "conversationShare.range.adjust": "Adjust",
-  "conversationShare.range.confirm": "Confirm",
-  "conversationShare.trigger": "Share",
-  "conversationShare.artifact.notIncluded": "This artifact was not included",
-  "conversationShare.artifact.sourceUnavailable": "Source unavailable",
-  "conversationShare.artifact.unsupported": "Unsupported by this share",
-  "conversationShare.artifact.limitExceeded": "Share size limit exceeded",
-  "conversationShare.artifact.dashboardUnavailable": "Dashboard unavailable",
-  "conversationShare.artifact.dashboardInvalid": "Unable to display dashboard",
-  "conversationShare.artifact.openDownload": "Open / download",
-  "conversationShare.artifact.openFile": "Open file",
-  "conversationShare.artifact.resourceUnavailable": "Resource unavailable",
-  "conversationShare.artifact.previewFailed": "Preview failed; try opening the file",
-  "conversationShare.artifact.loading": "Loading…",
-  "conversationShare.workflowUnavailable": "Workflow snapshot unavailable",
-  "conversationShare.workflowPartial": "Some workflow data is unavailable in this snapshot",
-  "conversationShare.capturedSnapshot": "Snapshot at sharing",
-  "conversationShare.readonly.history": "Reasoning",
-  "conversationShare.readonly.computerUse": "Computer use",
-  "conversationShare.readonly.explore": "Explore",
-  "conversationShare.readonly.execute": "Execute",
-  "conversationShare.readonly.changes": "Changes",
-  "conversationShare.readonly.artifactPreview": "Download file",
-  "conversationShare.readonly.markerCompact": "Context compacted",
-  "conversationShare.readonly.markerModelChange": "Model switched",
-  "conversationShare.readonly.unsupportedRows": "Some content requires a newer version of ZCode",
-  "conversationShare.workflowSnapshot": "Snapshot at tool execution; does not update live",
-  "conversationShare.shareTitle": "Share title",
-  "conversationShare.permissionLabel": "Access",
-  "conversationShare.permission.private": "Only me",
-  "conversationShare.permission.linkViewer": "Link: view only",
-  "conversationShare.permission.linkViewerSummary": "Link: view only",
-  "conversationShare.permission.linkEditor": "Link: import & continue",
-  "conversationShare.permission.linkEditorSummary": "Link: import & continue",
-  "conversationShare.permission.privateSummary": "Only me",
-  "conversationShare.openLink": "Open share page",
-  "conversationShare.result.title": "Share created",
-  "conversationShare.result.openInBrowser": "View in browser",
-  "conversationShare.result.dismiss": "Close share result",
-  "conversationShare.generatingLink": "Generating share link",
-  "conversationShare.copyLink": "Copy link",
-  "conversationShare.copySucceeded": "Share link copied",
-  "conversationShare.publishSucceeded": "Share link created",
-  "conversationShare.publishSucceededWithSkips": "Share link created; {count} file(s) were skipped",
-  "conversationShare.copyFailed": "Could not copy share link",
-  "conversationShare.error.serviceUnavailable":
-    "The sharing service is temporarily unavailable. Try again later.",
-  "conversationShare.error.safetyCheckRejected":
-    "Content did not pass the safety check. Adjust the selected conversation or files.",
-  "conversationShare.error.safetyCheckUnavailable":
-    "The safety check service is unavailable. Try again later.",
-  "conversationShare.error.preparationNotFound":
-    "Share preparation is no longer available. Generate a new link.",
-  "conversationShare.error.preparationExpired": "Share preparation expired. Generate a new link.",
-  "conversationShare.import.notAllowed":
-    "This share is view-only. Ask the author to enable importing.",
-  "conversationShare.import.unsupportedVersion": "This share format is unsupported. Update ZCode.",
-  "conversationShare.issue.ruleLabel": "Validation rule",
-  "conversationShare.issue.pathLabel": "Field path",
-  "conversationShare.issue.fieldLabel": "Field",
-  "conversationShare.issue.rowLabel": "Content row (starting at 1)",
-  "conversationShare.issue.rowKindLabel": "Content type",
-  "conversationShare.publishFailed": "Could not generate the share link. Try again.",
-  "conversationShare.error.authenticationRequired":
-    "Sign in to ZCode before sharing. If you're already signed in, sign in again and retry.",
-  "conversationShare.error.featureDisabled": "Sharing is currently unavailable. Try again later.",
-  "conversationShare.error.artifactNotAllowed":
-    "A previewed file type is not supported for sharing. Deselect that conversation and retry.",
-  "conversationShare.error.limitExceeded":
-    "The selected conversation or its files exceed the sharing limit. Select fewer conversations.",
-  "conversationShare.error.rateLimited": "Too many share attempts. Wait a moment, then try again.",
-  "conversationShare.error.invalidContractHttp":
-    "The share service returned HTTP {status}. Retry, and provide the error details if the problem persists.",
-  "conversationShare.error.invalidContract":
-    "ZCode could not read the share service’s response, so sharing could not finish. Try again later. If it still fails, copy the request ID from Error details and contact support.",
-  "conversationShare.issue.clientRequestIdLabel": "Client request ID",
-  "conversationShare.issue.codeLabel": "Error code",
-  "conversationShare.error.network":
-    "The share connection was interrupted or timed out. Check your network and retry.",
-  "conversationShare.error.safetyCheckTimeout":
-    "The share safety check took too long. Try again later.",
-  "conversationShare.error.invalidSelection":
-    "The selected conversation changed. Reopen the share panel and select it again.",
-  "conversationShare.error.invalidConversation":
-    "The selected conversation cannot be published. Review the specific issues and retry.",
-  "conversationShare.error.runningTurn":
-    "A selected turn is still running. Deselect it and wait for it to finish before sharing.",
-  "conversationShare.error.streamingRow":
-    "A selected response is still streaming. Wait for the turn to finish before sharing.",
-  "conversationShare.error.activeToolCall":
-    "A selected tool call is still active. Wait for it to finish before sharing.",
-  "conversationShare.error.activeSubagent":
-    "A selected subtask is still running. Wait for it to finish before sharing.",
-  "conversationShare.error.inputAttachment":
-    "A user-input attachment could not be shared. Check that it still exists and try again.",
-  "conversationShare.error.inlineToolImage":
-    "A selected turn contains an unsupported inline tool image. Deselect that turn and retry.",
-  "conversationShare.error.unsupportedTimeline":
-    "A selected turn contains an unsupported branch or restore record. Deselect that turn and retry.",
-  "conversationShare.error.unsafeUrl":
-    "The selected content contains a local or inline file URL. Remove it before sharing.",
-  "conversationShare.error.missingProductTurn":
-    "The selected conversation is incomplete. Reopen the share panel and select the turn again.",
-  "conversationShare.error.artifactTypeNotAllowed":
-    "A previewed file type is not allowed for sharing. Deselect its turn and retry.",
-  "conversationShare.error.artifactExtensionMissing":
-    "A previewed file has no valid extension. Check the file and retry.",
-  "conversationShare.error.artifactOutsideWorkspace":
-    "A previewed file is outside the current workspace. Regenerate or move it, then retry.",
-  "conversationShare.error.artifactChanged":
-    "A previewed file changed before sharing. Regenerate the preview file and retry.",
-  "conversationShare.error.artifactReadFailed":
-    "A previewed file could not be read. Check that it still exists and is accessible, then retry.",
-  "conversationShare.error.artifactSizeLimit":
-    "A file exceeds the per-file size limit. Deselect that turn or use a smaller file, then retry.",
-  "conversationShare.error.artifactManifest":
-    "The preview file manifest is incomplete. Regenerate the file and refresh the share panel.",
-  "conversationShare.error.payloadLimit":
-    "The selected conversation or files exceed the sharing limit. Select less and retry.",
-  "conversationShare.error.disclosureRequired":
-    "Review and confirm the shared content before creating the link.",
-  "conversationShare.error.uploadFailed":
-    "Upload is incomplete or the share state changed. Try again.",
-  "conversationShare.error.connectionUnavailable":
-    "Desktop connection is not ready. Reopen the share panel and try again.",
-  "conversationShare.error.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.error.summary":
-    "Share failed: {count} issue(s) found. See the share panel for details.",
-  "conversationShare.issue.artifactTypeNotAllowed":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) cannot be shared and will be skipped. Supported types: {allowedFormats}.",
-  "conversationShare.issue.artifactExtensionMissing":
-    "Turn {turnOrdinal}: the preview file has no valid extension. Check the file name and try again.",
-  "conversationShare.issue.artifactOutsideWorkspace":
-    "Turn {turnOrdinal}: the preview file is outside the current workspace. Move or regenerate it and try again.",
-  "conversationShare.issue.artifactChanged":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed while it was being read. Regenerate the file and try again.",
-  "conversationShare.issue.contentUnavailable":
-    "Some workflow content is shared as a summary. See the availability notes in the share.",
-  "conversationShare.issue.artifactReadFailed":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read. Check that it still exists and is accessible.",
-  "conversationShare.issue.inputAttachment":
-    "Turn {turnOrdinal} contains a user-input attachment, which is not supported in this version. Deselect this turn.",
-  "conversationShare.issue.inputAttachmentUnavailable":
-    "Turn {turnOrdinal} contains a user-input attachment that no longer exists or cannot be read.",
-  "conversationShare.issue.inlineToolImage":
-    "Turn {turnOrdinal} contains an inline tool image that cannot be included in a public share.",
-  "conversationShare.issue.runningTurn":
-    "Turn {turnOrdinal} is still running. Wait for it to finish or deselect it.",
-  "conversationShare.issue.streamingRow":
-    "Turn {turnOrdinal} is still generating. Wait for it to finish or deselect it.",
-  "conversationShare.issue.activeToolCall":
-    "Turn {turnOrdinal} has an unfinished tool call. Deselect this turn.",
-  "conversationShare.issue.activeSubagent":
-    "Turn {turnOrdinal} has a running subtask. Wait for it to finish or deselect it.",
-  "conversationShare.issue.unsupportedTimeline":
-    "Turn {turnOrdinal} contains a timeline record that cannot be included in a public share.",
-  "conversationShare.issue.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.issue.unsafeUrl":
-    "Turn {turnOrdinal} contains a local or inline file address, which is not supported. Remove it and try again.",
-  "conversationShare.issue.missingProductTurn":
-    "The selection is missing a complete turn identity. Re-select the conversation.",
-  "conversationShare.issue.invalidSelection":
-    "The selected turns changed. Return to selection and choose them again.",
-  "conversationShare.issue.invalidConversation":
-    "The selected conversation is incomplete. Deselect the affected turn(s) and try again.",
-  "conversationShare.issue.staleConversation":
-    "The conversation changed while the share was prepared. Return to selection and try again.",
-  "conversationShare.issue.rowsLimit":
-    "The conversation has {actual} rows, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactCountLimit":
-    "The conversation has {actual} artifacts, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactSizeLimit":
-    "{artifactDisplayName} is {actual}, above the per-file limit of {limit}. Deselect the turn or regenerate a smaller file.",
-  "conversationShare.issue.artifactTotalSizeLimit":
-    "Artifacts total {actual}, above the limit of {limit}. Reduce artifacts or deselect the affected turn(s).",
-  "conversationShare.issue.payloadSizeLimit":
-    "The share request is {actual}, above the limit of {limit}. Reduce the selected turns or artifacts.",
-  "conversationShare.issue.artifactManifest":
-    "The preview artifact manifest is duplicated or incomplete. Regenerate files and refresh the share panel.",
-  "conversationShare.issue.uploadIncomplete":
-    "The upload acknowledgement for {artifactDisplayName} does not match the file. Ensure it did not change and try again.",
-  "conversationShare.issue.invalidServiceResponse":
-    "The share service returned an unreadable response. Try again later.",
-  "conversationShare.issue.unknown":
-    "Sharing failed; the cause could not be determined. Retry, and provide the error details if it persists.",
-  "conversationShare.issue.details": "Error details",
-  "conversationShare.issue.requestIdLabel": "Server request ID",
-  "conversationShare.issue.requestId": "Server request ID: {requestId}",
-  "conversationShare.issue.requestIdMissing": "No server request ID was received.",
-  "conversationShare.issue.copyRequestId": "Copy request ID",
-  "conversationShare.issue.deselectTurn": "Deselect this turn",
-  "conversationShare.issue.retryPreflight": "Check again",
-  "conversationShare.issue.more": "{count} more issue(s) not shown.",
-  "conversationShare.warning.summary":
-    "Shared successfully. {count} file(s) were skipped and are not included in the link.",
-  "conversationShare.warning.artifactSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read, so it was skipped. If it should have been shared, regenerate the file and share again.",
-  "conversationShare.warning.inputAttachmentSkipped":
-    "Turn {turnOrdinal}: the input attachment is not included in the share; the turn's text is still shared.",
-  "conversationShare.warning.inputAttachmentUnavailable":
-    "Turn {turnOrdinal}: {artifactDisplayName} no longer exists or cannot be read and was skipped.",
-  "conversationShare.warning.artifactTypeSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) is not supported and was skipped. Supported types: {allowedFormats}.",
-  "conversationShare.warning.artifactChangedSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed before sharing and was skipped.",
-  "conversationShare.partial.panelLabel": "Select conversations to share",
-  "conversationShare.partial.empty": "There are no completed conversations to share",
-  "conversationShare.preflight.reviewIssues": "Review share issues",
-  "conversationShare.preflight.reviewSkipped": "Files will be skipped · Details",
-  "conversationShare.preflight.reviewDeferred": "Some files need checking · Details",
-  "conversationShare.partial.preflightChecking": "Checking share content…",
-  "conversationShare.partial.preflightUnavailable":
-    "Unable to check this share. Follow the instructions below.",
-  "conversationShare.partial.preflightBlocked":
-    "Some content cannot be shared. Fix the issues below first.",
-  "conversationShare.partial.preflightSkipped":
-    "{count} file(s) will not be included in the share. They will be skipped if you continue.",
-  "conversationShare.partial.preflightDeferred":
-    "Some files cannot be checked yet. They will be verified again when publishing.",
-  "conversationShare.publish.failedTitle": "Share publication failed",
-  "conversationShare.publish.failedDescription":
-    "Review the failure reason and error details below.",
-  "conversationShare.publish.retry": "Retry generation",
-  "conversationShare.publish.footerMeta": "Share {selected} conversation turn(s), {access}",
-  "conversationShare.publish.failedFooter":
-    "Your selection is preserved. Review the error and retry.",
-  "conversationShare.partial.selectAll": "Select all",
-  "conversationShare.partial.selectionCount": "{selected}/{total}",
-  "conversationShare.partial.cancel": "Cancel",
-  "conversationShare.partial.confirm": "Create share link",
-  "conversationShare.partial.publishing": "Generating…",
-  "conversationShare.progress.collecting": "Collecting conversation and artifacts…",
-  "conversationShare.progress.uploading": "Uploading artifacts…",
-  "conversationShare.progress.checking": "Confirming publication…",
-  "conversationShare.progress.collectingFailed": "Collecting conversation and artifacts failed",
-  "conversationShare.progress.uploadingFailed": "Uploading artifacts failed",
-  "conversationShare.progress.checkingFailed": "Publication confirmation failed",
-  "conversationShare.phase.collecting": "Prepare content",
-  "conversationShare.phase.uploading": "Upload artifacts",
-  "conversationShare.phase.checking": "Confirm publication",
-  "conversationShare.phase.collectingComplete": "Conversation and artifacts ready",
-  "conversationShare.phase.uploadingComplete": "Artifacts uploaded",
-  "conversationShare.phase.uploadingActive": "Uploading {completed} / {total}",
-  "conversationShare.phase.collectingPending": "Waiting to start",
-  "conversationShare.phase.uploadingPending": "Waiting for preparation",
-  "conversationShare.phase.checkingPending": "Waiting for upload",
-  "conversationShare.phase.failed": "Failed",
-  "conversationShare.disclosure.description": "No automatic checks.",
-  "conversationShare.disclosure.checkbox": "I've checked: no sensitive info.",
-  "conversationShare.disclosure.scope.trigger": "What to check",
-  "conversationShare.disclosure.scope.title": "Review scope",
-  "conversationShare.disclosure.scope.reviewLabel": "Review these areas",
-  "conversationShare.disclosure.scope.conversation":
-    "Conversation content: user messages, assistant replies, and task titles",
-  "conversationShare.disclosure.scope.tools":
-    "Tool inputs and outputs: commands, parameters, and results",
-  "conversationShare.disclosure.scope.generated":
-    "Generated content: code, files, and preview content",
-  "conversationShare.disclosure.scope.sensitiveLabel": "Check carefully",
-  "conversationShare.disclosure.scope.sensitive":
-    "Credentials, tokens, passwords, private keys, internal addresses, and personal information",
-  "conversationShare.disclosure.scope.note":
-    "The system does not scan or redact this content automatically. Review each item before sharing.",
-  "conversationShare.import.source": "Imported from share: {title}",
-  "conversationShare.import.dividerLabel": "Imported from share",
-  "conversationShare.import.fallbackRemoteWorkspace":
-    "Imported from share: {title}. The current workspace is remote, which import does not support yet, so the session was created in the local workspace {workspacePath}.",
-  "conversationShare.import.fallbackDefaultWorkspace":
-    "Imported from share: {title}. No target workspace was available, so the session was created in the default workspace {workspacePath}.",
-  "conversationShare.import.downloading": "Downloading shared files: {completed}/{total}",
-  "conversationShare.import.installing": "Installing shared files",
-  "conversationShare.import.committing": "Creating the shared conversation",
-  "conversationShare.import.complete": "Share import complete",
-  "conversationShare.import.loginRequired":
-    "This share cannot be imported anonymously. Sign in to ZCode and try again",
-  "conversationShare.import.notFound":
-    "Share not found or access denied. Check the link and your account.",
-  "conversationShare.import.expired": "The share expired. Ask the author to create a new one",
-  "conversationShare.import.integrityFailed":
-    "Share verification failed. Ask the author to create a new link.",
-  "conversationShare.import.failed":
-    "Share import failed. Try again later; if this persists, contact support.",
-  "conversationShare.import.integrityFailedWithArtifact":
-    "Verification failed for shared file {artifactDisplayName}; import stopped. Ask the author to create a new link.",
-  "conversationShare.import.failedWithArtifact":
-    "Downloading shared file {artifactDisplayName} failed. Check your network and retry.",
-  "conversationShare.import.retry": "Retry",
   "settings.resourceGroup.item.one": "{count} item",
   "settings.resourceGroup.item.other": "{count} items",
   "pluginCreator.add": "Add",
@@ -979,9 +276,7 @@ const enUS: Record<string, string> = {
   "quickPick.command.toggleDiffPanel": "Switch to diff panel",
   "quickPick.command.feedback": "Feedback",
   "quickPick.command.myTickets": "My feedback",
-  "quickPick.command.community": "Community",
   "quickPick.command.productDocs": "Product docs",
-  "quickPick.command.login": "Connect",
   "quickPick.command.logout": "Disconnect",
   "commandCenter.placeholder": "Search actions, tasks, or files",
   "commandCenter.open": "Search",
@@ -1024,7 +319,7 @@ const enUS: Record<string, string> = {
   "confirmDialog.taskArchiveDescription":
     "Task “{taskTitle}” will move to the archive list and can still be restored later.",
   "bots.title": "Bots",
-  "bots.description": "Connect external chats and webhooks to ZCode bots.",
+  "bots.description": "Connect external chats and webhooks to ZxCode bots.",
   "bots.listTitle": "Bots",
   "bots.addBot": "New bot",
   "bots.addBinding": "Add binding",
@@ -1078,9 +373,9 @@ const enUS: Record<string, string> = {
   "bots.setup.guide.weixin.create.1":
     "Start Weixin QR login, scan the QR code with Weixin, then confirm on your phone.",
   "bots.setup.guide.weixin.create.2":
-    "ZCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
+    "ZxCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
   "bots.setup.guide.weixin.create.3":
-    "ZCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
+    "ZxCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
   "bots.setup.guide.weixin.bind.1": "Open the Weixin direct chat you want to bind.",
   "bots.setup.guide.weixin.bind.2": "Send {command}.",
   "bots.setup.guide.weixin.bind.3":
@@ -1097,13 +392,13 @@ const enUS: Record<string, string> = {
   "bots.setup.guide.feishu.bind.3":
     "Return here after the bind succeeds to finish the workspace and CLI defaults.",
   "bots.setup.guide.webhook.create.1":
-    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZCode.",
+    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZxCode.",
   "bots.setup.guide.webhook.create.2":
     "Set a shared secret first; add an outbound webhook URL as well if you want asynchronous replies pushed back.",
   "bots.setup.guide.webhook.create.3":
     "Keep one stable userId per external user so binding and future context resolve to the same person.",
   "bots.setup.guide.webhook.bind.1":
-    "POST a private-message callback to ZCode's `/api/bots/webhook` endpoint.",
+    "POST a private-message callback to ZxCode's `/api/bots/webhook` endpoint.",
   "bots.setup.guide.webhook.bind.2":
     'The payload should at least include this botId, a stable userId, `chatType: "private"`, and set text to {command}.',
   "bots.setup.guide.webhook.bind.3":
@@ -1159,6 +454,9 @@ const enUS: Record<string, string> = {
     "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
   "bots.add": "Add",
   "bots.channel.telegram": "Telegram",
+  // BotsDialog/mobile remote-control entries still reference these keys (see botsUi.getBotProviderRegionTagLabelId).
+  "login.oauth.regionTag.zai": "Global",
+  "login.oauth.regionTag.bigmodel": "CN",
   "bots.channel.weixin": "Weixin",
   "bots.channel.feishu": "Feishu",
   "bots.channel.lark": "Lark",
@@ -1242,7 +540,7 @@ const enUS: Record<string, string> = {
   "bots.runtime.telegramLongPollingStarting": "Telegram long polling is starting.",
   "bots.runtime.telegramLongPollingStopped": "Telegram long polling is stopped.",
   "bots.runtime.telegramLongPollingHandledElsewhere":
-    "Telegram long polling is handled by another ZCode window.",
+    "Telegram long polling is handled by another ZxCode window.",
   "bots.runtime.telegramTokenMissing": "Telegram bot credential is missing.",
   "bots.runtime.telegramPollingFailedRetrying": "Telegram polling failed; retrying.",
   "bots.runtime.feishuWebSocketStarting": "Feishu WebSocket is starting.",
@@ -1328,69 +626,11 @@ const enUS: Record<string, string> = {
   "bots.unbindSuccess": "Bot unbound",
   "bots.unbindFailed": "Failed to unbind bot: {error}",
   "bots.deleteFailed": "Failed to delete bot: {error}",
-
-  // Welcome / Login
-  "welcome.title": "Welcome to ZCode",
-  "welcome.username": "Username",
-  "welcome.password": "Password",
-  "welcome.login": "Login",
-  "welcome.loggingIn": "Logging in...",
-  "welcome.loginFailed": "Login failed",
-  "login.title": "Welcome to ZCode",
-  "login.description": "Connect your account to start using ZCode",
-  "login.oauth.activeProviderHint":
-    "Current active provider: {provider}. Signing in again replaces the current identity.",
-  "login.oauth.loadingProviders": "Loading account providers...",
-  "login.oauth.noProviders":
-    "No account providers are available right now. Please try again later.",
-  "login.oauth.button": "Continue with {provider}",
-  "login.oauth.button.zai": "Connect to Z.ai",
-  "login.oauth.button.bigmodel": "Connect to BigModel",
-  "login.oauth.regionTag.zai": "Global",
-  "login.oauth.regionTag.bigmodel": "CN",
-  "login.oauth.waiting": "Waiting for {provider} authentication...",
-  "login.oauth.loginFailure": "Login failed, please try again",
-  "login.oauth.cancel": "Cancel",
-  "login.oauth.retry": "Retry login",
-  "login.expired.title": "Your session has expired",
-  "login.expired.description": "To keep your account secure, please sign in again.",
-  "login.expired.action": "Sign in again",
-  "login.expired.restart": "Confirm and restart",
-  "login.useApiKey": "Use API key",
-  "login.apiKey.title": "API Key",
-  "login.apiKey.placeholder": "Enter API key",
-  "login.apiKey.providerLabel": "API key provider",
-  "login.apiKey.provider.zai": "Z.ai",
-  "login.apiKey.provider.bigmodel": "BigModel",
-  "login.apiKey.getApiKey": "Get API Key",
-  "login.apiKey.cancel": "Cancel",
-  "login.apiKey.continue": "Continue",
-  "login.apiKey.emptyError": "Enter an API key.",
-  "login.apiKey.providerMissingError":
-    "Built-in provider configuration for {provider} was not found. Please try again later.",
-  "login.apiKey.saveError": "Failed to save API key: {error}",
-  "login.apiKey.skipError": "Failed to skip API key setup: {error}",
-  "login.skip": "Skip for now",
   "settings.onboarding": "Onboard",
   "settings.onboardingDescription":
     "Choose your role, interface mode, and preferences again. Use Migration settings to import data.",
   "settings.onboardingOpen": "Open onboarding",
-
-  // App header
   "app.currentTheme": "Current: {theme}",
-  "app.login": "Connect",
-  "app.logout": "Disconnect",
-  "logout.confirm.title": "Disconnect and restart ZCode?",
-  "logout.confirm.descriptionWithRunningSessions":
-    "{count} session(s) are currently running. Disconnecting will interrupt them and restart the app.",
-  "logout.confirm.descriptionDefault":
-    "The app will restart after disconnecting. You will need to connect your account again.",
-  "logout.confirm.ok": "Disconnect and restart",
-  "logout.confirm.cancel": "Cancel",
-  "sidebar.profile.accountId": "ID: {id}",
-  "sidebar.profile.copyUserId": "Click to copy user ID",
-  "sidebar.profile.userIdCopied": "User ID copied",
-  "sidebar.profile.userIdCopyFailed": "Copy failed. Please try again",
   "sidebar.profile.notLoggedIn": "Connect",
   "app.selectFile": "Select a file to get started",
   "app.workspace": "Workspace",
@@ -1633,7 +873,7 @@ const enUS: Record<string, string> = {
   "modelTrajectory.refresh": "Refresh",
   "modelTrajectory.close": "Close",
   "modelTrajectory.loading": "Loading trajectory…",
-  "modelTrajectory.empty": "No model calls recorded (only ZCode Agent writes model-io)",
+  "modelTrajectory.empty": "No model calls recorded (only ZxCode Agent writes model-io)",
   "modelTrajectory.error": "Failed to load trajectory",
   "modelTrajectory.truncatedNotice": "Too many records, showing the most recent calls",
   "modelTrajectory.summaryCalls": "{count} calls",
@@ -1944,6 +1184,17 @@ const enUS: Record<string, string> = {
   "fileManager.empty": "Select a file from the navigation",
   "codeViewer.title": "Code viewer",
   "codeViewer.close": "Close code viewer",
+  "codeViewer.edit": "Edit file",
+  "codeViewer.editorLoading": "Loading editor…",
+  "codeViewer.save": "Save",
+  "codeViewer.saving": "Saving…",
+  "codeViewer.discardChanges": "Discard changes",
+  "codeViewer.saved": "File saved",
+  "codeViewer.saveFailed": "Save failed: {error}",
+  "codeViewer.unsavedTitle": "Unsaved changes",
+  "codeViewer.unsavedDescription": '"{file}" has unsaved changes that will be lost.',
+  "codeViewer.unsavedSaveAndClose": "Save and close",
+  "codeViewer.unsavedDiscard": "Leave without saving",
   "codeViewer.loadingFile": "Loading file...",
   "codeViewer.loadingImage": "Loading image preview...",
   "codeViewer.fileMissing": "The file does not exist, or this environment cannot access that path.",
@@ -2071,6 +1322,8 @@ const enUS: Record<string, string> = {
   "appHeader.openInFileManagerFailed": "Could not open in the system file manager",
   "appHeader.openInEditor": "Open in {editor}",
   "appHeader.selectOpenApp": "Choose app",
+  "appHeader.chooseApplication": "Choose Application…",
+  "appHeader.removeCustomApp": "Remove {app}",
   "appHeader.copyPath": "Copy path",
   "fileActions.copyAbsolutePath": "Copy absolute path",
   "fileActions.copyRelativePath": "Copy relative path",
@@ -2090,12 +1343,6 @@ const enUS: Record<string, string> = {
   "appHeader.openProviderConfigWithEditorSuffix": "config file",
   "appHeader.openProviderConfigInEditorFailed": "Could not open provider config in {editor}",
   "workspaceHeader.help.menu": "Help",
-  "workspaceHeader.help.issueReport": "Report an issue",
-  "workspaceHeader.help.reportVulnerability": "Report a vulnerability",
-  "workspaceHeader.help.productRequest": "Request a feature",
-  "workspaceHeader.help.productRequestDraft": "I would like to suggest: ",
-  "workspaceHeader.help.community": "User community",
-  "workspaceHeader.help.docs": "Product docs",
   "titleBar.menu.file": "File",
   "titleBar.menu.view": "View",
   "titleBar.menu.help": "Help",
@@ -2109,10 +1356,9 @@ const enUS: Record<string, string> = {
   "titleBar.menu.view.actualSize": "Actual size",
   "titleBar.menu.view.zoomIn": "Zoom in",
   "titleBar.menu.view.zoomOut": "Zoom out",
-  "titleBar.menu.help.about": "About ZCode",
+  "titleBar.menu.help.about": "About ZxCode",
   "titleBar.menu.help.checkForUpdates": "Check for updates",
   "titleBar.menu.help.feedback": "Feedback",
-  "sidebar.menu.community": "Community",
   "titleBar.menu.help.exportLogs": "Export logs",
   "titleBar.menu.help.toggleDevTools": "Toggle developer tools",
   "titleBar.menu.help.resourceManager": "Resource manager",
@@ -2133,56 +1379,8 @@ const enUS: Record<string, string> = {
   "directoryBrowser.opening": "Opening…",
   "directoryBrowser.errorSystem": "Failed to get system info",
   "directoryBrowser.errorReadDir": "Failed to read directory: {error}",
-
-  // Update ready button
-  "updateReady.shortTitle": "Update",
-  "updateReady.title": "Update v{version}",
-  "updateReady.releaseNotesTitle": "v{version} Release Notes",
-  "updateReady.tooltip": "v{version} ready, click to restart and update",
-  "updateAvailable.tooltip": "New version v{version} is available. Click to review.",
-  "updateReady.confirm.title": "Update to v{version}?",
-  "updateReady.confirm.description":
-    "The app will quit and restart to update. In-progress tasks will be interrupted.",
-  "updateReady.confirm.ok": "Restart & update now",
-  "updateReady.confirm.cancel": "Later",
-  "updateDialog.availableTitle": "New version v{version}",
-  "updateDialog.downloadingTitle": "Downloading v{version}",
-  "updateDialog.readyTitle": "v{version} is ready",
-  "updateDialog.releaseDate": "{date}",
-  "updateDialog.releaseNotesExpand": "Show",
-  "updateDialog.releaseNotesCollapse": "Hide",
-  "updateDialog.downloadAndUpdate": "Download update",
-  "updateDialog.cancelDownload": "Cancel download",
-  "updateDialog.autoDownloadAndInstall": "Automatically download and install updates next time",
-  "updateDialog.downloadingAction": "Downloading",
-  "updateDialog.downloadProgress": "Download progress",
-  "updateDialog.restartToUpdate": "Restart to update",
-  "updateDialog.skipVersion": "Skip this version",
-  "updateDialog.later": "Later",
-  "update.toast.upToDate": "You're on the latest version (v{version})",
-  "update.toast.available": "New version v{version} is available",
-  "update.toast.downloading": "Downloading new version v{version}",
-  "update.toast.alreadyDownloading": "Downloading new version ({progress}%)",
-  "update.toast.ready": "v{version} downloaded, restart to install",
-  "update.toast.devSkipped": "Updates are disabled in dev builds",
-  "update.toast.error": "Update check failed: {error}",
-  "forceUpdate.title": "Update ZCode to continue",
-  "forceUpdate.description":
-    "Your current version v{currentVersion} is below the minimum supported version v{minimalVersion}. Update first before continuing with this client.",
-  "forceUpdate.currentVersion": "Current version",
-  "forceUpdate.minimalVersion": "Minimum version",
-  "forceUpdate.action.check": "Check and download update",
-  "forceUpdate.action.restart": "Restart to install update",
-  "forceUpdate.action.reload": "Reload page",
-  "desktopMenu.help.checkingForUpdates": "Checking for updates...",
-  "desktopMenu.help.updateAvailableVersion": "Update available {version}",
-  "desktopMenu.help.downloadingUpdateVersion": "Downloading update {version}...",
-  "desktopMenu.help.downloadingUpdateProgress": "Downloading update... {progress}",
-  "desktopMenu.help.restartUpdateAction": "Restart to update",
-  "desktopMenu.help.restartToUpdate": "Restart to update ({version})",
   "postUpdateReleaseNotes.title": "Release notes",
   "postUpdateReleaseNotes.acknowledge": "I know",
-
   "projectSelector.heroTitle": "Open fast. Stay focused.",
   "projectSelector.heroDescription": "Pick a workspace, jump back in, and keep the surface clean.",
   "appError.title": "The app ran into a problem",
@@ -2198,8 +1396,6 @@ const enUS: Record<string, string> = {
     "The error is isolated to this section, so the rest of the app can keep running. Try this section again first, and refresh the app if the issue keeps happening.",
   "appError.sectionRetry": "Try this section again",
   "appError.sectionHint": "Diagnostic details have been recorded to help investigation.",
-
-  // Workspace
   "workspace.openWorkspace": "Open workspace",
   "workspace.openFolder": "Open folder",
   "workspace.openPluginsSettings": "Plugin Marketplace",
@@ -2309,8 +1505,6 @@ const enUS: Record<string, string> = {
   "workspaceFileTree.openFailed": "Could not open this item",
   "workspaceFileTree.addToChat": "Add to chat",
   "workspaceFileTree.gitStatus.ignored": "Ignored",
-
-  // SSH dialog
   "ssh.trigger": "SSH Connection",
   "ssh.title": "SSH Remote connection",
   "ssh.host": "Host",
@@ -2326,7 +1520,7 @@ const enUS: Record<string, string> = {
   "ssh.assetInstallMode.local-download-upload": "Download locally, then upload",
   "ssh.assetInstallMode.remote-download": "Download on remote server",
   "ssh.assetInstallModeDescription":
-    "Remote server download reduces upload waiting, but the server must reach the ZCode CDN and have download, extract, and checksum tools.",
+    "Remote server download reduces upload waiting, but the server must reach the ZxCode CDN and have download, extract, and checksum tools.",
   "ssh.password": "Password",
   "ssh.passwordPlaceholder": "Enter your SSH password",
   "ssh.privateKey": "Private key",
@@ -2479,8 +1673,7 @@ const enUS: Record<string, string> = {
     "Sign in to control this computer from your phone. Use the same account on both devices.",
   "webRemoteControl.authRequired.login": "Sign in",
   "webRemoteControl.title": "Mobile remote control",
-  "webRemoteControl.description":
-    "Scan the QR code or open the link on your phone to control this workspace.",
+  "webRemoteControl.description": "Control ZxCode workspaces through chat bots.",
   "webRemoteControl.statusLabel": "Session status",
   "webRemoteControl.status.idle": "Idle",
   "webRemoteControl.status.starting": "Starting",
@@ -2810,7 +2003,7 @@ const enUS: Record<string, string> = {
   "remote.log.requestingSession": "Requesting the host process to create a remote session...",
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
-  "server.description": "Connect to an already running ZCode server.",
+  "server.description": "Connect to an already running ZxCode server.",
   "server.url": "Server URL",
   "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
   "server.name": "Display name",
@@ -2846,15 +2039,9 @@ const enUS: Record<string, string> = {
   "docker.unavailable": "Docker is unavailable",
   "docker.noContainers": "No running containers",
   "docker.validation.required": "Container name or ID is required",
-
-  // Locale switch
   "locale.switchLanguage": "Switch language",
-
-  // File tree
   "fileTree.loading": "Loading...",
   "fileTree.error": "Failed to load",
-
-  // Terminal
   "terminal.exited": "[Process exited]",
   "terminal.title": "Terminal",
   "terminal.show": "Toggle terminal",
@@ -2949,7 +2136,7 @@ const enUS: Record<string, string> = {
   "chat.changeSummary.reverted": "Undone",
   "chat.changeSummary.rewindDialog.title": "Undo file changes",
   "chat.changeSummary.rewindDialog.description":
-    "ZCode checks current file content again before writing. If another process changed a file, no files will be written.",
+    "ZxCode checks current file content again before writing. If another process changed a file, no files will be written.",
   "chat.changeSummary.rewindDialog.loading": "Checking reversible files…",
   "chat.changeSummary.rewindDialog.safeTitle": "Safe to undo {count}",
   "chat.changeSummary.rewindDialog.unsafeTitle": "Unsafe to undo {count}",
@@ -3016,8 +2203,6 @@ const enUS: Record<string, string> = {
   "sidebar.exportLogs.pending": "Exporting logs...",
   "sidebar.exportLogs.error": "Failed to export logs: {error}",
   "sidebar.newTask": "New task",
-
-  // Settings
   "settings.title": "Settings",
   "settings.breadcrumbLabel": "Settings path",
   "settings.subtitle":
@@ -3128,7 +2313,7 @@ const enUS: Record<string, string> = {
     "When launching the built-in terminal, inherit login shell environment, proxy, Kubernetes variables, and local terminal font when possible.",
   "settings.terminalFontFamily": "Terminal font",
   "settings.terminalFontFamilyDescription":
-    "Leave blank to auto-detect system terminal settings; set a value to override the ZCode terminal font.",
+    "Leave blank to auto-detect system terminal settings; set a value to override the ZxCode terminal font.",
   "settings.terminalFontFamilyPlaceholder": "Leave blank to inherit, e.g. MesloLGS NF, monospace",
   "settings.integratedTerminalShell": "Integrated terminal shell",
   "settings.integratedTerminalShellDescription":
@@ -3203,17 +2388,40 @@ const enUS: Record<string, string> = {
     "Optional. Set a PEM root certificate path to inject it as NODE_EXTRA_CA_CERTS for models, MCP, and command tools, and to trust it in renderer certificate verification. Restart the app to take effect.",
   "settings.httpProxyCaCertPathPlaceholder": "e.g. /Users/name/certs/root-ca.pem",
   "settings.httpProxySavedHint": "Network proxy settings saved. Restart the app to take effect.",
+  "settings.custom.title": "Custom",
+  "settings.custom.description":
+    "Manage user-level customizations. Changes stay on this machine and never sync to remote workspaces.",
+  "settings.custom.headers.title": "User-managed request headers",
+  "settings.custom.headers.description":
+    "When enabled, custom HTTP headers are appended to requests sent to model providers; headers with the same name override the defaults. Only model requests are affected. Reload the session (or restart the app) to take effect.",
+  "settings.custom.headers.defaultsHint":
+    "These are the default headers currently sent with model requests — edit them to override. Removing a row keeps the default value.",
+  "settings.custom.headers.nameLabel": "Header name",
+  "settings.custom.headers.namePlaceholder": "Header name, e.g. User-Agent",
+  "settings.custom.headers.valueLabel": "Header value",
+  "settings.custom.headers.valuePlaceholder": "Header value, e.g. MyApp/1.0",
+  "settings.custom.headers.addRow": "Add header",
+  "settings.custom.headers.removeRow": "Remove this row",
+  "settings.custom.headers.save": "Save",
+  "settings.custom.headers.saved":
+    "Headers saved. Reload the session (or restart the app) to take effect.",
+  "settings.custom.headers.saveFailed": "Save failed. Please try again.",
+  "settings.custom.headers.restartHint":
+    "Takes effect after reloading the session (or switching models / restarting the app).",
+  "settings.custom.headers.invalidName": "Name is not a valid HTTP header name",
+  "settings.custom.headers.invalidValue": "Value must contain printable ASCII characters only",
+  "settings.custom.headers.duplicateName": "This name already exists (case-insensitive)",
+  "settings.custom.headers.incompleteRow": "Complete the name and value, or remove this row",
+  "settings.custom.headers.maxEntriesReached": "Up to {count} headers are supported",
   "settings.desktopChromiumHardwareAcceleration": "Chrome hardware acceleration",
   "settings.desktopChromiumHardwareAccelerationDescription":
     "Turn this off to work around blank windows, crashes, or rendering issues caused by some GPUs or drivers. Restart the app to take effect.",
   "settings.desktopChromiumHardwareAccelerationSavedHint":
     "Chrome hardware acceleration setting saved. Restart the app to take effect.",
-  "settings.receivePreviewUpdates": "Receive preview updates early",
-  "settings.receivePreviewUpdatesDescription":
-    "When enabled, you will get the earliest access to new features and improvements. When disabled, you will receive update pushes according to the regular release schedule.",
-  "settings.autoDownloadAndInstallUpdates": "Automatically download and install updates",
-  "settings.autoDownloadAndInstallUpdatesDescription":
-    "When enabled, updates start downloading as soon as they are found. Restart still requires confirmation when tasks are running.",
+  "settings.dynamicWorkflow": "Workflows (experimental)",
+  "settings.dynamicWorkflowDescription":
+    'Enable the "Automations / Workflows" switch on the automations page and allow sessions to create dynamic workflows. Restart the app to take effect.',
+  "settings.dynamicWorkflowSavedHint": "Workflow setting saved. Restart the app to take effect.",
   "settings.notification": "Task notifications",
   "settings.notificationDescription":
     "Send desktop notifications when a task completes, fails, or needs approval.",
@@ -3257,15 +2465,12 @@ const enUS: Record<string, string> = {
     "Group consecutive Write, Edit, and ApplyPatch calls into a Changes section.",
   "settings.zcodeInteractionBehavior": "Interaction behavior",
   "settings.zcodeInteractionBehaviorDescription":
-    "While ZCode is running, add follow-up actions to the queue or guide them to run after the next tool call.",
+    "While ZxCode is running, add follow-up actions to the queue or guide them to run after the next tool call.",
   "settings.zcodeInteractionBehavior.option.queue": "Queue",
   "settings.zcodeInteractionBehavior.option.guide": "Guide",
   "settings.askUserQuestionAutoResolution": "Automatically continue questions",
   "settings.askUserQuestionAutoResolutionDescription":
     "When enabled, Agent questions automatically continue after 5 minutes without an answer. When disabled, current and future questions wait for your response.",
-  "settings.dynamicWorkflow": "Dynamic workflows",
-  "settings.dynamicWorkflowDescription":
-    "Let the model orchestrate many subagents working in parallel, so it can take on complex tasks and deliver polished results.",
   "settings.dynamicWorkflow.option.disabled": "Off",
   "settings.dynamicWorkflow.option.disabled.description":
     "Turn workflows off. The model cannot start new ones, and the Workflows tab leaves the Automations page. Workflows already in your conversations stay readable.",
@@ -3294,14 +2499,14 @@ const enUS: Record<string, string> = {
   "settings.taskAutoArchiveDays.option.30": "Archive after 30 days",
   "settings.dataBaseDir": "Data storage path",
   "settings.dataBaseDirDescription":
-    "Root directory for app data (defaults to user home directory). Existing data will be copied to the new location. The .zcode/v2 suffix cannot be changed.",
+    "Root directory for app data (defaults to user home directory). Existing data will be copied to the new location. The .zxcode/v2 suffix cannot be changed.",
   "settings.dataBaseDirPlaceholder": "Default: user home directory",
   "settings.dataBaseDirBrowse": "Choose folder",
   "settings.dataBaseDirSave": "Save",
   "settings.dataBaseDirCopying": "Copying data, please do not close the app...",
   "settings.dataBaseDirCopyFailed": "Data copy failed. Path was not changed.",
   "settings.dataBaseDirForbiddenInstallDir":
-    "The data directory cannot be the ZCode installation folder on Windows. Choose a folder outside the app install location.",
+    "The data directory cannot be the ZxCode installation folder on Windows. Choose a folder outside the app install location.",
   "settings.dataBaseDirRestartRequired": "Data saved. Please restart the app to take effect.",
   "settings.locale.system": "System default",
   "settings.locale.zh-CN": "中文简体",
@@ -3317,7 +2522,7 @@ const enUS: Record<string, string> = {
   "settings.migration.title": "Migration",
   "settings.migration.sectionTitle": "Claude History Migration",
   "settings.migration.sectionDescription":
-    "Scan native Claude Code history on this machine, optionally filter by workspace and activity window, then import the selected sessions into their matching ZCode task lists.",
+    "Scan native Claude Code history on this machine, optionally filter by workspace and activity window, then import the selected sessions into their matching ZxCode task lists.",
   "settings.migration.badge.localOnly": "Local Claude records",
   "settings.migration.badge.manualOnly": "Manual only",
   "settings.migration.currentWorkspace": "Current workspace",
@@ -3371,14 +2576,53 @@ const enUS: Record<string, string> = {
   "settings.usageTitle": "Usage stats",
   "settings.usageDescription":
     "Review rough activity and model usage aggregated from local sessions.",
-  "resourceManager.storage.summaryTotal": "Total used by ZCode",
+  "settings.usage.appUsageLoadingDescription":
+    "Reading local app session history, so it can take a moment.",
+  "settings.usage.appUsageRangeTitle": "Time range",
+  "settings.usage.checkApiKey": "Check account",
+  "settings.usage.currentStreak": "Current streak",
+  "settings.usage.dailyChartTitle": "Daily token trend chart",
+  "settings.usage.duration.day": "d",
+  "settings.usage.duration.hour": "h",
+  "settings.usage.duration.minute": "m",
+  "settings.usage.emptyDescription": "The selected range has no usage data yet.",
+  "settings.usage.emptyTitle": "No usage data yet",
+  "settings.usage.heatmapTitle": "Token activity",
+  "settings.usage.lifetimePeakTokens": "Peak tokens",
+  "settings.usage.lifetimeTotalTokens": "Total tokens",
+  "settings.usage.loadingTitle": "Computing usage",
+  "settings.usage.longestSession": "Longest session",
+  "settings.usage.longestStreak": "Longest streak",
+  "settings.usage.modelChart.other": "Other models",
+  "settings.usage.modelChartTitle": "Model usage",
+  "settings.usage.refresh": "Refresh",
+  "settings.usage.tokenUnit": "tokens",
+  "settings.usage.unknownModel": "Unknown model",
+  "settings.usage.heatmapCell": "{date}\n{tokens} tokens · {turns} messages",
+  "settings.usage.heatmapToolCell": "{date}\n{tokens} tokens · {tools} tools",
+  "settings.usage.heatmapWeeklyCell": "{date} week\n{tokens} tokens · {turns} messages",
+  "settings.usage.heatmapWeeklyToolCell": "{date} week\n{tokens} tokens · {tools} tools",
+  "settings.usage.heatmapCumulativeCell":
+    "Through {date} week cumulative\n{tokens} tokens · {turns} messages",
+  "settings.usage.heatmapCumulativeToolCell":
+    "Through {date} week cumulative\n{tokens} tokens · {tools} tools",
+  "settings.usage.heatmap.range.daily": "Daily",
+  "settings.usage.heatmap.range.weekly": "Weekly",
+  "settings.usage.heatmap.range.cumulative": "Cumulative",
+  "settings.usage.range.7d": "Last 7 days",
+  "settings.usage.range.30d": "Last 30 days",
+  "usage.error.stats.credential":
+    "Unable to load usage stats. Reconnect the Coding Plan account or confirm that the account has an active plan.",
+  "usage.error.stats.generic":
+    "Unable to load usage stats. Try again later or check the network and provider configuration.",
+  "resourceManager.storage.summaryTotal": "Total used by ZxCode",
   "resourceManager.storage.scanning": "Calculating…",
   "resourceManager.storage.lastScanned": "Last calculated {time}",
   "resourceManager.storage.idle": "Not calculated yet",
   "resourceManager.storage.failed": "Calculation failed",
   "resourceManager.storage.rescan": "Recalculate",
   "resourceManager.storage.disk": "Disk",
-  "resourceManager.storage.diskUsage": "ZCode uses {used}",
+  "resourceManager.storage.diskUsage": "ZxCode uses {used}",
   "resourceManager.storage.diskFree": "{free} free of {total}",
   "resourceManager.storage.diskUnknown": "Disk capacity unavailable",
   "resourceManager.storage.roots": "Data directories",
@@ -3446,7 +2690,7 @@ const enUS: Record<string, string> = {
   "settings.embeddedBrowserAllowInsecureCertificatesSavedHint":
     "Certificate setting saved. Restart the app to take effect.",
   "settings.browser.data.section": "Browser data",
-  "settings.browser.desktopOnly": "Browser data can only be managed in the ZCode desktop app.",
+  "settings.browser.desktopOnly": "Browser data can only be managed in the ZxCode desktop app.",
   "settings.browser.import.title": "Import Chrome sign-in state",
   "settings.browser.import.description":
     "Bring your Chrome sign-in state into the built-in browser once, so the AI can open sites you are already signed in to and work more smoothly.",
@@ -3464,13 +2708,13 @@ const enUS: Record<string, string> = {
   "settings.browser.import.elevationCancelled":
     "Windows administrator access was canceled. No cookies were imported.",
   "settings.browser.import.helperVerificationFailed":
-    "ZCode could not verify its Windows secure import component. Reinstall or update ZCode before importing cookies.",
+    "ZxCode could not verify its Windows secure import component. Reinstall or update ZxCode before importing cookies.",
   "settings.browser.import.appBoundFailed":
     "Windows could not unlock Chrome's App-Bound cookies. No cookies were imported.",
   "settings.browser.import.adminConfirmTitle":
     "Allow administrator access to import Chrome cookies?",
   "settings.browser.import.adminConfirmDescription":
-    "Chrome protects cookies with App-Bound encryption on Windows. For this import only, ZCode will request administrator access, start a temporary system service, and delete it immediately afterward. Chrome passwords are never read or imported.",
+    "Chrome protects cookies with App-Bound encryption on Windows. For this import only, ZxCode will request administrator access, start a temporary system service, and delete it immediately afterward. Chrome passwords are never read or imported.",
   "settings.browser.import.adminConsent":
     "I confirm administrator access for this cookie import only",
   "settings.browser.import.adminConfirmAction": "Continue and request access",
@@ -3529,7 +2773,7 @@ const enUS: Record<string, string> = {
   "settings.previewBadge.dark": "Dark",
   "settings.modelProviderTitle": "Model settings",
   "settings.mcpTitle": "MCP Servers",
-  "settings.mcp.description": "Manage MCP server configurations used by ZCode Agent.",
+  "settings.mcp.description": "Manage MCP server configurations used by ZxCode Agent.",
   "settings.mcp.create.open": "Add MCP server",
   "settings.mcp.import.open": "Import MCP servers from external agents",
   "settings.mcp.import.action": "Import",
@@ -3606,7 +2850,7 @@ const enUS: Record<string, string> = {
     "This plugin MCP server is loaded but not currently connected.",
   "settings.mcp.host.active": "Host built-in",
   "settings.mcp.host.activeDescription":
-    "ZCode provides this MCP server for the {pluginName} plugin. Its runtime identity is managed by the host.",
+    "ZxCode provides this MCP server for the {pluginName} plugin. Its runtime identity is managed by the host.",
   "settings.mcp.plugin.disabled": "Plugin disabled",
   "settings.mcp.plugin.disabledDescription":
     "This MCP server is built into a plugin. Enable the plugin to load it.",
@@ -3618,7 +2862,7 @@ const enUS: Record<string, string> = {
     "Open authorization to finish connecting this plugin MCP server.",
   "settings.mcp.oauth.openAuthorization": "Open authorization",
   "settings.mcp.statusOnlyUnsupported":
-    "This ZCode Agent cannot refresh OAuth status. Upgrade or restart ZCode, then reopen MCP settings to run a full refresh.",
+    "This ZxCode Agent cannot refresh OAuth status. Upgrade or restart ZxCode, then reopen MCP settings to run a full refresh.",
   "settings.mcp.refreshFailed": "Failed to refresh MCP status: {error}",
   "settings.mcp.status.toolCount": "{count} tools",
   "settings.mcp.status.connectedReason": "Connected and available.",
@@ -3645,9 +2889,9 @@ const enUS: Record<string, string> = {
   "settings.mcp.failure.official_origin_untrusted":
     "The MCP server URL failed the security check. The connection was blocked.",
   "settings.mcp.failure.not_authenticated":
-    "You are not signed in. Sign in to ZCode to use this MCP server.",
+    "The MCP server requires authentication and the current request was not accepted.",
   "settings.mcp.failure.coding_plan_required":
-    "This account has no Coding Plan. Purchase or configure a Coding Plan to use this MCP server.",
+    "The MCP server denied the current access. Check the availability of this service.",
   "settings.mcp.failure.server_not_found":
     "The MCP server was not found. Check the plugin or server configuration.",
   "settings.mcp.failure.server_unavailable":
@@ -3715,7 +2959,7 @@ const enUS: Record<string, string> = {
   "settings.mcpServers.import.targetLabel": "Import target",
   "settings.mcpServers.import.target.global": "Import to Global",
   "settings.mcpServers.import.target.project": "Import to Project",
-  "settings.mcpServers.import.importing": "Importing MCP servers into ZCode",
+  "settings.mcpServers.import.importing": "Importing MCP servers into ZxCode",
   "settings.mcpServers.import.imported": "Imported",
   "settings.mcpServers.import.skipped": "Skipped",
   "settings.mcpServers.import.failed": "Failed",
@@ -3777,7 +3021,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.catalogProviderEmpty": "No providers found",
   "settings.modelProvider.addProviderAction": "Add provider",
   "settings.modelProvider.templatePickerTitle": "Add provider",
-  "settings.modelProvider.templateGroup.zhipu": "Zhipu",
+  "settings.modelProvider.templateGroup.zhipu": "Z.ai / BigModel",
   "settings.modelProvider.templateGroup.other": "Other",
   "settings.modelProvider.templatePickerBack": "Back to provider details",
   "settings.modelProvider.addProviderModelReminder":
@@ -3813,559 +3057,13 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.useSubscription": "Use subscription",
   "settings.modelProvider.or": "or",
   "settings.modelProvider.connectionMode": "Connection mode",
-  "settings.modelProvider.connectionMode.oauth": "OAuth",
-  "settings.modelProvider.connectionMode.codingPlan": "Individual Plan",
-  "settings.modelProvider.connectionMode.startPlan": "Start Plan",
-  "settings.modelProvider.connectionMode.startPlanCount": "Start Plan × {count}",
-  "settings.modelProvider.connectionMode.switchToStartPlanPrefix": "Switch to",
-  "settings.modelProvider.connectionMode.teamPlan": "Team Plan",
-  "settings.modelProvider.connectionMode.apiKeyBadge": "API",
-  "settings.modelProvider.connectionMode.usageBasedApi": "Usage-based API",
-  "settings.modelProvider.connectionMode.codingPlanBadge": "Individual",
-  "settings.modelProvider.connectionMode.startPlanBadge": "Free",
-  "settings.modelProvider.connectionMode.teamPlanBadge": "Team",
-  "settings.modelProvider.connectionMode.loadFailed": "Connection settings failed",
-  "settings.modelProvider.connectionMode.noAvailablePlan": "No available plan",
   "settings.modelProvider.accountProviderConfigMissing":
     "The account provider configuration is unavailable. Refresh and try again.",
-  "settings.modelProvider.startPlan.login": "Log in",
-  "settings.modelProvider.startPlan.status.loginRequired": "Log in to view and use your Start Plan",
-  "settings.modelProvider.startPlan.status.expired": "Start Plan expired",
-  "settings.modelProvider.startPlan.status.noPlan": "No available Start Plan",
-  "settings.modelProvider.startPlan.status.loginExpired":
-    "Your login has expired. Please log in again.",
-  "settings.modelProvider.startPlan.title": "{provider} - Coding Plan",
-  "settings.modelProvider.startPlan.meta.today": "Today",
-  "settings.modelProvider.startPlan.meta.tomorrow": "Tomorrow",
-  "settings.modelProvider.startPlan.quotaSectionTitle": "Trial plan",
-  "settings.modelProvider.startPlan.eligibleNewUser": "New User",
-  "settings.modelProvider.startPlan.preview.unit.tokens": "tokens",
-  "settings.modelProvider.startPlan.preview.period.daily": "{unit} per day",
-  "settings.modelProvider.startPlan.preview.entitlementSummary.daily": "Daily quota · {details}",
-  "settings.modelProvider.startPlan.preview.entitlementSummary.generic": "Quota · {details}",
-  "settings.modelProvider.startPlan.preview.entitlementGroup.single": "{model} {quota}",
-  "settings.modelProvider.startPlan.preview.entitlementGroup.each": "{models} {quota} each",
-  "settings.modelProvider.startPlan.balance.title": "Today's balance",
-  "settings.modelProvider.startPlan.balance.remaining": "{value} tokens remaining",
-  "settings.modelProvider.startPlan.balance.used": "{value} used",
-  "settings.modelProvider.startPlan.highlight.trial.label": "Trial period",
-  "settings.modelProvider.startPlan.highlight.trial.value": "5 calendar days",
-  "settings.modelProvider.startPlan.highlight.trial.description":
-    "Timing starts after signing in to ZCode 3.x.",
-  "settings.modelProvider.startPlan.highlight.quota.label": "Daily quota",
-  "settings.modelProvider.startPlan.highlight.quota.value": "3M tokens daily",
-  "settings.modelProvider.startPlan.highlight.quota.description":
-    "Platform GLM flagship models share a 3M token daily trial quota.",
-  "settings.modelProvider.startPlan.highlight.metering.label": "Metering",
-  "settings.modelProvider.startPlan.highlight.metering.value": "After platform model use",
-  "settings.modelProvider.startPlan.highlight.metering.description":
-    "Metered only after using platform GLM flagship models.",
-  "settings.modelProvider.startPlan.compatibility":
-    "Supports BYOK and BYOA. Base URL, API format, and API Key are maintained by ZCode automatically.",
-  "settings.modelProvider.codingPlan.title": "{provider} - Coding Plan",
-  "settings.modelProvider.codingPlan.webview.title": "Upgrade Plan",
-  "settings.modelProvider.codingPlan.webview.authInjectFailed":
-    "Couldn't sign you into the plan page. Please retry.",
-  "settings.modelProvider.codingPlan.webview.retry": "Retry",
-  "settings.modelProvider.codingPlan.webview.loadFailed": "The plan page failed to load.",
-  "settings.modelProvider.codingPlan.webview.openWebsite": "Buy on the official website",
-  "settings.modelProvider.codingPlan.status.loginRequired": "Not signed in",
-  "settings.modelProvider.codingPlan.status.disconnected": "Not connected",
-  "settings.modelProvider.codingPlan.status.checking": "Checking",
-  "settings.modelProvider.codingPlan.status.notPurchased":
-    "Not subscribed, enabled after subscription",
-  "settings.modelProvider.codingPlan.status.purchased": "Subscribed",
-  "settings.modelProvider.codingPlan.status.unavailable": "Fetch failed",
-  "settings.modelProvider.remoteOAuthNotReady":
-    "OAuth sign-in cannot be started directly on a remote Source. Configure an API key or sync the signed-in account from the local Source.",
-  "settings.modelProvider.codingPlan.status.teamExpired":
-    "Team plan expired. Contact your team administrator.",
-  "settings.modelProvider.codingPlan.status.teamUnavailable":
-    "Team plan not assigned. Contact your team admin.",
-  "settings.modelProvider.codingPlan.status.unsupported": "Not supported yet",
-  "settings.modelProvider.codingPlan.bigmodel.unregisteredHint":
-    "This BigModel account is not registered yet. Register first.",
-  "settings.modelProvider.codingPlan.bigmodel.registerAction": "Register",
-  "settings.modelProvider.codingPlan.description.disconnected":
-    "Connect to view Coding Plan entitlements.",
-  "settings.modelProvider.codingPlan.description.checking":
-    "Checking Coding Plan entitlement with the current provider API key.",
-  "settings.modelProvider.codingPlan.description.notPurchased":
-    "No active Coding Plan was found for the current API key or account.",
-  "settings.modelProvider.codingPlan.description.purchased":
-    "Coding Plan is active and can be used by this provider.",
-  "settings.modelProvider.codingPlan.description.credentialFailed":
-    "Failed to retrieve your plan. Please sign in again and retry.",
-  "settings.modelProvider.codingPlan.description.unavailable":
-    "Could not verify Coding Plan entitlement. Connect again and retry.",
-  "settings.modelProvider.codingPlan.description.unsupported":
-    "This provider does not support Coding Plan status checks yet.",
-  "settings.modelProvider.codingPlan.login": "Sign in to {provider}",
-  "settings.modelProvider.codingPlan.connect": "Connect to {provider}",
-  "settings.modelProvider.codingPlan.purchaseLoginRequiredShort": "Sign in to purchase",
-  "settings.modelProvider.codingPlan.purchaseConnectRequiredShort": "Connect to purchase",
-  "settings.modelProvider.codingPlan.disconnect": "Unlink",
-  "settings.modelProvider.codingPlan.subscribe": "Subscribe",
-  "settings.modelProvider.codingPlan.upgrade": "Upgrade",
-  "settings.modelProvider.codingPlan.renew": "Renew",
-  "settings.modelProvider.codingPlan.currentPlan": "Current",
-  "settings.modelProvider.codingPlan.purchased": "Purchased",
-  "settings.modelProvider.codingPlan.startPlan.expiredBadge": "Expired",
-  "settings.modelProvider.codingPlan.startPlan.expiredAction": "Ended",
-  "settings.modelProvider.codingPlan.cancelUpgrade": "Back",
-  "settings.modelProvider.codingPlan.purchase.title": "Upgrade Coding Plan",
-  "settings.modelProvider.codingPlan.purchase.pricingTitle": "Pricing",
-  "settings.modelProvider.codingPlan.purchase.pricingDescription":
-    "Find the perfect plan for you and kick-start your AI coding journey.",
-  "settings.modelProvider.codingPlan.purchase.moreInfo": "More Info",
-  "settings.modelProvider.codingPlan.purchase.billingCycleTitle": "Choose billing cycle",
-  "settings.modelProvider.codingPlan.purchase.paymentConfirmTitle": "Confirm payment",
-  "settings.modelProvider.codingPlan.purchase.paymentTitle": "Payment",
-  "settings.modelProvider.codingPlan.purchase.personal": "Individuals",
-  "settings.modelProvider.codingPlan.purchase.team": "Teams",
-  "settings.modelProvider.codingPlan.purchase.individualsSectionTitle": "For Individuals",
-  "settings.modelProvider.codingPlan.purchase.teamsSectionTitle": "For Teams",
-  "settings.modelProvider.codingPlan.purchaseBanner.startPlanTitle": "Start Plan",
-  "settings.modelProvider.codingPlan.purchaseBanner.startPlanDescription":
-    "Try platform GLM flagship model quota for free.",
-  "settings.modelProvider.codingPlan.purchaseBanner.personalTitle": "For Individuals",
-  "settings.modelProvider.codingPlan.purchaseBanner.personalDescription":
-    "For individual developers with dedicated Coding Plan quota.",
-  "settings.modelProvider.codingPlan.purchaseBanner.temporarilySoldOut": "Temporarily sold out",
-  "settings.modelProvider.codingPlan.purchaseBanner.teamTitle": "For Teams",
-  "settings.modelProvider.codingPlan.purchaseBanner.teamDescription":
-    "For team collaboration with seats and centralized billing.",
-  "settings.modelProvider.codingPlan.purchaseBanner.teamStandardDescription":
-    "For small teams that need shared quota and seat management.",
-  "settings.modelProvider.codingPlan.purchaseBanner.teamAdvancedDescription":
-    "For high-throughput engineering teams that need more quota and flexible seats.",
-  "settings.modelProvider.codingPlan.purchase.choosePlan": "Choose a plan",
-  "settings.modelProvider.codingPlan.purchase.choosePlanDescription":
-    "Compare plan capacity first. Billing cycle and final payment are confirmed next.",
-  "settings.modelProvider.codingPlan.purchase.selectPlan": "Select",
-  "settings.modelProvider.codingPlan.purchase.select": "Select",
-  "settings.modelProvider.codingPlan.purchase.selected": "Selected",
-  "settings.modelProvider.codingPlan.purchase.fromPrice": "{price}+",
-  "settings.modelProvider.codingPlan.purchase.fromPriceSuffix": "",
-  "settings.modelProvider.codingPlan.purchase.previewLoading": "Calculating payment amount",
-  "settings.modelProvider.codingPlan.purchase.previewLoadingDescription":
-    "Please wait. Confirmation and payment use the same payment details.",
-  "settings.modelProvider.codingPlan.purchase.previewUnavailableDescription":
-    "Payment amount is unavailable. Go back and choose the billing cycle again.",
-  "settings.modelProvider.codingPlan.purchase.teamTitle": "Team plans",
-  "settings.modelProvider.codingPlan.purchase.teamDescription":
-    "Seats, shared quota, and centralized billing are coming later.",
-  "settings.modelProvider.codingPlan.purchase.teamCardDescription":
-    "Shared quota, seat management, and centralized billing.",
-  "settings.modelProvider.codingPlan.purchase.comingSoon": "Coming soon",
-  "settings.modelProvider.codingPlan.purchase.chooseBillingCycle":
-    "Choose billing cycle for {plan}",
-  "settings.modelProvider.codingPlan.purchase.billingCycleDescription":
-    "Prices and discounts are refreshed before payment. Final amount is confirmed in the payment step.",
-  "settings.modelProvider.codingPlan.purchase.continueToPayment": "Continue to payment",
-  "settings.modelProvider.codingPlan.purchase.summaryPlan": "Plan",
-  "settings.modelProvider.codingPlan.purchase.summaryBillingCycle": "Billing cycle",
-  "settings.modelProvider.codingPlan.purchase.summaryDueToday": "Due today",
-  "settings.modelProvider.codingPlan.purchase.summaryStatus": "Status",
-  "settings.modelProvider.codingPlan.purchase.servicePeriod": "Service period",
-  "settings.modelProvider.codingPlan.purchase.durationValue": "{duration} {unit}",
-  "settings.modelProvider.codingPlan.purchase.autoRenewPeriod": "Auto-renews every {period}",
-  "settings.modelProvider.codingPlan.purchase.renewalPolicyTitle": "Renewal policy",
-  "settings.modelProvider.codingPlan.purchase.renewalPolicyCharge":
-    "Your subscription renews automatically at {price}{unit} unless cancelled.",
-  "settings.modelProvider.codingPlan.purchase.renewalPolicyPreview":
-    "Final discounts, credits, and payment amount are confirmed in the next payment preview.",
-  "settings.modelProvider.codingPlan.purchase.renewalPolicyCancel":
-    "You can turn off auto-renewal from plan management before the next renewal.",
-  "settings.modelProvider.codingPlan.purchase.termsAccepted":
-    "I understand and agree to the renewal policy and subscription terms.",
-  "settings.modelProvider.codingPlan.purchase.paymentPreparing": "Preparing payment",
-  "settings.modelProvider.codingPlan.purchase.securityChecking":
-    "Waiting for security verification",
-  "settings.modelProvider.codingPlan.purchase.paymentPolling": "Waiting for payment confirmation",
-  "settings.modelProvider.codingPlan.purchase.paymentStarted":
-    "Complete payment on this payment page",
-  "settings.modelProvider.codingPlan.purchase.paymentStartedDescription":
-    "Keep this panel open while the payment channel finishes. You can go back to the payment confirmation page before payment succeeds.",
-  "settings.modelProvider.codingPlan.purchase.paymentInProgress": "Payment in progress",
-  "settings.modelProvider.codingPlan.purchase.successTitle": "Payment successful",
-  "settings.modelProvider.codingPlan.purchase.successDescription":
-    "Your Coding Plan payment was successful. The provider status will refresh after you close this panel.",
-  "settings.modelProvider.codingPlan.purchase.successRefreshingDescription":
-    "Your payment was successful. We are refreshing plan status; you can close this panel and the provider page will continue refreshing.",
-  "settings.modelProvider.codingPlan.purchase.statusSyncing": "Syncing",
-  "settings.modelProvider.codingPlan.purchase.statusActive": "Active",
-  "settings.modelProvider.codingPlan.purchase.refreshNow": "Refresh now",
-  "settings.modelProvider.codingPlan.purchase.done": "Done",
-  "settings.modelProvider.codingPlan.purchase.teamMemberNoticeTitle":
-    "Assign members to your team plan",
-  "settings.modelProvider.codingPlan.purchase.teamMemberNoticeDescription":
-    "Add yourself or other members on the BigModel team plan management page. Once assigned, the team quota will be available in ZCode.",
-  "settings.modelProvider.codingPlan.purchase.manageTeamPlan": "Manage team plan",
-  "settings.modelProvider.codingPlan.manage": "Manage",
   "settings.modelProvider.planCard.codingPlan": "Coding Plan",
   "settings.modelProvider.planCard.startPlan": "Start Plan",
   "settings.modelProvider.planCard.usage.fiveHour": "5h usage",
   "settings.modelProvider.planCard.usage.week": "1w usage",
   "settings.modelProvider.planCard.usage.totalTokens": "Total tokens",
-  "settings.modelProvider.codingPlan.recheck": "Recheck",
-  "settings.modelProvider.codingPlan.checkingPlans": "Checking...",
-  "settings.modelProvider.codingPlan.switchAccount": "Switch account",
-  "settings.modelProvider.codingPlan.useApiKeyProvider": "Use API key",
-  "settings.modelProvider.codingPlan.nextResetAt": "Quota resets {date}",
-  "settings.modelProvider.codingPlan.renewsAt": "Renews {date}",
-  "settings.modelProvider.codingPlan.expiresAt": "Expires {date}",
-  "settings.modelProvider.startPlan.pendingUntil": "Pending {date}",
-  "settings.modelProvider.startPlan.refreshEntitlement": "Refresh access",
-  "settings.modelProvider.startPlan.expiresAt": "Expires {date}",
-  "settings.modelProvider.codingPlan.openApiKeyProvider": "Open BigModel - API key",
-  "settings.modelProvider.codingPlan.plansTitle": "Coding Plan",
-  "settings.modelProvider.codingPlan.billingDiscountInfo.open": "View 150% quota campaign details",
-  "settings.modelProvider.codingPlan.audience.personal": "Individuals",
-  "settings.modelProvider.codingPlan.audience.enterprise": "Enterprise",
-  "settings.modelProvider.codingPlan.period.monthly": "Monthly",
-  "settings.modelProvider.codingPlan.period.quarterly": "Quarterly",
-  "settings.modelProvider.codingPlan.period.yearly": "Yearly",
-  "settings.modelProvider.codingPlan.unit.usd.month": "/mo",
-  "settings.modelProvider.codingPlan.unit.usd.quarter": "/quarter",
-  "settings.modelProvider.codingPlan.unit.usd.year": "/year",
-  "settings.modelProvider.codingPlan.unit.cny.month": "/month",
-  "settings.modelProvider.codingPlan.unit.cny.quarter": "/quarter",
-  "settings.modelProvider.codingPlan.unit.cny.year": "/year",
-  "settings.modelProvider.codingPlan.monthlyEquivalent": "Equivalent to {price}/month",
-  "settings.modelProvider.codingPlan.monthlyFlexibleBilling": "Flexible monthly billing",
-  "settings.modelProvider.codingPlan.providerFormDescription":
-    "These settings are maintained by Coding Plan. Use the API Key entry for manual keys.",
-  "settings.modelProvider.codingPlan.retry": "Retry",
-  "settings.modelProvider.codingPlan.viewPrices": "View prices",
-  "settings.modelProvider.codingPlan.productsLoading": "Loading Coding Plan",
-  "settings.modelProvider.codingPlan.productsLoadingDescription":
-    "Fetching the latest plans and prices from {provider}.",
-  "settings.modelProvider.codingPlan.purchase.authStateError":
-    "Failed to read your sign-in status. Please retry.",
-  "settings.modelProvider.codingPlan.purchase.authStateRetry": "Retry sign-in status",
-  "settings.modelProvider.codingPlan.productsError": "Could not load plans",
-  "settings.modelProvider.codingPlan.productsReconnectTitle": "Connect to view plans",
-  "settings.modelProvider.codingPlan.reconnectToViewPlans": "Reconnect",
-  "settings.modelProvider.codingPlan.productsLoginRequired":
-    "Reconnect your {provider} account to refresh prices and available Coding Plan products.",
-  "settings.modelProvider.codingPlan.purchaseLoginRequired":
-    "Reconnect your account and try again.",
-  "settings.modelProvider.codingPlan.productsEmpty": "No plans available",
-  "settings.modelProvider.codingPlan.productsEmptyDescription":
-    "{provider} did not return any purchasable Coding Plan products for this account.",
-  "settings.modelProvider.codingPlan.dynamicUnsupportedTitle": "Dynamic plans are not available",
-  "settings.modelProvider.codingPlan.dynamicUnsupportedDescription":
-    "In-app subscription is only connected for Z.ai / BigModel Coding Plan right now.",
-  "settings.modelProvider.codingPlan.priceUnavailable": "Price unavailable",
-  "settings.modelProvider.codingPlan.systemBusy": "The system is busy. Please try again later.",
-  "settings.modelProvider.codingPlan.subscriptionBusy": "Subscription busy",
-  "settings.modelProvider.codingPlan.subscriptionBusyButton": "System busy",
-  "settings.modelProvider.codingPlan.pendingOrder":
-    "There is an unfinished order. Complete or cancel it before starting another purchase.",
-  "settings.modelProvider.codingPlan.paymentTimeout":
-    "Payment is still pending. Recheck your Coding Plan status after the payment page finishes.",
-  "settings.modelProvider.codingPlan.zaiOverseasPaymentRequired":
-    "Z.ai overseas plans must be paid through PayPal or the official Z.ai payment page, not the Alipay signing flow.",
-  "settings.modelProvider.codingPlan.paypalSetupRequired":
-    "Authorize PayPal before continuing the payment.",
-  "settings.modelProvider.codingPlan.paypalApproveUrlMissing":
-    "PayPal did not return an approval link. Try again later.",
-  "settings.modelProvider.codingPlan.paypalUnsupported":
-    "PayPal is not supported for this account or region.",
-  "settings.modelProvider.codingPlan.paypalCancelled":
-    "PayPal authorization was cancelled. Choose PayPal again to retry.",
-  "settings.modelProvider.codingPlan.paypalSubscribeFailed":
-    "PayPal subscription could not be created. Confirm that PayPal authorization finished, then try again or pay by card.",
-  "settings.modelProvider.codingPlan.securityVerificationRequired":
-    "Complete the security verification before continuing the purchase.",
-  "settings.modelProvider.codingPlan.securityVerificationCancelled":
-    "Security verification was cancelled.",
-  "settings.modelProvider.codingPlan.securityVerificationFailed":
-    "Security verification failed. Try again in a moment.",
-  "settings.modelProvider.codingPlan.start.loginEnable": "Connect to enable",
-  "settings.modelProvider.codingPlan.start.loginTrial": "Connect Z.ai",
-  "settings.modelProvider.codingPlan.start.enabled": "Enabled",
-  "settings.modelProvider.codingPlan.start.freeBadge": "Free",
-  "settings.modelProvider.codingPlan.start.freeEquityTitle": "Start free plan",
-  "settings.modelProvider.codingPlan.start.freeEquityDetails":
-    "Basic coding capability is available after sign-in.",
-  "settings.modelProvider.codingPlan.paymentDialog.title": "{product} auto-renewal plan",
-  "settings.modelProvider.codingPlan.paymentDialog.close": "Close payment dialog",
-  "settings.modelProvider.codingPlan.paymentDialog.originalAmount": "Plan price",
-  "settings.modelProvider.codingPlan.paymentDialog.discountActivity": "Discount",
-  "settings.modelProvider.codingPlan.paymentDialog.currentPlanCredit":
-    "Current plan remaining value",
-  "settings.modelProvider.codingPlan.paymentDialog.payAmount": "Amount due",
-  "settings.modelProvider.codingPlan.paymentDialog.deductions": "Deductions",
-  "settings.modelProvider.codingPlan.paymentDialog.alipayScan": "Scan with Alipay to pay",
-  "settings.modelProvider.codingPlan.paymentDialog.polling": "Waiting for payment confirmation",
-  "settings.modelProvider.codingPlan.paymentDialog.qrAlt": "Payment QR code",
-  "settings.modelProvider.codingPlan.paymentDialog.qrLoading": "Generating QR code",
-  "settings.modelProvider.codingPlan.paymentDialog.qrError":
-    "Could not generate the QR code. Try again.",
-  "settings.modelProvider.codingPlan.paymentDialog.qrExpired": "QR code expired",
-  "settings.modelProvider.codingPlan.paymentDialog.refreshQr": "Refresh QR code",
-  "settings.modelProvider.codingPlan.paymentDialog.tipAutoRenew":
-    "The subscription will auto-renew at {price}/month.",
-  "settings.modelProvider.codingPlan.paymentDialog.tipDeduction":
-    "Deduction priority: credits first, then balance, then Alipay.",
-  "settings.modelProvider.codingPlan.paymentDialog.tipPeriodic":
-    "The plan renews monthly until you cancel it according to the service terms.",
-  "settings.modelProvider.codingPlan.paymentDialog.tipCancel":
-    "You can turn off auto-renewal at least 3 days before the renewal date from your plan overview.",
-  "settings.modelProvider.codingPlan.paymentDialog.tipCancelPrefix":
-    "You can turn off auto-renewal at least 3 days before the renewal date from your ",
-  "settings.modelProvider.codingPlan.paymentDialog.planOverviewLink": "plan overview",
-  "settings.modelProvider.codingPlan.paymentDialog.tipCancelSuffix": ".",
-  "settings.modelProvider.codingPlan.paymentDialog.ruleTitle": "Account usage policy",
-  "settings.modelProvider.codingPlan.paymentDialog.ruleDescription":
-    "Use the subscribed account only within officially permitted product scopes. Do not lend, transfer, or provide it to third parties, and do not use it for improper or rule-breaking behavior. If violations are found, the platform may restrict or ban the account without refund.",
-  "settings.modelProvider.codingPlan.paymentDialog.agreement":
-    "Payment means you agree to the service and subscription auto-renewal terms. Virtual products are not refundable after payment.",
-  "settings.modelProvider.codingPlan.enterprise.purchaseMethod": "Service method",
-  "settings.modelProvider.codingPlan.enterprise.purchaseMethodTooltipTitle":
-    "Service method details",
-  "settings.modelProvider.codingPlan.enterprise.purchaseMethodTooltipDescription":
-    "1. Monthly one-time purchase only supports 1, 3, 6, or 12 months. 12 months gets 10% off.\n2. Continuous subscription: auto-renewal deducts in this order: gift balance > balance > Alipay.",
-  "settings.modelProvider.codingPlan.enterprise.tier.lite": "Lite",
-  "settings.modelProvider.codingPlan.enterprise.tier.pro": "Pro",
-  "settings.modelProvider.codingPlan.enterprise.tier.max": "Max",
-  "settings.modelProvider.codingPlan.enterprise.configTitle": "Team plan configuration",
-  "settings.modelProvider.codingPlan.enterprise.packageType": "Plan type",
-  "settings.modelProvider.codingPlan.enterprise.packageSeats": "Plan seats",
-  "settings.modelProvider.codingPlan.enterprise.autoRenewAuthorization":
-    "You authorize us to enable auto-renewal for you",
-  "settings.modelProvider.codingPlan.enterprise.seatMonthlyPrice": "{price} / seat / month",
-  "settings.modelProvider.codingPlan.enterprise.refresh": "Refresh",
-  "settings.modelProvider.codingPlan.enterprise.singleSeatPrice": "single-seat price",
-  "settings.modelProvider.codingPlan.enterprise.singleSeatFrom": "Single-seat pricing",
-  "settings.modelProvider.codingPlan.enterprise.unitPrice": "Single-seat price",
-  "settings.modelProvider.codingPlan.enterprise.seats": "Seats",
-  "settings.modelProvider.codingPlan.enterprise.seatInputUnit": "seats",
-  "settings.modelProvider.codingPlan.enterprise.seatsUnit": "seats",
-  "settings.modelProvider.codingPlan.enterprise.duration": "Duration",
-  "settings.modelProvider.codingPlan.enterprise.durationUnit.month": "mo",
-  "settings.modelProvider.codingPlan.enterprise.durationUnit.quarter": "qtr",
-  "settings.modelProvider.codingPlan.enterprise.durationUnit.year": "yr",
-  "settings.modelProvider.codingPlan.enterprise.durationInputUnit.month": "months",
-  "settings.modelProvider.codingPlan.enterprise.durationInputUnit.year": "years",
-  "settings.modelProvider.codingPlan.enterprise.durationDiscountOption": "10% off",
-  "settings.modelProvider.codingPlan.enterprise.calculating": "Calculating",
-  "settings.modelProvider.codingPlan.enterprise.productsLoadingDescription":
-    "Loading team plan pricing from BigModel.",
-  "settings.modelProvider.codingPlan.enterprise.productsEmptyDescription":
-    "No team plan products are currently available.",
-  "settings.modelProvider.codingPlan.enterprise.productsError": "Could not load team plans",
-  "settings.modelProvider.codingPlan.enterprise.choosePurchaseMethod": "Service method",
-  "settings.modelProvider.codingPlan.enterprise.purchaseMethodDescription":
-    "You authorize us to enable auto-renewal for you. Select service method, seats, and one-time purchase duration before confirming payment.",
-  "settings.modelProvider.codingPlan.enterprise.continuousDescription":
-    "Auto-renews for the selected billing period.",
-  "settings.modelProvider.codingPlan.enterprise.oneTimeDescription":
-    "One-time purchase for the selected duration.",
-  "settings.modelProvider.codingPlan.enterprise.unit.monthly": "/ seat / month",
-  "settings.modelProvider.codingPlan.enterprise.unit.quarterly": "/ seat / quarter",
-  "settings.modelProvider.codingPlan.enterprise.unit.yearly": "/ seat / year",
-  "settings.modelProvider.codingPlan.enterprise.benefitSeats": "Seat-based team access",
-  "settings.modelProvider.codingPlan.enterprise.benefitBilling": "Centralized billing and payment",
-  "settings.modelProvider.codingPlan.enterprise.benefitQuota": "Team coding quota",
-  "settings.modelProvider.codingPlan.enterprise.balanceTitle": "Balance deduction",
-  "settings.modelProvider.codingPlan.enterprise.useGiftBalance": "Use gift balance",
-  "settings.modelProvider.codingPlan.enterprise.useCashBalance": "Use balance",
-  "settings.modelProvider.codingPlan.enterprise.currentGiftBalance":
-    "Current gift balance {amount}",
-  "settings.modelProvider.codingPlan.enterprise.currentCashBalance":
-    "Current account balance {amount}",
-  "settings.modelProvider.codingPlan.enterprise.recharge": "Top up",
-  "settings.modelProvider.codingPlan.enterprise.giftBalance": "Gift balance",
-  "settings.modelProvider.codingPlan.enterprise.cashBalance": "Cash balance",
-  "settings.modelProvider.codingPlan.enterprise.balanceAvailable": "Available {amount}",
-  "settings.modelProvider.codingPlan.enterprise.giftBalanceDeduction": "Gift balance deduction",
-  "settings.modelProvider.codingPlan.enterprise.cashBalanceDeduction": "Cash balance deduction",
-  "settings.modelProvider.codingPlan.enterprise.calculateDescription":
-    "Payment amount will update after the order estimate is ready.",
-  "settings.modelProvider.codingPlan.enterprise.paymentNotesTitle": "Payment notes",
-  "settings.modelProvider.codingPlan.enterprise.paymentNotesDescription":
-    "Balance and gift deductions are estimated by BigModel. Continuous subscriptions must keep at least the required third-party payment amount.",
-  "settings.modelProvider.codingPlan.enterprise.amountDetails": "Amount details",
-  "settings.modelProvider.codingPlan.enterprise.seatQuantity": "Seats",
-  "settings.modelProvider.codingPlan.enterprise.seatCountValue": "{count} seats",
-  "settings.modelProvider.codingPlan.enterprise.orderOriginalAmount": "Original order amount",
-  "settings.modelProvider.codingPlan.enterprise.orderDiscount": "{discount} discount",
-  "settings.modelProvider.codingPlan.enterprise.teamAgreementPrefix": "I agree to the ",
-  "settings.modelProvider.codingPlan.enterprise.teamAgreementLink": "Team plan purchase agreement",
-  "settings.modelProvider.codingPlan.enterprise.cancel": "Cancel",
-  "settings.modelProvider.codingPlan.enterprise.confirmPay": "Confirm and pay",
-  "settings.modelProvider.codingPlan.enterprise.confirmTitle": "Buy {product} enterprise plan",
-  "settings.modelProvider.codingPlan.enterprise.paymentDialog.title":
-    "{product} enterprise plan payment",
-  "settings.modelProvider.codingPlan.enterprise.paymentDialog.tipTotal":
-    "The QR amount is the calculated total for seats and purchase duration.",
-  "settings.modelProvider.codingPlan.enterprise.paymentDialog.tipDeduction":
-    "Balance and gift deductions follow the confirmed estimate on the payment confirmation page.",
-  "settings.modelProvider.codingPlan.enterprise.paymentDialog.tipComplete":
-    "After payment succeeds, enterprise pricing and Coding Plan entitlement will refresh automatically.",
-  "settings.modelProvider.codingPlan.enterprise.pendingOrderTitle": "You have an unpaid order",
-  "settings.modelProvider.codingPlan.enterprise.pendingOrderDescription":
-    "Continue with it? You can cancel this order and choose a new plan, or continue paying for the original order.",
-  "settings.modelProvider.codingPlan.enterprise.pendingOrderCancel": "Cancel order",
-  "settings.modelProvider.codingPlan.enterprise.pendingOrderContinue": "Continue payment",
-  "settings.modelProvider.codingPlan.enterprise.pendingOrderProductMissing":
-    "The plan for this unpaid order was not found. Refresh plans and try again.",
-  "settings.modelProvider.codingPlan.overseasPayment.title": "{product} overseas payment",
-  "settings.modelProvider.codingPlan.overseasPayment.description":
-    "Amount due: {price}. Choose PayPal or continue on the official Z.ai payment page.",
-  "settings.modelProvider.codingPlan.overseasPayment.paypal": "PayPal",
-  "settings.modelProvider.codingPlan.overseasPayment.paypalDescription":
-    "Open PayPal authorization, then return here to continue.",
-  "settings.modelProvider.codingPlan.overseasPayment.paypalAuthorize": "Continue to PayPal",
-  "settings.modelProvider.codingPlan.overseasPayment.paypalContinue":
-    "I authorized PayPal, continue payment",
-  "settings.modelProvider.codingPlan.overseasPayment.selectPaymentMethod": "Payment method",
-  "settings.modelProvider.codingPlan.overseasPayment.cardPayment": "Credit card / debit card",
-  "settings.modelProvider.codingPlan.overseasPayment.savedCards": "Saved cards",
-  "settings.modelProvider.codingPlan.overseasPayment.refreshCards": "Refresh cards",
-  "settings.modelProvider.codingPlan.overseasPayment.deleteCard": "Delete card",
-  "settings.modelProvider.codingPlan.overseasPayment.cardsLoading": "Loading saved cards...",
-  "settings.modelProvider.codingPlan.overseasPayment.noSavedCards": "No saved cards yet.",
-  "settings.modelProvider.codingPlan.overseasPayment.addCard": "Add card",
-  "settings.modelProvider.codingPlan.overseasPayment.changeCard": "Change card",
-  "settings.modelProvider.codingPlan.overseasPayment.cardExpires": "Expires {month}/{year}",
-  "settings.modelProvider.codingPlan.overseasPayment.cardInformation": "Card information",
-  "settings.modelProvider.codingPlan.overseasPayment.nameOnCard": "Name on card",
-  "settings.modelProvider.codingPlan.overseasPayment.billingAddress": "Billing address",
-  "settings.modelProvider.codingPlan.overseasPayment.country": "Country",
-  "settings.modelProvider.codingPlan.overseasPayment.countryRequired":
-    "Select a billing country or region.",
-  "settings.modelProvider.codingPlan.overseasPayment.addressLine1": "Address line 1",
-  "settings.modelProvider.codingPlan.overseasPayment.city": "City",
-  "settings.modelProvider.codingPlan.overseasPayment.postalCode": "Postal code",
-  "settings.modelProvider.codingPlan.overseasPayment.payWithCard": "Pay with card",
-  "settings.modelProvider.codingPlan.overseasPayment.saveCard": "Save card",
-  "settings.modelProvider.codingPlan.overseasPayment.confirm": "Confirm",
-  "settings.modelProvider.codingPlan.overseasPayment.amount.originalAmount": "Original price",
-  "settings.modelProvider.codingPlan.overseasPayment.amount.discountActivity": "Discount",
-  "settings.modelProvider.codingPlan.overseasPayment.amount.currentPlanCredit":
-    "Current plan credit",
-  "settings.modelProvider.codingPlan.overseasPayment.amount.payAmount": "Amount due",
-  "settings.modelProvider.codingPlan.overseasPayment.amount.deductions": "Deductions",
-  "settings.modelProvider.codingPlan.overseasPayment.addCardBeforeConfirm":
-    "Add a card before confirming.",
-  "settings.modelProvider.codingPlan.overseasPayment.stripeNotReady":
-    "Stripe is still loading. Try again in a moment.",
-  "settings.modelProvider.codingPlan.overseasPayment.cardElementMissing":
-    "Card input is not ready. Refresh and try again.",
-  "settings.modelProvider.codingPlan.overseasPayment.stripe3dsFailed":
-    "Stripe 3DS verification failed.",
-  "settings.modelProvider.codingPlan.overseasPayment.stripePaymentMethodFailed":
-    "Stripe payment method failed.",
-  "settings.modelProvider.codingPlan.overseasPayment.stripePublishableKeyMissing":
-    "Stripe card entry is not configured in this build.",
-  "settings.modelProvider.codingPlan.overseasPayment.close": "Maybe later",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalPolicyTitle": "Renewal Policy",
-  "settings.modelProvider.codingPlan.overseasPayment.accountPolicyTitle": "Account Usage Policy",
-  "settings.modelProvider.codingPlan.overseasPayment.period.month": "month",
-  "settings.modelProvider.codingPlan.overseasPayment.period.quarter": "quarter",
-  "settings.modelProvider.codingPlan.overseasPayment.period.year": "year",
-  "settings.modelProvider.codingPlan.overseasPayment.recurringPeriod.month": "Monthly",
-  "settings.modelProvider.codingPlan.overseasPayment.recurringPeriod.quarter": "Quarterly",
-  "settings.modelProvider.codingPlan.overseasPayment.recurringPeriod.year": "Yearly",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalCharge":
-    "{price} will be charged automatically per {period}.",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalChargeFallback":
-    "Future renewals will follow your selected subscription cycle. The actual renewal amount is subject to your renewal invoice.",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalDeduction":
-    "Payments will be deducted first from bonus credits, then from your account balance, and finally via credit card.",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalMinimum":
-    "Please note that a small minimum applies when charging your credit card. If the remaining amount is less, we will round up the deduction to meet this minimum.",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalRecurring":
-    "{period} charges will continue on a recurring basis until you cancel in accordance with our Terms of Service.",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalCancelPrefix":
-    "You may disable auto-renewal at least 1 day before the renewal date in your ",
-  "settings.modelProvider.codingPlan.overseasPayment.subscriptionSettingLink":
-    "subscription setting",
-  "settings.modelProvider.codingPlan.overseasPayment.renewalCancelSuffix": ".",
-  "settings.modelProvider.codingPlan.overseasPayment.accountPolicyPrefix":
-    "The GLM Coding Plan is strictly limited to use by the subscriber within ",
-  "settings.modelProvider.codingPlan.overseasPayment.supportedProductsLink":
-    "officially supported products",
-  "settings.modelProvider.codingPlan.overseasPayment.accountPolicyAfterSupportedProducts":
-    ". Any sharing, resale, transfer, or third-party access is strictly prohibited. Any improper, unauthorized, or policy-violating use may result in immediate account restriction or suspension with no refunds. Please comply with our ",
-  "settings.modelProvider.codingPlan.overseasPayment.termsLink": "Terms",
-  "settings.modelProvider.codingPlan.overseasPayment.accountPolicyBetween": " and ",
-  "settings.modelProvider.codingPlan.overseasPayment.policyLink": "Policy",
-  "settings.modelProvider.codingPlan.overseasPayment.accountPolicySuffix": ".",
-  "settings.modelProvider.codingPlan.overseasPayment.authorizationPrefix":
-    "You agree that Z.ai will charge your card the above amount now and on a recurring basis according to your subscription plan until you cancel in accordance with our ",
-  "settings.modelProvider.codingPlan.overseasPayment.authorizationTermsLink": "terms",
-  "settings.modelProvider.codingPlan.overseasPayment.authorizationSuffix": ".",
-  "settings.modelProvider.codingPlan.paymentDialog.agreementPrefix":
-    "Payment means you agree to the ",
-  "settings.modelProvider.codingPlan.paymentDialog.serviceAgreementLink": "Service agreement",
-  "settings.modelProvider.codingPlan.paymentDialog.agreementBetween": " and the ",
-  "settings.modelProvider.codingPlan.paymentDialog.subscriptionAgreementLink":
-    "Subscription and auto-renewal agreement",
-  "settings.modelProvider.codingPlan.paymentDialog.agreementSuffix":
-    ". Virtual products are not refundable after payment.",
-  "settings.modelProvider.codingPlan.product.soldOut": "Sold out",
-  "settings.modelProvider.codingPlan.product.forbidden": "Unavailable for this account",
-  "settings.modelProvider.codingPlan.product.unavailable": "Unavailable",
-  "settings.modelProvider.codingPlan.product.subscribeNow": "Subscribe now",
-  "settings.modelProvider.codingPlan.product.unavailableTooltipPrefix":
-    "This plan is unavailable for purchase. ",
-  "settings.modelProvider.codingPlan.product.unavailableTooltipLink": "view details",
-  "settings.modelProvider.codingPlan.product.included": "Included",
-  "settings.modelProvider.codingPlan.product.firstPromo": "First-time subscription discount",
-  "settings.modelProvider.codingPlan.product.delay": "Effective {time}",
-  "settings.modelProvider.codingPlan.zai.plan.lite.name": "Lite",
-  "settings.modelProvider.codingPlan.zai.plan.lite.summary": "Base usage limits",
-  "settings.modelProvider.codingPlan.zai.plan.pro.name": "Pro",
-  "settings.modelProvider.codingPlan.zai.plan.pro.summary":
-    "Everything in Lite, plus 5x Lite usage",
-  "settings.modelProvider.codingPlan.zai.plan.max.name": "Max",
-  "settings.modelProvider.codingPlan.zai.plan.max.summary":
-    "Everything in Pro, plus 20x Lite usage",
-  "settings.modelProvider.codingPlan.bigmodel.plan.lite.name": "Lite",
-  "settings.modelProvider.codingPlan.bigmodel.plan.lite.summary": "Base usage quota",
-  "settings.modelProvider.codingPlan.bigmodel.plan.pro.name": "Pro",
-  "settings.modelProvider.codingPlan.bigmodel.plan.pro.summary":
-    "5x Lite usage quota + all Lite benefits",
-  "settings.modelProvider.codingPlan.bigmodel.plan.max.name": "Max",
-  "settings.modelProvider.codingPlan.bigmodel.plan.max.summary":
-    "20x Lite usage quota + all Pro benefits",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.lite.detail0": "Base usage allowance",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.lite.detail1":
-    "Light iteration for small repos",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.lite.detail2":
-    "Latest models rolled out over time",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.lite.detail3": "20+ coding tools",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.pro.detail0": "5x Lite usage allowance",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.pro.detail1":
-    "Daily development for mid-sized repos",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.pro.detail2":
-    "Priority access to latest models",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.pro.detail3": "Curated MCP tools",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.max.detail0":
-    "20x Lite usage allowance",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.max.detail1":
-    "Deep work on mid-to-large repos",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.max.detail2":
-    "First access to latest models",
-  "settings.modelProvider.codingPlan.bigmodel.purchase.plan.max.detail3":
-    "Peak-time resource priority",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.lite.detail0": "Base usage included",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.lite.detail1": "Small repo iteration",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.lite.detail2": "Latest models over time",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.lite.detail3": "20+ coding tools",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.pro.detail0": "5x Lite usage",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.pro.detail1": "Mid-sized repo development",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.pro.detail2": "Priority model access",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.pro.detail3": "Curated MCP tools",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.max.detail0": "20x Lite usage",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.max.detail1": "Mid-to-large repo work",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.max.detail2": "First model access",
-  "settings.modelProvider.codingPlan.zai.purchase.plan.max.detail3": "Peak-time priority",
   "settings.modelProvider.enabledStatus": "Enabled",
   "settings.modelProvider.enableModel": "Enable",
   "settings.modelProvider.disabledStatus": "Disabled",
@@ -4383,7 +3081,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.resetForm": "Reset form",
   "settings.modelProvider.fieldHelp": "About {field}",
   "settings.modelProvider.help.contextWindow":
-    "The context capacity the model can process at once, in tokens. ZCode uses this to manage context.\nDo not exceed the model's actual limit.",
+    "The context capacity the model can process at once, in tokens. ZxCode uses this to manage context.\nDo not exceed the model's actual limit.",
   "settings.modelProvider.help.maxOutputTokens":
     "The maximum number of tokens a single model request may generate.\nDo not exceed the model's actual limit.",
   "settings.modelProvider.help.inputModalities":
@@ -4399,7 +3097,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.help.advanced":
     "**MFJS tool schema**: Enables Moonshot Flavored JSON Schema compatibility, commonly used by Moonshot's Kimi model API. Enable only when the model API requires this format.",
   "settings.modelProvider.help.followRecommendedConfig":
-    "Matches recommended configuration using the model ID, Base URL, and API format. ZCode continually updates recommendations and automatically syncs them to you.\nWhen you manually change a setting, that setting becomes manually managed and stops following recommendation updates; other settings remain managed by smart configuration.",
+    "Matches recommended configuration using the model ID, Base URL, and API format. ZxCode continually updates recommendations and automatically syncs them to you.\nWhen you manually change a setting, that setting becomes manually managed and stops following recommendation updates; other settings remain managed by smart configuration.",
   "settings.modelProvider.modelDefaultsLoaded": "Smart configuration matched for this model",
   "settings.modelProvider.modelConfigIncomplete": "Model configuration is incomplete",
   "settings.modelProvider.models": "Model list",
@@ -4451,152 +3149,6 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.newProviderName": "New provider",
   "settings.modelProvider.modelsPlaceholder": "One model name per line",
   "settings.modelProvider.modelsCount": "{count} models",
-  "settings.modelProvider.claudeMapping": "Claude model mapping",
-  "settings.modelProvider.claudeMappingDescription":
-    "Choose a matching model for each Claude model slot",
-  "settings.modelProvider.slot.haiku": "Haiku (light tasks)",
-  "settings.modelProvider.slot.sonnet": "Sonnet (general tasks)",
-  "settings.modelProvider.slot.opus": "Opus (complex tasks)",
-  "settings.modelProvider.slot.reasoning": "Reasoning (reasoning tasks)",
-  "settings.modelProvider.mappingNotSet": "Not set",
-  "settings.modelProvider.presetTitle": "Providers",
-  "settings.usage.sectionTitle": "Usage stats",
-  "settings.usage.sectionDescription": "Built from local app session history.",
-  "settings.usage.tab.appUsage": "App usage",
-  "settings.usage.tab.codingPlan": "Individual Plan",
-  "settings.usage.sectionDescriptionRemote":
-    "Synced from the selected provider monitor API for real token and tool usage.",
-  "settings.usage.remoteTokenHint": "From the selected provider model-usage API",
-  "settings.usage.calls": "Calls",
-  "settings.usage.toolCallsTotal": "Tool calls",
-  "settings.usage.toolCallsEmpty": "No tool calls in this window",
-  "settings.usage.toolCallsUnit": "calls",
-  "settings.usage.toolChartTitle": "Tool usage breakdown",
-  "settings.usage.toolChartDescription":
-    "From the selected provider tool-usage API: Network Search / Web Reader / Zread call counts.",
-  "settings.usage.sourceProvider": "Source: {provider}",
-  "settings.usage.billingBanner.title": "{provider} Coding Plan",
-  "settings.usage.billingBanner.description":
-    "Connect your {provider} account to query Coding Plan entitlement, then keep coding in ZCode after purchase or setup.",
-  "settings.usage.billingBanner.compactDescription":
-    "Connect your {provider} account to sync usage.",
-  "settings.usage.billingBanner.buy": "Buy Coding Plan",
-  "settings.usage.billingBanner.apiKeys": "API keys",
-  "settings.usage.billingBanner.usageDetails": "Usage details",
-  "settings.usage.entitlementTitle": "Coding Plan entitlement",
-  "settings.usage.entitlementDescription":
-    "Sync exact plan level, 5-hour prompt pool, weekly quota, and monthly tool quota from the connected Coding Plan account.",
-  "settings.usage.entitlementError":
-    "Unable to load Coding Plan entitlement. Try again later or check the provider configuration.",
-  "usage.error.entitlement.credential":
-    "No Coding Plan entitlement was found. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.entitlement.generic":
-    "Unable to load Coding Plan entitlement. Try again later or check the provider configuration.",
-  "settings.usage.entitlementRemaining": "Tool usage",
-  "settings.usage.entitlementRealtime": "Synced from the provider quota api",
-  "settings.usage.entitlementHidden": "Provider marked this balance as hidden",
-  "settings.usage.entitlementPlan": "Active plan",
-  "settings.usage.entitlementPlanLevel": "Plan level",
-  "settings.usage.entitlementNoPlan": "No active Coding Plan",
-  "settings.usage.entitlementExpires": "Expires {date}",
-  "settings.usage.entitlementResetTime": "Next reset",
-  "settings.usage.entitlementTokenUsage": "5-hour prompt pool used {percent}",
-  "settings.usage.quotaTitle": "Quota remaining",
-  "codingPlan.quotaReset.openDialog": "Get {count} reset quotas",
-  "codingPlan.quotaReset.countdown.daysHours": "{days}d {hours}h",
-  "codingPlan.quotaReset.countdown.daysOnly": "{days}d",
-  "codingPlan.quotaReset.countdown.hoursMinutes": "{hours}h {minutes}m",
-  "codingPlan.quotaReset.countdown.hoursOnly": "{hours}h",
-  "codingPlan.quotaReset.countdown.minutesSeconds": "{minutes}m {seconds}s",
-  "codingPlan.quotaReset.dialog.title": "Resettable quota",
-  "codingPlan.quotaReset.dialog.remaining": "Remaining quota",
-  "codingPlan.quotaReset.dialog.resettable": "Available resets",
-  "codingPlan.quotaReset.dialog.fiveHour": "5-hour quota reset",
-  "codingPlan.quotaReset.dialog.week": "Weekly quota reset",
-  "codingPlan.quotaReset.dialog.expiresIn": "Expires in {time}",
-  "codingPlan.quotaReset.dialog.expiresInSoonest": "Soonest expires in {time}",
-  "codingPlan.quotaReset.dialog.itemCount": "×{count}",
-  "codingPlan.quotaReset.opportunity": "{count} reset available",
-  "codingPlan.quotaReset.expiresIn": "Expires in {time}",
-  "codingPlan.quotaReset.contextReminder.available": "{count} reset available",
-  "codingPlan.quotaReset.contextReminder.expiresIn": "Reset expires in",
-  "codingPlan.quotaReset.contextReminder.dismiss": "Dismiss reminder",
-  "codingPlan.quotaReset.reset": "Reset",
-  "codingPlan.quotaReset.resetAria": "Reset 5-hour quota",
-  "codingPlan.quotaReset.resetAriaWeek": "Reset weekly quota",
-  "codingPlan.quotaReset.success": "Reset successful",
-  "codingPlan.quotaReset.failed": "Reset failed. Please try again.",
-  "codingPlan.quotaReset.processing": "Resetting 5-hour quota…",
-  "codingPlan.quotaReset.processingWeek": "Resetting weekly quota…",
-  "codingPlan.quotaReset.done": "5-hour quota reset",
-  "codingPlan.quotaReset.doneWeek": "Weekly quota reset",
-  "codingPlan.quotaReset.completed": "Reset",
-  "codingPlan.quotaReset.completedAt": "Reset at {time}",
-  "settings.usage.trendsTitle": "Usage trends",
-  "settings.usage.entitlementFiveHourUsage": "5-hour remaining",
-  "settings.usage.entitlementWeeklyUsage": "Weekly remaining",
-  "settings.usage.entitlementMonthlyMcpUsage": "Tool calls",
-  "settings.usage.entitlementServerMcpUsage": "ZCode MCP",
-  "settings.usage.entitlementResetAt": "Resets {time}",
-  "settings.usage.entitlementUsageDetails": "Tool usage detail",
-  "settings.usage.entitlementPromptCap": "5-hour prompt pool",
-  "settings.usage.entitlementPromptCapValue": "{value} prompts",
-  "settings.usage.entitlementToolCap": "Monthly MCP/tool quota",
-  "settings.usage.entitlementToolCapValue": "{value}/month",
-  "settings.usage.entitlementConcurrency": "Concurrency priority",
-  "settings.usage.entitlementConcurrencyValue": "{value}",
-  "settings.usage.entitlementPolicyHint":
-    "Quota values follow the current usage guide and may change with platform policy.",
-  "settings.usage.entitlementLoginRequired": "Login required",
-  "settings.usage.entitlementNotConfigured":
-    "No connected Z.ai or BigModel Coding Plan account is available for quota lookup. Connect a Coding Plan account first.",
-  "settings.usage.entitlementStatusActive": "Active",
-  "settings.usage.entitlementStatusError": "Error",
-  "settings.usage.entitlementStatusLoading": "Loading",
-  "settings.usage.entitlementStatusLoginRequired": "Login required",
-  "settings.usage.entitlementStatusNoPlan": "Not subscribed",
-  "settings.usage.entitlementStatusNotConfigured": "Not configured",
-  "sidebar.usage.summaryTitle": "Last 30 days",
-  "sidebar.usage.plan.title": "Usage remaining",
-  "sidebar.usage.plan.upgrade": "Upgrade",
-  "sidebar.usage.plan.renew": "Renew",
-  "sidebar.usage.plan.codingPlanTitle": "Coding Plan",
-  "sidebar.usage.plan.audienceIndividual": "Individual",
-  "sidebar.usage.plan.audienceTeam": "Team",
-  "sidebar.usage.plan.open": "More",
-  "sidebar.usage.plan.loading": "Syncing...",
-  "sidebar.usage.plan.unavailable": "No available entitlement data yet.",
-  "sidebar.usage.plan.loginRequired": "Login to view plan usage.",
-  "sidebar.usage.plan.notConfigured": "No connected Coding Plan account found.",
-  "sidebar.usage.plan.noPlanShort": "No plan",
-  "sidebar.usage.plan.remainingShort": "{value} left",
-  "sidebar.usage.plan.planTypeValue": "Plan: {plan}",
-  "sidebar.usage.plan.tokensLimit": "Token quota",
-  "sidebar.usage.plan.timeLimit": "Time quota",
-  "sidebar.usage.plan.otherLimit": "Quota",
-  "sidebar.usage.plan.percentUsed": "{percent}% used",
-  "sidebar.usage.plan.remainingValue": "Remaining",
-  "sidebar.usage.plan.total": "Total",
-  "sidebar.usage.plan.resetAt": "Resets {time}",
-  "sidebar.usage.plan.modelUsage": "Model usage",
-  "sidebar.usage.plan.openStats": "Usage stats",
-  "sidebar.usage.plan.refresh": "Refresh quota",
-  "sidebar.usage.plan.refreshing": "Updating quota",
-  "sidebar.usage.plan.updateFailed": "Possible network issue",
-  "sidebar.usage.plan.updated": "Quota updated",
-  "sidebar.usage.plan.noLimits": "Quota details unavailable.",
-  "sidebar.usage.plan.remaining": "Tool quota remaining",
-  "sidebar.usage.plan.realtime": "Synced from quota api",
-  "sidebar.usage.plan.hidden": "Provider marked this balance as hidden",
-  "sidebar.usage.plan.currentPlan": "Plan level",
-  "sidebar.usage.plan.noPlan": "No active Coding Plan",
-  "sidebar.usage.plan.expires": "Resets",
-  "sidebar.usage.plan.fiveHour": "5 hours",
-  "sidebar.usage.plan.weekly": "Weekly",
-  "sidebar.usage.plan.toolCalls": "Tool calls",
-  "sidebar.usage.plan.mcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcpDescription": "Daily aggregate quota for ZCode built-in plugin MCPs",
   "chat.planUsage.title": "Plan usage",
   "chat.planUsage.titleWithPlan": "{plan} Plan usage",
   "chat.planUsage.providerFallback": "Current provider",
@@ -4614,114 +3166,6 @@ const enUS: Record<string, string> = {
   "chat.planUsage.toolUsed": "{used} / {total} used · resets {time}",
   "chat.planUsage.noQuotaLimits":
     "No Coding Plan quota was found. Confirm that the connected account has an active Coding Plan.",
-  "usage.error.chatPlan.credential":
-    "Unable to read plan quota. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.chatPlan.generic":
-    "Unable to read plan quota. Try again later or check the provider configuration.",
-  "settings.usage.range.all": "All time",
-  "settings.usage.range.7d": "Last 7 days",
-  "settings.usage.range.30d": "Last 30 days",
-  "settings.usage.appUsageRangeTitle": "Time range",
-  "settings.usage.codingPlanRange.today": "Today",
-  "settings.usage.codingPlanRange.7d": "7 days",
-  "settings.usage.codingPlanRange.30d": "30 days",
-  "settings.usage.codingPlanRange.custom": "Custom",
-  "settings.usage.codingPlanMetric.credits": "Credits",
-  "settings.usage.codingPlanMetric.usage": "Usage",
-  "settings.usage.codingPlanSubject.model": "Models",
-  "settings.usage.codingPlanSubject.tool": "Tools",
-  "settings.usage.codingPlanLegendTotal": "Total",
-  "settings.usage.healthTitle": "System health",
-  "settings.usage.healthRange.7d": "Last 7 days",
-  "settings.usage.healthProMaxDecode": "Max&Pro peak average decode speed",
-  "settings.usage.healthLiteDecode": "Lite peak average decode speed",
-  "settings.usage.refresh": "Refresh",
-  "settings.usage.loadingTitle": "Computing usage",
-  "settings.usage.appUsageLoadingDescription":
-    "Reading local app session history, so it can take a moment.",
-  "settings.usage.codingPlanLoadingDescription":
-    "Reading the selected provider monitor API, so it can take a moment.",
-  "settings.usage.lastRefreshTime": "Last refreshed: {time}",
-  "settings.usage.error":
-    "Unable to load usage stats. Try again later or check the network and provider configuration.",
-  "settings.usage.checkApiKey": "Check account",
-  "usage.error.stats.credential":
-    "Unable to load usage stats. Reconnect the Coding Plan account or confirm that the account has an active plan.",
-  "usage.error.stats.generic":
-    "Unable to load usage stats. Try again later or check the network and provider configuration.",
-  "settings.usage.emptyTitle": "No usage data yet",
-  "settings.usage.emptyDescription": "The selected range has no usage data yet.",
-  "settings.usage.estimationHint": "Estimated from local session history",
-  "settings.usage.totalTokens": "Token usage",
-  "settings.usage.tokenUnit": "tokens",
-  "settings.usage.creditUnit": "credits",
-  "settings.usage.sessions": "Sessions",
-  "settings.usage.messages": "Messages",
-  "settings.usage.activeDays": "Active days",
-  "settings.usage.favoriteModel": "Favorite model",
-  "settings.usage.favoriteModelShare": "{share} share",
-  "settings.usage.longestSession": "Longest session",
-  "settings.usage.totalUsageDuration": "Total usage duration",
-  "settings.usage.activityTitle": "Activity",
-  "settings.usage.lifetimeTotalTokens": "Total tokens",
-  "settings.usage.lifetimePeakTokens": "Peak tokens",
-  "settings.usage.currentStreak": "Current streak",
-  "settings.usage.longestStreak": "Longest streak",
-  "settings.usage.cacheHitRate": "Cache hit rate",
-  "settings.usage.creditsTotal": "Credits total",
-  "settings.usage.averageDailyCredits": "Average daily credits",
-  "settings.usage.peakHour": "Peak hour",
-  "settings.usage.peakHourTokens": "{tokens} tokens",
-  "settings.usage.unknownModel": "Unknown model",
-  "settings.usage.heatmapTitle": "Token activity",
-  "settings.usage.heatmapCell": "{date}\n{tokens} tokens · {turns} messages",
-  "settings.usage.heatmapToolCell": "{date}\n{tokens} tokens · {tools} tools",
-  "settings.usage.heatmapWeeklyCell": "{date} week\n{tokens} tokens · {turns} messages",
-  "settings.usage.heatmapWeeklyToolCell": "{date} week\n{tokens} tokens · {tools} tools",
-  "settings.usage.heatmapCumulativeCell":
-    "Through {date} week cumulative\n{tokens} tokens · {turns} messages",
-  "settings.usage.heatmapCumulativeToolCell":
-    "Through {date} week cumulative\n{tokens} tokens · {tools} tools",
-  "settings.usage.heatmapDescription": "The busiest day was {day}, with about {tokens} tokens.",
-  "settings.usage.heatmap.intensity": "Peak intensity",
-  "settings.usage.heatmap.less": "Less",
-  "settings.usage.heatmap.more": "More",
-  "settings.usage.heatmap.range.daily": "Daily",
-  "settings.usage.heatmap.range.weekly": "Weekly",
-  "settings.usage.heatmap.range.cumulative": "Cumulative",
-  "settings.usage.dailyChartTitle": "Daily token trend chart",
-  "settings.usage.dailyChartDescription": "Token usage trend by day across {days} days.",
-  "settings.usage.dailyChart.peak": "Peak day",
-  "settings.usage.dailyChart.max": "Max",
-  "settings.usage.modelChartTitle": "Model usage",
-  "settings.usage.modelUsageTitle": "Model usage",
-  "settings.usage.toolUsageTitle": "Tool usage",
-  "settings.usage.tokenTotal": "Total token usage",
-  "settings.usage.timesUnit": " times",
-  "settings.usage.codingPlanNotConfiguredTitle": "Coding Plan is not connected",
-  "settings.usage.codingPlanNotConfiguredDescription":
-    "Connect a Z.ai or BigModel Coding Plan provider in Model Settings to view plan quota, model usage, and tool usage.",
-  "settings.usage.codingPlanCurrentConnectionTitle": "Current connection is not using Coding Plan",
-  "settings.usage.codingPlanCurrentConnectionDescription":
-    "Switch the workspace model connection to an Individual Plan or Team Plan to view its quota and usage here.",
-  "settings.usage.modelChartDescription":
-    "{model} currently has the highest share at about {share}.",
-  "settings.usage.modelChart.other": "Other models",
-  "settings.usage.modelChart.input": "In",
-  "settings.usage.modelChart.cachedInput": "Cached",
-  "settings.usage.modelChart.uncachedInput": "Uncached",
-  "settings.usage.modelChart.output": "Out",
-  "settings.usage.modelChart.remoteTokens": "From model-usage api",
-  "settings.usage.duration.day": "d",
-  "settings.usage.duration.hour": "h",
-  "settings.usage.duration.minute": "m",
-  "settings.usage.duration.second": "s",
-  "settings.usage.dayLabel.mon": "Mon",
-  "settings.usage.dayLabel.wed": "Wed",
-  "settings.usage.dayLabel.fri": "Fri",
-  "settings.modelProvider.presetDescription":
-    "Built-in Z.ai and BigModel providers with OAuth-assisted configuration.",
-  "settings.modelProvider.presetEmpty": "Not synced yet. Complete OAuth login first.",
   "settings.modelProvider.customTitle": "Custom providers",
   "settings.modelProvider.refresh": "Refresh",
   "settings.modelProvider.reorderProvider": "Drag to reorder provider",
@@ -4822,10 +3266,10 @@ const enUS: Record<string, string> = {
   "settings.skills.import.mode.copy": "Copy",
   "settings.skills.import.mode.symlink": "Symlink",
   "settings.skills.import.mode.copy.description":
-    "Copy the full skill directory into ZCode. Later changes in the external agent directory will not sync automatically.",
+    "Copy the full skill directory into ZxCode. Later changes in the external agent directory will not sync automatically.",
   "settings.skills.import.mode.symlink.description":
-    "Create a directory link to the external agent skill. ZCode follows later source changes, but the skill depends on that source path remaining available.",
-  "settings.skills.import.importing": "Importing skills into ZCode",
+    "Create a directory link to the external agent skill. ZxCode follows later source changes, but the skill depends on that source path remaining available.",
+  "settings.skills.import.importing": "Importing skills into ZxCode",
   "settings.skills.import.imported": "Imported",
   "settings.skills.import.skipped": "Skipped",
   "settings.skills.import.failed": "Failed",
@@ -4901,7 +3345,7 @@ const enUS: Record<string, string> = {
   "settings.skills.diagnostics.code.skill_not_found": "Skill not found",
   "settings.subagents.title": "Subagents",
   "settings.subagents.description":
-    "Manage user-level subagent Markdown files consumed by ZCode Agent.",
+    "Manage user-level subagent Markdown files consumed by ZxCode Agent.",
   "settings.subagents.workspaceScopeUnsupported":
     "Workspace-level creation or editing is unsupported",
   "settings.subagents.searchPlaceholder": "Search subagents...",
@@ -5268,10 +3712,10 @@ const enUS: Record<string, string> = {
   "settings.plugins.import.mode.copy": "Copy",
   "settings.plugins.import.mode.symlink": "Symlink",
   "settings.plugins.import.mode.copy.description":
-    "Copy the full plugin directory into ZCode and register it in plugins.dirs. Later changes in the external agent directory will not sync automatically.",
+    "Copy the full plugin directory into ZxCode and register it in plugins.dirs. Later changes in the external agent directory will not sync automatically.",
   "settings.plugins.import.mode.symlink.description":
-    "Create a directory link to the external agent plugin and register it in plugins.dirs. ZCode follows later source changes, but the plugin depends on that source path remaining available.",
-  "settings.plugins.import.importing": "Importing plugins into ZCode",
+    "Create a directory link to the external agent plugin and register it in plugins.dirs. ZxCode follows later source changes, but the plugin depends on that source path remaining available.",
+  "settings.plugins.import.importing": "Importing plugins into ZxCode",
   "settings.plugins.import.imported": "Imported",
   "settings.plugins.import.skipped": "Skipped",
   "settings.plugins.import.failed": "Failed",
@@ -5280,9 +3724,9 @@ const enUS: Record<string, string> = {
   "settings.plugins.import.finish": "Done",
   "settings.commands.title": "Commands",
   "settings.commands.description":
-    "Manage ZCode Agent .md command files. Commands can be invoked with /command-name in chat.",
+    "Manage ZxCode Agent .md command files. Commands can be invoked with /command-name in chat.",
   "settings.commands.sourceFilterLabel": "Source filter",
-  "settings.commands.source.zcodeAgent": "ZCode Agent",
+  "settings.commands.source.zcodeAgent": "ZxCode Agent",
   "settings.commands.add": "New",
   "settings.commands.addNew": "New command",
   "settings.commands.addDescription":
@@ -5342,17 +3786,16 @@ const enUS: Record<string, string> = {
   "settings.commands.import.mode.copy": "Copy",
   "settings.commands.import.mode.symlink": "Symlink",
   "settings.commands.import.mode.copy.description":
-    "Copy the command file into ZCode. Later changes in the external agent file will not sync automatically.",
+    "Copy the command file into ZxCode. Later changes in the external agent file will not sync automatically.",
   "settings.commands.import.mode.symlink.description":
-    "Create a file link to the external agent command. ZCode follows later source changes, but the command depends on that source path remaining available.",
-  "settings.commands.import.importing": "Importing commands into ZCode",
+    "Create a file link to the external agent command. ZxCode follows later source changes, but the command depends on that source path remaining available.",
+  "settings.commands.import.importing": "Importing commands into ZxCode",
   "settings.commands.import.imported": "Imported",
   "settings.commands.import.skipped": "Skipped",
   "settings.commands.import.failed": "Failed",
   "settings.commands.import.resultList": "Command results",
   "settings.commands.import.resultEmpty": "No command results were returned.",
   "settings.commands.import.finish": "Done",
-
   "settings.hooks.review.trust": "Trust",
   "settings.hooks.review.notice":
     "Hooks can run outside of the sandbox so we ask you to review any recently installed or modified hooks",
@@ -5372,9 +3815,9 @@ const enUS: Record<string, string> = {
   "settings.hooks.title": "Hooks",
   "settings.workspaceFileSearch.title": "Workspace Search Scope",
   "settings.workspaceFileSearch.description":
-    "Edit .zcodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
+    "Edit .zxcodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
   "settings.workspaceFileSearch.templateHint":
-    ".zcodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
+    ".zxcodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
   "settings.workspaceFileSearch.editorLabel": "Workspace search ignore rules editor",
   "settings.workspaceFileSearch.save": "Save",
   "settings.workspaceFileSearch.saved": "Saved; effective on the next search",
@@ -5385,7 +3828,8 @@ const enUS: Record<string, string> = {
   "settings.workspaceFileSearch.transformFailed":
     "Failed to apply the section operation; check the logs",
   "settings.workspaceFileSearch.reveal": "Reveal file location",
-  "settings.workspaceFileSearch.revealHint": "Save first; .zcodeignore lives at the workspace root",
+  "settings.workspaceFileSearch.revealHint":
+    "Save first; .zxcodeignore lives at the workspace root",
   "settings.workspaceFileSearch.unsaved": "Unsaved changes",
   "settings.workspaceFileSearch.noWorkspace":
     "No workspace is open, so search ignore rules cannot be configured.",
@@ -5442,8 +3886,8 @@ const enUS: Record<string, string> = {
   "settingsSync.action.rescanning": "Scanning...",
   "settingsSync.action.importSelected": "Import selected",
   "settingsSync.action.importing": "Importing...",
-  "settingsSync.action.finish": "Start using ZCode",
-  "settingsSync.agent.zcode": "ZCode Agent",
+  "settingsSync.action.finish": "Start using ZxCode",
+  "settingsSync.agent.zxcode": "ZxCode Agent",
   "settingsSync.agent.claudeCode": "Claude Code",
   "settingsSync.agent.codexCli": "Codex CLI",
   "settingsSync.agent.openCode": "OpenCode",
@@ -5492,17 +3936,17 @@ const enUS: Record<string, string> = {
   "settingsSync.discovery.description":
     "Importable agent settings are no longer scanned automatically.",
   "settingsSync.discovery.helper":
-    "Only missing items will be imported and your current ZCode settings will not be overwritten.",
+    "Only missing items will be imported and your current ZxCode settings will not be overwritten.",
   "settingsSync.discovery.agentCount": "Agents found: {count}",
   "settingsSync.discovery.categoryCount": "Categories found: {count}",
   "settingsSync.discovery.error": "Scan failed: {error}",
   "settingsSync.discovery.continue": "Continue",
-  "onboarding.dialog.title": "Welcome to ZCode",
+  "onboarding.dialog.title": "Welcome to ZxCode",
   "onboarding.dialog.description": "Choose how to start your first session.",
   "onboarding.wizard.label": "Migration guide",
   "onboarding.welcome.eyebrow": "First run setup",
-  "onboarding.welcome.title": "Welcome to ZCode",
-  "onboarding.welcome.start": "Start ZCode",
+  "onboarding.welcome.title": "Welcome to ZxCode",
+  "onboarding.welcome.start": "Start ZxCode",
   "onboarding.welcome.migrate": "Migration Guide",
   "onboarding.welcome.helper":
     "Import existing tool settings now, or skip and continue later from Settings.",
@@ -5526,7 +3970,7 @@ const enUS: Record<string, string> = {
     "Import selected commands from external agents before the final migration.",
   "onboarding.stepDescription.agentSettings": "Choose which agents' providers to bring in.",
   "onboarding.stepDescription.migration":
-    "Start migration and wait while ZCode imports your selections.",
+    "Start migration and wait while ZxCode imports your selections.",
   "onboarding.sessions.empty":
     "No workspaces yet. Scan local history, then pick workspaces to migrate.",
   "onboarding.sessions.count": "{count} sessions",
@@ -5545,7 +3989,7 @@ const enUS: Record<string, string> = {
   "onboarding.agentsFile.error": "Could not check AGENTS.md migration status: {error}",
   "onboarding.agentsFile.confirmTitle": "Overwrite default AGENTS.md?",
   "onboarding.agentsFile.confirmDescription":
-    "ZCode will copy {source} to {target}.\nIf the target file already exists, the ZCode default AGENTS configuration will be overwritten.",
+    "ZxCode will copy {source} to {target}.\nIf the target file already exists, the ZxCode default AGENTS configuration will be overwritten.",
   "onboarding.agentsFile.confirmAction": "Overwrite and migrate",
   "onboarding.finish.summary.label.imported": "Imported",
   "onboarding.finish.summary.label.skipped": "Skipped",
@@ -5573,8 +4017,6 @@ const enUS: Record<string, string> = {
   "onboarding.finish.summary.agentsFile": "AGENTS.md",
   "onboarding.finish.summary.settings.detail":
     "Imported {imported}, skipped {skipped}, failed {failed}.",
-
-  // Chat
   "chat.empty.title": "Start a Conversation",
   "chat.empty.description": "Start a new task in {workspace}",
   "chat.empty.description.beforeWorkspace": "Start a new task in",
@@ -5633,8 +4075,8 @@ const enUS: Record<string, string> = {
   "chat.emptyResult.description":
     "This task finished without any chat content. It may have been stopped before the model produced a response.",
   "chat.placeholder.newTask":
-    "Ask ZCode anything, @ to add context, / for commands or capabilities",
-  "chat.placeholder.newTaskMobile": "Ask ZCode anything…",
+    "Ask ZxCode anything, @ to add context, / for commands or capabilities",
+  "chat.placeholder.newTaskMobile": "Ask ZxCode anything…",
   "chat.placeholder.followUpAsk": "Ask for follow-up changes",
   "chat.placeholder.followUpQueue": "Keep typing to queue follow-up changes",
   "chat.placeholder.loading": "Initializing task...",
@@ -5910,24 +4352,23 @@ const enUS: Record<string, string> = {
   "chat.compact.duplicateBlocked": "A compaction is already running or queued.",
   "chat.modelSwitch.contextWindowGuard.title": "Compress context before switching models",
   "chat.modelSwitch.contextWindowGuard.description":
-    "This conversation has used {used} tokens, which exceeds {modelName}'s available context of {target} tokens after reserving maximum output.\nCompress the current conversation with the current model first. If the compressed context fits, ZCode will continue switching models.",
+    "This conversation has used {used} tokens, which exceeds {modelName}'s available context of {target} tokens after reserving maximum output.\nCompress the current conversation with the current model first. If the compressed context fits, ZxCode will continue switching models.",
   "chat.modelSwitch.contextWindowGuard.compress": "Compress",
   "chat.modelSwitch.contextWindowGuard.runningBlocked":
     "This conversation has used more context than the target model's available context after reserving maximum output. The conversation must be compressed before switching models, but the current task is still running and context compression cannot run now. Wait for the task to finish, then switch models again.",
   "chat.modelSwitch.contextWindowGuard.stillTooLarge":
     "After compression, the context used by this conversation is still larger than the target model's available context after reserving maximum output. Model switching was canceled.",
   "chat.toolbar.mode.label": "Switch mode",
-  // CUA composer entry button
   "chat.toolbar.computerUse.label": "Computer Use",
   "chat.toolbar.computerUse.tooltip.idle":
     "Computer Use is idle — it will start automatically on first use",
   "chat.toolbar.computerUse.tooltip.starting": "Enabling Computer Use plugin…",
   "chat.toolbar.computerUse.tooltip.ready":
-    "Computer Use ready — just describe what you want ZCode to do",
+    "Computer Use ready — just describe what you want ZxCode to do",
   "chat.toolbar.computerUse.tooltip.permissionRequired":
     "Missing macOS permissions — click to grant",
   "chat.toolbar.computerUse.tooltip.error":
-    "Computer Use enablement failed. Please restart ZCode app and retry, or ask ZCode to investigate the logs",
+    "Computer Use enablement failed. Please restart ZxCode app and retry, or ask ZxCode to investigate the logs",
   "chat.toolbar.computerUse.tooltip.sessionBusy":
     "A conversation is running. Computer Use can't be toggled right now — try again after it finishes.",
   "chat.toolbar.mode.description":
@@ -6259,7 +4700,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.models.levelsNoDefault": "Thinking levels: {levels}",
   "chat.toolCall.workflow.models.noLevels": "No thinking levels",
   "chat.toolCall.workflow.models.truncated": "Not all models are shown",
-
   "automations.pageTab.ariaLabel": "Automations page",
   "automations.pageTab.automation": "Automations",
   "automations.pageTab.workflow": "Workflows",
@@ -6279,7 +4719,7 @@ const enUS: Record<string, string> = {
     "Could not reach the local agent; global workflows are unavailable.",
   "workflows.hub.empty.title": "No saved workflows in your open projects yet",
   "workflows.hub.empty.hint":
-    "Design a workflow with ZCode in chat, then have it save the workflow to a project once it works. Projects that aren't open don't appear here.",
+    "Design a workflow with ZxCode in chat, then have it save the workflow to a project once it works. Projects that aren't open don't appear here.",
   "workflows.hub.noWorkspace": "Open a workspace to see its workflows.",
   "workflows.hub.loadError": "Could not read workflows: {error}",
   "workflows.hub.invalid": "{count} files could not be read",
@@ -6342,7 +4782,7 @@ const enUS: Record<string, string> = {
   "workflows.hub.detail.description": "Description",
   "workflows.hub.detail.whenToUse": "When to use",
   "workflows.hub.detail.whenToUse.help":
-    "A routing hint for ZCode: when this workflow is the right pick.",
+    "A routing hint for ZxCode: when this workflow is the right pick.",
   "workflows.hub.detail.args": "Arguments",
   "workflows.hub.detail.args.name": "Name",
   "workflows.hub.detail.args.type": "Type",
@@ -6363,7 +4803,7 @@ const enUS: Record<string, string> = {
   "workflows.hub.detail.meta.descriptionRequired": "Description is required",
   "workflows.hub.detail.script": "Script",
   "workflows.hub.detail.script.note":
-    "The script is read-only. To change it, revise it with ZCode in chat and save a new version.",
+    "The script is read-only. To change it, revise it with ZxCode in chat and save a new version.",
   "workflows.hub.detail.script.copy": "Copy script",
   "workflows.hub.detail.loadError": "Could not read this workflow: {reason}",
   "workflows.hub.detail.notFound": "This workflow is no longer in the project.",
@@ -6379,7 +4819,6 @@ const enUS: Record<string, string> = {
   "workflows.hub.reason.read_error": "File could not be read",
   "workflows.hub.time.duration.seconds": "{seconds}s",
   "workflows.hub.time.duration.minutes": "{minutes}m {seconds}s",
-  // ── Observation tool cards  ──
   "chat.toolCall.workflow.getRun.fetching": "Checking workflow status",
   "chat.toolCall.workflow.getRun.runningNodes": "{count} running nodes",
   "chat.toolCall.workflow.getRun.fetched": "Workflow status",
@@ -6466,7 +4905,6 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.completed": "Workflow completed",
   "chat.backgroundResult.workflow.errored": "Workflow errored",
   "chat.backgroundResult.workflow.stopped": "Workflow stopped",
-  // run 级停滞通知：run 还在跑，只是没有进展。
   "chat.backgroundResult.workflow.stall": "Workflow waiting on the model",
   "chat.backgroundResult.workflow.stall.body":
     "No model request in this run has succeeded for {minutes} min. It is still running and retrying with backoff; stop it from the run card if you no longer need it.",
@@ -6479,8 +4917,6 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.answered": "Subagent question answered",
   "chat.backgroundResult.workflow.asked": "Subagent asked a question",
   "chat.backgroundResult.workflow.artifacts.more": "+{count}",
-  // ── Escalation tool cards ──
-  // escalate：子代理把阻塞问题升级给主代理，停驻等答案。asking 相可能持续很久，措辞要平静。
   "chat.toolCall.workflow.escalate.asking": "Asking the main agent",
   "chat.toolCall.workflow.escalate.asked": "Asked the main agent",
   "chat.toolCall.workflow.escalate.question": "Question",
@@ -6499,7 +4935,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.status.completed": "Completed",
   "chat.toolCall.workflow.run.status.errored": "Errored",
   "chat.toolCall.workflow.run.status.stopped": "Stopped",
-  // stopped 的原因词，跟在状态词后。
   "chat.toolCall.workflow.run.stopReason.user": "by you",
   "chat.toolCall.workflow.run.stopReason.model": "by the agent",
   "chat.toolCall.workflow.run.stopReason.provider": "model error",
@@ -6551,7 +4986,7 @@ const enUS: Record<string, string> = {
   // 「配置」弹层（docs/dynamic-workflow/presentation.md「The settings popover」）：改子代理模型与最大并发数，
   // 应用即一次 GUI 修订（新 run 接着跑，旧 run 停下，已完成的步骤作缓存带过去）。
   // 完成卡与 run 侧板上的「保存 / 再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
-  // 「Saving the run, and running it again」）。两条路：交给 ZCode 提炼，或按原样直接写下去。
+  // 「Saving the run, and running it again」）。两条路：交给 ZxCode 提炼，或按原样直接写下去。
   "chat.toolCall.workflow.saveRun.action": "Save",
   "chat.toolCall.workflow.saveRun.runAgain": "Run again",
   "chat.toolCall.workflow.saveRun.starting": "Starting…",
@@ -6560,10 +4995,10 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.saveRun.announce.project": "Saved to the project",
   "chat.toolCall.workflow.saveRun.announce.global": "Saved as a global workflow",
   "chat.toolCall.workflow.saveRun.title": "Save workflow",
-  "chat.toolCall.workflow.saveRun.lead": "Let ZCode refine and save it",
+  "chat.toolCall.workflow.saveRun.lead": "Let ZxCode refine and save it",
   "chat.toolCall.workflow.saveRun.lead.hint":
-    "ZCode distills a reusable workflow for you, then asks you to confirm.",
-  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to ZCode…",
+    "ZxCode distills a reusable workflow for you, then asks you to confirm.",
+  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to ZxCode…",
   "chat.toolCall.workflow.saveRun.lead.unsupported": "This agent cannot save directly.",
   "chat.toolCall.workflow.saveRun.or": "or save it as is",
   "chat.toolCall.workflow.saveRun.name": "Name",
@@ -6690,8 +5125,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.preset.otherColumn": "Other",
   "chat.toolCall.workflow.run.artifacts.preset.empty": "No data yet",
   "chat.toolCall.workflow.run.artifacts.preset.items": "{count} items",
-  // 待答问题区（升级问答）：actor 停驻在自己那次 ask 里等
-  // 主代理回话。只读——应答者是主代理，不是用户，所以文案不能读起来像在请用户作答。
   "chat.toolCall.workflow.run.questions.title": "Waiting on an answer",
   "chat.toolCall.workflow.run.graph.unavailable":
     "The workflow graph is not in this conversation's visible history.",
@@ -6745,7 +5178,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.event.nodeSettledCached": "Settled · {outcome} (cached)",
   "chat.toolCall.workflow.run.event.usageUpdated": "Usage updated",
   "chat.toolCall.workflow.run.event.log": "Log",
-  // amend-resume: the first workspace write closed the predecessor cache; later steps run live.
   "chat.toolCall.workflow.run.event.importCacheClosed": "Cache closed by a workspace write",
   "chat.toolCall.workflow.run.event.report": "Reported",
   "chat.toolCall.workflow.run.event.phaseEntered": "Entered phase",
@@ -6926,15 +5358,12 @@ const enUS: Record<string, string> = {
   "chat.slash.subagents.title": "Agents",
   "chat.slash.subagents.empty": "No matching agents",
   "chat.slash.emptyUnavailable":
-    "No slash commands have been broadcast for the current ZCode Agent session",
+    "No slash commands have been broadcast for the current ZxCode Agent session",
   "chat.slash.emptyResults": "No matching slash commands",
-  // Errors
   "chat.error.connectionLost": "Connection to agent lost",
   "chat.error.processExited": "Agent process exited unexpectedly",
   "chat.error.dismiss": "Dismiss error",
   "chat.error.retry": "Retry",
-  "chat.error.reloginProvider": "Sign in to {provider}",
-  "chat.error.action.relogin": "Sign in again",
   "chat.error.action.refreshQuota": "Refresh quota",
   "chat.error.action.switchModel": "Switch model",
   "chat.error.action.retryLater": "Try again later",
@@ -6952,37 +5381,18 @@ const enUS: Record<string, string> = {
   "chat.error.sendFailed": "Failed to send. Try again later.",
   "chat.error.modelSettings": "Model settings",
   "chat.error.setModels": "Set",
-
-  // Start Plan per-bucket quota reminders
-  "chat.quota.startPlan.bucketDailyLow":
-    "{model} has {percent} of its daily quota remaining ({remaining} tokens).",
-  "chat.quota.startPlan.bucketActivityLow":
-    "{model} has {percent} of its promotional quota remaining ({remaining} tokens).",
-  "chat.quota.startPlan.modelVeryLow":
-    "{model} has {percent} of its plan quota remaining ({remaining} tokens).",
-  "chat.quota.startPlan.modelExhausted":
-    "All available quota for {model} has been used up. Switch models or upgrade your plan.",
   "chat.quota.startPlan.dailyExhausted":
     "Your Start Plan quota has been used up. Upgrade your plan or wait for the quota to reset.",
   "chat.quota.startPlan.concurrentLimit":
     "The system is busy. Please switch models, upgrade your account, or try again later.",
   "chat.quota.startPlan.concurrentLimit.retryExhausted":
     "The system is busy, and automatic retries have reached the maximum count. Please try again later or upgrade your account.",
-  "chat.quota.startPlan.concurrentLimit.switchModel":
-    "The current model request concurrency limit has been reached. Switch models to continue your current task.",
   "chat.quota.mcp.quotaExhausted":
-    'ZCode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
+    'ZxCode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
   "chat.quota.mcp.codingPlanRequired":
-    'No ZCode MCP "{server}" quota. Sign in or get a Coding Plan to use it.',
+    'ZxCode MCP "{server}" is currently unavailable. Try again later or check the service configuration.',
   "chat.quota.providerLimited":
     "The current account quota or plan limit has been reached. Upgrade or adjust the plan to continue.",
-  "chat.quota.action.upgrade": "Upgrade",
-  "chat.quota.action.renew": "Renew",
-  "chat.quota.action.switchModel": "Switch model",
-  "chat.quota.action.switchProvider": "Switch provider",
-  "chat.quota.action.refresh": "Refresh quota",
-
-  // Permissions
   "chat.permission.title": "Permission required",
   "chat.permission.awaitingApproval": "Awaiting approval",
   "chat.permission.approve": "Allow",
@@ -7073,8 +5483,6 @@ const enUS: Record<string, string> = {
   "chat.cuaPermission.openScreenRecording": "Open Screen Recording",
   "chat.cuaPermission.opening": "Opening...",
   "chat.cuaPermission.openFailed": "Could not open CUA permissions: {error}",
-
-  // Elicitation
   "chat.elicitation.title": "Input required",
   "chat.elicitation.keyboardHint": "Use Tab / arrow keys to choose, then Enter or Space to select",
   "chat.elicitation.customAnswer": "Custom answer",
@@ -7152,8 +5560,6 @@ const enUS: Record<string, string> = {
   "planTool.panel.syncing": "Syncing plan…",
   "planTool.guidance.enterMode": "Entered plan mode",
   "chat.permission.switchMode.placeholder": "Implementation plan",
-
-  // ZCode Agent
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
@@ -7166,15 +5572,16 @@ const enUS: Record<string, string> = {
     "Current image attachments are too large. Remove or compress images and try again.",
   "zcode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
     "Current video attachments are too large. Remove or compress videos and try again.",
-  "zcode.error.ZCODE_RUNTIME_MODEL_UNAVAILABLE":
+  "zcode.error.ZXCODE_RUNTIME_MODEL_UNAVAILABLE":
     "The current model is no longer available. Select an available model from the current model list to continue.",
-  "zcode.error.ZCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
+  "zcode.error.ZXCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
     "The current model is unavailable. Check whether the current account has been added to the project member list.",
   "zcode.error.CLAUDE_UNKNOWN_COMMAND":
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
   "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "zcode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
+  "zcode.error.providerBusiness.1006":
+    "Provider authentication expired. Check the provider configuration or API key.",
   "zcode.error.providerBusiness.1005":
     "Today's free plan quota has been used up. Upgrade to continue now, or wait for the quota to reset.",
   "zcode.error.providerBusiness.3006":
@@ -7195,15 +5602,11 @@ const enUS: Record<string, string> = {
     "The upstream service is temporarily unavailable. Please try again later.",
   "zcode.error.providerBusiness.429":
     "You're sending requests too quickly. Please try again later.",
-
-  // Debug info bar
   "debugInfo.taskId": "Task ID",
   "debugInfo.traceId": "Trace ID",
   "debugInfo.sessionId": "Session ID",
   "debugInfo.provider": "Provider",
   "debugInfo.copied": "Copied",
-
-  // Resource manager
   "resourceManager.title": "Resource manager",
   "resourceManager.loading": "Reading resource usage...",
   "resourceManager.unavailable": "Resource manager bridge is unavailable",
@@ -7225,7 +5628,7 @@ const enUS: Record<string, string> = {
   "resourceManager.network.empty": "Waiting for new network requests…",
   "resourceManager.network.noMatches": "No matching requests",
   "resourceManager.storage": "Storage",
-  "resourceManager.appUsage": "ZCode",
+  "resourceManager.appUsage": "ZxCode",
   "resourceManager.systemUsage": "System",
   "resourceManager.category.base": "Base services",
   "resourceManager.category.builtinPlugin": "Built-in plugins",
@@ -7234,338 +5637,10 @@ const enUS: Record<string, string> = {
   "resourceManager.sampling": "Sampling metrics",
   "resourceManager.column.process": "Process",
   "resourceManager.column.pid": "PID",
-
-  // Feedback
-  "feedback.center.title": "Feedback",
-  "feedback.center.description": "Describe the issue and track progress after submitting.",
-  "feedback.center.submitTitle": "Submit feedback",
-  "feedback.center.ticketsTitle": "My feedback",
-  "feedback.center.backToSubmit": "Back to submit feedback",
-  "feedback.center.submitTab": "Submit",
-  "feedback.center.ticketsTab": "My feedback",
-  "feedback.background.title": "Submitting feedback",
-  "feedback.background.open": "Open feedback submission details",
-  "feedback.background.openDetail": "Open details",
-  "feedback.background.defaultDetail":
-    "Feedback submission continues and stops if you quit the app",
-  "feedback.background.expand": "Expand feedback submission status",
-  "feedback.background.collapse": "Collapse feedback submission status",
-  "feedback.background.dismiss": "Hide feedback submission status",
-  "feedback.background.pauseLogs": "Pause logs",
-  "feedback.module.pluginMcp": "Plugin / MCP",
-  "feedback.module.agentTaskFailed": "Agent task failed",
-  "feedback.module.modelConfigApiKey": "Model configuration / API key",
-  "feedback.module.modelCallError": "Model call error",
-  "feedback.module.permissionConfigSave": "Permissions / settings save",
-  "feedback.module.sshConnectionFailed": "SSH connection failed",
-  "feedback.module.wslConnectionFailed": "WSL connection failed",
-  "feedback.module.uiLayoutInteraction": "UI layout / interaction",
-  "feedback.module.modelSlowQuota": "Slow model response / quota",
-  "feedback.module.crashInternalError": "Crash / Internal error",
-  "feedback.module.docsUsage": "Docs / usage question",
-  "feedback.module.other": "Other",
-  "feedback.status.pendingReview": "Submitted",
-  "feedback.status.needInfo": "Need more info",
-  "feedback.status.accepted": "Accepted",
-  "feedback.status.closedByReply": "Closed after reply",
-  "feedback.status.completed": "Completed",
-  "feedback.status.rejected": "Rejected",
-  "feedback.status.inDevelopment": "In development",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.released": "Released",
-  "feedback.statusHint.pendingReview": "We received it and will handle it soon.",
-  "feedback.statusHint.needInfo": "We need a bit more information. Check the team reply below.",
-  "feedback.statusHint.accepted":
-    "Your feedback was accepted. We will schedule a fix or improvement.",
-  "feedback.statusHint.closedByReply":
-    "The product team replied and closed this feedback. Submit a new one if the issue remains.",
-  "feedback.statusHint.archived":
-    "The product team replied and closed this feedback. Submit a new one if the issue remains.",
-  "feedback.statusHint.rejected":
-    "This feedback is not planned for now. You can check the explanation below.",
-  "feedback.statusHint.inDevelopment": "We are working on it. Updates will appear below.",
-  "feedback.statusHint.resolved": "The issue has been fixed and is waiting for release.",
-  "feedback.statusHint.released":
-    "The related fix or improvement is live. Thanks for the feedback.",
-  "feedback.time.justNow": "just now",
-  "feedback.time.minutesAgo": "{count} min ago",
-  "feedback.time.hoursAgo": "{count} hr ago",
-  "feedback.time.daysAgo": "{count} day(s) ago",
-  "feedback.time.submittedAt": "Submitted {time}",
-  "feedback.title.fallback": "User feedback",
-  "feedback.submit.notReported": "Not reported",
-  "feedback.tickets.newFeedback": "New feedback",
-  "feedback.tickets.backToList": "Back to list",
-  "feedback.tickets.empty.title": "No feedback yet",
-  "feedback.tickets.empty.description":
-    "Send a note whenever you run into an issue. We will sync progress here.",
-  "feedback.tickets.empty.action": "Submit feedback",
-  "feedback.tickets.placeholder.title": "Select feedback to view details",
-  "feedback.tickets.placeholder.description":
-    "Replies from our team will appear here. You can also add reproduction steps, screenshots, or logs in the details.",
-  "feedback.tickets.group.last24h": "Last 24 hours",
-  "feedback.tickets.group.last7d": "Last 7 days",
-  "feedback.tickets.group.earlier": "Earlier",
-  "feedback.tickets.column.status": "Status",
-  "feedback.tickets.column.description": "Issue description",
-  "feedback.tickets.column.id": "ID",
-  "feedback.tickets.issuePrefix": "Issue #",
-  "feedback.detail.noActivity": "No activity yet",
-  "feedback.detail.issueCopy": "Copy issue ID",
-  "feedback.detail.issueCopied": "Issue ID copied",
-  "feedback.detail.issueCopyFailed": "Failed to copy issue ID",
-  "feedback.detail.viewFullProcess": "View full process",
-  "feedback.detail.yourDescription": "Your description",
-  "feedback.process.backToDetail": "Back to details",
-  "feedback.process.title": "Process",
-  "feedback.process.currentLatest": "Latest:",
-  "feedback.progress.title": "Progress",
-  "feedback.progress.currentHandler": "Current handler:",
-  "feedback.progress.assignee.dev": "Developer",
-  "feedback.progress.assignee.unassigned": "Unassigned",
-  "feedback.progress.stage.submitted": "Submitted",
-  "feedback.progress.stage.reviewing": "Reviewing",
-  "feedback.progress.stage.inProgress": "In progress",
-  "feedback.progress.stage.done": "Done",
-  "feedback.progress.stage.closed": "Closed",
-  "feedback.timeline.stepCount": "{count} step(s)",
-  "feedback.timeline.latestUpdate": "Updated {time}",
-  "feedback.timeline.syncWhenUpdated": "Updates will sync here",
-  "feedback.timeline.officialReply": "Team reply",
-  "feedback.timeline.yourSupplement": "You added information",
-  "feedback.timeline.empty": "No activity yet. We will notify you here when there is progress.",
-  "feedback.timeline.duration": "Took {time}",
-  "feedback.timeline.assignedToDev": "Assigned to development",
-  "feedback.timeline.event.submitted": "Feedback submitted",
-  "feedback.timeline.event.progressUpdated": "Progress updated",
-  "feedback.timeline.event.conclusion": "Conclusion added",
-  "feedback.timeline.event.fullLogUploaded": "Full logs uploaded; feedback submitted",
-  "feedback.timeline.event.statusChanged": "Status changed to {status}",
-  "feedback.timeline.event.agentSubmitted": "{name} submitted feedback via Agent",
-  "feedback.timeline.event.progressUpdatedWithStatus":
-    "Progress updated (status to {status}): {message}",
-  "feedback.timeline.event.progressUpdatedWithMessage": "Progress updated: {message}",
-  "feedback.timeline.event.markedStatus": "Marked as {status}: {message}",
-  "feedback.actor.user": "User",
-  "feedback.actor.productManager": "Product manager",
-  "feedback.actor.dev": "Developer",
-  "feedback.duration.instant": "Instant",
-  "feedback.duration.lessThanMinute": "Less than 1 min",
-  "feedback.duration.minutes": "{count} min",
-  "feedback.duration.hours": "{count} hr",
-  "feedback.duration.days": "{count} day(s)",
-  "feedback.supplement.title": "Additional information",
-  "feedback.supplement.description":
-    "Add reproduction steps, screenshot notes, log snippets, or more clues here.",
-  "feedback.supplement.continueTitle": "Add more information",
-  "feedback.supplement.continueDescription":
-    "You can add reproduction steps, screenshot notes, log snippets, or new clues while viewing the process.",
-  "feedback.supplement.attachmentLimit": "You can add up to {count} attachments",
-  "feedback.supplement.attachmentTooLarge": "{name} is over 100 MB and cannot be uploaded yet.",
-  "feedback.supplement.attachment": "Attachment",
-  "feedback.supplement.uploadedAttachments": "Attachments: {names}",
-  "feedback.supplement.addAttachment": "Add attachment",
-  "feedback.supplement.placeholder": "Add more details, paste a screenshot, or add a local file...",
-  "feedback.supplement.removeAttachment": "Remove {name}",
-  "feedback.supplement.attachmentHint":
-    "Supports pasted screenshots or local files. Each attachment must be under 100 MB.",
-  "feedback.supplement.sending": "Sending",
-  "feedback.supplement.send": "Send update",
-  "feedback.type.bug.label": "Bug",
-  "feedback.type.bug.description": "Errors, crashes, or unexpected behavior",
-  "feedback.type.usage.label": "How-to help",
-  "feedback.type.usage.description": "Unclear steps or configuration",
-  "feedback.type.feature.label": "Suggestion",
-  "feedback.type.feature.description": "New capabilities or UX improvements",
-  "feedback.type.performance.label": "Slow performance",
-  "feedback.type.performance.description": "Lag, slow response, or resource issues",
-  "feedback.severity.P1-高.label": "Cannot use it",
-  "feedback.severity.P2-中.label": "Affects usage",
-  "feedback.severity.P3-低.label": "Minor issue/suggestion",
-  "feedback.submit.bug.sectionTitle": "What happened?",
-  "feedback.submit.bug.titleLabel": "Title",
-  "feedback.submit.bug.titlePlaceholder": "Example: SSH connection fails",
-  "feedback.submit.bug.descriptionLabel": "Details",
-  "feedback.submit.bug.descriptionPlaceholder":
-    "Describe what you ran into: where you clicked, what happened, what you expected, and whether there was an error. We keep your original description and analyze it after submission.",
-  "feedback.submit.bug.helper.1": "Location",
-  "feedback.submit.bug.helper.2": "Steps to reproduce",
-  "feedback.submit.bug.helper.3": "Expected result",
-  "feedback.submit.bug.helper.4": "Actual result / error",
-  "feedback.submit.bug.supplementalDescription": "",
-  "feedback.submit.bug.screenshotHint":
-    "Paste a screenshot, or add a local screenshot as an attachment.",
-  "feedback.submit.bug.missingTitle": "Please enter a title",
-  "feedback.submit.bug.missingDescription": "Please describe the issue",
-  "feedback.submit.usage.sectionTitle": "Where are you stuck?",
-  "feedback.submit.usage.titleLabel": "Question title",
-  "feedback.submit.usage.titlePlaceholder":
-    "Example: Not sure how to configure a remote connection",
-  "feedback.submit.usage.descriptionLabel": "Blocked step",
-  "feedback.submit.usage.descriptionPlaceholder":
-    "Describe what you are trying to do, where you got stuck, what prompt you saw, and how you want us to explain or guide you.",
-  "feedback.submit.usage.helper.1": "Current task",
-  "feedback.submit.usage.helper.2": "Blocked step",
-  "feedback.submit.usage.helper.3": "What you tried",
-  "feedback.submit.usage.helper.4": "Help needed",
-  "feedback.submit.usage.supplementalDescription":
-    "Module and model help us locate documentation, guidance, or default configuration issues.",
-  "feedback.submit.usage.screenshotHint": "You can paste a screenshot of the blocked screen.",
-  "feedback.submit.usage.missingTitle": "Please enter a question title",
-  "feedback.submit.usage.missingDescription": "Please describe where you are stuck",
-  "feedback.submit.feature.sectionTitle": "What would you suggest?",
-  "feedback.submit.feature.titleLabel": "Suggestion title",
-  "feedback.submit.feature.titlePlaceholder": "Example: Support one-click task report export",
-  "feedback.submit.feature.descriptionLabel": "Suggestion",
-  "feedback.submit.feature.descriptionPlaceholder":
-    "Describe what you want added or improved: the scenario, what is inconvenient now, the ideal behavior, and what it would save you.",
-  "feedback.submit.feature.helper.1": "Scenario",
-  "feedback.submit.feature.helper.2": "Current friction",
-  "feedback.submit.feature.helper.3": "Expected capability / interaction",
-  "feedback.submit.feature.helper.4": "Value",
-  "feedback.submit.feature.supplementalDescription":
-    "Choose a module so we can assess priority and impact.",
-  "feedback.submit.feature.screenshotHint":
-    "You can attach a reference screenshot, sketch, or current awkward screen.",
-  "feedback.submit.feature.missingTitle": "Please enter a suggestion title",
-  "feedback.submit.feature.missingDescription": "Please describe the suggestion",
-  "feedback.submit.performance.sectionTitle": "What feels slow?",
-  "feedback.submit.performance.titleLabel": "Performance issue title",
-  "feedback.submit.performance.titlePlaceholder": "Example: Task list opens slowly",
-  "feedback.submit.performance.descriptionLabel": "Where it is slow",
-  "feedback.submit.performance.descriptionPlaceholder":
-    "Describe which operation is slow, how slow it feels, whether it happens every time, and the approximate data or task size.",
-  "feedback.submit.performance.helper.1": "Operation",
-  "feedback.submit.performance.helper.2": "Delay felt",
-  "feedback.submit.performance.helper.3": "Stable reproduction",
-  "feedback.submit.performance.helper.4": "Task scale / data size",
-  "feedback.submit.performance.supplementalDescription":
-    "Performance reports attach logs by default. Module and model help locate the slow path.",
-  "feedback.submit.performance.screenshotHint":
-    "You can attach loading, stuck, or resource-usage screenshots.",
-  "feedback.submit.performance.missingTitle": "Please enter a performance issue title",
-  "feedback.submit.performance.missingDescription": "Please describe what is slow",
-  "feedback.submit.template.bug.problem": "Problem:",
-  "feedback.submit.template.bug.steps": "Steps:",
-  "feedback.submit.template.bug.expected": "Expected result:",
-  "feedback.submit.template.bug.actual": "Actual result / error:",
-  "feedback.submit.template.usage.task": "Current task:",
-  "feedback.submit.template.usage.blockedStep": "Blocked step:",
-  "feedback.submit.template.usage.tried": "What you tried:",
-  "feedback.submit.template.usage.help": "Help needed:",
-  "feedback.submit.template.feature.scenario": "Scenario:",
-  "feedback.submit.template.feature.currentPain": "Current friction:",
-  "feedback.submit.template.feature.expected": "Expected capability / interaction:",
-  "feedback.submit.template.performance.action": "Operation:",
-  "feedback.submit.template.performance.delay": "Delay felt:",
-  "feedback.submit.template.performance.reproducible": "Stable reproduction:",
-  "feedback.submit.template.occurredAt": "Time: {timestamp}",
-  "feedback.submit.template.occurredAtPrefix": "Time:",
-  "feedback.submit.template.proposedAt": "Proposed at: {timestamp}",
-  "feedback.submit.template.proposedAtPrefix": "Proposed at:",
-  "feedback.submit.template.section.errorHeading":
-    "I encountered an error during use. Please help investigate.",
   "feedback.submit.template.section.errorSummary": "Error Summary",
-  "feedback.submit.template.section.errorSummaryLine": "Error Summary: {message}",
   "feedback.submit.template.section.errorDetail": "Error Details",
   "feedback.submit.template.section.errorTraceId": "TraceID: {traceId}",
-  "feedback.submit.template.section.copyErrorHeading": "ZCode Error Info",
-  "feedback.submit.template.section.notProvided": "Not provided",
-  "feedback.submit.template.section.remoteLogEmpty": "No connection logs captured",
-  "feedback.submit.template.section.taskFeedbackTitle": "Feedback about task: {title}",
-  "feedback.submit.template.section.remoteConnectFailed": "Remote connection failed",
-  "feedback.submit.template.section.taskHeading":
-    "I encountered a problem with this task. Please help investigate.",
-  "feedback.submit.template.section.taskInfo": "Task Info",
-  "feedback.submit.template.section.taskTitle": "Task title: {title}",
-  "feedback.submit.template.section.taskId": "Task ID: {id}",
-  "feedback.submit.template.section.taskWorkspace": "Workspace: {path}",
-  "feedback.submit.template.section.taskSessionPath": "Task session: {path}",
-  "feedback.submit.template.section.taskLogPath": "Task log: {path}",
-  "feedback.submit.template.section.problem": "Issue",
-  "feedback.submit.template.section.whatDoing": "What I Was Doing",
-  "feedback.submit.template.section.expectedResult": "Expected result",
-  "feedback.submit.template.section.supplement": "Please describe:",
-  "feedback.submit.template.section.remoteHeading":
-    "An error occurred during remote connection. Please help investigate.",
-  "feedback.submit.template.section.remoteLog": "Connection logs (last 30)",
-  "feedback.submit.template.section.remoteEnvironment": "Environment I Was Connecting To",
-  "feedback.submit.template.section.featureSource": "Source",
-  "feedback.submit.type.label": "Feedback type",
-  "feedback.submit.type.hint": "Changing it updates the description guide below",
-  "feedback.submit.simple.descriptionTitle": "Issue description",
-  "feedback.submit.simple.descriptionLabel": "Description",
-  "feedback.submit.simple.descriptionPlaceholder":
-    "Describe the issue, where it happened, what you expected, or what you want improved.",
-  "feedback.submit.simple.screenshotTitle": "Screenshots",
-  "feedback.submit.simple.screenshotHint": "Paste, drag images here, or choose files.",
-  "feedback.submit.simple.screenshotPrivacyHint":
-    "Please check images for private information before uploading.",
-  "feedback.submit.simple.contactTitle": "Contact",
-  "feedback.submit.simple.logsTitle": "Logs",
-  "feedback.submit.simple.logsLabel": "Upload diagnostic logs",
-  "feedback.submit.simple.logsHint":
-    "On by default; you can turn it off. Uploads today's diagnostic logs, a safe projection of CLI configuration, and today's model-call traces; databases are excluded. Automatic redaction may not remove all business information. Please choose carefully.",
-  "feedback.submit.simple.footerHint": "Track progress later in My feedback.",
-  "feedback.submit.missingDescription": "Please describe the issue first",
-  "feedback.submit.addScreenshot": "Add screenshot",
-  "feedback.submit.removeScreenshot": "Remove",
-  "feedback.submit.contact.label": "Contact",
-  "feedback.submit.contact.hint":
-    "Optional, for follow-up. You can also enter another social account.",
-  "feedback.submit.contact.placeholder": "example@domain.com / social account",
-  "feedback.submit.supplemental.title": "Additional information",
-  "feedback.submit.module.label": "Module",
-  "feedback.submit.severity.label": "Impact",
-  "feedback.submit.model.label": "Current model",
-  "feedback.submit.model.unavailable": "Model not detected",
-  "feedback.submit.continueUpload": "Continue upload",
-  "feedback.submit.processing": "Processing",
-  "feedback.submit.submitting": "Submitting",
-  "feedback.submit.submit": "Submit feedback",
-  "feedback.submit.screenshotLimit": "You can add up to {count} screenshots",
-  "feedback.featureRequest.title": "Request a feature",
-  "feedback.featureRequest.descriptionLabel": "Request description",
-  "feedback.featureRequest.descriptionPlaceholder":
-    "Example: I want to save common prompts while a task is running, then insert them with one click later.",
-  "feedback.featureRequest.solutionLabel": "Expected solution",
-  "feedback.featureRequest.solutionPlaceholder":
-    "Example: Add a quick prompt menu next to the composer with create, edit, and insert actions.",
-  "feedback.featureRequest.contactLabel": "Contact",
-  "feedback.featureRequest.reset": "Reset",
-  "feedback.featureRequest.submit": "Submit request",
-  "feedback.featureRequest.missingRequired":
-    "Please fill in the request description and expected solution",
-  "feedback.featureRequest.source": "Workspace Header help menu / Request a feature",
-  "feedback.featureRequest.submittedToast": "Request submitted. We will review it carefully.",
-  "feedback.submission.connectingLabel": "Connecting to feedback service",
-  "feedback.submission.connectingDetail":
-    "Screenshots and logs will continue uploading after the ticket is created",
-  "feedback.submission.cancelingCreateLabel": "Canceling submission",
-  "feedback.submission.cancelingCreateDetail": "Cancel request received. Stopping ticket creation.",
-  "feedback.submission.canceledLabel": "Feedback submission canceled",
-  "feedback.submission.canceledDetail": "Feedback submission canceled",
-  "feedback.submission.uploadingScreenshotLabel": "Uploading screenshot",
-  "feedback.submission.submittedLabel": "Feedback submitted",
-  "feedback.submission.submittedDetail": "We will review it soon.",
-  "feedback.submission.submittedToast": "Feedback submitted. We will review it soon.",
-  "feedback.submission.failedLabel": "Feedback submission failed",
-  "feedback.submission.networkErrorDetail":
-    "Could not connect to the feedback service. Check your network, VPN, or proxy settings, then try again.",
-  "feedback.submission.postCreateNetworkErrorDetail":
-    "Feedback was created, but additional materials failed to upload. Open the existing feedback to add the missing files; do not submit it again.",
-  "feedback.submission.pausingLogLabel": "Pausing log upload",
-  "feedback.submission.pausingLogDetail": "Cancel request received. Please wait.",
-  "feedback.submission.exportingLogLabel": "Exporting full logs",
-  "feedback.submission.exportingLogDetail":
-    "This may take a few seconds depending on local log size",
-  "feedback.submission.uploadingLogLabel": "Uploading full logs",
-  "feedback.submission.logUploadSuccessLabel": "Log upload completed",
-  "feedback.submission.logUploadPausedLabel": "Log upload paused",
-  "feedback.submission.logUploadPausedDetail":
-    "Logs are required for investigation. Please continue the upload.",
-  "feedback.submission.preparingUploadDetail": "Preparing upload",
-  // Forms
+  "feedback.submit.template.section.copyErrorHeading": "ZxCode Error Info",
   "forms.labels.name": "Name",
   "forms.labels.description": "Description",
   "forms.labels.color": "Color",
@@ -7583,7 +5658,6 @@ const enUS: Record<string, string> = {
   "forms.validation.agentDescriptionHint": "Briefly describe the subagent's purpose",
   "forms.validation.agentSystemPromptHint": "Define the subagent's behavior and capabilities",
   "forms.validation.fileExists": "File {fileName} already exists",
-  // ---- Scheduled tasks / Automations ----
   "taskList.cronTaskLabel": "Scheduled task",
   "taskList.offPeakTaskLabel": "Idle-time task",
   "taskList.workflowRun.ariaLabel": "Workflow run {name}: {status}",
@@ -7609,116 +5683,16 @@ const enUS: Record<string, string> = {
   "automations.createManually": "Create scheduled task",
   "automations.list.title": "Scheduled tasks",
   "automations.createdLabel": "Task created",
-  "offPeak.notify.completed.title": "Idle-time task finished",
-  "offPeak.notify.completed.body": '"{title}" completed successfully.',
-  "offPeak.notify.failed.title": "Idle-time task failed",
-  "offPeak.notify.failed.body": '"{title}" stopped with an error.',
-  "offPeak.sidebar.groupTitle": "Idle-time tasks",
-  "offPeak.newTask.bannerText":
-    'New feature for subscribers: Create "Idle-time task" , We will complete your assigned task for free during periods of surplus computing power.',
-  "offPeak.newTask.bannerTipText":
-    "This feature does not consume your subscription plan quota and is available exclusively to subscribers.",
-  "offPeak.newTask.carousel.goToSlide": "Go to idle-time task template {index}",
-  "offPeak.newTask.template.customize.title": "Customize",
-  "offPeak.newTask.template.customize.description":
-    "Skip the template and tell it directly what you want to do.",
-  "offPeak.tabs.scheduled": "Scheduled tasks",
-  "offPeak.tabs.idle": "Idle-time task",
   "automations.statusFilter.all": "All",
   "automations.statusFilter.inProgress": "In progress",
   "automations.statusFilter.completed": "Completed",
   "automations.statusFilter.failed": "Failed",
   "automations.statusFilter.empty": "No tasks match this filter",
-  "offPeak.keepAwakeBanner": "Keep your computer awake while ZCode is running a chat.",
-  "offPeak.sectionTitle": "Idle-time tasks",
-  "offPeak.createButton": "Create idle-time task",
-  "offPeak.templates.sectionTitle": "Idle-time task template",
-  "offPeak.list.empty":
-    "No idle-time tasks yet. Create one to run it during off-peak hours at no extra cost.",
-  "offPeak.badge.pausedPosition": "#{position} Paused",
-  "offPeak.action.pauseHint":
-    "Tasks paused beyond the queue wait time will be placed back in the queue",
-  "offPeak.action.continueHint":
-    "If the queue ticket has expired, Continue re-queues the task at the back.",
-  "offPeak.badge.queuePosition": "#{position} in queue",
-  "offPeak.status.queued": "Waiting for idle compute",
-  "offPeak.status.paused": "Paused",
-  "offPeak.status.running": "Running",
-  "offPeak.status.completed": "Succeeded",
-  "offPeak.status.failed": "Failed",
-  "offPeak.status.cancelled": "Cancelled",
-  "offPeak.goToSession": "Go to session",
-  "offPeak.boundSession.label": "Runs in: {title}",
-  "offPeak.nav.listUnavailable": "Idle-time task list failed to load. Refresh and try again.",
-  "offPeak.boundSession.hint":
-    "Runs in that session; stopping the session while the task runs cancels it.",
-  "offPeak.chatCreated.boundHint": "Runs in this session",
-  "offPeak.action.pause": "Pause",
-  "offPeak.action.continue": "Continue",
-  "offPeak.action.cancel": "Cancel task",
-  "offPeak.cancel.title": "Cancel idle-time task?",
-  "offPeak.cancel.description": '"{title}" will stop running. Files it already changed are kept.',
-  "offPeak.delete.title": "Delete this idle-time task?",
-  "offPeak.delete.description":
-    "This action can't be undone. If the task is currently queued or running, it will stop immediately.",
-  "offPeak.delete.confirm": "Delete idle-time task",
-  "offPeak.error.quota": "Free tier limit reached. Try again later.",
-  "offPeak.error.unavailable":
-    "Idle-time task service is temporarily unavailable. Try again later.",
-  "offPeak.error.generic": "Idle-time task operation failed.",
-  "offPeak.create.title": "New Idle-time task",
-  "offPeak.create.subtitle": "Configure the instructions and how this task runs during idle time.",
-  "offPeak.create.defaultTitle": "Untitled",
-  "offPeak.edit.title": "Edit Idle-time task",
-  "offPeak.edit.subtitle": "Update the instructions and how this task runs during idle time.",
-  "offPeak.modelSelection.repairRequired":
-    "The model configuration needs updating. Choose a model again and save.",
+  "offPeak.keepAwakeBanner": "Keep your computer awake while ZxCode is running a chat.",
   "modelSelection.invalidated.fallback":
     "The previous model selection is no longer available. Switched to the current default; review it before continuing.",
   "modelSelection.invalidated.reselect":
     "The previous model selection is no longer available. Choose a model again.",
-  "offPeak.create.submit": "Create Idle-time task",
-  "offPeak.edit.save": "Save",
-  "offPeak.edit.peakHoursWarning":
-    "This task runs during peak hours, which may cause errors to occur.",
-  "offPeak.form.soonestAvailable": "Soonest available",
-  "offPeak.form.titleLabel": "Task title",
-  "offPeak.form.titlePlaceholder": "e.g. Nightly refactor",
-  "offPeak.form.instructionsLabel": "Instructions",
-  "offPeak.form.instructionsPlaceholder":
-    "Describe a task ZCode can work on in the background, including the expected result and any constraints…",
-  "offPeak.form.permissionWarning":
-    "Idle-time runs are unattended. Actions that need confirmation will pause the task until you respond.",
-  "offPeak.form.modelLabel": "Model",
-  "offPeak.thought.max": "Max",
-  "offPeak.thought.high": "High",
-  "offPeak.thought.low": "Low",
-  "offPeak.thought.enabled": "Enabled",
-  "offPeak.thought.off": "Off",
-  "offPeak.thought.nothink": "No thinking",
-  "offPeak.form.keepAwakeLabel": "Keep your computer running",
-  "offPeak.form.keepAwakeHint":
-    "Prevent idle sleep (desktop-wide switch; also available under Settings → General).",
-  "offPeak.tab.settings": "Settings",
-  "offPeak.tab.history": "History",
-  "offPeak.history.empty": "No history yet.",
-  "offPeak.history.col.instructions": "Instructions",
-  "offPeak.history.delete": "Delete history",
-  "offPeak.history.durationMinutes": "{count} min",
-  "offPeak.form.fullAccessHint": "Switch permissions to Full access to reduce task failures",
-  "offPeak.discard.title": "Discard Idle-time task draft?",
-  "offPeak.discard.description": "Your changes to the current idle-time task will be lost.",
-  "offPeak.discard.confirm": "Discard",
-  "offPeak.create.codingPlanOnly": "Coding plan users only",
-  "offPeak.create.availabilityUnavailable": "Could not verify availability. Refresh and try again.",
-  "offPeak.create.limitReachedAt":
-    "Free tier limit reached. You can create another task in {time}.",
-  "offPeak.create.remaining.hoursMinutes": "{hours} hr {minutes} min",
-  "offPeak.create.remaining.hours": "{hours} hr",
-  "offPeak.create.remaining.minutes": "{minutes} min",
-  "offPeak.create.remaining.lessThanMinute": "less than 1 min",
-  "offPeak.create.codingPlanToast":
-    "Idle-time tasks are available for Coding Plan subscribers only.",
   "automations.moreIdeas": "Scheduled task template",
   "automations.templates.unavailable": "No templates available",
   "automations.runNow": "Run now",
@@ -7879,11 +5853,10 @@ const enUS: Record<string, string> = {
   "automations.runs.delete": "Delete run",
   "automations.runs.prevPage": "Previous",
   "automations.runs.nextPage": "Next",
-  // CUA (Computer Use)
   "chat.cuaReadiness.toolsNotLoaded":
-    "ZCode Computer Use is still preparing — its tools aren't loaded yet ({count} loaded). Grant the permissions below; tools appear once the helper is ready.",
+    "ZxCode Computer Use is still preparing — its tools aren't loaded yet ({count} loaded). Grant the permissions below; tools appear once the helper is ready.",
   "chat.cuaReadiness.toolsPreparing":
-    "ZCode Computer Use is still preparing — its tools aren't loaded yet. Grant the permissions below; tools appear once the helper is ready.",
+    "ZxCode Computer Use is still preparing — its tools aren't loaded yet. Grant the permissions below; tools appear once the helper is ready.",
   "chat.toolCall.cua.requestAccess": "Check Computer Use access",
   "chat.toolCall.cua.appName": "Computer Use",
   "chat.toolCall.cua.group.completedLabel": "Computer Use",
@@ -8011,9 +5984,9 @@ const enUS: Record<string, string> = {
   "cuaPermission.modal.restartButton": "Restart Helper",
   "cuaPermission.modal.restarting": "Restarting Helper…",
   "cuaPermission.modal.restartFailed": "Couldn't restart Helper: {error}",
-  "cuaPermission.modal.relaunchAppButton": "Restart ZCode",
+  "cuaPermission.modal.relaunchAppButton": "Restart ZxCode",
   "cuaPermission.modal.relaunchAppHint":
-    "Still not working after restarting Helper? Restart ZCode to fully reload the Helper process.",
+    "Still not working after restarting Helper? Restart ZxCode to fully reload the Helper process.",
   "cuaPermission.status.granted": "Granted",
   "cuaPermission.status.missing": "Missing",
   "cuaPermission.status.unknown": "Unknown",
@@ -8027,7 +6000,7 @@ const enUS: Record<string, string> = {
   "cuaPermission.tools.agentUpdateRequired":
     "The connected Agent is too old for a safe readiness check. Update or restart it, then check again.",
   "cuaPermission.tools.untrustedRuntime":
-    "Computer Use tools were found, but they did not come from the verified ZCode plugin. Review the plugin installation, then check again.",
+    "Computer Use tools were found, but they did not come from the verified ZxCode plugin. Review the plugin installation, then check again.",
   "cuaPermission.perm.accessibility": "Accessibility",
   "cuaPermission.perm.accessibility.purpose": "Read/drive UI elements + synthesize input",
   "cuaPermission.perm.screenRecording": "Screen Recording",
@@ -8038,8 +6011,33 @@ const enUS: Record<string, string> = {
     "Please upgrade macOS before using it. Permission setup cannot be completed on older versions.",
   "cuaPermission.ready": "Permissions ready",
   "cuaPermission.ready.sessionValidationHint":
-    "ZCode will verify the Computer Use tools against the exact session when your first session starts.",
+    "ZxCode will verify the Computer Use tools against the exact session when your first session starts.",
   "settings.computerUse.title": "Computer Use",
+  "settings.mobileRelay.title": "Mobile Remote",
+  "settings.mobileRelay.enable": "Enable mobile remote",
+  "settings.mobileRelay.enableDescription":
+    "Connect to your self-deployed relay server to control this workspace from a phone browser.",
+  "settings.mobileRelay.statusUnsupported":
+    "Mobile remote is not supported on this platform (desktop required).",
+  "settings.mobileRelay.statusDisabled": "Disabled",
+  "settings.mobileRelay.statusConnected": "Connected",
+  "settings.mobileRelay.statusConnecting": "Connecting…",
+  "settings.mobileRelay.statusError": "Connection failed: {error}",
+  "settings.mobileRelay.serverUrl": "Relay server",
+  "settings.mobileRelay.serverUrlDescription":
+    "Address of your self-deployed relay, e.g. https://relay.example.com; deploy packages/relay first.",
+  "settings.mobileRelay.tokenPlaceholder": "Deployment token (optional)",
+  "settings.mobileRelay.save": "Save",
+  "settings.mobileRelay.saveFailed": "Failed to save mobile relay settings",
+  "settings.mobileRelay.grant": "Generate phone authorization link",
+  "settings.mobileRelay.grantDescription":
+    "Generate a one-time authorization link for the current workspace (valid for 10 minutes, single use); scan or open it on your phone to connect.",
+  "settings.mobileRelay.generate": "Generate link",
+  "settings.mobileRelay.regenerate": "Regenerate",
+  "settings.mobileRelay.grantCountdown": "Expires in {seconds}s",
+  "settings.mobileRelay.grantExpired": "Link expired; regenerate to continue",
+  "settings.mobileRelay.grantFailed": "Failed to generate authorization link",
+  "settings.mobileRelay.grantNoWorkspace": "No active workspace found for authorization",
   "settings.computerUse.toggleLabel": "Enable Computer Use",
   "settings.computerUse.toggleDescription":
     "Turning this on enables Computer Use — its MCP server and skills.",
@@ -8068,37 +6066,12 @@ const enUS: Record<string, string> = {
   "chat.highspeed.originalModel": "Original model: {model}",
   "chat.highspeed.remainingTime": "Time remaining: {time}",
   "chat.highspeed.generatedBy": "Generated by Highspeed",
-  "chat.highspeed.shareAction": "Share",
-  "chat.highspeed.viewAction": "View",
-  "chat.highspeed.share": "Share this accelerated run",
-  "chat.highspeed.shareFailed": "Could not share. Try again later.",
   "chat.highspeed.savedDuration": "About {duration} saved",
   "chat.highspeed.statusTag": "HighSpeed",
   "chat.highspeed.cardExpiredFallback":
     "The Highspeed card has expired. The rest of this turn will continue with the original model.",
   "chat.highspeed.requestFailedFallback":
     "Highspeed is temporarily unavailable. The rest of this turn will continue with the original model.",
-  "globalNotice.highspeed.title": "Highspeed run completed",
-  "globalNotice.highspeed.summary": "{tokens} output tokens · {duration}s",
-  "globalNotice.highspeed.tagline": "Share a Highspeed moment",
-  "globalNotice.highspeed.sidebarTagline": "Share your speedup",
-  "globalNotice.highspeed.share": "Share",
-  "globalNotice.highspeed.view": "View",
-  "globalNotice.highspeed.imageCopied": "Acceleration stats copied",
-  "globalNotice.highspeed.imageCopyFailed": "Could not copy image. Try again.",
-  "globalNotice.highspeed.textCopied": "Share text copied",
-  "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
-  "globalNotice.highspeed.copyImage": "Copy image",
-  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
-  "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
-  "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
-  "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
-  "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
-  "globalNotice.highspeed.copySummary":
-    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
-  "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
-  "globalNotice.highspeed.close": "Close Highspeed share card",
-  ...requestSecurityMessagesEnUS,
 };
 
 export default enUS;

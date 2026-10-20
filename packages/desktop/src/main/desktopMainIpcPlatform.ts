@@ -1,4 +1,3 @@
-import { decorateRequestSecurityLogArgs } from "./request-security-edition/index.js";
 /* eslint-disable max-lines -- 桌面平台 IPC 集中装配，拆散会让权限边界更难审计；行数随平台能力增长。 */
 import { BrowserWindow, dialog, ipcMain, nativeTheme } from "electron";
 import { readZCodeStdioTapDevState } from "@zcode/services/node";
@@ -21,14 +20,31 @@ import {
   type SaveCliMcpToUserDirectoryRequest,
   type CreateTempTextAttachmentRequest,
   type MaterializeWorkflowArtifactFileRequest,
-  type UpdateStatePayload,
+  type WebRemoteControlTaskTarget,
   type WebRemoteControlWorkspaceTarget,
   type WindowControlsOverlayReadyPayload,
 } from "@zcode/shared";
+import { z } from "zod";
+
+const windowWorkspaceSyncPayloadSchema = z
+  .object({
+    workspacePath: nonEmptyStringSchema,
+    workspaceIdentity: nonEmptyStringSchema.optional(),
+    workspaceKey: nonEmptyStringSchema,
+  })
+  .strict();
+
+const mobileRelayGrantRequestSchema = z
+  .object({
+    workspacePath: nonEmptyStringSchema,
+    workspaceIdentity: nonEmptyStringSchema.optional(),
+    remoteSessionId: nonEmptyStringSchema.optional(),
+  })
+  .strict();
 import { getInstalledEditors } from "./editors.js";
+import { addCustomEditor, listCustomEditors, removeCustomEditor } from "./customEditors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
 import { exportLogs } from "./exportLogs.js";
-import { resolveCommunityUrl } from "./desktopCommandHandlers.js";
 import { openInEditor } from "./openInEditor.js";
 import {
   openResourceManager,
@@ -64,7 +80,6 @@ import { registerDesktopCommandIpcHandler } from "./desktopCommandIpc.js";
 import { registerCuaPipActiveSessionIpc } from "./desktopCuaPipIpc.js";
 
 export function registerPlatformIpcHandlers(options: {
-  fetchHelpConfig?: () => Promise<unknown>;
   logger: {
     info: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
@@ -82,11 +97,12 @@ export function registerPlatformIpcHandlers(options: {
     command: DesktopCommandId,
     senderWindow?: BrowserWindow | null,
   ) => Promise<unknown>;
-  acknowledgePostUpdateReleaseNotes: (version: string) => Promise<void>;
   syncActiveTaskSession: (windowId: number, sessionId: string | null) => void;
   syncTaskRealtimeWorkspaceKeys: (windowId: number, workspaceKeys: Iterable<string>) => void;
-  getUpdateState: () => UpdateStatePayload;
-  openUpdateStatusWindow: () => void;
+  restorePreviouslyEnabledWebRemoteControl: (
+    windowId: number,
+    contexts: Array<{ workspacePath: string }>,
+  ) => void;
   syncWebRemoteControlWorkspaces: (
     windowId: number,
     workspaces: WebRemoteControlWorkspaceTarget[],
@@ -99,6 +115,24 @@ export function registerPlatformIpcHandlers(options: {
   }>;
   setAutoDownloadAndInstallUpdates: (enabled: boolean) => Promise<void>;
   syncAppSettings: (patch: ReturnType<typeof appSettingsPatchSchema.parse>) => void;
+  /** renderer 上报当前窗口 active workspace 三元组（手机远控 presence 数据源）。 */
+  syncWindowWorkspace?: (
+    windowId: number,
+    payload: { workspacePath: string; workspaceIdentity?: string; workspaceKey: string },
+  ) => void;
+  /** 自部署手机远控 relay 状态查询（设置页与授权入口共用）；supported 由 handler 统一补齐。 */
+  getMobileRelayStatus?: () => {
+    enabled: boolean;
+    connected: boolean;
+    serverUrl?: string;
+    lastError?: string;
+  };
+  /** 请求 relay 签发一次性手机远控授权链接。 */
+  requestMobileRelayGrant?: (payload: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+  }) => Promise<{ success: boolean; url?: string; expiresAt?: number; error?: string }>;
   /** 关闭驻留托盘能力查询（spec：docs/desktop/linux-close-to-tray.md）；传入 monitor 的 refresh */
   refreshCloseToTrayCapability: () => Promise<import("@zcode/shared").DesktopCloseToTrayCapability>;
   /** 快捷键设置页录制态开关：true 时 main 重建菜单摘除可配置 accelerator（见 shortcut-settings-spec §7） */
@@ -342,6 +376,39 @@ export function registerPlatformIpcHandlers(options: {
     options.syncAppSettings(result.data);
   });
 
+  ipcMain.on(PlatformChannels.SyncWindowWorkspace, (event, payload: unknown) => {
+    const result = windowWorkspaceSyncPayloadSchema.safeParse(payload);
+    if (!result.success) {
+      options.logger.warn("[sync-window-workspace] invalid payload:", formatZodError(result.error));
+      return;
+    }
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      options.syncWindowWorkspace?.(win.id, result.data);
+    }
+  });
+
+  ipcMain.handle(PlatformChannels.GetMobileRelayStatus, () => ({
+    supported: true,
+    ...options.getMobileRelayStatus?.(),
+  }));
+
+  ipcMain.handle(PlatformChannels.RequestMobileRelayGrant, (_event, payload: unknown) => {
+    const result = mobileRelayGrantRequestSchema.safeParse(payload);
+    if (!result.success) {
+      return {
+        success: false,
+        error: `invalid mobile relay grant request: ${formatZodError(result.error)}`,
+      };
+    }
+    return (
+      options.requestMobileRelayGrant?.(result.data) ?? {
+        success: false,
+        error: "mobile relay is not available",
+      }
+    );
+  });
+
   // 快捷键录制态：renderer 设置页进入/退出录制时通知。macOS 系统菜单会先于 renderer
   // 吃掉按键，录制 menu 通道命令必须先摘掉可配置 accelerator，否则按键直接触发原命令。
   // 附带发起方 webContents id：录制中窗口销毁时 main 侧据此复位（见 index.ts）。
@@ -353,7 +420,7 @@ export function registerPlatformIpcHandlers(options: {
     options.setShortcutRecordingActive?.(payload, event.sender.id);
   });
 
-  ipcMain.on(PlatformChannels.Log, (event, payload: unknown) => {
+  ipcMain.on(PlatformChannels.Log, (_event, payload: unknown) => {
     const result = rendererLogPayloadSchema.safeParse(payload);
     if (!result.success) {
       options.logger.warn("[renderer-log] invalid payload:", formatZodError(result.error));
@@ -361,10 +428,7 @@ export function registerPlatformIpcHandlers(options: {
     }
     (
       options.logger as unknown as { fromRenderer(level: string, args: unknown[]): void }
-    ).fromRenderer?.(
-      result.data.level,
-      decorateRequestSecurityLogArgs(result.data.args, event.sender.id),
-    );
+    ).fromRenderer?.(result.data.level, result.data.args);
   });
 
   ipcMain.handle(PlatformChannels.OpenInFileManager, async (_event, rawPath: string) =>
@@ -376,46 +440,6 @@ export function registerPlatformIpcHandlers(options: {
     currentApplicationLocale: options.currentApplicationLocale,
   });
 
-  ipcMain.handle(PlatformChannels.CanOpenCommunity, async (_event, locale: unknown) => {
-    const result = localeSchema.safeParse(locale);
-    if (!result.success) {
-      options.logger.warn("[community] invalid locale:", formatZodError(result.error));
-      return false;
-    }
-
-    const communityUrl = await resolveCommunityUrl({
-      locale: result.data,
-      fetchRemoteConfig: options.fetchHelpConfig,
-      logger: options.logger,
-    });
-
-    return typeof communityUrl === "string" && communityUrl.length > 0;
-  });
-
-  ipcMain.handle(
-    PlatformChannels.AcknowledgePostUpdateReleaseNotes,
-    async (_event, version: string) => {
-      const validatedVersion = nonEmptyStringSchema.parse(version);
-      await options.acknowledgePostUpdateReleaseNotes(validatedVersion);
-    },
-  );
-
-  ipcMain.handle(PlatformChannels.GetUpdateState, () => options.getUpdateState());
-  ipcMain.handle(PlatformChannels.OpenUpdateStatusWindow, () => {
-    options.openUpdateStatusWindow();
-  });
-  ipcMain.handle(PlatformChannels.GetAutoUpdatePreferences, () =>
-    options.getAutoUpdatePreferences(),
-  );
-  ipcMain.handle(
-    PlatformChannels.SetAutoDownloadAndInstallUpdates,
-    async (_event, enabled: unknown) => {
-      if (typeof enabled !== "boolean") {
-        return;
-      }
-      await options.setAutoDownloadAndInstallUpdates(enabled);
-    },
-  );
   ipcMain.handle(PlatformChannels.GetDesktopSessionActivity, () =>
     options.getDesktopSessionActivity(),
   );
@@ -451,6 +475,33 @@ export function registerPlatformIpcHandlers(options: {
     (_event, payload: { editorId: string; path: string; options?: OpenInEditorOptions }) =>
       openInEditor(payload.editorId, payload.path, payload.options),
   );
+  ipcMain.handle(PlatformChannels.SelectAndAddCustomEditor, async (event) => {
+    // 文件选择对话框必须在 main 弹出：renderer 只收注册结果，永远不向 main 传可执行路径。
+    // 挂到 sender window 保证对话框模态于发起的窗口。
+    const filters =
+      process.platform === "win32"
+        ? [{ name: "Applications", extensions: ["exe"] }]
+        : [{ name: "Applications", extensions: ["app"] }];
+    const senderWindow = BrowserWindow.fromWebContents(event.sender);
+    const result =
+      senderWindow && !senderWindow.isDestroyed()
+        ? await dialog.showOpenDialog(senderWindow, { properties: ["openFile"], filters })
+        : await dialog.showOpenDialog({ properties: ["openFile"], filters });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return addCustomEditor(result.filePaths[0]!);
+  });
+  ipcMain.handle(PlatformChannels.RemoveCustomEditor, (_event, payload: unknown) => {
+    const result = nonEmptyStringSchema.safeParse(
+      (payload as { editorId?: unknown } | null | undefined)?.editorId,
+    );
+    if (!result.success) {
+      options.logger.warn("[custom-editors] invalid remove payload:", payload);
+      return { success: false };
+    }
+    return { success: removeCustomEditor(result.data) };
+  });
 
   registerDesktopCommandIpcHandler({
     executeDesktopCommand: options.executeDesktopCommand,

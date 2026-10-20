@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { sanitizeTelemetrySkillName } from "../telemetry.js";
+import { sanitizeTelemetrySkillName } from "../pluginTelemetry.js";
 import { zcodeSyntheticUserMessageSourceSchema } from "../zcode-protocol-legacy-types.js";
 import { timestampSchema } from "./core.js";
 

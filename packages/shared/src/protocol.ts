@@ -5,6 +5,7 @@ import type { ProviderFamilyConnectionSelectionSettings } from "./provider-famil
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
+import type { CustomModelRequestHeaderEntry } from "./zcode-source-headers.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
 import type { AppToolSearchMode } from "./app-runtime-preferences.js";
 
@@ -252,7 +253,19 @@ export interface ResourceUsageSnapshot {
   processes: ResourceUsageProcess[];
 }
 
+/** 自部署手机远控 relay 的桌面侧连接配置；serverUrl 形如 https://relay.example.com。 */
+export interface MobileRelaySettings {
+  /** 是否让桌面 main 出站连接 relay；关闭即断开并停止 presence 上报。 */
+  enabled: boolean;
+  /** relay 部署地址（https:// 或 http://）；缺失时即使 enabled 也不出站。 */
+  serverUrl?: string;
+  /** deployment token（对应 relay 的 ZXCODE_RELAY_TOKEN）；仅存在鉴权部署时填写。 */
+  token?: string;
+}
+
 export interface AppSettings {
+  /** 自部署手机远控 relay 的桌面侧配置；未配置时桌面不出站连接任何 relay。 */
+  mobileRelay?: MobileRelaySettings;
   /** 当前 App/Host 不再显示提交前体验套餐推荐；不改变任何入口的模型选择。 */
   startPlanRecommendationDismissed?: boolean;
   recentProjects: string[]; // 最近项目列表，最多保留 10 个
@@ -277,6 +290,16 @@ export interface AppSettings {
   httpProxyNoProxy?: string;
   /** 自定义 PEM 根证书路径；下次启动 app/agent 时用于 renderer 校验与 agent NODE_EXTRA_CA_CERTS。 */
   httpProxyCaCertPath?: string;
+  /**
+   * 模型 API 请求自定义头开关；关闭（缺省）时模型请求只携带默认来源头，编辑器在设置页隐藏。
+   * 行为见 specs/custom-request-headers.md。
+   */
+  customModelRequestHeadersEnabled?: boolean;
+  /**
+   * 用户自定义的模型请求头（有序列表；同名不区分大小写覆盖默认来源头）。
+   * 仅作用于模型 API 请求，经 spawn env 下发，下次启动 agent 生效。
+   */
+  customModelRequestHeaders?: CustomModelRequestHeaderEntry[];
   /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
    * 只影响内置浏览器出口，不影响 ZCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。

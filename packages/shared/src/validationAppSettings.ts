@@ -18,6 +18,11 @@ import {
   sourceServerRecordSchema,
   sourceServerWorkspaceHistoryEntrySchema,
 } from "./source-server/contracts.js";
+import {
+  CUSTOM_MODEL_REQUEST_HEADERS_MAX_ENTRIES,
+  isValidModelRequestHeaderName,
+  isValidModelRequestHeaderValue,
+} from "./zcode-source-headers.js";
 
 /** 引导职业枚举；单独导出供 onboarding 记录回填 settings 时做窄化校验。 */
 const appSettingsOccupationSchema = z.enum([
@@ -70,6 +75,44 @@ const enabledBuiltinAgentCliProvidersSchema = z
   .array(z.enum(["claude", "opencode", "gemini", "codex", "glm"]))
   .transform(() => [...ZCODE_ENABLED_AGENT_PROVIDERS]);
 const providerFamilyDomainSchema = z.enum(["zai", "bigmodel"]);
+const mobileRelayServerUrlSchema = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed;
+}, z.string().url());
+
+/** 自部署手机远控 relay 桌面侧配置；schema 与 MobileRelaySettings 保持同构。 */
+const mobileRelaySettingsSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    serverUrl: mobileRelayServerUrlSchema.optional(),
+    token: z.string().optional(),
+  })
+  .strict();
+
+/** 用户自定义模型请求头条目；名字/值校验与 agent 侧 env 解析共用同一份实现（specs/custom-request-headers.md）。 */
+const customModelRequestHeaderEntrySchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .refine(isValidModelRequestHeaderName, "header name must be a valid HTTP token"),
+    value: z
+      .string()
+      .trim()
+      .refine(isValidModelRequestHeaderValue, "header value must be printable ASCII"),
+  })
+  .strict();
+
+const customModelRequestHeadersSchema = z
+  .array(customModelRequestHeaderEntrySchema)
+  .max(CUSTOM_MODEL_REQUEST_HEADERS_MAX_ENTRIES);
+
 
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
@@ -545,6 +588,10 @@ const appSettingsObjectSchema = z.object({
     ...ZCODE_ENABLED_AGENT_PROVIDERS,
   ]),
   startPlanRecommendationDismissed: z.boolean().default(false),
+  dynamicWorkflowEnabled: z.boolean().default(false),
+  mobileRelay: mobileRelaySettingsSchema.default({ enabled: false }),
+  customModelRequestHeadersEnabled: z.boolean().default(false),
+  customModelRequestHeaders: customModelRequestHeadersSchema.optional(),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.default({}),
   providerFamilyDomain: providerFamilyDomainSchema.optional(),
   providerFamilyDomainUpdatedAt: z.number().int().nonnegative().optional(),
@@ -640,6 +687,10 @@ export const appSettingsPatchSchema = z.object({
   dynamicWorkflowMode: z.union([z.enum(DYNAMIC_WORKFLOW_MODES), z.literal("")]).optional(),
   enabledBuiltinAgentCliProviders: enabledBuiltinAgentCliProvidersSchema.optional(),
   startPlanRecommendationDismissed: z.boolean().optional(),
+  dynamicWorkflowEnabled: z.boolean().optional(),
+  mobileRelay: mobileRelaySettingsSchema.optional(),
+  customModelRequestHeadersEnabled: z.boolean().optional(),
+  customModelRequestHeaders: customModelRequestHeadersSchema.optional(),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.optional(),
   providerFamilyDomain: z.union([providerFamilyDomainSchema, z.literal("")]).optional(),
   providerFamilyDomainUpdatedAt: z.number().int().nonnegative().optional(),

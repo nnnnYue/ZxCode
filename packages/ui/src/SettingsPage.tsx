@@ -4,12 +4,6 @@ import { RemoteConnectionNavigationDot } from "@/remote-connection/RemoteConnect
 import { resolveRemoteConnectionNavigationPresentation } from "@/lib/remoteConnectionPresentation.js";
 /* oxlint-disable eslint(max-lines) */
 import { ArrowLeft, Rocket, type LucideIcon } from "lucide-react";
-import { useStore } from "zustand";
-import {
-  marketingNavigation,
-  finishMarketingNavigation,
-  marketingSettingsSections,
-} from "@/lib/marketingNavigation.js";
 import {
   useCallback,
   useEffect,
@@ -24,8 +18,6 @@ import type {
   IntegratedTerminalShellOption,
   IntegratedTerminalShellSelection,
   Locale,
-  UsageEntitlementSnapshot,
-  UserInfo,
   ZCodeInteractionBehavior,
 } from "@zcode/shared";
 import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
@@ -33,7 +25,6 @@ import {
   TID_SETTINGS_BACK_BUTTON,
   TID_SETTINGS_PAGE,
   TID_SETTINGS_SECTION_NAV,
-  TID_SETTINGS_USAGE_TAB,
   testId,
 } from "@zcode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
@@ -43,8 +34,6 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { logger } from "@/logger.js";
 import { getPathLeaf } from "@/lib/path.js";
-import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
-import { useUsageEntitlement } from "@/hooks/useUsageEntitlement.js";
 import {
   addPendingSettingsSectionListener,
   clearPendingSettingsPluginOrigin,
@@ -55,39 +44,24 @@ import {
   consumePendingSettingsPluginOrigin,
   consumePendingSettingsPluginScopeKey,
   consumePendingSettingsPluginTab,
-  consumePendingSettingsModelProviderTarget,
-  consumePendingSettingsUsageTab,
   resolveSettingsSection,
   setPendingSettingsSectionIntent,
   shouldFallbackSettingsUsageTabToApp,
   writeLastSettingsSectionPreference,
-  type SettingsModelProviderTarget,
 } from "@/lib/settingsNavigation.js";
-import { readSidebarUsageCodingPlanSourcePreference } from "@/lib/sidebarUsageCodingPlanProviderPreference.js";
-import {
-  resolveEntitledAccountProviderAccess,
-  resolveEntitledAccountProviderAccessFingerprint,
-} from "@/lib/accountProviderAccess.js";
-import { buildUsageEntitlementCacheKey } from "@/lib/usageEntitlementCache.js";
 import { ArchiveManagement, useOptionalProjectDirectory } from "@/project-sidebar/index.js";
 import { resolveRecentRemoteProjectPreference } from "@/project-sidebar/remote-project-connection.js";
 import { ModelProviderSection } from "@/settings/ModelProviderSection.js";
-import { useCodingPlanUpgradeDialog } from "@/settings/CodingPlanUpgradeDialogProvider.js";
-import { useEnterpriseCodingPlanProducts } from "@/settings/model-provider-section/useEnterpriseCodingPlanProducts.js";
-import { UsageStatsSection, type UsageStatsSectionTab } from "@/settings/UsageStatsSection.js";
-import {
-  buildCodingPlanUsageSources,
-  type CodingPlanUsageSource,
-} from "@/settings/usage-stats/CodingPlanUsagePanel.js";
-import { buildPersonalCodingPlanUsageSource } from "@/lib/codingPlanUsageSources.js";
 import { SubagentsSection } from "@/settings/SubagentsSection.js";
 import { AutomationsSection } from "@/settings/AutomationsSection.js";
-import { SegmentPill } from "@/settings/PluginStoreListView.js";
 import { PluginsSection } from "@/settings/PluginsSection.js";
 import { HooksSection } from "@/settings/HooksSection.js";
 import { WorkspaceFileSearchSection } from "@/settings/WorkspaceFileSearchSection.js";
 import { MemorySettingsSection } from "@/settings/MemorySettingsSection.js";
+import { CustomSection } from "@/settings/CustomSection.js";
+import { AppUsagePanel } from "@/settings/usage-stats/AppUsagePanel.js";
 import { BrowserSettingsSection } from "@/settings/BrowserSettingsSection.js";
+import { MobileRelaySettingsSection } from "@/settings/MobileRelaySettingsSection.js";
 import { ComputerUseSection } from "@/settings/ComputerUseSection.js";
 import { ShortcutSettingsSection } from "@/settings/ShortcutSettingsSection.js";
 import { MigrationSection } from "@/settings/MigrationSection.js";
@@ -155,99 +129,6 @@ function runSettingsActionAsync<T>(options: {
     completed: options.completed,
     failureStage: options.failureStage ?? "settings_commit",
   });
-}
-
-function SettingsUsageProviderTabs({
-  activeTab,
-  codingPlanSources,
-  onTabChange,
-}: {
-  activeTab: UsageStatsSectionTab;
-  codingPlanSources: CodingPlanUsageSource[];
-  onTabChange: (tab: UsageStatsSectionTab) => void;
-}) {
-  const { intl } = useZCodeIntl();
-  const tabItems = [
-    {
-      id: "app" as const,
-      label: intl.formatMessage({ id: "settings.usage.tab.appUsage" }),
-    },
-    ...codingPlanSources.map((source, index) => ({
-      id: createSettingsUsageCodingPlanTabId(source.id),
-      label: resolveSettingsUsageCodingPlanTabLabel({
-        defaultLabel: intl.formatMessage({
-          id: "settings.usage.tab.codingPlan",
-        }),
-        hasMultiplePersonalSources:
-          codingPlanSources.filter((item) => !isTeamCodingPlanUsageSource(item)).length > 1,
-        index,
-        source,
-      }),
-    })),
-  ];
-  const visibleActiveTab =
-    activeTab === "codingPlan" && codingPlanSources[0]
-      ? createSettingsUsageCodingPlanTabId(codingPlanSources[0].id)
-      : activeTab;
-
-  return (
-    <div className="flex items-center gap-1.5">
-      {tabItems.map((item) => (
-        <SegmentPill
-          key={item.id}
-          active={visibleActiveTab === item.id}
-          label={item.label}
-          testId={testId(TID_SETTINGS_USAGE_TAB, item.id)}
-          onClick={() => onTabChange(item.id)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function isTeamCodingPlanUsageSource(source: CodingPlanUsageSource): boolean {
-  return "planKind" in source.accountAccess && source.accountAccess.planKind === "team-coding-plan";
-}
-
-function createSettingsUsageCodingPlanTabId(sourceId: string): UsageStatsSectionTab {
-  return `codingPlan:${sourceId}`;
-}
-
-function resolveSettingsUsageCodingPlanSourceId(tab: UsageStatsSectionTab): string | null {
-  return tab.startsWith("codingPlan:") ? tab.slice("codingPlan:".length) : null;
-}
-
-function resolveSettingsUsageCodingPlanTabLabel({
-  defaultLabel,
-  hasMultiplePersonalSources,
-  source,
-}: {
-  defaultLabel: string;
-  hasMultiplePersonalSources: boolean;
-  index: number;
-  source: CodingPlanUsageSource;
-}): string {
-  if (isTeamCodingPlanUsageSource(source)) {
-    return source.label.replace(/^BigModel\s*-\s*/i, "").trim() || source.label;
-  }
-  if (hasMultiplePersonalSources) {
-    return source.label.replace(/\s*-\s*Coding Plan$/i, "").trim() || source.label;
-  }
-  return defaultLabel;
-}
-
-function hasActiveCodingPlanSnapshot(
-  snapshot: UsageEntitlementSnapshot | null,
-  providerId: string,
-): boolean {
-  return (
-    snapshot?.provider?.id === providerId &&
-    snapshot.unavailableReason !== "no_plan" &&
-    (Boolean(snapshot.subscription?.details.length) ||
-      // quota 暂时失败时服务仍能确认当前 provider，但旧过滤条件会把
-      // Coding Plan tab 当成未开通套餐删除。只有明确 no_plan 才应隐藏入口。
-      snapshot.unavailableReason === "unavailable")
-  );
 }
 
 function SettingsSidebarButton({
@@ -318,9 +199,6 @@ export function SettingsPage({
   onOpenRemoteWorkspace?: (preference?: RemoteConnectionOpenPreference) => void;
   /** 远程设备卡「新任务」：激活该设备已打开的 tab 并开新草稿（Root 注入）。 */
   allowOpenWorkspace?: boolean;
-  onLogin?: () => void;
-  onLogout?: () => void;
-  user?: UserInfo | null;
 }) {
   const { intl, localePreference, setLocalePreference } = useZCodeIntl();
   const { settingsSectionGroups, settingsSections } = useMemo(
@@ -386,17 +264,6 @@ export function SettingsPage({
           linuxCloseToTrayCapability.gnomeLikeWithoutTray,
       }
     : undefined;
-  const marketingRequest = useStore(marketingNavigation, (state) => state.request);
-  useEffect(() => {
-    if (marketingRequest?.target.page !== "settings") return;
-    const target = marketingRequest.target;
-    const section = target.section ? marketingSettingsSections[target.section] : activeSection;
-    if (!settingsSections.some((item) => item.id === section)) {
-      finishMarketingNavigation(marketingRequest.id, new Error("marketing_navigation_unavailable"));
-    } else if (activeSection === section && !target.provider_id) {
-      finishMarketingNavigation(marketingRequest.id);
-    }
-  }, [activeSection, marketingRequest, settingsSections]);
   const [pluginNavigationOrigin, setPluginNavigationOrigin] = useState(() =>
     consumePendingSettingsPluginOrigin(),
   );
@@ -425,248 +292,6 @@ export function SettingsPage({
   const setNotificationEnabled = useZCodeStore((state) => state.setNotificationEnabled);
   const notificationSoundEnabled = useZCodeStore((state) => state.notificationSoundEnabled);
   const setNotificationSoundEnabled = useZCodeStore((state) => state.setNotificationSoundEnabled);
-  const usageProviderSettingsRead = useProviderSettingsView();
-  const usageProviderSettingsView =
-    usageProviderSettingsRead.state.status === "ready"
-      ? usageProviderSettingsRead.state.view
-      : null;
-  const usageProviderSettingsLoading = usageProviderSettingsRead.state.status !== "ready";
-  const usageZaiProvider = usageProviderSettingsView?.providers.find(
-    (provider) => provider.providerId === BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-  );
-  const usageBigmodelProvider = usageProviderSettingsView?.providers.find(
-    (provider) => provider.providerId === BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-  );
-  const usageZaiProviderAccess = resolveEntitledAccountProviderAccess(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-  );
-  const usageBigmodelProviderAccess = resolveEntitledAccountProviderAccess(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-  );
-  const usageZaiProviderFingerprint = resolveEntitledAccountProviderAccessFingerprint(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-  );
-  const usageBigmodelProviderFingerprint = resolveEntitledAccountProviderAccessFingerprint(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-  );
-  const usageZaiTeamProviderFingerprint = resolveEntitledAccountProviderAccessFingerprint(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-  );
-  const usageBigmodelTeamProviderFingerprint = resolveEntitledAccountProviderAccessFingerprint(
-    usageProviderSettingsView,
-    BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-  );
-  const usageZaiEntitlement = useUsageEntitlement({
-    enabled:
-      activeSection === "usage" &&
-      !usageProviderSettingsLoading &&
-      Boolean(usageZaiProviderFingerprint),
-    includeSubscription: true,
-    preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-    accountAccess: usageZaiProviderAccess?.access,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    cacheKey: buildUsageEntitlementCacheKey({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-      providerFingerprint: usageZaiProviderFingerprint,
-    }),
-    // 个人 Usage source 依赖 entitlement snapshot；冷启动无缓存时若不先探测，
-    // source 不会渲染，子面板也无法触发 access 刷新。共享 freshness window 继续负责限频。
-    refreshOnMount: true,
-  });
-  const usageBigmodelEntitlement = useUsageEntitlement({
-    enabled:
-      activeSection === "usage" &&
-      !usageProviderSettingsLoading &&
-      Boolean(usageBigmodelProviderFingerprint),
-    includeSubscription: true,
-    preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-    accountAccess: usageBigmodelProviderAccess?.access,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    cacheKey: buildUsageEntitlementCacheKey({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-      providerFingerprint: usageBigmodelProviderFingerprint,
-    }),
-    refreshOnMount: true,
-  });
-  // 原只拉 bigmodel family 的企业 pricing，zai team plan 在使用统计页
-  // 永远拿不到 team project 上下文；后续又误用 Individual Provider 的权益作为 Team
-  // 商品门禁，导致仅有 Team Plan 的账号仍然没有 Usage 来源。企业商品只依赖对应的
-  // Team Account Provider，个人额度继续依赖 Individual Provider，避免两个产品身份串线。
-  const usageBigmodelEnterpriseProducts = useEnterpriseCodingPlanProducts({
-    enabled: !usageProviderSettingsLoading && Boolean(usageBigmodelTeamProviderFingerprint),
-    authenticated: true,
-    family: "bigmodel",
-  });
-  const usageZaiEnterpriseProducts = useEnterpriseCodingPlanProducts({
-    enabled: !usageProviderSettingsLoading && Boolean(usageZaiTeamProviderFingerprint),
-    authenticated: true,
-    family: "zai",
-  });
-  const usageSubscribedTeamProducts = useMemo(
-    () => [
-      ...(usageBigmodelEnterpriseProducts.snapshot?.productList.filter(
-        (product) => product.subscribed === true,
-      ) ?? []),
-      ...(usageZaiEnterpriseProducts.snapshot?.productList.filter(
-        (product) => product.subscribed === true,
-      ) ?? []),
-    ],
-    [
-      usageBigmodelEnterpriseProducts.snapshot?.productList,
-      usageZaiEnterpriseProducts.snapshot?.productList,
-    ],
-  );
-  const [usageActiveTab, setUsageActiveTab] = useState<UsageStatsSectionTab>(() => {
-    const pendingTab = consumePendingSettingsUsageTab();
-    return pendingTab === "codingPlan" ? "codingPlan" : (pendingTab ?? "app");
-  });
-  const usagePersonalCodingPlanSources = useMemo(() => {
-    const sources: CodingPlanUsageSource[] = [];
-    if (
-      usageZaiProviderAccess &&
-      hasActiveCodingPlanSnapshot(
-        usageZaiEntitlement.snapshot,
-        BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-      )
-    ) {
-      sources.push(
-        buildPersonalCodingPlanUsageSource({
-          providerId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-          accountAccess: usageZaiProviderAccess.access,
-          label: usageZaiProvider?.providerName,
-        }),
-      );
-    }
-    if (
-      usageBigmodelProviderAccess &&
-      hasActiveCodingPlanSnapshot(
-        usageBigmodelEntitlement.snapshot,
-        BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-      )
-    ) {
-      sources.push(
-        buildPersonalCodingPlanUsageSource({
-          providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          accountAccess: usageBigmodelProviderAccess.access,
-          label: usageBigmodelProvider?.providerName,
-        }),
-      );
-    }
-    return sources;
-  }, [
-    usageBigmodelEntitlement.snapshot,
-    usageBigmodelProvider,
-    usageBigmodelProviderAccess,
-    usageZaiEntitlement.snapshot,
-    usageZaiProvider,
-    usageZaiProviderAccess,
-  ]);
-  const usageTeamCodingPlanSources = useMemo(
-    () =>
-      buildCodingPlanUsageSources({
-        accountAccesses: {
-          ...(resolveEntitledAccountProviderAccess(
-            usageProviderSettingsView,
-            BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-          )?.access
-            ? {
-                zai: resolveEntitledAccountProviderAccess(
-                  usageProviderSettingsView,
-                  BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-                )!.access,
-              }
-            : {}),
-          ...(resolveEntitledAccountProviderAccess(
-            usageProviderSettingsView,
-            BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-          )?.access
-            ? {
-                bigmodel: resolveEntitledAccountProviderAccess(
-                  usageProviderSettingsView,
-                  BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-                )!.access,
-              }
-            : {}),
-        },
-        subscribedTeamProducts: usageSubscribedTeamProducts,
-      }),
-    [usageProviderSettingsView, usageSubscribedTeamProducts],
-  );
-  const usageCodingPlanSources = useMemo(
-    () => [...usagePersonalCodingPlanSources, ...usageTeamCodingPlanSources],
-    [usagePersonalCodingPlanSources, usageTeamCodingPlanSources],
-  );
-  const selectedUsageCodingPlanSourceId =
-    usageActiveTab === "codingPlan"
-      ? (usageCodingPlanSources[0]?.id ?? null)
-      : resolveSettingsUsageCodingPlanSourceId(usageActiveTab);
-  const selectedUsageCodingPlanSource =
-    usageCodingPlanSources.find((source) => source.id === selectedUsageCodingPlanSourceId) ?? null;
-  const showUsageCodingPlanTab = usageCodingPlanSources.length > 0;
-  const checkingUsageZaiCodingPlanTab = Boolean(
-    usageZaiProviderFingerprint &&
-    (usageZaiEntitlement.loading || (!usageZaiEntitlement.snapshot && !usageZaiEntitlement.error)),
-  );
-  const checkingUsageBigmodelCodingPlanTab = Boolean(
-    usageBigmodelProviderFingerprint &&
-    (usageBigmodelEntitlement.loading ||
-      (!usageBigmodelEntitlement.snapshot && !usageBigmodelEntitlement.error)),
-  );
-  const checkingUsageCodingPlanTab =
-    usageProviderSettingsLoading ||
-    checkingUsageZaiCodingPlanTab ||
-    checkingUsageBigmodelCodingPlanTab ||
-    usageBigmodelEnterpriseProducts.loading ||
-    usageZaiEnterpriseProducts.loading;
-  const [initialModelProviderTarget] = useState(() => consumePendingSettingsModelProviderTarget());
-  const { openCodingPlanUpgrade } = useCodingPlanUpgradeDialog();
-  const [pendingModelProviderTarget, setPendingModelProviderTarget] = useState<
-    SettingsModelProviderTarget | undefined
-  >(() => initialModelProviderTarget);
-  const handleUsageTabSelect = useCallback((tab: UsageStatsSectionTab) => {
-    setUsageActiveTab(tab);
-  }, []);
-  /*
-   * 使用统计是账号级 sources，不再绑定当前 workspace 连接方式。
-   * 旧入口只会写入 "codingPlan" 意图；等 sources 加载后需要落到真实来源。
-   * 剩余额度「更多」等入口会先写入来源偏好（当前 coding plan 类型/团队项目），
-   * 解析时优先选中该来源，缺失或已不可用时回退第一份真实来源。
-   */
-  useEffect(() => {
-    if (usageActiveTab !== "codingPlan" || !usageCodingPlanSources[0]) {
-      return;
-    }
-    const preferredSourceId = readSidebarUsageCodingPlanSourcePreference();
-    const preferredSource = preferredSourceId
-      ? usageCodingPlanSources.find((source) => source.id === preferredSourceId)
-      : undefined;
-    setUsageActiveTab(
-      createSettingsUsageCodingPlanTabId((preferredSource ?? usageCodingPlanSources[0]).id),
-    );
-  }, [usageActiveTab, usageCodingPlanSources]);
-  useEffect(() => {
-    if (
-      usageActiveTab === "app" ||
-      usageActiveTab === "codingPlan" ||
-      selectedUsageCodingPlanSource
-    ) {
-      return;
-    }
-    setUsageActiveTab(
-      usageCodingPlanSources[0]
-        ? createSettingsUsageCodingPlanTabId(usageCodingPlanSources[0].id)
-        : "app",
-    );
-  }, [selectedUsageCodingPlanSource, usageActiveTab, usageCodingPlanSources]);
   const setNewUserOnboardingOpen = useZCodeStore((state) => state.setNewUserOnboardingOpen);
   const requestOnboardingDialog = () => setNewUserOnboardingOpen(true);
   const setActiveSettingsSection = useCallback(
@@ -682,25 +307,8 @@ export function SettingsPage({
       setActiveSettingsSection("general");
     }
   }, [activeSection, isDesktop, setActiveSettingsSection]);
-  const handleOpenCodingPlanUpgradeSettings = useCallback(
-    (
-      providerId: string,
-      funnelContext?: import("@/lib/codingPlanFunnelTelemetry.js").CodingPlanFunnelContext,
-    ) => {
-      openCodingPlanUpgrade({
-        providerId,
-        funnelContext,
-      });
-    },
-    [openCodingPlanUpgrade],
-  );
   const handleOpenModelProviderSettings = useCallback(() => {
     setActiveSettingsSection("modelProvider");
-  }, [setActiveSettingsSection]);
-  const handleOpenUsageSettings = useCallback(() => {
-    // 设置页 sidebar footer 里的齿轮/返回按钮复用 onBack，
-    // 但头像菜单的“使用统计”应该停留在设置页并切到 Usage，不能跟着返回工作区。
-    setActiveSettingsSection("usage");
   }, [setActiveSettingsSection]);
   const activeWorkspacePath = useTabStore((state) => state.activeWorkspacePath);
   const activateTab = useTabStore((state) => state.activateTab);
@@ -808,10 +416,9 @@ export function SettingsPage({
     desktopChromiumHardwareAccelerationEnabled,
     setDesktopChromiumHardwareAccelerationEnabled,
   ] = useState(true);
-  const [receivePreviewUpdates, setReceivePreviewUpdates] = useState(false);
-  const [autoDownloadAndInstallUpdates, setAutoDownloadAndInstallUpdates] = useState(false);
   const [messageStreamShowReasoning, setMessageStreamShowReasoning] = useState(true);
   const [messageStreamShowTodos, setMessageStreamShowTodos] = useState(false);
+  const [dynamicWorkflowEnabled, setDynamicWorkflowEnabled] = useState(false);
   const [toolGroupingExploreEnabled, setToolGroupingExploreEnabled] = useState(true);
   const [toolGroupingTerminalEnabled, setToolGroupingTerminalEnabled] = useState(true);
   const [toolGroupingChangesEnabled, setToolGroupingChangesEnabled] = useState(false);
@@ -819,30 +426,6 @@ export function SettingsPage({
     useState<ZCodeInteractionBehavior>("queue");
   const [defaultHomeDir, setDefaultHomeDir] = useState("");
   const [hostPlatform, setHostPlatform] = useState("");
-
-  useEffect(() => {
-    if (
-      !shouldFallbackSettingsUsageTabToApp({
-        activeTab: usageActiveTab === "app" ? "app" : "codingPlan",
-        checkingCodingPlanTab: checkingUsageCodingPlanTab,
-        loadingModelProviders: usageProviderSettingsLoading,
-        showCodingPlanTab: showUsageCodingPlanTab,
-      })
-    ) {
-      return;
-    }
-
-    // 剩余额度入口会先写入 Coding Plan tab 意图，再打开设置页。
-    // 如果首帧 provider/entitlement 仍在加载就立刻回退，会让“更多”看起来只打开了 App Usage。
-    // 这里等数据确认没有套餐后再回退，避免空入口误导用户。
-    setUsageActiveTab("app");
-  }, [
-    checkingUsageCodingPlanTab,
-    showUsageCodingPlanTab,
-    usageSubscribedTeamProducts.length,
-    usageActiveTab,
-    usageProviderSettingsLoading,
-  ]);
 
   useEffect(
     () =>
@@ -866,11 +449,6 @@ export function SettingsPage({
           setPluginScopeKey(detail.pluginScopeKey);
         } else if (resolveSettingsSection(section) !== "plugin") {
           setPluginNavigationOrigin(undefined);
-        }
-        if (section === "modelProvider" && detail?.modelProviderId) {
-          setPendingModelProviderTarget({
-            providerId: detail.modelProviderId,
-          });
         }
       }),
     [activeSection, setActiveSettingsSection],
@@ -896,6 +474,13 @@ export function SettingsPage({
         setDesktopChromiumHardwareAccelerationEnabled(
           settings.desktopChromiumHardwareAccelerationEnabled ?? true,
         );
+        setMessageStreamShowReasoning(settings.messageStreamShowReasoning ?? true);
+        setMessageStreamShowTodos(settings.messageStreamShowTodos ?? false);
+        setDynamicWorkflowEnabled(settings.dynamicWorkflowEnabled ?? false);
+        setToolGroupingExploreEnabled(settings.toolGroupingExploreEnabled ?? true);
+        setToolGroupingTerminalEnabled(settings.toolGroupingTerminalEnabled ?? true);
+        setToolGroupingChangesEnabled(settings.toolGroupingChangesEnabled ?? false);
+        setZCodeInteractionBehavior(settings.zcodeInteractionBehavior ?? "queue");
       })
       .catch(() => {});
     localHostServices.systemService
@@ -947,12 +532,11 @@ export function SettingsPage({
     }
     setMessageStreamShowReasoning(sharedSettings.messageStreamShowReasoning ?? true);
     setMessageStreamShowTodos(sharedSettings.messageStreamShowTodos ?? false);
+    setDynamicWorkflowEnabled(sharedSettings.dynamicWorkflowEnabled ?? false);
     setToolGroupingExploreEnabled(sharedSettings.toolGroupingExploreEnabled ?? true);
     setToolGroupingTerminalEnabled(sharedSettings.toolGroupingTerminalEnabled ?? true);
     setToolGroupingChangesEnabled(sharedSettings.toolGroupingChangesEnabled ?? false);
     setZCodeInteractionBehavior(sharedSettings.zcodeInteractionBehavior ?? "queue");
-    setReceivePreviewUpdates(sharedSettings.receivePreviewUpdates ?? false);
-    setAutoDownloadAndInstallUpdates(sharedSettings.autoDownloadAndInstallUpdates ?? false);
   }, [sharedSettings]);
   const handleTerminalInheritSystemProfileChange = useCallback(
     async (enabled: boolean) => {
@@ -1279,38 +863,6 @@ export function SettingsPage({
     },
     [localHostServices.settingService, intl],
   );
-  const handleReceivePreviewUpdatesChange = useCallback(
-    async (enabled: boolean) => {
-      await runSettingsActionAsync({
-        featureId: "settings.update",
-        action: "toggle_preview_updates",
-        trigger: "switch",
-        operation: () => updateSharedSettings({ receivePreviewUpdates: enabled }),
-        completed: {
-          resultSource: "shared_settings",
-          stateAfter: enabled ? "enabled" : "disabled",
-        },
-      });
-      setReceivePreviewUpdates(enabled);
-    },
-    [updateSharedSettings],
-  );
-  const handleAutoDownloadAndInstallUpdatesChange = useCallback(
-    async (enabled: boolean) => {
-      await runSettingsActionAsync({
-        featureId: "settings.update",
-        action: "toggle_auto_update",
-        trigger: "switch",
-        operation: () => updateSharedSettings({ autoDownloadAndInstallUpdates: enabled }),
-        completed: {
-          resultSource: "shared_settings",
-          stateAfter: enabled ? "enabled" : "disabled",
-        },
-      });
-      setAutoDownloadAndInstallUpdates(enabled);
-    },
-    [updateSharedSettings],
-  );
   const handleMessageStreamShowReasoningChange = useCallback(
     async (enabled: boolean) => {
       await runSettingsActionAsync({
@@ -1326,6 +878,25 @@ export function SettingsPage({
       setMessageStreamShowReasoning(enabled);
     },
     [updateSharedSettings],
+  );
+  const handleDynamicWorkflowEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.desktop",
+        action: "toggle_dynamic_workflow",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ dynamicWorkflowEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+          requiresRestart: true,
+        },
+      });
+      setDynamicWorkflowEnabled(enabled);
+      // 折算发生在 main fork Host 时（buildHostProcessEnv），已运行 Host 不热切换，重启后生效。
+      toast(intl.formatMessage({ id: "settings.dynamicWorkflowSavedHint" }));
+    },
+    [updateSharedSettings, intl],
   );
   const handleMessageStreamShowTodosChange = useCallback(
     async (enabled: boolean) => {
@@ -1689,14 +1260,9 @@ export function SettingsPage({
                   onLocaleChange={handleFooterLocaleChange}
                   onThemeChange={handleFooterThemeChange}
                   onSettingsButtonClick={onBack}
-                  onUsageClick={handleOpenUsageSettings}
-                  onUpgradeClick={handleOpenCodingPlanUpgradeSettings}
-                  onLogin={onLogin}
-                  onLogout={onLogout}
                   settingsButtonMode="back"
-                  user={user}
-                  // 头像菜单是 WorkspaceSidebarFooter 的共享菜单，Settings 场景不能丢失桌面平台能力。
-                  // 之前这里没透传 isDesktop，导致同一个头像菜单在设置页缺少界面缩放入口。
+                  // 偏好菜单是 WorkspaceSidebarFooter 的共享菜单，Settings 场景不能丢失桌面平台能力。
+                  // 之前这里没透传 isDesktop，导致同一个偏好菜单在设置页缺少界面缩放入口。
                   isDesktop={isDesktop}
                 />
               </div>
@@ -1773,474 +1339,342 @@ export function SettingsPage({
                   </div>
                   <SettingsMachinesProvider servers={sourceManagementSnapshot?.servers ?? []}>
                     <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
-                      <div
-                        className={cn(
-                          SETTINGS_FRAME_CONTENT_CLASSNAME,
-                          "flex flex-col gap-8",
-                          isMacDesktop && "pt-0",
-                          // isWindowsDesktop && "pt-12",
-                        )}
-                      >
-                        {/* 归档设置迁入后也需要公共页头，不能再因列表自带标题而隐藏页面标题。 */}
-                        <div>
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex min-w-0 flex-wrap items-center gap-3">
-                              {showActiveSectionTitle ? (
-                                <h2 className="text-ui-settings-title font-semibold tracking-tight text-foreground lg:text-ui-settings-title-lg">
-                                  {activeSectionLabel}
-                                </h2>
-                              ) : null}
-                              {!hasVisibleSettingsBreadcrumb && activeSectionMeta.titleBadgeId ? (
-                                <span className="inline-flex h-6 items-center rounded-md border border-border px-2 text-ui-xs font-semibold tracking-normal text-foreground">
-                                  {intl.formatMessage({
-                                    id: activeSectionMeta.titleBadgeId,
-                                  })}
-                                </span>
-                              ) : null}
-                              {activeSection === "usage" ? (
-                                <SettingsUsageProviderTabs
-                                  activeTab={usageActiveTab}
-                                  codingPlanSources={usageCodingPlanSources}
-                                  onTabChange={handleUsageTabSelect}
-                                />
-                              ) : null}
-                            </div>
-                          </div>
-                          {activeSection === "general" ? (
-                            <GeneralSectionHeader localePreference={localePreference} />
-                          ) : null}
-                        </div>
-                        <div className="space-y-8">
-                          {activeSection === "general" ? (
-                            <GeneralSectionContent
-                              localePreference={localePreference}
-                              interfaceMode={interfaceMode}
-                              setInterfaceMode={setInterfaceMode}
-                              isDesktop={isDesktop}
-                              isWindowsDesktop={isWindowsDesktop}
-                              isLinuxDesktop={isLinuxDesktop}
-                              linuxCloseToTray={linuxCloseToTray}
-                              platform={platform}
-                              notificationEnabled={notificationEnabled}
-                              notificationSoundEnabled={notificationSoundEnabled}
-                              closeToTrayOnWindows={closeToTrayOnWindows}
-                              keepAwakeWhileRunning={sharedSettings?.keepAwakeWhileRunning ?? false}
-                              desktopChromiumHardwareAccelerationEnabled={
-                                desktopChromiumHardwareAccelerationEnabled
-                              }
-                              receivePreviewUpdates={receivePreviewUpdates}
-                              autoDownloadAndInstallUpdates={autoDownloadAndInstallUpdates}
-                              dataBaseDir={dataBaseDir}
-                              terminalInheritSystemProfile={terminalInheritSystemProfile}
-                              terminalFontFamily={terminalFontFamily}
-                              integratedTerminalShell={integratedTerminalShell}
-                              integratedTerminalShellOptions={integratedTerminalShellOptions}
-                              toolSearchMode={toolSearchMode}
-                              onToolSearchModeChange={handleToolSearchModeChange}
-                              nativeSearchEnhancementsEnabled={nativeSearchEnhancementsEnabled}
-                              httpProxy={httpProxy}
-                              httpProxyNoProxy={httpProxyNoProxy}
-                              httpProxyCaCertPath={httpProxyCaCertPath}
-                              defaultHomeDir={defaultHomeDir}
-                              showIntegratedTerminalShell={hostPlatform === "win32"}
-                              setLocalePreference={handleFooterLocaleChange}
-                              setNotificationEnabled={(enabled) =>
-                                runUserAction({
-                                  input: {
-                                    featureId: "settings.notification",
-                                    action: "toggle_notification",
-                                    trigger: "switch",
-                                  },
-                                  operation: () => setNotificationEnabled(enabled),
-                                  completed: {
-                                    resultSource: "local_commit",
-                                    stateAfter: enabled ? "enabled" : "disabled",
-                                  },
-                                  failureStage: "local_commit",
-                                })
-                              }
-                              setNotificationSoundEnabled={(enabled) =>
-                                runUserAction({
-                                  input: {
-                                    featureId: "settings.notification",
-                                    action: "toggle_notification_sound",
-                                    trigger: "switch",
-                                  },
-                                  operation: () => setNotificationSoundEnabled(enabled),
-                                  completed: {
-                                    resultSource: "local_commit",
-                                    stateAfter: enabled ? "enabled" : "disabled",
-                                  },
-                                  failureStage: "local_commit",
-                                })
-                              }
-                              messageStreamShowReasoning={messageStreamShowReasoning}
-                              messageStreamShowTodos={messageStreamShowTodos}
-                              toolGroupingExploreEnabled={toolGroupingExploreEnabled}
-                              toolGroupingTerminalEnabled={toolGroupingTerminalEnabled}
-                              toolGroupingChangesEnabled={toolGroupingChangesEnabled}
-                              zcodeInteractionBehavior={zcodeInteractionBehavior}
-                              askUserQuestionAutoResolutionEnabled={
-                                askUserQuestionAutoResolutionEnabled
-                              }
-                              modelIoFullRetentionEnabled={modelIoFullRetentionEnabled}
-                              onDataBaseDirChange={handleDataBaseDirChange}
-                              onSelectDataBaseDir={selectDirectory}
-                              onTerminalInheritSystemProfileChange={
-                                handleTerminalInheritSystemProfileChange
-                              }
-                              onTerminalFontFamilyChange={handleTerminalFontFamilyChange}
-                              onIntegratedTerminalShellChange={handleIntegratedTerminalShellChange}
-                              onNativeSearchEnhancementsEnabledChange={
-                                handleNativeSearchEnhancementsEnabledChange
-                              }
-                              onModelIoFullRetentionEnabledChange={
-                                handleModelIoFullRetentionEnabledChange
-                              }
-                              onHttpProxyChange={handleHttpProxyChange}
-                              onHttpProxyNoProxyChange={handleHttpProxyNoProxyChange}
-                              onHttpProxyCaCertPathChange={handleHttpProxyCaCertPathChange}
-                              onCloseToTrayOnWindowsChange={handleCloseToTrayOnWindowsChange}
-                              onKeepAwakeWhileRunningChange={handleKeepAwakeWhileRunningChange}
-                              onDesktopChromiumHardwareAccelerationChange={
-                                handleDesktopChromiumHardwareAccelerationChange
-                              }
-                              onReceivePreviewUpdatesChange={handleReceivePreviewUpdatesChange}
-                              onAutoDownloadAndInstallUpdatesChange={
-                                handleAutoDownloadAndInstallUpdatesChange
-                              }
-                              onMessageStreamShowReasoningChange={
-                                handleMessageStreamShowReasoningChange
-                              }
-                              onMessageStreamShowTodosChange={handleMessageStreamShowTodosChange}
-                              onToolGroupingExploreEnabledChange={
-                                handleToolGroupingExploreEnabledChange
-                              }
-                              onToolGroupingTerminalEnabledChange={
-                                handleToolGroupingTerminalEnabledChange
-                              }
-                              onToolGroupingChangesEnabledChange={
-                                handleToolGroupingChangesEnabledChange
-                              }
-                              onZCodeInteractionBehaviorChange={
-                                handleZCodeInteractionBehaviorChange
-                              }
-                              onAskUserQuestionAutoResolutionEnabledChange={
-                                handleAskUserQuestionAutoResolutionEnabledChange
-                              }
-                              onOpenOnboardingDialog={() =>
-                                runUserAction({
-                                  input: {
-                                    featureId: "settings.navigation",
-                                    action: "open_onboarding",
-                                    trigger: "button",
-                                  },
-                                  operation: requestOnboardingDialog,
-                                  completed: { resultSource: "local_commit" },
-                                  failureStage: "dialog_open",
-                                })
-                              }
-                            />
-                          ) : activeSection === "remoteDevices" ? (
-                            sharedSettings && isDesktop && sourceManagement ? (
-                              <SourceServerManagementPanel
-                                key={`remote:${settingsSectionNavigationVersion}`}
-                                targetSourceServerId={targetSourceServerId}
-                                targetSourceServerDetails={targetSourceServerDetails}
-                                onTargetSourceServerFocused={() => {
-                                  setTargetSourceServerId(undefined);
-                                  setTargetSourceServerDetails(false);
-                                }}
-                                management={sourceManagement}
-                                onCreateConnection={
-                                  onOpenRemoteWorkspace
-                                    ? () =>
-                                        onOpenRemoteWorkspace({ completion: "device-management" })
-                                    : undefined
-                                }
-                                onConnectProfile={
-                                  remoteWorkspaceController
-                                    ? (profileId) =>
-                                        remoteWorkspaceController.dispatch({
-                                          type: "connect-device",
-                                          profileId,
-                                          effect: "device-management",
-                                        })
-                                    : onOpenRemoteWorkspace
-                                      ? (profileId) =>
-                                          onOpenRemoteWorkspace({
-                                            preferredProfileId: profileId,
-                                            completion: "device-management",
-                                          })
-                                      : undefined
-                                }
-                                onDisconnectSource={
-                                  remoteWorkspaceController
-                                    ? (sourceServerId) =>
-                                        remoteWorkspaceController.dispatch({
-                                          type: "disconnect-device",
-                                          sourceServerId,
-                                        })
-                                    : undefined
-                                }
-                                onOpenProject={
-                                  onOpenRemoteWorkspace
-                                    ? async (sourceServerId, path, profileId) => {
-                                        // 仅传目录会被 Root 当成新建；复用侧栏唯一目录 owner，同步固定原入口。
-                                        const preference =
-                                          projectDirectory &&
-                                          resolveRecentRemoteProjectPreference(
-                                            projectDirectory.directory,
-                                            {
-                                              sourceServerId,
-                                              path,
-                                              profileId,
-                                            },
-                                          );
-                                        if (!preference) {
-                                          throw Object.assign(
-                                            new Error("remote-project.entry-not-found"),
-                                            {
-                                              code: "recent-project-unresolved",
-                                            },
-                                          );
-                                        }
-                                        onBack?.();
-                                        onOpenRemoteWorkspace(preference);
-                                      }
-                                    : undefined
-                                }
-                                onShowUpdateDetails={(sourceServerId) => {
-                                  setPendingSettingsSectionIntent("remoteDevices", {
-                                    sourceServerId,
-                                    sourceServerDetails: true,
-                                  });
-                                  openSettingsTab();
-                                }}
-                                workspaceTabs={workspaceTabs}
-                                onShowInSidebar={(sourceServerId) => {
-                                  const target = workspaceTabs.find(
-                                    (tab) =>
-                                      getWorkspaceSourceServerId(tab, {
-                                        workspaceHistory:
-                                          sourceManagementSnapshot?.workspaceHistory,
-                                      }) === sourceServerId,
-                                  );
-                                  onBack?.();
-                                  if (target) {
-                                    activateTab(target.id);
-                                    requestAnimationFrame(() => {
-                                      const row = Array.from(
-                                        document.querySelectorAll<HTMLElement>(
-                                          "[data-remote-project-identity]",
-                                        ),
-                                      ).find(
-                                        (element) =>
-                                          element.dataset.remoteProjectIdentity ===
-                                          target.workspaceIdentity,
-                                      );
-                                      row?.scrollIntoView({ block: "center" });
-                                      row
-                                        ?.querySelector<HTMLElement>('[role="button"]')
-                                        ?.focus({ preventScroll: true });
-                                    });
-                                  }
-                                }}
-                                settings={sharedSettings}
-                                onUpdateSettings={updateSharedSettings}
-                              />
-                            ) : (
-                              <p className="text-ui-sm text-remote-foreground-muted">
+                    <div
+                      className={cn(
+                        SETTINGS_FRAME_CONTENT_CLASSNAME,
+                        "flex flex-col gap-8",
+                        isMacDesktop && "pt-0",
+                        // isWindowsDesktop && "pt-12",
+                      )}
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex min-w-0 flex-wrap items-center gap-3">
+                            {showActiveSectionTitle ? (
+                              <h2 className="text-2xl font-semibold tracking-tight text-foreground lg:text-3xl">
+                                {activeSectionLabel}
+                              </h2>
+                            ) : null}
+                            {!hasVisibleSettingsBreadcrumb && activeSectionMeta.titleBadgeId ? (
+                              <span className="inline-flex h-6 items-center rounded-full border border-sky-500 px-2 text-ui-xs font-semibold tracking-normal text-sky-500 dark:border-sky-400 dark:text-sky-400">
                                 {intl.formatMessage({
-                                  id: sharedSettings ? "settings.source.empty" : "common.loading",
+                                  id: activeSectionMeta.titleBadgeId,
                                 })}
-                              </p>
-                            )
-                          ) : activeSection === "appearance" ? (
-                            <AppearanceSectionContent
-                              codePreviewSettings={codePreviewSettings}
-                              setCodePreviewSettings={handleCodePreviewSettingsChange}
-                              theme={theme}
-                              setTheme={(nextTheme) => handleFooterThemeChange(nextTheme)}
-                              uiFontSizePx={uiFontSizePx}
-                              setUiFontSizePx={(fontSizePx) =>
-                                runUserAction({
-                                  input: {
-                                    featureId: "settings.appearance",
-                                    action: "change_ui_font_size",
-                                    trigger: "keyboard",
-                                  },
-                                  operation: () => setUiFontSizePx(fontSizePx),
-                                  completed: {
-                                    resultSource: "local_commit",
-                                    valueAfter: String(fontSizePx),
-                                  },
-                                  failureStage: "local_commit",
-                                })
-                              }
-                            />
-                          ) : activeSection === "shortcuts" ? (
-                            <ShortcutSettingsSection isDesktop={Boolean(isDesktop)} />
-                          ) : activeSection === "modelProvider" ? (
-                            <ServiceProvider services={localHostServices}>
-                              {/* 模型配置属于本机全局事实源；激活远端 workspace 时也不能注入远端 Host。 */}
-                              <ModelProviderSection
-                                workspacePath={activeWorkspacePath ?? captionWorkspacePath ?? ""}
-                                connectivityWorkspacePath={
-                                  localModelProviderConnectivityWorkspacePath
-                                }
-                                connectivityWorkspaceRequired={isRemoteModelProviderWorkspace}
-                                pendingModelProviderTarget={pendingModelProviderTarget}
-                                onConsumePendingModelProviderTarget={() =>
-                                  setPendingModelProviderTarget(undefined)
-                                }
-                              />
-                            </ServiceProvider>
-                          ) : activeSection === "memory" ? (
-                            <ServiceProvider services={localHostServices}>
-                              {/* Memory catalog 始终使用本地 Host，避免远程 workspace 误读本机数据。 */}
-                              <MemorySettingsSection
-                                memoryEnabled={memoryEnabled}
-                                memoryService={localHostServices.memoryService}
-                                onMemoryEnabledChange={handleMemoryEnabledChange}
-                                projectMemoryViewerAvailable={Boolean(isDesktop)}
-                                workspaceDisplayNames={memoryWorkspaceDisplayNames}
-                              />
-                            </ServiceProvider>
-                          ) : activeSection === "plugin" ? (
-                            <PluginsSection
-                              key={`plugin:${settingsSectionNavigationVersion}`}
-                              isDesktop={Boolean(isDesktop)}
-                              isMacDesktop={Boolean(isMacDesktop)}
-                              isWindowsDesktop={Boolean(isWindowsDesktop)}
-                              isWebRemoteControl={isWebRemoteControl}
-                              initialTab={pluginTab}
-                              initialScopeKey={pluginScopeKey}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              showMarketplaceBreadcrumb={pluginNavigationOrigin === "plugin-store"}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "mcp" ? (
-                            <PluginsSection
-                              key={`mcp:${settingsSectionNavigationVersion}`}
-                              mode="mcp"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "skill" ? (
-                            <PluginsSection
-                              key={`skill:${settingsSectionNavigationVersion}`}
-                              mode="skill"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "migration" ? (
-                            <MigrationSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              isDesktop={isDesktop}
-                            />
-                          ) : activeSection === "archives" ? (
-                            <div className="min-w-0 space-y-6">
-                              <TaskAutoArchiveSettings
-                                taskAutoArchiveEnabled={taskAutoArchiveEnabled}
-                                taskAutoArchiveOlderThanDays={taskAutoArchiveOlderThanDays}
-                                onTaskAutoArchiveEnabledChange={handleTaskAutoArchiveEnabledChange}
-                                onTaskAutoArchiveOlderThanDaysChange={
-                                  handleTaskAutoArchiveOlderThanDaysChange
-                                }
-                              />
-                              <ArchiveManagement />
-                            </div>
-                          ) : activeSection === "usage" ? (
-                            <UsageStatsSection
-                              activeTab={usageActiveTab}
-                              providerSourcesLoading={usageProviderSettingsLoading}
-                              selectedCodingPlanSource={selectedUsageCodingPlanSource}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              workspacePath={activeWorkspacePath ?? undefined}
-                            />
-                          ) : activeSection === "subagents" ? (
-                            <SubagentsSection
-                              onManageModels={handleOpenModelProviderSettings}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "automations" ? (
-                            <AutomationsSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "commands" ? (
-                            <PluginsSection
-                              mode="command"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "hooks" ? (
-                            <HooksSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "workspaceFileSearch" ? (
-                            <WorkspaceFileSearchSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "browser" ? (
-                            <BrowserSettingsSection
-                              isDesktop={Boolean(isDesktop)}
-                              isWindowsDesktop={isWindowsDesktop}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              embeddedBrowserAllowInsecureCertificates={
-                                embeddedBrowserAllowInsecureCertificates
-                              }
-                              onEmbeddedBrowserAllowInsecureCertificatesChange={
-                                handleEmbeddedBrowserAllowInsecureCertificatesChange
-                              }
-                            />
-                          ) : activeSection === "computerUse" ? (
-                            <ComputerUseSection
-                              isDesktop={Boolean(isDesktop)}
-                              isMacDesktop={Boolean(isMacDesktop)}
-                              isWindowsDesktop={Boolean(isWindowsDesktop)}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              remoteSessionId={activeWorkspaceTab?.remoteSessionId}
-                              remoteTarget={activeWorkspaceTab?.remoteTarget}
-                              localWorkspacePath={activeWorkspaceTab?.localWorkspacePath}
-                            />
-                          ) : null}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
+                        {activeSection === "general" ? (
+                          <GeneralSectionHeader localePreference={localePreference} />
+                        ) : null}
                       </div>
+                      <div className="space-y-8">
+                        {activeSection === "general" ? (
+                          <GeneralSectionContent
+                            localePreference={localePreference}
+                            interfaceMode={interfaceMode}
+                            setInterfaceMode={setInterfaceMode}
+                            isDesktop={isDesktop}
+                            isWindowsDesktop={isWindowsDesktop}
+                            isLinuxDesktop={isLinuxDesktop}
+                            linuxCloseToTray={linuxCloseToTray}
+                            platform={platform}
+                            notificationEnabled={notificationEnabled}
+                            notificationSoundEnabled={notificationSoundEnabled}
+                            closeToTrayOnWindows={closeToTrayOnWindows}
+                            keepAwakeWhileRunning={sharedSettings?.keepAwakeWhileRunning ?? false}
+                            desktopChromiumHardwareAccelerationEnabled={
+                              desktopChromiumHardwareAccelerationEnabled
+                            }
+                            dataBaseDir={dataBaseDir}
+                            terminalInheritSystemProfile={terminalInheritSystemProfile}
+                            terminalFontFamily={terminalFontFamily}
+                            integratedTerminalShell={integratedTerminalShell}
+                            integratedTerminalShellOptions={integratedTerminalShellOptions}
+                            nativeSearchEnhancementsEnabled={nativeSearchEnhancementsEnabled}
+                            httpProxy={httpProxy}
+                            httpProxyNoProxy={httpProxyNoProxy}
+                            httpProxyCaCertPath={httpProxyCaCertPath}
+                            defaultHomeDir={defaultHomeDir}
+                            showIntegratedTerminalShell={hostPlatform === "win32"}
+                            setLocalePreference={handleFooterLocaleChange}
+                            setNotificationEnabled={(enabled) =>
+                              runUserAction({
+                                input: {
+                                  featureId: "settings.notification",
+                                  action: "toggle_notification",
+                                  trigger: "switch",
+                                },
+                                operation: () => setNotificationEnabled(enabled),
+                                completed: {
+                                  resultSource: "local_commit",
+                                  stateAfter: enabled ? "enabled" : "disabled",
+                                },
+                                failureStage: "local_commit",
+                              })
+                            }
+                            setNotificationSoundEnabled={(enabled) =>
+                              runUserAction({
+                                input: {
+                                  featureId: "settings.notification",
+                                  action: "toggle_notification_sound",
+                                  trigger: "switch",
+                                },
+                                operation: () => setNotificationSoundEnabled(enabled),
+                                completed: {
+                                  resultSource: "local_commit",
+                                  stateAfter: enabled ? "enabled" : "disabled",
+                                },
+                                failureStage: "local_commit",
+                              })
+                            }
+                            taskAutoArchiveEnabled={taskAutoArchiveEnabled}
+                            taskAutoArchiveOlderThanDays={taskAutoArchiveOlderThanDays}
+                            messageStreamShowReasoning={messageStreamShowReasoning}
+                            messageStreamShowTodos={messageStreamShowTodos}
+                            dynamicWorkflowEnabled={dynamicWorkflowEnabled}
+                            toolGroupingExploreEnabled={toolGroupingExploreEnabled}
+                            toolGroupingTerminalEnabled={toolGroupingTerminalEnabled}
+                            toolGroupingChangesEnabled={toolGroupingChangesEnabled}
+                            zcodeInteractionBehavior={zcodeInteractionBehavior}
+                            askUserQuestionAutoResolutionEnabled={
+                              askUserQuestionAutoResolutionEnabled
+                            }
+                            modelIoFullRetentionEnabled={modelIoFullRetentionEnabled}
+                            onDataBaseDirChange={handleDataBaseDirChange}
+                            onSelectDataBaseDir={selectDirectory}
+                            onTerminalInheritSystemProfileChange={
+                              handleTerminalInheritSystemProfileChange
+                            }
+                            onTerminalFontFamilyChange={handleTerminalFontFamilyChange}
+                            onIntegratedTerminalShellChange={handleIntegratedTerminalShellChange}
+                            onNativeSearchEnhancementsEnabledChange={
+                              handleNativeSearchEnhancementsEnabledChange
+                            }
+                            onModelIoFullRetentionEnabledChange={
+                              handleModelIoFullRetentionEnabledChange
+                            }
+                            onHttpProxyChange={handleHttpProxyChange}
+                            onHttpProxyNoProxyChange={handleHttpProxyNoProxyChange}
+                            onHttpProxyCaCertPathChange={handleHttpProxyCaCertPathChange}
+                            onTaskAutoArchiveEnabledChange={handleTaskAutoArchiveEnabledChange}
+                            onTaskAutoArchiveOlderThanDaysChange={
+                              handleTaskAutoArchiveOlderThanDaysChange
+                            }
+                            onCloseToTrayOnWindowsChange={handleCloseToTrayOnWindowsChange}
+                            onKeepAwakeWhileRunningChange={handleKeepAwakeWhileRunningChange}
+                            onDesktopChromiumHardwareAccelerationChange={
+                              handleDesktopChromiumHardwareAccelerationChange
+                            }
+                            onMessageStreamShowReasoningChange={
+                              handleMessageStreamShowReasoningChange
+                            }
+                            onDynamicWorkflowEnabledChange={handleDynamicWorkflowEnabledChange}
+                            onMessageStreamShowTodosChange={handleMessageStreamShowTodosChange}
+                            onToolGroupingExploreEnabledChange={
+                              handleToolGroupingExploreEnabledChange
+                            }
+                            onToolGroupingTerminalEnabledChange={
+                              handleToolGroupingTerminalEnabledChange
+                            }
+                            onToolGroupingChangesEnabledChange={
+                              handleToolGroupingChangesEnabledChange
+                            }
+                            onZCodeInteractionBehaviorChange={handleZCodeInteractionBehaviorChange}
+                            onAskUserQuestionAutoResolutionEnabledChange={
+                              handleAskUserQuestionAutoResolutionEnabledChange
+                            }
+                            onOpenOnboardingDialog={() =>
+                              runUserAction({
+                                input: {
+                                  featureId: "settings.navigation",
+                                  action: "open_onboarding",
+                                  trigger: "button",
+                                },
+                                operation: requestOnboardingDialog,
+                                completed: { resultSource: "local_commit" },
+                                failureStage: "dialog_open",
+                              })
+                            }
+                          />
+                        ) : activeSection === "appearance" ? (
+                          <AppearanceSectionContent
+                            codePreviewSettings={codePreviewSettings}
+                            setCodePreviewSettings={handleCodePreviewSettingsChange}
+                            theme={theme}
+                            setTheme={(nextTheme) => handleFooterThemeChange(nextTheme)}
+                            uiFontSizePx={uiFontSizePx}
+                            setUiFontSizePx={(fontSizePx) =>
+                              runUserAction({
+                                input: {
+                                  featureId: "settings.appearance",
+                                  action: "change_ui_font_size",
+                                  trigger: "keyboard",
+                                },
+                                operation: () => setUiFontSizePx(fontSizePx),
+                                completed: {
+                                  resultSource: "local_commit",
+                                  valueAfter: String(fontSizePx),
+                                },
+                                failureStage: "local_commit",
+                              })
+                            }
+                          />
+                        ) : activeSection === "shortcuts" ? (
+                          <ShortcutSettingsSection isDesktop={Boolean(isDesktop)} />
+                        ) : activeSection === "modelProvider" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* 模型配置属于本机全局事实源；激活远端 workspace 时也不能注入远端 Host。 */}
+                            <ModelProviderSection
+                              workspacePath={activeWorkspacePath ?? captionWorkspacePath ?? ""}
+                              connectivityWorkspacePath={
+                                localModelProviderConnectivityWorkspacePath
+                              }
+                              connectivityWorkspaceRequired={isRemoteModelProviderWorkspace}
+                            />
+                          </ServiceProvider>
+                        ) : activeSection === "custom" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* 自定义请求头属于本机全局设置；激活远端 workspace 时也读本地 Host。 */}
+                            <CustomSection />
+                          </ServiceProvider>
+                        ) : activeSection === "usage" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* App Usage 统计的是本机 agent 全局库；激活远端 workspace 时也读本地 Host。 */}
+                            <AppUsagePanel />
+                          </ServiceProvider>
+                        ) : activeSection === "memory" ? (
+                          <ServiceProvider services={localHostServices}>
+                            {/* Memory catalog 始终使用本地 Host，避免远程 workspace 误读本机数据。 */}
+                            <MemorySettingsSection
+                              memoryEnabled={memoryEnabled}
+                              memoryService={localHostServices.memoryService}
+                              onMemoryEnabledChange={handleMemoryEnabledChange}
+                              projectMemoryViewerAvailable={Boolean(isDesktop)}
+                              workspaceDisplayNames={memoryWorkspaceDisplayNames}
+                            />
+                          </ServiceProvider>
+                        ) : activeSection === "plugin" ? (
+                          <PluginsSection
+                            key={`plugin:${settingsSectionNavigationVersion}`}
+                            isDesktop={Boolean(isDesktop)}
+                            isMacDesktop={Boolean(isMacDesktop)}
+                            isWindowsDesktop={Boolean(isWindowsDesktop)}
+                            isWebRemoteControl={isWebRemoteControl}
+                            initialTab={pluginTab}
+                            initialScopeKey={pluginScopeKey}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            showMarketplaceBreadcrumb={pluginNavigationOrigin === "plugin-store"}
+                            onCreateTask={onCreateTask}
+                            onOpenPluginStore={(_returnScopeKey, intent) => {
+                              // 添加市场与浏览插件都先离开设置层，再显示商店。
+                              requestPluginStoreOpen({ returnScopeKey: "user", intent });
+                              onBack?.();
+                            }}
+                          />
+                        ) : activeSection === "mcp" ? (
+                          <PluginsSection
+                            key={`mcp:${settingsSectionNavigationVersion}`}
+                            mode="mcp"
+                            isWebRemoteControl={isWebRemoteControl}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            onCreateTask={onCreateTask}
+                            onOpenPluginStore={(_returnScopeKey, intent) => {
+                              // 添加市场与浏览插件都先离开设置层，再显示商店。
+                              requestPluginStoreOpen({ returnScopeKey: "user", intent });
+                              onBack?.();
+                            }}
+                          />
+                        ) : activeSection === "skill" ? (
+                          <PluginsSection
+                            key={`skill:${settingsSectionNavigationVersion}`}
+                            mode="skill"
+                            isWebRemoteControl={isWebRemoteControl}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            onCreateTask={onCreateTask}
+                            onOpenPluginStore={(_returnScopeKey, intent) => {
+                              // 添加市场与浏览插件都先离开设置层，再显示商店。
+                              requestPluginStoreOpen({ returnScopeKey: "user", intent });
+                              onBack?.();
+                            }}
+                          />
+                        ) : activeSection === "migration" ? (
+                          <MigrationSection
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            isDesktop={isDesktop}
+                          />
+                        ) : activeSection === "subagents" ? (
+                          <SubagentsSection
+                            onManageModels={handleOpenModelProviderSettings}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                          />
+                        ) : activeSection === "automations" ? (
+                          <AutomationsSection
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                          />
+                        ) : activeSection === "commands" ? (
+                          <PluginsSection
+                            mode="command"
+                            isWebRemoteControl={isWebRemoteControl}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            onCreateTask={onCreateTask}
+                            onOpenPluginStore={(_returnScopeKey, intent) => {
+                              // 添加市场与浏览插件都先离开设置层，再显示商店。
+                              requestPluginStoreOpen({ returnScopeKey: "user", intent });
+                              onBack?.();
+                            }}
+                          />
+                        ) : activeSection === "hooks" ? (
+                          <HooksSection
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                          />
+                        ) : activeSection === "workspaceFileSearch" ? (
+                          <WorkspaceFileSearchSection
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                          />
+                        ) : activeSection === "browser" ? (
+                          <BrowserSettingsSection
+                            isDesktop={Boolean(isDesktop)}
+                            isWindowsDesktop={isWindowsDesktop}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            embeddedBrowserAllowInsecureCertificates={
+                              embeddedBrowserAllowInsecureCertificates
+                            }
+                            onEmbeddedBrowserAllowInsecureCertificatesChange={
+                              handleEmbeddedBrowserAllowInsecureCertificatesChange
+                            }
+                          />
+                        ) : activeSection === "mobileRelay" ? (
+                          <MobileRelaySettingsSection
+                            isDesktop={Boolean(isDesktop)}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            remoteSessionId={activeWorkspaceTab?.remoteSessionId}
+                          />
+                        ) : activeSection === "computerUse" ? (
+                          <ComputerUseSection
+                            isDesktop={Boolean(isDesktop)}
+                            isMacDesktop={Boolean(isMacDesktop)}
+                            isWindowsDesktop={Boolean(isWindowsDesktop)}
+                            workspacePath={activeWorkspacePath}
+                            workspaceIdentity={activeWorkspaceIdentity}
+                            remoteSessionId={activeWorkspaceTab?.remoteSessionId}
+                            remoteTarget={activeWorkspaceTab?.remoteTarget}
+                            localWorkspacePath={activeWorkspaceTab?.localWorkspacePath}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
                     </main>
                   </SettingsMachinesProvider>
                 </div>

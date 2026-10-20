@@ -1,7 +1,7 @@
 import {
   generateTraceId,
   resolveWorkspaceKey,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
   type ZCodeTaskMeta,
 } from "@zcode/shared";
 import type { SessionsIndexReconcileResult } from "@zcode/shared/zcode-protocol-v4";
@@ -58,7 +58,7 @@ export function createTaskFacts(options: {
           createdAt: fact.createdAt,
           updatedAt: fact.updatedAt,
           mode: "default",
-          provider: ZCODE_AGENT_PROVIDER,
+          provider: ZXCODE_AGENT_PROVIDER,
         },
         titleSource: fact.titleSource,
         lastOutcome: fact.lastOutcome,
@@ -93,7 +93,7 @@ export function createTaskFacts(options: {
         createdAt: summary.createdAt,
         updatedAt: summary.lastActivityAt,
         mode: "default",
-        provider: ZCODE_AGENT_PROVIDER,
+        provider: ZXCODE_AGENT_PROVIDER,
         ...(summary.parentSessionId ? { forkedFromTaskId: summary.parentSessionId } : {}),
         ...(lastOutcome ? { status: lastOutcome === "error" ? "error" : "completed" } : {}),
       };

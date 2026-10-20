@@ -28,7 +28,7 @@ import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboard
 
 const CASE_NAME = "conversation-session-composer-compression";
 const evidence = join(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? join(process.cwd(), ".e2e-artifacts"),
+  process.env.ZXCODE_E2E_ARTIFACT_DIR ?? join(process.cwd(), ".e2e-artifacts"),
   CASE_NAME,
 );
 
@@ -55,7 +55,14 @@ async function snapshot() {
     const bar = thought?.querySelector(".bg-success") ?? null;
     const rect = (el: Element) => {
       const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      return {
+        x: r.x,
+        y: r.y,
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+      };
     };
     const modelIcon = root.dataset.composerModelIcon === "true";
     const providerHidden = root.dataset.composerProviderCompact === "true";
@@ -209,7 +216,7 @@ describe("Composer 五档压缩", () => {
               enabled: true,
               enabledPlugins: {
                 ...config.plugins?.enabledPlugins,
-                [ZCODE_CUA_OFFICIAL_PLUGIN_ID]: true,
+                [ZXCODE_CUA_OFFICIAL_PLUGIN_ID]: true,
               },
             },
           }),

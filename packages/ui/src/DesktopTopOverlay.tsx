@@ -1,5 +1,3 @@
-import { SidebarTooltipProvider } from "@/ControlHintTooltip.js";
-import type { IPlatformService, UpdateStatePayload } from "@zcode/shared";
 import { cn } from "@/components/lib/utils.js";
 import {
   ArrowLeftIcon,
@@ -9,7 +7,6 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { UpdateStatusButton } from "@/UpdateStatusButton.js";
 import { DesktopTopOverlayActionButton } from "@/DesktopTopOverlayActionButton.js";
 import { ZCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
 import {
@@ -26,8 +23,6 @@ interface DesktopTopOverlayProps {
   macWindowControlsLeftPaddingPx?: number;
   windowsWindowControlsRightPaddingPx?: number;
   isSidebarVisible: boolean;
-  updateReadyVersion: string | null;
-  updateState: UpdateStatePayload | null;
   toggleSidebarShortcutLabel: string;
   newTaskShortcutLabel: string;
   goBackShortcutLabel: string;
@@ -38,7 +33,6 @@ interface DesktopTopOverlayProps {
   canGoForward: boolean;
   showNewTaskButton?: boolean;
   appLogoUrl: string;
-  platform: IPlatformService;
   onToggleSidebar: () => void;
   onCreateTask: () => void;
   onGoBack: () => void;
@@ -56,8 +50,6 @@ export function DesktopTopOverlay({
   macWindowControlsLeftPaddingPx,
   windowsWindowControlsRightPaddingPx,
   isSidebarVisible,
-  updateReadyVersion,
-  updateState,
   toggleSidebarShortcutLabel,
   newTaskShortcutLabel,
   goBackShortcutLabel,

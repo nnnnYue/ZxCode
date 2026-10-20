@@ -7,7 +7,9 @@ import {
   isZCodeGoalContinuationReminderText,
   isZCodeModelOnlySyntheticUserMessage,
   resolveWorkspaceKey,
-  ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
+  resolveZCodeVisibleSessionTitle,
+  ZXCODE_AGENT_PROVIDER_NOT_READY_CODE,
+  ZXCODE_AGENT_PROVIDER,
   type ZCodeTaskGoal,
   type ZCodeTaskMode,
   type ZCodeTaskMeta,
@@ -42,7 +44,7 @@ import type {
   ZCodeAgentSessionTarget,
   ZCodeAgentWorkspaceTarget,
 } from "./zcodeAgent.js";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
+import { ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
 import { formatTaskMetaModelSelectionFromSnapshot } from "./zcodeConfigOptions.js";
 
 import { createTaskFacts, type TaskFactMutation } from "#src/task-facts/index.js";
@@ -51,7 +53,7 @@ import {
   createHostCommandEnvelope,
 } from "#src/zcode-agent/zcodeV4HostCommand.js";
 
-const logger = createServiceLogger("zcode-task-index-syncer");
+const logger = createServiceLogger("zxcode-task-index-syncer");
 
 /** v4 订阅 connectionId 作用域：与 renderer 侧栏共 topic 不同代际（重订阅替换）。 */
 const TASK_INDEX_SUBSCRIBER_SCOPE = "task-index";
@@ -287,11 +289,11 @@ export function createZCodeTaskIndexSyncer(
   const isProviderNotReadyError = (error: unknown): boolean =>
     typeof error === "object" &&
     error !== null &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_PROVIDER_NOT_READY_CODE;
+    (error as { code?: unknown }).code === ZXCODE_AGENT_PROVIDER_NOT_READY_CODE;
   const isRuntimeUnavailableError = (error: unknown): boolean =>
     typeof error === "object" &&
     error !== null &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
+    (error as { code?: unknown }).code === ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
   const logTopicSubscribeFailure = (
     state: WorkspaceIngestState,
     topic: TaskIndexTopicKind,

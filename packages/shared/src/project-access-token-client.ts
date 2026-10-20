@@ -2,7 +2,7 @@ import { z } from "zod";
 import { projectTokenSuccessCodeSchema } from "./project-access-token-response.js";
 import { API_KEY_USAGE_SCENE } from "./api-key-usage-scene.js";
 import { ProjectAccessTokenCache, ProjectAccessTokenError } from "./project-access-token.js";
-import { ZCODE_VERSION } from "./version.js";
+import { ZXCODE_VERSION } from "./version.js";
 import { isCredentialDecryptError } from "./oauth.js";
 
 const DEFAULT_ORGANIZATION_NAME = "默认机构";
@@ -212,7 +212,7 @@ export class ProjectAccessTokenClient {
               headers,
               body: JSON.stringify({
                 clientType: "zcode",
-                clientVersion: ZCODE_VERSION,
+                clientVersion: ZXCODE_VERSION,
               }),
             },
           );

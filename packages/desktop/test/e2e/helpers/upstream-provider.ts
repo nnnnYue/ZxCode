@@ -233,8 +233,16 @@ async function createMissingUpstreamProvider() {
 }
 
 async function seedUpstreamToolbarPreferences() {
+  // fork 修复：显式标注 execute 回调参数类型（默认首参 HTMLElement）。
   await browser.execute(
-    (workspacePath, keyPrefix, providerId, modelId, thoughtLevel, appProvider) => {
+    (
+      workspacePath: string,
+      keyPrefix: string,
+      providerId: string,
+      modelId: string,
+      thoughtLevel: string,
+      appProvider: string,
+    ) => {
       window.localStorage.setItem(
         `${keyPrefix}:${workspacePath}`,
         JSON.stringify({
@@ -250,7 +258,7 @@ async function seedUpstreamToolbarPreferences() {
     UPSTREAM_PROVIDER_ID,
     UPSTREAM_MODEL,
     UPSTREAM_THOUGHT_LEVEL,
-    ZCODE_AGENT_PROVIDER,
+    ZXCODE_AGENT_PROVIDER,
   );
 }
 

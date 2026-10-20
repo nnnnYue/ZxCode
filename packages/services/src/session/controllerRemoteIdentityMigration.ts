@@ -1,5 +1,4 @@
 import { runTasksDatabaseMigrations } from "#src/session/tasksDatabase/migrations.js";
-import { cancelConflictingOffPeakBindings } from "#src/session/offPeakWorkspaceIdentityMigration.js";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
@@ -279,7 +278,6 @@ export async function migrateControllerRemoteWorkspaceIdentity(
     migrateTaskNodeOrders(db, options.oldWorkspaceKey, options.newWorkspaceKey);
     updateIdentityColumn(db, "automations", options.oldWorkspaceKey, options.newWorkspaceKey);
     updateIdentityColumn(db, "automation_runs", options.oldWorkspaceKey, options.newWorkspaceKey);
-    cancelConflictingOffPeakBindings(db, options.oldWorkspaceKey, options.newWorkspaceKey, now());
     updateIdentityColumn(db, "off_peak_tasks", options.oldWorkspaceKey, options.newWorkspaceKey);
     const after = countRows(db, options.newWorkspaceKey);
     db.prepare(`UPDATE controller_remote_identity_migrations

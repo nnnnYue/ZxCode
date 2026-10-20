@@ -44,10 +44,8 @@ import {
   resolvePluginDisplayName,
   type StorePluginItem,
 } from "@/settings/pluginStoreListing.js";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { PluginUninstallConfirmDialog } from "@/settings/PluginUninstallConfirmDialog.js";
 import { usePluginUninstall } from "@/settings/usePluginUninstall.js";
-import { claimMarketplaceAutoRefresh } from "@/settings/officialMarketplaceAutoRefresh.js";
 import { consumePluginStoreOpenTarget } from "@/lib/pluginStoreNavigation.js";
 import { SettingsBreadcrumbReporter } from "@/settings/SettingsHeaderBreadcrumb.js";
 import {
@@ -86,7 +84,6 @@ export function PluginStorePage({
 }: PluginStorePageProps) {
   const platform = usePlatform();
   const { intl, locale } = useZCodeIntl();
-  const { order: storeOrder, refresh: refreshStoreOrder } = usePluginStoreOrder();
   const { pluginManagementService, skillsService } = useServices();
   const usePluginManagementStore = useScopedPluginManagementStore(pluginManagementService);
   const pluginUi = useMarketPluginUi({
@@ -365,11 +362,9 @@ export function PluginStorePage({
     });
   }, []);
 
-  // 顶栏刷新 = 真网络更新：updateMarketplace(null) 重拉全部市场 manifest（含 CDN 与 git 源，
-  // 操作内部完成后会重载概览），随后按更新徽标数量给完成提示。只做本地重载时，
-  // 用户点了刷新看不到 CDN 新插件（与规格「刷新→update(null)」不符）。
+  // 顶栏刷新 = updateMarketplace(null)：重拉用户显式添加的自定义市场（git/url 源），
+  // 官方市场对刷新一律短路、只读随包快照。操作完成后按更新徽标数量给完成提示。
   const handleRefresh = async () => {
-    void refreshStoreOrder(true);
     setRefreshing(true);
     try {
       await handleCheckForUpdates();
@@ -768,7 +763,6 @@ export function PluginStorePage({
       ) : null}
       <div hidden={view !== "store"}>
         <PluginStoreListView
-          order={storeOrder}
           items={items}
           marketplaces={marketplaces}
           actions={actions}

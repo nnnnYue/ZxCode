@@ -14,18 +14,11 @@ import {
   IZCodeTaskService,
   IZCodeAgentService,
   IZCodeSessionService,
-  IConversationShareService,
-  createUnsupportedConversationShareService,
   IBotsService,
   IFileWatcherService,
-  IOAuthService,
   IModelSelectionService,
   IProviderSettingsService,
   ISourceServerWorkspaceService,
-  IUsageStatsService,
-  ICodingPlanSubscriptionService,
-  IClientConfigService,
-  IClientScenesService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
@@ -79,16 +72,11 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["zcodeTaskService", IZCodeTaskService],
   ["zcodeAgentService", IZCodeAgentService],
   ["zcodeSessionService", IZCodeSessionService],
-  ["conversationShareService", IConversationShareService],
   ["botsService", IBotsService],
   ["fileWatcherService", IFileWatcherService],
-  ["oauthService", IOAuthService],
   ["providerSettingsService", IProviderSettingsService],
   ["modelSelectionService", IModelSelectionService],
   ["sourceServerWorkspaceService", ISourceServerWorkspaceService],
-  ["usageStatsService", IUsageStatsService],
-  ["codingPlanSubscriptionService", ICodingPlanSubscriptionService],
-  ["clientScenesService", IClientScenesService],
   ["skillsService", ISkillsService],
   ["skillSyncService", ISkillSyncService],
   ["mcpSyncService", IMcpSyncService],
@@ -104,20 +92,6 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["promptAttachmentTransferService", IPromptAttachmentTransferService],
 ] as const satisfies readonly [keyof IServiceAccessor, ServiceDescriptor<unknown>][];
 
-const conversationShareLog = createServiceLogger("conversation-share");
-
-function createUnsupportedRemoteConversationShareService(): IConversationShareService {
-  return createUnsupportedConversationShareService({
-    message: "Conversation sharing is not available for this client or remote target",
-    onRejected: (action) => {
-      conversationShareLog.warn(undefined, "conversation share action rejected", {
-        action,
-        kind: "feature_disabled",
-        reason: "server_remote_unsupported",
-      });
-    },
-  });
-}
 
 export function resolveServerProjectService(params: {
   connectionServices: IServiceAccessor;
@@ -174,7 +148,6 @@ export function resolveServerProjectService(params: {
 }
 
 export function createServerRemoteWorkspaceServiceCollection(params: {
-  clientConfigService: IClientConfigService;
   connectionServices: IServiceAccessor;
   virtualProjects?: boolean;
   serverId?: string;
@@ -208,25 +181,11 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
     .register(IZCodeAgentService, params.connectionServices.zcodeAgentService)
     .register(IZCodeSessionService, params.connectionServices.zcodeSessionService)
     // R3 的分享属于目标 Environment；不能恢复旧 SSH 的本机 JWT 混装。
-    .register(
-      IConversationShareService,
-      params.targetKind === "server"
-        ? createUnsupportedRemoteConversationShareService()
-        : params.connectionServices.conversationShareService,
-    )
     .register(IBotsService, params.connectionServices.botsService)
     .register(IFileWatcherService, params.connectionServices.fileWatcherService)
-    .register(IOAuthService, params.connectionServices.oauthService)
     .register(IProviderSettingsService, params.connectionServices.providerSettingsService)
     .register(IModelSelectionService, params.connectionServices.modelSelectionService)
     .register(ISourceServerWorkspaceService, params.connectionServices.sourceServerWorkspaceService)
-    .register(IUsageStatsService, params.connectionServices.usageStatsService)
-    .register(
-      ICodingPlanSubscriptionService,
-      params.connectionServices.codingPlanSubscriptionService,
-    )
-    .register(IClientConfigService, params.clientConfigService)
-    .register(IClientScenesService, params.connectionServices.clientScenesService)
     .register(ISkillsService, params.connectionServices.skillsService)
     .register(ISkillSyncService, params.connectionServices.skillSyncService)
     .register(IMcpSyncService, params.connectionServices.mcpSyncService)

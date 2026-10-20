@@ -182,21 +182,9 @@ function createSettingsMutationTarget(
       ),
     refresh: (reason) => registryService.refresh(reason),
     refreshSources: async (reason) => {
-      const [builtinResult, accountResult] = await Promise.allSettled([
-        configRuntime.refreshZCodeBuiltin({ force: true }),
-        accountSource.refresh?.(reason) ?? Promise.resolve(),
-      ]);
-      // 远端更新失败不代表本地配置不可用；此前统一抛错会让套餐切换回滚，
-      // 并掩盖真正的账号失败。只降级远端更新，Config/Registry 和权益错误仍保留。
-      if (builtinResult.status === "rejected") {
-        log.warn(undefined, "Builtin 远端更新失败，继续使用本地配置", {
-          reason,
-          error: builtinResult.reason,
-        });
-      }
-      const snapshot = await registryService.refresh(reason);
-      if (accountResult.status === "rejected") throw accountResult.reason;
-      return snapshot;
+      // 内置目录为纯打包文件，无远端源可刷新；只剩账号事实的刷新。
+      await accountSource.refresh?.(reason);
+      return await registryService.refresh(reason);
     },
   };
 }

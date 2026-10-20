@@ -1,15 +1,10 @@
 import { useState } from "react";
 import { Smartphone } from "lucide-react";
 import type { WebRemoteControlStatus } from "@zcode/shared";
-import {
-  buildWebRemoteControlEntryViewTelemetry,
-  parseRemoteWorkspaceIdentity,
-} from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { cn } from "@/components/lib/utils.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { useResolvedRemoteWorkspaceSessionId } from "@/hooks/useResolvedRemoteWorkspaceSessionId.js";
-import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { useWebRemoteControlStatus } from "@/hooks/useWebRemoteControlStatus.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
@@ -124,7 +119,6 @@ function WorkspaceWebRemoteControlTriggerContent({
   className?: string;
 }) {
   const { intl } = useZCodeIntl();
-  const platform = useOptionalPlatform();
   const mappedRemoteSessionId = useResolvedRemoteWorkspaceSessionId(
     workspacePath,
     remoteSessionId,
@@ -153,19 +147,7 @@ function WorkspaceWebRemoteControlTriggerContent({
         <Button
           variant="ghost"
           onClick={() => {
-            if (platform) {
-              void reportAppTelemetryEvent(
-                platform,
-                buildWebRemoteControlEntryViewTelemetry({
-                  workspaceKind:
-                    workspaceIdentity?.trim() || currentRemoteSessionId ? "remote" : "local",
-                  remoteKind: workspaceIdentity
-                    ? parseRemoteWorkspaceIdentity(workspaceIdentity)?.kind
-                    : undefined,
-                }),
-                "web-remote-control-entry",
-              );
-            }
+            // 去平台化：appTelemetry 上报链路已删除，这里只保留日志与弹层打开。
             logger.info("[WorkspaceWebRemoteControlTrigger] 打开 Web 远程控制弹层", {
               workspacePath,
               workspaceIdentity: workspaceIdentity ?? "none",

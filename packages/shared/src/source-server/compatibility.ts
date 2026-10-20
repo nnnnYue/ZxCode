@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { ZCODE_VERSION } from "../version.js";
+import { ZXCODE_VERSION } from "../version.js";
 
 declare const __ZCODE_MIN_COMPATIBLE_VERSION__: string;
 
 export const ZCODE_MIN_COMPATIBLE_VERSION =
   typeof __ZCODE_MIN_COMPATIBLE_VERSION__ !== "undefined"
     ? __ZCODE_MIN_COMPATIBLE_VERSION__
-    : ZCODE_VERSION;
+    : ZXCODE_VERSION;
 
 export const compatibilityManifestSchema = z
   .object({
@@ -19,7 +19,7 @@ export const compatibilityManifestSchema = z
 export type CompatibilityManifest = z.infer<typeof compatibilityManifestSchema>;
 
 export function createCompatibilityManifest(
-  productVersion = ZCODE_VERSION,
+  productVersion = ZXCODE_VERSION,
   minCompatibleVersion = ZCODE_MIN_COMPATIBLE_VERSION,
 ): CompatibilityManifest {
   return compatibilityManifestSchema.parse({

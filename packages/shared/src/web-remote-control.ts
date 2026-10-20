@@ -1,4 +1,4 @@
-import type { MobilePluginDiscoveryTelemetry } from "./telemetry.js";
+import type { MobilePluginDiscoveryTelemetry } from "./pluginTelemetry.js";
 import { z } from "zod";
 import type { MobileSessionCreateTelemetry } from "./sessionCreateTelemetry.js";
 /* eslint-disable max-lines -- Web 远程控制共享 App payload 与 workspace bridge 契约。 */

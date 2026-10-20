@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- provider 重启 helper 集中维护本地 registry 桥与 execute 回调注入，拆分会割裂 fixture 生命周期。 */
 import { DatabaseSync } from "node:sqlite";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -66,7 +67,7 @@ export async function readBigModelConnectionSelection(): Promise<
 export async function seedBigModelOAuthCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
@@ -91,7 +92,7 @@ export async function seedHighspeedLoginCredential() {
 export async function seedBigModelStartPlanCredential() {
   await writeJsonPatch(CREDENTIALS_FILE, {
     "oauth:active_provider": "bigmodel",
-    "oauth:bigmodel:access_token": "e2e-bigmodel-oauth-token",
+    "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
       id: "bigmodel-e2e-user",
@@ -143,8 +144,18 @@ export async function seedPersistedModelSelection(params: {
   providerId: string;
   reasoningLevel: string;
 }) {
+  // fork 修复：显式标注 execute 回调参数类型（默认首参 HTMLElement）。
   await browser.execute(
-    (workspacePath, keyPrefix, selection, appProvider) => {
+    (
+      workspacePath: string,
+      keyPrefix: string,
+      selection: {
+        providerId: string;
+        modelId: string;
+        reasoningLevel: string;
+      },
+      appProvider: string,
+    ) => {
       window.localStorage.setItem(
         `${keyPrefix}:${workspacePath}`,
         JSON.stringify({
@@ -158,7 +169,7 @@ export async function seedPersistedModelSelection(params: {
     paths.workspace,
     MODEL_SELECTION_RECENT_KEY_PREFIX,
     params,
-    ZCODE_AGENT_PROVIDER,
+    ZXCODE_AGENT_PROVIDER,
   );
 }
 
@@ -243,7 +254,8 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
     // Bug 根因：同一 spec 内 Agent SQLite 会跨 case 保留上一条显式 thought，
     // 只 seed renderer localStorage 不能隔离跨模型默认值。这里固定 Agent 侧前置状态，
     // 避免 I39 的 GLM high 泄漏到 I42，让用例真正验证 Turbo enabled → GLM 默认值。
-    db.prepare(`
+    db.prepare(
+      `
       insert into local_setting (
         scope, scope_id, namespace, key, value, schema_version, time_created, time_updated
       ) values (?, ?, ?, ?, ?, ?, ?, ?)
@@ -251,7 +263,8 @@ export async function seedGlobalAgentReasoningLevel(thoughtLevel: string) {
         value = excluded.value,
         schema_version = excluded.schema_version,
         time_updated = excluded.time_updated
-    `).run(
+    `,
+    ).run(
       "user",
       "default",
       "model",
@@ -330,7 +343,9 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
           try {
             const record = JSON.parse(line) as {
               querySource?: string;
-              request?: { body?: { model?: string; thinking?: { type?: string } } };
+              request?: {
+                body?: { model?: string; thinking?: { type?: string } };
+              };
             };
             if (record.querySource === "main_turn" && record.request?.body) {
               matched = record.request.body;
@@ -343,7 +358,10 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
       }
       return false;
     },
-    { timeout: 30000, timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}` },
+    {
+      timeout: 30000,
+      timeoutMsg: `没有找到 Plan model IO 请求: ${expectedText}`,
+    },
   );
   return matched as { model?: string; thinking?: { type?: string } } | null;
 }

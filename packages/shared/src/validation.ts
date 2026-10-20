@@ -1,4 +1,4 @@
-import { mobilePluginDiscoveryTelemetrySchema } from "./telemetry.js";
+import { mobilePluginDiscoveryTelemetrySchema } from "./pluginTelemetry.js";
 import { databaseStartupControlSchema, databaseStartupStateSchema } from "./database-startup.js";
 import { mcpAppInstanceSchema } from "./mcp-apps/instance.js";
 import {

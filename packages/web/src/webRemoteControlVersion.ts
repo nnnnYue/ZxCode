@@ -1,9 +1,7 @@
 import type { WebRemoteControlWindowBootstrapResult } from "@zcode/shared";
 
 interface WebRemoteControlVersionGuardOptions {
-  /** 只读取响应；依赖当前连接的副作用由 onAccepted 同步提交。 */
   requestBootstrap(): Promise<WebRemoteControlWindowBootstrapResult>;
-  onAccepted?(result: WebRemoteControlWindowBootstrapResult): void;
   getUrl(): string;
   isPageReady(): boolean;
   navigate(url: string): void;
@@ -47,22 +45,15 @@ export function createWebRemoteControlVersionGuard(options: WebRemoteControlVers
           // 重连可能让旧响应晚于新连接返回，不能用旧桌面的版本导航或初始化业务。
           if (disposed || requestGeneration !== generation) return undefined;
           const version = result.desktopAppVersion?.trim();
-          if (version) {
-            const url = new URL(options.getUrl());
-            if (
-              url.pathname.replace(/\/+$/, "") === "/remote/v4" &&
-              url.searchParams.get("app_version") !== version
-            ) {
-              url.searchParams.set("app_version", version);
-              pendingUrl = url.toString();
-              if (options.isPageReady()) options.onMismatch(version);
-              else confirm();
-              return undefined;
-            }
-          }
-          // 旧 bootstrap 曾先写入查看 epoch 再被丢弃；副作用必须和代际校验在同一同步段。
-          options.onAccepted?.(result);
-          return result;
+          if (!version) return result;
+          const url = new URL(options.getUrl());
+          if (url.pathname.replace(/\/+$/, "") !== "/remote/v4") return result;
+          if (url.searchParams.get("app_version") === version) return result;
+          url.searchParams.set("app_version", version);
+          pendingUrl = url.toString();
+          if (options.isPageReady()) options.onMismatch(version);
+          else confirm();
+          return undefined;
         })
         .catch((error: unknown) => {
           if (disposed || requestGeneration !== generation) return undefined;

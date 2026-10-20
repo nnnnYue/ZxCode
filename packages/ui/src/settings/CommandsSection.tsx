@@ -192,7 +192,7 @@ export function CommandsSection({
         } else {
           await formServices.commandsService.writeCommandFile({
             config,
-            agentSource: ZCODE_COMMAND_AGENT_SOURCE,
+            agentSource: ZXCODE_COMMAND_AGENT_SOURCE,
             storageLevel,
             workspacePath: targetWorkspacePath,
           });
@@ -419,7 +419,7 @@ export function CommandsSection({
 
           <CommandForm
             initial={editingCommand ?? undefined}
-            agentSource={editingCommand?.agentSource ?? ZCODE_COMMAND_AGENT_SOURCE}
+            agentSource={editingCommand?.agentSource ?? ZXCODE_COMMAND_AGENT_SOURCE}
             scopeKey={formScopeKey}
             workspaceTabs={workspaceTabs}
             onScopeKeyChange={handleFormScopeKeyChange}

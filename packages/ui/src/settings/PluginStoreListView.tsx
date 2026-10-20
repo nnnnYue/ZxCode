@@ -26,14 +26,13 @@ import { resolveMarketplaceDisplayName } from "@/settings/pluginSourceLabel.js";
 
 // 分类/市场分组手动收起后的展示数量；默认完整展示，避免较少的插件又被自动隐藏。
 const CATEGORY_VISIBLE_LIMIT = 6;
-const RETIRED_STORE_PLUGIN_ID = `restore-legacy-sessions@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID}`;
+const RETIRED_STORE_PLUGIN_ID = `restore-legacy-sessions@${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID}`;
 
 export type { PluginStoreSegment } from "@/settings/pluginStoreListing.js";
 import type { PluginStoreSegment } from "@/settings/pluginStoreListing.js";
 
 export function PluginStoreListView({
   items: allItems,
-  order,
   marketplaces,
   actions,
   loading,
@@ -44,7 +43,6 @@ export function PluginStoreListView({
   onSegmentChange,
 }: {
   items: StorePluginItem[];
-  order?: PluginStoreOrder | null;
   marketplaces: ZCodePluginMarketplaceSummary[];
   actions: PluginStoreActions;
   loading: boolean;
@@ -55,8 +53,6 @@ export function PluginStoreListView({
   onSegmentChange: (segment: PluginStoreSegment) => void;
 }) {
   const { intl, locale } = useZCodeIntl();
-  const isOfficeMode = useIsOfficeMode();
-  const modeOrder = isOfficeMode ? order?.work : order?.code;
   const keyword = query.trim().toLowerCase();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   // 旧版会话恢复入口退出市场；统一过滤所有浏览投影，旧缓存/精选也不能重新露出。
@@ -100,8 +96,8 @@ export function PluginStoreListView({
     [marketplaces, publicItems],
   );
   const categoryGroups = useMemo(
-    () => groupItemsByCategory(publicItems, locale, modeOrder),
-    [locale, publicItems, modeOrder],
+    () => groupItemsByCategory(publicItems, locale),
+    [locale, publicItems],
   );
 
   // 个人分段：按市场分组，最近刷新的市场排最前（见 sortPersonalMarketplaceGroups）。

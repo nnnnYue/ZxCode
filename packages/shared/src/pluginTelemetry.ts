@@ -1,0 +1,425 @@
+/**
+ * 插件生命周期/发现事件的本地可观测 schema 与脱敏收口。
+ *
+ * 从上游 telemetry.ts / telemetryRedaction.ts 中提取插件相关纯函数：
+ * fork 不接 ARMS 上报链路（REMOVALS.md「四、遥测上报」），但插件事件的
+ * schema、白名单与脱敏规则被 shared/validation、web-remote-control、
+ * zcode-protocol-v4 telemetry facts 复用，必须与上游保持同源，避免
+ * privacy allowlist 分叉。模式与 CLI 的
+ * `apps/zcode-cli/packages/telemetry/src/error-sanitizer.ts` 保持一致。
+ */
+
+import { z } from "zod";
+import { decodeCustomModelValue } from "./custom-model-value.js";
+import { migrateLegacyModelProviderId } from "./legacy-model-provider-identity.js";
+import { isBuiltinModelProviderId } from "./model-provider-types.js";
+import { OFFICIAL_GLM_MODEL_IDS } from "./official-glm-model-id.js";
+
+/** 单字段默认上限；上报通道单字段过长会被截断或拒绝，主动截断保证关键头部一定上得去。 */
+export const TELEMETRY_TEXT_MAX_LENGTH = 2_048;
+
+/** 脱敏前的输入上限：错误可能携带整段响应正文，先有界截断再正则清洗，避免无界 CPU 成本。 */
+const TELEMETRY_TEXT_SCAN_LIMIT = 4_096;
+
+/** 路由段保留原文的最大长度；更长的段一律视为不可信内容。 */
+const TELEMETRY_ROUTE_SEGMENT_MAX_LENGTH = 128;
+
+export interface RedactTelemetryTextOptions {
+  /** 输出上限，默认 {@link TELEMETRY_TEXT_MAX_LENGTH}。 */
+  maxLength?: number;
+}
+
+/**
+ * 把自由文本清洗成可上报形态：URL 去 query、路径/邮箱/凭据归一为占位符，并有界截断。
+ *
+ * 只作用于上报副本；错误展示、本地日志、崩溃归档和分类逻辑必须继续使用原值。
+ */
+export function redactTelemetryText(
+  value: string | undefined | null,
+  options: RedactTelemetryTextOptions = {},
+): string {
+  if (typeof value !== "string" || !value) {
+    return "";
+  }
+
+  const maxLength = options.maxLength ?? TELEMETRY_TEXT_MAX_LENGTH;
+  const redacted = value
+    .slice(0, TELEMETRY_TEXT_SCAN_LIMIT)
+    .replace(/\bhttps?:\/\/[^\s"'<>]+/giu, (match) => redactTelemetryUrl(match))
+    .replace(
+      /(\bauthorization\b["']?\s*[:=])\s*(?:(?:Bearer|Basic)\s+)?[^\s,"'};]+/giu,
+      "$1 {redacted}",
+    )
+    .replace(
+      /([?&](?:api[_-]?key|token|access[_-]?token|authorization|password|passwd|secret|cookie|session)=)[^&\s]+/giu,
+      "$1{redacted}",
+    )
+    .replace(
+      /(["']?(?:api[_-]?key|token|access[_-]?token|password|passwd|secret|client[_-]?secret|cookie|set-cookie|session)["']?\s*[:=]\s*["']?)(?!\{redacted\})[^\s,"'};]+/giu,
+      "$1{redacted}",
+    )
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/giu, "$1 {redacted}")
+    .replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/giu, "{secret}")
+    .replace(/\bgh[pousr]_[A-Za-z0-9]{20,}\b/gu, "{secret}")
+    .replace(/\bAKIA[A-Z0-9]{16}\b/gu, "{secret}")
+    .replace(/\bAIza[0-9A-Za-z_-]{30,}\b/gu, "{secret}")
+    .replace(/\b[^/@\s]+@[^/@\s]+\.[^/@\s]+\b/gu, "{email}")
+    // 修复原因：崩溃/异常消息里的绝对路径会带上本机用户名与工作区目录名，必须在离开本机前归一。
+    .replace(/\/(?:private\/)?(?:var\/folders|tmp)\/[^\s:;,)\]}]+/gu, "{path}")
+    .replace(
+      /\/(?:Users|home|root|workspace|workspaces|Volumes)\/[^/\s]+(?:\/[^\s:;,)\]}]+)*/gu,
+      "{path}",
+    )
+    .replace(/\b[A-Za-z]:\\[^\\\s]+(?:\\[^\s:;,)\]}]+)*/gu, "{path}")
+    .replace(/\p{Cc}+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+
+  return redacted.slice(0, maxLength);
+}
+
+/**
+ * 把 URL 清洗成 `protocol//host` 加归一化路由；丢弃 query 与 fragment。
+ *
+ * `file://`、本地绝对路径归一为 `local_file`，`blob:` / `data:` 只保留协议标记，
+ * 无法解析时返回 `unknown`，不回退到原值。
+ */
+export function redactTelemetryUrl(value: string | undefined | null): string {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) {
+    return "unknown";
+  }
+  if (/^blob:/iu.test(raw)) {
+    return "blob";
+  }
+  if (/^data:/iu.test(raw)) {
+    return "data";
+  }
+  // Bug 根因：枚举常见根目录会漏掉 /opt、/root、/mnt 等合法 POSIX 绝对路径。
+  if (/^file:/iu.test(raw) || /^[a-zA-Z]:[\\/]/u.test(raw) || raw.startsWith("/")) {
+    return "local_file";
+  }
+
+  try {
+    // Bug 根因：无条件补 `https://` 会让 `!!!` 之类的普通文本被 URL 解析成 host 后原样回显。
+    // 只有本身带 scheme，或看起来确实是 host[:port][/path] 的输入才进入解析。
+    const candidate = raw.includes("://")
+      ? raw
+      : /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?(?:[/?#]|$)/iu.test(raw)
+        ? `https://${raw}`
+        : "";
+    if (!candidate) {
+      return "unknown";
+    }
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "file:" || !parsed.host) {
+      return "local_file";
+    }
+    const route = parsed.pathname
+      .split("/")
+      .map((segment) => redactTelemetryRouteSegment(segment))
+      .join("/");
+    return `${parsed.protocol}//${parsed.host}${route}`;
+  } catch {
+    return "unknown";
+  }
+}
+
+function redactTelemetryRouteSegment(segment: string): string {
+  if (!segment) {
+    return segment;
+  }
+  if (
+    // 邮箱、长数字 ID、hash 和 UUID 都是高基数身份，不能原样留在路由里。
+    /@/u.test(segment) ||
+    /^\d{7,}$/u.test(segment) ||
+    /^[0-9a-f]{16,}$/iu.test(segment) ||
+    /^[0-9a-f]{8}-[0-9a-f-]{27,}$/iu.test(segment)
+  ) {
+    return "{segment}";
+  }
+  return segment.slice(0, TELEMETRY_ROUTE_SEGMENT_MAX_LENGTH);
+}
+
+const pluginDimensionEnums: Record<string, readonly string[]> = {
+  schema_version: ["1"],
+  result: ["success", "failure", "cancelled", "noop", "partial"],
+  source_type: ["builtin", "official_cdn", "personal", "unknown"],
+  publisher_type: ["official", "community", "unknown"],
+  entry: [
+    "store_list",
+    "store_detail",
+    "side_pane_market",
+    "recommended_prompt",
+    "recommended_ui",
+    "component_settings",
+    "unknown",
+  ],
+  trigger: ["user", "dependency", "automatic", "restore", "sync"],
+  scope: ["user", "workspace", "unknown"],
+  client_kind: ["desktop", "mobile", "unknown"],
+  workspace_kind: ["local", "remote"],
+  remote_kind: ["", "ssh", "wsl", "docker", "server"],
+  error_category: ["diagnostic", "transport", "timeout", "cancelled", "unknown"],
+  plugin_component: ["skill", "mcp", "agent", "command", "hook", "lsp", "ui"],
+  remove_cache: ["true", "false", "unknown"],
+  action: [
+    "install",
+    "uninstall",
+    "update",
+    "restore",
+    "enable",
+    "disable",
+    "configure",
+    "reset_config",
+    "source_add",
+    "source_remove",
+    "source_refresh",
+    "sync",
+    "store_view",
+    "detail_view",
+    "search",
+    "ui_open_request",
+    "ui_ready",
+    "ui_close",
+    "ui_tool_call",
+  ],
+};
+const pluginIdentifierKeys = new Set([
+  "plugin_id",
+  "marketplace",
+  "version_before",
+  "version_after",
+  "batch_id",
+]);
+const pluginNumericKeys = new Set(["duration_ms", "target_count", "result_count"]);
+
+export const PLUGIN_TELEMETRY_EVENTS = [
+  "plugin_lifecycle",
+  "plugin_discovery",
+  "plugin_usage",
+  "plugin_runtime_error",
+] as const;
+
+/** 去平台化后本地保留的最小埋点上下文（原 telemetry.ts 的 renderer 上下文形状）。 */
+export interface TelemetryRendererContext {
+  clientTimezone: string;
+  clientLanguage: string;
+  screenResolution: string;
+}
+
+/** 插件生命周期/使用事件的本地 payload 形状；消费方由宿主注入，fork 不外发。 */
+export interface RendererTelemetryEventPayload {
+  elementName: string;
+  eventRegion: string;
+  eventType: string;
+  eventText?: string;
+  eventExtraDetail: Record<string, string>;
+  context: TelemetryRendererContext;
+}
+
+interface TelemetryScreenLike {
+  width: number;
+  height: number;
+}
+
+interface TelemetryWindowLike {
+  intlLocale?: string;
+  timeZone?: string;
+  screen: TelemetryScreenLike;
+}
+
+/** 采集当前 Intl/屏幕上下文；仅供本地插件事件明细使用，不做任何指纹外发。 */
+export function collectTelemetryRendererContext(
+  options?: TelemetryWindowLike,
+): TelemetryRendererContext {
+  const resolvedIntlOptions =
+    typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions() : undefined;
+  const timeZone = options?.timeZone ?? resolvedIntlOptions?.timeZone ?? "UTC";
+  const clientLanguage = options?.intlLocale ?? resolvedIntlOptions?.locale ?? "en-US";
+  const runtimeScreen = (globalThis as { screen?: TelemetryScreenLike }).screen;
+  const screen = options?.screen ?? runtimeScreen ?? { width: 0, height: 0 };
+
+  return {
+    clientTimezone: timeZone,
+    clientLanguage,
+    screenResolution: `${screen.width}x${screen.height}`,
+  };
+}
+
+/** 只清洗上报副本；拒绝任意配置/URL/路径和自由错误文本。 */
+export function sanitizePluginTelemetryDetail(
+  detail: Readonly<Record<string, string>>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(detail).filter(([key, value]) => {
+      if (pluginDimensionEnums[key]) return pluginDimensionEnums[key].includes(value);
+      if (pluginNumericKeys.has(key)) return /^\d{1,15}$/.test(value);
+      return (
+        pluginIdentifierKeys.has(key) &&
+        value.length <= 256 &&
+        /^[A-Za-z0-9@._+:-]+$/.test(value) &&
+        redactTelemetryText(value) === value
+      );
+    }),
+  );
+}
+
+/** 手机只转发发现行为；管理结果由同一个 Desktop Host 产生。 */
+export const mobilePluginDiscoveryTelemetrySchema = z
+  .object({
+    elementName: z.literal("plugin_discovery"),
+    eventRegion: z.literal("app"),
+    eventType: z.literal("view"),
+    context: z
+      .object({
+        clientTimezone: z.string().max(128),
+        clientLanguage: z.string().max(128),
+        screenResolution: z.string().max(64),
+      })
+      .strict(),
+    eventExtraDetail: z
+      .object({
+        schema_version: z.literal("1"),
+        action: z.enum(["store_view", "detail_view", "search"]),
+        entry: z.enum(["store_list", "store_detail", "side_pane_market"]),
+        client_kind: z.literal("mobile"),
+        plugin_id: z
+          .string()
+          .regex(/^[A-Za-z0-9@._+:-]+$/)
+          .max(256)
+          .optional(),
+        result_count: z
+          .string()
+          .regex(/^\d{1,15}$/)
+          .optional(),
+      })
+      .strict(),
+  })
+  .strict();
+export type MobilePluginDiscoveryTelemetry = z.infer<typeof mobilePluginDiscoveryTelemetrySchema>;
+
+const MAX_TELEMETRY_SKILL_NAME_LENGTH = 64;
+const TELEMETRY_SKILL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/u;
+
+/**
+ * 只用于已解析的 Skill 名称，不能据此信任模型请求参数。
+ * 不 trim 或截断，以免把敏感文本残片变成看似合法的标识；出网时再次检查同一规则。
+ */
+export function sanitizeTelemetrySkillName(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > MAX_TELEMETRY_SKILL_NAME_LENGTH ||
+    !TELEMETRY_SKILL_NAME_PATTERN.test(value) ||
+    redactTelemetryText(value) !== value
+  ) {
+    return "unknown";
+  }
+  return value;
+}
+
+/** 官方 GLM 名单之外的历史内置模型；仍是 ZCode 自己发布的稳定 ID，不是用户命名。 */
+const TELEMETRY_LEGACY_BUILTIN_MODEL_IDS: readonly string[] = ["charglm-4", "codegeex-4", "emohaa"];
+
+/**
+ * telemetry 模型白名单：只有这里的内置稳定模型 ID 允许原样进入遥测。
+ *
+ * 白名单独立于账号返回的运行时 catalog，以人工维护的官方 GLM 名单为来源，
+ * 与 CLI 侧共用 OFFICIAL_GLM_MODEL_IDS，两处不会各自漂移。
+ */
+export const TELEMETRY_SAFE_BUILTIN_MODEL_IDS: ReadonlySet<string> = new Set([
+  ...OFFICIAL_GLM_MODEL_IDS.map((id) => id.toLowerCase()),
+  ...TELEMETRY_LEGACY_BUILTIN_MODEL_IDS,
+]);
+
+export type TelemetryProviderScope = "builtin" | "custom" | "unknown";
+
+export interface TelemetryProviderIdentity {
+  providerId: string;
+  providerScope: TelemetryProviderScope;
+}
+
+function isLegacyBuiltinTelemetryProviderId(providerId: string): boolean {
+  const migrated = migrateLegacyModelProviderId(providerId);
+  return migrated !== undefined && migrated !== providerId;
+}
+
+/** 内置 provider 保留稳定 ID；自定义 provider 由用户命名，原样上报会泄露私有名称并制造高基数。 */
+export function resolveTelemetryProviderScope(
+  providerId: string | undefined | null,
+): TelemetryProviderIdentity {
+  const normalized = providerId?.trim();
+  if (!normalized) {
+    return { providerId: "", providerScope: "unknown" };
+  }
+  if (isBuiltinModelProviderId(normalized) || isLegacyBuiltinTelemetryProviderId(normalized)) {
+    return { providerId: normalized, providerScope: "builtin" };
+  }
+  return { providerId: "custom", providerScope: "custom" };
+}
+
+/**
+ * 从 `custom:<providerId>:<modelName>` 编码值或 `<providerId>/<modelId>` 复合值里剥出裸模型 ID。
+ * 裸 ID 只用于查白名单，无论 provider 部分是什么都不会原样进入遥测。
+ */
+function extractBareModelId(value: string): string {
+  const decoded = decodeCustomModelValue(value);
+  if (decoded) {
+    return decoded.modelName ?? "";
+  }
+  const separator = value.indexOf("/");
+  return separator > 0 ? value.slice(separator + 1) : value;
+}
+
+/**
+ * 只保留白名单内的内置模型 ID。
+ *
+ * 自定义 provider 的模型、内置 provider 下未命中白名单的模型统一写 `custom`；
+ * provider scope 未知或模型缺失时写空串，与既有留空口径一致。
+ */
+export function resolveTelemetryModelId(
+  providerScope: TelemetryProviderScope,
+  modelId: string | undefined | null,
+): string {
+  const normalized = modelId?.trim();
+  if (!normalized || providerScope === "unknown") {
+    return "";
+  }
+  if (providerScope === "custom") {
+    return "custom";
+  }
+  const bareModelId = extractBareModelId(normalized).toLowerCase();
+  return TELEMETRY_SAFE_BUILTIN_MODEL_IDS.has(bareModelId) ? bareModelId : "custom";
+}
+
+/**
+ * 归一化「只拿到一个模型值、没有独立 provider 字段」的场景。
+ *
+ * 支持三种形态：`custom:<providerId>[:<modelName>]` 编码值、`<providerId>/<modelId>` 复合值和
+ * 裸模型 ID。裸 ID 直接按白名单判定，未命中一律降级为 `custom`——这正是「新增内置模型未进入
+ * 白名单时必须默认降级」的要求，因此不需要调用方额外传 provider。
+ */
+export function sanitizeTelemetryModelValue(value: string | undefined | null): string {
+  const normalized = value?.trim();
+  if (!normalized) {
+    return "";
+  }
+
+  // `custom:` 前缀本身就表示非内置 provider，无需解码出用户命名即可判定。
+  const decoded = decodeCustomModelValue(normalized);
+  if (decoded) {
+    return resolveTelemetryModelId(
+      resolveTelemetryProviderScope(decoded.providerId).providerScope,
+      decoded.modelName,
+    );
+  }
+
+  const separator = normalized.indexOf("/");
+  if (separator > 0) {
+    const { providerScope } = resolveTelemetryProviderScope(normalized.slice(0, separator));
+    return resolveTelemetryModelId(providerScope, normalized.slice(separator + 1));
+  }
+
+  return resolveTelemetryModelId("builtin", normalized);
+}

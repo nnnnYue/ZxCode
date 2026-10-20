@@ -232,7 +232,7 @@ async function loadHooksImpl(
         source: userSource,
         runtimeRoot,
         workspacePath,
-        location: buildLocation("zcode"),
+        location: buildLocation("zxcode"),
       }),
       ...(await loadLegacyHooksFromLocation("agents")),
       ...(await loadLegacyHooksFromLocation("claude")),

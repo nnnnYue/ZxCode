@@ -6,7 +6,7 @@ import {
   generateTraceId,
   isRemoteWorkspaceIdentity,
   resolveWorkspaceKey,
-  ZCODE_AGENT_PROVIDER,
+  ZXCODE_AGENT_PROVIDER,
 } from "@zcode/shared";
 import type {
   AutoArchiveInput,
@@ -117,7 +117,7 @@ function readTasks(db: DatabaseSync): ProjectTask[] {
     .prepare(
       "SELECT * FROM tasks WHERE provider=? AND deleted=0 AND coalesce(cli_deleted,0)=0 AND cli_created_at IS NOT NULL ORDER BY cli_updated_at DESC,task_id",
     )
-    .all(ZCODE_AGENT_PROVIDER)
+    .all(ZXCODE_AGENT_PROVIDER)
     .map((row) => {
       const meta = typeof row.meta_json === "string" ? JSON.parse(row.meta_json) : {};
       return {
