@@ -474,13 +474,6 @@ export function SettingsPage({
         setDesktopChromiumHardwareAccelerationEnabled(
           settings.desktopChromiumHardwareAccelerationEnabled ?? true,
         );
-        setMessageStreamShowReasoning(settings.messageStreamShowReasoning ?? true);
-        setMessageStreamShowTodos(settings.messageStreamShowTodos ?? false);
-        setDynamicWorkflowEnabled(settings.dynamicWorkflowEnabled ?? false);
-        setToolGroupingExploreEnabled(settings.toolGroupingExploreEnabled ?? true);
-        setToolGroupingTerminalEnabled(settings.toolGroupingTerminalEnabled ?? true);
-        setToolGroupingChangesEnabled(settings.toolGroupingChangesEnabled ?? false);
-        setZCodeInteractionBehavior(settings.zcodeInteractionBehavior ?? "queue");
       })
       .catch(() => {});
     localHostServices.systemService
@@ -862,6 +855,22 @@ export function SettingsPage({
       );
     },
     [localHostServices.settingService, intl],
+  );
+  const handleReceivePreviewUpdatesChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.update",
+        action: "toggle_preview_updates",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ receivePreviewUpdates: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+      setReceivePreviewUpdates(enabled);
+    },
+    [updateSharedSettings],
   );
   const handleMessageStreamShowReasoningChange = useCallback(
     async (enabled: boolean) => {
@@ -1358,7 +1367,7 @@ export function SettingsPage({
                             {!hasVisibleSettingsBreadcrumb && activeSectionMeta.titleBadgeId ? (
                               <span className="inline-flex h-6 items-center rounded-full border border-sky-500 px-2 text-ui-xs font-semibold tracking-normal text-sky-500 dark:border-sky-400 dark:text-sky-400">
                                 {intl.formatMessage({
-                                  id: activeSectionMeta.titleBadgeId,
+                                  id: sharedSettings ? "settings.source.empty" : "common.loading",
                                 })}
                               </span>
                             ) : null}
