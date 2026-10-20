@@ -255,7 +255,7 @@ export function createWindow(options: {
       options.disposeHostProcess(child, `${label}:window-closed`);
       options.windowHostProcessMap.delete(wcId);
     }
-    void options.webRemoteControlManager.disposeWindow(browserWindowId);
+    void options.webRemoteControlManager.disposeWindow(wcId);
     options.disposeRemoteWorkspaceSessionsForWindow(wcId, `${label}:window-closed`);
   });
 

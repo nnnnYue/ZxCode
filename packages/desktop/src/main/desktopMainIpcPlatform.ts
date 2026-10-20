@@ -99,7 +99,7 @@ export function registerPlatformIpcHandlers(options: {
   ) => Promise<unknown>;
   syncActiveTaskSession: (windowId: number, sessionId: string | null) => void;
   syncTaskRealtimeWorkspaceKeys: (windowId: number, workspaceKeys: Iterable<string>) => void;
-  restorePreviouslyEnabledWebRemoteControl: (
+  restorePreviouslyEnabledWebRemoteControl?: (
     windowId: number,
     contexts: Array<{ workspacePath: string }>,
   ) => void;
@@ -110,10 +110,11 @@ export function registerPlatformIpcHandlers(options: {
   getDesktopSessionActivity: () => {
     runningAgentSessionCount: number;
   };
-  getAutoUpdatePreferences: () => Promise<{
+  /** fork：自动更新域已剔除；字段保留兼容上游 IPC 注册，实现方可缺省。 */
+  getAutoUpdatePreferences?: () => Promise<{
     autoDownloadAndInstallUpdates: boolean;
   }>;
-  setAutoDownloadAndInstallUpdates: (enabled: boolean) => Promise<void>;
+  setAutoDownloadAndInstallUpdates?: (enabled: boolean) => Promise<void>;
   syncAppSettings: (patch: ReturnType<typeof appSettingsPatchSchema.parse>) => void;
   /** renderer 上报当前窗口 active workspace 三元组（手机远控 presence 数据源）。 */
   syncWindowWorkspace?: (

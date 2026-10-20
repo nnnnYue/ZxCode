@@ -18,10 +18,14 @@ import {
   type WebRemoteControlRelayV2IncomingMessage,
   type WebRemoteControlRelayV2OutgoingMessage,
 } from "@zcode/shared/web-remote-relay";
-import {
-  noteWebRemoteRelayConnectAttempt,
-  noteWebRemoteRelayReconnect,
-} from "#src/main/desktopNetworkTelemetry.js";
+
+// fork：ARMS 网络遥测已随域剔除；relay v1 连接指标仅保留 no-op 桩，调用点语义不变。
+function noteWebRemoteRelayConnectAttempt(
+  _durationMs: number,
+  _success: boolean,
+  _detail?: Record<string, unknown>,
+): void {}
+function noteWebRemoteRelayReconnect(): void {}
 
 import type {
   WebRemoteControlDeviceTransportState,

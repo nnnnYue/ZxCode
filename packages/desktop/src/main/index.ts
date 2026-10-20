@@ -665,6 +665,8 @@ const windowWorkspaceInfoMap = new Map<
 const mobileRelayClient: DesktopRelayClientHandle = createDesktopRelayClient({
   logger,
   deviceId: deviceMid,
+  // fork：路由级 session 列表投影随上游重构暂缺；relay presence 用窗口 workspace 镜像兜底。
+  listRemoteWorkspaceSessions: () => [],
   attachLocalWorkspace: (windowId) => {
     // 复刻 renderer reload 重连先例（desktopWindowLifecycle），但 clientMode 用
     // web-remote-replayable：手机端必须走 snapshot+delta 重放语义，不复用 continuous。
@@ -699,7 +701,6 @@ const mobileRelayClient: DesktopRelayClientHandle = createDesktopRelayClient({
       windowId,
       ...info,
     })),
-  listRemoteWorkspaceSessions: remoteSessionManager.listRemoteWorkspaceSessions,
 });
 const webRemoteControlAppVersion = ZCODE_VERSION || app.getVersion();
 const defaultZCodeEndpointUrls = buildZCodeEndpointUrls(DEFAULT_ZCODE_ENDPOINT_ORIGIN, {
@@ -1223,6 +1224,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     iconPath,
     preloadPath,
     logger,
+    webRemoteControlManager,
     forceQuitRef,
     handleBeforeClose: (win, label) =>
       handleDesktopWindowCloseRequest({
@@ -1688,10 +1690,6 @@ app.whenReady().then(async () => {
         taskRealtimeBus.updateHostWorkspaceKeys(hostId, workspaceKeys);
       }
     },
-    getUpdateState: getAutoUpdaterState,
-    openUpdateStatusWindow,
-    getAutoUpdatePreferences,
-    setAutoDownloadAndInstallUpdates,
     getDesktopSessionActivity: () => ({
       runningAgentSessionCount: getRunningAgentSessionCount(),
     }),

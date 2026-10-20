@@ -1,4 +1,10 @@
-import type { RendererTelemetryEventPayload } from "@zcode/shared";
+/** fork：去平台化后本地保留的最小埋点 payload 形状（无 renderer 上下文，不外发）。 */
+interface TelemetryEventPayload {
+  elementName: string;
+  eventRegion: string;
+  eventType: string;
+  eventExtraDetail: Record<string, string>;
+}
 /* eslint-disable max-lines -- Web 远程控制 manager 承担外部 relay app payload 路由与 workspace bridge 编排。 */
 import type { MessagePortMain, UtilityProcess as ElectronUtilityProcess } from "electron";
 import { randomUUID } from "node:crypto";
@@ -41,7 +47,6 @@ import {
   type WebRemoteControlWorkspaceListResult,
   type WebRemoteControlWorkspaceTarget,
   type RemoteUsageRemoteKind,
-  type TelemetryEventPayload,
   measureWebRemoteControlRpcRelayEnvelopeBytes,
 } from "@zcode/shared";
 import { WebRemoteControlV2ConnectionError } from "@zcode/shared/web-remote-relay";
@@ -190,7 +195,7 @@ interface WebRemoteControlManagerDependencies {
   ) => Promise<HostPreparedProjectWorkspace>;
   cancelProjectPreparation?: (windowId: number, requestId: string) => void;
   reportRemoteUsageEvent?: (windowId: number, event: TelemetryEventPayload) => void;
-  reportRendererTelemetryEvent?: (event: RendererTelemetryEventPayload) => void;
+  reportRendererTelemetryEvent?: (event: TelemetryEventPayload) => void;
   onStatusChanged?: (windowId: number, status: WebRemoteControlStatus) => void;
   attachWorkspaceHost: (
     windowId: number,
@@ -1464,13 +1469,14 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
   }
 
   function createQrUrl(deviceSid: string, mobileRemoteControlUrl: string): string {
+    // fork：v1 自部署 relay 配对二维码（与 v2 登录二维码协议不同）。
     return buildWebRemoteControlExternalQrUrl({
       baseUrl: mobileRemoteControlUrl,
       deviceSid,
       deviceMid: dependencies.deviceMid,
       deviceName: dependencies.deviceName,
       appVersion: dependencies.appVersion,
-    });
+    } as import("@zcode/shared").BuildWebRemoteControlV1PairingQrUrlOptions & { baseUrl: string } as import("@zcode/shared").BuildWebRemoteControlExternalQrUrlOptions);
   }
 
   return {

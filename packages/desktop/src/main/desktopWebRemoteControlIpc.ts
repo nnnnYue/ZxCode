@@ -1,3 +1,11 @@
+/** fork：去平台化后本地保留的最小埋点 payload 形状（无 renderer 上下文，不外发）。 */
+interface TelemetryEventPayload {
+  elementName: string;
+  eventRegion: string;
+  eventType: string;
+  eventExtraDetail: Record<string, string>;
+}
+
 import { BrowserWindow, ipcMain } from "electron";
 import type { WebContents } from "electron";
 import {
@@ -7,7 +15,6 @@ import {
   PlatformChannels,
   webRemoteControlAuthStateChangeSchema,
   type WebRemoteControlAuthStateChange,
-  type TelemetryEventPayload,
   type WebRemoteControlContext,
   type WebRemoteControlStartResult,
   type WebRemoteControlStatus,

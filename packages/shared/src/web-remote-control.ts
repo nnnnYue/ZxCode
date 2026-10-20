@@ -264,6 +264,15 @@ export interface BuildWebRemoteControlExternalQrUrlOptions extends WebRemoteCont
   baseUrl: string;
 }
 
+/** fork：v1 自部署 relay 配对二维码选项（无 passHash/timestamp，配对走 WS challenge）。 */
+export interface BuildWebRemoteControlV1PairingQrUrlOptions {
+  baseUrl: string;
+  deviceSid: string;
+  deviceMid?: string;
+  deviceName?: string;
+  appVersion?: string;
+}
+
 function readNonEmptySearchParam(params: URLSearchParams, name: string): string | undefined {
   const value = params.get(name)?.trim();
   return value ? value : undefined;
