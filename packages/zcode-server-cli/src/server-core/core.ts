@@ -29,7 +29,7 @@ export async function runServerCore(generation: number): Promise<void> {
   const layout = resolveServerLayout(process.env.ZCODE_SERVER_ROOT?.trim());
   const topicResourcePeers = createTopicResourcePeers();
   const explicitZCodeBuiltinProviderConfigFilePath =
-    process.env[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
+    process.env[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
   // Built-in Config 物化到所属 Environment 配置根（~/.zcode/v2）而不是 release 自带的 runtime 目录：
   // release 目录是不可变的，同一 releaseId 重装时 assertExistingReleaseMatches 会重算整棵树的
   // 内容哈希，多出的物化文件会让校验失败。
@@ -80,7 +80,7 @@ export async function runServerCore(generation: number): Promise<void> {
     type: "ready",
     host: http.host,
     port: http.port,
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     ...(process.env.ZCODE_SERVER_RELEASE_ID?.trim()
       ? { releaseId: process.env.ZCODE_SERVER_RELEASE_ID.trim() }
       : {}),

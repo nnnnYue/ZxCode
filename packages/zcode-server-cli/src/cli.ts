@@ -4,7 +4,7 @@ import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
-import { isPublicZCodeErrorCode, ZCODE_VERSION } from "@zcode/shared";
+import { isPublicZCodeErrorCode, ZXCODE_VERSION } from "@zcode/shared";
 import { SourceServerWorkspaceAliasRepo } from "@zcode/services/node";
 import {
   CORE_KILL_TIMEOUT_MS,
@@ -116,7 +116,7 @@ export async function runServerCli(
     if (command === "version" || command === "--version") {
       // Bug 原因：Server --version 过去落入 legacy delegate，实际输出取决于旁边的 Agent
       // zcode.cjs，Desktop probe 无法稳定判断 Server compatibility。
-      stdout(io, json ? { product: "zcode-server", version: ZCODE_VERSION } : ZCODE_VERSION);
+      stdout(io, json ? { product: "zcode-server", version: ZXCODE_VERSION } : ZXCODE_VERSION);
       return 0;
     }
     const proxyStdioRequested =
@@ -414,7 +414,7 @@ async function runServe(
         });
       },
     },
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     ...(supervisorReleaseId ? { supervisorReleaseId } : {}),
     serviceRegistered,
     onStopped: () => {

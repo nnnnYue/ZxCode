@@ -1,4 +1,3 @@
-import { scopeConversationShareServiceForAttachment } from "@zcode/services/node";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { hostname, userInfo } from "node:os";
 import { serve } from "@hono/node-server";
@@ -22,7 +21,6 @@ import {
   createZCodeAgentConnectionScope,
   IProviderProvisioningTargetService,
   IZCodeAgentService,
-  IConversationShareService,
   ServiceCollection,
 } from "@zcode/services";
 import {
@@ -36,8 +34,8 @@ import {
   TOPIC_RESOURCE_RELAY_CHANNEL,
   serverRemoteInfoOutputSchema,
   ZCODE_COMPATIBILITY_MANIFEST,
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_VERSION,
+  ZXCODE_RPC_HOST_CAPABILITY_HEADER,
+  ZXCODE_VERSION,
   type ServerRemoteInfo,
 } from "@zcode/shared";
 import { createHostCapabilityStore, type HostCapabilityStore } from "./hostCapability.js";
@@ -160,18 +158,6 @@ function exposeWebSocket(
   if (scope) {
     overrides.set(IZCodeAgentService.channelName, scope.service);
   }
-  const shareService = services.getOptional(IConversationShareService);
-  if (shareService) {
-    overrides.set(
-      IConversationShareService.channelName,
-      scopeConversationShareServiceForAttachment(
-        shareService,
-        clientMode,
-        scope?.service,
-        connectionContext,
-      ),
-    );
-  }
   // Provisioning envelope 携带跨 Environment 的 Personal 配置与凭据，只允许受信 Desktop Host
   // 通过 /ws/host 下发；/ws 上的 Web / 手机 replayable 客户端即使知道频道名，也只能拿到抛错 stub，
   // 不能把凭据写进本 Source Server。
@@ -219,7 +205,7 @@ export async function createCoreHttpServer(
   const ingressToken = options.ingressToken?.trim();
   const info: ServerRemoteInfo = serverRemoteInfoOutputSchema.parse({
     serverId: options.serverId ?? hostname() ?? "zcode-server",
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
     authRequired: Boolean(ingressToken),
     workspaces: [],
