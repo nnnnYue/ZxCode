@@ -91,7 +91,6 @@ function readRecordFromUnknown(value: unknown): Record<string, unknown> | null {
   return text ? parseJsonObject(text) : null;
 }
 
-
 function isImplementationToolTitle(title: string): boolean {
   const normalized = title
     .trim()

@@ -251,4 +251,3 @@ describe("输入框复用市场排序", () => {
     ).toEqual(old.filter((x) => x.enabled).map((x) => x.pluginId));
   });
 });
-

@@ -36,23 +36,18 @@ import { createAndConfigurePersonalProvider } from "./personal-provider-settings
 import { saveProviderModelMetadataDialog } from "./provider-model-metadata-dialog.js";
 import { resolveUpstreamModels } from "./upstream-recorded-models.js";
 
-export const UPSTREAM_PROVIDER_ID =
-  process.env.E2E_PROVIDER_ID?.trim() || "e2e-upstream";
+export const UPSTREAM_PROVIDER_ID = process.env.E2E_PROVIDER_ID?.trim() || "e2e-upstream";
 export const UPSTREAM_PROVIDER_NAV_KEY = `custom:${UPSTREAM_PROVIDER_ID}`;
 export const UPSTREAM_ALTERNATE_PROVIDER_ID =
   process.env.E2E_PROVIDER_ALTERNATE_PROVIDER_ID?.trim() || "e2e-upstream-alt";
 export const UPSTREAM_ALTERNATE_PROVIDER_NAME =
-  process.env.E2E_PROVIDER_ALTERNATE_PROVIDER_NAME?.trim() ||
-  "Upstream E2E Alt";
+  process.env.E2E_PROVIDER_ALTERNATE_PROVIDER_NAME?.trim() || "Upstream E2E Alt";
 // 模型名由 E2E_PROVIDER_MODEL / E2E_PROVIDER_SECONDARY_MODEL 控制，未设置时使用回放夹具的录制模型。
-export const {
-  model: UPSTREAM_MODEL,
-  secondaryModel: UPSTREAM_SECONDARY_MODEL,
-} = resolveUpstreamModels();
+export const { model: UPSTREAM_MODEL, secondaryModel: UPSTREAM_SECONDARY_MODEL } =
+  resolveUpstreamModels();
 export const UPSTREAM_ALTERNATE_MODEL =
   process.env.E2E_PROVIDER_ALTERNATE_MODEL?.trim() || UPSTREAM_SECONDARY_MODEL;
-export const UPSTREAM_PROVIDER_NAME =
-  process.env.E2E_PROVIDER_NAME?.trim() || "Upstream";
+export const UPSTREAM_PROVIDER_NAME = process.env.E2E_PROVIDER_NAME?.trim() || "Upstream";
 export const UPSTREAM_THOUGHT_LEVEL = readUpstreamThoughtLevel();
 export const UPSTREAM_SECONDARY_THOUGHT_LEVEL =
   process.env.E2E_PROVIDER_SECONDARY_THOUGHT_LEVEL?.trim() || "max";
@@ -71,9 +66,7 @@ function readUpstreamThoughtLevel() {
   if (process.env.E2E_PROVIDER_THOUGHT_LEVEL !== undefined) {
     return process.env.E2E_PROVIDER_THOUGHT_LEVEL.trim();
   }
-  return process.env.E2E_PROVIDER_PRESET?.trim() === "glmhighspeed"
-    ? ""
-    : "high";
+  return process.env.E2E_PROVIDER_PRESET?.trim() === "glmhighspeed" ? "" : "high";
 }
 
 export function getUpstreamApiKey() {
@@ -86,9 +79,7 @@ export function getUpstreamApiKey() {
     // 修复原因：只有 capture 模式会访问真实 上游；采集 fixture 时不能用
     // placeholder，否则后续 replay 会固化一份失败响应。真实录制可切到 GLM highspeed
     // preset，但测试 helper 仍复用这组历史 env 名以保持旧 case 兼容。
-    throw new Error(
-      "E2E_PROVIDER_HTTP_MODE=capture requires E2E_PROVIDER_API_KEY",
-    );
+    throw new Error("E2E_PROVIDER_HTTP_MODE=capture requires E2E_PROVIDER_API_KEY");
   }
   return apiKey;
 }
@@ -102,9 +93,7 @@ interface EnsureUpstreamProviderOptions {
   skipToolbarSelection?: boolean;
 }
 
-export async function ensureUpstreamProviderForE2E(
-  options: EnsureUpstreamProviderOptions = {},
-) {
+export async function ensureUpstreamProviderForE2E(options: EnsureUpstreamProviderOptions = {}) {
   const upstreamApiKey = getUpstreamApiKey();
 
   await waitForDefaultWorkspaceReady(30000);
@@ -145,14 +134,10 @@ export async function ensureUpstreamProviderForE2E(
   }
   await waitForModelProviderNavSelected(UPSTREAM_PROVIDER_NAV_KEY);
 
-  await setInputValueByTestIdDom(
-    TID_MODEL_PROVIDER_API_KEY_INPUT,
-    upstreamApiKey,
-    {
-      timeout: 15000,
-      timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider API Key 输入框没有出现`,
-    },
-  );
+  await setInputValueByTestIdDom(TID_MODEL_PROVIDER_API_KEY_INPUT, upstreamApiKey, {
+    timeout: 15000,
+    timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider API Key 输入框没有出现`,
+  });
   await waitForUpstreamProviderSaved(
     (provider) => provider.apiKey.trim().length > 0,
     `${UPSTREAM_PROVIDER_NAME} API Key 没有保存到 e2e app data`,
@@ -160,10 +145,7 @@ export async function ensureUpstreamProviderForE2E(
 
   const currentProvider = await readModelProvider(UPSTREAM_PROVIDER_ID);
   if (!currentProvider || !hasUpstreamModel(currentProvider, UPSTREAM_MODEL)) {
-    await addUpstreamProviderModel(
-      UPSTREAM_MODEL,
-      currentProvider?.models.length ?? 0,
-    );
+    await addUpstreamProviderModel(UPSTREAM_MODEL, currentProvider?.models.length ?? 0);
   }
 
   await waitForUpstreamProviderSaved(
@@ -197,22 +179,16 @@ async function hasSeededUpstreamProvider(apiKey: string) {
 }
 
 async function tryClickUpstreamProviderNavItem() {
-  const navTestId = testId(
-    TID_MODEL_PROVIDER_NAV_ITEM,
-    UPSTREAM_PROVIDER_NAV_KEY,
-  );
+  const navTestId = testId(TID_MODEL_PROVIDER_NAV_ITEM, UPSTREAM_PROVIDER_NAV_KEY);
   return browser
     .waitUntil(
       async () => {
         const clicked = await browser.execute((currentTestId) => {
-          const element = document.querySelector<HTMLElement>(
-            `[data-testid="${currentTestId}"]`,
-          );
+          const element = document.querySelector<HTMLElement>(`[data-testid="${currentTestId}"]`);
           if (
             !element ||
             (element instanceof HTMLButtonElement &&
-              (element.disabled ||
-                element.getAttribute("aria-disabled") === "true"))
+              (element.disabled || element.getAttribute("aria-disabled") === "true"))
           ) {
             return false;
           }
@@ -237,9 +213,7 @@ async function tryClickUpstreamProviderNavItem() {
 async function createMissingUpstreamProvider() {
   const baseURL = process.env.E2E_PROVIDER_RUNTIME_BASE_URL?.trim();
   if (!baseURL) {
-    throw new Error(
-      "E2E_PROVIDER_RUNTIME_BASE_URL 未配置，无法通过设置页新增 replay provider",
-    );
+    throw new Error("E2E_PROVIDER_RUNTIME_BASE_URL 未配置，无法通过设置页新增 replay provider");
   }
 
   await createAndConfigurePersonalProvider({
@@ -253,9 +227,7 @@ async function createMissingUpstreamProvider() {
     timeoutMsg: "新增 provider 添加模型按钮没有出现",
   });
   await addUpstreamProviderModelThroughMetadataDialog(UPSTREAM_MODEL);
-  await waitForMetadataDialogClosed(
-    "新增 provider 模型 metadata 弹窗保存后没有关闭",
-  );
+  await waitForMetadataDialogClosed("新增 provider 模型 metadata 弹窗保存后没有关闭");
 
   return waitForCreatedProvider(UPSTREAM_PROVIDER_ID, baseURL, UPSTREAM_MODEL);
 }
@@ -276,9 +248,7 @@ async function seedUpstreamToolbarPreferences() {
         JSON.stringify({
           providerId,
           modelId,
-          ...(thoughtLevel.trim()
-            ? { options: { reasoningLevel: thoughtLevel.trim() } }
-            : {}),
+          ...(thoughtLevel.trim() ? { options: { reasoningLevel: thoughtLevel.trim() } } : {}),
         }),
       );
       window.localStorage.setItem("zcode-last-agent-provider", appProvider);
@@ -337,18 +307,12 @@ function hasUpstreamModel(
   );
 }
 
-async function addUpstreamProviderModel(
-  modelId: string,
-  nextModelIndex: number,
-) {
+async function addUpstreamProviderModel(modelId: string, nextModelIndex: number) {
   await clickTestIdByDom(TID_MODEL_PROVIDER_ADD_MODEL_BUTTON, {
     timeout: 15000,
     timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider 添加模型按钮没有出现`,
   });
-  const modelInputTestId = testId(
-    TID_MODEL_PROVIDER_MODEL_INPUT,
-    String(nextModelIndex),
-  );
+  const modelInputTestId = testId(TID_MODEL_PROVIDER_MODEL_INPUT, String(nextModelIndex));
   const hasInlineInput = await waitForTestIdByDom(modelInputTestId, {
     timeout: 3000,
     timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider 新模型输入框没有出现`,
@@ -392,14 +356,11 @@ async function addUpstreamProviderModelThroughMetadataDialog(modelId: string) {
       };
     }
 
-    const inputs = Array.from(
-      dialog.querySelectorAll<HTMLInputElement>("input"),
-    );
+    const inputs = Array.from(dialog.querySelectorAll<HTMLInputElement>("input"));
     const descriptors = inputs.map((input, index) => ({
       index,
       inputMode: input.getAttribute("inputmode") ?? "",
-      label:
-        input.parentElement?.querySelector("label")?.textContent?.trim() ?? "",
+      label: input.parentElement?.querySelector("label")?.textContent?.trim() ?? "",
       placeholder: input.getAttribute("placeholder") ?? "",
       readOnly: input.readOnly,
       type: input.getAttribute("type") ?? "",
@@ -411,16 +372,13 @@ async function addUpstreamProviderModelThroughMetadataDialog(modelId: string) {
           /^(模型 ID|Model ID)$/i.test(text.trim()),
         ),
       )?.index ??
-      descriptors.find(
-        (descriptor) =>
-          descriptor.inputMode !== "numeric" && !descriptor.readOnly,
-      )?.index ??
+      descriptors.find((descriptor) => descriptor.inputMode !== "numeric" && !descriptor.readOnly)
+        ?.index ??
       -1;
     return {
       descriptors,
       inputCount: inputs.length,
-      reason:
-        selectedInputIndex >= 0 ? "model-input-found" : "model-input-missing",
+      reason: selectedInputIndex >= 0 ? "model-input-found" : "model-input-missing",
       selectedInputIndex,
     };
   });
@@ -443,22 +401,16 @@ async function addUpstreamProviderModelThroughMetadataDialog(modelId: string) {
   }
   await modelInput.waitForDisplayed({ timeout: 5000 });
   await modelInput.setValue(modelId);
-  await browser.waitUntil(
-    async () => (await modelInput.getValue()) === modelId,
-    {
-      timeout: 5000,
-      timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider 新模型 ID 没有写入输入框: ${modelId}`,
-    },
-  );
+  await browser.waitUntil(async () => (await modelInput.getValue()) === modelId, {
+    timeout: 5000,
+    timeoutMsg: `${UPSTREAM_PROVIDER_NAME} provider 新模型 ID 没有写入输入框: ${modelId}`,
+  });
   await saveProviderModelMetadataDialog(UPSTREAM_PROVIDER_NAME);
 }
 
 async function waitForMetadataDialogClosed(timeoutMsg: string) {
   await browser.waitUntil(
-    () =>
-      browser.execute(
-        () => !document.querySelector<HTMLElement>('[role="dialog"]'),
-      ),
+    () => browser.execute(() => !document.querySelector<HTMLElement>('[role="dialog"]')),
     {
       timeout: 10000,
       timeoutMsg,
@@ -466,18 +418,12 @@ async function waitForMetadataDialogClosed(timeoutMsg: string) {
   );
 }
 
-async function waitForCreatedProvider(
-  providerName: string,
-  baseURL: string,
-  modelId: string,
-) {
+async function waitForCreatedProvider(providerName: string, baseURL: string, modelId: string) {
   let latestProviders: E2EModelProviderSnapshot[] = [];
   await browser.waitUntil(
     async () => {
       latestProviders = await readModelProviders();
-      const provider = latestProviders.find(
-        (candidate) => candidate.name === providerName,
-      );
+      const provider = latestProviders.find((candidate) => candidate.name === providerName);
       return Boolean(
         provider &&
         provider.apiKey.trim() === getUpstreamApiKey() &&
@@ -491,9 +437,7 @@ async function waitForCreatedProvider(
     },
   );
 
-  const provider = latestProviders.find(
-    (candidate) => candidate.name === providerName,
-  );
+  const provider = latestProviders.find((candidate) => candidate.name === providerName);
   if (!provider) {
     throw new Error(`新增 provider 等待后仍不存在: ${providerName}`);
   }
@@ -516,25 +460,19 @@ function hasModel(provider: E2EModelProviderSnapshot, modelId: string) {
 }
 
 async function clickUpstreamProviderNavItem() {
-  const navTestId = testId(
-    TID_MODEL_PROVIDER_NAV_ITEM,
-    UPSTREAM_PROVIDER_NAV_KEY,
-  );
+  const navTestId = testId(TID_MODEL_PROVIDER_NAV_ITEM, UPSTREAM_PROVIDER_NAV_KEY);
   let latestReason = "not-started";
   try {
     await browser.waitUntil(
       async () => {
         const clicked = (await browser.execute((currentTestId) => {
-          const element = document.querySelector<HTMLElement>(
-            `[data-testid="${currentTestId}"]`,
-          );
+          const element = document.querySelector<HTMLElement>(`[data-testid="${currentTestId}"]`);
           if (!element) {
             return { clicked: false, reason: "missing" };
           }
           if (
             element instanceof HTMLButtonElement &&
-            (element.disabled ||
-              element.getAttribute("aria-disabled") === "true")
+            (element.disabled || element.getAttribute("aria-disabled") === "true")
           ) {
             return { clicked: false, reason: "disabled" };
           }
@@ -549,13 +487,10 @@ async function clickUpstreamProviderNavItem() {
         // 修复原因：设置页的 provider registry 来自 host 异步快照。
         // e2e 每个 session 都会重置 HOME，刚进设置页时左侧导航可能还在旧 section
         // 或 loading。周期性重新进入模型供应商页，避免把初始化窗口误报成业务失败。
-        await clickTestIdByDom(
-          testId(TID_SETTINGS_SECTION_NAV, "modelProvider"),
-          {
-            timeout: 2000,
-            timeoutMsg: "设置页模型供应商分区入口不可点击",
-          },
-        ).catch(() => undefined);
+        await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "modelProvider"), {
+          timeout: 2000,
+          timeoutMsg: "设置页模型供应商分区入口不可点击",
+        }).catch(() => undefined);
         await browser.pause(250);
         return false;
       },
@@ -582,32 +517,23 @@ async function collectProviderNavDiagnostics(navTestId: string) {
   const dom = await browser.execute(
     (providerNavPrefix, expectedNavTestId, settingsPageTestId) => {
       const navItems = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          `[data-testid^="${providerNavPrefix}-"]`,
-        ),
+        document.querySelectorAll<HTMLElement>(`[data-testid^="${providerNavPrefix}-"]`),
       ).map((element) => ({
         ariaDisabled: element.getAttribute("aria-disabled"),
         ariaLabel: element.getAttribute("aria-label"),
         ariaSelected: element.getAttribute("aria-selected"),
-        disabled:
-          element instanceof HTMLButtonElement ? element.disabled : false,
+        disabled: element instanceof HTMLButtonElement ? element.disabled : false,
         state: element.getAttribute("data-state"),
         testId: element.dataset.testid ?? "",
         text: element.innerText.trim(),
       }));
       return {
         bodyText: document.body?.innerText?.slice(0, 1600) ?? "",
-        expectedExists: Boolean(
-          document.querySelector(`[data-testid="${expectedNavTestId}"]`),
-        ),
+        expectedExists: Boolean(document.querySelector(`[data-testid="${expectedNavTestId}"]`)),
         navItems,
         readyState: document.readyState,
-        settingsVisible: Boolean(
-          document.querySelector(`[data-testid="${settingsPageTestId}"]`),
-        ),
-        testIds: Array.from(
-          document.querySelectorAll<HTMLElement>("[data-testid]"),
-        )
+        settingsVisible: Boolean(document.querySelector(`[data-testid="${settingsPageTestId}"]`)),
+        testIds: Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
           .slice(0, 120)
           .map((element) => element.dataset.testid ?? ""),
         url: window.location.href,
@@ -626,9 +552,7 @@ async function collectProviderNavDiagnostics(navTestId: string) {
       enabled: provider.enabled,
       id: provider.id,
       modelCount: provider.models.length,
-      models: provider.models.map((model) =>
-        typeof model === "string" ? model : model.id,
-      ),
+      models: provider.models.map((model) => (typeof model === "string" ? model : model.id)),
       name: provider.name,
       source: provider.source,
     })),
@@ -640,9 +564,9 @@ async function waitForModelProviderNavSelected(navKey: string) {
   await browser.waitUntil(
     async () =>
       browser.execute((currentTestId) => {
-        const element = Array.from(
-          document.querySelectorAll<HTMLElement>("[data-testid]"),
-        ).find((item) => item.dataset.testid === currentTestId);
+        const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+          (item) => item.dataset.testid === currentTestId,
+        );
         // 修复原因：模型供应商导航选中态是产品状态，不应依赖具体 CSS class。
         // UI 现在通过 aria-selected / data-state 暴露稳定协议，E2E 读取语义字段。
         return (
@@ -714,11 +638,7 @@ export async function selectRegistryProviderModelById(
             (await isUpstreamModelSelected(modelId, {
               includePlainModelFallback,
               providerId,
-            })) ||
-            openModelMenuUntilModelVisible(
-              providerGroupTestIds,
-              modelItemTestIds,
-            ),
+            })) || openModelMenuUntilModelVisible(providerGroupTestIds, modelItemTestIds),
           {
             timeout: 45000,
             timeoutMsg: `聊天工具栏没有出现 ${providerName} e2e 模型选项`,
@@ -743,9 +663,7 @@ export async function selectRegistryProviderModelById(
             providerId,
           })
         ) {
-          await waitForModelSwitchIdle(
-            `${providerName} 模型 ${modelId} 已选中但持久化没有完成`,
-          );
+          await waitForModelSwitchIdle(`${providerName} 模型 ${modelId} 已选中但持久化没有完成`);
           if (
             await isUpstreamModelSelected(modelId, {
               includePlainModelFallback,
@@ -776,9 +694,7 @@ export async function selectRegistryProviderModelById(
       });
     }
 
-    await waitForModelSwitchIdle(
-      `${providerName} 模型 ${modelId} 切换持久化没有完成`,
-    );
+    await waitForModelSwitchIdle(`${providerName} 模型 ${modelId} 切换持久化没有完成`);
     if (
       await isUpstreamModelSelected(modelId, {
         includePlainModelFallback,
@@ -810,13 +726,10 @@ export async function waitForUpstreamModelSelected(
     providerId?: string;
   } = {},
 ) {
-  await browser.waitUntil(
-    async () => isUpstreamModelSelected(modelId, options),
-    {
-      timeout: 15000,
-      timeoutMsg: `上游 模型没有切换到 ${modelId}`,
-    },
-  );
+  await browser.waitUntil(async () => isUpstreamModelSelected(modelId, options), {
+    timeout: 15000,
+    timeoutMsg: `上游 模型没有切换到 ${modelId}`,
+  });
 }
 
 async function isUpstreamModelSelected(
@@ -835,9 +748,7 @@ async function isUpstreamModelSelected(
   });
   return browser.execute(
     (triggerTestId, expectedModel, modelValues) => {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-testid="${triggerTestId}"]`,
-      );
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
       const currentValue = trigger?.dataset.modelCurrentValue?.trim() ?? "";
       if (currentValue && modelValues.includes(currentValue)) {
         return true;
@@ -845,9 +756,7 @@ async function isUpstreamModelSelected(
       // 修复原因：自定义模型已被选中时，Radix 二级菜单可能只展示 provider 分组，
       // 不再稳定挂载当前模型项。E2E 以工具栏当前选择作为最终语义，避免误判。
       // 若组件尚未暴露 data-model-current-value，才退回可见文本；新组件优先用严格 value。
-      return (
-        !currentValue && (trigger?.innerText ?? "").includes(expectedModel)
-      );
+      return !currentValue && (trigger?.innerText ?? "").includes(expectedModel);
     },
     TID_CHAT_MODEL_SELECT_TRIGGER,
     modelId,
@@ -857,16 +766,12 @@ async function isUpstreamModelSelected(
 
 export function getSelectedUpstreamModelLabel() {
   return browser.execute((triggerTestId) => {
-    const trigger = document.querySelector<HTMLElement>(
-      `[data-testid="${triggerTestId}"]`,
-    );
+    const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
     return {
       ariaLabel: trigger?.getAttribute("aria-label") ?? "",
       currentValue: trigger?.dataset.modelCurrentValue ?? "",
       text: trigger?.innerText.trim() ?? "",
-      title:
-        trigger?.querySelector<HTMLElement>("[title]")?.getAttribute("title") ??
-        "",
+      title: trigger?.querySelector<HTMLElement>("[title]")?.getAttribute("title") ?? "",
     };
   }, TID_CHAT_MODEL_SELECT_TRIGGER);
 }
@@ -875,9 +780,7 @@ export async function waitForModelSwitchIdle(timeoutMsg = "模型切换没有完
   await browser.waitUntil(
     () =>
       browser.execute((chatViewTestId) => {
-        const chatView = document.querySelector<HTMLElement>(
-          `[data-testid="${chatViewTestId}"]`,
-        );
+        const chatView = document.querySelector<HTMLElement>(`[data-testid="${chatViewTestId}"]`);
         return chatView?.dataset.modelSwitchPending !== "true";
       }, TID_CHAT_VIEW),
     {
@@ -905,19 +808,13 @@ export async function selectUpstreamThoughtLevelValue(thoughtLevel: string) {
     timeoutMsg: "聊天工具栏没有出现 上游 思考深度选择器",
   });
   if (await isUpstreamThoughtLevelSelected(thoughtLevel)) {
-    await waitForModelSwitchIdle(
-      `上游 思考深度 ${thoughtLevel} 已选中但持久化没有完成`,
-    );
+    await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 已选中但持久化没有完成`);
     return;
   }
 
   const itemTestId = testId(TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM, thoughtLevel);
 
-  for (
-    let attempt = 0;
-    attempt < UPSTREAM_THOUGHT_LEVEL_MAX_ATTEMPTS;
-    attempt += 1
-  ) {
+  for (let attempt = 0; attempt < UPSTREAM_THOUGHT_LEVEL_MAX_ATTEMPTS; attempt += 1) {
     await clickTestIdByDom(TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER, {
       timeout: 15000,
       timeoutMsg: "聊天工具栏思考深度选择器不可点击",
@@ -933,18 +830,14 @@ export async function selectUpstreamThoughtLevelValue(thoughtLevel: string) {
         thoughtLevel,
         `上游 思考深度没有切换到 ${thoughtLevel}`,
       );
-      await waitForModelSwitchIdle(
-        `上游 思考深度 ${thoughtLevel} 切换持久化没有完成`,
-      );
+      await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 切换持久化没有完成`);
       return;
     }
 
     // 修复原因：小宽度/特定 toolbar 形态下思考深度是循环按钮，不会挂载
     // Radix SelectItem。此时一次 click 就是一次真实的用户切换动作。
     if (await isUpstreamThoughtLevelSelected(thoughtLevel)) {
-      await waitForModelSwitchIdle(
-        `上游 思考深度 ${thoughtLevel} 切换持久化没有完成`,
-      );
+      await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 切换持久化没有完成`);
       return;
     }
   }
@@ -958,27 +851,19 @@ export async function selectUpstreamThoughtLevelValue(thoughtLevel: string) {
   );
 }
 
-export async function waitForUpstreamThoughtLevelSelectedValue(
-  thoughtLevel: string,
-) {
+export async function waitForUpstreamThoughtLevelSelectedValue(thoughtLevel: string) {
   await waitForUpstreamThoughtLevelSelected(
     thoughtLevel,
     `上游 思考深度没有切换到 ${thoughtLevel}`,
   );
 }
 
-async function waitForUpstreamThoughtLevelSelected(
-  thoughtLevel: string,
-  timeoutMsg: string,
-) {
+async function waitForUpstreamThoughtLevelSelected(thoughtLevel: string, timeoutMsg: string) {
   try {
-    await browser.waitUntil(
-      async () => isUpstreamThoughtLevelSelected(thoughtLevel),
-      {
-        timeout: 15000,
-        timeoutMsg,
-      },
-    );
+    await browser.waitUntil(async () => isUpstreamThoughtLevelSelected(thoughtLevel), {
+      timeout: 15000,
+      timeoutMsg,
+    });
   } catch (error) {
     throw new Error(
       `${timeoutMsg}\n${JSON.stringify(
@@ -995,15 +880,8 @@ async function waitForUpstreamThoughtLevelSelected(
 
 async function isUpstreamThoughtLevelSelected(thoughtLevel: string) {
   return browser.execute(
-    (
-      triggerTestId,
-      modelConfigTestId,
-      expectedValue,
-      expectedLabels,
-      defaultWorkspace,
-    ) => {
-      const normalize = (value: string) =>
-        value.replace(/\s+/g, " ").trim().toLowerCase();
+    (triggerTestId, modelConfigTestId, expectedValue, expectedLabels, defaultWorkspace) => {
+      const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
       const readCurrentThoughtLevel = () => {
         const e2eWindow = window as Window & {
           __zcodeSessionStoreE2E?: {
@@ -1051,16 +929,12 @@ async function isUpstreamThoughtLevelSelected(thoughtLevel: string) {
               (candidate.category ?? candidate.id) === "thought_level" &&
               candidate.type === "select",
           );
-          return typeof option?.currentValue === "string"
-            ? option.currentValue
-            : "";
+          return typeof option?.currentValue === "string" ? option.currentValue : "";
         };
         const activeTaskId = workspaceState?.activeTaskId ?? null;
         const taskValue =
           activeTaskId && workspaceState?.taskConfigOptionsByTaskId
-            ? readFromOptions(
-                workspaceState.taskConfigOptionsByTaskId[activeTaskId],
-              )
+            ? readFromOptions(workspaceState.taskConfigOptionsByTaskId[activeTaskId])
             : "";
         return taskValue || readFromOptions(workspaceState?.configOptions);
       };
@@ -1069,9 +943,7 @@ async function isUpstreamThoughtLevelSelected(thoughtLevel: string) {
         .querySelector<HTMLElement>(`[data-testid="${modelConfigTestId}"]`)
         ?.dataset.thought?.trim();
       const currentValue = v4CurrentValue || readCurrentThoughtLevel();
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-testid="${triggerTestId}"]`,
-      );
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
       const expected = [expectedValue, ...expectedLabels].map(normalize);
       if (currentValue) {
         // 修复原因：Select 打开/动画期间 trigger 文本可能同时包含多个选项。
@@ -1147,16 +1019,12 @@ export function getSelectedUpstreamThoughtLevelLabel() {
               (candidate.category ?? candidate.id) === "thought_level" &&
               candidate.type === "select",
           );
-          return typeof option?.currentValue === "string"
-            ? option.currentValue
-            : "";
+          return typeof option?.currentValue === "string" ? option.currentValue : "";
         };
         const activeTaskId = workspaceState?.activeTaskId ?? null;
         const taskValue =
           activeTaskId && workspaceState?.taskConfigOptionsByTaskId
-            ? readFromOptions(
-                workspaceState.taskConfigOptionsByTaskId[activeTaskId],
-              )
+            ? readFromOptions(workspaceState.taskConfigOptionsByTaskId[activeTaskId])
             : "";
         return taskValue || readFromOptions(workspaceState?.configOptions);
       };
@@ -1164,9 +1032,7 @@ export function getSelectedUpstreamThoughtLevelLabel() {
       const v4CurrentValue = document
         .querySelector<HTMLElement>(`[data-testid="${modelConfigTestId}"]`)
         ?.dataset.thought?.trim();
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-testid="${triggerTestId}"]`,
-      );
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
       return {
         ariaLabel: trigger?.getAttribute("aria-label") ?? "",
         // 修复原因：V4 投影已确认切换后，legacy store 可能仍保留上一档位；
@@ -1196,10 +1062,7 @@ export function getUpstreamProviderModelValues(
     providerId?: string;
   } = {},
 ) {
-  const values = [
-    `${providerId}/${modelId}`,
-    encodeCustomModelValue(providerId, modelId),
-  ];
+  const values = [`${providerId}/${modelId}`, encodeCustomModelValue(providerId, modelId)];
   if (includePlainModelFallback) {
     values.push(modelId);
   }
@@ -1217,9 +1080,7 @@ async function hasUpstreamThoughtLevelItem(itemTestId: string) {
 }
 
 async function waitForUpstreamProviderSaved(
-  predicate: (
-    provider: NonNullable<Awaited<ReturnType<typeof readModelProvider>>>,
-  ) => boolean,
+  predicate: (provider: NonNullable<Awaited<ReturnType<typeof readModelProvider>>>) => boolean,
   timeoutMsg: string,
 ) {
   await browser.waitUntil(
@@ -1268,9 +1129,9 @@ async function hasAnyExactTestId(testIds: string[]) {
 
 async function hasExactTestId(currentTestId: string) {
   return browser.execute((expectedTestId) => {
-    return Array.from(
-      document.querySelectorAll<HTMLElement>("[data-testid]"),
-    ).some((element) => element.dataset.testid === expectedTestId);
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).some(
+      (element) => element.dataset.testid === expectedTestId,
+    );
   }, currentTestId);
 }
 
@@ -1282,18 +1143,14 @@ async function openModelProviderGroup(providerGroupTestId: string) {
   // 修复原因：自定义 provider 模型在二级菜单里，不能只打开一级模型菜单后等待模型项。
   // 这里先触发 provider 子菜单，再用模型项 test id 判断是否可选。
   await browser.execute((currentTestId) => {
-    const element = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-testid]"),
-    ).find((item) => item.dataset.testid === currentTestId);
+    const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+      (item) => item.dataset.testid === currentTestId,
+    );
     if (!element) {
       return;
     }
     element.focus();
-    for (const eventName of [
-      "pointerenter",
-      "mouseenter",
-      "mousemove",
-    ] as const) {
+    for (const eventName of ["pointerenter", "mouseenter", "mousemove"] as const) {
       element.dispatchEvent(
         new MouseEvent(eventName, {
           bubbles: true,
@@ -1309,9 +1166,7 @@ async function openModelProviderGroup(providerGroupTestId: string) {
 async function clickFirstExistingTestId(testIds: string[]) {
   return browser.execute((currentTestIds) => {
     for (const currentTestId of currentTestIds) {
-      const element = document.querySelector<HTMLElement>(
-        `[data-testid="${currentTestId}"]`,
-      );
+      const element = document.querySelector<HTMLElement>(`[data-testid="${currentTestId}"]`);
       if (element) {
         element.click();
         return {
@@ -1331,13 +1186,9 @@ async function collectModelDropdownDiagnostics(
   const provider = await readModelProvider(providerId);
   const dom = await browser.execute(
     (modelItemPrefix, triggerTestId, defaultWorkspace) => {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-testid="${triggerTestId}"]`,
-      );
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
       const items = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          `[data-testid^="${modelItemPrefix}"]`,
-        ),
+        document.querySelectorAll<HTMLElement>(`[data-testid^="${modelItemPrefix}"]`),
       ).map((element) => ({
         testId: element.dataset.testid ?? "",
         text: element.innerText.trim(),
@@ -1400,9 +1251,7 @@ async function collectModelDropdownDiagnostics(
       ) =>
         (options ?? [])
           .filter((option) =>
-            ["model", "mode", "thought_level"].includes(
-              option.category ?? option.id ?? "",
-            ),
+            ["model", "mode", "thought_level"].includes(option.category ?? option.id ?? ""),
           )
           .map((option) => ({
             category: option.category ?? null,
@@ -1411,9 +1260,7 @@ async function collectModelDropdownDiagnostics(
                 ? option.currentValue
                 : (option.currentValue ?? null),
             id: option.id ?? null,
-            optionValues: (option.options ?? []).map(
-              (candidate) => candidate.value ?? "",
-            ),
+            optionValues: (option.options ?? []).map((candidate) => candidate.value ?? ""),
             type: option.type ?? null,
           }));
       const activeTaskId = workspaceState?.activeTaskId ?? null;
@@ -1438,16 +1285,13 @@ async function collectModelDropdownDiagnostics(
               modelSwitchStage: workspaceState.modelSwitchStage ?? null,
               selectedProvider: workspaceState.selectedProvider ?? null,
               selectedSupplierKey: workspaceState.selectedSupplierKey ?? null,
-              supplierMismatchReason:
-                workspaceState.supplierMismatchReason ?? null,
+              supplierMismatchReason: workspaceState.supplierMismatchReason ?? null,
               taskConfigOptions: selectSummary(taskConfigOptions),
               workspaceKeys: Object.keys(storeState?.workspaces ?? {}),
             }
           : {
               available: Boolean(storeState),
-              reason: storeState
-                ? "workspace-state-missing"
-                : "store-bridge-missing",
+              reason: storeState ? "workspace-state-missing" : "store-bridge-missing",
               workspaceKeys: Object.keys(storeState?.workspaces ?? {}),
             },
         triggerText: trigger?.innerText.trim() ?? "",
@@ -1479,13 +1323,9 @@ async function collectModelDropdownDiagnostics(
 async function collectThoughtLevelDiagnostics(attemptedTestId: string) {
   return browser.execute(
     (itemPrefix, triggerTestId, expectedItemTestId) => {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-testid="${triggerTestId}"]`,
-      );
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
       const items = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          `[data-testid^="${itemPrefix}"]`,
-        ),
+        document.querySelectorAll<HTMLElement>(`[data-testid^="${itemPrefix}"]`),
       ).map((element) => ({
         ariaDisabled: element.getAttribute("aria-disabled"),
         testId: element.dataset.testid ?? "",

@@ -64,8 +64,7 @@ export function shouldRecordE2ENetworkResponseChunkTimeline(
     enabled &&
     Object.entries(responseHeaders).some(
       ([name, value]) =>
-        name.toLowerCase() === "content-type" &&
-        value.toLowerCase().includes("text/event-stream"),
+        name.toLowerCase() === "content-type" && value.toLowerCase().includes("text/event-stream"),
     )
   );
 }
@@ -80,9 +79,7 @@ function headerToString(value: HeaderValue): string {
 function shouldRedactJsonKey(key: string): boolean {
   const normalizedKey = key.replaceAll(/[-_]/gu, "").toLowerCase();
   return (
-    /api[-_]?key|authorization|access[-_]?token|refresh[-_]?token|secret/i.test(
-      key,
-    ) ||
+    /api[-_]?key|authorization|access[-_]?token|refresh[-_]?token|secret/i.test(key) ||
     normalizedKey === "sig" ||
     normalizedKey === "signature" ||
     // 密文字段（如私钥密文）一律按密钥材料脱敏。

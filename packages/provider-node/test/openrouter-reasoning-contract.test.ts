@@ -5,7 +5,9 @@ import { compileModelOptionMaps } from "@zcode/model-option-map";
 import { ModelConfig, ModelOptionSpecsConfig } from "@zcode/provider";
 import { NodeZCodeBuiltinProviderConfigSource } from "../src/index.js";
 
-const path = fileURLToPath(new URL("../../../config/provider/zxcode-builtin.json", import.meta.url));
+const path = fileURLToPath(
+  new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
+);
 const source = new NodeZCodeBuiltinProviderConfigSource({ bundledFilePath: path, watch: false });
 let snapshot: Awaited<ReturnType<typeof source.read>>;
 let modelIds: string[];

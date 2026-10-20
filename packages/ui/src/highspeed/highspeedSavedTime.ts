@@ -42,8 +42,7 @@ export function calculateHighspeedSavedDurationMs(params: {
         ? params.otherDurationMs
         : Math.max(0, params.durationMs - modelDurationMs - toolDurationMs);
     // CLI 已把真实模型/工具区间持久化；工具与其它等待不因模型换速而缩短。
-    const regularDurationMs =
-      toolDurationMs + otherDurationMs + modelDurationMs * modelSpeedup;
+    const regularDurationMs = toolDurationMs + otherDurationMs + modelDurationMs * modelSpeedup;
     const actualDurationMs = modelDurationMs + toolDurationMs + otherDurationMs;
     return Math.max(0, Math.round(regularDurationMs - actualDurationMs));
   }
@@ -51,10 +50,7 @@ export function calculateHighspeedSavedDurationMs(params: {
   // 工具占 20% 且不变，只有模型推理的 80% 按 Highspeed 倍率缩短。
   const highspeedShare = 0.2 + 0.8 / modelSpeedup;
   const estimatedRegularDurationMs = params.durationMs / highspeedShare;
-  return Math.max(
-    0,
-    Math.round(estimatedRegularDurationMs - params.durationMs),
-  );
+  return Math.max(0, Math.round(estimatedRegularDurationMs - params.durationMs));
 }
 
 /**

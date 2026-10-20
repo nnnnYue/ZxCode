@@ -7,13 +7,15 @@ import type { ServerLayout } from "./paths.js";
 const SERVER_INSTALL_OWNERSHIP_PRODUCT = "zxcode-server";
 const SERVER_INSTALL_OWNERSHIP_SCHEMA_VERSION = 1;
 
-const serverInstallOwnershipSchema = z.object({
-  product: z.literal(SERVER_INSTALL_OWNERSHIP_PRODUCT),
-  schemaVersion: z.literal(SERVER_INSTALL_OWNERSHIP_SCHEMA_VERSION),
-  canonicalServerRoot: z.string().min(1),
-  installationId: z.string().uuid(),
-  installedAt: z.number().int().nonnegative(),
-}).strict();
+const serverInstallOwnershipSchema = z
+  .object({
+    product: z.literal(SERVER_INSTALL_OWNERSHIP_PRODUCT),
+    schemaVersion: z.literal(SERVER_INSTALL_OWNERSHIP_SCHEMA_VERSION),
+    canonicalServerRoot: z.string().min(1),
+    installationId: z.string().uuid(),
+    installedAt: z.number().int().nonnegative(),
+  })
+  .strict();
 
 export type ServerInstallOwnership = z.infer<typeof serverInstallOwnershipSchema>;
 
@@ -23,7 +25,9 @@ async function readOwnership(layout: ServerLayout): Promise<ServerInstallOwnersh
     throw new Error(`ZxCode Server ownership marker is missing or invalid: ${layout.installFile}`);
   }
   try {
-    return serverInstallOwnershipSchema.parse(JSON.parse(await readFile(layout.installFile, "utf8")));
+    return serverInstallOwnershipSchema.parse(
+      JSON.parse(await readFile(layout.installFile, "utf8")),
+    );
   } catch (error) {
     throw new Error(`ZxCode Server ownership marker is invalid: ${layout.installFile}`, {
       cause: error,
@@ -31,7 +35,9 @@ async function readOwnership(layout: ServerLayout): Promise<ServerInstallOwnersh
   }
 }
 
-export async function ensureServerInstallOwnership(layout: ServerLayout): Promise<ServerInstallOwnership> {
+export async function ensureServerInstallOwnership(
+  layout: ServerLayout,
+): Promise<ServerInstallOwnership> {
   await mkdir(layout.serverRoot, { recursive: true, mode: 0o700 });
   const canonicalServerRoot = await realpath(layout.serverRoot);
   const ownership: ServerInstallOwnership = {
@@ -63,7 +69,9 @@ export async function ensureServerInstallOwnership(layout: ServerLayout): Promis
   }
 }
 
-export async function validateServerInstallOwnership(layout: ServerLayout): Promise<ServerInstallOwnership> {
+export async function validateServerInstallOwnership(
+  layout: ServerLayout,
+): Promise<ServerInstallOwnership> {
   const [ownership, canonicalServerRoot] = await Promise.all([
     readOwnership(layout),
     realpath(layout.serverRoot).catch((error: unknown) => {

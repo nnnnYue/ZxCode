@@ -66,29 +66,32 @@ function setup() {
 describe("定时任务的 Session 创建口径", () => {
   // fork 已剔除 reportHostSessionCreate 遥测：保留的时序断言是
   // sendPrompt 未 accepted 前派发不完成，accepted 后返回新会话 id。
-  it.each(["a1:1000", "a1:manual:1000"])("新建会话 %s 首发 accepted 后才完成派发", async (runId) => {
-    const state = setup();
-    let accept!: () => void;
-    state.service.sendPrompt.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          accept = resolve;
-        }),
-    );
-    const dispatched = state.dispatch({ ...state.request, runId });
-    await vi.waitFor(() => expect(state.service.sendPrompt).toHaveBeenCalledOnce());
-    let settled = false;
-    void dispatched.then(() => {
-      settled = true;
-    });
-    await Promise.resolve();
-    expect(settled).toBe(false);
-    accept();
-    await expect(dispatched).resolves.toEqual({
-      taskId: "new-session",
-      sessionId: "new-session",
-    });
-  });
+  it.each(["a1:1000", "a1:manual:1000"])(
+    "新建会话 %s 首发 accepted 后才完成派发",
+    async (runId) => {
+      const state = setup();
+      let accept!: () => void;
+      state.service.sendPrompt.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            accept = resolve;
+          }),
+      );
+      const dispatched = state.dispatch({ ...state.request, runId });
+      await vi.waitFor(() => expect(state.service.sendPrompt).toHaveBeenCalledOnce());
+      let settled = false;
+      void dispatched.then(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      accept();
+      await expect(dispatched).resolves.toEqual({
+        taskId: "new-session",
+        sessionId: "new-session",
+      });
+    },
+  );
   it("prompt 创建的任务绑定原会话，多次追加都不报告", async () => {
     const state = setup();
     await state.dispatch({ ...state.request, targetTaskId: "existing" });

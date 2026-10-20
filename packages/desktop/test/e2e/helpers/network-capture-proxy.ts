@@ -1,9 +1,5 @@
 /* eslint-disable max-lines -- E2E 抓包代理需要集中维护 MITM、脱敏、chunk timeline、SSE event 解析和 artifact 序列化，拆开会让录制协议更难追踪。 */
-import {
-  createPrivateKey,
-  createPublicKey,
-  X509Certificate,
-} from "node:crypto";
+import { createPrivateKey, createPublicKey, X509Certificate } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { readdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -138,13 +134,10 @@ export async function startE2ENetworkCaptureProxy(
   const requestedPort = options.port ?? 0;
   const caDir = resolve(options.caDir);
   const artifactPath = resolve(options.artifactPath);
-  const requestBodyLimitBytes =
-    options.requestBodyLimitBytes ?? DEFAULT_REQUEST_BODY_BYTES;
-  const recordResponseChunkTimeline =
-    options.recordResponseChunkTimeline ?? false;
+  const requestBodyLimitBytes = options.requestBodyLimitBytes ?? DEFAULT_REQUEST_BODY_BYTES;
+  const recordResponseChunkTimeline = options.recordResponseChunkTimeline ?? false;
   const responseChunkTimelineLimitBytes =
-    options.responseChunkTimelineLimitBytes ??
-    DEFAULT_RESPONSE_CHUNK_TIMELINE_BYTES;
+    options.responseChunkTimelineLimitBytes ?? DEFAULT_RESPONSE_CHUNK_TIMELINE_BYTES;
   const responsePreviewLimitBytes =
     options.responsePreviewLimitBytes ?? DEFAULT_RESPONSE_PREVIEW_BYTES;
   await removeUnusableE2ENetworkCaptureLeafCertificates(caDir);
@@ -180,10 +173,7 @@ export async function startE2ENetworkCaptureProxy(
   };
 
   proxy.onError((ctx, error, errorKind) => {
-    const message = [
-      errorKind,
-      error instanceof Error ? error.message : String(error),
-    ]
+    const message = [errorKind, error instanceof Error ? error.message : String(error)]
       .filter(Boolean)
       .join(": ");
     markContextError(ctx, message || "network proxy error");
@@ -225,11 +215,7 @@ export async function startE2ENetworkCaptureProxy(
       const current = recordForContext(responseCtx);
       if (current) {
         current.responseBodyBytes += chunk.length;
-        appendLimitedChunk(
-          current.responseChunks,
-          chunk,
-          responsePreviewLimitBytes,
-        );
+        appendLimitedChunk(current.responseChunks, chunk, responsePreviewLimitBytes);
         // 修复原因：部分接口的 JSON 响应含密钥密文；若录原始 base64 chunk，
         // 即使 text preview 已脱敏，密钥材料仍会旁路落盘。chunk timeline 只服务 SSE 回放。
         if (
@@ -238,11 +224,7 @@ export async function startE2ENetworkCaptureProxy(
             current.responseHeaders,
           )
         ) {
-          appendResponseTimelineChunk(
-            current,
-            chunk,
-            responseChunkTimelineLimitBytes,
-          );
+          appendResponseTimelineChunk(current, chunk, responseChunkTimelineLimitBytes);
         }
         appendSseResponseEvents(current, chunk);
       }
@@ -340,9 +322,7 @@ export async function startE2ENetworkCaptureProxy(
     }
     current.statusCode = ctx.serverToProxyResponse.statusCode;
     current.statusMessage = ctx.serverToProxyResponse.statusMessage;
-    current.responseHeaders = sanitizeE2ENetworkCaptureHeaders(
-      ctx.serverToProxyResponse.headers,
-    );
+    current.responseHeaders = sanitizeE2ENetworkCaptureHeaders(ctx.serverToProxyResponse.headers);
   }
 
   function findResponseMock(
@@ -366,12 +346,7 @@ export async function startE2ENetworkCaptureProxy(
     const requestChunks: Buffer[] = [];
     let requestBodyBytes = 0;
     const finish = () => {
-      applyMockRequestBody(
-        record,
-        requestChunks,
-        requestBodyBytes,
-        requestBodyLimitBytes,
-      );
+      applyMockRequestBody(record, requestChunks, requestBodyBytes, requestBodyLimitBytes);
 
       const body = Buffer.from(
         typeof mock.body === "function"
@@ -385,18 +360,12 @@ export async function startE2ENetworkCaptureProxy(
         connection: "close",
         ...mock.headers,
       };
-      ctx.proxyToClientResponse.writeHead(
-        mock.statusCode ?? 200,
-        responseHeaders,
-      );
+      ctx.proxyToClientResponse.writeHead(mock.statusCode ?? 200, responseHeaders);
       ctx.proxyToClientResponse.end(body);
 
       record.responseBodyBytes = body.length;
-      record.responseHeaders =
-        sanitizeE2ENetworkCaptureHeaders(responseHeaders);
-      record.responseTextPreview = redactE2ENetworkCaptureJsonText(
-        body.toString("utf-8"),
-      );
+      record.responseHeaders = sanitizeE2ENetworkCaptureHeaders(responseHeaders);
+      record.responseTextPreview = redactE2ENetworkCaptureJsonText(body.toString("utf-8"));
       record.status = "complete";
       record.statusCode = mock.statusCode ?? 200;
       record.statusMessage = mock.statusMessage ?? "OK";
@@ -453,21 +422,14 @@ export async function removeUnusableE2ENetworkCaptureLeafCertificates(
 
   await Promise.all(
     certificateNames
-      .filter(
-        (name) =>
-          name.endsWith(".pem") &&
-          name !== "ca.pem" &&
-          name !== "ca-bundle.pem",
-      )
+      .filter((name) => name.endsWith(".pem") && name !== "ca.pem" && name !== "ca-bundle.pem")
       .map(async (name) => {
         const certificatePath = join(certsDir, name);
         const host = name.slice(0, -".pem".length);
         const privateKeyPath = join(caDir, "keys", `${host}.key`);
         let usable = false;
         try {
-          const certificate = new X509Certificate(
-            await readFile(certificatePath, "utf8"),
-          );
+          const certificate = new X509Certificate(await readFile(certificatePath, "utf8"));
           const certificatePublicKey = certificate.publicKey.export({
             format: "der",
             type: "spki",
@@ -519,9 +481,7 @@ function createRecord(ctx: IContext): MutableCaptureRecord {
     protocol: ctx.isSSL ? "https" : "http",
     requestBodyBytes: 0,
     requestChunks: [],
-    requestHeaders: sanitizeE2ENetworkCaptureHeaders(
-      ctx.clientToProxyRequest.headers,
-    ),
+    requestHeaders: sanitizeE2ENetworkCaptureHeaders(ctx.clientToProxyRequest.headers),
     responseBodyBytes: 0,
     responseChunkTimelineBytes: 0,
     responseChunks: [],
@@ -554,10 +514,7 @@ function flushPartialSseResponseEvent(record: MutableCaptureRecord) {
   drainCompleteSseEvents(record, true);
 }
 
-function drainCompleteSseEvents(
-  record: MutableCaptureRecord,
-  flushPartial: boolean,
-) {
+function drainCompleteSseEvents(record: MutableCaptureRecord, flushPartial: boolean) {
   while (record.responseSseBuffer.length > 0) {
     const boundary = findSseEventBoundary(record.responseSseBuffer);
     if (!boundary) {
@@ -569,18 +526,12 @@ function drainCompleteSseEvents(
     }
 
     const text = record.responseSseBuffer.slice(0, boundary.endIndex);
-    record.responseSseBuffer = record.responseSseBuffer.slice(
-      boundary.endIndex,
-    );
+    record.responseSseBuffer = record.responseSseBuffer.slice(boundary.endIndex);
     pushSseEvent(record, text, false);
   }
 }
 
-function pushSseEvent(
-  record: MutableCaptureRecord,
-  text: string,
-  partial: boolean,
-) {
+function pushSseEvent(record: MutableCaptureRecord, text: string, partial: boolean) {
   const startedAtMs = record.responseSseStartedAtMs ?? Date.now();
   record.responseEvents ??= [];
   record.responseEvents.push({
@@ -598,20 +549,14 @@ function findSseEventBoundary(text: string): { endIndex: number } | null {
       const index = text.indexOf(separator);
       return index < 0 ? null : { endIndex: index + separator.length };
     })
-    .filter((candidate): candidate is { endIndex: number } =>
-      Boolean(candidate),
-    )
+    .filter((candidate): candidate is { endIndex: number } => Boolean(candidate))
     .sort((left, right) => left.endIndex - right.endIndex);
   return candidates[0] ?? null;
 }
 
-function isSseResponse(
-  record: Pick<E2ENetworkCaptureRecord, "responseHeaders">,
-): boolean {
+function isSseResponse(record: Pick<E2ENetworkCaptureRecord, "responseHeaders">): boolean {
   return (
-    record.responseHeaders["content-type"]
-      ?.toLowerCase()
-      .includes("text/event-stream") ?? false
+    record.responseHeaders["content-type"]?.toLowerCase().includes("text/event-stream") ?? false
   );
 }
 
@@ -632,8 +577,7 @@ function buildRequestUrl(ctx: IContext): URL {
   }
 
   const protocol = ctx.isSSL ? "https" : "http";
-  const host =
-    stringValue(ctx.clientToProxyRequest.headers.host) ?? "unknown.local";
+  const host = stringValue(ctx.clientToProxyRequest.headers.host) ?? "unknown.local";
   const path = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
   return new URL(`${protocol}://${host}${path}`);
 }
@@ -653,34 +597,21 @@ function applyRequestBody(record: MutableCaptureRecord, limitBytes: number) {
   }
 }
 
-function applyResponsePreview(
-  record: MutableCaptureRecord,
-  limitBytes: number,
-) {
+function applyResponsePreview(record: MutableCaptureRecord, limitBytes: number) {
   const body = Buffer.concat(record.responseChunks);
   record.responseBodyTruncated = record.responseBodyBytes > limitBytes;
   if (body.length > 0) {
-    record.responseTextPreview = redactE2ENetworkCaptureJsonText(
-      body.toString("utf-8"),
-    );
+    record.responseTextPreview = redactE2ENetworkCaptureJsonText(body.toString("utf-8"));
   }
 }
 
-function appendLimitedChunk(
-  chunks: Buffer[],
-  chunk: Buffer,
-  limitBytes: number,
-) {
+function appendLimitedChunk(chunks: Buffer[], chunk: Buffer, limitBytes: number) {
   const currentBytes = chunks.reduce((total, item) => total + item.length, 0);
   if (currentBytes >= limitBytes) {
     return;
   }
   const remaining = limitBytes - currentBytes;
-  chunks.push(
-    chunk.length > remaining
-      ? chunk.subarray(0, remaining)
-      : Buffer.from(chunk),
-  );
+  chunks.push(chunk.length > remaining ? chunk.subarray(0, remaining) : Buffer.from(chunk));
 }
 
 function appendResponseTimelineChunk(
@@ -698,8 +629,7 @@ function appendResponseTimelineChunk(
   }
 
   const remainingBytes = limitBytes - record.responseChunkTimelineBytes;
-  const storedChunk =
-    chunk.length > remainingBytes ? chunk.subarray(0, remainingBytes) : chunk;
+  const storedChunk = chunk.length > remainingBytes ? chunk.subarray(0, remainingBytes) : chunk;
   record.responseChunkTimeline.push({
     base64: Buffer.from(storedChunk).toString("base64"),
     byteLength: chunk.length,
@@ -712,9 +642,7 @@ function appendResponseTimelineChunk(
   }
 }
 
-function serializeRecord(
-  record: MutableCaptureRecord,
-): E2ENetworkCaptureRecord {
+function serializeRecord(record: MutableCaptureRecord): E2ENetworkCaptureRecord {
   const {
     requestChunks: _requestChunks,
     responseChunkTimelineBytes: _responseChunkTimelineBytes,
@@ -787,9 +715,7 @@ function durationMs(startedAt: string, completedAt: string): number {
   return Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
 }
 
-function stringValue(
-  value: string | string[] | number | undefined,
-): string | undefined {
+function stringValue(value: string | string[] | number | undefined): string | undefined {
   if (Array.isArray(value)) {
     return value[0];
   }

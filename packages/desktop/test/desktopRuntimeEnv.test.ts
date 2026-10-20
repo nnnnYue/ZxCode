@@ -1,9 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { TEST_ZCODE_ENDPOINT_ORIGIN } from "@zcode/shared";
-import {
-  DEV_HELPER_APP_NAME,
-  HELPER_APP_NAME,
-} from "@zcode/zcode-cua/broker/helperConstants";
+import { DEV_HELPER_APP_NAME, HELPER_APP_NAME } from "@zcode/zcode-cua/broker/helperConstants";
 import {
   existsSync,
   mkdirSync,
@@ -33,99 +30,99 @@ vi.mock("electron", () => ({
 vi.mock("@zcode/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@zcode/shared")>();
   return {
-  ...actual,
-  ZXCODE_APP_VERSION_ENV: "ZXCODE_APP_VERSION",
-  ZXCODE_RUNTIME_ENV_KEY: "ZXCODE_RUNTIME_ENV",
-  ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY: "ZXCODE_TOOL_ENV_PASSTHROUGH_JSON",
-  ZXCODE_AGENT_RUNTIME: {
-    binaryKind: "native-binary",
-    binaryEnvVar: "GLM_BINARY_PATH",
-    bundledResourceDir: "glm",
-    version: "0.0.0-test",
-    spawnArgs: ["app-server", "--stdio"],
-    nativeConfigDir: ".zxcode/cli",
-    nativeConfigFileName: "config.json",
-    missingBinaryMessage: "[ZxCode Agent] missing test binary",
-    resolveEntrySegments: (platform: string) => [
-      platform === "win32" ? "zxcode-agent.exe" : "zxcode-agent",
-    ],
-  },
-  ZXCODE_ENV: "test",
-  get ZXCODE_PRODUCT_FLAVOR() {
-    return productFlavorMock.value;
-  },
-  ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV: "ZXCODE_DYNAMIC_WORKFLOW_MODE",
-  normalizeDynamicWorkflowMode: (value: unknown) => {
-    if (typeof value !== "string") return undefined;
-    const trimmed = value.trim();
-    return ["disabled", "onDemand", "alwaysOn"].includes(trimmed) ? trimmed : undefined;
-  },
-  ZXCODE_VERSION: "0.0.0-test",
-  readProductEndpointEnv: () => ({}),
-  // 端点常量不再复制字面量，直接沿用真实模块导出（本 mock 只覆盖其余测试替身）。
-  resolveRuntimeZCodeEndpointOrigin: (env: Record<string, string | undefined>) =>
-    env.ZXCODE_BASE_URL ?? env.ZXCODE_TEST_BASE_URL ?? actual.DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
-  sanitizeZCodeRuntimeEnv: (env: Record<string, string | undefined>) => {
-    const sanitizedKeys = new Set([
-      "NODE_ENV",
-      "ELECTRON_RUN_AS_NODE",
-      "NODE_NO_WARNINGS",
-      "HTTP_PROXY",
-      "HTTPS_PROXY",
-      "ALL_PROXY",
-      "NO_PROXY",
-      "NODE_EXTRA_CA_CERTS",
-      "SSL_CERT_FILE",
-      "SSL_CERT_DIR",
-      "REQUESTS_CA_BUNDLE",
-      "CURL_CA_BUNDLE",
-      "GIT_SSL_CAINFO",
-    ]);
-    const sanitized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(env)) {
-      if (
-        value == null ||
-        sanitizedKeys.has(key.toUpperCase()) ||
-        /^(npm_config|yarn|pnpm)_(http_proxy|https_proxy|proxy|all_proxy|no_proxy|cafile|ca)$/i.test(
-          key,
-        )
-      ) {
-        continue;
-      }
-      sanitized[key] = value;
-    }
-    return sanitized;
-  },
-  buildZCodeToolEnvPassthroughEnv: (env: Record<string, string | undefined>) => {
-    const captured: Record<string, string> = {};
-    for (const [key, value] of Object.entries(env)) {
-      const upperKey = key.toUpperCase();
-      if (
-        value != null &&
-        !["NODE_ENV", "ELECTRON_RUN_AS_NODE", "NODE_NO_WARNINGS"].includes(upperKey) &&
-        ([
-          "HTTP_PROXY",
-          "HTTPS_PROXY",
-          "ALL_PROXY",
-          "NO_PROXY",
-          "NODE_EXTRA_CA_CERTS",
-          "SSL_CERT_FILE",
-          "SSL_CERT_DIR",
-          "REQUESTS_CA_BUNDLE",
-          "CURL_CA_BUNDLE",
-          "GIT_SSL_CAINFO",
-        ].includes(upperKey) ||
+    ...actual,
+    ZXCODE_APP_VERSION_ENV: "ZXCODE_APP_VERSION",
+    ZXCODE_RUNTIME_ENV_KEY: "ZXCODE_RUNTIME_ENV",
+    ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY: "ZXCODE_TOOL_ENV_PASSTHROUGH_JSON",
+    ZXCODE_AGENT_RUNTIME: {
+      binaryKind: "native-binary",
+      binaryEnvVar: "GLM_BINARY_PATH",
+      bundledResourceDir: "glm",
+      version: "0.0.0-test",
+      spawnArgs: ["app-server", "--stdio"],
+      nativeConfigDir: ".zxcode/cli",
+      nativeConfigFileName: "config.json",
+      missingBinaryMessage: "[ZxCode Agent] missing test binary",
+      resolveEntrySegments: (platform: string) => [
+        platform === "win32" ? "zxcode-agent.exe" : "zxcode-agent",
+      ],
+    },
+    ZXCODE_ENV: "test",
+    get ZXCODE_PRODUCT_FLAVOR() {
+      return productFlavorMock.value;
+    },
+    ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV: "ZXCODE_DYNAMIC_WORKFLOW_MODE",
+    normalizeDynamicWorkflowMode: (value: unknown) => {
+      if (typeof value !== "string") return undefined;
+      const trimmed = value.trim();
+      return ["disabled", "onDemand", "alwaysOn"].includes(trimmed) ? trimmed : undefined;
+    },
+    ZXCODE_VERSION: "0.0.0-test",
+    readProductEndpointEnv: () => ({}),
+    // 端点常量不再复制字面量，直接沿用真实模块导出（本 mock 只覆盖其余测试替身）。
+    resolveRuntimeZCodeEndpointOrigin: (env: Record<string, string | undefined>) =>
+      env.ZXCODE_BASE_URL ?? env.ZXCODE_TEST_BASE_URL ?? actual.DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
+    sanitizeZCodeRuntimeEnv: (env: Record<string, string | undefined>) => {
+      const sanitizedKeys = new Set([
+        "NODE_ENV",
+        "ELECTRON_RUN_AS_NODE",
+        "NODE_NO_WARNINGS",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "NO_PROXY",
+        "NODE_EXTRA_CA_CERTS",
+        "SSL_CERT_FILE",
+        "SSL_CERT_DIR",
+        "REQUESTS_CA_BUNDLE",
+        "CURL_CA_BUNDLE",
+        "GIT_SSL_CAINFO",
+      ]);
+      const sanitized: Record<string, string> = {};
+      for (const [key, value] of Object.entries(env)) {
+        if (
+          value == null ||
+          sanitizedKeys.has(key.toUpperCase()) ||
           /^(npm_config|yarn|pnpm)_(http_proxy|https_proxy|proxy|all_proxy|no_proxy|cafile|ca)$/i.test(
             key,
-          ))
-      ) {
-        captured[key] = value;
+          )
+        ) {
+          continue;
+        }
+        sanitized[key] = value;
       }
-    }
-    return Object.keys(captured).length > 0
-      ? { ZXCODE_TOOL_ENV_PASSTHROUGH_JSON: JSON.stringify(captured) }
-      : {};
-  },
+      return sanitized;
+    },
+    buildZCodeToolEnvPassthroughEnv: (env: Record<string, string | undefined>) => {
+      const captured: Record<string, string> = {};
+      for (const [key, value] of Object.entries(env)) {
+        const upperKey = key.toUpperCase();
+        if (
+          value != null &&
+          !["NODE_ENV", "ELECTRON_RUN_AS_NODE", "NODE_NO_WARNINGS"].includes(upperKey) &&
+          ([
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "NO_PROXY",
+            "NODE_EXTRA_CA_CERTS",
+            "SSL_CERT_FILE",
+            "SSL_CERT_DIR",
+            "REQUESTS_CA_BUNDLE",
+            "CURL_CA_BUNDLE",
+            "GIT_SSL_CAINFO",
+          ].includes(upperKey) ||
+            /^(npm_config|yarn|pnpm)_(http_proxy|https_proxy|proxy|all_proxy|no_proxy|cafile|ca)$/i.test(
+              key,
+            ))
+        ) {
+          captured[key] = value;
+        }
+      }
+      return Object.keys(captured).length > 0
+        ? { ZXCODE_TOOL_ENV_PASSTHROUGH_JSON: JSON.stringify(captured) }
+        : {};
+    },
   };
 });
 
@@ -270,7 +267,9 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
 
       expect(dirs.mockCdnDir).toMatch(/[\\/]mock-cdn$/);
       // fork 只维护单一默认 CDN 基址（remoteCdn.ts 的 DEFAULT_CDN_BASE_URL）。
-      expect(dirs.remoteCdnBaseUrl).toBe(`${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`);
+      expect(dirs.remoteCdnBaseUrl).toBe(
+        `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
+      );
       expect(dirs.remoteCdnBaseUrls).toEqual([
         `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
       ]);
@@ -288,7 +287,9 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
       });
 
       expect(dirs.mockCdnDir).toBeUndefined();
-      expect(dirs.remoteCdnBaseUrl).toBe(`${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`);
+      expect(dirs.remoteCdnBaseUrl).toBe(
+        `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
+      );
       expect(dirs.remoteCdnBaseUrls).toEqual([
         `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
       ]);
@@ -305,7 +306,9 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
     });
 
     expect(dirs.mockCdnDir).toBeUndefined();
-    expect(dirs.remoteCdnBaseUrl).toBe(`${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`);
+    expect(dirs.remoteCdnBaseUrl).toBe(
+      `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
+    );
     expect(dirs.remoteCdnBaseUrls).toEqual([
       `${DEFAULT_CDN_BASE_URL}/zcode/electron/releases/0.0.0-test`,
     ]);
@@ -516,9 +519,7 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
         ZXCODE_CUA_BUNDLED_HELPER_APP_PATH: `/tmp/new-helper/${DEV_HELPER_APP_NAME}`,
       });
 
-      expect(env.ZXCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(
-        `/tmp/new-helper/${DEV_HELPER_APP_NAME}`,
-      );
+      expect(env.ZXCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(`/tmp/new-helper/${DEV_HELPER_APP_NAME}`);
     },
   );
 
@@ -700,9 +701,8 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
   // fork 实现位于 desktopDynamicWorkflowTier.ts（可被 node --test 直测）。
   describe("resolveDynamicWorkflowModeHostEnv", () => {
     it("未打包 dev 透传 shell 里的合法取值", async () => {
-      const { resolveDynamicWorkflowModeHostEnv } = await import(
-        "../src/main/desktopDynamicWorkflowTier.js"
-      );
+      const { resolveDynamicWorkflowModeHostEnv } =
+        await import("../src/main/desktopDynamicWorkflowTier.js");
 
       expect(
         resolveDynamicWorkflowModeHostEnv({
@@ -715,9 +715,8 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
 
     it("未打包 dev 丢弃非法取值和缺省值，而不是转发给 Host", async () => {
-      const { resolveDynamicWorkflowModeHostEnv } = await import(
-        "../src/main/desktopDynamicWorkflowTier.js"
-      );
+      const { resolveDynamicWorkflowModeHostEnv } =
+        await import("../src/main/desktopDynamicWorkflowTier.js");
 
       expect(
         resolveDynamicWorkflowModeHostEnv({
@@ -738,9 +737,8 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
 
     it("未打包 dev 无 shell 覆盖时按用户设置回落 alwaysOn", async () => {
-      const { resolveDynamicWorkflowModeHostEnv } = await import(
-        "../src/main/desktopDynamicWorkflowTier.js"
-      );
+      const { resolveDynamicWorkflowModeHostEnv } =
+        await import("../src/main/desktopDynamicWorkflowTier.js");
 
       expect(
         resolveDynamicWorkflowModeHostEnv({
@@ -753,9 +751,8 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
 
     it("打包 preview 固定写入 alwaysOn，忽略 shell 的相反取值", async () => {
-      const { resolveDynamicWorkflowModeHostEnv } = await import(
-        "../src/main/desktopDynamicWorkflowTier.js"
-      );
+      const { resolveDynamicWorkflowModeHostEnv } =
+        await import("../src/main/desktopDynamicWorkflowTier.js");
 
       expect(
         resolveDynamicWorkflowModeHostEnv({
@@ -768,9 +765,8 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
 
     it("打包 production 读用户设置：关闭不写入，开启写 alwaysOn", async () => {
-      const { resolveDynamicWorkflowModeHostEnv } = await import(
-        "../src/main/desktopDynamicWorkflowTier.js"
-      );
+      const { resolveDynamicWorkflowModeHostEnv } =
+        await import("../src/main/desktopDynamicWorkflowTier.js");
 
       expect(
         resolveDynamicWorkflowModeHostEnv({
@@ -857,7 +853,10 @@ describe("desktopRuntimeEnv runtime identity", () => {
     restoreEnvValue("ZXCODE_DESKTOP_HOME_DIR", originalDesktopHomeDir);
     restoreEnvValue("ZXCODE_DESKTOP_USER_DATA_DIR", originalDesktopUserDataDir);
     restoreEnvValue("ZXCODE_DESKTOP_SESSION_DATA_DIR", originalDesktopSessionDataDir);
-    restoreEnvValue("ZXCODE_DESKTOP_USE_ELECTRON_DEFAULT_USER_DATA", originalDesktopUseElectronDefaultUserData);
+    restoreEnvValue(
+      "ZXCODE_DESKTOP_USE_ELECTRON_DEFAULT_USER_DATA",
+      originalDesktopUseElectronDefaultUserData,
+    );
   });
 
   it("e2e 可通过环境变量隔离应用名和 Electron 数据目录", async () => {

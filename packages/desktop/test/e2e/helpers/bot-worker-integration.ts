@@ -28,18 +28,13 @@ import {
 } from "../bots/helpers/bots-service-harness.js";
 
 /** 真实 Host/CLI，只有模型 HTTP、飞书 HTTP 和 Bot 配置存储使用隔离夹具。 */
-export async function createBotWorkerIntegration(
-  baseUrl: string,
-  dropTextContaining?: string,
-) {
+export async function createBotWorkerIntegration(baseUrl: string, dropTextContaining?: string) {
   const home = await mkdtemp(join(getE2EAppDataPaths().homeDir, "bot-worker-"));
   const workspacePath = join(home, "workspace");
   await mkdir(workspacePath, { recursive: true });
   const previousDataDir = getDataBaseDir();
   setDataBaseDir(home);
-  const cleanup: Array<() => void | Promise<void>> = [
-    () => setDataBaseDir(previousDataDir),
-  ];
+  const cleanup: Array<() => void | Promise<void>> = [() => setDataBaseDir(previousDataDir)];
   const dispose = async () => {
     const errors: unknown[] = [];
     for (const release of cleanup.splice(0).reverse()) {
@@ -49,8 +44,7 @@ export async function createBotWorkerIntegration(
         errors.push(error);
       }
     }
-    if (errors.length)
-      throw new AggregateError(errors, "Bot worker fixture cleanup failed");
+    if (errors.length) throw new AggregateError(errors, "Bot worker fixture cleanup failed");
   };
   try {
     const personalFilePath = join(home, ".zcode/v2/provider_config.json");
@@ -193,10 +187,7 @@ export async function createBotWorkerIntegration(
                   kind?: string;
                   delta?: unknown;
                 };
-                if (
-                  payload.kind === "text_delta" &&
-                  typeof payload.delta === "string"
-                )
+                if (payload.kind === "text_delta" && typeof payload.delta === "string")
                   observedTextEvents.push(payload.delta);
                 if (
                   dropTextContaining &&

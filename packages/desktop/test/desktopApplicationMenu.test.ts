@@ -135,7 +135,6 @@ vi.mock("@zcode/shared", () => ({
   },
 }));
 
-
 vi.mock("../src/main/autoUpdater.js", () => ({
   CHECK_FOR_UPDATE_MENU_ID: "check-for-update",
   setAutoUpdaterMenuLocale: vi.fn(),

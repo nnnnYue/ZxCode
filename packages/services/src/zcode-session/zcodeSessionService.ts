@@ -107,11 +107,7 @@ export function createZCodeSessionService({
         if (typeof option === "string") {
           return option.trim();
         }
-        if (
-          typeof option === "object" &&
-          option !== null &&
-          "value" in option
-        ) {
+        if (typeof option === "object" && option !== null && "value" in option) {
           const value = (option as { value?: unknown }).value;
           return typeof value === "string" ? value.trim() : "";
         }
@@ -125,13 +121,8 @@ export function createZCodeSessionService({
     snapshot: ZCodeSessionStateSnapshot;
     thoughtLevel: string;
   }): boolean {
-    const availableThoughtLevels = readSnapshotAvailableThoughtLevels(
-      params.snapshot,
-    );
-    return (
-      availableThoughtLevels === null ||
-      availableThoughtLevels.has(params.thoughtLevel)
-    );
+    const availableThoughtLevels = readSnapshotAvailableThoughtLevels(params.snapshot);
+    return availableThoughtLevels === null || availableThoughtLevels.has(params.thoughtLevel);
   }
 
   // zcodeSessionService 是 desktop-continuous 主路径，状态变更后必须
@@ -223,9 +214,7 @@ export function createZCodeSessionService({
       return agentService.getWorkspaceRuntimeIdentity(params);
     },
 
-    readWorkspacePresentation(
-      params: ZCodeSessionReadWorkspacePresentationParams,
-    ) {
+    readWorkspacePresentation(params: ZCodeSessionReadWorkspacePresentationParams) {
       return agentService.readWorkspacePresentation(params);
     },
 
@@ -236,29 +225,21 @@ export function createZCodeSessionService({
         ...params,
         sessionTraceId,
       });
-      logger.info(
-        sessionTraceId,
-        "[zxcode-session-service] createSession 分配 session trace",
-        {
-          persistence: agentParams.persistence,
-          workspaceIdentity: agentParams.workspaceIdentity,
-          workspacePath: agentParams.workspacePath,
-        },
-      );
+      logger.info(sessionTraceId, "[zxcode-session-service] createSession 分配 session trace", {
+        persistence: agentParams.persistence,
+        workspaceIdentity: agentParams.workspaceIdentity,
+        workspacePath: agentParams.workspacePath,
+      });
       const snapshot = await agentService.createSession(agentParams);
-      logger.info(
-        sessionTraceId,
-        "[zxcode-session-service] createSession agent 返回",
-        {
-          durationMs: Date.now() - startedAt,
-          mcpServerCount: agentParams.mcpServers?.length ?? 0,
-          persistence: agentParams.persistence,
-          snapshotTraceId: snapshot.session.traceId ?? null,
-          sessionId: snapshot.session.sessionId,
-          workspaceIdentity: agentParams.workspaceIdentity,
-          workspacePath: agentParams.workspacePath,
-        },
-      );
+      logger.info(sessionTraceId, "[zxcode-session-service] createSession agent 返回", {
+        durationMs: Date.now() - startedAt,
+        mcpServerCount: agentParams.mcpServers?.length ?? 0,
+        persistence: agentParams.persistence,
+        snapshotTraceId: snapshot.session.traceId ?? null,
+        sessionId: snapshot.session.sessionId,
+        workspaceIdentity: agentParams.workspaceIdentity,
+        workspacePath: agentParams.workspacePath,
+      });
       if (agentParams.persistence === "deferred") {
         // 未发送前的草稿 session 只用于让 toolbar 和 agent runtime 共用同一份状态。
         // 这类空 session 不能进入 app 的 task index sqlite，否则侧边栏/搜索会出现没有用户输入的会话。
@@ -284,26 +265,19 @@ export function createZCodeSessionService({
         // 语义化成 task_created（insert-active）需连同乐观插入去重一起改。
         broadcastReason: "task_meta_changed",
       });
-      logger.info(
-        sessionTraceId,
-        "[zxcode-session-service] createSession task index 同步完成",
-        {
-          broadcastDurationMs: Date.now() - broadcastStartedAt,
-          durationMs: Date.now() - startedAt,
-          sessionId: snapshot.session.sessionId,
-          workspaceIdentity: params.workspaceIdentity,
-          workspacePath: params.workspacePath,
-        },
-      );
+      logger.info(sessionTraceId, "[zxcode-session-service] createSession task index 同步完成", {
+        broadcastDurationMs: Date.now() - broadcastStartedAt,
+        durationMs: Date.now() - startedAt,
+        sessionId: snapshot.session.sessionId,
+        workspaceIdentity: params.workspaceIdentity,
+        workspacePath: params.workspacePath,
+      });
       return snapshotWithRuntime;
     },
 
     async resumeSession(params: ZCodeSessionResumeParams) {
       const startedAt = Date.now();
-      const {
-        broadcastSnapshot: shouldBroadcastSnapshot = true,
-        ...resumeParams
-      } = params;
+      const { broadcastSnapshot: shouldBroadcastSnapshot = true, ...resumeParams } = params;
       const agentParams = await withResolvedMcpServers(resumeParams);
       let snapshot = await repairEmptyImportedClaudeSession(
         withApiRetryRuntime(await agentService.resumeSession(agentParams)),
@@ -334,30 +308,21 @@ export function createZCodeSessionService({
               ),
               requestedThoughtLevel: requestedThoughtLevelOverride,
               sessionId: agentParams.sessionId,
-              snapshotThoughtLevel:
-                snapshot.settings.thoughtLevel.current ?? null,
+              snapshotThoughtLevel: snapshot.settings.thoughtLevel.current ?? null,
               workspaceIdentity: agentParams.workspaceIdentity ?? null,
               workspacePath: agentParams.workspacePath,
             },
           );
         }
       }
-      if (
-        thoughtLevelOverride &&
-        snapshot.settings.thoughtLevel.current !== thoughtLevelOverride
-      ) {
-        logger.info(
-          undefined,
-          "[zxcode-session-service] resumeSession 重放 task 思考强度",
-          {
-            requestedThoughtLevel: thoughtLevelOverride,
-            sessionId: agentParams.sessionId,
-            snapshotThoughtLevel:
-              snapshot.settings.thoughtLevel.current ?? null,
-            workspaceIdentity: agentParams.workspaceIdentity ?? null,
-            workspacePath: agentParams.workspacePath,
-          },
-        );
+      if (thoughtLevelOverride && snapshot.settings.thoughtLevel.current !== thoughtLevelOverride) {
+        logger.info(undefined, "[zxcode-session-service] resumeSession 重放 task 思考强度", {
+          requestedThoughtLevel: thoughtLevelOverride,
+          sessionId: agentParams.sessionId,
+          snapshotThoughtLevel: snapshot.settings.thoughtLevel.current ?? null,
+          workspaceIdentity: agentParams.workspaceIdentity ?? null,
+          workspacePath: agentParams.workspacePath,
+        });
         // 打开历史 task 时，resume 返回的 snapshot 可能仍带同 workspace 草稿态的最新思考强度。
         // 这里对同一个 session 显式重放 task-local thoughtLevel，再把修正后的 snapshot 广播出去；
         // 否则 syncer/UI 会把草稿的 high 写回原本是 max 的 active task。
@@ -403,23 +368,17 @@ export function createZCodeSessionService({
           modelOverride,
         );
       }
-      logger.info(
-        undefined,
-        "[zxcode-session-service] resumeSession 历史恢复完成",
-        {
-          agentDurationMs,
-          broadcastDurationMs: shouldBroadcastSnapshot
-            ? Date.now() - broadcastStartedAt
-            : 0,
-          broadcastSnapshot: shouldBroadcastSnapshot,
-          durationMs: Date.now() - startedAt,
-          mcpServerCount: agentParams.mcpServers?.length ?? 0,
-          sessionId: agentParams.sessionId,
-          snapshot: getSessionSnapshotDiagnostics(snapshot),
-          workspaceIdentity: agentParams.workspaceIdentity ?? null,
-          workspacePath: agentParams.workspacePath,
-        },
-      );
+      logger.info(undefined, "[zxcode-session-service] resumeSession 历史恢复完成", {
+        agentDurationMs,
+        broadcastDurationMs: shouldBroadcastSnapshot ? Date.now() - broadcastStartedAt : 0,
+        broadcastSnapshot: shouldBroadcastSnapshot,
+        durationMs: Date.now() - startedAt,
+        mcpServerCount: agentParams.mcpServers?.length ?? 0,
+        sessionId: agentParams.sessionId,
+        snapshot: getSessionSnapshotDiagnostics(snapshot),
+        workspaceIdentity: agentParams.workspaceIdentity ?? null,
+        workspacePath: agentParams.workspacePath,
+      });
       return snapshot;
     },
 
@@ -433,19 +392,15 @@ export function createZCodeSessionService({
         withApiRetryRuntime(await agentService.readSession(params)),
         params,
       );
-      logger.info(
-        undefined,
-        "[zxcode-session-service] readSession 历史快照读取完成",
-        {
-          deliveryKind: params.deliveryKind,
-          durationMs: Date.now() - startedAt,
-          messageLimit: params.messageLimit ?? null,
-          sessionId: params.sessionId,
-          snapshot: getSessionSnapshotDiagnostics(snapshot),
-          workspaceIdentity: params.workspaceIdentity ?? null,
-          workspacePath: params.workspacePath,
-        },
-      );
+      logger.info(undefined, "[zxcode-session-service] readSession 历史快照读取完成", {
+        deliveryKind: params.deliveryKind,
+        durationMs: Date.now() - startedAt,
+        messageLimit: params.messageLimit ?? null,
+        sessionId: params.sessionId,
+        snapshot: getSessionSnapshotDiagnostics(snapshot),
+        workspaceIdentity: params.workspaceIdentity ?? null,
+        workspacePath: params.workspacePath,
+      });
       return snapshot;
     },
 
@@ -466,15 +421,11 @@ export function createZCodeSessionService({
       // 手机 replayable 首发由 task facade 消费 deferred draft，需要在这里清除草稿标记
       // 并通知 task index 同步，避免桌面后续控制同一 task 时仍按 deferred 规则跳过同步。
       notifySyncer(params);
-      logger.info(
-        undefined,
-        "[zxcode-session-service] deferred draft session 已提升为 task",
-        {
-          sessionId: params.sessionId,
-          workspaceIdentity: params.workspaceIdentity ?? null,
-          workspacePath: params.workspacePath,
-        },
-      );
+      logger.info(undefined, "[zxcode-session-service] deferred draft session 已提升为 task", {
+        sessionId: params.sessionId,
+        workspaceIdentity: params.workspaceIdentity ?? null,
+        workspacePath: params.workspacePath,
+      });
       return Promise.resolve();
     },
 

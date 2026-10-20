@@ -16,10 +16,7 @@ import { buildRegistryModelSelectGroups } from "@/lib/modelSelectionGroups.js";
 import { resolveModelThoughtOption } from "@/lib/modelThoughtOption.js";
 import { encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
-import type {
-  ModelSelectGroup,
-  ModelSelectGroupItem,
-} from "@/ModelConfigSelect.js";
+import type { ModelSelectGroup, ModelSelectGroupItem } from "@/ModelConfigSelect.js";
 import { formatProviderModelLabel } from "@/v4/composer/modelTriggerDisplay.js";
 import { describeWorkflowSubagentModel } from "./subagent-model-label.js";
 import {
@@ -51,13 +48,10 @@ export interface WorkflowSettingsModelFace {
   thoughtOption: ZCodeConfigOption | null;
 }
 
-export function useWorkflowSettingsModelChoices(
-  scope: WorkflowSettingsModelScope,
-) {
+export function useWorkflowSettingsModelChoices(scope: WorkflowSettingsModelScope) {
   const { intl } = useZCodeIntl();
   const format = useCallback(
-    (id: string, values?: Record<string, string | number>) =>
-      intl.formatMessage({ id }, values),
+    (id: string, values?: Record<string, string | number>) => intl.formatMessage({ id }, values),
     [intl],
   );
   const modelRead = useModelSelectionView(
@@ -76,8 +70,8 @@ export function useWorkflowSettingsModelChoices(
   );
   const providerName = useCallback(
     (providerId: string) =>
-      view?.providers.find((provider) => provider.providerId === providerId)
-        ?.providerName ?? undefined,
+      view?.providers.find((provider) => provider.providerId === providerId)?.providerName ??
+      undefined,
     [view],
   );
 
@@ -90,9 +84,7 @@ export function useWorkflowSettingsModelChoices(
           providerName(sessionModel.providerId),
           sessionModel.modelId,
         );
-  const sessionBadge = format(
-    "chat.toolCall.workflow.run.settings.model.session",
-  );
+  const sessionBadge = format("chat.toolCall.workflow.run.settings.model.session");
   // 两个字段都是字符串，所以这一项只在文案真变了时换引用；下游的模型选择器是 memo 组件。
   const sessionModelItem: ModelSelectGroupItem = useMemo(
     () => ({
@@ -110,13 +102,10 @@ export function useWorkflowSettingsModelChoices(
         model.kind === "session"
           ? SESSION_MODEL_VALUE
           : encodeCustomModelValue(model.providerId, model.modelId);
-      const listed = groups.some((group) =>
-        group.items.some((item) => item.value === value),
-      );
+      const listed = groups.some((group) => group.items.some((item) => item.value === value));
       // 清单读好了、却找不到这个模型：它已被删或停用。下游等用户换一个——沿用它只会让 agent 回
       // model_unavailable（同工具「沿用的模型已不可用」那条失败，在点下去之前就说出来）。
-      const unavailable =
-        model.kind === "model" && view !== null && groups.length > 0 && !listed;
+      const unavailable = model.kind === "model" && view !== null && groups.length > 0 && !listed;
       const canonical = workflowRunSettingsModelCanonical(model);
       const triggerLabel =
         model.kind === "session" || canonical === undefined
@@ -131,9 +120,7 @@ export function useWorkflowSettingsModelChoices(
               modelSelectionView: view,
               providerId: model.providerId,
               modelId: model.modelId,
-              ...(model.level === undefined
-                ? {}
-                : { currentValue: model.level }),
+              ...(model.level === undefined ? {} : { currentValue: model.level }),
             })
           : null;
       return { value, triggerLabel, unavailable, thoughtOption };
@@ -143,10 +130,7 @@ export function useWorkflowSettingsModelChoices(
 
   /** 菜单选中一项 → 新的模型选择。换模型即取它在注册表里的默认思考档；同一个模型保留当前档。 */
   const pick = useCallback(
-    (
-      value: string,
-      current: WorkflowRunSettingsModel,
-    ): WorkflowRunSettingsModel => {
+    (value: string, current: WorkflowRunSettingsModel): WorkflowRunSettingsModel => {
       if (value === SESSION_MODEL_VALUE) return { kind: "session" };
       const picked = parseModelPickerValue(value);
       const same =

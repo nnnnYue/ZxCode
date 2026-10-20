@@ -29,9 +29,7 @@ export interface DraftModelReadinessGate {
 export function resolveModelSelectionReadinessStatus(
   view: ModelSelectionView,
 ): Extract<DraftModelReadinessStatus, "ready" | "missing"> {
-  return view.providers.some((provider) => provider.models.length > 0)
-    ? "ready"
-    : "missing";
+  return view.providers.some((provider) => provider.models.length > 0) ? "ready" : "missing";
 }
 
 /**
@@ -48,13 +46,7 @@ export function useDraftModelReadinessGate(params: {
   sessionId: string | null;
   modelSelectionService: Pick<IModelSelectionService, "getView" | "onDidChange">;
 }): DraftModelReadinessGate {
-  const {
-    workspacePath,
-    workspaceIdentity,
-    provider,
-    sessionId,
-    modelSelectionService,
-  } = params;
+  const { workspacePath, workspaceIdentity, provider, sessionId, modelSelectionService } = params;
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
   const displayProvider = provider ?? ZXCODE_AGENT_PROVIDER;
   const enabled = sessionId === null && isZCodeAgentProvider(displayProvider);
@@ -127,12 +119,7 @@ export function useDraftModelReadinessGate(params: {
       disposed = true;
       subscription?.dispose();
     };
-  }, [
-    commitStatus,
-    enabled,
-    modelSelectionService,
-    workspaceKey,
-  ]);
+  }, [commitStatus, enabled, modelSelectionService, workspaceKey]);
 
   const effectiveState: DraftModelReadinessState =
     state.gateKey === gateKey
@@ -167,12 +154,7 @@ export function useDraftModelReadinessGate(params: {
       });
       return true;
     }
-  }, [
-    commitStatus,
-    enabled,
-    modelSelectionService,
-    workspaceKey,
-  ]);
+  }, [commitStatus, enabled, modelSelectionService, workspaceKey]);
 
   const error = useMemo(
     () =>

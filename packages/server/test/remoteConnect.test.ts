@@ -291,7 +291,9 @@ describe("connectRemote", () => {
     });
     connection.dispose();
 
-    expect(backend.commands[0]).toContain('ZXCODE_SERVICE_AUTHORITY_MODE="desktop-attached-remote"');
+    expect(backend.commands[0]).toContain(
+      'ZXCODE_SERVICE_AUTHORITY_MODE="desktop-attached-remote"',
+    );
   });
 
   it("启动远端 server 时 shell quote 注入 app version", async () => {
@@ -324,7 +326,9 @@ describe("connectRemote", () => {
     connection.dispose();
 
     expect(backend.commands[0]).toContain("ZXCODE_ENV='test'");
-    expect(backend.commands[0]).toContain("ZXCODE_BASE_URL='https://remote-endpoint.example.test/api/v1'");
+    expect(backend.commands[0]).toContain(
+      "ZXCODE_BASE_URL='https://remote-endpoint.example.test/api/v1'",
+    );
     // fork 已移除 OAuth 登录链路：ZAI_OAUTH_* 不再进入远端 server 命令。
     expect(backend.commands[0]).not.toContain("ZAI_OAUTH_ORIGIN");
     expect(backend.commands[0]).not.toContain("ZAI_OAUTH_APP_SECRET");

@@ -17,8 +17,6 @@ export function supportsZCodeSessionFork(provider: ZCodeProvider): boolean {
   return true;
 }
 
-export function shouldHideZCodeSessionForkAction(
-  provider: ZCodeProvider,
-): boolean {
+export function shouldHideZCodeSessionForkAction(provider: ZCodeProvider): boolean {
   return !supportsZCodeSessionFork(provider);
 }

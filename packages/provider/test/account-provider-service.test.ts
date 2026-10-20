@@ -375,10 +375,11 @@ describe("AccountProviderService", () => {
     });
     const service = new AccountProviderService({
       configSource,
-      resolve: configOnlyResolver(async () =>
-        new ProviderConfigMap([
-          [offPeakProviderId, createAccountProviderConfig({ models: ["model-a"] })],
-        ]),
+      resolve: configOnlyResolver(
+        async () =>
+          new ProviderConfigMap([
+            [offPeakProviderId, createAccountProviderConfig({ models: ["model-a"] })],
+          ]),
       ),
     });
 

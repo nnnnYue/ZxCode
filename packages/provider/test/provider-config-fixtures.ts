@@ -58,7 +58,7 @@ export function createAccountProviderConfig(
         ? undefined
         : (input.group ?? (input.accountType === "bigmodel" ? "bigmodel-family" : "zai-family")),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 兼容旧入参面
-    ...(input.mode ?? input.entitled !== undefined ? {} : {}),
+    ...((input.mode ?? input.entitled !== undefined) ? {} : {}),
     logo: input.logo,
     api: createProviderApi(input),
     builtinModelIds: input.models,

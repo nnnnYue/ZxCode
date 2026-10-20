@@ -161,9 +161,12 @@ describe("zxcode-file-citation parser", () => {
   });
 
   it("智能引号未闭合时仍隐藏流式 citation 尾部", () => {
-    const result = projectZCodeFileCitations("正文\n::zxcode-file-citation{path=“docs/report.pdf”", {
-      streaming: true,
-    });
+    const result = projectZCodeFileCitations(
+      "正文\n::zxcode-file-citation{path=“docs/report.pdf”",
+      {
+        streaming: true,
+      },
+    );
     expect(result.visibleText).toBe("正文\n");
   });
 

@@ -223,7 +223,6 @@ export function WorkspaceHeader({
           onSelectedEditorChange={setSelectedEditor}
         />
       </div>
-
     </header>
   );
 }

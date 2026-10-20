@@ -1,9 +1,5 @@
 /* eslint-disable max-lines -- 资源管理器窗口需要集中维护 UtilityProcess 生命周期、窗口状态与 IPC 转发，拆分会割裂进程边界注释。 */
-import {
-  app,
-  BrowserWindow,
-  webContents as electronWebContents,
-} from "electron";
+import { app, BrowserWindow, webContents as electronWebContents } from "electron";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import os from "node:os";
 import { join } from "node:path";
@@ -20,10 +16,7 @@ import {
   type ZCodeProvider,
 } from "@zcode/shared";
 import { logger } from "./logger.js";
-import {
-  configureNetworkCaptureHost,
-  observeNetworkWindow,
-} from "./resourceManagerNetwork.js";
+import { configureNetworkCaptureHost, observeNetworkWindow } from "./resourceManagerNetwork.js";
 import { normalizeElectronCpuToMachinePercent } from "./electronCpuNormalization.js";
 import type { ChromiumProcessRolePids } from "./processResourceRoleClassifier.js";
 import { buildAuxiliaryRendererName } from "./resourceManagerProcessNames.js";
@@ -67,9 +60,7 @@ export function createSystemCpuMeter(
       const baseline = previous;
       previous = current;
       if (!baseline || current.total <= baseline.total) return 0;
-      const percent =
-        ((current.busy - baseline.busy) / (current.total - baseline.total)) *
-        100;
+      const percent = ((current.busy - baseline.busy) / (current.total - baseline.total)) * 100;
       return Math.max(0, Math.min(100, Math.round(percent * 10) / 10));
     },
   };
@@ -86,23 +77,13 @@ function stopResourceUsageSampling(): void {
 }
 
 /** 只有资源管理器本身能启停观测；Main 持有唯一生命周期。 */
-export function setResourceUsageSamplingActive(
-  senderId: number,
-  active: boolean,
-): void {
-  if (
-    !instance ||
-    instance.isDestroyed() ||
-    instance.webContents.id !== senderId
-  )
-    return;
+export function setResourceUsageSamplingActive(senderId: number, active: boolean): void {
+  if (!instance || instance.isDestroyed() || instance.webContents.id !== senderId) return;
   if (active) samplingController ??= new AbortController();
   else stopResourceUsageSampling();
 }
 
-export async function getResourceUsageSnapshot(
-  senderId: number,
-): Promise<ResourceUsageSnapshot> {
+export async function getResourceUsageSnapshot(senderId: number): Promise<ResourceUsageSnapshot> {
   if (
     !instance ||
     instance.isDestroyed() ||
@@ -140,15 +121,10 @@ interface RegisteredAgentProcess {
   startedAt: number;
 }
 
-const hostAgentProcesses = new Map<
-  string,
-  Map<number, RegisteredAgentProcess>
->();
+const hostAgentProcesses = new Map<string, Map<number, RegisteredAgentProcess>>();
 
 export function listRegisteredHostAgentProcessIds(): number[] {
-  return [...hostAgentProcesses.values()].flatMap((processes) => [
-    ...processes.keys(),
-  ]);
+  return [...hostAgentProcesses.values()].flatMap((processes) => [...processes.keys()]);
 }
 
 /**
@@ -169,9 +145,7 @@ export function unregisterMainApplicationWindow(webContentsId: number): void {
 }
 
 /** renderer heap 样本按发送方 webContents 判断是否属于 `renderer_main`。 */
-export function isMainApplicationWindowWebContents(
-  webContentsId: number,
-): boolean {
+export function isMainApplicationWindowWebContents(webContentsId: number): boolean {
   return mainApplicationWindowWebContentsIds.has(webContentsId);
 }
 
@@ -182,15 +156,11 @@ export function registerSchedulerProcess(child: ElectronUtilityProcess): void {
   schedulerProcesses.add(child);
 }
 
-export function unregisterSchedulerProcess(
-  child: ElectronUtilityProcess,
-): void {
+export function unregisterSchedulerProcess(child: ElectronUtilityProcess): void {
   schedulerProcesses.delete(child);
 }
 
-function collectUtilityProcessPids(
-  children: Iterable<ElectronUtilityProcess>,
-): Set<number> {
+function collectUtilityProcessPids(children: Iterable<ElectronUtilityProcess>): Set<number> {
   const pids = new Set<number>();
   for (const child of children) {
     if (child.pid != null && child.pid > 0) {
@@ -237,18 +207,12 @@ export function collectChromiumProcessRolePids(): ChromiumProcessRolePids {
   };
 }
 
-export function registerHostProcess(
-  label: string,
-  child: ElectronUtilityProcess,
-): void {
+export function registerHostProcess(label: string, child: ElectronUtilityProcess): void {
   hostProcesses.set(label, child);
   configureNetworkCaptureHost(child);
 }
 
-export function unregisterHostProcess(
-  label: string,
-  child?: ElectronUtilityProcess,
-): void {
+export function unregisterHostProcess(label: string, child?: ElectronUtilityProcess): void {
   // 同 label 的 host 被重建后，旧 host 的延迟 exit 不能把新 host 从
   // 资源注册表里删掉，否则存活 host/agent 从资源遥测中消失。按进程身份校验。
   if (child && hostProcesses.get(label) !== child) {
@@ -259,10 +223,7 @@ export function unregisterHostProcess(
   forgetHostResourceUsage(label);
 }
 
-export function registerHostAgentProcess(
-  label: string,
-  process: RegisteredAgentProcess,
-): void {
+export function registerHostAgentProcess(label: string, process: RegisteredAgentProcess): void {
   let processes = hostAgentProcesses.get(label);
   if (!processes) {
     processes = new Map();
@@ -287,9 +248,7 @@ export function unregisterHostAgentProcess(label: string, pid: number): void {
 /** browser-use 的浏览器 guest 是 main 里的 WebContentsView，其 renderer 归内置插件 browser-use */
 let browserUseGuestWebContentsIdsProvider: () => Iterable<number> = () => [];
 
-export function setBrowserUseGuestWebContentsIdsProvider(
-  provider: () => Iterable<number>,
-): void {
+export function setBrowserUseGuestWebContentsIdsProvider(provider: () => Iterable<number>): void {
   browserUseGuestWebContentsIdsProvider = provider;
 }
 
@@ -328,9 +287,7 @@ export function openResourceManager(): void {
     const base = process.env["ELECTRON_RENDERER_URL"];
     instance.loadURL(`${base}/resource-manager.html`);
   } else {
-    instance.loadFile(
-      join(import.meta.dirname, "../renderer/resource-manager.html"),
-    );
+    instance.loadFile(join(import.meta.dirname, "../renderer/resource-manager.html"));
   }
 
   instance.on("closed", () => {
@@ -374,17 +331,12 @@ function collectElectronProcesses(): ResourceUsageProcess[] {
   const rows: ResourceUsageProcess[] = [];
   const logicalCpuCount = os.cpus().length;
 
-  const metricsOf = (
-    pid: number,
-  ): { cpuPercent: number; memoryBytes: number } => {
+  const metricsOf = (pid: number): { cpuPercent: number; memoryBytes: number } => {
     const metric = metricsByPid.get(pid);
     return {
-      cpuPercent: normalizeElectronCpuToMachinePercent(
-        metric?.cpu.percentCPUUsage,
-        {
-          logicalCpuCount,
-        },
-      ),
+      cpuPercent: normalizeElectronCpuToMachinePercent(metric?.cpu.percentCPUUsage, {
+        logicalCpuCount,
+      }),
       // getAppMetrics 的 workingSetSize 单位是 KB
       memoryBytes: (metric?.memory.workingSetSize ?? 0) * 1024,
     };
@@ -409,15 +361,7 @@ function collectElectronProcesses(): ResourceUsageProcess[] {
   for (const m of metrics) {
     if (m.type === "GPU") {
       const { cpuPercent, memoryBytes } = metricsOf(m.pid);
-      push(
-        baseProcess(
-          m.pid,
-          formatZCodeGpuProcessName(),
-          "gpu",
-          cpuPercent,
-          memoryBytes,
-        ),
-      );
+      push(baseProcess(m.pid, formatZCodeGpuProcessName(), "gpu", cpuPercent, memoryBytes));
     }
   }
 
@@ -467,13 +411,7 @@ function collectElectronProcesses(): ResourceUsageProcess[] {
     if (child.pid == null) continue;
     const { cpuPercent, memoryBytes } = metricsOf(child.pid);
     push(
-      baseProcess(
-        child.pid,
-        formatZCodeHostProcessName(label),
-        "host",
-        cpuPercent,
-        memoryBytes,
-      ),
+      baseProcess(child.pid, formatZCodeHostProcessName(label), "host", cpuPercent, memoryBytes),
     );
   }
 
@@ -496,23 +434,17 @@ function collectElectronProcesses(): ResourceUsageProcess[] {
   return rows;
 }
 
-async function collectHostProcesses(
-  signal?: AbortSignal,
-): Promise<HostResourceUsageProcess[]> {
+async function collectHostProcesses(signal?: AbortSignal): Promise<HostResourceUsageProcess[]> {
   const results = await Promise.all(
     [...hostProcesses].map(([label, child]) =>
-      child.pid != null
-        ? requestHostResourceUsage(label, child, undefined, signal)
-        : [],
+      child.pid != null ? requestHostResourceUsage(label, child, undefined, signal) : [],
     ),
   );
   return results.flat();
 }
 
 /** Agent 注册表兜底：Host 还没回报的 Agent 也要出现在列表里（指标未采到） */
-function collectUnsampledAgentProcesses(
-  sampledPids: Set<number>,
-): ResourceUsageProcess[] {
+function collectUnsampledAgentProcesses(sampledPids: Set<number>): ResourceUsageProcess[] {
   const rows: ResourceUsageProcess[] = [];
   for (const processes of hostAgentProcesses.values()) {
     for (const agent of [...processes.values()].sort(
@@ -541,10 +473,7 @@ export async function buildResourceUsageSnapshot(
   options: { includeHosts?: boolean; signal?: AbortSignal } = {},
 ): Promise<ResourceUsageSnapshot> {
   const electronProcesses = collectElectronProcesses();
-  const hostRows =
-    options.includeHosts === false
-      ? []
-      : await collectHostProcesses(options.signal);
+  const hostRows = options.includeHosts === false ? [] : await collectHostProcesses(options.signal);
 
   const electronPids = new Set(electronProcesses.map((row) => row.pid));
   const processes: ResourceUsageProcess[] = [...electronProcesses];
@@ -554,9 +483,7 @@ export async function buildResourceUsageSnapshot(
     if (electronPids.has(row.pid)) continue;
     processes.push({ ...row, sampled: true });
   }
-  processes.push(
-    ...collectUnsampledAgentProcesses(new Set(processes.map((row) => row.pid))),
-  );
+  processes.push(...collectUnsampledAgentProcesses(new Set(processes.map((row) => row.pid))));
 
   const appTotals = processes.reduce(
     (total, row) => ({

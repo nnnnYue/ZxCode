@@ -113,6 +113,8 @@ describe("desktop product identity", () => {
   });
 
   it("开发态继续使用独立 AUMID，避免污染打包版 Shell 身份", () => {
-    expect(resolveWindowsAppUserModelId({}, { isPackaged: false })).toBe("dev.zxcode.app.development");
+    expect(resolveWindowsAppUserModelId({}, { isPackaged: false })).toBe(
+      "dev.zxcode.app.development",
+    );
   });
 });

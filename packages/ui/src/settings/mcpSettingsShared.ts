@@ -11,8 +11,7 @@ export const SOURCE_META: Record<
   zxcodeagentmcp: {
     label: "ZCode Agent",
     section: "ZCode Agent",
-    badgeClass:
-      "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+    badgeClass: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
   },
 };
 export type ConfigStorageLevel = "user" | "workspace";
@@ -78,9 +77,7 @@ export function serverToForm(server: ZCodeMcpServer): FormState {
     oauth: isRecord(cfg.oauth) ? JSON.stringify(cfg.oauth, null, 2) : "",
     // 非法枚举值归一为未设置（等价 auto），与 shared DTO 的 isMcpProtocolVersion
     // 静默丢弃行为对齐；否则 config 里的手滑值会让协议版本下拉显示空白。
-    protocolVersion: isMcpProtocolVersion(cfg.protocolVersion)
-      ? cfg.protocolVersion
-      : "",
+    protocolVersion: isMcpProtocolVersion(cfg.protocolVersion) ? cfg.protocolVersion : "",
   };
 }
 
@@ -104,8 +101,7 @@ export function formToConfig(form: FormState): McpServerConfig {
       ...(timeoutMs !== undefined ? { timeoutMs } : {}),
       ...(form.protocolVersion
         ? {
-            protocolVersion:
-              form.protocolVersion as McpServerConfig["protocolVersion"],
+            protocolVersion: form.protocolVersion as McpServerConfig["protocolVersion"],
           }
         : {}),
     };
@@ -137,8 +133,7 @@ export function formToConfig(form: FormState): McpServerConfig {
     ...(timeoutMs !== undefined ? { timeoutMs } : {}),
     ...(form.protocolVersion
       ? {
-          protocolVersion:
-            form.protocolVersion as McpServerConfig["protocolVersion"],
+          protocolVersion: form.protocolVersion as McpServerConfig["protocolVersion"],
         }
       : {}),
   };
@@ -156,19 +151,14 @@ export function formToJsonDraft(form: FormState): string {
   return JSON.stringify({ [fallbackName]: formToConfig(form) }, null, 2);
 }
 
-export function jsonDraftToForm(
-  jsonText: string,
-  fallback: FormState,
-): FormState {
+export function jsonDraftToForm(jsonText: string, fallback: FormState): FormState {
   const parsed = JSON.parse(jsonText) as unknown;
 
   let serverName = fallback.name.trim();
   let serverConfig: unknown = parsed;
 
   if (isRecord(parsed) && isRecord(parsed.mcpServers)) {
-    const entries = Object.entries(parsed.mcpServers).filter(([, value]) =>
-      isRecord(value),
-    );
+    const entries = Object.entries(parsed.mcpServers).filter(([, value]) => isRecord(value));
     if (entries.length !== 1) {
       throw new Error("JSON 模式暂时只支持一次编辑一个 MCP server");
     }
@@ -176,9 +166,7 @@ export function jsonDraftToForm(
     serverName = singleName;
     serverConfig = singleConfig;
   } else if (isRecord(parsed)) {
-    const entries = Object.entries(parsed).filter(([, value]) =>
-      isRecord(value),
-    );
+    const entries = Object.entries(parsed).filter(([, value]) => isRecord(value));
     if (
       entries.length === 1 &&
       !("type" in parsed) &&
@@ -217,27 +205,17 @@ export function jsonDraftToForm(
     storageLevel: fallback.storageLevel,
     type: normalizedType,
     command: normalizedConfig.command ?? "",
-    args: Array.isArray(normalizedConfig.args)
-      ? normalizedConfig.args.join(" ")
-      : "",
-    env: normalizedConfig.env
-      ? JSON.stringify(normalizedConfig.env, null, 2)
-      : "",
+    args: Array.isArray(normalizedConfig.args) ? normalizedConfig.args.join(" ") : "",
+    env: normalizedConfig.env ? JSON.stringify(normalizedConfig.env, null, 2) : "",
     url: normalizedConfig.url ?? "",
-    headers: normalizedConfig.headers
-      ? JSON.stringify(normalizedConfig.headers, null, 2)
-      : "",
+    headers: normalizedConfig.headers ? JSON.stringify(normalizedConfig.headers, null, 2) : "",
     // JSON 模式会先转成 FormState 再保存；这里必须保留 timeoutMs，
     // 否则用户粘贴的 MCP tool 超时配置会被表单保存链路吞掉。
     timeoutMs:
-      typeof normalizedConfig.timeoutMs === "number"
-        ? String(normalizedConfig.timeoutMs)
-        : "",
+      typeof normalizedConfig.timeoutMs === "number" ? String(normalizedConfig.timeoutMs) : "",
     // JSON 模式没有 OAuth 表单控件，但保存仍会走 FormState；
     // 需要隐藏保留 oauth，避免 Notion 等授权型 MCP 被保存成裸连配置。
-    oauth: isRecord(normalizedConfig.oauth)
-      ? JSON.stringify(normalizedConfig.oauth, null, 2)
-      : "",
+    oauth: isRecord(normalizedConfig.oauth) ? JSON.stringify(normalizedConfig.oauth, null, 2) : "",
     // 手工配置的 protocolVersion 兼容开关也必须保留，否则 UI 编辑保存后
     // 会被表单链路吞掉，非标 legacy server 的兼容配置被静默还原成 auto。
     // 非法枚举值同样归一为未设置，不把可立即发现的配置错误留给连接阶段。
@@ -249,8 +227,6 @@ export function jsonDraftToForm(
 
 // 与 shared 层 convertToZCodeAgentMcpServer 的 isMcpProtocolVersion 守卫保持同一语义：
 // 非法枚举值在 UI 读取侧就归一为未设置（等价 auto），不留给连接阶段。
-function isMcpProtocolVersion(
-  value: unknown,
-): value is "legacy" | "auto" | "2026-07-28" {
+function isMcpProtocolVersion(value: unknown): value is "legacy" | "auto" | "2026-07-28" {
   return value === "legacy" || value === "auto" || value === "2026-07-28";
 }

@@ -276,5 +276,4 @@ describe("createQuickPickCommands", () => {
       "app",
     ]);
   });
-
 });

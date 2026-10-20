@@ -138,7 +138,9 @@ describe("native subagent Host watchers", () => {
         });
         await f.both({ kind: "ready", profiles: [{ name: "researcher", systemPrompt: "old" }] });
         const parent =
-          scope === "user" ? join(f.homeDir, ".zxcode") : join(f.workspace.workspacePath, ".zxcode");
+          scope === "user"
+            ? join(f.homeDir, ".zxcode")
+            : join(f.workspace.workspacePath, ".zxcode");
         const logical = join(parent, "agents", "researcher.md");
         const actual = join(parent, "AGENTS", "researcher.md");
         if (operation === "delete") await rm(logical);
@@ -325,8 +327,9 @@ describe("native subagent Host watchers", () => {
         if (operation === "rename") {
           expect(next).toMatchObject({ profiles: [] });
           expect(
-            JSON.parse(await readFile(join(f.homeDir, ".zxcode", "v2", "agents-state.json"), "utf8"))
-              .disabledAgentIds,
+            JSON.parse(
+              await readFile(join(f.homeDir, ".zxcode", "v2", "agents-state.json"), "utf8"),
+            ).disabledAgentIds,
           ).toContain("user:user:renamed");
         }
       });

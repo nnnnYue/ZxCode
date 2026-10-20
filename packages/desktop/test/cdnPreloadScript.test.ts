@@ -235,7 +235,8 @@ else process.stdout.write("\\n");
     ).toBe(true);
     expect(
       pushCalls.some(
-        (line) => line.includes("cdn.b-release.example") && line.includes("--profile zcode-ai-account"),
+        (line) =>
+          line.includes("cdn.b-release.example") && line.includes("--profile zcode-ai-account"),
       ),
     ).toBe(true);
     expect(pushCalls.every((line) => !line.includes("--region"))).toBe(true);

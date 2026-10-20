@@ -2,10 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_V4_COMPOSER_INPUT, ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import { DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
-import {
-  prepareConversationE2E,
-  startNewTask,
-} from "../../../helpers/conversation-session.js";
+import { prepareConversationE2E, startNewTask } from "../../../helpers/conversation-session.js";
 
 const TEST_TIMEOUT_MS = 120000;
 const TID_PROMPT_SUGGESTION_PANEL = "prompt-suggestion-panel";
@@ -46,9 +43,7 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
 
   after(async () => {
     await Promise.all(
-      createdWorkspacePaths.map((targetPath) =>
-        rm(targetPath, { recursive: true, force: true }),
-      ),
+      createdWorkspacePaths.map((targetPath) => rm(targetPath, { recursive: true, force: true })),
     );
     await browser.electron.restoreAllMocks();
     // 修复原因：task index sqlite 由 host/service 生命周期持有，Windows 上在
@@ -73,17 +68,9 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     await seedRendererPromptSources(seed);
 
     await setComposerText(`@${seed.fileName}`);
-    const atFilePanel = await waitForPanelSections(
-      "@",
-      ["files"],
-      "@ 文件候选面板没有打开",
-    );
+    const atFilePanel = await waitForPanelSections("@", ["files"], "@ 文件候选面板没有打开");
     expect(optionTexts(atFilePanel).join("\n")).toContain(seed.fileName);
-    assertPanelExcludesSections(atFilePanel, [
-      "commands",
-      "subagents",
-      "skills",
-    ]);
+    assertPanelExcludesSections(atFilePanel, ["commands", "subagents", "skills"]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       seed.fileName,
@@ -91,14 +78,8 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`@${seed.directoryName}`);
-    const atDirectoryPanel = await waitForPanelSections(
-      "@",
-      ["files"],
-      "@ 文件夹候选面板没有打开",
-    );
-    expect(optionTexts(atDirectoryPanel).join("\n")).toContain(
-      seed.directoryName,
-    );
+    const atDirectoryPanel = await waitForPanelSections("@", ["files"], "@ 文件夹候选面板没有打开");
+    expect(optionTexts(atDirectoryPanel).join("\n")).toContain(seed.directoryName);
     await browser.keys("Tab");
     await waitForComposerMarkdownContaining(
       `${seed.directoryName}/`,
@@ -111,30 +92,16 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
       ["whiteboards"],
       "@ 画板候选面板没有打开",
     );
-    expect(optionTexts(atWhiteboardPanel).join("\n")).toContain(
-      seed.whiteboardName,
-    );
-    assertPanelExcludesSections(atWhiteboardPanel, [
-      "commands",
-      "subagents",
-      "skills",
-    ]);
+    expect(optionTexts(atWhiteboardPanel).join("\n")).toContain(seed.whiteboardName);
+    assertPanelExcludesSections(atWhiteboardPanel, ["commands", "subagents", "skills"]);
 
     // S01 语义：`@` 固定按 plugins → files → sessions → whiteboards 路由；
     // 当前 query 只命中 Plugin，选中后仍写入既有 canonical plugin:// markdown。
     // 默认启用的官方纯内容插件 skill-creator 作为确定性候选；选中写入 canonical plugin:// markdown。
     await setComposerText("@skill-creator");
-    const atPluginPanel = await waitForPanelSections(
-      "@",
-      ["plugins"],
-      "@ plugin 候选面板没有打开",
-    );
+    const atPluginPanel = await waitForPanelSections("@", ["plugins"], "@ plugin 候选面板没有打开");
     expect(optionTexts(atPluginPanel).join("\n")).toContain("skill-creator");
-    assertPanelExcludesSections(atPluginPanel, [
-      "commands",
-      "subagents",
-      "skills",
-    ]);
+    assertPanelExcludesSections(atPluginPanel, ["commands", "subagents", "skills"]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       "plugin://skill-creator@zcode-plugins-official",
@@ -155,9 +122,7 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
       ["commands"],
       "/ command 候选面板没有打开",
     );
-    expect(optionTexts(slashCommandPanel).join("\n")).toContain(
-      `/${seed.commandName}`,
-    );
+    expect(optionTexts(slashCommandPanel).join("\n")).toContain(`/${seed.commandName}`);
     await browser.keys("Enter");
     await waitForComposerMarkdown(
       `/${seed.commandName}`,
@@ -165,14 +130,8 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`/${seed.skillName}`);
-    const slashSkillPanel = await waitForPanelSections(
-      "/",
-      ["skills"],
-      "/ skill 候选面板没有打开",
-    );
-    expect(optionTexts(slashSkillPanel).join("\n")).toContain(
-      `$${seed.skillName}`,
-    );
+    const slashSkillPanel = await waitForPanelSections("/", ["skills"], "/ skill 候选面板没有打开");
+    expect(optionTexts(slashSkillPanel).join("\n")).toContain(`$${seed.skillName}`);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       `$${seed.skillName}`,
@@ -185,9 +144,7 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
       ["subagents"],
       "/ subagent 候选面板没有打开",
     );
-    expect(optionTexts(slashSubagentPanel).join("\n")).toContain(
-      seed.subagentName,
-    );
+    expect(optionTexts(slashSubagentPanel).join("\n")).toContain(seed.subagentName);
     await browser.keys("Tab");
     await waitForComposerMarkdown(
       `@${seed.subagentName}`,
@@ -195,18 +152,9 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     );
 
     await setComposerText(`$${seed.skillName}`);
-    const skillPanel = await waitForPanelSections(
-      "$",
-      ["skills"],
-      "$ skill 候选面板没有打开",
-    );
+    const skillPanel = await waitForPanelSections("$", ["skills"], "$ skill 候选面板没有打开");
     expect(optionTexts(skillPanel).join("\n")).toContain(seed.skillName);
-    assertPanelExcludesSections(skillPanel, [
-      "files",
-      "whiteboards",
-      "commands",
-      "subagents",
-    ]);
+    assertPanelExcludesSections(skillPanel, ["files", "whiteboards", "commands", "subagents"]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
       `$${seed.skillName}`,
@@ -215,18 +163,11 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
   });
 });
 
-async function seedWorkspaceFileCandidates(seed: {
-  directoryName: string;
-  fileName: string;
-}) {
+async function seedWorkspaceFileCandidates(seed: { directoryName: string; fileName: string }) {
   const directoryPath = join(DEFAULT_WORKSPACE, seed.directoryName);
   const filePath = join(DEFAULT_WORKSPACE, seed.fileName);
   await mkdir(directoryPath, { recursive: true });
-  await writeFile(
-    filePath,
-    "export const e2eComposerPrefixRouting = true;\n",
-    "utf-8",
-  );
+  await writeFile(filePath, "export const e2eComposerPrefixRouting = true;\n", "utf-8");
   createdWorkspacePaths.push(directoryPath, filePath);
 }
 
@@ -258,15 +199,10 @@ async function seedRendererPromptSources(seed: {
         };
         __whiteboardStoreE2E?: {
           getState: () => {
-            createBoard: (params: {
-              defaultNamePrefix: string;
-              workspacePath: string;
-            }) => { id: string };
-            renameBoard: (params: {
-              boardId: string;
-              name: string;
-              workspacePath: string;
-            }) => void;
+            createBoard: (params: { defaultNamePrefix: string; workspacePath: string }) => {
+              id: string;
+            };
+            renameBoard: (params: { boardId: string; name: string; workspacePath: string }) => void;
           };
         };
         __zcodeSessionStoreE2E?: {
@@ -347,8 +283,7 @@ async function seedRendererPromptSources(seed: {
             id: `e2e-${currentSeed.subagentName}`,
             name: currentSeed.subagentName,
             description: "E2E subagent for composer prefix routing",
-            systemPrompt:
-              "You are only used by an E2E composer suggestion case.",
+            systemPrompt: "You are only used by an E2E composer suggestion case.",
             path: `${workspacePath}/.zcode/agents/${currentSeed.subagentName}.md`,
             scope: "workspace",
             source: "user",
@@ -375,9 +310,7 @@ async function seedRendererPromptSources(seed: {
   )) as { ok: boolean; reason?: string; bridges?: Record<string, boolean> };
 
   if (!result.ok) {
-    throw new Error(
-      `composer prefix routing seed failed: ${JSON.stringify(result)}`,
-    );
+    throw new Error(`composer prefix routing seed failed: ${JSON.stringify(result)}`);
   }
 }
 
@@ -386,9 +319,7 @@ async function setComposerText(text: string) {
     async () =>
       browser.execute(
         (inputTestId, nextText) => {
-          const input = document.querySelector<HTMLElement>(
-            `[data-testid="${inputTestId}"]`,
-          ) as
+          const input = document.querySelector<HTMLElement>(`[data-testid="${inputTestId}"]`) as
             | (HTMLElement & {
                 __zcodeLexicalInputE2E?: {
                   focus: () => void;
@@ -440,41 +371,28 @@ async function waitForPanelSections(
 }
 
 function arraysEqual(left: string[], right: string[]) {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function getPanelSnapshot(): Promise<PanelSnapshot> {
   return browser.execute(
     (panelTestId, optionPrefix, statusPrefix) => {
-      const panel = document.querySelector<HTMLElement>(
-        `[data-testid="${panelTestId}"]`,
-      );
+      const panel = document.querySelector<HTMLElement>(`[data-testid="${panelTestId}"]`);
       const options = Array.from(
-        panel?.querySelectorAll<HTMLElement>(
-          `[data-testid^="${optionPrefix}-"]`,
-        ) ?? [],
+        panel?.querySelectorAll<HTMLElement>(`[data-testid^="${optionPrefix}-"]`) ?? [],
       ).map((element) => ({
         id: element.getAttribute("data-option-id"),
         index: Number(element.getAttribute("data-option-index") ?? "0"),
         sectionId: element.getAttribute("data-section-id"),
         selected: element.getAttribute("data-selected") === "true",
-        text: (element.innerText || element.textContent || "")
-          .replace(/\u00a0/g, " ")
-          .trim(),
+        text: (element.innerText || element.textContent || "").replace(/\u00a0/g, " ").trim(),
       }));
       const statuses = Array.from(
-        panel?.querySelectorAll<HTMLElement>(
-          `[data-testid^="${statusPrefix}-"]`,
-        ) ?? [],
+        panel?.querySelectorAll<HTMLElement>(`[data-testid^="${statusPrefix}-"]`) ?? [],
       ).map((element) => ({
         sectionId: element.getAttribute("data-section-id"),
         status: element.getAttribute("data-status"),
-        text: (element.innerText || element.textContent || "")
-          .replace(/\u00a0/g, " ")
-          .trim(),
+        text: (element.innerText || element.textContent || "").replace(/\u00a0/g, " ").trim(),
       }));
       return {
         options,
@@ -502,10 +420,7 @@ function optionTexts(snapshot: PanelSnapshot) {
   return snapshot.options.map((option) => option.text);
 }
 
-function assertPanelExcludesSections(
-  snapshot: PanelSnapshot,
-  excludedSectionIds: string[],
-) {
+function assertPanelExcludesSections(snapshot: PanelSnapshot, excludedSectionIds: string[]) {
   const actualSectionIds = optionSectionIds(snapshot);
   for (const excluded of excludedSectionIds) {
     expect(actualSectionIds).not.toContain(excluded);
@@ -513,33 +428,22 @@ function assertPanelExcludesSections(
 }
 
 async function waitForComposerMarkdown(expected: string, timeoutMsg: string) {
-  await browser.waitUntil(
-    async () => (await getComposerMarkdown()).trim() === expected,
-    {
-      timeout: 10000,
-      timeoutMsg,
-    },
-  );
+  await browser.waitUntil(async () => (await getComposerMarkdown()).trim() === expected, {
+    timeout: 10000,
+    timeoutMsg,
+  });
 }
 
-async function waitForComposerMarkdownContaining(
-  expected: string,
-  timeoutMsg: string,
-) {
-  await browser.waitUntil(
-    async () => (await getComposerMarkdown()).includes(expected),
-    {
-      timeout: 10000,
-      timeoutMsg,
-    },
-  );
+async function waitForComposerMarkdownContaining(expected: string, timeoutMsg: string) {
+  await browser.waitUntil(async () => (await getComposerMarkdown()).includes(expected), {
+    timeout: 10000,
+    timeoutMsg,
+  });
 }
 
 function getComposerMarkdown(): Promise<string> {
   return browser.execute((inputTestId) => {
-    const input = document.querySelector<HTMLElement>(
-      `[data-testid="${inputTestId}"]`,
-    ) as
+    const input = document.querySelector<HTMLElement>(`[data-testid="${inputTestId}"]`) as
       | (HTMLElement & {
           __zcodeLexicalInputE2E?: { getText: () => string };
         })

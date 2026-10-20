@@ -4681,7 +4681,6 @@ export function createZCodeAgentService(
       };
     },
 
-
     onDynamicSessionEvent(params: ZCodeAgentSessionSubscribeParams) {
       const emitter = getSessionEmitter(params);
       return (listener) => {

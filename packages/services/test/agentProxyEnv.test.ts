@@ -216,7 +216,10 @@ describe("official MCP trust: host and agent must agree on the ZCode API origin"
 
   it("agrees in production: fork 的 settings override 在两侧一致生效", async () => {
     // fork 的 overrideOrigin 语义不再按环境忽略：注入值即 settings 覆盖值，两侧判定保持一致。
-    const hostEnv = { ZXCODE_ENV: "production", ZXCODE_BASE_URL: "https://endpoint-fixture.example.test" };
+    const hostEnv = {
+      ZXCODE_ENV: "production",
+      ZXCODE_BASE_URL: "https://endpoint-fixture.example.test",
+    };
     const injected = resolveRuntimeZCodeEndpointOrigin(hostEnv, {
       overrideOrigin: SETTINGS_ORIGIN,
     });

@@ -13,7 +13,9 @@ async function makeTempDir(): Promise<string> {
 }
 
 afterEach(async () => {
-  await Promise.all(temporaryDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })));
+  await Promise.all(
+    temporaryDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })),
+  );
 });
 
 describe("resolveBundledAgentWiring", () => {
@@ -53,17 +55,27 @@ describe("resolveBundledAgentWiring", () => {
 
     expect(createReleaseAgentWiring(oldRuntime, join(oldRuntime, "node"), {})).toEqual({
       ZXCODE_AGENT_SERVER_COMMAND: join(oldRuntime, "node"),
-      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(oldRuntime, "zxcode.cjs"), "app-server", "--stdio"]),
+      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([
+        join(oldRuntime, "zxcode.cjs"),
+        "app-server",
+        "--stdio",
+      ]),
     });
     expect(createReleaseAgentWiring(newRuntime, join(newRuntime, "node"), {})).toEqual({
       ZXCODE_AGENT_SERVER_COMMAND: join(newRuntime, "node"),
-      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([join(newRuntime, "zxcode.cjs"), "app-server", "--stdio"]),
+      ZXCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([
+        join(newRuntime, "zxcode.cjs"),
+        "app-server",
+        "--stdio",
+      ]),
     });
   });
 
   it("does not replace an explicit agent command while computing release wiring", () => {
-    expect(createReleaseAgentWiring("/release/runtime", "/release/runtime/node", {
-      ZXCODE_AGENT_SERVER_COMMAND: "/custom/agent",
-    })).toBeNull();
+    expect(
+      createReleaseAgentWiring("/release/runtime", "/release/runtime/node", {
+        ZXCODE_AGENT_SERVER_COMMAND: "/custom/agent",
+      }),
+    ).toBeNull();
   });
 });

@@ -279,9 +279,7 @@ export function aggregateHighspeedCardMetrics(cardId: string): HighspeedShareMet
   const regularDurationSeconds = records.reduce(
     (total, record) =>
       total +
-      (record.metrics.regularTps > 0
-        ? record.metrics.outputTokens / record.metrics.regularTps
-        : 0),
+      (record.metrics.regularTps > 0 ? record.metrics.outputTokens / record.metrics.regularTps : 0),
     0,
   );
   const hasRealTiming =
@@ -319,9 +317,7 @@ export function aggregateHighspeedCardMetrics(cardId: string): HighspeedShareMet
       : {}),
     savedDurationMs,
     regularTps:
-      regularDurationSeconds > 0
-        ? Number((outputTokens / regularDurationSeconds).toFixed(3))
-        : 0,
+      regularDurationSeconds > 0 ? Number((outputTokens / regularDurationSeconds).toFixed(3)) : 0,
     highspeedTps,
   };
 }

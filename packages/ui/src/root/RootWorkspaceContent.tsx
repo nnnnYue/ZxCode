@@ -154,9 +154,7 @@ export function RootWorkspaceContent({
                 initialWebRemoteControlMobileNavigationIntent
               }
               initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
-              webRemoteControlTerminalTransportState={
-                webRemoteControlTerminalTransportState
-              }
+              webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
               allowRemoteWorkspace={allowRemoteWorkspace}
               remoteWorkspaceSessions={remoteWorkspaceSessions}
               isWorkspaceVisible={!isSettingsTabActive}

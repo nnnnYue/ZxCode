@@ -58,7 +58,11 @@ const idleCleaner: FsCleanerPort = {
 test("startScan 重叠：resolveRoots 等待期间被新扫描取代的 job 不再创建遍历", async () => {
   const resolver = createDeferredRootsResolver();
   const runner = createRecordingRunner();
-  const service = createStorageService({ roots: resolver, scanRunner: runner, cleaner: idleCleaner });
+  const service = createStorageService({
+    roots: resolver,
+    scanRunner: runner,
+    cleaner: idleCleaner,
+  });
 
   try {
     // 第一次 startScan 停在 resolveRoots 的 IO 等待窗口内。

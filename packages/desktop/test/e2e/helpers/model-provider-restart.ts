@@ -34,12 +34,9 @@ const MODEL_SELECTION_RECENT_KEY_PREFIX = "zcode-model-selection-recent-v1";
 
 export { seedTurboAgentStartupModel } from "./model-provider-restart-runtime.js";
 
-export const E2E_BIGMODEL_PLAN_PROVIDER_ID =
-  BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan;
-export const E2E_BIGMODEL_START_PROVIDER_ID =
-  BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan;
-export const E2E_BIGMODEL_API_PROVIDER_ID =
-  BUILTIN_PROVIDER_TEMPLATE_IDS.bigmodel;
+export const E2E_BIGMODEL_PLAN_PROVIDER_ID = BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan;
+export const E2E_BIGMODEL_START_PROVIDER_ID = BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan;
+export const E2E_BIGMODEL_API_PROVIDER_ID = BUILTIN_PROVIDER_TEMPLATE_IDS.bigmodel;
 export const E2E_PLAN_FIRST_MODEL = "GLM-5.3";
 export const E2E_PLAN_DEFAULT_MODEL = "GLM-5.2";
 export const E2E_PLAN_NON_DEFAULT_MODEL = "GLM-5.3-Flash";
@@ -62,15 +59,10 @@ export async function readBigModelConnectionSelection(): Promise<
 > {
   const settings = await readJson(SETTINGS_FILE);
   const selections = settings.providerFamilyConnectionSelections;
-  if (
-    !selections ||
-    typeof selections !== "object" ||
-    Array.isArray(selections)
-  ) {
+  if (!selections || typeof selections !== "object" || Array.isArray(selections)) {
     return undefined;
   }
-  return (selections as { bigmodel?: ProviderFamilyConnectionSelection })
-    .bigmodel;
+  return (selections as { bigmodel?: ProviderFamilyConnectionSelection }).bigmodel;
 }
 
 export async function seedBigModelOAuthCredential() {
@@ -114,9 +106,7 @@ export async function seedReplayProvider(params: {
 }) {
   const baseURL = params.baseURL ?? (await resolveSeededReplayBaseUrl());
   if (!baseURL) {
-    throw new Error(
-      "没有可用 replay Base URL，无法 seed model provider restart case",
-    );
+    throw new Error("没有可用 replay Base URL，无法 seed model provider restart case");
   }
   const provider: PersonalProviderConfigSeed = {
     id: params.id,
@@ -124,9 +114,7 @@ export async function seedReplayProvider(params: {
     // 内建 account provider 的模型规则按 anthropic-messages 匹配；若用 OpenAI Chat Completions
     // 格式覆盖连接配置，GLM builtin model rules 不会命中，模型在 Registry 中
     // 会因缺少完整 option/properties 被过滤，UI 菜单就看不到该计划模型。
-    apiFormat: params.id.startsWith("account:")
-      ? "anthropic-messages"
-      : "openai-chat-completions",
+    apiFormat: params.id.startsWith("account:") ? "anthropic-messages" : "openai-chat-completions",
     apiKey: params.apiKey ?? getUpstreamApiKey(),
     baseURL,
     enabled: params.enabled ?? true,
@@ -184,14 +172,9 @@ export async function readLastSelectedAgentConfig() {
       if (!raw) return null;
       const recent: unknown = JSON.parse(raw);
       // Recent 扩展为模型与权限并列保存；重启断言同时兼容旧的纯模型种子。
-      const record =
-        recent && typeof recent === "object" && !Array.isArray(recent)
-          ? recent
-          : null;
+      const record = recent && typeof recent === "object" && !Array.isArray(recent) ? recent : null;
       const selection =
-        record && "modelSelection" in record
-          ? record.modelSelection
-          : (record ?? recent);
+        record && "modelSelection" in record ? record.modelSelection : (record ?? recent);
       const candidate =
         selection && typeof selection === "object" && !Array.isArray(selection)
           ? (selection as {
@@ -230,8 +213,7 @@ export async function waitForLastSelectedAgentConfig(params: {
       async () => {
         latest = await readLastSelectedAgentConfig();
         return Boolean(
-          latest?.model.includes(params.model) &&
-          latest.thoughtLevel === params.thoughtLevel,
+          latest?.model.includes(params.model) && latest.thoughtLevel === params.thoughtLevel,
         );
       },
       {
@@ -242,9 +224,7 @@ export async function waitForLastSelectedAgentConfig(params: {
   } catch {
     const storedAgentPreferences = await browser.execute(() =>
       Object.fromEntries(
-        Object.entries(window.localStorage).filter(([key]) =>
-          key.startsWith("zcode-last-agent-"),
-        ),
+        Object.entries(window.localStorage).filter(([key]) => key.startsWith("zcode-last-agent-")),
       ),
     );
     throw new Error(
@@ -311,32 +291,25 @@ export async function waitForDraftThoughtLevelState(params: {
     },
     {
       timeout: 30000,
-      timeoutMsg:
-        params.timeoutMsg ?? `draft thought 没有收敛到 ${params.current}`,
+      timeoutMsg: params.timeoutMsg ?? `draft thought 没有收敛到 ${params.current}`,
     },
   );
   return latest;
 }
 
-export async function waitForV4DraftModelConfig(params: {
-  model: string;
-  thought: string;
-}) {
+export async function waitForV4DraftModelConfig(params: { model: string; thought: string }) {
   let latest: { model: string | null; thought: string | null } | null = null;
   await browser.waitUntil(
     async () => {
       latest = await browser.execute((configTestId) => {
-        const config = document.querySelector<HTMLElement>(
-          `[data-testid="${configTestId}"]`,
-        );
+        const config = document.querySelector<HTMLElement>(`[data-testid="${configTestId}"]`);
         return {
           model: config?.dataset.model?.trim() || null,
           thought: config?.dataset.thought?.trim() || null,
         };
       }, TID_V4_MODEL_CONFIG);
       const modelMatches =
-        latest.model === params.model ||
-        latest.model?.endsWith(`/${params.model}`) === true;
+        latest.model === params.model || latest.model?.endsWith(`/${params.model}`) === true;
       return modelMatches && latest.thought === params.thought;
     },
     {
@@ -356,9 +329,7 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
       for (const file of files.filter(
         (item) => item.startsWith("model-io-") && item.endsWith(".jsonl"),
       )) {
-        const content = await readFile(join(debugDir, file), "utf-8").catch(
-          () => "",
-        );
+        const content = await readFile(join(debugDir, file), "utf-8").catch(() => "");
         for (const line of content.split("\n")) {
           if (!line.includes(expectedText)) continue;
           try {
@@ -387,9 +358,7 @@ export async function waitForPlanModelIoRequest(expectedText: string) {
   return matched as { model?: string; thinking?: { type?: string } } | null;
 }
 
-export async function restartIntoWorkspace(
-  options: ModelProviderRestartOptions = {},
-) {
+export async function restartIntoWorkspace(options: ModelProviderRestartOptions = {}) {
   await restartIntoWorkspaceRestoringPreferences(paths.workspace, options);
 }
 
@@ -397,10 +366,7 @@ export async function restartIntoWorkspacePreservingProfile() {
   await restartIntoWorkspacePreservingProfileFixture(paths.workspace);
 }
 
-export async function waitForSelectedModel(
-  providerId: string,
-  modelId: string,
-) {
+export async function waitForSelectedModel(providerId: string, modelId: string) {
   const expected = encodeCustomModelValue(providerId, modelId);
   let actual: string | null = null;
   let storedConfig: string | null = null;
@@ -409,15 +375,11 @@ export async function waitForSelectedModel(
       async () => {
         const snapshot = await browser.execute(
           (value, triggerTestId, workspacePath, keyPrefix) => {
-            const trigger = document.querySelector<HTMLElement>(
-              `[data-testid="${triggerTestId}"]`,
-            );
+            const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
             return {
               actual: trigger?.dataset.modelCurrentValue ?? null,
               matched: trigger?.dataset.modelCurrentValue === value,
-              storedConfig: window.localStorage.getItem(
-                `${keyPrefix}:${workspacePath}`,
-              ),
+              storedConfig: window.localStorage.getItem(`${keyPrefix}:${workspacePath}`),
             };
           },
           expected,
@@ -445,11 +407,7 @@ export async function waitForSelectedModel(
 async function writeJsonPatch(file: string, patch: Record<string, unknown>) {
   const current = await readJson(file);
   await mkdir(dirname(file), { recursive: true });
-  await writeFile(
-    file,
-    JSON.stringify({ ...current, ...patch }, null, 2),
-    "utf-8",
-  );
+  await writeFile(file, JSON.stringify({ ...current, ...patch }, null, 2), "utf-8");
 }
 
 async function readJson(file: string): Promise<Record<string, unknown>> {

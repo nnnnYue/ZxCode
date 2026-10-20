@@ -4,13 +4,17 @@ const generation = Number(process.argv[2] ?? 0);
 const outputPath = process.env.ZXCODE_TEST_WIRING_OUTPUT;
 if (!outputPath) throw new Error("ZXCODE_TEST_WIRING_OUTPUT is required");
 
-await appendFile(outputPath, `${JSON.stringify({
-  agentArgs: JSON.parse(process.env.ZXCODE_AGENT_SERVER_ARGS_JSON ?? "[]"),
-  agentCommand: process.env.ZXCODE_AGENT_SERVER_COMMAND ?? null,
-  dataBaseDir: process.env.ZXCODE_DATA_BASE_DIR ?? null,
-  generation,
-  runtimeRoot: process.env.ZXCODE_SERVER_RUNTIME_ROOT ?? null,
-})}\n`, "utf8");
+await appendFile(
+  outputPath,
+  `${JSON.stringify({
+    agentArgs: JSON.parse(process.env.ZXCODE_AGENT_SERVER_ARGS_JSON ?? "[]"),
+    agentCommand: process.env.ZXCODE_AGENT_SERVER_COMMAND ?? null,
+    dataBaseDir: process.env.ZXCODE_DATA_BASE_DIR ?? null,
+    generation,
+    runtimeRoot: process.env.ZXCODE_SERVER_RUNTIME_ROOT ?? null,
+  })}\n`,
+  "utf8",
+);
 
 process.send?.({
   type: "ready",

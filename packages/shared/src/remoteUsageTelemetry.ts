@@ -22,20 +22,15 @@ export function resolveWorkspaceTelemetryDetail(scope: {
 } {
   const identity = scope.workspaceIdentity?.trim();
   return {
-    workspace_kind:
-      identity || scope.remoteSessionId?.trim() ? "remote" : "local",
-    remote_kind: identity
-      ? (parseRemoteWorkspaceIdentity(identity)?.kind ?? "")
-      : "",
+    workspace_kind: identity || scope.remoteSessionId?.trim() ? "remote" : "local",
+    remote_kind: identity ? (parseRemoteWorkspaceIdentity(identity)?.kind ?? "") : "",
   };
 }
 
 export type RemoteUsageRemoteKind = RemoteTarget["kind"];
 export type RemoteUsageWorkspaceKind = "local" | "remote";
 export type RemoteUsageResult = "success" | "failure";
-export type WebRemoteControlStartTelemetryResult =
-  | RemoteUsageResult
-  | "cancelled";
+export type WebRemoteControlStartTelemetryResult = RemoteUsageResult | "cancelled";
 export type RemoteWorkspaceConnectTrigger = "new" | "reconnect" | "restore";
 export type WebRemoteControlPairKind = "initial" | "reconnect";
 export type WebRemoteControlEntryKind = "home" | "task";
@@ -85,8 +80,7 @@ export function buildRemoteWorkspaceConnectResultTelemetry(input: {
       result: input.result,
       remote_kind: input.remoteKind,
       connect_trigger: input.connectTrigger,
-      error_category:
-        input.result === "success" ? "" : (input.errorCategory ?? "unknown"),
+      error_category: input.result === "success" ? "" : (input.errorCategory ?? "unknown"),
     },
   };
 }
@@ -107,15 +101,11 @@ export function buildWebRemoteControlStartResultTelemetry(input: {
   remoteKind?: RemoteUsageRemoteKind;
   errorCategory?: RemoteUsageErrorCategory;
 }): TelemetryEventPayload {
-  return buildWebRemoteControlEvent(
-    "web_remote_control_start_result",
-    "result",
-    {
-      ...buildResultDetail(input.result, input.errorCategory),
-      workspace_kind: input.workspaceKind,
-      remote_kind: input.remoteKind ?? "",
-    },
-  );
+  return buildWebRemoteControlEvent("web_remote_control_start_result", "result", {
+    ...buildResultDetail(input.result, input.errorCategory),
+    workspace_kind: input.workspaceKind,
+    remote_kind: input.remoteKind ?? "",
+  });
 }
 
 export function buildWebRemoteControlPairResultTelemetry(input: {
@@ -125,16 +115,12 @@ export function buildWebRemoteControlPairResultTelemetry(input: {
   remoteKind?: RemoteUsageRemoteKind;
   errorCategory?: RemoteUsageErrorCategory;
 }): TelemetryEventPayload {
-  return buildWebRemoteControlEvent(
-    "web_remote_control_pair_result",
-    "result",
-    {
-      ...buildResultDetail(input.result, input.errorCategory),
-      pair_kind: input.pairKind,
-      workspace_kind: input.workspaceKind,
-      remote_kind: input.remoteKind ?? "",
-    },
-  );
+  return buildWebRemoteControlEvent("web_remote_control_pair_result", "result", {
+    ...buildResultDetail(input.result, input.errorCategory),
+    pair_kind: input.pairKind,
+    workspace_kind: input.workspaceKind,
+    remote_kind: input.remoteKind ?? "",
+  });
 }
 
 export function buildWebRemoteControlBridgeResultTelemetry(input: {
@@ -144,16 +130,12 @@ export function buildWebRemoteControlBridgeResultTelemetry(input: {
   entryKind: WebRemoteControlEntryKind;
   errorCategory?: RemoteUsageErrorCategory;
 }): TelemetryEventPayload {
-  return buildWebRemoteControlEvent(
-    "web_remote_control_bridge_result",
-    "result",
-    {
-      ...buildResultDetail(input.result, input.errorCategory),
-      workspace_kind: input.workspaceKind,
-      remote_kind: input.remoteKind ?? "",
-      entry_kind: input.entryKind,
-    },
-  );
+  return buildWebRemoteControlEvent("web_remote_control_bridge_result", "result", {
+    ...buildResultDetail(input.result, input.errorCategory),
+    workspace_kind: input.workspaceKind,
+    remote_kind: input.remoteKind ?? "",
+    entry_kind: input.entryKind,
+  });
 }
 
 function readErrorSearchText(error: unknown): string {
@@ -163,35 +145,23 @@ function readErrorSearchText(error: unknown): string {
   if (typeof error !== "object" || error === null) {
     return "";
   }
-  const code =
-    "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
-  const message =
-    "message" in error
-      ? String((error as { message?: unknown }).message ?? "")
-      : "";
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  const message = "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
   return `${code} ${message}`.toLowerCase();
 }
 
 /**
  * 原始错误只在本地参与匹配，返回值固定为低基数枚举，禁止把远端目标或错误消息带入埋点。
  */
-export function classifyRemoteUsageError(
-  error: unknown,
-): RemoteUsageErrorCategory {
+export function classifyRemoteUsageError(error: unknown): RemoteUsageErrorCategory {
   const value = readErrorSearchText(error);
-  if (
-    /(auth|password|credential|token|permission|denied|unauthor)/.test(value)
-  ) {
+  if (/(auth|password|credential|token|permission|denied|unauthor)/.test(value)) {
     return "auth";
   }
   if (/(deploy|download|install|asset|checksum)/.test(value)) {
     return "deploy";
   }
-  if (
-    /(host_start|host start|spawn|process.*(?:exit|start)|host.*(?:exit|start))/.test(
-      value,
-    )
-  ) {
+  if (/(host_start|host start|spawn|process.*(?:exit|start)|host.*(?:exit|start))/.test(value)) {
     return "host_start";
   }
   if (
@@ -201,16 +171,10 @@ export function classifyRemoteUsageError(
   ) {
     return "attach";
   }
-  if (
-    /(relay|websocket|web socket|pair|device.*(?:kicked|not.found))/.test(value)
-  ) {
+  if (/(relay|websocket|web socket|pair|device.*(?:kicked|not.found))/.test(value)) {
     return "relay";
   }
-  if (
-    /(connect|network|socket|ssh|wsl|docker|server|timeout|timedout|econn)/.test(
-      value,
-    )
-  ) {
+  if (/(connect|network|socket|ssh|wsl|docker|server|timeout|timedout|econn)/.test(value)) {
     return "connect";
   }
   return "unknown";

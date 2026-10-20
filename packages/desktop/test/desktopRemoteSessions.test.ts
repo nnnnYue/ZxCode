@@ -112,12 +112,17 @@ function createManager(
       error: (...args: unknown[]) => void;
     };
     rendererAttachmentReadyTimeoutMs?: number;
-    resolveWslTarget?: (target: Extract<RemoteTarget, { kind: "wsl" }>) =>
-      Promise<Extract<RemoteTarget, { kind: "wsl" }>>;
+    resolveWslTarget?: (
+      target: Extract<RemoteTarget, { kind: "wsl" }>,
+    ) => Promise<Extract<RemoteTarget, { kind: "wsl" }>>;
   },
 ) {
   return createRemoteWorkspaceSessionManager({
-    logger: options?.logger ?? { info: () => undefined, warn: () => undefined, error: () => undefined },
+    logger: options?.logger ?? {
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+    },
     windowHostProcessMap: windowHostProcessMap as never,
     resolveRemoteAssetDirs: () =>
       ({ mockCdnDir: "/mock/cdn", remoteCdnBaseUrl: "https://cdn.example.test" }) as never,
@@ -277,11 +282,7 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     const win = createWindow(1, 101);
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const manager = createManager(new Map([[101, child]]), { logger });
-    const connecting = manager.createRemoteWorkspaceSession(
-      win as never,
-      sshTarget,
-      "connect-1",
-    );
+    const connecting = manager.createRemoteWorkspaceSession(win as never, sshTarget, "connect-1");
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
     await connecting;
@@ -395,11 +396,7 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     const child = new MockUtilityProcess(1001);
     const win = createWindow(1, 101);
     const manager = createManager(new Map([[101, child]]));
-    const connecting = manager.createRemoteWorkspaceSession(
-      win as never,
-      sshTarget,
-      "connect-1",
-    );
+    const connecting = manager.createRemoteWorkspaceSession(win as never, sshTarget, "connect-1");
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
     await connecting;
@@ -426,11 +423,7 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     const child = new MockUtilityProcess(1001);
     const win = createWindow(1, 101);
     const manager = createManager(new Map([[101, child]]));
-    const connecting = manager.createRemoteWorkspaceSession(
-      win as never,
-      sshTarget,
-      "connect-1",
-    );
+    const connecting = manager.createRemoteWorkspaceSession(win as never, sshTarget, "connect-1");
     await emitConnected({ child, requestId: "connect-1", remoteSessionId: "remote-session-1" });
     confirmLatestScopedAttachment(manager, win);
     await connecting;

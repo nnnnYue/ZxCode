@@ -20,18 +20,11 @@ describe("settings frame content layout", () => {
       '"mx-auto w-full max-w-4xl px-4 pb-8 pt-0 lg:px-8 lg:pb-10"',
     );
 
-    for (const source of [
-      settingsPageSource,
-      automationsSectionSource,
-      automationEditViewSource,
-    ]) {
+    for (const source of [settingsPageSource, automationsSectionSource, automationEditViewSource]) {
       expect(source).toContain("SETTINGS_FRAME_CONTENT_CLASSNAME");
     }
 
-    for (const source of [
-      automationsSectionSource,
-      automationEditViewSource,
-    ]) {
+    for (const source of [automationsSectionSource, automationEditViewSource]) {
       expect(source).not.toContain("max-w-[866px]");
     }
   });

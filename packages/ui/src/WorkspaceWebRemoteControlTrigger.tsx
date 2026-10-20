@@ -147,15 +147,12 @@ function WorkspaceWebRemoteControlTriggerContent({
           variant="ghost"
           onClick={() => {
             // 去平台化：appTelemetry 上报链路已删除，这里只保留日志与弹层打开。
-            logger.info(
-              "[WorkspaceWebRemoteControlTrigger] 打开 Web 远程控制弹层",
-              {
-                workspacePath,
-                workspaceIdentity: workspaceIdentity ?? "none",
-                remoteSessionId: currentRemoteSessionId ?? "none",
-                initialTaskId: initialTaskId ?? "none",
-              },
-            );
+            logger.info("[WorkspaceWebRemoteControlTrigger] 打开 Web 远程控制弹层", {
+              workspacePath,
+              workspaceIdentity: workspaceIdentity ?? "none",
+              remoteSessionId: currentRemoteSessionId ?? "none",
+              initialTaskId: initialTaskId ?? "none",
+            });
             setWebRemoteControlOpen(true);
           }}
           size={compact ? "icon-lg" : "lg"}
@@ -170,9 +167,7 @@ function WorkspaceWebRemoteControlTriggerContent({
           {/* Bugfix: 触发入口以前只显示固定手机图标，用户无法从桌面端判断手机是否已连上。
               这里复用远控状态轮询结果，用语义色表达连接状态，并把入口名称和状态文案合进同一个 tooltip，
               避免桌面端 footer 外层和按钮内层同时弹出两份提示。 */}
-          <Smartphone
-            className={cn("size-4", triggerPresentation.iconClassName)}
-          />
+          <Smartphone className={cn("size-4", triggerPresentation.iconClassName)} />
           {compact ? (
             <span className="sr-only">
               {intl.formatMessage({ id: "webRemoteControl.trigger" })}

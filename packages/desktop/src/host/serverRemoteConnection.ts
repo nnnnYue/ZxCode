@@ -53,9 +53,7 @@ function stripWebSocketEndpointPath(pathname: string): string {
   return normalizedPath;
 }
 
-export function resolveServerRemoteEndpoints(
-  serverUrl: string,
-): ServerRemoteEndpoints {
+export function resolveServerRemoteEndpoints(serverUrl: string): ServerRemoteEndpoints {
   const trimmedUrl = serverUrl.trim();
   if (!trimmedUrl) {
     throw new Error("Server URL is required");
@@ -67,9 +65,7 @@ export function resolveServerRemoteEndpoints(
   const hostWsUrl = new URL(trimmedUrl);
   const infoBasePath = stripWebSocketEndpointPath(infoUrl.pathname);
   const wsBasePath = stripWebSocketEndpointPath(wsUrl.pathname);
-  const hostCapabilityBasePath = stripWebSocketEndpointPath(
-    hostCapabilityUrl.pathname,
-  );
+  const hostCapabilityBasePath = stripWebSocketEndpointPath(hostCapabilityUrl.pathname);
   const hostWsBasePath = stripWebSocketEndpointPath(hostWsUrl.pathname);
 
   switch (infoUrl.protocol) {
@@ -199,9 +195,7 @@ async function fetchHostCapability(
   if (!response.ok) {
     throw new Error(`Host capability request failed: ${response.status}`);
   }
-  const parsed = serverRemoteHostCapabilitySchema.safeParse(
-    await response.json(),
-  );
+  const parsed = serverRemoteHostCapabilitySchema.safeParse(await response.json());
   if (!parsed.success) {
     throw new Error("Host capability response is invalid");
   }
@@ -248,10 +242,7 @@ function connectNodeWebSocket(
         ? new ChannelServer(protocol, "desktop-resource")
         : undefined;
       if (reverseServer && options.topicResourceChannel)
-        reverseServer.registerChannel(
-          TOPIC_RESOURCE_RELAY_CHANNEL,
-          options.topicResourceChannel,
-        );
+        reverseServer.registerChannel(TOPIC_RESOURCE_RELAY_CHANNEL, options.topicResourceChannel);
       rpcSocket.onClose(() => reverseServer?.dispose());
       resolve({
         socket,
@@ -266,11 +257,7 @@ export async function connectServerRemote(
   options: ServerRemoteConnectionOptions = {},
 ): Promise<ServerRemoteConnection> {
   const endpoints = resolveServerRemoteEndpoints(target.url);
-  const serverInfo = await fetchServerInfo(
-    endpoints.infoUrl,
-    target,
-    options.fetchImpl ?? fetch,
-  );
+  const serverInfo = await fetchServerInfo(endpoints.infoUrl, target, options.fetchImpl ?? fetch);
   const capability = await fetchHostCapability(
     endpoints.hostCapabilityUrl,
     target,

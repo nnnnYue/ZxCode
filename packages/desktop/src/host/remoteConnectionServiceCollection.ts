@@ -60,24 +60,15 @@ export function createRemoteConnectionServiceCollection(params: {
       .register(IZCodeTaskService, params.remoteZCodeTaskService)
       .register(IZCodeAgentService, params.connectionServices.zcodeAgentService)
       .register(IZCodeSessionService, params.remoteZCodeSessionService)
-      .register(
-        IPromptAttachmentTransferService,
-        params.promptAttachmentTransferService,
-      )
-      .register(
-        IFileWatcherService,
-        params.connectionServices.fileWatcherService,
-      )
+      .register(IPromptAttachmentTransferService, params.promptAttachmentTransferService)
+      .register(IFileWatcherService, params.connectionServices.fileWatcherService)
       .register(ISkillsService, params.connectionServices.skillsService)
       .register(ISkillSyncService, params.connectionServices.skillSyncService)
       .register(IMcpSyncService, params.connectionServices.mcpSyncService)
       .register(IPluginSyncService, params.connectionServices.pluginSyncService)
       .register(IPluginsService, params.connectionServices.pluginsService)
       // M5 ③-3：远端设置页插件管理也必须打到远端 agent（插件目录在远端文件系统）。
-      .register(
-        IPluginManagementService,
-        params.connectionServices.pluginManagementService,
-      )
+      .register(IPluginManagementService, params.connectionServices.pluginManagementService)
       .register(ICommandsService, params.connectionServices.commandsService)
       .register(
         ISettingsSyncService,

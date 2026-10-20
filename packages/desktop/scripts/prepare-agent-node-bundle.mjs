@@ -27,10 +27,7 @@ import { stageKoffiIntoBundledAgents } from "./koffi-package-assets.mjs";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(scriptDir, "..");
 const repoRoot = resolve(desktopRoot, "..", "..");
-const cliBundlePath = resolve(
-  repoRoot,
-  "apps/zcode-cli/packages/cli/dist/zxcode.cjs",
-);
+const cliBundlePath = resolve(repoRoot, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
 // fork：上游 stageKoffiForCuaPlugin 依赖的 adapters 根目录（koffi native staging）。
 const adaptersRoot = resolve(repoRoot, "apps/zcode-cli/packages/adapters");
 const pnpmRunEnv = {
@@ -77,10 +74,8 @@ function normalizeArch(raw) {
   }
 }
 
-const platform =
-  normalizePlatform(process.env.ZXCODE_TARGET_OS || "") || process.platform;
-const arch =
-  normalizeArch(process.env.ZXCODE_TARGET_ARCH || "") || process.arch;
+const platform = normalizePlatform(process.env.ZXCODE_TARGET_OS || "") || process.platform;
+const arch = normalizeArch(process.env.ZXCODE_TARGET_ARCH || "") || process.arch;
 const platformKey = `${platform}-${arch}`;
 
 const glmDir = resolve(desktopRoot, "bundled-agents", platformKey, "glm");
@@ -374,18 +369,12 @@ function shouldCopyOfficialPluginAsset(sourcePath) {
 const isBootstrapWithRemote = process.env.ZXCODE_BOOTSTRAP_WITH_REMOTE === "1";
 
 function buildCliBundle() {
-  console.log(
-    "[prepare:agent-bundle] building zcode-cli app-server bundle ...",
-  );
+  console.log("[prepare:agent-bundle] building zcode-cli app-server bundle ...");
   // 复用仓库根脚本（turbo build:desktop-agent --filter=@zcode/cli），命中缓存时几乎瞬时。
-  runCommand(
-    process.execPath,
-    [resolve(repoRoot, "scripts/build-desktop-agent-cli.mjs")],
-    {
-      cwd: repoRoot,
-      env: pnpmRunEnv,
-    },
-  );
+  runCommand(process.execPath, [resolve(repoRoot, "scripts/build-desktop-agent-cli.mjs")], {
+    cwd: repoRoot,
+    env: pnpmRunEnv,
+  });
   if (!existsSync(cliBundlePath)) {
     throw new Error(
       `[prepare:agent-bundle] expected cli bundle missing after build: ${cliBundlePath}`,
@@ -396,9 +385,7 @@ function buildCliBundle() {
 function buildOfficialPluginRuntimes() {
   for (const plugin of officialPluginPackages) {
     if (!plugin.requiresRuntime) continue;
-    console.log(
-      `[prepare:agent-bundle] building ${plugin.packageName} runtime ...`,
-    );
+    console.log(`[prepare:agent-bundle] building ${plugin.packageName} runtime ...`);
     if (isBootstrapWithRemote) {
       buildOfficialPluginRuntimeForBootstrap(plugin);
       assertOfficialPluginRuntime(plugin);
@@ -407,13 +394,7 @@ function buildOfficialPluginRuntimes() {
 
     runCommand(
       "pnpm",
-      [
-        "--dir",
-        resolve(repoRoot, "apps/zcode-cli"),
-        "--filter",
-        plugin.packageName,
-        "build",
-      ],
+      ["--dir", resolve(repoRoot, "apps/zcode-cli"), "--filter", plugin.packageName, "build"],
       {
         cwd: repoRoot,
         env: pnpmRunEnv,
@@ -428,10 +409,7 @@ function buildOfficialPluginRuntimeForBootstrap(plugin) {
   const hasCompleteRuntime = plugin.requiredRuntimePaths.every((relativePath) =>
     existsSync(resolve(pluginRoot, ...relativePath.split("/"))),
   );
-  if (
-    plugin.packageName !== BROWSER_USE_PLUGIN_PACKAGE_NAME &&
-    hasCompleteRuntime
-  ) {
+  if (plugin.packageName !== BROWSER_USE_PLUGIN_PACKAGE_NAME && hasCompleteRuntime) {
     console.log(
       `[prepare:agent-bundle] reuse existing official plugin runtime: ${plugin.packageName}`,
     );
@@ -458,9 +436,7 @@ function assertOfficialPluginRuntime(plugin) {
   for (const relativePath of plugin.requiredRuntimePaths) {
     const runtimePath = resolve(pluginRoot, ...relativePath.split("/"));
     if (!existsSync(runtimePath)) {
-      throw new Error(
-        `[prepare:agent-bundle] missing official plugin runtime: ${runtimePath}`,
-      );
+      throw new Error(`[prepare:agent-bundle] missing official plugin runtime: ${runtimePath}`);
     }
   }
 }
@@ -476,9 +452,7 @@ function stageOfficialPlugins() {
     const sourceRoot = resolve(repoRoot, plugin.relativePath);
     const manifestPath = resolve(sourceRoot, ".zcode-plugin", "plugin.json");
     if (!existsSync(manifestPath)) {
-      throw new Error(
-        `[prepare:agent-bundle] missing official plugin manifest: ${manifestPath}`,
-      );
+      throw new Error(`[prepare:agent-bundle] missing official plugin manifest: ${manifestPath}`);
     }
 
     const targetRoot = resolve(glmDir, plugin.stagedPath);
@@ -499,9 +473,7 @@ function stageOfficialPlugins() {
         );
       }
     }
-    console.log(
-      `[prepare:agent-bundle] staged official plugin ${plugin.stagedPath}`,
-    );
+    console.log(`[prepare:agent-bundle] staged official plugin ${plugin.stagedPath}`);
   }
 }
 
@@ -511,12 +483,7 @@ function stageOfficialPlugins() {
 // 这里在打包前置校验快照完整性：目录缺失只是商店目录退化为内置插件（warn），
 // 但 manifest 声明的条目缺解压目录说明快照半成品，必须 fail fast。
 function validateOfflineMarketplaceStaging() {
-  const manifestPath = resolve(
-    desktopRoot,
-    "resources",
-    "official-marketplace",
-    "manifest.json",
-  );
+  const manifestPath = resolve(desktopRoot, "resources", "official-marketplace", "manifest.json");
   if (!existsSync(manifestPath)) {
     console.warn(
       "[prepare:agent-bundle] [warn] 官方市场离线快照缺失（先运行 scripts/fetch-official-marketplace.mjs）；商店将只展示内置插件",
@@ -540,9 +507,7 @@ function validateOfflineMarketplaceStaging() {
       );
     }
   }
-  console.log(
-    `[prepare:agent-bundle] offline marketplace snapshot ok (${entries.length} plugins)`,
-  );
+  console.log(`[prepare:agent-bundle] offline marketplace snapshot ok (${entries.length} plugins)`);
 }
 
 function stageBundledSkillPack() {
@@ -565,9 +530,7 @@ function stageBundledSkillPack() {
       );
     }
   }
-  console.log(
-    `[prepare:agent-bundle] staged bundled skill pack ${bundledSkillPack.stagedPath}`,
-  );
+  console.log(`[prepare:agent-bundle] staged bundled skill pack ${bundledSkillPack.stagedPath}`);
 }
 
 function stageSharpForNodeReplPlugin() {
@@ -584,21 +547,13 @@ function stageSharpForNodeReplPlugin() {
   // Browser Use 目录保留一份兼容 staging。三份 staging 都位于 plugin 子目录下，避免
   // electron-builder 过滤 extraResources 根目录的 node_modules。
   const pluginStagedDirs = [
-    [
-      NODE_REPL_HOST_PACKAGE_NAME,
-      resolve(glmDir, "packages", "node-repl-host"),
-    ],
-    [
-      BROWSER_USE_PLUGIN_PACKAGE_NAME,
-      resolve(glmDir, "packages", "browser-use-plugin"),
-    ],
+    [NODE_REPL_HOST_PACKAGE_NAME, resolve(glmDir, "packages", "node-repl-host")],
+    [BROWSER_USE_PLUGIN_PACKAGE_NAME, resolve(glmDir, "packages", "browser-use-plugin")],
     [CUA_PLUGIN_PACKAGE_NAME, resolve(glmDir, "packages", "zcode-cua-plugin")],
   ];
   for (const [packageName, pluginStagedDir] of pluginStagedDirs) {
     if (!existsSync(resolve(pluginStagedDir, ".zcode-plugin", "plugin.json"))) {
-      console.log(
-        `[prepare:agent-bundle] ${packageName} not staged, skip sharp staging`,
-      );
+      console.log(`[prepare:agent-bundle] ${packageName} not staged, skip sharp staging`);
       continue;
     }
     stageSharpIntoBundledAgents({
@@ -614,12 +569,8 @@ function stageSharpForNodeReplPlugin() {
 
 function stageKoffiForCuaPlugin() {
   const cuaPluginStagedDir = resolve(glmDir, "packages", "zcode-cua-plugin");
-  if (
-    !existsSync(resolve(cuaPluginStagedDir, ".zcode-plugin", "plugin.json"))
-  ) {
-    console.log(
-      "[prepare:agent-bundle] zcode-cua-plugin not staged, skip koffi staging",
-    );
+  if (!existsSync(resolve(cuaPluginStagedDir, ".zcode-plugin", "plugin.json"))) {
+    console.log("[prepare:agent-bundle] zcode-cua-plugin not staged, skip koffi staging");
     return;
   }
   stageKoffiIntoBundledAgents({

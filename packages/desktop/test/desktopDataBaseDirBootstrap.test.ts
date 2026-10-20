@@ -23,8 +23,6 @@ describe("desktopDataBaseDirBootstrap", () => {
     const result = resolveBootstrapSettingsFile("/Users/tester");
     // Windows 下 path.join 使用反斜杠，统一为正斜杠后再比较
     // fork 配置目录为 .zxcode。
-    expect(result.replace(/\\/g, "/")).toBe(
-      "/Users/tester/.zxcode/v2/setting.json",
-    );
+    expect(result.replace(/\\/g, "/")).toBe("/Users/tester/.zxcode/v2/setting.json");
   });
 });

@@ -2,10 +2,7 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import {
-  DesktopCommandIds,
-  TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER,
-} from "@zcode/shared";
+import { DesktopCommandIds, TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER } from "@zcode/shared";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({
@@ -28,8 +25,7 @@ const captured = vi.hoisted(() => ({
 }));
 
 vi.mock("@/components/ui/dropdown-menu.js", () => ({
-  DropdownMenu: ({ children }: { children: ReactNode }) =>
-    createElement("div", null, children),
+  DropdownMenu: ({ children }: { children: ReactNode }) => createElement("div", null, children),
   DropdownMenuContent: ({ children }: { children: ReactNode }) =>
     createElement("div", null, children),
   DropdownMenuItem: ({
@@ -79,11 +75,8 @@ describe("WorkspaceHelpMenuButton", () => {
   async function render(isDesktop: boolean | undefined) {
     captured.menuItems = [];
     captured.executeDesktopCommand.mockClear();
-    const { WorkspaceHelpMenuButton } =
-      await import("@/WorkspaceHelpMenuButton.js");
-    return renderToStaticMarkup(
-      createElement(WorkspaceHelpMenuButton, { isDesktop }),
-    );
+    const { WorkspaceHelpMenuButton } = await import("@/WorkspaceHelpMenuButton.js");
+    return renderToStaticMarkup(createElement(WorkspaceHelpMenuButton, { isDesktop }));
   }
 
   it("桌面端渲染资源管理器项，点击走 OpenResourceManager 命令", async () => {

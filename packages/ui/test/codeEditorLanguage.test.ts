@@ -42,9 +42,7 @@ describe("code editor language", () => {
       expect(supported.has(language), `缺少语言映射: ${language}`).toBe(true);
     }
     for (const language of plainLanguages) {
-      expect(supported.has(language), `${language} 不应有语言映射（约定纯文本降级）`).toBe(
-        false,
-      );
+      expect(supported.has(language), `${language} 不应有语言映射（约定纯文本降级）`).toBe(false);
     }
   });
 
@@ -91,10 +89,9 @@ describe("code editor language", () => {
     ];
     for (const [file, expectHighlight] of samples) {
       const language = inferCodeLanguage(file);
-      expect(
-        hasCodeEditorLanguage(language),
-        `${file} → ${language} 的高亮预期不符`,
-      ).toBe(expectHighlight);
+      expect(hasCodeEditorLanguage(language), `${file} → ${language} 的高亮预期不符`).toBe(
+        expectHighlight,
+      );
     }
   });
 });

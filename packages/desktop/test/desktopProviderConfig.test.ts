@@ -30,7 +30,7 @@ describe("resolveZCodeBuiltinProviderConfigFilePath", () => {
           env: {},
         }),
       ),
-    // fork 收敛为唯一线上配置源 zxcode-builtin.json（desktopProviderConfig.ts）。
+      // fork 收敛为唯一线上配置源 zxcode-builtin.json（desktopProviderConfig.ts）。
     ).toBe("/repo/config/provider/zxcode-builtin.json");
   });
 
@@ -63,8 +63,8 @@ describe("开发态按编译环境选取配置", () => {
           env: { ZXCODE_ENV: environment === "test" ? "production" : "test" },
         }),
       ),
-    // fork 开发态与打包共用唯一配置源，不再按编译环境切换 test 变体；
-    // 环境变量也不反向覆盖文件选择。
+      // fork 开发态与打包共用唯一配置源，不再按编译环境切换 test 变体；
+      // 环境变量也不反向覆盖文件选择。
     ).toBe("/repo/config/provider/zxcode-builtin.json");
   });
 });

@@ -10,8 +10,7 @@ interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY =
-  "zcode-last-agent-provider";
+export const LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY = "zcode-last-agent-provider";
 
 function getBrowserStorage(): StorageLike | null {
   if (typeof window === "undefined") {
@@ -26,10 +25,7 @@ function getBrowserStorage(): StorageLike | null {
 }
 
 function isAgentProvider(value: unknown): value is ZCodeProvider {
-  return (
-    typeof value === "string" &&
-    ZCODE_AGENT_PROVIDERS.includes(value as ZCodeProvider)
-  );
+  return typeof value === "string" && ZCODE_AGENT_PROVIDERS.includes(value as ZCodeProvider);
 }
 
 export function readLastSelectedAgentProvider(

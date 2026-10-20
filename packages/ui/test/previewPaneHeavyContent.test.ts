@@ -22,7 +22,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStore: <T,>(selector: (state: Record<string, unknown>) => T) =>
+  useZCodeStore: <T>(selector: (state: Record<string, unknown>) => T) =>
     selector({
       codePreviewSettings: {
         darkTheme: "github-dark",
@@ -36,9 +36,7 @@ vi.mock("@/store/StoreProvider.js", () => ({
 }));
 
 vi.mock("@/store/codeCommentPreviewStore.js", () => ({
-  useCodeCommentPreviewStore: <T,>(
-    selector: (state: Record<string, unknown>) => T,
-  ) =>
+  useCodeCommentPreviewStore: <T>(selector: (state: Record<string, unknown>) => T) =>
     selector({
       addComment: vi.fn(),
       getComments: () => [],
@@ -47,8 +45,7 @@ vi.mock("@/store/codeCommentPreviewStore.js", () => ({
 }));
 
 vi.mock("@/previewPaneContent.js", () => ({
-  PreviewPaneContent: () =>
-    createElement("div", { "data-preview-pane-content": "mounted" }),
+  PreviewPaneContent: () => createElement("div", { "data-preview-pane-content": "mounted" }),
 }));
 
 async function renderPreviewPane(renderHeavyContent: boolean) {

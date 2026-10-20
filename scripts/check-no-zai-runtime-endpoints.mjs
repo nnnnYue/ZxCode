@@ -105,7 +105,11 @@ for (const root of SCAN_ROOTS) {
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       if (ZCODE_ORIGIN_PATTERN.test(lines[lineIndex])) {
         if (!ZCODE_ORIGIN_ALLOWED_FILES.has(relativePath)) {
-          checkLine(lineIndex, ZCODE_ORIGIN_PATTERN, "zcode.z.ai 平台端点字面量（须先更新允许清单与 spec）");
+          checkLine(
+            lineIndex,
+            ZCODE_ORIGIN_PATTERN,
+            "zcode.z.ai 平台端点字面量（须先更新允许清单与 spec）",
+          );
         }
         continue;
       }

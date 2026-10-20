@@ -105,9 +105,7 @@ describe(`${CASE_MARKER}: SSH 本地下载遵循应用代理`, () => {
   });
 });
 
-function restoreRemoteAssetEnv(
-  originalEnv: ReadonlyMap<string, string | undefined>,
-): void {
+function restoreRemoteAssetEnv(originalEnv: ReadonlyMap<string, string | undefined>): void {
   for (const [key, value] of originalEnv) {
     if (value === undefined) {
       delete process.env[key];

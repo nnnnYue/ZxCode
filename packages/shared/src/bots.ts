@@ -1,22 +1,10 @@
-import {
-  zcodeProtocolTraceSchema,
-  type ZCodeProtocolTrace,
-} from "./zcode-protocol/trace.js";
-import {
-  channelContentPartsSchema,
-  type ChannelContentPart,
-} from "./channel-mention.js";
+import { zcodeProtocolTraceSchema, type ZCodeProtocolTrace } from "./zcode-protocol/trace.js";
+import { channelContentPartsSchema, type ChannelContentPart } from "./channel-mention.js";
 /* oxlint-disable eslint(max-lines) -- Bot 共享合约集中维护 provider、状态和 schema，保持类型与校验就近。 */
 import { z } from "zod";
-import {
-  modelSelectionSchema,
-  type ModelSelection,
-} from "./model-selection.js";
+import { modelSelectionSchema, type ModelSelection } from "./model-selection.js";
 import { conversationQuotesSchema } from "./conversationSelection.js";
-import {
-  ZXCODE_AGENT_PROVIDER,
-  ZXCODE_AGENT_PROVIDER_LABEL,
-} from "./zcode-agent-policy.js";
+import { ZXCODE_AGENT_PROVIDER, ZXCODE_AGENT_PROVIDER_LABEL } from "./zcode-agent-policy.js";
 import type {
   ZCodeConfigOption,
   ZCodeElicitationRequest,
@@ -68,9 +56,7 @@ export type ZCodeAutomationBotDeliveryTarget = z.infer<
   typeof zcodeAutomationBotDeliveryTargetSchema
 >;
 
-export function isFeishuBotProvider(
-  provider: BotProvider,
-): provider is FeishuBotProvider {
+export function isFeishuBotProvider(provider: BotProvider): provider is FeishuBotProvider {
   return provider === "feishu" || provider === "lark";
 }
 export type BotContextMode = "draft" | "task";
@@ -262,9 +248,7 @@ export const botTopicMessageSchema = z
     senderId: z.string(),
     senderName: z.string().optional(),
     parentId: z.string().optional(),
-    attachments: z
-      .array(z.object({ name: z.string(), kind: z.string() }).strict())
-      .optional(),
+    attachments: z.array(z.object({ name: z.string(), kind: z.string() }).strict()).optional(),
     senderType: z.enum(["user", "app"]),
     text: z.string(),
     createdAt: z.number(),
@@ -326,10 +310,7 @@ export interface BotGroupSession {
   ownerId: string;
   enabled: boolean;
   taskIds: string[];
-  taskWorkspaces?: Record<
-    string,
-    { workspacePath: string; workspaceIdentity?: string }
-  >;
+  taskWorkspaces?: Record<string, { workspacePath: string; workspaceIdentity?: string }>;
   currentOptions: BotCurrentOptions;
   initiatorId?: string;
   authorizationId?: string;
@@ -642,11 +623,7 @@ export interface BotOutboundMessage {
 export interface BotTaskSummary {
   taskId: string;
   title: string;
-  status:
-    | ZCodeTaskRuntimeStatus
-    | "persisted-completed"
-    | "persisted-error"
-    | "unknown";
+  status: ZCodeTaskRuntimeStatus | "persisted-completed" | "persisted-error" | "unknown";
   workspacePath: string;
   workspaceIdentity?: string;
   provider?: ZCodeProvider;
@@ -790,9 +767,7 @@ const botPendingElicitationSchema = z
       })
       .strict()
       .optional(),
-    expandedCustomAnswerQuestionIndexes: z
-      .array(z.number().int().min(0))
-      .optional(),
+    expandedCustomAnswerQuestionIndexes: z.array(z.number().int().min(0)).optional(),
     handledAt: z.number().optional(),
   })
   .strict();
@@ -886,9 +861,7 @@ export const botsStateFileSchema = z
                   .object({
                     taskId: z.string().min(1),
                     source: botGroupInputSourceSchema,
-                    admission: z
-                      .enum(["pending", "accepted", "rejected"])
-                      .optional(),
+                    admission: z.enum(["pending", "accepted", "rejected"]).optional(),
                     progress: botGroupInputProgressSchema.optional(),
                   })
                   .strict(),
@@ -937,8 +910,7 @@ export const DEFAULT_BOT_COMMANDS: BotAllowedCommands = {
   reply: true,
 };
 
-export const DEFAULT_BOT_REPLY_GRANULARITY: BotReplyGranularity =
-  "assistant_changes";
+export const DEFAULT_BOT_REPLY_GRANULARITY: BotReplyGranularity = "assistant_changes";
 
 export function getSupportedBotReplyGranularities(
   provider: BotProvider,

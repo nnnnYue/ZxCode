@@ -162,7 +162,9 @@ const highlightStyleCache = new Map<string, Promise<HighlightStyle | null>>();
  * 解析代码预览 shiki 主题对应的 CodeMirror HighlightStyle；失败返回 null（仅无 token 配色）。
  * 结果按主题名缓存（含失败），主题设置切换时由调用方传入新主题名触发新解析。
  */
-export function resolveCodeEditorHighlightStyle(codeTheme: BundledTheme): Promise<HighlightStyle | null> {
+export function resolveCodeEditorHighlightStyle(
+  codeTheme: BundledTheme,
+): Promise<HighlightStyle | null> {
   const cached = highlightStyleCache.get(codeTheme);
   if (cached) {
     return cached;
@@ -172,8 +174,7 @@ export function resolveCodeEditorHighlightStyle(codeTheme: BundledTheme): Promis
     // shiki v4 的 bundledThemes loader 直接返回动态 import 的 module namespace，
     // 主题在 .default 上；做运行时解包兼容未来直接返回主题注册的形态。
     const themeModule: unknown = await bundledThemes[codeTheme]();
-    const registration =
-      (themeModule as { default?: unknown }).default ?? themeModule;
+    const registration = (themeModule as { default?: unknown }).default ?? themeModule;
     const normalized = normalizeTheme(registration as Parameters<typeof normalizeTheme>[0]);
     const specs = buildHighlightStyleSpecs(normalized.settings ?? []);
     return HighlightStyle.define(specs);

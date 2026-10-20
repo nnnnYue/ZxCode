@@ -76,7 +76,9 @@ export function getToolCallErrorText(
   }
 
   const rawOutput = isRecord(toolCall.raw.rawOutput) ? toolCall.raw.rawOutput : null;
-  const rawOutputError = rawOutput ? readFirstStringField(rawOutput, ["error", "message"]) : undefined;
+  const rawOutputError = rawOutput
+    ? readFirstStringField(rawOutput, ["error", "message"])
+    : undefined;
   if (rawOutputError) {
     return rawOutputError;
   }
@@ -86,7 +88,6 @@ export function getToolCallErrorText(
   if (taggedRawOutputError) {
     return taggedRawOutputError;
   }
-
 
   if (toolCall.status === "failed" || rawStatus === "failed") {
     const contentBlocks = Array.isArray(toolCall.raw.content) ? toolCall.raw.content : [];

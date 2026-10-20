@@ -23,10 +23,7 @@ import {
   lineNumbers,
   rectangularSelection,
 } from "@codemirror/view";
-import {
-  closeBrackets,
-  closeBracketsKeymap,
-} from "@codemirror/autocomplete";
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import {
   bracketMatching,
   foldGutter,
@@ -37,10 +34,7 @@ import {
 } from "@codemirror/language";
 import { history, defaultKeymap, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
-import {
-  codeEditorBaseTheme,
-  resolveCodeEditorHighlightStyle,
-} from "@/lib/codeEditorTheme.js";
+import { codeEditorBaseTheme, resolveCodeEditorHighlightStyle } from "@/lib/codeEditorTheme.js";
 import { hasCodeEditorLanguage, loadCodeEditorLanguage } from "@/lib/codeEditorLanguage.js";
 import type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 import { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
@@ -53,8 +47,7 @@ const wrapCompartment = new Compartment();
 const readOnlyCompartment = new Compartment();
 const lineNumbersCompartment = new Compartment();
 
-export interface CodeEditorProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
+export interface CodeEditorProps extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
   /** 编辑器初始内容（真源在外部 draft，本组件非受控，仅挂载时消费）。 */
   initialValue: string;
   /** doc 变更回调（含 undo/redo、粘贴、输入法）。 */
@@ -78,9 +71,7 @@ function resolveEffectiveFontSize(fontSizePx: number): number {
     return fontSizePx;
   }
 
-  return window.matchMedia("(max-width: 767px)").matches
-    ? Math.max(fontSizePx, 16)
-    : fontSizePx;
+  return window.matchMedia("(max-width: 767px)").matches ? Math.max(fontSizePx, 16) : fontSizePx;
 }
 
 export const CodeEditor = memo(function CodeEditor({
@@ -193,25 +184,19 @@ export const CodeEditor = memo(function CodeEditor({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: lineNumbersCompartment.reconfigure(
-        settings.showLineNumbers ? lineNumbers() : [],
-      ),
+      effects: lineNumbersCompartment.reconfigure(settings.showLineNumbers ? lineNumbers() : []),
     });
   }, [settings.showLineNumbers]);
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: wrapCompartment.reconfigure(
-        settings.wrapLongLines ? EditorView.lineWrapping : [],
-      ),
+      effects: wrapCompartment.reconfigure(settings.wrapLongLines ? EditorView.lineWrapping : []),
     });
   }, [settings.wrapLongLines]);
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: chromeThemeCompartment.reconfigure(
-        codeEditorBaseTheme(effectiveFontSize),
-      ),
+      effects: chromeThemeCompartment.reconfigure(codeEditorBaseTheme(effectiveFontSize)),
     });
   }, [effectiveFontSize]);
 
@@ -255,9 +240,7 @@ export const CodeEditor = memo(function CodeEditor({
     void resolveCodeEditorHighlightStyle(codeTheme).then((style) => {
       if (!cancelled && viewRef.current === view) {
         view.dispatch({
-          effects: syntaxThemeCompartment.reconfigure(
-            style ? [syntaxHighlighting(style)] : [],
-          ),
+          effects: syntaxThemeCompartment.reconfigure(style ? [syntaxHighlighting(style)] : []),
         });
       }
     });

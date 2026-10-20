@@ -3,14 +3,8 @@ import { describe, expect, it } from "vitest";
 
 // fork：闲时任务（Off-Peak）域已剔除，仅保留存活自动化组件的边框令牌围栏。
 const [automationsSectionSource, automationDesignPrimitivesSource] = await Promise.all([
-  readFile(
-    new URL("../src/settings/AutomationsSection.tsx", import.meta.url),
-    "utf8",
-  ),
-  readFile(
-    new URL("../src/settings/AutomationDesignPrimitives.tsx", import.meta.url),
-    "utf8",
-  ),
+  readFile(new URL("../src/settings/AutomationsSection.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../src/settings/AutomationDesignPrimitives.tsx", import.meta.url), "utf8"),
 ]);
 
 describe("automation card border tokens", () => {
@@ -33,8 +27,6 @@ describe("automation card border tokens", () => {
     expect(automationsSectionSource).not.toContain(
       "rounded-2xl border border-surface bg-background",
     );
-    expect(automationDesignPrimitivesSource).not.toContain(
-      '"border border-surface bg-background"',
-    );
+    expect(automationDesignPrimitivesSource).not.toContain('"border border-surface bg-background"');
   });
 });

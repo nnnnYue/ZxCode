@@ -62,7 +62,10 @@ let templates: {
 }[];
 beforeAll(async () => {
   const release = JSON.parse(
-    await readFile(new URL("../../../config/provider/zxcode-builtin.json", import.meta.url), "utf8"),
+    await readFile(
+      new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
+      "utf8",
+    ),
   );
   rules = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules);
   templates = release.config.providerConfigRules.templateRules;

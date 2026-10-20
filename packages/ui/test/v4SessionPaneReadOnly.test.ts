@@ -352,4 +352,3 @@ describe("SessionPane read-only mode", () => {
     expect(html).not.toContain("shared_context");
   });
 });
-

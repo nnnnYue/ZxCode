@@ -230,9 +230,7 @@ describe("relay http server", () => {
           version: ZXCODE_RELAY_PROTOCOL_VERSION,
         }),
       );
-      const ack = await control.next(
-        (m) => (m as { type?: string }).type === "relay-control-ack",
-      );
+      const ack = await control.next((m) => (m as { type?: string }).type === "relay-control-ack");
       expect((ack as { deviceId?: string }).deviceId).toBe("device-test");
 
       // 连接仍然存活且控制注册未被拆掉：还能正常签发 grant。

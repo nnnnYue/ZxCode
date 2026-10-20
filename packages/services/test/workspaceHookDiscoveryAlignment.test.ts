@@ -100,7 +100,9 @@ describe("workspace hook Settings/Runtime discovery alignment", () => {
       workspacePath: workspace,
       hooks: loaded.hooks,
     });
-    const savedCurrent = JSON.parse(readFileSync(join(workspace, ".zxcode", "config.json"), "utf8"));
+    const savedCurrent = JSON.parse(
+      readFileSync(join(workspace, ".zxcode", "config.json"), "utf8"),
+    );
     expect(savedCurrent.hooks.events.SessionStart).toHaveLength(1);
     expect(savedCurrent.hooks.events.Stop).toBeUndefined();
     expect(readFileSync(join(repo, "zxcode.json"), "utf8")).toContain("echo zcode-json");

@@ -32,32 +32,35 @@ describe("desktop renderer Vite dependency aliases", () => {
   // Windows 跳过：环境配置差异导致断言失败，需要 CI 环境统一配置
   const isWindows = process.platform === "win32";
 
-  (isWindows ? it.skip : it)("injects the selected ZCode endpoint env into renderer env", async () => {
-    vi.stubEnv("ZXCODE_ENV", "test");
-    vi.stubEnv("ZXCODE_BASE_URL", "https://renderer-endpoint.example.test");
-    const desktopRoot = resolve(import.meta.dirname, "..");
-    const configFile = resolve(desktopRoot, "vite.config.ts");
-    const result = await loadConfigFromFile(
-      {
-        command: "build",
-        mode: "production",
-        isPreview: false,
-        isSsrBuild: false,
-      },
-      configFile,
-      desktopRoot,
-      "silent",
-    );
+  (isWindows ? it.skip : it)(
+    "injects the selected ZCode endpoint env into renderer env",
+    async () => {
+      vi.stubEnv("ZXCODE_ENV", "test");
+      vi.stubEnv("ZXCODE_BASE_URL", "https://renderer-endpoint.example.test");
+      const desktopRoot = resolve(import.meta.dirname, "..");
+      const configFile = resolve(desktopRoot, "vite.config.ts");
+      const result = await loadConfigFromFile(
+        {
+          command: "build",
+          mode: "production",
+          isPreview: false,
+          isSsrBuild: false,
+        },
+        configFile,
+        desktopRoot,
+        "silent",
+      );
 
-    // fork 构建期经 pickProductEndpointEnv 注入 __ZXCODE_ENDPOINT_ENV__；
-    // VITE_ZCODE_BASE_URL/VITE_ZCODE_ENDPOINT_ORIGIN 注入已随去平台化删除。
-    expect(result?.config.define).toMatchObject({
-      __ZXCODE_ENDPOINT_ENV__: JSON.stringify({
-        ZXCODE_BASE_URL: "https://renderer-endpoint.example.test",
-      }),
-      __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
-    });
-  });
+      // fork 构建期经 pickProductEndpointEnv 注入 __ZXCODE_ENDPOINT_ENV__；
+      // VITE_ZCODE_BASE_URL/VITE_ZCODE_ENDPOINT_ORIGIN 注入已随去平台化删除。
+      expect(result?.config.define).toMatchObject({
+        __ZXCODE_ENDPOINT_ENV__: JSON.stringify({
+          ZXCODE_BASE_URL: "https://renderer-endpoint.example.test",
+        }),
+        __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
+      });
+    },
+  );
 
   it("marks non-production renderer builds as local development runtime", async () => {
     vi.stubEnv("ZXCODE_ENV", "production");

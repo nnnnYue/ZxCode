@@ -32,11 +32,12 @@ describe("desktop deep link url helpers", () => {
   it("extracts protocol urls from desktop argv variants", async () => {
     const { extractDeepLinkUrlFromArgs } = await import("../src/main/desktopDeepLinkUrl.js");
     // fork 完整性判定：payment 回调需 provider+channel+status 齐备才直接采用，否则回退首个候选。
-    const completePaymentUrl = "zxcode://payment/callback?provider=zai&channel=paypal&status=return";
+    const completePaymentUrl =
+      "zxcode://payment/callback?provider=zai&channel=paypal&status=return";
 
-    expect(
-      extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", completePaymentUrl]),
-    ).toBe(completePaymentUrl);
+    expect(extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", completePaymentUrl])).toBe(
+      completePaymentUrl,
+    );
     expect(
       extractDeepLinkUrlFromArgs(["/opt/ZxCode/zxcode", `--open-url=${completePaymentUrl}`]),
     ).toBe(completePaymentUrl);
@@ -103,10 +104,12 @@ describe("desktop deep link url helpers", () => {
         "--open-workspace=C:\\Users\\demo\\Project%20A",
       ]),
     ).toBe("C:\\Users\\demo\\Project%20A");
-    expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:"'])).toBe("C:\\");
-    expect(
-      extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:\\repo"']),
-    ).toBe("C:\\repo\\");
+    expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:"'])).toBe(
+      "C:\\",
+    );
+    expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace", 'C:\\repo"'])).toBe(
+      "C:\\repo\\",
+    );
     expect(extractOpenWorkspacePathFromArgs(["ZxCode.exe", "--open-workspace"])).toBeNull();
   });
 

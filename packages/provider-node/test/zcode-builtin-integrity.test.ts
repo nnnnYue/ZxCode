@@ -953,7 +953,6 @@ describe("ZCode Built-in Provider Config 完整性", () => {
           ).toEqual([]);
         }
       }
-
     } finally {
       source.dispose();
     }

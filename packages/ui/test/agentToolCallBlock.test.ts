@@ -975,8 +975,6 @@ describe("AgentToolCallBlock", () => {
     expect(html).toMatch(/>Explore</);
   });
 
-
-
   it("renders prompt and child tool calls without result content", () => {
     const html = renderToStaticMarkup(
       createElement(

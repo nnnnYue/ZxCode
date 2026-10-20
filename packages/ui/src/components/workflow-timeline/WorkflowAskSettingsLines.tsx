@@ -17,10 +17,7 @@ import { ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import { ThoughtLevelCycleControl } from "@/chat-input-toolbar/ThoughtLevelCycleControl.js";
 import { cn } from "@/components/lib/utils.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import {
-  MODEL_CONFIG_SELECT_BADGE_CLASS_NAME,
-  ModelConfigSelect,
-} from "@/ModelConfigSelect.js";
+import { MODEL_CONFIG_SELECT_BADGE_CLASS_NAME, ModelConfigSelect } from "@/ModelConfigSelect.js";
 import {
   workflowScriptNamesModels,
   type WorkflowAdjustableSettings,
@@ -72,21 +69,13 @@ export function WorkflowAskSettings({
 }) {
   const defaultConcurrency = adjustable.defaultConcurrency;
   // 起点在挂载那一刻定下：父组件按 requestId 重挂，同一个请求的入参不会变。
-  const [initial] = useState(() =>
-    initialWorkflowAskSettingsDraft(input, defaultConcurrency),
-  );
+  const [initial] = useState(() => initialWorkflowAskSettingsDraft(input, defaultConcurrency));
   const [draft, setDraft] = useState<WorkflowRunSettingsDraft>(initial);
   const update = (next: WorkflowRunSettingsDraft) => {
     setDraft(next);
-    onContentChange?.(
-      workflowAskSettingsContent(initial, next, defaultConcurrency),
-    );
+    onContentChange?.(workflowAskSettingsContent(initial, next, defaultConcurrency));
   };
-  const changed = workflowAskSettingsChangedLines(
-    initial,
-    draft,
-    defaultConcurrency,
-  );
+  const changed = workflowAskSettingsChangedLines(initial, draft, defaultConcurrency);
 
   return (
     <div className="space-y-1" data-testid="workflow-permission-settings">
@@ -148,10 +137,7 @@ function WorkflowAskModelLine({
   const levelTriggerRef = useRef<HTMLSpanElement | null>(null);
   const [levelOpen, setLevelOpen] = useState(false);
   // ModelConfigSelect 是 memo 组件：内联数组每次渲染都是新引用（reactStableReferences.test.ts）。
-  const leadingItems = useMemo(
-    () => [choices.sessionModelItem],
-    [choices.sessionModelItem],
-  );
+  const leadingItems = useMemo(() => [choices.sessionModelItem], [choices.sessionModelItem]);
   const selectable = adjustable && !choices.noCatalog;
   const face = choices.describe(model);
   const blocked = selectable && face.unavailable;
@@ -254,19 +240,14 @@ function WorkflowAskModelLine({
         {...(model.kind === "session"
           ? {
               triggerBadge: (
-                <span className={MODEL_CONFIG_SELECT_BADGE_CLASS_NAME}>
-                  {choices.sessionBadge}
-                </span>
+                <span className={MODEL_CONFIG_SELECT_BADGE_CLASS_NAME}>{choices.sessionBadge}</span>
               ),
             }
           : face.unavailable
             ? {
                 triggerBadge: (
                   <span
-                    className={cn(
-                      MODEL_CONFIG_SELECT_BADGE_CLASS_NAME,
-                      "text-warning",
-                    )}
+                    className={cn(MODEL_CONFIG_SELECT_BADGE_CLASS_NAME, "text-warning")}
                     data-testid="workflow-permission-settings-model-unavailable"
                   >
                     {format({
@@ -294,10 +275,7 @@ function WorkflowAskModelLine({
           provider={ZXCODE_AGENT_PROVIDER}
           restoreFocusSelector={null}
           showInvalidCurrentValue
-          triggerClassName={cn(
-            WORKFLOW_ASK_CHIP_CLASS_NAME,
-            changed && "font-medium",
-          )}
+          triggerClassName={cn(WORKFLOW_ASK_CHIP_CLASS_NAME, changed && "font-medium")}
           triggerRef={levelTriggerRef}
         />
       )}

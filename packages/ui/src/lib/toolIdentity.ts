@@ -6,10 +6,7 @@ import {
   type ZCodeKnownToolName,
   type ZCodeToolFamily,
 } from "@zcode/shared";
-import {
-  normalizeAskUserQuestionInput,
-  readAskUserQuestionInput,
-} from "@/lib/askUserQuestion.js";
+import { normalizeAskUserQuestionInput, readAskUserQuestionInput } from "@/lib/askUserQuestion.js";
 
 export type ToolCallPresentationFamily =
   | ZCodeToolFamily
@@ -57,15 +54,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : undefined;
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function readNestedString(
-  value: unknown,
-  path: readonly string[],
-): string | undefined {
+function readNestedString(value: unknown, path: readonly string[]): string | undefined {
   let current: unknown = value;
   for (const key of path) {
     if (!isRecord(current)) {
@@ -163,26 +155,19 @@ function isLegacySkillTool(
     rawClaude === "skill" ||
     title === "skill" ||
     kind === "skill" ||
-    (kind === "other" &&
-      isRecord(toolCall.input) &&
-      typeof toolCall.input.skill === "string")
+    (kind === "other" && isRecord(toolCall.input) && typeof toolCall.input.skill === "string")
   );
 }
 
 function hasAskUserQuestionPayload(toolCall: ToolIdentityLike): boolean {
-  return (
-    normalizeAskUserQuestionInput(readAskUserQuestionInput(toolCall)).questions
-      .length > 0
-  );
+  return normalizeAskUserQuestionInput(readAskUserQuestionInput(toolCall)).questions.length > 0;
 }
 
 function isLegacyGoalToolToken(value: string): boolean {
   return value === "goalcreate" || value === "goalupdate";
 }
 
-function resolveLegacyKindFamily(
-  kind: string,
-): ToolCallPresentationFamily | null {
+function resolveLegacyKindFamily(kind: string): ToolCallPresentationFamily | null {
   if (/^(?:read|view|open|cat|head|tail|read_file)(?:_|$)/i.test(kind)) {
     return "file-read";
   }
@@ -220,9 +205,7 @@ function isPlanModeExitToken(value: string): boolean {
   );
 }
 
-export function resolveToolCallIdentity(
-  toolCall: ToolIdentityLike,
-): ToolCallIdentity {
+export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIdentity {
   const rawNames = readRawToolNameCandidates(toolCall.raw);
   const normalizedKind = normalizeLegacyToken(toolCall.kind);
   const normalizedTitle = normalizeLegacyToken(toolCall.title);
@@ -237,10 +220,7 @@ export function resolveToolCallIdentity(
     { value: rawNames.direct, source: "raw" as const },
     { value: rawNames.zxcode, source: "raw-zcode-meta" as const },
   ]) {
-    const identity = identityFromKnownToolName(
-      candidate.value,
-      candidate.source,
-    );
+    const identity = identityFromKnownToolName(candidate.value, candidate.source);
     if (identity) {
       return identity;
     }
@@ -303,11 +283,7 @@ export function resolveToolCallIdentity(
     normalizedTitle === "enterplanmode" ||
     normalizeLegacyToken(rawNames.claudeCode) === "enterplanmode"
   ) {
-    return identityFromLegacyFamily(
-      "EnterPlanMode",
-      "plan-guidance",
-      "legacy-title",
-    );
+    return identityFromLegacyFamily("EnterPlanMode", "plan-guidance", "legacy-title");
   }
 
   if (
@@ -327,11 +303,7 @@ export function resolveToolCallIdentity(
       .map(normalizeLegacyToken)
       .some(isPlanModeExitToken)
   ) {
-    return identityFromLegacyFamily(
-      "switch_mode",
-      "switch-mode",
-      "legacy-kind",
-    );
+    return identityFromLegacyFamily("switch_mode", "switch-mode", "legacy-kind");
   }
 
   if (isLegacySkillTool(toolCall, rawNames)) {
@@ -344,37 +316,22 @@ export function resolveToolCallIdentity(
     normalizeLegacyToken(rawNames.claudeCode) === "askuserquestion" ||
     hasAskUserQuestionPayload(toolCall)
   ) {
-    return identityFromLegacyFamily(
-      "AskUserQuestion",
-      "ask-user-question",
-      "legacy-payload",
-    );
+    return identityFromLegacyFamily("AskUserQuestion", "ask-user-question", "legacy-payload");
   }
 
   const legacyKindFamily = resolveLegacyKindFamily(normalizedKind);
   if (legacyKindFamily) {
-    return identityFromLegacyFamily(
-      toolCall.kind?.trim() ?? null,
-      legacyKindFamily,
-      "legacy-kind",
-    );
+    return identityFromLegacyFamily(toolCall.kind?.trim() ?? null, legacyKindFamily, "legacy-kind");
   }
 
   const titlePrefixFamily = resolveLegacyKindFamily(
     normalizeLegacyToken(toolCall.title).split("_")[0] ?? "",
   );
   if (titlePrefixFamily === "file-read") {
-    return identityFromLegacyFamily(
-      toolCall.title?.trim() ?? null,
-      "file-read",
-      "legacy-title",
-    );
+    return identityFromLegacyFamily(toolCall.title?.trim() ?? null, "file-read", "legacy-title");
   }
 
-  const claudeIdentity = identityFromKnownToolName(
-    rawNames.claudeCode,
-    "raw-claude-meta",
-  );
+  const claudeIdentity = identityFromKnownToolName(rawNames.claudeCode, "raw-claude-meta");
   if (claudeIdentity) {
     return {
       ...claudeIdentity,
@@ -403,8 +360,5 @@ export function isFileDiffToolCall(
   toolCall: ToolIdentityLike,
   identity = resolveToolCallIdentity(toolCall),
 ): boolean {
-  return (
-    identity.family === "file-write" &&
-    !isFileContentWriteToolCall(toolCall, identity)
-  );
+  return identity.family === "file-write" && !isFileContentWriteToolCall(toolCall, identity);
 }

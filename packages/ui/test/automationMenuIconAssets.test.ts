@@ -36,15 +36,11 @@ describe("automation Lucide icon contract", () => {
 
     expect(automationsSectionSource).toContain("<AutomationEditActionIcon");
     expect(automationsSectionSource).toContain("<AutomationRunNowIcon");
-    expect(automationsSectionSource).toContain(
-      "paused: { icon: AutomationPausedIcon",
-    );
+    expect(automationsSectionSource).toContain("paused: { icon: AutomationPausedIcon");
   });
 
   it("取消任务使用实心 Square 图标", () => {
-    expect(automationIconsSource).toContain(
-      "export function AutomationCancelActionIcon",
-    );
+    expect(automationIconsSource).toContain("export function AutomationCancelActionIcon");
     expect(automationIconsSource).toContain('fill="currentColor"');
   });
 });

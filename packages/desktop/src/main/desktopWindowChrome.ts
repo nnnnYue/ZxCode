@@ -450,8 +450,7 @@ export function createBrowserWindow(options: {
   // fork 移除了 Coding Plan / Rewards 官网 guest，队列只承载内置浏览器与插件沙箱两类；
   // 上游用于区分 Rewards 官网 guest 的 isRewards 判别字段随 Rewards 链路一并剔除。
   const pendingWebviewGuestKinds: Array<
-    | { kind: "browser" }
-    | { kind: "pluginSandbox"; sandboxId: string }
+    { kind: "browser" } | { kind: "pluginSandbox"; sandboxId: string }
   > = [];
 
   win.webContents.once("did-finish-load", () => {
