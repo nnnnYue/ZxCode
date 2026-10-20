@@ -158,6 +158,10 @@ export interface WorkspaceZCodeUIState {
   workspaceInit: WorkspaceInitState;
   /** 草稿态尚未创建 taskId 前的短期运行状态；已有 task 的状态从 taskRuntimeByTaskId 派生。 */
   draftRuntime: DraftRuntimeState;
+  /** 未提交草稿的项目选择；已提交归属只在 Host。fork+上游 3.16 project-sidebar 创建入口使用。 */
+  draftProjectId?: string | null;
+  /** 未提交任务的分组意图；无文字时仅保留在当前 Renderer 内存。 */
+  draftTaskGroupId?: string | null;
   /** 未发送草稿对应的 agent draft session；不进入 task 列表，首发时提升为真实 task。 */
   draftSessionId: string | null;
   /**

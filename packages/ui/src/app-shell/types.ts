@@ -57,9 +57,22 @@ export interface WorkspaceShellZCodeState {
 }
 
 export interface CreateTaskOptions {
+  /** Renderer 发起方租约；异步准备期间取消或换草稿后不得导航。fork+上游 3.16 project-sidebar。 */
+  isCurrent?: () => boolean;
+  remoteProjectMembershipId?: string;
+  /** 只在目标准备和新草稿导航完成后通知发起界面；不自动发送。 */
+  onComplete?: () => void;
+  onError?: (error: unknown) => void;
   /** 异步预填只能提交到解析 Skill 时的同一新任务目标。 */
   expectedWorkspaceKey?: string;
   provider?: ZCodeProvider;
+  /** 未归类任务目录准备的幂等身份，不作为 session 身份。 */
+  draftId?: string;
+  /** 仅分组组织意图，不决定执行项目或 cwd。 */
+  taskGroupId?: string | null;
+  hostId?: string;
+  /** 项目草稿目标：project-sidebar 创建入口使用（fork+上游 3.16）。 */
+  projectId?: string | null;
   groupedDraftPlacement?: GroupedDraftTaskPlacement;
   createSource?: SessionCreateSource;
   /** 新草稿输入框预填文本；只写草稿，不自动发送。 */
