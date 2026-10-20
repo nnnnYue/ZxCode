@@ -294,6 +294,8 @@ export interface AppSettings {
    * 模型 API 请求自定义头开关；关闭（缺省）时模型请求只携带默认来源头，编辑器在设置页隐藏。
    * 行为见 specs/custom-request-headers.md。
    */
+  /** fork：动态工作流用户档位（跟随/启用）；由设置页写入、Host 读取。 */
+  dynamicWorkflowEnabled?: boolean;
   customModelRequestHeadersEnabled?: boolean;
   /**
    * 用户自定义的模型请求头（有序列表；同名不区分大小写覆盖默认来源头）。
