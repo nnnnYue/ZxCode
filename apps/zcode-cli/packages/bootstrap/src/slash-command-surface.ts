@@ -1,4 +1,4 @@
-import { BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES } from "@zcode/shared";
+import { BUILTIN_ZXCODE_SLASH_COMMAND_HELP_ENTRIES } from "@zcode/shared";
 
 /**
  * App `/` 面板与加号菜单按本顺序展示（UI 不维护排序白名单）。`workflow` 紧随 `goal`：两者都是
@@ -16,7 +16,7 @@ export const APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES = [
 const EXTRA_RESERVED_SLASH_COMMAND_NAMES = ["compress", "plan"] as const;
 
 const RESERVED_SLASH_COMMAND_NAMES = new Set(
-  BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES.flatMap((entry) => [
+  BUILTIN_ZXCODE_SLASH_COMMAND_HELP_ENTRIES.flatMap((entry) => [
     entry.name,
     ...(entry.aliases ?? []),
   ]).concat([...EXTRA_RESERVED_SLASH_COMMAND_NAMES]),

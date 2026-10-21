@@ -132,6 +132,8 @@ export type RevokeWorkspaceHookTrustInput =
 export type ZCodeAppRuntimeConfigInput = AgentRuntimeConfig;
 
 export interface ZCodeAppOptions {
+  /** fork：provider runtime headers 已随域剔除；类型占位兼容上游 workspace-model-runtime。 */
+  providerRuntimeHeadersPort?: unknown;
   /** 独立 CLI 的配置菜单编辑输入默认值；其他装配保留显式 Session 配置语义。 */
   modelSelectionMode?: "cli-default";
   /** Host 在运行实例创建时传入，运行中不刷新。 */

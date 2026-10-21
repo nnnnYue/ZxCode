@@ -37,16 +37,13 @@ import type {
   McpToolCallResult,
   McpToolDescriptor,
   OfficialMcpAuthFailureReason,
-  OfficialMcpAuthHeadersPort,
   OfficialMcpTrustedOriginRegistry,
 } from "@zcode/contracts";
 import {
   McpResourceSubscribeUnsupportedError,
-  ZCODE_MCP_SERVER_REQUEST_ID_META_KEY,
 } from "@zcode/contracts";
 import {
   OFFICIAL_MCP_AUTH_META_KEY,
-  ZCODE_OFFICIAL_MCP_AUTH_TYPE,
   type McpServerFailureKind,
   type OfficialMcpAuthFailureKind,
 } from "@zcode/shared";
@@ -128,7 +125,13 @@ export interface CreateMcpAdapterOptions {
    * 可缺省，此时各请求匿名降级并交给服务端做权威判定。
    */
   officialMcpAuth?: {
-    authHeadersPort?: OfficialMcpAuthHeadersPort;
+    authHeadersPort?: {
+    authHeaders?: Record<string, string>;
+    resolveHeaders: (input: unknown) =>
+      | { ok: true; headers: Record<string, string> }
+      | { ok: false; reason: "official_auth_unavailable" | "official_auth_plan_required" | "official_mcp_origin_untrusted" };
+    [key: string]: unknown;
+  };
     trustedOrigins: OfficialMcpTrustedOriginRegistry;
     /**
      * 当前 ZCode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出
@@ -512,7 +515,7 @@ class NodeMcpAdapter implements McpPort {
             tool,
             record.config.timeoutMs,
             record.config.type === "http" &&
-              record.config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+              record.config.auth?.type === "zcode_official",
           ),
         );
         record.status = { ...record.status, toolCount: record.tools.length };
@@ -1223,7 +1226,7 @@ class NodeMcpAdapter implements McpPort {
         // 只在失败时附加：成功路径上它是纯噪声。服务端已给的键一律不覆盖。
         _meta:
           isError && serverRequestId
-            ? { ...meta, [ZCODE_MCP_SERVER_REQUEST_ID_META_KEY]: serverRequestId }
+            ? { ...meta, ["zcode-mcp-server-request-id"]: serverRequestId }
             : meta,
       };
     } catch (error) {
@@ -1582,7 +1585,7 @@ class NodeMcpAdapter implements McpPort {
           //     从而在用户输入框上方弹出"额度用完 / 请开通 Coding Plan"的误导提示。
           // 原判据是 `type !== "sse"`，把 stdio 一起放了进来，等于这道门槛在 stdio 上为零。
           // 注意这不是在挡凭证外泄（那由 origin 校验负责），而是在挡**结果伪造**。
-          config.type === "http" && config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+          config.type === "http" && config.auth?.type === "zcode_official",
           config.alwaysLoad,
         ),
       );

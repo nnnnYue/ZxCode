@@ -83,6 +83,8 @@ export interface AgentRuntimeInternal
   workspaceHookAdmission?: WorkspaceHookRuntimeAdmissionPort;
   modelFactory: AgentRuntimeDeps["modelFactory"];
   modelIoDir?: string;
+  /** fork：provider runtime headers 已随域剔除；属性保留以兼容类型引用。 */
+  providerRuntimeHeadersPort?: MessagePort;
   browserControlPort?: AgentRuntimeDeps["browserControlPort"];
   modelRequestAdmission?: AgentRuntimeDeps["modelRequestAdmission"];
   sessionModelSelection: ModelSelection | undefined;

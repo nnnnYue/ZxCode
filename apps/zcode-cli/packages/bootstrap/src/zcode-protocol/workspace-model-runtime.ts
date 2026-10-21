@@ -84,7 +84,7 @@ export async function createWorkspaceZCodeApp(
       }),
     includeVisualize: true,
     platform: context.deps.platform,
-    providerRuntimeHeadersPort,
+    providerRuntimeHeadersPort: providerRuntimeHeadersPort as never,
     runtimeConfig: {
       ...options.runtimeConfig,
       // createZCodeApp 会把 workingDirectory 规范化为执行 cwd。把协议入口的

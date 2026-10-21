@@ -319,3 +319,6 @@ export * from "./pluginTelemetry.js";
 export {
   DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
 } from "./zcode-protocol/index.js";
+
+// fork：request-security 域已剔除；保留类型别名兼容 zcode-cli 引用。
+export type RequestVerificationReason = string;

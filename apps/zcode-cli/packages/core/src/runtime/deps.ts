@@ -320,3 +320,9 @@ export {
 } from "../subagent/index.js";
 export type { AgentProfile, ExploreSubagentRuntimeRequest } from "../subagent/index.js";
 export { registerMcpTools } from "../mcp/index.js";
+
+/** fork：off-peak 域已剔除；保留类型占位兼容 types.ts 引用。 */
+export interface OffPeakPort {
+  /** no-op：off-peak 域已删除 */
+  readonly _removed: unique symbol;
+}

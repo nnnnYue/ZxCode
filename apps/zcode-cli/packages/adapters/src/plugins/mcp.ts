@@ -9,8 +9,8 @@ import type {
   PluginManifest,
   PluginOptionValues,
 } from "@zcode/contracts";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
-import { ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
+import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { ZXCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
 import type { LoadedPlugin } from "./types.js";
 import { isNotFoundError, isPluginOptionValue, isRecord, resolveInside } from "./helpers.js";
 import { buildOfficialProvenance, parseZCodeOfficialAuth } from "./mcp-official-auth.js";
@@ -188,7 +188,7 @@ function resolveMcpServerConfig(
     enabled: typeof server.enabled === "boolean" ? server.enabled : undefined,
     timeoutMs: typeof server.timeoutMs === "number" ? server.timeoutMs : undefined,
     source: {
-      kind: context.loaded.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE ? "builtin" : "plugin",
+      kind: context.loaded.marketplace === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE ? "builtin" : "plugin",
     },
   };
 
@@ -227,7 +227,7 @@ function resolveMcpServerConfig(
     // 插件 manifest 可自定义 env，但插件身份必须由 resolver 权威写入（loaded.id 来自本地 plugin
     // registry，不是可序列化配置），不能让第三方伪造 official zcode-cua 身份后获得只应定向注入给
     // 内置插件的 broker 凭据。manifest env spread 之后覆写，确保 user/manifest 无法覆盖。
-    env[ZCODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
+    env[ZXCODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
     return {
       ...baseConfig,
       type: "stdio",
