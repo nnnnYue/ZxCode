@@ -158,6 +158,9 @@ export interface WorkspaceZCodeUIState {
   workspaceInit: WorkspaceInitState;
   /** 草稿态尚未创建 taskId 前的短期运行状态；已有 task 的状态从 taskRuntimeByTaskId 派生。 */
   draftRuntime: DraftRuntimeState;
+  draftProjectId?: string | null;
+  composerInitialization?: import("@zcode/shared/zcode-protocol-v4").ComposerInitializationState;
+  draftTaskGroupId?: string | null;
   /** 未发送草稿对应的 agent draft session；不进入 task 列表，首发时提升为真实 task。 */
   draftSessionId: string | null;
   /**

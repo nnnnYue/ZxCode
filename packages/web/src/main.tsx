@@ -572,9 +572,7 @@ function createWebPlatform(options?: {
     // fork：openFeedback/openCommunity 已从平台合同剔除。
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    onPaymentCallback: () => () => {},
-    notifyRendererReady: () => {},
+    openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),    notifyRendererReady: () => {},
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
         return;
@@ -1234,7 +1232,7 @@ async function bootstrapExternalRelayWebRemoteControl(params: URLSearchParams): 
   }
 
   // fork：v2 QR 参数不再携带主题；保持默认主题种子。
-  seedStableWebRemoteControlClientId(relayParams.deviceSid);
+  seedStableWebRemoteControlClientId(relayParams.deviceSid ?? "");
 
   let bootstrapping = false;
   let recovering = false;
@@ -1457,7 +1455,7 @@ async function bootstrapExternalRelayWebRemoteControl(params: URLSearchParams): 
   const transport = new WebRemoteControlTerminalTransport({
     relayWsUrl: resolveExternalRelayWsUrl(),
     deviceSid: relayParams.deviceSid,
-    passHash: relayParams.passHash,
+    passHash: (relayParams as Record<string, unknown>).passHash as string | undefined,
     deviceMid: relayParams.deviceMid,
     appVersion: relayParams.appVersion,
     authProvider: createBrowserWebRemoteControlRelayAuthProvider(),

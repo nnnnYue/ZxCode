@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-// fork：Agent 默认 provider 常量为 ZXCODE_AGENT_PROVIDER（上游为 ZCODE_AGENT_PROVIDER）
+// fork：Agent 默认 provider 常量为 ZXCODE_AGENT_PROVIDER（上游为 ZXCODE_AGENT_PROVIDER）
 import { ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import {
   UPSTREAM_MODEL,

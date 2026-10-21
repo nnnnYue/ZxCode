@@ -12,7 +12,7 @@ import {
   waitForV4ComposerText,
 } from "#e2e/helpers/v4-conversation";
 import { installHandoffRpcProbe, callHandoffHost } from "#e2e/helpers/remote-project-handoff-probe";
-import { ServiceChannels, ZCODE_AGENT_PROVIDER } from "@zcode/shared";
+import { ServiceChannels, ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
 import { TID_TASK_ITEM, testId } from "@zcode/shared/test-ids";
 
 declare global {
@@ -523,7 +523,7 @@ describe("任务分组独立视图", () => {
           id,
           now + i,
           now + i,
-          ZCODE_AGENT_PROVIDER,
+          ZXCODE_AGENT_PROVIDER,
         );
         member.run(group.id, cwd, cwd, id, i, now, now, now);
       }

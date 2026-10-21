@@ -1,6 +1,6 @@
 /* eslint-disable max-lines -- Upstream E2E 初始化包含设置页、provider store、模型选择三段探针，集中维护方便失败诊断 */
 import { selectCombinedComposerThoughtLevel } from "./composer-model-picker.js";
-import { ZCODE_AGENT_PROVIDER, encodeCustomModelValue } from "@zcode/shared";
+import { ZXCODE_AGENT_PROVIDER, encodeCustomModelValue } from "@zcode/shared";
 import {
   TID_CHAT_MODEL_SELECT_GROUP,
   TID_CHAT_MODEL_SELECT_ITEM,

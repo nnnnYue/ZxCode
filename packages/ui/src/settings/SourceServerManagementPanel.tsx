@@ -542,7 +542,7 @@ export function SourceServerManagementPanel({
     switch (presentation.primaryAction) {
       case "update-desktop":
         void run("desktop-update", async () => {
-          await platform?.executeDesktopCommand(DesktopCommandIds.CheckForUpdates);
+          // fork：CheckForUpdates 已随更新域剔除。
         });
         return;
       case "update-server":

@@ -2539,6 +2539,26 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
+
+    // fork：grouped-task 方法 stub（域功能在 fork UI 暂不暴露，仅满足接口合同）
+    async createTaskGroup(params?: { title?: string; color?: ZCodeTaskGroupColor }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available in community edition");
+    },
+    async renameTaskGroup(_params: { groupId: string; title: string }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available");
+    },
+    async updateTaskGroupColor(_params: { groupId: string; color: ZCodeTaskGroupColor }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available");
+    },
+    async deleteTaskGroup(_params: { groupId: string }): Promise<void> {
+      throw new Error("grouped-task: not available");
+    },
+    async listGroupedTaskViewStructure(_params: { workspaceScopes: ZCodeTaskListWorkspaceScope[] }): Promise<ZCodeGroupedTaskViewStructure> {
+      return { groups: [], memberships: [], topLevelOrder: [] };
+    },
+    async applyGroupedTaskViewOrder(_params: ZCodeGroupedTaskViewOrderInput): Promise<ZCodeGroupedTaskView> {
+      return { groups: [], memberships: [], topLevelOrder: [] };
+    },
     async listArchivedTasks(params): Promise<ZCodeTaskMeta[]> {
       const tasks = await taskIndexRepo.listTaskMetas({
         workspacePath: params.workspacePath,

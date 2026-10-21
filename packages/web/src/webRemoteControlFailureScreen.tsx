@@ -273,7 +273,7 @@ const WEB_REMOTE_CONTROL_SCREEN_COPY = {
   },
 } satisfies Record<
   WebRemoteControlScreenLocale,
-  Record<WebRemoteControlFailureReason, WebRemoteControlScreenCopy>
+  { [K in WebRemoteControlFailureReason]?: WebRemoteControlScreenCopy }
 >;
 
 export function resolveWebRemoteControlScreenLocale(

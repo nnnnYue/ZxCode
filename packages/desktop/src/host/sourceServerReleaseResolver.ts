@@ -7,7 +7,7 @@ import { pipeline } from "node:stream/promises";
 import { dirname, join } from "node:path";
 import {
   SOURCE_SERVER_RELEASE_DESCRIPTOR_FILE_NAME,
-  ZCODE_VERSION,
+  ZXCODE_VERSION,
   normalizeRemoteAssetInstallMode,
   sourceServerReleaseDescriptorSchema,
   type RemoteTarget,
@@ -51,9 +51,9 @@ async function verifyArchive(path: string, archive: SourceServerReleaseArchive):
 
 function readDescriptor(text: string): SourceServerReleaseDescriptor {
   const descriptor = sourceServerReleaseDescriptorSchema.parse(JSON.parse(text));
-  if (descriptor.version !== ZCODE_VERSION) {
+  if (descriptor.version !== ZXCODE_VERSION) {
     throw new Error(
-      `Source Server descriptor version mismatch: expected ${ZCODE_VERSION}, received ${descriptor.version}`,
+      `Source Server descriptor version mismatch: expected ${ZXCODE_VERSION}, received ${descriptor.version}`,
     );
   }
   return descriptor;
@@ -110,7 +110,7 @@ async function resolveRemoteDescriptor(
   const releaseBases = buildReleaseBaseCandidates(
     remoteAssets.remoteCdnBaseUrls ??
       (remoteAssets.remoteCdnBaseUrl ? [remoteAssets.remoteCdnBaseUrl] : []),
-    ZCODE_VERSION,
+    ZXCODE_VERSION,
   );
   const descriptorUrls = buildReleaseAssetUrlCandidates(releaseBases, [
     SOURCE_SERVER_RELEASE_DESCRIPTOR_FILE_NAME,
@@ -207,7 +207,7 @@ async function resolveReleaseAsset(
       ? normalizeRemoteAssetInstallMode(remoteTarget.assetInstallMode)
       : "local-download-upload";
   const cacheRoot = remoteAssets.remoteCacheDir
-    ? join(remoteAssets.remoteCacheDir, "source-server", ZCODE_VERSION)
+    ? join(remoteAssets.remoteCacheDir, "source-server", ZXCODE_VERSION)
     : null;
 
   if (
@@ -219,7 +219,7 @@ async function resolveReleaseAsset(
         "Development Source Server release is unavailable; run pnpm bootstrap:with-remote",
       );
     }
-    const releaseDir = join(remoteAssets.mockCdnDir, "releases", ZCODE_VERSION);
+    const releaseDir = join(remoteAssets.mockCdnDir, "releases", ZXCODE_VERSION);
     const local = await resolveLocalDescriptor(releaseDir, target);
     if (!local) {
       // Bug 原因：开发态回退 CDN 会把 bootstrap 失败伪装成连接成功，并继续运行同版本旧代码。
@@ -231,7 +231,7 @@ async function resolveReleaseAsset(
     return {
       localArchivePath: local.archivePath,
       target,
-      version: ZCODE_VERSION,
+      version: ZXCODE_VERSION,
       sha256: local.archive.sha256,
       sizeBytes: local.archive.sizeBytes,
       urls: local.archive.urls,
@@ -242,7 +242,7 @@ async function resolveReleaseAsset(
     // Bug 原因：开发态曾直接信任 gitignore 的 dist-release；同版本源码变化后仍会部署旧包。
     // 现在只接受本轮 staging 写入 mock-cdn 且通过 descriptor SHA/size 校验的本地产物。
     const localReleaseDirs = remoteAssets.mockCdnDir
-      ? [join(remoteAssets.mockCdnDir, "releases", ZCODE_VERSION)]
+      ? [join(remoteAssets.mockCdnDir, "releases", ZXCODE_VERSION)]
       : [];
     for (const releaseDir of localReleaseDirs) {
       const local = await resolveLocalDescriptor(releaseDir, target);
@@ -250,7 +250,7 @@ async function resolveReleaseAsset(
       return {
         localArchivePath: local.archivePath,
         target,
-        version: ZCODE_VERSION,
+        version: ZXCODE_VERSION,
         sha256: local.archive.sha256,
         sizeBytes: local.archive.sizeBytes,
         urls: local.archive.urls,
@@ -268,7 +268,7 @@ async function resolveReleaseAsset(
   if (installMode === "remote-download" || options.metadataOnly) {
     return {
       target,
-      version: ZCODE_VERSION,
+      version: ZXCODE_VERSION,
       sha256: archive.sha256,
       sizeBytes: archive.sizeBytes,
       urls,
@@ -279,7 +279,7 @@ async function resolveReleaseAsset(
   return {
     localArchivePath: await downloadArchive(archive, urls, cacheRoot, remoteAssetNetwork),
     target,
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     sha256: archive.sha256,
     sizeBytes: archive.sizeBytes,
     urls,

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
-import { ZCODE_CUA_OFFICIAL_PLUGIN_ID } from "@zcode/shared";
+import { ZXCODE_CUA_OFFICIAL_PLUGIN_ID } from "@zcode/shared";
 import {
   TID_LOGIN_USE_API_KEY_BUTTON,
   TID_TASK_SETTINGS_BUTTON,

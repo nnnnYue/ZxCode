@@ -48,6 +48,11 @@ import type {
   ZCodeTaskListSortBy,
   ZCodeTaskListWorkspaceScope,
   ZCodeWorkspaceEventSubscriptionParams,
+  ZCodeTaskGroup,
+  ZCodeTaskGroupColor,
+  ZCodeGroupedTaskView,
+  ZCodeGroupedTaskViewStructure,
+  ZCodeGroupedTaskViewOrderInput,
 } from "#src/session/zcodeTaskListTypes.js";
 
 export interface ZCodeTaskSnapshotWithEtagResult {
@@ -461,6 +466,29 @@ export interface IZCodeTaskService {
    */
   listTaskList(params: ZCodeTaskListQuery): Promise<ZCodeTaskListResult>;
 
+  /** fork：创建最小 task group（grouped task 栈用；adapter 层可 stub） */
+  createTaskGroup(params?: {
+    title?: string;
+    color?: ZCodeTaskGroupColor;
+  }): Promise<ZCodeTaskGroup>;
+  renameTaskGroup(params: {
+    groupId: string;
+    title: string;
+    workspaceScopes?: ZCodeTaskListWorkspaceScope[];
+  }): Promise<ZCodeTaskGroup>;
+  updateTaskGroupColor(params: {
+    groupId: string;
+    color: ZCodeTaskGroupColor;
+    workspaceScopes?: ZCodeTaskListWorkspaceScope[];
+  }): Promise<ZCodeTaskGroup>;
+  deleteTaskGroup(params: {
+    groupId: string;
+    workspaceScopes?: ZCodeTaskListWorkspaceScope[];
+  }): Promise<void>;
+  listGroupedTaskViewStructure(params: {
+    workspaceScopes: ZCodeTaskListWorkspaceScope[];
+  }): Promise<ZCodeGroupedTaskViewStructure>;
+  applyGroupedTaskViewOrder(params: ZCodeGroupedTaskViewOrderInput): Promise<ZCodeGroupedTaskView>;
   /** 列出 workspace 下所有已归档 task */
   listArchivedTasks(params: {
     workspacePath: string;
