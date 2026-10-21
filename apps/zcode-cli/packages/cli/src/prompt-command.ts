@@ -1,5 +1,3 @@
-import type { ToolSearchMode } from "@zcode/contracts";
-import { createCliProviderRefreshReporter } from "./provider-runtime-env.js";
 import { extname } from "node:path";
 import { formatJson, type PresentationSurface } from "@zcode/core";
 import type { RunContext, GlobalOptions } from "@zcode/shared-types";
@@ -18,15 +16,14 @@ import {
   readHeadlessRuntimeFacts,
   waitForHeadlessWorkflowSettle,
 } from "./headless-workflow.js";
-import { runLoginCommand, runLogoutCommand } from "./login-command.js";
 import { resolveResumeSession } from "./resume.js";
 import { readRuntimeEventSubscriber } from "./runtime-event-subscriber.js";
+import { runSkillsCommand } from "./skills-command.js";
 import {
   DEFAULT_CLI_CLEANUP_TIMEOUT_MS,
   registerCliShutdownHandlers,
   runCliCleanupWithTimeout,
 } from "./shutdown.js";
-import { runSkillsCommand } from "./skills-command.js";
 import {
   DEFAULT_CLI_WORKFLOW_MODE,
   isWorkflowModeEnabled,
@@ -78,7 +75,6 @@ export const runPrompt = async (
   resumeRequest: CliResumeRequest = { continueSession: false },
   toolDisallowlist?: readonly string[],
   forceMcs = false,
-  toolsearchMode: ToolSearchMode = "off",
   presentationSurface: PresentationSurface = "terminal",
   workflowMode: DynamicWorkflowMode = DEFAULT_CLI_WORKFLOW_MODE,
 ): Promise<number> => {
@@ -109,20 +105,6 @@ export const runPrompt = async (
   if (slashCommand?.type === "known" && slashCommand.name === "skill" && !slashCommand.skillName) {
     return await runSkillsCommand(ctx, options, deps, []);
   }
-  if (slashCommand?.type === "known" && slashCommand.name === "login") {
-    if (slashCommand.args.length > 0) {
-      ctx.stderr.write("Usage: /login\n");
-      return 1;
-    }
-    return await runLoginCommand(ctx, options, deps, false);
-  }
-  if (slashCommand?.type === "known" && slashCommand.name === "logout") {
-    if (slashCommand.args.length > 0) {
-      ctx.stderr.write("Usage: /logout\n");
-      return 1;
-    }
-    return await runLogoutCommand(ctx, options, deps);
-  }
 
   const runtimePrompt =
     slashCommand?.type === "known" && slashCommand.name === "skill"
@@ -135,7 +117,6 @@ export const runPrompt = async (
     | undefined;
   let closePromise: Promise<void> | undefined;
   let browserRuntime: ReturnType<typeof createCliHeadlessBrowserRuntime>;
-  let shutdownTelemetry: (() => Promise<void>) | undefined;
   // 常驻事件订阅的摘除句柄。声明在这里而不是 try 内，是为了让 finally 也能收口——
   // 任何早退（command-center 路径、抛错）都不能留下一个还在写 stdout 的 sink。
   let detachEvents: (() => void) | undefined;
@@ -157,9 +138,6 @@ export const runPrompt = async (
       await runCliCleanupWithTimeout(async () => targetApp?.close?.(), cleanupTimeoutMs);
       // Browser process 由 CLI adapter 持有；App close 悬空或失败也必须继续回收 Chromium。
       await runCliCleanupWithTimeout(async () => browserRuntime?.close(), cleanupTimeoutMs);
-      // Bug 根因：App.close 只结束 Session 并 flush，共享 OTLP Owner 过去没有进程级终态。
-      // 单次 prompt 是最外层生命周期，必须与 prepare 对称 shutdown。
-      await runCliCleanupWithTimeout(async () => shutdownTelemetry?.(), cleanupTimeoutMs);
       providerRegistryRuntime?.dispose();
     })();
     await closePromise;
@@ -188,7 +166,7 @@ export const runPrompt = async (
     const sessionId = await resolveResumeSession(resumeRequest, workingDirectory, env, deps);
     const bootstrapModule = deps.createZCodeApp ? undefined : await loadBootstrapModule();
     const createApp = deps.createZCodeApp ?? bootstrapModule?.createZCodeApp;
-    if (!createApp) throw new Error("ZCode app factory is unavailable.");
+    if (!createApp) throw new Error("ZxCode app factory is unavailable.");
     const streamsEvents = wantsEventStream(options);
     let mapSessionEvent: NonNullable<RunDependencies["mapSessionEvent"]> | undefined;
     if (streamsEvents) {
@@ -203,17 +181,6 @@ export const runPrompt = async (
       stderr: ctx.stderr,
       stdout: ctx.stdout,
     });
-    const prepareTelemetry =
-      deps.prepareZCodeTelemetryEnv ?? bootstrapModule?.prepareZCodeTelemetryEnv;
-    if (prepareTelemetry) {
-      shutdownTelemetry = deps.shutdownZCodeTelemetry ?? bootstrapModule?.shutdownZCodeTelemetry;
-    }
-    const appEnv = prepareTelemetry
-      ? await prepareTelemetry(env, {
-          cliVersion: version,
-          productVersion: env.ZCODE_APP_VERSION,
-        })
-      : env;
     const startProviderRegistryRuntime =
       deps.startProcessProviderRegistryRuntime ??
       bootstrapModule?.startProcessProviderRegistryRuntime;
@@ -221,12 +188,11 @@ export const runPrompt = async (
       throw new Error("Provider Registry runtime is unavailable.");
     }
     providerRegistryRuntime = await startProviderRegistryRuntime(
-      appEnv,
+      env,
       deps.skipUserConfig
         ? {}
         : {
             standalone: {
-              ...createCliProviderRefreshReporter(ctx.stderr),
               ...(deps.userConfigPath ? { legacyCliUserConfigFilePath: deps.userConfigPath } : {}),
             },
           },
@@ -241,9 +207,8 @@ export const runPrompt = async (
     });
     browserRuntime = createCliHeadlessBrowserRuntime(options, deps);
     app = await createApp({
-      modelSelectionMode: "cli-default",
       browserControlPort: browserRuntime?.browserControlPort,
-      env: appEnv,
+      env,
       // headless 没有交互审批面，core 因此退到 deny broker，于是 CreateWorkflow 的
       // alwaysAsk gate 在 -p 下**必然被拒**（"No permission client configured"）。
       // 这个最小 broker 只按工具名放行 CreateWorkflow，其余工具委托回同一个 deny
@@ -252,16 +217,10 @@ export const runPrompt = async (
       ...(providerEndpointRoutingPort ? { providerEndpointRoutingPort } : {}),
       providerRegistry: providerRegistryRuntime.runtime.registryService,
       configuredDefaultModelSelection: providerRegistryRuntime.configuredDefaultModelSelection,
-      ...(providerRegistryRuntime.providerRuntimeHeadersPort
-        ? {
-            providerRuntimeHeadersPort: providerRegistryRuntime.providerRuntimeHeadersPort,
-          }
-        : {}),
       resume: sessionId !== undefined,
       runtimeConfig: {
         ...(mode ? { mode } : {}),
         ...(toolDisallowlist ? { toolDisallowlist } : {}),
-        toolSearch: { mode: toolsearchMode },
         ...(forceMcs ? { midConversationSystem: { mode: "force" as const } } : {}),
         ...resolveWorkflowModeRuntimeConfig(workflowMode),
         memory: { extractionEnabled: options.memoryBench === true },
@@ -292,7 +251,7 @@ export const runPrompt = async (
     // 自定义命令解析出来一律是 `type === "unknown"`，过去因此全部早退进
     // command-center；那条路径自己 submit 完就 return，于是只挂在下面普通 prompt 路径上
     // 的三件机制全被跳过——dwf 结算等待、常驻事件订阅的单一写者、`response` 取最后一个
-    // 回合。结果是 `zcode -p "/workflow ..."` 在第一个回合后就退出，把在飞的 run 孤儿化
+    // 回合。结果是 `zxcode -p "/workflow ..."` 在第一个回合后就退出，把在飞的 run 孤儿化
     // 成 Interrupted。能解析成真实自定义命令的必须落到普通 prompt 路径，提交**原文**即可：
     // facade 的 customCommandPromptResolver 会在服务端展开（$ARGUMENTS、skills: 前言、`!`）。
     // 解析不出来的名字继续留在 command-center，拿它的 "Unknown command" 文案；保留名
@@ -671,7 +630,8 @@ function writeHeadlessWorkspaceHookTrustDiagnostic(
       ...status.items
         .filter((item) => item.configuredEnabled && item.trustState !== "trusted_persistent")
         .map((item) => `pending digest: ${item.hookDeclarationDigest}`),
-      `Review with: zcode hooks trust review --workspace ${JSON.stringify(status.workspaceIdentity)}`,
+      `Review with: zxcode hooks trust review --workspace ${JSON.stringify(status.workspaceIdentity)}`,
     ].join("\n") + "\n",
   );
 }
+
