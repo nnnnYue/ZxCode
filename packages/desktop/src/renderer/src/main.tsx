@@ -144,9 +144,6 @@ let baseServicesForRemoteSessions: IServiceAccessor | null = null;
 const pendingRemoteWorkspaceServicePorts: RemoteWorkspaceServicePortRegistration[] = [];
 
 const desktopPlatform = createDesktopPlatform({ isLocalDevelopmentRuntime });
-  platform: desktopPlatform,
-  isLocalDevelopmentRuntime,
-});
 
 /**
  * 等待 preload 通过 window.postMessage 转发 MessagePort。
