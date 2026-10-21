@@ -67,6 +67,13 @@
 - Coding Plan 购买支付：`@stripe/*` 依赖、`CodingPlanBillingDiscount`、share-ui 内嵌购买页
 - 平台端点运行时白名单新增：`packages/shared/test/pluginMarketplaces.test.ts`（插件市场 CDN `cdn-zcode.z.ai` 保留项的来源 fixture）
 
+## 九、v3.16.2 同步剔除（随桌面 fork 基线恢复补齐）
+
+- 桌面 fork 基线 removes：删除 fork 基线（3.15.1-ce.1，`23dae928`）不存在的 43 个上游新增 src 文件（Source Server 连接管理、database-startup、botRemoteWorkspaceResolver 等），desktop test/scripts/package.json 与根级构建配置一并恢复基线；上游改名残留的 e2e 用例清理
+- 回潜清扫：上游复活的 6 个剔除域测试/helper 文件删除（electron-updater mock、`/event/report` 断言、ARMS patch bootstrap 测试、`zcode.z.ai` e2e helper 等），services/ui 两个被上游覆盖的基线测试恢复 fork 内容；`scripts/check-no-zai-runtime-endpoints.mjs` 归零
+- 协议域残留：runtime headers 请求参数 schema（账号请求安全域）已随 `7b02617d` 剔除，对应的 4+1 个悬挂测试用例移除
+- off-peak 休眠层遗留：上游协议整体合入带回 off-peak 休眠面（shared 协议 schema、共享迁移创建的 `off_peak_tasks` 表与 `tasks.off_peak_task_id` 列、`packages/services/src/session/offPeakResidentExecutions.ts` 等）。fork 无激活路径（桌面 Host 不下发 `offPeakToolEnabled`，工具簇不注册，UI 设置面不存在）；DB 层彻底剔除涉及共享迁移改造与基线 SQL 再生，需独立专项处理，`check-sqlite-schema.ts` 已排除未合入的 `OffPeakTaskRepo`
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。
