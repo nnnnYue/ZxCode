@@ -82,7 +82,7 @@ export function resolveBotRemoteWorkspaceReconnectedIdentity(params: {
     // 这里如果用 canonical path 重新计算 identity，UI tab 会订阅到另一个 key，导致远端结果被过滤掉。
     return eventWorkspaceIdentity;
   }
-  return buildRemoteWorkspaceIdentity(params.resolvedWorkspacePath, params.target);
+  return buildRemoteWorkspaceIdentity(params.resolvedWorkspacePath, params.target ?? ("" as never));
 }
 
 export function shouldPersistRemoteWorkspaceFailure(params: {
