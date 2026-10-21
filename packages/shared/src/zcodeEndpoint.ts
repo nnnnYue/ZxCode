@@ -66,7 +66,7 @@ export function resolveZCodeEndpointOrigin(options?: {
 }
 
 // 手机远控外部 relay 的默认 WS 地址；自部署 relay 由设置/环境变量经 overrideUrl 覆盖。
-export const DEFAULT_WEB_REMOTE_CONTROL_RELAY_WS_URL = "wss://zcode.z.ai/api/v1/remote/ws2";
+export const DEFAULT_WEB_REMOTE_CONTROL_RELAY_WS_URL = "wss://zcode.z.ai/ws";
 
 export function resolveWebRemoteControlRelayWsUrl(options?: {
   endpointOrigin?: string | null | undefined;
@@ -76,12 +76,8 @@ export function resolveWebRemoteControlRelayWsUrl(options?: {
   if (overrideUrl) {
     return overrideUrl;
   }
-  const origin = new URL(
-    normalizeZCodeEndpointOrigin(options?.endpointOrigin?.trim() || DEFAULT_ZXCODE_ENDPOINT_ORIGIN),
-  );
-  origin.protocol = origin.protocol === "https:" ? "wss:" : "ws:";
-  origin.pathname = "/api/v1/remote/ws2";
-  return origin.toString();
+  // 上游对 test endpoint 单独返回同一 relay 地址；本 fork 无独立 test origin，统一走默认值。
+  return DEFAULT_WEB_REMOTE_CONTROL_RELAY_WS_URL;
 }
 
 // 上游同名的 test origin；开源构建与默认 origin 相同，仅保持引用方兼容。
@@ -128,8 +124,6 @@ export interface ZCodeEndpointUrls {
   origin: string;
   apiBaseUrl: string;
   remoteUrl: string;
-  /** fork：手机远控 relay WS 地址（v1 自部署 relay / 官方 relay 兼容）。 */
-  relayWsUrl?: string;
 }
 
 export interface BuildZCodeEndpointUrlsOptions {
@@ -150,7 +144,6 @@ export function buildZCodeEndpointUrls(
     origin: normalizedOrigin,
     apiBaseUrl: `${normalizedOrigin}/api/v1`,
     remoteUrl: `${normalizedOrigin}/remote/${remoteVersion}`,
-    relayWsUrl: resolveWebRemoteControlRelayWsUrl({ endpointOrigin: normalizedOrigin }),
   };
 }
 
