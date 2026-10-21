@@ -60,50 +60,24 @@ export interface DesktopRelayClientHandle {
 
 const RECONNECT_INITIAL_DELAY_MS = 1_000;
 const RECONNECT_MAX_DELAY_MS = 30_000;
-/** grant 签发等待上限：半开连接下 relay 永不回包，必须本地失败结算，否则 UI 永久 loading。 */
-const RELAY_GRANT_TIMEOUT_MS = 15_000;
-/** hello 后等待 relay-control-ack 的上限；超时说明控制面已不可用，重建连接。 */
-const RELAY_HELLO_ACK_TIMEOUT_MS = 10_000;
-/** 收到最近一条服务端消息后允许的最大静默窗口；超时判定连接僵尸化（NAT 老化/反代黑洞）。 */
-const RELAY_SERVER_SILENCE_LIMIT_MS = RELAY_CONTROL_HEARTBEAT_INTERVAL_MS * 2 + 15_000;
 
 interface PendingGrant {
   requestId: string;
   resolve: (value: { success: boolean; url?: string; expiresAt?: number; error?: string }) => void;
-  timeoutTimer: ReturnType<typeof setTimeout>;
 }
 
 export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopRelayClientHandle {
   const { logger } = deps;
-  const now = deps.now ?? Date.now;
   let settings: MobileRelaySettings | undefined;
   let disposed = false;
   let control: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  let helloAckTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectDelayMs = RECONNECT_INITIAL_DELAY_MS;
   let connected = false;
   let lastError: string | undefined;
-  let lastServerMessageAt = 0;
   let generation = 0;
   const pendingGrants = new Map<string, PendingGrant>();
-
-  const settlePendingGrant = (
-    requestId: string,
-    value: {
-      success: boolean;
-      url?: string;
-      expiresAt?: number;
-      error?: string;
-    },
-  ): void => {
-    const pending = pendingGrants.get(requestId);
-    if (!pending) return;
-    pendingGrants.delete(requestId);
-    clearTimeout(pending.timeoutTimer);
-    pending.resolve(value);
-  };
 
   const sendControl = (payload: unknown): boolean => {
     if (!control || control.readyState !== WebSocket.OPEN) return false;
@@ -125,10 +99,6 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
-    if (helloAckTimer) {
-      clearTimeout(helloAckTimer);
-      helloAckTimer = null;
-    }
   };
 
   const teardownConnection = (reason: string): void => {
@@ -147,7 +117,6 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
       logger.info(`[mobile-relay] control connection closed (${reason})`);
     }
     for (const pending of pendingGrants.values()) {
-      clearTimeout(pending.timeoutTimer);
       pending.resolve({ success: false, error: "relay control connection lost" });
     }
     pendingGrants.clear();
@@ -212,18 +181,9 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
         relayToken: settings?.token ?? "",
         version: ZXCODE_RELAY_PROTOCOL_VERSION,
       });
-      // Bugfix: 中间层可能放行 upgrade 后静默吞帧（或 relay 在握手瞬间崩溃），
-      // 桌面会停在"已连接 socket 但永远等不到 ack"；超时即重建。
-      helloAckTimer = setTimeout(() => {
-        if (currentGeneration !== generation || control !== ws || connected) return;
-        logger.warn("[mobile-relay] relay-control-ack overdue; rebuilding control connection");
-        teardownConnection("hello-ack-timeout");
-        scheduleReconnect();
-      }, RELAY_HELLO_ACK_TIMEOUT_MS);
     });
     ws.on("message", (raw) => {
       if (currentGeneration !== generation || control !== ws) return;
-      lastServerMessageAt = now();
       let parsed: unknown;
       try {
         parsed = JSON.parse(String(raw));
@@ -241,10 +201,6 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
         connected = true;
         lastError = undefined;
         reconnectDelayMs = RECONNECT_INITIAL_DELAY_MS;
-        if (helloAckTimer) {
-          clearTimeout(helloAckTimer);
-          helloAckTimer = null;
-        }
         logger.info(
           `[mobile-relay] control connection established (deviceId=${message.data.deviceId})`,
         );
@@ -254,21 +210,15 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
           // presence 随心跳重推：远程 session 建立/关闭没有 Main 侧单一回调点，
           // 30s 内最终一致即可（连接建立与 workspace 切换时另有即时推送）。
           pushPresence();
-          // Bugfix: 半开 TCP（NAT 老化、relay 主机更换、反代黑洞）下 send 永远"成功"，
-          // connected 永真，grant 请求写进黑洞且 UI 永久 loading。
-          // 服务端静默超过宽限即判定僵尸连接，主动重建。
-          if (now() - lastServerMessageAt > RELAY_SERVER_SILENCE_LIMIT_MS) {
-            logger.warn("[mobile-relay] server went silent beyond grace; rebuilding connection");
-            teardownConnection("server-silent");
-            scheduleReconnect();
-          }
         }, RELAY_CONTROL_HEARTBEAT_INTERVAL_MS);
         return;
       }
       if (message.data.type === "relay-heartbeat-ack") return;
       if (message.data.type === "relay-issue-grant-response") {
-        settlePendingGrant(
-          message.data.requestId,
+        const pending = pendingGrants.get(message.data.requestId);
+        if (!pending) return;
+        pendingGrants.delete(message.data.requestId);
+        pending.resolve(
           message.data.ok && message.data.grantId
             ? {
                 success: true,
@@ -303,15 +253,7 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
       teardownConnection(reason);
       scheduleReconnect();
     };
-    ws.on("close", (code: number, reasonBuffer: Buffer) => {
-      // Bugfix: relay 的多数拒绝以 close code 表达（1013 另一桌面已连接、1002 版本/hello
-      // 不合法等）；此前 close 不写 lastError，设置页只会永远显示"连接中…"，无从排查。
-      if (code !== 1000) {
-        const reasonText = reasonBuffer.toString().trim();
-        lastError = `relay 连接被关闭（code=${code}${reasonText ? `：${reasonText}` : ""}）`;
-      }
-      onDrop("closed");
-    });
+    ws.on("close", () => onDrop("closed"));
     ws.on("error", (error: Error) => {
       lastError = error.message;
       onDrop("error");
@@ -408,18 +350,11 @@ export function createDesktopRelayClient(deps: DesktopRelayClientDeps): DesktopR
       }
       const requestId = randomUUID();
       return new Promise((resolve) => {
-        // Bugfix: 控制连接僵尸化（半开 TCP/反代黑洞）时 relay 永不回包，此前该 Promise
-        // 永不结算，设置页"生成链接"永久 loading。超时本地失败结算，让 UI 可重试。
-        const timeoutTimer = setTimeout(() => {
-          settlePendingGrant(requestId, {
-            success: false,
-            error: "relay 签发授权超时，请检查 relay 服务端与网络后重试",
-          });
-        }, RELAY_GRANT_TIMEOUT_MS);
-        pendingGrants.set(requestId, { requestId, resolve, timeoutTimer });
+        pendingGrants.set(requestId, { requestId, resolve });
         // 回包由 relay-issue-grant-response 结算；控制连接断开时统一失败结算。
         if (!sendControl({ type: "relay-issue-grant-request", requestId, target })) {
-          settlePendingGrant(requestId, { success: false, error: "relay 控制连接不可用" });
+          pendingGrants.delete(requestId);
+          resolve({ success: false, error: "relay 控制连接不可用" });
         }
       });
     },

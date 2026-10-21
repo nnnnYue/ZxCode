@@ -1,12 +1,11 @@
-import {
-  InternalChannels,
-  scopedServicePortPayloadSchema,
-  type ScopedServicePortPayload,
-} from "@zcode/shared";
+import { InternalChannels, type RemoteTarget } from "@zcode/shared";
 
-export type RemoteWorkspaceServicePortRegistration = ScopedServicePortPayload & {
+export interface RemoteWorkspaceServicePortRegistration {
+  attachmentId: string;
   port: MessagePort;
-};
+  sessionId: string;
+  target: RemoteTarget;
+}
 
 export function parseRemoteWorkspaceServicePortMessage(
   event: MessageEvent,
@@ -20,13 +19,11 @@ export function parseRemoteWorkspaceServicePortMessage(
     return null;
   }
   const port = event.ports[0];
-  const { type: _type, ...payload } = event.data;
-  const parsed = scopedServicePortPayloadSchema.safeParse(payload);
-  if (!port || !parsed.success) return null;
-  return {
-    ...parsed.data,
-    port,
-  };
+  const attachmentId = typeof event.data.attachmentId === "string" ? event.data.attachmentId : null;
+  const sessionId = typeof event.data.sessionId === "string" ? event.data.sessionId : null;
+  const target = "target" in event.data ? (event.data.target as RemoteTarget | null) : null;
+  if (!port || !attachmentId || !sessionId || !target) return null;
+  return { attachmentId, port, sessionId, target };
 }
 
 export function notifyRemoteWorkspaceServicePortReady(

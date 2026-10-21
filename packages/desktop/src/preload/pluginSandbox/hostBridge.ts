@@ -12,13 +12,6 @@ export function installPluginSandboxHostBridge(): void {
    */
   contextBridge.exposeInMainWorld("zcodePluginSandbox", {
     supportsRetainedMove,
-    setExecutionActive: (sandboxId: string, initId: number, active: boolean) =>
-      ipcRenderer.invoke(
-        PlatformChannels.PluginSandboxExecutionActive,
-        sandboxId,
-        initId,
-        active,
-      ) as Promise<void>,
     copyImage: (input: PluginSandboxCaptureRequest) =>
       ipcRenderer.invoke(PlatformChannels.PluginSandboxCopyImage, input) as Promise<void>,
     getOwnerWebContentsId: () =>

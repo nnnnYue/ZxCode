@@ -2,7 +2,6 @@ import { Emitter } from "@zcode/rpc";
 import type { IRemoteBackend } from "@zcode/server/remote";
 import type {
   IPromptAttachmentTransferService,
-  PromptAttachmentStageParams,
   PromptAttachmentStageResult,
   PromptAttachmentTransferProgress,
 } from "@zcode/services";
@@ -17,29 +16,23 @@ interface TransferRecord {
   controller: AbortController;
   ref?: string;
   bytes: number;
+  adopted: boolean;
 }
 
-type AttachmentScope = Pick<
-  PromptAttachmentStageParams,
-  "workspacePath" | "workspaceIdentity" | "remoteSessionId"
->;
-
-export type RemotePromptAttachmentTransferService = IPromptAttachmentTransferService & {
-  dispose(): Promise<void>;
-};
-
-function canceled(): Error {
-  return Object.assign(new Error("Remote attachment transfer canceled"), { name: "AbortError" });
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
-/** 只有 owning attachment 持有暂存记录；Source 业务服务与登录态保持远端权威。 */
+/**
+ * 远程 workspace 的 eager staging 实现。记录只存在当前 workspace host，
+ * relay/main 不持有附件进度或暂存生命周期。
+ */
 export function createRemotePromptAttachmentTransferService(
   backend: Pick<IRemoteBackend, "exec" | "upload">,
-  options: { scope?: AttachmentScope; onJanitorError?: (error: unknown) => void } = {},
-): RemotePromptAttachmentTransferService {
+  options: { onJanitorError?: (error: unknown) => void } = {},
+): IPromptAttachmentTransferService {
   const records = new Map<string, TransferRecord>();
   const emitters = new Map<string, Emitter<PromptAttachmentTransferProgress>>();
-  let disposed = false;
 
   void cleanupStaleRemotePromptAttachments(backend).catch((error) => {
     options.onJanitorError?.(error);
@@ -58,62 +51,44 @@ export function createRemotePromptAttachmentTransferService(
     return emitter;
   };
 
-  const cleanupRecord = async (operationId: string, record: TransferRecord) => {
-    // 先使旧操作失效；跨 await 的旧 cleanup 不能删除重试创建的新 record。
-    if (records.get(operationId) === record) records.delete(operationId);
-    record.controller.abort();
-    if (record.ref) await cleanupRemotePromptAttachment(backend, record.ref);
-  };
-  const cleanup = async (operationId: string) => {
+  const cleanup = async (operationId: string, includeAdopted: boolean) => {
     const record = records.get(operationId);
-    if (record) {
-      emitters
-        .get(operationId)
-        ?.fire({ operationId, phase: "canceled", uploadedBytes: 0, totalBytes: record.bytes });
-      await cleanupRecord(operationId, record);
+    if (!record) return;
+    record.controller.abort();
+    if (record.ref && (includeAdopted || !record.adopted)) {
+      await cleanupRemotePromptAttachment(backend, record.ref);
     }
+    records.delete(operationId);
   };
 
   return {
     async stage(params): Promise<PromptAttachmentStageResult> {
-      if (disposed) throw new Error("Remote attachment transfer is disposed");
-      if (
-        options.scope &&
-        (params.workspacePath !== options.scope.workspacePath ||
-          params.workspaceIdentity !== options.scope.workspaceIdentity ||
-          params.remoteSessionId !== options.scope.remoteSessionId)
-      ) {
-        throw new Error("Remote attachment scope mismatch");
-      }
-      const previous = records.get(params.operationId);
+      await cleanup(params.operationId, false);
+      const controller = new AbortController();
       const record: TransferRecord = {
-        controller: new AbortController(),
+        controller,
         bytes: Math.max(0, params.sizeBytes ?? 0),
+        adopted: false,
       };
-      // 同 operationId admission 必须在第一个 await 前完成，避免两次 stage 同时成为 owner。
       records.set(params.operationId, record);
-      const isCurrent = () =>
-        !disposed &&
-        !record.controller.signal.aborted &&
-        records.get(params.operationId) === record;
       const emitter = getEmitter(params.operationId);
       let lastPercent = -1;
       let lastEmittedAt = 0;
       let lastUploadedBytes = 0;
+      const attachment: ZCodePromptAttachment = {
+        kind: params.mime.startsWith("image/") ? "image" : "file",
+        filename: params.fileName,
+        localPath: params.localPath,
+        mimeType: params.mime,
+        sizeBytes: params.sizeBytes ?? 0,
+      } as ZCodePromptAttachment;
+      const workspaceKey = params.workspaceIdentity?.trim() || params.workspacePath;
       try {
-        if (previous) await cleanupRecord(params.operationId, previous);
-        if (!isCurrent()) throw canceled();
-        const attachment: ZCodePromptAttachment = {
-          kind: params.mime.startsWith("image/") ? "image" : "file",
-          filename: params.fileName,
-          localPath: params.localPath,
-          mimeType: params.mime,
-          sizeBytes: params.sizeBytes ?? 0,
-        } as ZCodePromptAttachment;
-        const workspaceKey = params.workspaceIdentity?.trim() || params.workspacePath;
         const materialized = await materializeRemotePromptAttachments(
           {
             taskId: params.sessionId,
+            // 暂存目录同时带 workspace identity 与 remote session 维度，避免同一路径、
+            // 不同远端身份或 attached session 的 eager attachment 互相覆盖。
             traceId: `${workspaceKey}\u0000${params.remoteSessionId ?? ""}\u0000${params.operationId}`,
             content: "",
             attachments: [attachment],
@@ -121,9 +96,8 @@ export function createRemotePromptAttachmentTransferService(
           {
             backend,
             uploadOptions: {
-              signal: record.controller.signal,
+              signal: controller.signal,
               onProgress(progress) {
-                if (!isCurrent()) return;
                 const totalBytes = Math.max(progress.totalBytes, record.bytes);
                 record.bytes = totalBytes;
                 lastUploadedBytes = Math.max(lastUploadedBytes, progress.uploadedBytes);
@@ -143,24 +117,33 @@ export function createRemotePromptAttachmentTransferService(
             },
           },
         );
-        const ref = materialized.attachments?.[0]?.localPath?.trim();
+        const next = materialized.attachments?.[0];
+        const ref = next?.localPath?.trim();
         if (!ref) throw new Error("Remote attachment staging returned no path");
-        record.ref = ref;
-        // 上传忽略 abort 或 chmod 晚完成时也须清理；旧实现只抛错，漏掉已经上传的文件。
-        if (!isCurrent()) throw canceled();
-        for (const phase of ["committing", "complete"] as const) {
-          if (!isCurrent()) throw canceled();
-          emitter.fire({
-            operationId: params.operationId,
-            phase,
-            uploadedBytes: record.bytes,
-            totalBytes: record.bytes,
-          });
+        if (records.get(params.operationId) !== record || controller.signal.aborted) {
+          throw Object.assign(new Error("Remote upload canceled"), { name: "AbortError" });
         }
-        return { operationId: params.operationId, ref, bytes: record.bytes, staged: true };
+        record.ref = ref;
+        emitter.fire({
+          operationId: params.operationId,
+          phase: "committing",
+          uploadedBytes: record.bytes,
+          totalBytes: record.bytes,
+        });
+        emitter.fire({
+          operationId: params.operationId,
+          phase: "complete",
+          uploadedBytes: record.bytes,
+          totalBytes: record.bytes,
+        });
+        return {
+          operationId: params.operationId,
+          ref,
+          bytes: record.bytes,
+          staged: true,
+        };
       } catch (error) {
-        const aborted = record.controller.signal.aborted;
-        if (aborted && records.get(params.operationId) === record) {
+        if (isAbortError(error) || controller.signal.aborted) {
           emitter.fire({
             operationId: params.operationId,
             phase: "canceled",
@@ -168,25 +151,25 @@ export function createRemotePromptAttachmentTransferService(
             totalBytes: record.bytes,
           });
         }
-        await cleanupRecord(params.operationId, record).catch(() => {});
-        if (aborted) throw canceled();
+        if (records.get(params.operationId) === record) {
+          records.delete(params.operationId);
+        }
         throw error;
       }
     },
     async adopt(operationId) {
-      if (records.get(operationId)?.ref) records.delete(operationId);
+      const record = records.get(operationId);
+      if (record?.ref) {
+        record.adopted = true;
+        records.delete(operationId);
+      }
     },
-    cancel: cleanup,
-    cleanup,
+    async cancel(operationId) {
+      await cleanup(operationId, false);
+    },
+    async cleanup(operationId) {
+      await cleanup(operationId, false);
+    },
     onDynamicProgress: (operationId) => getEmitter(operationId).event,
-    async dispose() {
-      if (disposed) return;
-      disposed = true;
-      const pending = [...records].map(([id, record]) => cleanupRecord(id, record));
-      for (const emitter of emitters.values()) emitter.dispose();
-      emitters.clear();
-      // 断网无法 cleanup 时保留既有 janitor 回收；不能为了删除暂存而重建远端连接。
-      await Promise.allSettled(pending);
-    },
   };
 }

@@ -9,7 +9,6 @@ import {
 
 interface SecondInstanceWorkspaceDeps {
   additionalData: unknown;
-  logger?: { warn: (...args: unknown[]) => void };
   argv: readonly string[];
   handleDeepLink: (
     url: string,

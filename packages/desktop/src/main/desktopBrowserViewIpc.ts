@@ -30,6 +30,7 @@ export type UpdateBrowserGuestViewport = (
   tabId: string,
   viewport: BrowserViewportSize | null,
   windowId: number,
+  desktopZoomFactor: number,
 ) => Promise<void> | void;
 
 export type ReportBrowserScreenshotSurfaceReady = (
@@ -158,7 +159,8 @@ export function registerBrowserViewIpcHandlers(
       const tabId = nonEmptyStringSchema.parse(payload.tabId);
       const viewport =
         payload.viewport === null ? null : browserViewportInputSchema.parse(payload.viewport);
-      await updateBrowserGuestViewport?.(tabId, viewport, win.id);
+      // zoom factor 只能从 IPC 绑定的 BrowserWindow 读取，不能信任 renderer payload。
+      await updateBrowserGuestViewport?.(tabId, viewport, win.id, win.webContents.getZoomFactor());
     },
   );
 

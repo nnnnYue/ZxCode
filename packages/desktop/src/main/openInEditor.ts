@@ -1,17 +1,11 @@
-import { stat } from "node:fs/promises";
-import { isAbsolute, win32 } from "node:path";
-import { execFile, spawn } from "node:child_process";
-import { statSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { existsSync, statSync } from "node:fs";
 import { shell } from "electron";
 import type { OpenInEditorOptions, OpenInEditorRemoteTarget } from "@zcode/shared";
 import { listWSLDistros } from "@zcode/server/remote/wsl-detect.js";
 import { getEditorDefsForCurrentPlatform, resolveEditorDefAppPath } from "./editors.js";
+import { findCustomEditor } from "./customEditors.js";
 import { logger } from "./logger.js";
-import {
-  getFileApplicationDefs,
-  matchesFileApplication,
-  resolveFileApplicationPath,
-} from "@desktop/main/fileApplications.js";
 import { isDelegatedWindowsExplorerExit } from "./windowsExplorerDelegation.js";
 
 type PathKind = "file" | "directory" | "unknown";
@@ -309,6 +303,46 @@ async function openWindowsEditor(
   }
 }
 
+/** 用注册表里的自定义应用打开路径。用户自选应用没有 CLI/白名单语义，按平台走最通用的启动方式。 */
+async function openCustomEditor(
+  editorId: string,
+  path: string,
+  options?: OpenInEditorOptions,
+): Promise<OpenInEditorResult> {
+  const entry = findCustomEditor(editorId);
+  if (!entry) {
+    return { success: false, error: `unknown editor: ${editorId}` };
+  }
+
+  // 远程工作区路径只在远端存在，用户自选的本地应用无法消费；UI 侧已按 id 白名单过滤，
+  // 这里在打开边界再兜底一次失败关闭。
+  if (options?.remoteTarget) {
+    return { success: false, error: "custom editor does not support remote workspace" };
+  }
+
+  // 应用可能已被移动/卸载：预检给出明确错误，条目保留在列表里由用户手动删除。
+  if (!existsSync(entry.appPath)) {
+    return { success: false, error: `application not found: ${entry.appPath}` };
+  }
+
+  try {
+    if (process.platform === "win32") {
+      await execFileAsync(entry.appPath, [path]);
+    } else {
+      await execFileAsync("open", ["-a", entry.appPath, path]);
+    }
+    return { success: true };
+  } catch (error) {
+    logger.warn("[editors] 打开自定义应用失败", {
+      editorId,
+      path,
+      appPath: entry.appPath,
+      error: stringifyError(error),
+    });
+    return { success: false, error: stringifyError(error) };
+  }
+}
+
 /**
  * 用指定编辑器打开路径。
  */
@@ -319,51 +353,7 @@ export async function openInEditor(
 ): Promise<OpenInEditorResult> {
   const def = getEditorDefsForCurrentPlatform().find((editor) => editor.id === editorId);
   if (!def) {
-    return { success: false, error: `unknown editor: ${editorId}` };
-  }
-
-  const fileApp = getFileApplicationDefs().find((app) => app.id === editorId);
-  if (fileApp) {
-    // 文档应用只能消费本机匹配类型的文件，不能把远端路径当成本机路径打开。
-    if (
-      options?.remoteTarget ||
-      options?.pathKind === "directory" ||
-      !(process.platform === "win32" ? win32.isAbsolute(path) : isAbsolute(path)) ||
-      !matchesFileApplication(fileApp, path)
-    ) {
-      return { success: false, error: "unsupported file application target" };
-    }
-    // renderer 的 pathKind 不能证明文件存在；异步 stat 避免阻塞主进程。
-    if (!(await stat(path).catch(() => null))?.isFile())
-      return { success: false, error: "unsupported file application target" };
-    const applicationPath = await resolveFileApplicationPath(fileApp);
-    if (!applicationPath) return { success: false, error: "application is not installed" };
-    try {
-      if (process.platform === "darwin") {
-        await execFileAsync("open", [
-          "-a",
-          applicationPath,
-          path,
-          ...(fileApp.launchArgs?.length ? ["--args", ...fileApp.launchArgs] : []),
-        ]);
-      } else {
-        // 阅读器可能长时间运行并输出日志；不能用 execFile 缓冲输出或等待其退出。
-        const child = spawn(applicationPath, [...(fileApp.launchArgs ?? []), path], {
-          detached: true,
-          stdio: "ignore",
-          windowsHide: false,
-        });
-        await new Promise<void>((resolve, reject) => {
-          child.once("spawn", resolve);
-          child.once("error", reject);
-        });
-        child.unref();
-      }
-      return { success: true };
-    } catch (error) {
-      logger.warn("[editors] 打开文件应用失败", { editorId, path, error: stringifyError(error) });
-      return { success: false, error: stringifyError(error) };
-    }
+    return openCustomEditor(editorId, path, options);
   }
 
   const appPath = resolveEditorDefAppPath(def) ?? def.appPath;
