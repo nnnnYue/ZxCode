@@ -1909,3 +1909,24 @@ export const zcodeSessionFileSchema = z.object({
   fileChanges: z.array(zcodePersistedFileChangeSchema).optional(),
   turnCheckpoints: z.array(zcodePersistedTurnCheckpointSchema).optional(),
 });
+
+// fork：手机任务列表 schema（上游 3.16 已删，fork UI 使用）。
+export const webRemoteControlTaskTargetSchema = z.object({
+  taskId: nonEmptyStringSchema,
+  title: z.string(),
+  workspacePath: nonEmptyStringSchema,
+  workspaceIdentity: nonEmptyStringSchema.optional(),
+  remoteSessionId: nonEmptyStringSchema.optional(),
+  workspaceLabel: nonEmptyStringSchema,
+  workspaceKind: z.enum(["local", "remote"]),
+  createdAt: z.number().finite(),
+  updatedAt: z.number().finite(),
+  provider: zcodeProviderSchema.optional(),
+  unreadAt: z.number().finite().optional(),
+  displayStatus: z.enum(["idle", "running", "completed", "error"]).optional(),
+  hasBackgroundWork: z.boolean().optional(),
+  workflowActivity: sessionWorkflowActivitySchema.optional(),
+  pinned: z.boolean().optional(),
+  archived: z.boolean().optional(),
+});
+export const webRemoteControlTaskTargetsSchema = z.array(webRemoteControlTaskTargetSchema);
