@@ -1,7 +1,4 @@
 {
-  "compilerOptions": {
-    "paths": { "@desktop/*": ["./src/*"] }
-  },
   "files": [],
   "references": [
     { "path": "./tsconfig.main.json" },

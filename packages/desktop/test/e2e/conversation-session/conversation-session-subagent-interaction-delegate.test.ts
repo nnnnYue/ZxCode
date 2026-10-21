@@ -82,8 +82,7 @@ describe("会话区 subagent 人机交互代理 E2E", () => {
 
     await sendV4Prompt(prompt);
     const parentPane = await waitForV4Pane(
-      // Host 创建的正式 ID 使用 session_；前缀不是产品身份合同。
-      (snapshot) => Boolean(snapshot.sessionId && snapshot.sessionId !== "draft"),
+      (snapshot) => snapshot.sessionId?.startsWith("sess_") === true,
       "subagent AskUserQuestion case 发送后没有绑定真实 session",
       30_000,
     );
@@ -140,7 +139,7 @@ describe("会话区 subagent 人机交互代理 E2E", () => {
 
     await sendV4Prompt(prompt);
     const parentPane = await waitForV4Pane(
-      (snapshot) => Boolean(snapshot.sessionId && snapshot.sessionId !== "draft"),
+      (snapshot) => snapshot.sessionId?.startsWith("sess_") === true,
       "subagent permission case 发送后没有绑定真实 session",
       30_000,
     );

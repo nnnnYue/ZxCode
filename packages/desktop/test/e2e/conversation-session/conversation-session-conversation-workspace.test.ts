@@ -1,14 +1,15 @@
 import { access } from "node:fs/promises";
 import {
   TID_COMPOSER_PROJECT_DETACH,
-  TID_COMPOSER_WORKSPACE_TRIGGER,
   TID_COMPOSER_WORK_OUTSIDE_PROJECT,
+  TID_COMPOSER_WORKSPACE_TRIGGER,
+  TID_CONVERSATION_NEW_TASK,
   TID_CONVERSATION_SECTION,
+  TID_PROJECT_ADD,
   TID_PROJECT_SECTION,
   TID_V4_COMPOSER_INPUT,
-  TID_VIRTUAL_PROJECT_ADD,
-  TID_VIRTUAL_PROJECT_NEW_TASK,
-} from "@zcode/shared/test-ids";
+  TID_WORKSPACE_LIST,
+} from "@zcode/shared";
 import {
   DEFAULT_CONVERSATION_WORKSPACE,
   DEFAULT_WORKSPACE,
@@ -66,24 +67,25 @@ describe("非项目对话工作区 E2E", () => {
           const action = project?.querySelector(`[data-testid="${testIds.projectAdd}"]`);
           return Boolean(trigger && action && !trigger.contains(action));
         })(),
-        titlesAreDragTriggers: Object.values(testIds)
+        dragHandlesOutsideTrigger: Object.values(testIds)
           .filter((testId) =>
             [testIds.projectSection, testIds.conversationSection].includes(testId),
           )
           .every((testId) => {
             const section = document.querySelector(`[data-testid="${testId}"]`);
             const trigger = section?.querySelector('[data-slot="collapsible-trigger"]');
-            const dragHandle = section?.querySelector("[data-purpose-section-drag-trigger]");
-            return Boolean(trigger && dragHandle && trigger === dragHandle);
+            const dragHandle = section?.querySelector("[data-purpose-section-drag-handle]");
+            return Boolean(trigger && dragHandle && !trigger.contains(dragHandle));
           }),
       }),
       {
         composerInput: TID_V4_COMPOSER_INPUT,
         composerWorkspaceTrigger: TID_COMPOSER_WORKSPACE_TRIGGER,
         conversationSection: TID_CONVERSATION_SECTION,
-        conversationNewTask: TID_VIRTUAL_PROJECT_NEW_TASK,
+        conversationNewTask: TID_CONVERSATION_NEW_TASK,
         projectSection: TID_PROJECT_SECTION,
-        projectAdd: TID_VIRTUAL_PROJECT_ADD,
+        projectAdd: TID_PROJECT_ADD,
+        projectWorkspaceList: TID_WORKSPACE_LIST,
         projectDetach: TID_COMPOSER_PROJECT_DETACH,
       },
     );
@@ -96,10 +98,11 @@ describe("非项目对话工作区 E2E", () => {
     expect(snapshot.elements.projectSection?.exists).toBe(true);
     expect(snapshot.elements.projectSection?.expanded).toBe("true");
     expect(snapshot.elements.projectAdd?.exists).toBe(true);
+    expect(snapshot.elements.projectWorkspaceList?.exists).toBe(false);
     expect(snapshot.elements.projectDetach?.exists).toBe(false);
     expect(snapshot.projectBeforeTask).toBe(true);
     expect(snapshot.projectActionOutsideTrigger).toBe(true);
-    expect(snapshot.titlesAreDragTriggers).toBe(true);
+    expect(snapshot.dragHandlesOutsideTrigger).toBe(true);
 
     await dragPurposeSectionOnto(TID_CONVERSATION_SECTION, TID_PROJECT_SECTION);
     await expectPurposeSectionOrder(TID_CONVERSATION_SECTION, TID_PROJECT_SECTION);
@@ -160,7 +163,7 @@ async function dragPurposeSectionOnto(sourceTestId: string, targetTestId: string
     (sourceId, targetId) => {
       const source = document.querySelector<HTMLElement>(`[data-testid="${sourceId}"]`);
       const target = document.querySelector<HTMLElement>(`[data-testid="${targetId}"]`);
-      const dragHandle = source?.querySelector<HTMLElement>("[data-purpose-section-drag-trigger]");
+      const dragHandle = source?.querySelector<HTMLElement>("[data-purpose-section-drag-handle]");
       if (!dragHandle || !target) {
         return null;
       }

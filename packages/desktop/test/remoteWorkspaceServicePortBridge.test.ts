@@ -9,8 +9,6 @@ describe("remoteWorkspaceServicePortBridge", () => {
   it("解析带 attachmentId 的 scoped service port", () => {
     const port = {} as MessagePort;
     const target = { kind: "ssh", host: "dev.internal", username: "developer" } as const;
-    const workspacePath = "/remote/project";
-    const workspaceIdentity = "remote:server:source-1:/remote/project";
 
     expect(
       parseRemoteWorkspaceServicePortMessage({
@@ -19,10 +17,6 @@ describe("remoteWorkspaceServicePortBridge", () => {
           attachmentId: "attachment-b",
           sessionId: "remote-session-1",
           target,
-          sourceServerId: "source-1",
-          workspacePath,
-          workspaceIdentity,
-          workspacePurpose: "project",
         },
         ports: [port],
       } as unknown as MessageEvent),
@@ -31,27 +25,7 @@ describe("remoteWorkspaceServicePortBridge", () => {
       port,
       sessionId: "remote-session-1",
       target,
-      sourceServerId: "source-1",
-      workspacePath,
-      workspaceIdentity,
-      workspacePurpose: "project",
     });
-  });
-
-  it("拒绝缺少 workspace scope 的 scoped service port", () => {
-    const port = {} as MessagePort;
-
-    expect(
-      parseRemoteWorkspaceServicePortMessage({
-        data: {
-          type: InternalChannels.ScopedServicePort,
-          attachmentId: "attachment-b",
-          sessionId: "remote-session-1",
-          target: { kind: "docker", container: "dev" },
-        },
-        ports: [port],
-      } as unknown as MessageEvent),
-    ).toBeNull();
   });
 
   it("services 注册完成后发送 attachment-ready ACK", () => {

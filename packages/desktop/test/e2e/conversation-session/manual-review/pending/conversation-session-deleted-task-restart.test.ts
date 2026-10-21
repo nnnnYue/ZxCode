@@ -7,11 +7,12 @@ import {
   TID_TASK_ITEM,
   TID_V4_COMPOSER_INPUT,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   DEFAULT_WORKSPACE,
   clearAppData,
   clickTestIdByDom,
+  ensureWorkspaceItemExpanded,
   setInputValueByTestIdDom,
 } from "../../../helpers/desktop-app.js";
 import { restartIntoWorkspacePreservingProfile } from "../../../helpers/model-provider-restart.js";
@@ -23,7 +24,6 @@ import {
   waitForV4Pane,
   waitForV4TimelineContaining,
 } from "../../../helpers/v4-conversation.js";
-import { ensureProjectExpanded } from "../../../helpers/project-sidebar.js";
 
 const CASE_TIMEOUT_MS = 180_000;
 const PROMPT_MARKER = "E2E_DELETED_TASK_RESTART";
@@ -93,7 +93,7 @@ describe("TSL20：deleted tombstone 阻止冷启动复活", () => {
 
     // 冷启动可能恢复 workspace 折叠态；负向断言前必须展开，
     // 否则所有 task row 都未渲染会制造 deleted tombstone 的假阳性。
-    await ensureProjectExpanded(DEFAULT_WORKSPACE);
+    await ensureWorkspaceItemExpanded(DEFAULT_WORKSPACE);
     await waitForProjectRow(taskId, false, "CLI summary 已恢复后 deleted task 在 Project 复活");
     await toggleArchivedView();
     await waitForArchivedRow(

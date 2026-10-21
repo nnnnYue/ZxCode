@@ -1,11 +1,6 @@
 import { open, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  TID_CHAT_SUMMARY_PANEL,
-  TID_GIT_PANE,
-  TID_TASK_ITEM,
-  testId,
-} from "@zcode/shared/test-ids";
+import { TID_CHAT_SUMMARY_PANEL, TID_GIT_PANE, TID_TASK_ITEM, testId } from "@zcode/shared";
 import type { ChainablePromiseElement } from "webdriverio";
 import {
   DEFAULT_WORKSPACE,

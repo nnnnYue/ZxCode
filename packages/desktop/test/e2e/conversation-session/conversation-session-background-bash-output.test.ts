@@ -1,22 +1,19 @@
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { clearAppData, DEFAULT_WORKSPACE, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
 import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
 import { ensureToolCrossProductFullAccessMode } from "../helpers/conversation-session-tool-cross-product.js";
 import { countUpstreamRequests } from "../helpers/conversation-session-network.js";
 import {
   getV4PaneSnapshot,
-  getV4ConfigProjection,
   openV4ComposerRunningBackgroundWorks,
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4Prompt,
-  switchV4Mode,
+  startNewV4Draft,
   waitForV4AssistantMessageContaining,
   setV4ElectronWindowSize,
 } from "../helpers/v4-conversation.js";
-
-import { startDraftFromProject } from "../helpers/project-sidebar.js";
 
 const ROOT = resolveE2ERuntimePath("background-bash-output", "中文 空格");
 const names: string[] = [];
@@ -46,15 +43,9 @@ async function openRow() {
 }
 async function launch(name: string) {
   names.push(name);
-  // 合并适配：全局新任务落到独立聊天目录，Bash fixture 必须从 ZCodeProject 发起。
-  await startDraftFromProject(DEFAULT_WORKSPACE);
-
-  // 项目新草稿恢复 build；显式选择 yolo，避免把模式切换动画中的旧文案当成已选中。
-  await switchV4Mode("yolo");
-  await browser.waitUntil(async () => (await getV4ConfigProjection()).mode === "yolo", {
-    timeout: 15000,
-    timeoutMsg: "项目草稿未应用 yolo 模式",
-  });
+  await startNewV4Draft();
+  // 新草稿会恢复 build；每次固定权限前置，避免把审批等待误判为输出未刷新。
+  await ensureToolCrossProductFullAccessMode();
   await sendV4Prompt(`E2E_BGV_${name}: Run the exact background Bash fixture.`);
   await waitForV4AssistantMessageContaining(`E2E_BGV_${name}_DONE`, 60000);
   const sessionId = (await getV4PaneSnapshot()).sessionId!;
@@ -128,13 +119,8 @@ describe("后台 Bash 实时输出详情", () => {
       join(ROOT, "writer.cjs"),
     );
     await prepareV4ConversationE2E();
-    await switchV4Mode("yolo");
-    await browser.waitUntil(async () => (await getV4ConfigProjection()).mode === "yolo", {
-      timeout: 15000,
-      timeoutMsg: "项目草稿未应用 yolo 模式",
-    });
-    // 宿主显示器会截断 1000px 高窗口；800px 仍覆盖原有输出滚动和标签页断言。
-    await setV4ElectronWindowSize(1440, 800);
+    await ensureToolCrossProductFullAccessMode();
+    await setV4ElectronWindowSize(1440, 1000);
   });
   afterEach(async () => {
     // 所有 barrier 均由用例拥有；断言失败也释放 producer，避免遗留后台任务。
@@ -377,14 +363,8 @@ describe("后台 Bash 实时输出详情", () => {
   it("BGV04: 子会话冷恢复后仍能读取原后台 Bash，完成后保留最终输出", async function () {
     this.timeout(360000);
     names.push("CHILD");
-    // 合并适配：全局新任务落到独立聊天目录，Bash fixture 必须从 ZCodeProject 发起。
-    await startDraftFromProject(DEFAULT_WORKSPACE);
-
-    await switchV4Mode("yolo");
-    await browser.waitUntil(async () => (await getV4ConfigProjection()).mode === "yolo", {
-      timeout: 15000,
-      timeoutMsg: "项目草稿未应用 yolo 模式",
-    });
+    await startNewV4Draft();
+    await ensureToolCrossProductFullAccessMode();
     await sendV4Prompt("E2E_BGV_PARENT: Launch the exact background child fixture.");
     await waitForV4AssistantMessageContaining("E2E_BGV_PARENT_DONE", 60000);
     const rootSessionId = (await getV4PaneSnapshot()).sessionId;

@@ -55,22 +55,25 @@ export async function checkLifecycle(
     },
   );
   await check(
-    "idle MCP page preserves large widget snapshot and unsaved page state without reconstruction",
+    "large JSON widget snapshot survives recycle without capturing unsaved React state",
     async () => {
       await page(
         "window.saveWidget({text:'x'.repeat(512*1024), nested:[null,1,false,{value:'safe'}]})",
       );
       await ui("window.setAnchors(false,false)");
-      const guest = env.guests.get(win.webContents.id)!;
-      await ui("window.expireOffscreen()");
-      assert.equal(await ui("window.suspendManaged()"), false);
+      await ui("window.suspendManaged()");
+      const offset = env.events.history.length;
       await ui("window.setAnchors(true,false)");
-      assert.equal(env.guests.get(win.webContents.id), guest);
+      await env.events.wait((e) => e.type === "phase" && e.phase === "running", offset);
       await page("window.fixtureReady");
-      const snapshot = (await ui("window.managedState()")).widget;
-      assert.equal(snapshot.text.length, 512 * 1024);
-      assert.deepEqual(snapshot.nested, [null, 1, false, { value: "safe" }]);
-      assert.equal(await page("document.querySelector('#counter').textContent"), "1");
+      assert.equal(await page("window.readWidget().text.length"), 512 * 1024);
+      assert.deepEqual(await page("window.readWidget().nested"), [
+        null,
+        1,
+        false,
+        { value: "safe" },
+      ]);
+      assert.equal(await page("document.querySelector('#counter').textContent"), "0");
       await page("window.saveWidget(null)");
       assert.equal((await ui("window.managedState()")).widget, null);
     },

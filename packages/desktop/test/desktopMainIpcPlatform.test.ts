@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { DesktopCommandIds, PlatformChannels } from "@zcode/shared";
+import { PlatformChannels } from "@zcode/shared";
 
 type IpcHandler = (...args: unknown[]) => unknown;
 
@@ -122,6 +122,7 @@ describe("registerPlatformIpcHandlers", () => {
       syncTaskRealtimeWorkspaceKeys: vi.fn(),
       getUpdateState: vi.fn(() => ({ status: "idle" })),
       syncWebRemoteControlWorkspaces: vi.fn(),
+      syncWebRemoteControlTasks: vi.fn(),
       deviceMid: "test-device-mid",
     });
 
@@ -137,38 +138,6 @@ describe("registerPlatformIpcHandlers", () => {
     expect(electronMocks.showOpenDialog).toHaveBeenCalledWith({
       properties: ["openDirectory", "createDirectory"],
     });
-  });
-
-  it("returns every native directory selection and an empty list on cancellation", async () => {
-    const { registerPlatformIpcHandlers } = await import("../src/main/desktopMainIpcPlatform.js");
-    registerPlatformIpcHandlers({
-      logger: { info: vi.fn(), warn: vi.fn() },
-      applyApplicationLocale: vi.fn(async () => {}),
-      focusWorkspaceInExistingWindow: vi.fn(() => ({ activated: false })),
-      windowWorkspaceMap: new Map(),
-      windowUnreadCountMap: new Map(),
-      currentApplicationLocale: () => "en-US",
-      executeDesktopCommand: vi.fn(async () => {}),
-      acknowledgePostUpdateReleaseNotes: vi.fn(async () => {}),
-      syncTaskRealtimeWorkspaceKeys: vi.fn(),
-      getUpdateState: vi.fn(() => ({ status: "idle" })),
-      syncWebRemoteControlWorkspaces: vi.fn(),
-      deviceMid: "test-device-mid",
-    });
-    const handler = electronMocks.handlers.get(PlatformChannels.SelectDirectories);
-    expect(handler).toBeDefined();
-    electronMocks.showOpenDialog.mockResolvedValueOnce({
-      canceled: false,
-      filePaths: ["/one", "/two"],
-    });
-    await expect(handler?.()).resolves.toEqual(["/one", "/two"]);
-    expect(electronMocks.showOpenDialog).toHaveBeenCalledWith({
-      properties: ["openDirectory", "createDirectory", "multiSelections"],
-    });
-    electronMocks.showOpenDialog.mockResolvedValueOnce({ canceled: true, filePaths: ["/ignored"] });
-    await expect(handler?.()).resolves.toEqual([]);
-    electronMocks.showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [] });
-    await expect(handler?.()).resolves.toEqual([]);
   });
 
   it("syncs macOS window controls when preload reports startup zoom metrics", async () => {
@@ -191,6 +160,7 @@ describe("registerPlatformIpcHandlers", () => {
       syncTaskRealtimeWorkspaceKeys: vi.fn(),
       getUpdateState: vi.fn(() => ({ status: "idle" })),
       syncWebRemoteControlWorkspaces: vi.fn(),
+      syncWebRemoteControlTasks: vi.fn(),
       deviceMid: "test-device-mid",
     });
 
@@ -207,9 +177,9 @@ describe("registerPlatformIpcHandlers", () => {
     expect(syncWindowControlsOverlayForZoomLevel).toHaveBeenCalledWith(targetWindow, 2);
   });
 
-  it("keeps local window tabs separate from the complete remote control workspace snapshot", async () => {
+  it("offers restored local workspace contexts to Web remote control startup recovery", async () => {
     const { registerPlatformIpcHandlers } = await import("../src/main/desktopMainIpcPlatform.js");
-    const syncWebRemoteControlWorkspaces = vi.fn();
+    const restorePreviouslyEnabledWebRemoteControl = vi.fn();
     const targetWindow = { id: 7 };
     electronMocks.browserWindowFromWebContents.mockReturnValue(targetWindow);
 
@@ -223,8 +193,10 @@ describe("registerPlatformIpcHandlers", () => {
       executeDesktopCommand: vi.fn(async () => {}),
       acknowledgePostUpdateReleaseNotes: vi.fn(async () => {}),
       syncTaskRealtimeWorkspaceKeys: vi.fn(),
+      restorePreviouslyEnabledWebRemoteControl,
       getUpdateState: vi.fn(() => ({ status: "idle" })),
-      syncWebRemoteControlWorkspaces,
+      syncWebRemoteControlWorkspaces: vi.fn(),
+      syncWebRemoteControlTasks: vi.fn(),
       deviceMid: "test-device-mid",
     });
 
@@ -233,22 +205,10 @@ describe("registerPlatformIpcHandlers", () => {
       "/workspace/two",
     ]);
 
-    expect(syncWebRemoteControlWorkspaces).not.toHaveBeenCalled();
-    const workspaces = [
-      { kind: "local", label: "Local", workspacePath: "/workspace/one" },
-      {
-        kind: "remote",
-        label: "Remote",
-        workspacePath: "/remote",
-        workspaceIdentity: "ssh://host/remote",
-        remoteSessionId: "remote-1",
-      },
-    ];
-    electronMocks.handlers.get(PlatformChannels.SyncWebRemoteControlWorkspaces)?.(
-      { sender: {} },
-      workspaces,
-    );
-    expect(syncWebRemoteControlWorkspaces).toHaveBeenCalledWith(7, workspaces);
+    expect(restorePreviouslyEnabledWebRemoteControl).toHaveBeenCalledWith(7, [
+      { workspacePath: "/workspace/one" },
+      { workspacePath: "/workspace/two" },
+    ]);
   });
 
   it("runs generalized CUA permission onboarding for Screen Recording", async () => {
@@ -271,6 +231,7 @@ describe("registerPlatformIpcHandlers", () => {
       syncTaskRealtimeWorkspaceKeys: vi.fn(),
       getUpdateState: vi.fn(() => ({ status: "idle" })),
       syncWebRemoteControlWorkspaces: vi.fn(),
+      syncWebRemoteControlTasks: vi.fn(),
       deviceMid: "test-device-mid",
     });
 
@@ -309,33 +270,5 @@ describe("registerPlatformIpcHandlers", () => {
         missingPermissions: expect.anything(),
       }),
     );
-  });
-
-  it("returns desktop command results to the renderer", async () => {
-    const { registerPlatformIpcHandlers } = await import("../src/main/desktopMainIpcPlatform.js");
-    const executeDesktopCommand = vi.fn(async () => ({ kind: "supported" }));
-
-    registerPlatformIpcHandlers({
-      logger: { info: vi.fn(), warn: vi.fn() },
-      applyApplicationLocale: vi.fn(async () => {}),
-      focusWorkspaceInExistingWindow: vi.fn(() => ({ activated: false })),
-      windowWorkspaceMap: new Map(),
-      windowUnreadCountMap: new Map(),
-      currentApplicationLocale: () => "en-US",
-      executeDesktopCommand,
-      acknowledgePostUpdateReleaseNotes: vi.fn(async () => {}),
-      syncTaskRealtimeWorkspaceKeys: vi.fn(),
-      getUpdateState: vi.fn(() => ({ status: "idle" })),
-      syncWebRemoteControlWorkspaces: vi.fn(),
-      deviceMid: "test-device-mid",
-    });
-
-    const handler = electronMocks.handlers.get(PlatformChannels.ExecuteDesktopCommand);
-    expect(handler).toBeDefined();
-
-    await expect(handler?.({ sender: {} }, DesktopCommandIds.GetCuaOsSupport)).resolves.toEqual({
-      kind: "supported",
-    });
-    expect(executeDesktopCommand).toHaveBeenCalledWith(DesktopCommandIds.GetCuaOsSupport, null);
   });
 });

@@ -6,7 +6,7 @@ import {
   TID_V4_EDIT_SUBMIT,
   TID_V4_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   clearAppData,
   clickTestIdByDom,

@@ -6,7 +6,7 @@ import {
   TID_SETTINGS_SECTION_NAV,
   TID_TASK_SETTINGS_BUTTON,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   DEFAULT_WORKSPACE,
   clearAppData,
@@ -24,6 +24,7 @@ import {
 import { resolveSeededReplayBaseUrl } from "../helpers/custom-openai-provider-store.js";
 import { createAndConfigurePersonalProvider } from "../helpers/personal-provider-settings.js";
 import {
+  UPSTREAM_MODEL,
   getUpstreamApiKey,
   getUpstreamProviderModelValues,
   getSelectedUpstreamModelLabel,
@@ -42,8 +43,6 @@ import {
   waitForV4UserMessageContaining,
 } from "../helpers/v4-conversation.js";
 
-// Template 的模型成员 ID 与通用 replay Provider 不同，不能借用 UPSTREAM_MODEL。
-const TEMPLATE_MODEL = "deepseek-flash";
 const CATALOG_MAX_OUTPUT_TOKENS = 384_000;
 const EDITED_MAX_OUTPUT_TOKENS = 64_000;
 const EXPECTED_THOUGHT_LEVEL = "high";
@@ -71,7 +70,7 @@ describe("会话区设置页新增模型供应商首发 E2E", () => {
     });
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 30000);
 
-    await selectUpstreamProviderModelById(TEMPLATE_MODEL, {
+    await selectUpstreamProviderModelById(UPSTREAM_MODEL, {
       includePlainModelFallback: false,
       providerId: provider.id,
       providerName,
@@ -90,7 +89,7 @@ describe("会话区设置页新增模型供应商首发 E2E", () => {
     const captureRecord = await waitForUpstreamNetworkCapture(marker);
     assertUpstreamRequestCapture(captureRecord, {
       expectedText: prompt,
-      model: TEMPLATE_MODEL,
+      model: UPSTREAM_MODEL,
     });
     assertUpstreamThoughtLevelCapture(captureRecord, EXPECTED_THOUGHT_LEVEL);
     expect(readRequestNumber(captureRecord.requestJson, "max_completion_tokens")).toBe(
@@ -128,13 +127,13 @@ async function createCustomUpstreamProvider(providerName: string) {
   await restoreModelDefaults(EDITED_MAX_OUTPUT_TOKENS, CATALOG_MAX_OUTPUT_TOKENS);
   await editModelMaxOutputTokens(CATALOG_MAX_OUTPUT_TOKENS, EDITED_MAX_OUTPUT_TOKENS);
   expect(
-    await hasPersonalMaxOutputOverride(firstProvider.id, TEMPLATE_MODEL, EDITED_MAX_OUTPUT_TOKENS),
+    await hasPersonalMaxOutputOverride(firstProvider.id, UPSTREAM_MODEL, EDITED_MAX_OUTPUT_TOKENS),
   ).toBe(false);
 
   const savedProvider = await waitForCreatedProvider(
     providerName,
     baseURL,
-    TEMPLATE_MODEL,
+    UPSTREAM_MODEL,
     EDITED_MAX_OUTPUT_TOKENS,
   );
   await waitForProviderConfigPolling();
@@ -300,17 +299,16 @@ async function editModelMaxOutputTokens(currentValue: number, nextValue: number)
 async function restoreModelDefaults(currentValue: number, inheritedValue: number) {
   await openFirstModelMetadataDialog();
   expect((await readModelMetadataDialogSnapshot()).maxOutputTokensValue).toBe(String(currentValue));
-  // Todo 141 将恢复操作改名为重置表单；仍验证整份草稿恢复继承值并保存。
   const restored = await browser.execute(() => {
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     const button = Array.from(dialog?.querySelectorAll<HTMLButtonElement>("button") ?? []).find(
-      (candidate) => /^(重置表单|Reset form)$/i.test(candidate.innerText.trim()),
+      (candidate) => /^(全部恢复默认|Restore all defaults)$/i.test(candidate.innerText.trim()),
     );
     if (!button || button.disabled) return false;
     button.click();
     return true;
   });
-  if (!restored) throw new Error("Template 模型没有可用的重置表单按钮");
+  if (!restored) throw new Error("Template 模型没有可用的全部恢复默认按钮");
   await browser.waitUntil(
     async () => {
       const snapshot = await readModelMetadataDialogSnapshot();
@@ -321,7 +319,7 @@ async function restoreModelDefaults(currentValue: number, inheritedValue: number
     },
     {
       timeout: 10_000,
-      timeoutMsg: "重置表单后没有回到 Provider Template 继承值",
+      timeoutMsg: "全部恢复默认后没有回到 Provider Template 继承值",
     },
   );
   await clickModelMetadataSave();
@@ -424,10 +422,9 @@ async function hasPersonalMaxOutputOverride(
 ) {
   try {
     const parsed = JSON.parse(await readFile(paths.configFile, "utf-8")) as {
-      config?: { modelConfigRules?: { providerModelRules?: unknown } };
+      modelConfigRules?: { providerModelRules?: unknown };
     };
-    // 当前配置文件将稀疏规则放在 config 内，根级旧结构会把已保存的 Overlay 读成缺失。
-    const rules = parsed.config?.modelConfigRules?.providerModelRules;
+    const rules = parsed.modelConfigRules?.providerModelRules;
     if (!Array.isArray(rules)) return false;
     return rules.some((rule) => {
       if (!rule || typeof rule !== "object" || Array.isArray(rule)) return false;
@@ -440,7 +437,7 @@ async function hasPersonalMaxOutputOverride(
       }
       const maxSpec = (optionSpecs as Record<string, unknown>).maxOutputTokens;
       return (
-        // 序列化层由 providerModelRules 数组表达作用域，不再保存重复的 type 字段。
+        candidate.type === "provider-model" &&
         candidate.providerId === providerId &&
         candidate.modelId === modelId &&
         Boolean(
@@ -466,7 +463,7 @@ function readRequestNumber(body: unknown, key: string): number | undefined {
 
 async function assertSelectedAddedProviderModel(provider: E2EModelProviderSnapshot) {
   const label = await getSelectedUpstreamModelLabel();
-  const acceptedValues = getUpstreamProviderModelValues(TEMPLATE_MODEL, {
+  const acceptedValues = getUpstreamProviderModelValues(UPSTREAM_MODEL, {
     includePlainModelFallback: false,
     providerId: provider.id,
   });

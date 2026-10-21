@@ -4,11 +4,12 @@ import {
   TID_PREVIEW_PANE,
   TID_TERMINAL,
   TID_TERMINAL_TOGGLE,
+  TID_WORKSPACE_FILE_TREE_BUTTON,
   TID_WORKSPACE_FILE_TREE_PANEL,
   TID_WORKSPACE_FILE_TREE_REFRESH_BUTTON,
   TID_WORKSPACE_FILE_TREE_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "../helpers/desktop-app.js";
 import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
 import {
@@ -18,7 +19,6 @@ import {
   runSSHCommand,
   type SSHRuntimeConfig,
 } from "../helpers/ssh-remote-p0.js";
-import { openProjectFileTree } from "../helpers/project-sidebar.js";
 
 const CASE_MARKER = "SSH_P0_DEVELOPMENT";
 const FILE_MARKER = "SSH_P0_REMOTE_FILE_MARKER";
@@ -90,7 +90,7 @@ describe(`${CASE_MARKER}: SSH 远端开发基础能力 P0`, () => {
 });
 
 async function assertRemoteFileTreeAndPreview(workspacePath: string): Promise<void> {
-  await openProjectFileTree(workspacePath, {
+  await clickTestIdByDom(testId(TID_WORKSPACE_FILE_TREE_BUTTON, workspacePath), {
     timeoutMsg: `${CASE_MARKER}: 没有找到远端文件树入口`,
   });
   await waitForTestIdByDom(TID_WORKSPACE_FILE_TREE_PANEL, {

@@ -19,7 +19,7 @@ import {
   TID_AUTOMATION_SCHEDULE_ADD,
   TID_AUTOMATIONS_LIST,
   TID_AUTOMATIONS_OPEN,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   clearAppData,
   clickTestIdByDom,

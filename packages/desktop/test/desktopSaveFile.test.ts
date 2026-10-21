@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
+import { PlatformChannels } from "@zcode/shared";
 
 const mocks = vi.hoisted(() => ({
   agentOptions: [] as Array<{ connect?: { lookup?: Function } }>,
@@ -340,5 +341,10 @@ describe("desktopSaveFile", () => {
       ),
     ).resolves.toEqual({ success: true, path: "/tmp/pinned.png" });
     expect(mocks.lookup).toHaveBeenCalledTimes(1);
+  });
+
+  it("注册到统一的平台频道", () => {
+    // fork 频道前缀为 zxcode:。
+    expect(PlatformChannels.SaveFile).toBe("zxcode:save-file");
   });
 });

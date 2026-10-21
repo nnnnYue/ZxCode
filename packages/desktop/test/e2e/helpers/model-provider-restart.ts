@@ -5,11 +5,12 @@ import { dirname, join } from "node:path";
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
   BUILTIN_PROVIDER_TEMPLATE_IDS,
+  TID_CHAT_MODEL_SELECT_TRIGGER,
+  TID_V4_MODEL_CONFIG,
   ZXCODE_AGENT_PROVIDER,
   encodeCustomModelValue,
   type ProviderFamilyConnectionSelection,
 } from "@zcode/shared";
-import { TID_CHAT_MODEL_SELECT_TRIGGER, TID_V4_MODEL_CONFIG } from "@zcode/shared/test-ids";
 import { getE2EAppDataPaths } from "./desktop-app.js";
 import { getUpstreamApiKey } from "./upstream-provider.js";
 import { waitForSqliteTable } from "./e2e-sqlite-readiness.js";
@@ -76,13 +77,6 @@ export async function seedBigModelOAuthCredential() {
   });
 }
 
-/** 为需要经过 Highspeed 网关鉴权的 E2E 补齐登录 JWT。 */
-export async function seedHighspeedLoginCredential() {
-  await writeJsonPatch(CREDENTIALS_FILE, {
-    zcodejwttoken: "e2e-highspeed-zcode-jwt",
-  });
-}
-
 /**
  * 为需要实际进入 BigModel Start Plan 的 E2E 补齐 zcode JWT。
  *
@@ -131,8 +125,6 @@ export async function seedReplayProvider(params: {
             contextWindow: input.contextWindow,
             id: input.id,
             maxOutputTokens: input.maxOutputTokens ?? input.limit?.output,
-            // 保留场景声明的档位，避免退回 disabled 后拒绝已保存的 high/max 偏好。
-            reasoningLevel: input.reasoningLevel,
           },
     ),
   };

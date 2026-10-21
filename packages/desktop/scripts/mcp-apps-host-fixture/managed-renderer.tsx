@@ -1,6 +1,3 @@
-import { attachPluginUiToolResults } from "../../../ui/src/plugin-ui/adapters/pluginUiBackground.js";
-import { buildPluginUiSurfaceKey } from "../../../ui/src/plugin-ui/contract.js";
-import { subscribePage } from "../../../ui/src/plugin-ui/adapters/pluginUiPageRegistry.js";
 import { registerPluginUiSessionActions } from "../../../ui/src/plugin-ui/adapters/pluginUiSessionActions.js";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -20,8 +17,6 @@ import type {
 const harness = (window as any).harness;
 const ready = Promise.withResolvers<void>();
 (window as any).harnessReady = ready.promise;
-const paused = Promise.withResolvers<void>();
-(window as any).fixturePaused = paused.promise;
 const drained = new Set<() => void>();
 const channels = new Map<string, Set<(value: any) => void>>();
 const emit = (name: string, value: unknown) => {
@@ -56,7 +51,6 @@ const agent = {
       "resyncConversationV4",
     ].map((method) => [method, (p: unknown) => harness.v4(method, p)]),
   ),
-  onDynamicPluginUiToolResult: () => (handler: any) => subscribe("ui-result", handler),
   onDynamicConversationFrame: () => (handler: any) => subscribe("frame", handler),
   onDynamicLocalTtftFacts: () => (handler: any) => subscribe("ttft", handler),
   onAgentRuntimeRestarted: (handler: any) => subscribe("restart", handler),
@@ -71,7 +65,6 @@ const services = {
 };
 const platform = {
   pluginSandbox: {
-    setExecutionActive: window.zcodePluginSandbox?.setExecutionActive,
     getOwnerWebContentsId: () => harness.owner(),
     disposeSandbox: (id: string, init: number) => harness.dispose(id, init),
     consumeUserGesture: async () => false,
@@ -116,13 +109,11 @@ function Anchor({
   enabled,
   sequence,
   remote,
-  visible = true,
 }: {
   side: boolean;
   enabled: boolean;
   sequence?: number;
   remote?: boolean;
-  visible?: boolean;
 }) {
   const input: UsePluginUiHostInput = {
     ...config,
@@ -147,10 +138,8 @@ function Anchor({
     if (host.phase === "running" || !host.supported) ready.resolve();
     if (host.phase === "error") ready.reject(new Error(host.error ?? "managed page failed"));
   }, [host.phase, host.pageKey, enabled]);
-  if (config.mode.startsWith("background-cold")) return null;
   return side ? (
     <PluginUiSidePaneView
-      visible={visible}
       scopeRef={config.scope.scope}
       host={host}
       loadingLabel="loading"
@@ -170,12 +159,8 @@ function Anchor({
 }
 function Fixture() {
   const [state, setState] = useState({
-    inline: config.mode !== "background-hidden" && !config.mode.startsWith("background-admission"),
-    sidebar: config.mode === "background-hidden",
-    sidebarVisible: true,
-    sidebarActive: true,
-    chatVisible: true,
-    workspaceVisible: true,
+    inline: true,
+    sidebar: false,
     sequence: undefined as number | undefined,
     remote: config.mode === "remote",
   });
@@ -210,76 +195,9 @@ function Fixture() {
         </div>
         <div
           id="sidebar-anchor"
-          aria-hidden={!state.sidebarVisible || !state.chatVisible || !state.workspaceVisible}
-          style={{
-            position: "absolute",
-            left: 500,
-            top: 20,
-            width: state.sidebarVisible ? 450 : 0,
-            height: 600,
-            display: config.mode === "background-hidden" ? "none" : undefined,
-            overflow: "hidden",
-            opacity: state.sidebarVisible && state.chatVisible && state.workspaceVisible ? 1 : 0,
-            pointerEvents:
-              state.sidebarVisible && state.chatVisible && state.workspaceVisible
-                ? undefined
-                : "none",
-          }}
+          style={{ position: "absolute", left: 500, top: 20, width: 450, height: 600 }}
         >
-          {/* 复现应用收起时锁宽、切标签时 forceMount 的真实布局；锚点一直连接。 */}
-          <div style={{ width: 450, height: 600, display: state.sidebarActive ? "block" : "none" }}>
-            {state.sidebar && (
-              <Anchor
-                side
-                enabled
-                visible={
-                  state.sidebarVisible &&
-                  state.sidebarActive &&
-                  state.chatVisible &&
-                  state.workspaceVisible
-                }
-                sequence={state.sequence}
-                remote={state.remote}
-              />
-            )}
-          </div>
-        </div>
-        <div style={{ position: "absolute", left: 500, top: 650 }}>
-          <button
-            id="toggle-sidebar"
-            onClick={() =>
-              setState((previous) => ({ ...previous, sidebarVisible: !previous.sidebarVisible }))
-            }
-          >
-            Toggle sidebar
-          </button>
-          <button
-            id="switch-sidebar-tab"
-            onClick={() =>
-              setState((previous) => ({ ...previous, sidebarActive: !previous.sidebarActive }))
-            }
-          >
-            Switch tab
-          </button>
-          <button
-            id="switch-main-page"
-            onClick={() =>
-              setState((previous) => ({ ...previous, chatVisible: !previous.chatVisible }))
-            }
-          >
-            Switch page
-          </button>
-          <button
-            id="switch-workspace"
-            onClick={() =>
-              setState((previous) => ({
-                ...previous,
-                workspaceVisible: !previous.workspaceVisible,
-              }))
-            }
-          >
-            Switch workspace
-          </button>
+          {state.sidebar && <Anchor side enabled sequence={state.sequence} remote={state.remote} />}
         </div>
       </PlatformProvider>
     </ServiceProvider>
@@ -291,11 +209,6 @@ const layout = () =>
   );
 (window as any).setAnchors = async (inline: boolean, sidebar: boolean, sequence?: number) => {
   flushSync(() => renderState({ inline, sidebar, sequence }));
-  await layout();
-};
-(window as any).revealBackgroundPage = async () => {
-  config.mode = "background";
-  flushSync(() => renderState({ inline: false, sidebar: true }));
   await layout();
 };
 (window as any).setShowcasePresentation = async (
@@ -337,15 +250,12 @@ const layout = () =>
   deadlines.clear();
   for (const run of pending) run();
 };
-(window as any).removeTask = () => {
-  // 删除任务同时撤掉呈现入口；不能让测试中仍挂载的 hook 再次请求已删除任务。
-  flushSync(() => renderState({ inline: false, sidebar: false }));
+(window as any).removeTask = () =>
   emit("task", {
     type: "workspace_task_list_changed",
     reason: "task_deleted",
     taskId: config.scope.sessionId,
   });
-};
 (window as any).runtimeUnavailable = () =>
   emit("lifecycle", {
     workspaceKey: config.scope.workspaceIdentity ?? config.scope.workspacePath,
@@ -387,7 +297,7 @@ const layout = () =>
 };
 void harness
   .config()
-  .then(async (value: any) => {
+  .then((value: any) => {
     config = value;
     if (config.mode === "sampling") {
       let unregister: (() => void) | undefined;
@@ -420,30 +330,7 @@ void harness
           notify();
         });
     }
-    if (config.mode.startsWith("background-admission")) {
-      // 故意不挂 Anchor/usePluginUiHost，也没有 conversation lease；只保留生产窗口接收器。
-      const key = buildPluginUiSurfaceKey(
-        { ...config.scope, ...config.presentation },
-        config.scope.scope,
-      );
-      subscribePage(key, () => {
-        const page = pluginUiPages.get(key);
-        if (page) current = page.snapshot();
-      });
-      const off = attachPluginUiToolResults(services as never, platform as never, () => ({
-        theme: "light",
-        locale: "en",
-      }));
-      (window as any).stopBackgroundReceiver = off;
-      ready.resolve();
-    }
     if (config.mode === "web") platform.pluginSandbox = undefined as never;
-    if (config.mode.endsWith("-minimized")) {
-      const start = Promise.withResolvers<void>();
-      (window as any).startFixture = start.resolve;
-      paused.resolve();
-      await start.promise;
-    }
     createRoot(document.getElementById("root")!).render(
       config.mode === "rows" ? (
         <ServiceProvider services={services as never}>

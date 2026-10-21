@@ -101,9 +101,7 @@ export async function requestAdditionalBrowserTab(): Promise<void> {
   await browser.waitUntil(
     async () =>
       browser.execute(() => {
-        const item = document.querySelector<HTMLElement>(
-          '[data-state="active"] [data-side-pane-open-tab-item="browser"]',
-        );
+        const item = document.querySelector<HTMLElement>('[data-side-pane-add-item="browser"]');
         if (!item) return false;
         item.click();
         return true;

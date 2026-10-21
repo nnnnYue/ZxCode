@@ -1,6 +1,6 @@
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+import { TID_V4_COMPOSER_INPUT } from "@zcode/shared";
 import { clearAppData, setInputValueByTestIdDom } from "../../../helpers/desktop-app.js";
 import {
   ELECTRON_WINDOW_RECORDING_CAPTURE_MODE,
@@ -199,10 +199,8 @@ async function seedLifecycleMarketplaceCache(marketplaceRoot: string): Promise<v
             lastUpdated: "2099-01-01T00:00:00.000Z",
             name: "zcode-plugins-official",
             pluginCount: 1,
-            source: {
-              source: "url",
-              url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
-            },
+            // fork：官方市场不再写 CDN url source，用 bundled 形态预置已刷新标记。
+            source: { source: "bundled" },
           },
           {
             addedAt: "2026-07-31T00:00:00.000Z",

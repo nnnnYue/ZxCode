@@ -1,4 +1,3 @@
-import { openWorkspaceDraftFromSidebar } from "../helpers/workspace-agent-warmup.js";
 /**
  * 正式 E2E —— Workspace Hook Trust 软门禁与逐条持久信任（HK05–HK07）。
  * 已通过人工 review 并由 e2e:promote 从 manual-review/pending 晋级，
@@ -22,7 +21,7 @@ import {
   TID_V4_WORKSPACE_HOOK_PENDING_DISMISS,
   TID_V4_WORKSPACE_HOOK_PENDING_REVIEW,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   DEFAULT_WORKSPACE,
   clearAppData,
@@ -40,6 +39,7 @@ import {
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
+  startNewV4Draft,
   waitForV4Pane,
 } from "../helpers/v4-conversation.js";
 
@@ -158,8 +158,7 @@ describe("Workspace Hook Trust (HK05–HK07)", () => {
     // 第二段（新 task）：catalog HK07 字面语义——新 task 的自然 SessionStart
     // 按 Trust 执行。该路径与 UserPromptSubmit 不同：覆盖新 session 冷启动时
     // 的配置发现、trust store 读取与 admission 评估全链路，不以"语义等价"省略。
-    // 全局新建会分配虚拟目录；Hook、Skill 与会话候选必须继续使用夹具所属项目。
-    await openWorkspaceDraftFromSidebar(DEFAULT_WORKSPACE);
+    await startNewV4Draft();
     await sendV4Prompt("E2E_HOOK_TRUST new task: reply with ok");
     await waitForHookTrustExecution(
       E2E_HOOK_TRUST_LABELS.sessionStartA,

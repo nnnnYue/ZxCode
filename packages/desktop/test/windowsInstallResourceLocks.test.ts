@@ -1,13 +1,14 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+// fork：自动更新链路（runWindowsUpdateProcessCleanup / WINDOWS_UPDATE_LOCK_RELEASE_GRACE_MS /
+// isWindowsProcessReferencingResourceMarkers 导出面）已随功能剔除，对应用例一并删除；
+// 保留安装前资源锁诊断的现存导出（markers / snapshot / probe / 扫描查询）。
 import {
   findWindowsProcessesReferencingResourceMarkers,
-  isWindowsProcessReferencingResourceMarkers,
   probeWindowsPackagedResourceWritable,
   resolveWindowsPackagedResourceLockMarkers,
-  runWindowsUpdateProcessCleanup,
   snapshotWindowsPackagedResources,
 } from "../src/main/windowsInstallResourceLocks.js";
 
@@ -43,36 +44,6 @@ describe("windows install resource locks", () => {
       join(resourcesPath, "glm"),
       join(resourcesPath, "tools"),
     ]);
-  });
-
-  it("matches resource paths regardless of slash direction or case", () => {
-    const markers = ["C:\\Users\\demo\\AppData\\Local\\Programs\\ZCode\\resources\\glm"];
-
-    expect(
-      isWindowsProcessReferencingResourceMarkers(
-        {
-          pid: 42,
-          commandLine:
-            '"C:/Users/demo/AppData/Local/Programs/ZCode/ZCode.exe" "C:/Users/demo/AppData/Local/Programs/ZCode/resources/GLM/zcode-agent.exe"',
-        },
-        markers,
-      ),
-    ).toBe(true);
-  });
-
-  it("does not match unrelated processes", () => {
-    const markers = ["C:\\Users\\demo\\AppData\\Local\\Programs\\ZCode\\resources\\glm"];
-
-    expect(
-      isWindowsProcessReferencingResourceMarkers(
-        {
-          pid: 108,
-          commandLine: '"C:\\Windows\\System32\\notepad.exe"',
-          executablePath: "C:\\Windows\\System32\\notepad.exe",
-        },
-        markers,
-      ),
-    ).toBe(false);
   });
 
   it("snapshots packaged resource dirs without throwing on missing dirs", () => {
@@ -118,89 +89,5 @@ describe("windows install resource locks", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
-
-  it("terminates only processes still verified against packaged resources", async () => {
-    const marker = "C:\\ZCode\\resources\\glm";
-    const scan = vi
-      .fn()
-      .mockResolvedValueOnce([
-        // 模拟退出屏障前的 Host PID=10 已退出，随后被无关记事本进程复用。
-        {
-          pid: 10,
-          commandLine: '"C:\\Windows\\System32\\notepad.exe"',
-        },
-        {
-          pid: 30,
-          commandLine: `"${marker}\\zcode-agent.exe"`,
-        },
-        {
-          pid: 30,
-          executablePath: `${marker}\\zcode-agent.exe`,
-        },
-      ])
-      .mockResolvedValueOnce([]);
-    const terminate = vi.fn(async (pids: number[]) => pids.map((pid) => ({ pid })));
-    const delay = vi.fn(async () => {});
-
-    const result = await runWindowsUpdateProcessCleanup({
-      resourceLockMarkers: [marker],
-      lockReleaseGraceMs: 300,
-      scan,
-      terminate,
-      delay,
-    });
-
-    expect(result.terminationPids).toEqual([30]);
-    expect(terminate).toHaveBeenCalledWith([30]);
-    expect(delay).toHaveBeenCalledWith(300);
-    expect(scan).toHaveBeenCalledTimes(2);
-    expect(result.errors).toEqual([]);
-  });
-
-  it("keeps update cleanup fail-open when scan or taskkill fails", async () => {
-    const marker = "C:\\ZCode\\resources\\glm";
-    const scan = vi
-      .fn()
-      .mockResolvedValueOnce([
-        {
-          pid: 10,
-          executablePath: `${marker}\\zcode-agent.exe`,
-        },
-      ])
-      .mockRejectedValueOnce(new Error("rescan timeout"));
-    const terminate = vi.fn(async () => {
-      throw new Error("taskkill failed");
-    });
-
-    const result = await runWindowsUpdateProcessCleanup({
-      resourceLockMarkers: [marker],
-      lockReleaseGraceMs: 300,
-      scan,
-      terminate,
-      delay: async () => {},
-    });
-
-    expect(result.terminationPids).toEqual([10]);
-    expect(result.remainingLockProcesses).toEqual([]);
-    expect(result.errors).toEqual(["terminate: taskkill failed", "rescan: rescan timeout"]);
-  });
-
-  it("does not terminate historical pids when the live scan fails", async () => {
-    const terminate = vi.fn(async () => []);
-
-    const result = await runWindowsUpdateProcessCleanup({
-      resourceLockMarkers: ["C:\\ZCode\\resources\\glm"],
-      lockReleaseGraceMs: 300,
-      scan: async () => {
-        throw new Error("powershell timeout");
-      },
-      terminate,
-      delay: async () => {},
-    });
-
-    expect(result.terminationPids).toEqual([]);
-    expect(terminate).not.toHaveBeenCalled();
-    expect(result.errors).toEqual(["initial-scan: powershell timeout"]);
   });
 });

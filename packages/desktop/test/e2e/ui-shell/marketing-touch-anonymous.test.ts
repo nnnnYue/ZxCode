@@ -5,12 +5,12 @@ import {
   TID_LOGOUT_BUTTON,
   TID_LOGIN_USE_API_KEY_BUTTON,
   TID_LOGIN_API_KEY_SKIP_BUTTON,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import {
   clearAppData,
   getE2EAppDataPaths,
   waitForDefaultWorkspaceReady,
-} from "#e2e/helpers/desktop-app";
+} from "../helpers/desktop-app.js";
 
 const byId = (id: string) => $(`[data-testid="${id}"]`);
 function origin() {
@@ -107,8 +107,7 @@ describe("Marketing Touch anonymous boundaries", () => {
   it("MTE-05 anonymous banner: closes normally and opens login instead of submitting a claim", async () => {
     const banner = byId("marketing-banner");
     await banner.waitForDisplayed({ timeout: 15_000 });
-    // 空文案 fixture 使用 App 的本地化回退名称，不能只匹配英文。
-    await banner.$('button[aria-label="Close"], button[aria-label="关闭"]').click();
+    await banner.$('button[aria-label="Close"]').click();
     await banner.waitForExist({ reverse: true });
     await browser.waitUntil(async () => (await state()).events.length === 1);
     const closed = await state();
@@ -121,7 +120,7 @@ describe("Marketing Touch anonymous boundaries", () => {
     await fetch(`${origin()}/__e2e/marketing/redeliver-banner`, { method: "POST" });
     await browser.execute(() => window.dispatchEvent(new Event("online")));
     await banner.waitForDisplayed({ timeout: 15_000 });
-    await banner.$('button[aria-label="Open"], button[aria-label="打开"]').click();
+    await banner.$('button[aria-label="Open"]').click();
     await byId(TID_LOGIN_USE_API_KEY_BUTTON).waitForDisplayed({ timeout: 15_000 });
     const after = await state();
     expect(after.events).toEqual(closed.events);

@@ -4,10 +4,15 @@ import {
   TID_WORKSPACE_PATH,
   TID_WORKSPACE_TITLE,
   testId,
-} from "@zcode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { ensureProjectExpanded } from "../helpers/project-sidebar.js";
+} from "@zcode/shared";
 import {
+  DEFAULT_WORKSPACE,
+  clearAppData,
+  ensureWorkspaceItemExpanded,
+  waitForWorkspaceApp,
+} from "../helpers/desktop-app.js";
+import {
+  TASK_TITLE_MARQUEE_GROUPED_ID,
   TASK_TITLE_MARQUEE_LONG_ID,
   TASK_TITLE_MARQUEE_PINNED_ID,
   TASK_TITLE_MARQUEE_SHORT_ID,
@@ -30,7 +35,8 @@ interface TitleSnapshot {
 describe("TTL：Task 名称溢出走马灯", () => {
   before(async () => {
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 45_000);
-    await ensureProjectExpanded(DEFAULT_WORKSPACE);
+    await setTaskViewPreference("project");
+    await ensureWorkspaceItemExpanded(DEFAULT_WORKSPACE);
     await waitForTask(TASK_TITLE_MARQUEE_LONG_ID);
   });
 
@@ -126,16 +132,19 @@ describe("TTL：Task 名称溢出走马灯", () => {
     expect(snapshot.animationCount).toBe(0);
   });
 
-  it("TTL07：项目任务行、全局置顶区与深色主题复用相同溢出语义", async function () {
+  it("TTL07：Timeline、Group、Pinned 与深色主题复用相同溢出语义", async function () {
     this.timeout(CASE_TIMEOUT_MS);
-    // Timeline / Group 视图已随虚拟项目重构下线；剩余展示形态是项目树任务行与全局置顶区。
+    await setTaskViewPreference("chronological");
     await assertOverflowSurface(TASK_TITLE_MARQUEE_LONG_ID);
+    await setTaskViewPreference("grouped");
     await assertOverflowSurface(TASK_TITLE_MARQUEE_PINNED_ID);
+    await assertOverflowSurface(TASK_TITLE_MARQUEE_GROUPED_ID, true);
     await browser.execute(() => document.documentElement.classList.add("dark"));
-    await assertOverflowSurface(TASK_TITLE_MARQUEE_PINNED_ID);
+    await assertOverflowSurface(TASK_TITLE_MARQUEE_GROUPED_ID, true);
 
     // 任务标题上下文入口：打开任务后，工作区图标位于名称前，hover/点按均可查看信息。
-    await ensureProjectExpanded(DEFAULT_WORKSPACE);
+    await setTaskViewPreference("project");
+    await ensureWorkspaceItemExpanded(DEFAULT_WORKSPACE);
     const task = await $(`[data-testid="${testId(TID_TASK_ITEM, TASK_TITLE_MARQUEE_SHORT_ID)}"]`);
     await task.click();
     const icon = await $(
@@ -183,7 +192,10 @@ async function waitForTask(taskId: string) {
 }
 
 function taskRowSelectors(taskId: string): string[] {
-  return [`[data-testid="${testId(TID_TASK_ITEM, taskId)}"]`];
+  return [
+    `[data-testid="${testId(TID_TASK_ITEM, taskId)}"]`,
+    `[data-grouped-task-key*="${taskId}"]`,
+  ];
 }
 
 async function readTitleSnapshot(taskId: string): Promise<TitleSnapshot> {
@@ -238,6 +250,21 @@ async function hoverTaskRow(taskId: string): Promise<boolean> {
     },
     taskRowSelectors(taskId),
     taskId,
+  );
+}
+
+async function setTaskViewPreference(organizeBy: "project" | "chronological" | "grouped") {
+  await browser.execute((value) => {
+    localStorage.setItem(
+      "zcode-sidebar-task-preferences",
+      JSON.stringify({ organizeBy: value, sortBy: "updated" }),
+    );
+    location.reload();
+  }, organizeBy);
+  await browser.waitUntil(
+    () =>
+      browser.execute(() => Boolean(document.querySelector('[data-task-title-copy="original"]'))),
+    { timeout: 45_000, timeoutMsg: `${organizeBy} 视图刷新后未恢复任务标题` },
   );
 }
 
@@ -344,7 +371,7 @@ async function setReducedMotion(reduce: boolean) {
   });
 }
 
-async function assertOverflowSurface(taskId: string) {
+async function assertOverflowSurface(taskId: string, grouped = false) {
   const selectors = taskRowSelectors(taskId);
   await browser.waitUntil(
     () =>
@@ -354,7 +381,7 @@ async function assertOverflowSurface(taskId: string) {
       ),
     {
       timeout: 15_000,
-      timeoutMsg: `侧栏未显示 ${taskId}`,
+      timeoutMsg: `${grouped ? "Group" : "任务视图"} 未显示 ${taskId}`,
     },
   );
   const snapshot = await readTitleSnapshot(taskId);
