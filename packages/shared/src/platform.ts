@@ -768,7 +768,9 @@ export interface IPlatformService {
   /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
   onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
   /** fork：Bot 重连事件（onRemoteSessionReconnected 别名，fork UI 用旧名）。 */
-  onBotRemoteWorkspaceReconnected?(handler: (event: BotRemoteWorkspaceReconnectedEvent) => void): () => void;
+  onBotRemoteWorkspaceReconnected?(
+    handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
+  ): () => void;
 
   /** 检查目录是否已在其他窗口打开；如果是则激活该窗口并切到对应 tab */
   activateOrSetWorkspace(path: string): Promise<{ activated: boolean }>;
@@ -924,7 +926,9 @@ export interface IPlatformService {
   syncWindowTabs(paths: string[]): void;
 
   /** fork：同步当前窗口可供 Web 远程控制展示的 task 快照（手机任务列表）；Web 不实现。 */
-  syncWebRemoteControlTasks?(tasks: import("./web-remote-control.js").WebRemoteControlTaskTarget[]): void;
+  syncWebRemoteControlTasks?(
+    tasks: import("./web-remote-control.js").WebRemoteControlTaskTarget[],
+  ): void;
 
   /** 同步当前窗口里 Web 远程控制允许切换的 workspace；Web fallback 可忽略 */
   syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;

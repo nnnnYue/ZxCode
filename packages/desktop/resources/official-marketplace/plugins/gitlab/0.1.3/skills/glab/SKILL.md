@@ -230,7 +230,7 @@ glab api projects/:id/issues/:iid/notes \
   `glab api .../discussions/<id>/notes` for issues/incidents (write the body
   to a file and pass `-F body=@file` for anything non-trivial).
 - **`--input` requires an explicit `Content-Type` header** — `glab api
-  --input file.json` sends raw bytes without setting Content-Type, causing
+--input file.json` sends raw bytes without setting Content-Type, causing
   HTTP 415. Add `-H "Content-Type: application/json"` or use `-f` / `-F`
   instead.
 - **`glab ci retry` takes a job ID, not a pipeline ID** — to retry an

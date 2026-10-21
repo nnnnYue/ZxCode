@@ -10,14 +10,14 @@ Do **NOT** use `createFunction` or `manageCloudRun` for Agent deployment.
 
 ## Why HTTP Cloud Functions First
 
-| Dimension | HTTP Cloud Functions | CloudRun |
-|-----------|---------------------|----------|
-| SSE Streaming | ✅ Native support | ✅ Supported |
-| WebSocket | ✅ Native support | ✅ Supported |
-| Deployment Complexity | Low (no Dockerfile needed) | High (container config required) |
-| Cost | Pay-per-invocation, scales to zero | Pay-per-instance-hour |
-| Cold Start | Yes, mitigated with provisioned instances | Yes, mitigated with min instances |
-| Supported Runtimes | Node.js, Python | Any |
+| Dimension             | HTTP Cloud Functions                      | CloudRun                          |
+| --------------------- | ----------------------------------------- | --------------------------------- |
+| SSE Streaming         | ✅ Native support                         | ✅ Supported                      |
+| WebSocket             | ✅ Native support                         | ✅ Supported                      |
+| Deployment Complexity | Low (no Dockerfile needed)                | High (container config required)  |
+| Cost                  | Pay-per-invocation, scales to zero        | Pay-per-instance-hour             |
+| Cold Start            | Yes, mitigated with provisioned instances | Yes, mitigated with min instances |
+| Supported Runtimes    | Node.js, Python                           | Any                               |
 
 ---
 
@@ -55,6 +55,7 @@ pyenv local 3.10
 ```
 
 **Verification (REQUIRED before proceeding):**
+
 ```bash
 python3.10 --version
 # MUST output: Python 3.10.x
@@ -65,6 +66,7 @@ python3.10 --version
 <summary>Why must it be Python 3.10? (background info, AI may skip)</summary>
 
 pip's `--python-version` flag correctly selects wheel files for the target version, but it does **NOT** reliably evaluate environment markers (e.g., `exceptiongroup; python_version < "3.11"`) — it may use the **host interpreter's version** instead of the target version. This causes conditional dependencies like `exceptiongroup` (required by `anyio` on Python < 3.11) to be silently skipped, leading to `ModuleNotFoundError` at runtime on the cloud (which runs Python 3.10).
+
 </details>
 
 ---
@@ -76,6 +78,7 @@ pip's `--python-version` flag correctly selects wheel files for the target versi
 > ### ⚠️ CRITICAL: `env/` is an immutable build artifact
 >
 > The ONLY correct workflow is:
+>
 > 1. **Delete** → `rm -rf ./env`
 > 2. **Install** → single `pip install` command (below)
 > 3. **Never touch again**
@@ -153,7 +156,7 @@ for req in reqs:
              os.path.isfile(os.path.join(env_path, import_name + '.so')))
     if not found:
         # Some packages have different import names, try dist-info
-        dist_matches = [d for d in os.listdir(env_path) 
+        dist_matches = [d for d in os.listdir(env_path)
                        if d.endswith('.dist-info') and req.replace('-','_').lower() in d.lower()]
         if dist_matches:
             found = True
@@ -257,9 +260,11 @@ manageAgent(action="create", runtime="Python3.10", installDependency=false, targ
 ## Error Recovery Playbook
 
 > **Golden Rule: ANY problem with `env/` has exactly ONE fix:**
+>
 > ```
 > edit requirements.txt (if needed) → rm -rf env/ → re-run Step 2 script → re-run Step 3
 > ```
+>
 > **There is NO other fix. Never deviate from this.**
 
 ### Error: `pip install` reports "no matching distribution"
@@ -421,14 +426,14 @@ CMD ["python", "server.py"]
 
 ## Summary
 
-| Decision | Choice |
-|----------|--------|
-| **Deployment tool** | `manageAgent` MCP tool (MUST USE) |
-| **Python runtime** | Python 3.10 (MUST USE, `runtime="Python3.10"`) |
+| Decision                | Choice                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| **Deployment tool**     | `manageAgent` MCP tool (MUST USE)                                                                |
+| **Python runtime**      | Python 3.10 (MUST USE, `runtime="Python3.10"`)                                                   |
 | **Dependency strategy** | Local pre-packaging to `./env` (**MUST use Python 3.10 interpreter**, `installDependency=false`) |
-| **Build workflow** | Step 1 (Python) → Step 2 (build env/) → Step 3 (verify) → Step 4 (deploy) |
-| **env/ rebuild rule** | ALWAYS atomic: `rm -rf env/` → single `pip install` — NEVER incremental |
-| **Default platform** | HTTP Cloud Functions |
-| **Fallback platform** | CloudRun (only for special requirements) |
-| **Startup script** | `scf_bootstrap` — set `PYTHONPATH="./env:$PYTHONPATH"`, do NOT `pip install` at startup |
-| **Port** | Read from `SCF_RUNTIME_PORT` env var |
+| **Build workflow**      | Step 1 (Python) → Step 2 (build env/) → Step 3 (verify) → Step 4 (deploy)                        |
+| **env/ rebuild rule**   | ALWAYS atomic: `rm -rf env/` → single `pip install` — NEVER incremental                          |
+| **Default platform**    | HTTP Cloud Functions                                                                             |
+| **Fallback platform**   | CloudRun (only for special requirements)                                                         |
+| **Startup script**      | `scf_bootstrap` — set `PYTHONPATH="./env:$PYTHONPATH"`, do NOT `pip install` at startup          |
+| **Port**                | Read from `SCF_RUNTIME_PORT` env var                                                             |

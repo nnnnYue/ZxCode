@@ -14,10 +14,10 @@ Reuse an existing authorization before initializing again. Match the status line
 
 ## Skills
 
-| Skill | Entry | Purpose |
-| --- | --- | --- |
+| Skill   | Entry              | Purpose                                                                           |
+| ------- | ------------------ | --------------------------------------------------------------------------------- |
 | `setup` | `/wecom-cli:setup` | Check/install the latest `wecom-cli`, initialize authorization, and verify status |
-| `cli` | Context-triggered | Use dynamic discovery for messages, docs, sheets, calendar, and other services |
+| `cli`   | Context-triggered  | Use dynamic discovery for messages, docs, sheets, calendar, and other services    |
 
 ## Safety boundary
 

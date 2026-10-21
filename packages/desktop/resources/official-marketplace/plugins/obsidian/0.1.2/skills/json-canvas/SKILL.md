@@ -72,11 +72,11 @@ Turn an article, outline, or brainstorm into a complete canvas:
 
 Node sizing by content length:
 
-| Text length | Width × Height (px) |
-|-------------|---------------------|
-| Short (<30 chars) | 220 × 100 |
-| Medium (30-60 chars) | 260 × 120 |
-| Long (60-100 chars) | 320 × 140 |
+| Text length            | Width × Height (px)                                                     |
+| ---------------------- | ----------------------------------------------------------------------- |
+| Short (<30 chars)      | 220 × 100                                                               |
+| Medium (30-60 chars)   | 260 × 120                                                               |
+| Long (60-100 chars)    | 320 × 140                                                               |
 | Very long (>100 chars) | 320 × 180 — or reference the source with a file node instead of pasting |
 
 Ready-made starting points: [assets/template-mindmap-simple.canvas](assets/template-mindmap-simple.canvas) and [assets/template-freeform-grouped.canvas](assets/template-freeform-grouped.canvas).
@@ -89,21 +89,21 @@ Nodes are objects placed on the canvas. Array order determines z-index: first no
 
 ### Generic Node Attributes
 
-| Attribute | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `id` | Yes | string | Unique 16-char hex identifier |
-| `type` | Yes | string | `text`, `file`, `link`, or `group` |
-| `x` | Yes | integer | X position in pixels |
-| `y` | Yes | integer | Y position in pixels |
-| `width` | Yes | integer | Width in pixels |
-| `height` | Yes | integer | Height in pixels |
-| `color` | No | canvasColor | Preset `"1"`-`"6"` or hex (e.g., `"#FF0000"`) |
+| Attribute | Required | Type        | Description                                   |
+| --------- | -------- | ----------- | --------------------------------------------- |
+| `id`      | Yes      | string      | Unique 16-char hex identifier                 |
+| `type`    | Yes      | string      | `text`, `file`, `link`, or `group`            |
+| `x`       | Yes      | integer     | X position in pixels                          |
+| `y`       | Yes      | integer     | Y position in pixels                          |
+| `width`   | Yes      | integer     | Width in pixels                               |
+| `height`  | Yes      | integer     | Height in pixels                              |
+| `color`   | No       | canvasColor | Preset `"1"`-`"6"` or hex (e.g., `"#FF0000"`) |
 
 ### Text Nodes
 
-| Attribute | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `text` | Yes | string | Plain text with Markdown syntax |
+| Attribute | Required | Type   | Description                     |
+| --------- | -------- | ------ | ------------------------------- |
+| `text`    | Yes      | string | Plain text with Markdown syntax |
 
 ```json
 {
@@ -121,10 +121,10 @@ Nodes are objects placed on the canvas. Array order determines z-index: first no
 
 ### File Nodes
 
-| Attribute | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `file` | Yes | string | Path to file within the system |
-| `subpath` | No | string | Link to heading or block (starts with `#`) |
+| Attribute | Required | Type   | Description                                |
+| --------- | -------- | ------ | ------------------------------------------ |
+| `file`    | Yes      | string | Path to file within the system             |
+| `subpath` | No       | string | Link to heading or block (starts with `#`) |
 
 ```json
 {
@@ -140,9 +140,9 @@ Nodes are objects placed on the canvas. Array order determines z-index: first no
 
 ### Link Nodes
 
-| Attribute | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `url` | Yes | string | External URL |
+| Attribute | Required | Type   | Description  |
+| --------- | -------- | ------ | ------------ |
+| `url`     | Yes      | string | External URL |
 
 ```json
 {
@@ -160,11 +160,11 @@ Nodes are objects placed on the canvas. Array order determines z-index: first no
 
 Groups are visual containers for organizing other nodes. Position child nodes inside the group's bounds.
 
-| Attribute | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `label` | No | string | Text label for the group |
-| `background` | No | string | Path to background image |
-| `backgroundStyle` | No | string | `cover`, `ratio`, or `repeat` |
+| Attribute         | Required | Type   | Description                   |
+| ----------------- | -------- | ------ | ----------------------------- |
+| `label`           | No       | string | Text label for the group      |
+| `background`      | No       | string | Path to background image      |
+| `backgroundStyle` | No       | string | `cover`, `ratio`, or `repeat` |
 
 ```json
 {
@@ -183,17 +183,17 @@ Groups are visual containers for organizing other nodes. Position child nodes in
 
 Edges connect nodes via `fromNode` and `toNode` IDs.
 
-| Attribute | Required | Type | Default | Description |
-|-----------|----------|------|---------|-------------|
-| `id` | Yes | string | - | Unique identifier |
-| `fromNode` | Yes | string | - | Source node ID |
-| `fromSide` | No | string | - | `top`, `right`, `bottom`, or `left` |
-| `fromEnd` | No | string | `none` | `none` or `arrow` |
-| `toNode` | Yes | string | - | Target node ID |
-| `toSide` | No | string | - | `top`, `right`, `bottom`, or `left` |
-| `toEnd` | No | string | `arrow` | `none` or `arrow` |
-| `color` | No | canvasColor | - | Line color |
-| `label` | No | string | - | Text label |
+| Attribute  | Required | Type        | Default | Description                         |
+| ---------- | -------- | ----------- | ------- | ----------------------------------- |
+| `id`       | Yes      | string      | -       | Unique identifier                   |
+| `fromNode` | Yes      | string      | -       | Source node ID                      |
+| `fromSide` | No       | string      | -       | `top`, `right`, `bottom`, or `left` |
+| `fromEnd`  | No       | string      | `none`  | `none` or `arrow`                   |
+| `toNode`   | Yes      | string      | -       | Target node ID                      |
+| `toSide`   | No       | string      | -       | `top`, `right`, `bottom`, or `left` |
+| `toEnd`    | No       | string      | `arrow` | `none` or `arrow`                   |
+| `color`    | No       | canvasColor | -       | Line color                          |
+| `label`    | No       | string      | -       | Text label                          |
 
 ```json
 {
@@ -211,14 +211,14 @@ Edges connect nodes via `fromNode` and `toNode` IDs.
 
 The `canvasColor` type accepts either a hex string or a preset number:
 
-| Preset | Color |
-|--------|-------|
-| `"1"` | Red |
-| `"2"` | Orange |
-| `"3"` | Yellow |
-| `"4"` | Green |
-| `"5"` | Cyan |
-| `"6"` | Purple |
+| Preset | Color  |
+| ------ | ------ |
+| `"1"`  | Red    |
+| `"2"`  | Orange |
+| `"3"`  | Yellow |
+| `"4"`  | Green  |
+| `"5"`  | Cyan   |
+| `"6"`  | Purple |
 
 Preset color values are intentionally undefined -- applications use their own brand colors.
 
@@ -238,13 +238,13 @@ Generate 16-character lowercase hexadecimal strings (64-bit random value):
 - Space nodes 50-100px apart; leave 20-50px padding inside groups
 - Align to grid (multiples of 10 or 20) for cleaner layouts
 
-| Node Type | Suggested Width | Suggested Height |
-|-----------|-----------------|------------------|
-| Small text | 200-300 | 80-150 |
-| Medium text | 300-450 | 150-300 |
-| Large text | 400-600 | 300-500 |
-| File preview | 300-500 | 200-400 |
-| Link preview | 250-400 | 100-200 |
+| Node Type    | Suggested Width | Suggested Height |
+| ------------ | --------------- | ---------------- |
+| Small text   | 200-300         | 80-150           |
+| Medium text  | 300-450         | 150-300          |
+| Large text   | 400-600         | 300-500          |
+| File preview | 300-500         | 200-400          |
+| Link preview | 250-400         | 100-200          |
 
 ## Validation Checklist
 

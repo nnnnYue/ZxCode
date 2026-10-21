@@ -28,7 +28,6 @@ export interface ISettingService {
    * 只读、不落盘；取值与 agent 实际发送头同一份 shared 实现，供设置页预填编辑行。
    */
   getModelRequestHeaderDefaults(): Promise<CustomModelRequestHeaderEntry[]>;
-
 }
 
 export const ISettingService = createServiceDescriptor<ISettingService>(ServiceChannels.Setting);

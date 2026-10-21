@@ -88,22 +88,22 @@ agent = create_react_agent(
 @server.post("/chat")
 async def chat(request):
     conversation_id = request.conversation_id
-    
+
     # Load conversation
     messages = await conv_storage.load_conversation(conversation_id)
-    
+
     # Invoke agent
     result = await agent.ainvoke(
         {"messages": messages + [request.message]},
         config={"configurable": {"thread_id": conversation_id}}
     )
-    
+
     # Save conversation
     await conv_storage.save_conversation(
         conversation_id,
         messages + [request.message, result["messages"][-1]]
     )
-    
+
     return result
 ```
 
@@ -120,7 +120,7 @@ async def chat_stream(request):
         async for chunk in agent.astream(request.data):
             # Yield SSE format
             yield f"data: {json.dumps(chunk)}\n\n"
-    
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream"
@@ -145,10 +145,10 @@ def send_email(to: str, subject: str, body: str) -> str:
         "email_approval",
         data={"to": to, "subject": subject, "body": body}
     )
-    
+
     # Wait for approval
     approved = approval_manager.wait_for_approval(approval_id)
-    
+
     if approved:
         # Actually send email
         email_service.send(to, subject, body)
@@ -176,7 +176,7 @@ def analyze_data(dataset: str) -> dict:
     """Analyze dataset and return chart data."""
     data = load_dataset(dataset)
     analysis = perform_analysis(data)
-    
+
     return {
         "type": "line_chart",
         "data": analysis["timeseries"],

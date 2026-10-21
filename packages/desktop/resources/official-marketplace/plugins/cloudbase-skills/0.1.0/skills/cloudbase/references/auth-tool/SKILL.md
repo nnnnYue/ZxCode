@@ -109,6 +109,7 @@ Recommended MCP request:
 Fallback API path: use the official login-config API. Do **not** use `lowcode/DescribeLoginStrategy` or `lowcode/ModifyLoginStrategy` as the default path.
 
 Query current login configuration:
+
 ```js
 {
     "params": { "EnvId": `env` },
@@ -237,6 +238,7 @@ Short MCP example:
 ```
 
 **Configure email provider (Tencent Cloud email)**:
+
 ```js
 {
     "params": {
@@ -251,6 +253,7 @@ Short MCP example:
 ```
 
 **Disable email provider**:
+
 ```js
 {
     "params": { "EnvId": `env`, "Id": "email", "On": "FALSE" },
@@ -260,6 +263,7 @@ Short MCP example:
 ```
 
 **Configure email provider (custom SMTP)**:
+
 ```js
 {
     "params": {
@@ -293,6 +297,7 @@ Preferred MCP tool path:
 - `manageAppAuth(action="updateProvider")`
 
 1. Get WeChat config:
+
 ```js
 {
     "params": { "EnvId": `env` },
@@ -300,6 +305,7 @@ Preferred MCP tool path:
     "action": "GetProviders"
 }
 ```
+
 Filter by `Id == "wx_open"`, save as `WeChatProvider`.
 
 2. Get credentials from [WeChat Open Platform](https://open.weixin.qq.com/cgi-bin/readtemplate?t=regist/regist_tmpl):
@@ -307,6 +313,7 @@ Filter by `Id == "wx_open"`, save as `WeChatProvider`.
    - `AppSecret`
 
 3. Update:
+
 ```js
 {
     "params": {
@@ -335,6 +342,7 @@ Preferred MCP tool path:
 - `manageAppAuth(action="updateProvider")`
 
 1. Get redirect URI (static hosting CDN domain):
+
 ```js
 {
     "params": { "EnvId": `env` },
@@ -342,6 +350,7 @@ Preferred MCP tool path:
     "action": "DescribeStaticStore"
 }
 ```
+
 Prefer MCP: `queryAppAuth(action="getStaticDomain")` — use `cdnDomain` / `staticDomain` from the tool response (first store’s `CdnDomain`). Raw rows are in `staticStores`.
 
 2. Configure at [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
@@ -350,6 +359,7 @@ Prefer MCP: `queryAppAuth(action="getStaticDomain")` — use `cdnDomain` / `stat
    - Get `Client ID` and `Client Secret`
 
 3. Enable:
+
 ```js
 {
     "params": {
@@ -412,6 +422,7 @@ Preferred MCP tool path:
 Both tools should default to the current selected environment's default client. Only pass `clientId` when you intentionally want to inspect or modify a non-default client record.
 
 **Query client config**:
+
 ```js
 {
     "params": { "EnvId": `env`, "Id": `env` },
@@ -421,6 +432,7 @@ Both tools should default to the current selected environment's default client. 
 ```
 
 **Update client config**:
+
 ```js
 {
     "params": {
@@ -449,6 +461,7 @@ Use the shortcut pair `getPublishableKey` / `ensurePublishableKey` for the most 
 Use the generic API key lifecycle actions when you need inventory, pagination, non-publishable keys, or explicit deletion.
 
 **Query existing publishable key**:
+
 ```js
 {
     "params": { "EnvId": `env`, "KeyType": "publish_key", "PageNumber": 1, "PageSize": 10 },
@@ -456,9 +469,11 @@ Use the generic API key lifecycle actions when you need inventory, pagination, n
     "action": "DescribeApiKeyList"
 }
 ```
+
 `queryAppAuth(action="getPublishableKey")` should always force `KeyType="publish_key"` and return a short payload with `publishableKey`, `keyId`, `keyName`, `expireAt`, and `createdAt`.
 
 **List API keys**:
+
 ```json
 {
   "action": "listApiKeys",
@@ -467,9 +482,11 @@ Use the generic API key lifecycle actions when you need inventory, pagination, n
   "pageSize": 20
 }
 ```
+
 Use `listApiKeys` for a general key inventory view. It supports optional `keyType`, `pageNumber`, and `pageSize`.
 
 **Ensure publishable key exists**:
+
 ```js
 {
     "params": { "EnvId": `env`, "KeyType": "publish_key" },
@@ -477,9 +494,11 @@ Use `listApiKeys` for a general key inventory view. It supports optional `keyTyp
     "action": "CreateApiKey"
 }
 ```
+
 `manageAppAuth(action="ensurePublishableKey")` should first query the existing `publish_key`; if one already exists, return it directly; otherwise create it and return the new key. This keeps the MCP interface short and avoids requiring the model to reason about `KeyType` or whether a key already exists.
 
 **Create a generic API key**:
+
 ```json
 {
   "action": "createApiKey",
@@ -488,15 +507,18 @@ Use `listApiKeys` for a general key inventory view. It supports optional `keyTyp
   "expireIn": 86400
 }
 ```
+
 `createApiKey` defaults to `publish_key` when `keyType` is omitted, but it can also create `api_key` for generic service-side access.
 
 **Delete an API key**:
+
 ```json
 {
   "action": "deleteApiKey",
   "keyId": "api-key-id"
 }
 ```
+
 Use `deleteApiKey` only when you intentionally want to revoke that key token.
 
 If creation fails, direct user to: "https://tcb.cloud.tencent.com/dev?envId=`env`#/env/apikey"

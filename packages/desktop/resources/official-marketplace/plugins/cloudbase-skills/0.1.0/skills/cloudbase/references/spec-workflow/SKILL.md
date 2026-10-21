@@ -136,7 +136,7 @@ Task format:
 - [ ] 1. Task title
   - Specific work item
   - Another concrete step
-  - _Requirement: 1
+  - \_Requirement: 1
 ```
 
 ### Phase 4: Execution

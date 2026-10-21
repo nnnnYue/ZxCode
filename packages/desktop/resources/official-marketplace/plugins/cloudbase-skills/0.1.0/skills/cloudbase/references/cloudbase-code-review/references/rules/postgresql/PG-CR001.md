@@ -39,17 +39,18 @@
 
 示例 SQL：```sql
 CREATE TABLE IF NOT EXISTS public.articles (
-  id BIGSERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  summary TEXT,
-  cover_image TEXT,
-  content TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'draft',
-  author_id TEXT NOT NULL,
-  author_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+id BIGSERIAL PRIMARY KEY,
+title TEXT NOT NULL,
+summary TEXT,
+cover_image TEXT,
+content TEXT NOT NULL,
+status TEXT NOT NULL DEFAULT 'draft',
+author_id TEXT NOT NULL,
+author_name TEXT,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
 ```
 
 - 确保建表 SQL 在 CRUD 代码之前执行
@@ -59,3 +60,4 @@ CREATE TABLE IF NOT EXISTS public.articles (
 ## 根因
 
 CloudBase PG 不会自动根据 `db.from("表名")` 建表。agent 写了 CRUD 代码但没有建表步骤，运行时所有查询都会返回 404。
+```

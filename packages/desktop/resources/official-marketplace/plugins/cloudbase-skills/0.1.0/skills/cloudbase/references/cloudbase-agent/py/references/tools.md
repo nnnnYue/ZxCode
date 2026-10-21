@@ -14,11 +14,11 @@ from cloudbase_agent.server import tool
 @tool
 def search_database(query: str, limit: int = 10) -> list[dict]:
     """Search the database for matching records.
-    
+
     Args:
         query: Search query string
         limit: Maximum number of results to return
-        
+
     Returns:
         List of matching records
     """
@@ -146,13 +146,13 @@ def fetch_and_process(query: str) -> dict:
     """Chain multiple operations."""
     # Fetch data
     raw_data = fetch_data(query)
-    
+
     # Process data
     processed = process_data(raw_data)
-    
+
     # Store results
     store_results(processed)
-    
+
     return {"status": "complete", "count": len(processed)}
 ```
 

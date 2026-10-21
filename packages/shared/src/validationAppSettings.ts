@@ -113,7 +113,6 @@ const customModelRequestHeadersSchema = z
   .array(customModelRequestHeaderEntrySchema)
   .max(CUSTOM_MODEL_REQUEST_HEADERS_MAX_ENTRIES);
 
-
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
   title: nonEmptyStringSchema,

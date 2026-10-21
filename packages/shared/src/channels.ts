@@ -1,5 +1,8 @@
 /* eslint-disable max-lines -- 通信频道和请求响应映射必须集中定义，避免跨进程 channel 字符串散落。 */
-import type { WebRemoteControlAuthStateChange, WebRemoteControlTaskTarget } from "./web-remote-control.js";
+import type {
+  WebRemoteControlAuthStateChange,
+  WebRemoteControlTaskTarget,
+} from "./web-remote-control.js";
 import type {
   ResourceUsageSnapshot,
   LoadCliMcpFromUserDirectoryRequest,

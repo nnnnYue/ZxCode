@@ -36,12 +36,12 @@ createExpressRoutes({ createAgent: () => ({ agent }), express: app, basePath: "/
 
 ## Endpoints Created
 
-| Endpoint | Purpose |
-|----------|---------|
-| `/agui` | CopilotKit RPC endpoint |
-| `/send-message` | AG-UI endpoint (SSE) |
-| `/healthz` | Health check |
-| `/chat/completions` | OpenAI-compatible endpoint |
+| Endpoint                      | Purpose                                       |
+| ----------------------------- | --------------------------------------------- |
+| `/agui`                       | CopilotKit RPC endpoint                       |
+| `/send-message`               | AG-UI endpoint (SSE)                          |
+| `/healthz`                    | Health check                                  |
+| `/chat/completions`           | OpenAI-compatible endpoint                    |
 | `/v1/aibot/bots/:agentId/...` | Same endpoints with bot ID (when no basePath) |
 
 ## AgentCreatorContext
@@ -67,9 +67,9 @@ createAgent: (ctx) => {
   ctx.logger?.info("Connected to database");
   return {
     agent: new LanggraphAgent({ workflow }),
-    cleanup: () => db.close()
+    cleanup: () => db.close(),
   };
-}
+};
 ```
 
 ## All Options
@@ -94,11 +94,11 @@ run({
 
 ```typescript
 import {
-  noopLogger,           // Silent logger (default)
-  createConsoleLogger,  // Console logger
+  noopLogger, // Silent logger (default)
+  createConsoleLogger, // Console logger
   generateRequestId,
   extractRequestId,
-  getOrGenerateRequestId
+  getOrGenerateRequestId,
 } from "@cloudbase/agent-server";
 
 // Custom logger (Pino-style interface)
@@ -106,7 +106,7 @@ const logger = {
   info: (obj, msg) => console.log(msg, obj),
   error: (obj, msg) => console.error(msg, obj),
   debug: (obj, msg) => console.debug(msg, obj),
-  child: (bindings) => ({ ...logger })
+  child: (bindings) => ({ ...logger }),
 };
 ```
 
@@ -117,7 +117,7 @@ Requires `@cloudbase/agent-observability` package:
 ```typescript
 run({
   createAgent,
-  observability: { type: "console" }  // Logs traces to stdout
+  observability: { type: "console" }, // Logs traces to stdout
 });
 
 // OTLP exporter (Langfuse, Jaeger, etc.)
@@ -126,17 +126,14 @@ run({
   observability: {
     type: "otlp",
     url: "https://cloud.langfuse.com/api/public/otlp/v1/traces",
-    headers: { Authorization: "Basic xxx" }
-  }
+    headers: { Authorization: "Basic xxx" },
+  },
 });
 
 // Multiple exporters
 run({
   createAgent,
-  observability: [
-    { type: "console" },
-    { type: "otlp", url: "http://localhost:4318/v1/traces" }
-  ]
+  observability: [{ type: "console" }, { type: "otlp", url: "http://localhost:4318/v1/traces" }],
 });
 ```
 

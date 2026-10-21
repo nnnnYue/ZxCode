@@ -7,12 +7,7 @@
     "url": "https://z.ai"
   },
   "license": "MIT",
-  "keywords": [
-    "video2code",
-    "replication",
-    "webapp",
-    "motion"
-  ],
+  "keywords": ["video2code", "replication", "webapp", "motion"],
   "userConfig": {
     "media_resolution": {
       "title": "抽帧分辨率档位",
@@ -35,9 +30,7 @@
     "runtime": {
       "type": "stdio",
       "command": "python3",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp/runtime_server.py"
-      ],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/runtime_server.py"],
       "cwd": "${CLAUDE_PROJECT_DIR}",
       "env": {
         "V2C_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}",
@@ -48,9 +41,7 @@
     "video": {
       "type": "stdio",
       "command": "python3",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp/video_server.py"
-      ],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/video_server.py"],
       "cwd": "${CLAUDE_PROJECT_DIR}",
       "env": {
         "V2C_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}",

@@ -23,7 +23,7 @@ exports.main = async (event, context) => {
   return {
     code: 0,
     message: "ok",
-    data: { event }
+    data: { event },
   };
 };
 ```
@@ -41,9 +41,9 @@ manageFunctions({
     name: "myFunction",
     type: "Event",
     runtime: "Nodejs18.15",
-    timeout: 30
+    timeout: 30,
   },
-  functionRootPath: "/absolute/path/to/cloudfunctions"
+  functionRootPath: "/absolute/path/to/cloudfunctions",
 });
 ```
 
@@ -55,7 +55,7 @@ Use `manageFunctions(action="updateFunctionCode")` when only code changes.
 manageFunctions({
   action: "updateFunctionCode",
   functionName: "myFunction",
-  functionRootPath: "/absolute/path/to/cloudfunctions"
+  functionRootPath: "/absolute/path/to/cloudfunctions",
 });
 ```
 
@@ -75,7 +75,7 @@ import cloudbase from "@cloudbase/js-sdk";
 const app = cloudbase.init({ env: "your-env-id" });
 const result = await app.callFunction({
   name: "myFunction",
-  data: { userId: "123" }
+  data: { userId: "123" },
 });
 ```
 
@@ -84,7 +84,7 @@ const result = await app.callFunction({
 ```javascript
 const result = await wx.cloud.callFunction({
   name: "myFunction",
-  data: { userId: "123" }
+  data: { userId: "123" },
 });
 ```
 
@@ -96,7 +96,7 @@ const app = tcb.init({ env: "your-env-id" });
 
 const result = await app.callFunction({
   name: "myFunction",
-  data: { userId: "123" }
+  data: { userId: "123" },
 });
 ```
 
@@ -121,13 +121,13 @@ exports.main = async (event, context) => {
     return {
       code: 0,
       message: "Success",
-      data: result
+      data: result,
     };
   } catch (error) {
     return {
       code: -1,
       message: error.message,
-      data: null
+      data: null,
     };
   }
 };

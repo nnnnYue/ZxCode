@@ -38,7 +38,7 @@ Requirements:
 The `scf_bootstrap` Node.js binary path must match the function runtime. Use this mapping:
 
 | Runtime value | `scf_bootstrap` binary path |
-| --- | --- |
+| ------------- | --------------------------- |
 | `Nodejs20.19` | `/var/lang/node20/bin/node` |
 | `Nodejs18.15` | `/var/lang/node18/bin/node` |
 | `Nodejs16.13` | `/var/lang/node16/bin/node` |
@@ -277,9 +277,9 @@ manageFunctions({
     type: "HTTP",
     protocolType: "HTTP",
     runtime: "Nodejs18.15",
-    timeout: 60
+    timeout: 60,
   },
-  functionRootPath: "/absolute/path/to/cloudfunctions"
+  functionRootPath: "/absolute/path/to/cloudfunctions",
 });
 ```
 
@@ -303,8 +303,8 @@ managePermissions({
   resourceId: "myHttpFunction",
   permission: {
     aclTag: "CUSTOM",
-    rule: "true"
-  }
+    rule: "true",
+  },
 });
 ```
 
@@ -325,9 +325,9 @@ manageFunctions({
   func: {
     name: "mySocketFunction",
     type: "HTTP",
-    protocolType: "WS"
+    protocolType: "WS",
   },
-  functionRootPath: "/absolute/path/to/cloudfunctions"
+  functionRootPath: "/absolute/path/to/cloudfunctions",
 });
 ```
 
@@ -352,7 +352,7 @@ manageGateway({
   targetType: "function",
   targetName: "myHttpFunction",
   type: "HTTP",
-  path: "/api/hello"
+  path: "/api/hello",
 });
 ```
 

@@ -134,11 +134,11 @@ App({
   onLaunch: function () {
     // Initialize CloudBase
     wx.cloud.init({
-      env: 'your-env-id',  // Your CloudBase environment ID
-      traceUser: true      // Optional: track user access in console
-    })
-  }
-})
+      env: "your-env-id", // Your CloudBase environment ID
+      traceUser: true, // Optional: track user access in console
+    });
+  },
+});
 ```
 
 **Key points:**
@@ -155,18 +155,18 @@ Use this when you need to know **who is calling** your cloud function:
 
 ```js
 // Cloud function: cloudfunctions/getUserInfo/index.js
-const cloud = require('wx-server-sdk')
+const cloud = require("wx-server-sdk");
 
 // Initialize cloud with dynamic environment
 cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
-})
+  env: cloud.DYNAMIC_CURRENT_ENV,
+});
 
 exports.main = async (event, context) => {
   // Get user identity - this is automatically injected by WeChat
-  const { OPENID, APPID, UNIONID } = cloud.getWXContext()
+  const { OPENID, APPID, UNIONID } = cloud.getWXContext();
 
-  console.log('User identity:', { OPENID, APPID, UNIONID })
+  console.log("User identity:", { OPENID, APPID, UNIONID });
 
   // Use OPENID for user-specific operations
   // For example: query user data, check permissions, etc.
@@ -174,9 +174,9 @@ exports.main = async (event, context) => {
   return {
     openid: OPENID,
     appid: APPID,
-    unionid: UNIONID  // May be undefined if not available
-  }
-}
+    unionid: UNIONID, // May be undefined if not available
+  };
+};
 ```
 
 **Key points:**
@@ -206,29 +206,29 @@ Use this in your Mini Program to call a cloud function and get user identity:
 ```js
 // In Mini Program page
 Page({
-  onLoad: function() {
-    this.getUserInfo()
+  onLoad: function () {
+    this.getUserInfo();
   },
 
-  getUserInfo: function() {
+  getUserInfo: function () {
     wx.cloud.callFunction({
-      name: 'getUserInfo',  // Cloud function name
-      data: {},             // Optional parameters
-      success: res => {
-        console.log('User info from cloud function:', res.result)
+      name: "getUserInfo", // Cloud function name
+      data: {}, // Optional parameters
+      success: (res) => {
+        console.log("User info from cloud function:", res.result);
         // res.result contains { openid, appid, unionid }
 
         // Use the user info
         this.setData({
-          openid: res.result.openid
-        })
+          openid: res.result.openid,
+        });
       },
-      fail: err => {
-        console.error('Failed to get user info:', err)
-      }
-    })
-  }
-})
+      fail: (err) => {
+        console.error("Failed to get user info:", err);
+      },
+    });
+  },
+});
 ```
 
 **Key points:**
@@ -245,29 +245,29 @@ Page({
 **Cloud function (cloudfunctions/test/index.js):**
 
 ```js
-const cloud = require('wx-server-sdk')
+const cloud = require("wx-server-sdk");
 
 cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
-})
+  env: cloud.DYNAMIC_CURRENT_ENV,
+});
 
 exports.main = async (event, context) => {
   // Get verified user identity - automatically injected by WeChat
-  const { OPENID, APPID, UNIONID } = cloud.getWXContext()
+  const { OPENID, APPID, UNIONID } = cloud.getWXContext();
 
-  console.log('User identity:', { OPENID, APPID, UNIONID })
+  console.log("User identity:", { OPENID, APPID, UNIONID });
 
   return {
     success: true,
-    message: 'Authentication successful',
+    message: "Authentication successful",
     identity: {
       openid: OPENID,
       appid: APPID,
-      unionid: UNIONID || 'Not available'
+      unionid: UNIONID || "Not available",
     },
-    timestamp: new Date().toISOString()
-  }
-}
+    timestamp: new Date().toISOString(),
+  };
+};
 ```
 
 **Mini Program code:**
@@ -276,40 +276,40 @@ exports.main = async (event, context) => {
 // pages/index/index.js
 Page({
   data: {
-    userIdentity: null
+    userIdentity: null,
   },
 
-  onLoad: function() {
-    this.testAuth()
+  onLoad: function () {
+    this.testAuth();
   },
 
-  testAuth: function() {
-    console.log('Testing authentication...')
+  testAuth: function () {
+    console.log("Testing authentication...");
 
     wx.cloud.callFunction({
-      name: 'test',
-      success: res => {
-        console.log('Authentication test result:', res.result)
+      name: "test",
+      success: (res) => {
+        console.log("Authentication test result:", res.result);
 
         this.setData({
-          userIdentity: res.result.identity
-        })
+          userIdentity: res.result.identity,
+        });
 
         wx.showToast({
-          title: 'Auth successful',
-          icon: 'success'
-        })
+          title: "Auth successful",
+          icon: "success",
+        });
       },
-      fail: err => {
-        console.error('Authentication test failed:', err)
+      fail: (err) => {
+        console.error("Authentication test failed:", err);
         wx.showToast({
-          title: 'Auth failed',
-          icon: 'error'
-        })
-      }
-    })
-  }
-})
+          title: "Auth failed",
+          icon: "error",
+        });
+      },
+    });
+  },
+});
 ```
 
 **Key points:**
@@ -328,8 +328,8 @@ Page({
 
 ```js
 cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
-})
+  env: cloud.DYNAMIC_CURRENT_ENV,
+});
 ```
 
 This ensures the cloud function uses the correct environment automatically.
@@ -343,14 +343,14 @@ This ensures the cloud function uses the correct environment automatically.
 ### 3. Handle UNIONID availability
 
 ```js
-const { OPENID, UNIONID } = cloud.getWXContext()
+const { OPENID, UNIONID } = cloud.getWXContext();
 
 if (UNIONID) {
   // User has UNIONID - can be used for cross-app identification
-  console.log('UNIONID available:', UNIONID)
+  console.log("UNIONID available:", UNIONID);
 } else {
   // UNIONID not available - use OPENID only
-  console.log('Using OPENID only:', OPENID)
+  console.log("Using OPENID only:", OPENID);
 }
 ```
 
@@ -366,19 +366,19 @@ Always handle errors when calling cloud functions:
 
 ```js
 wx.cloud.callFunction({
-  name: 'myFunction',
-  success: res => {
+  name: "myFunction",
+  success: (res) => {
     // Handle success
   },
-  fail: err => {
-    console.error('Cloud function error:', err)
+  fail: (err) => {
+    console.error("Cloud function error:", err);
     // Show user-friendly error message
     wx.showToast({
-      title: 'Operation failed',
-      icon: 'error'
-    })
-  }
-})
+      title: "Operation failed",
+      icon: "error",
+    });
+  },
+});
 ```
 
 ### 6. Initialize CloudBase early
@@ -389,11 +389,11 @@ Initialize CloudBase in `app.js` `onLaunch`:
 App({
   onLaunch: function () {
     wx.cloud.init({
-      env: 'your-env-id',
-      traceUser: true
-    })
-  }
-})
+      env: "your-env-id",
+      traceUser: true,
+    });
+  },
+});
 ```
 
 ---
@@ -403,58 +403,58 @@ App({
 ### Pattern 1: Get and return user identity
 
 ```js
-const cloud = require('wx-server-sdk')
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+const cloud = require("wx-server-sdk");
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 exports.main = async (event, context) => {
-  const { OPENID, APPID, UNIONID } = cloud.getWXContext()
+  const { OPENID, APPID, UNIONID } = cloud.getWXContext();
 
   return {
     openid: OPENID,
     appid: APPID,
-    unionid: UNIONID || null
-  }
-}
+    unionid: UNIONID || null,
+  };
+};
 ```
 
 ### Pattern 2: Use OPENID for authorization
 
 ```js
-const cloud = require('wx-server-sdk')
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+const cloud = require("wx-server-sdk");
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 exports.main = async (event, context) => {
-  const { OPENID } = cloud.getWXContext()
+  const { OPENID } = cloud.getWXContext();
 
   // Check if user is authorized
   if (OPENID === event.resourceOwnerId) {
     // User is authorized to access this resource
-    return { authorized: true }
+    return { authorized: true };
   } else {
-    return { authorized: false, error: 'Unauthorized' }
+    return { authorized: false, error: "Unauthorized" };
   }
-}
+};
 ```
 
 ### Pattern 3: Handle UNIONID availability
 
 ```js
-const cloud = require('wx-server-sdk')
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+const cloud = require("wx-server-sdk");
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 exports.main = async (event, context) => {
-  const { OPENID, UNIONID } = cloud.getWXContext()
+  const { OPENID, UNIONID } = cloud.getWXContext();
 
   if (UNIONID) {
     // Can use UNIONID for cross-app user identification
-    console.log('User has UNIONID:', UNIONID)
+    console.log("User has UNIONID:", UNIONID);
   } else {
     // Fall back to OPENID only
-    console.log('Using OPENID only:', OPENID)
+    console.log("Using OPENID only:", OPENID);
   }
 
-  return { openid: OPENID, hasUnionId: !!UNIONID }
-}
+  return { openid: OPENID, hasUnionId: !!UNIONID };
+};
 ```
 
 ---
@@ -468,20 +468,20 @@ If the Mini Program uses `@cloudbase/js-sdk` (Web SDK v3) instead of `wx-server-
 WeChat OpenID silent login — automatically uses the current WeChat login state:
 
 ```js
-import cloudbase from "@cloudbase/js-sdk"
+import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
   env: "your-env-id",
   region: "ap-shanghai",
-})
-const auth = app.auth
+});
+const auth = app.auth;
 
 // OpenID silent login (default: use wx.cloud mode)
-const { data, error } = await auth.signInWithOpenId()
+const { data, error } = await auth.signInWithOpenId();
 if (error) {
-  console.error('OpenID login failed:', error.message)
+  console.error("OpenID login failed:", error.message);
 } else {
-  console.log('Logged in with OpenID:', data.user?.id)
+  console.log("Logged in with OpenID:", data.user?.id);
 }
 
 // For non-wx.cloud mode, pass useWxCloud: false
@@ -498,16 +498,17 @@ WeChat phone number authorization login — requires the user to authorize phone
 
 // Step 2: Pass the phoneCode to signInWithPhoneAuth
 const { data, error } = await auth.signInWithPhoneAuth({
-  phoneCode: '<encrypted-phone-code-from-wechat>',
-})
+  phoneCode: "<encrypted-phone-code-from-wechat>",
+});
 if (error) {
-  console.error('Phone auth failed:', error.message)
+  console.error("Phone auth failed:", error.message);
 } else {
-  console.log('Logged in with phone:', data.user)
+  console.log("Logged in with phone:", data.user);
 }
 ```
 
 **Important:**
+
 - These methods are from `@cloudbase/js-sdk`, **not** `wx-server-sdk` or `wx.cloud`
 - They provide an alternative auth path for Mini Programs using the v3 Web SDK
 - For the standard `wx.cloud` + cloud function path, use the scenarios above instead

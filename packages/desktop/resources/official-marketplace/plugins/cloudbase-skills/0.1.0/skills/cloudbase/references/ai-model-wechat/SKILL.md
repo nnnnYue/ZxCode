@@ -37,22 +37,22 @@ Use this skill for **calling AI models in WeChat Mini Program** using `wx.cloud.
 
 Read this before writing any `createModel(...)` line. Agents frequently hallucinate this argument. There are **exactly three** legal shapes. Anything else is a bug.
 
-| ✅ Legal `createModel(provider)` argument | When to use it |
-|-----------------------------------------|----------------|
-| `"hunyuan-exp"` | The Mini Program **成长计划** (`ai_miniprogram_inspire_plan`) is enrolled for the current env. Default model: `hunyuan-2.0-instruct-20251111`. |
-| `"cloudbase"` | Default fallback. Main managed group (TokenHub-backed, multi-vendor pool). Vendor + concrete model go into the **`model` field**, e.g. `{ model: "deepseek-v4-flash" }`. |
-| `"custom-<your-name>"` | A user-defined GroupName you onboarded via `CreateAIModel`. **Must** start with `custom-` (e.g. `custom-kimi`, `custom-openai-compat`). |
+| ✅ Legal `createModel(provider)` argument | When to use it                                                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `"hunyuan-exp"`                           | The Mini Program **成长计划** (`ai_miniprogram_inspire_plan`) is enrolled for the current env. Default model: `hunyuan-2.0-instruct-20251111`.                           |
+| `"cloudbase"`                             | Default fallback. Main managed group (TokenHub-backed, multi-vendor pool). Vendor + concrete model go into the **`model` field**, e.g. `{ model: "deepseek-v4-flash" }`. |
+| `"custom-<your-name>"`                    | A user-defined GroupName you onboarded via `CreateAIModel`. **Must** start with `custom-` (e.g. `custom-kimi`, `custom-openai-compat`).                                  |
 
 ### ❌ Do NOT write any of these — they are all wrong
 
 ```js
-wx.cloud.extend.AI.createModel("deepseek")                   // wrong — vendor, not GroupName
-wx.cloud.extend.AI.createModel("deepseek-v4-flash")          // wrong — model id goes in `model`
-wx.cloud.extend.AI.createModel("hunyuan")                    // wrong — vendor family
-wx.cloud.extend.AI.createModel("hunyuan-2.0-instruct-20251111")  // wrong — model name
-wx.cloud.extend.AI.createModel("glm") / "kimi" / "minimax"   // wrong — vendor names
-wx.cloud.extend.AI.createModel("custom")                     // wrong — placeholder
-wx.cloud.extend.AI.createModel(modelName)                    // wrong — do not reuse the model-id variable
+wx.cloud.extend.AI.createModel("deepseek"); // wrong — vendor, not GroupName
+wx.cloud.extend.AI.createModel("deepseek-v4-flash"); // wrong — model id goes in `model`
+wx.cloud.extend.AI.createModel("hunyuan"); // wrong — vendor family
+wx.cloud.extend.AI.createModel("hunyuan-2.0-instruct-20251111"); // wrong — model name
+wx.cloud.extend.AI.createModel("glm") / "kimi" / "minimax"; // wrong — vendor names
+wx.cloud.extend.AI.createModel("custom"); // wrong — placeholder
+wx.cloud.extend.AI.createModel(modelName); // wrong — do not reuse the model-id variable
 ```
 
 ### ✅ Correct pattern — provider vs model are two different fields
@@ -94,12 +94,12 @@ The Mini Program side has two billing paths: **小程序成长计划** (checked 
 
 2. Pick the branch by user intent:
 
-| User intent | Eligibility to check first | `createModel` provider on hit | Model selection | Guidance on miss |
-|-------------|----------------------------|-------------------------------|-----------------|------------------|
-| No model specified / default call | Check **小程序成长计划** enrollment first; if not enrolled, fall back to Token Credits resource pack | Enrolled: `"hunyuan-exp"`; otherwise: `"cloudbase"` | Enrolled: `hunyuan-2.0-instruct-20251111` (the 成长计划 default). Otherwise: pick a text model with the user, then verify/enable it in the `"cloudbase"` group via `DescribeAIModels` → `DescribeManagedAIModelList` → `UpdateAIModel` | Plan not enrolled → point to `https://docs.cloudbase.net/ai/ai-inspire-plan`; resource pack missing → purchase link |
-| User requests a `hunyuan-*` model | **小程序成长计划** enrollment | `"hunyuan-exp"` (plan-exclusive Token pack billing) | `hunyuan-2.0-instruct-20251111` if present; otherwise verify via `DescribeAIModels({ GroupName: "hunyuan-exp" }).Models[]` and `UpdateAIModel` to enable | Not enrolled → enroll first, or switch to `"cloudbase"` + a non-hunyuan model |
-| User requests `deepseek-*` / `glm-*` / `kimi-*` / `minimax-*` / other non-hunyuan managed models | **Token Credits 资源包** activation | `"cloudbase"` | Do NOT assume the model is already enabled. `DescribeAIModels` → if missing, `DescribeManagedAIModelList` for the canonical `Model` string → `UpdateAIModel` with `Status: 1` (full-replacement `Models[]`) | Resource pack not activated → purchase link |
-| User requests a third-party / self-hosted (non-managed) model | Skip billing eligibility and go to "Custom onboarding" | Custom GroupName (must start with `custom-`) | Registered via `CreateAIModel.Models[]` | Offer both console + `CreateAIModel` paths |
+| User intent                                                                                      | Eligibility to check first                                                                           | `createModel` provider on hit                       | Model selection                                                                                                                                                                                                                        | Guidance on miss                                                                                                    |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| No model specified / default call                                                                | Check **小程序成长计划** enrollment first; if not enrolled, fall back to Token Credits resource pack | Enrolled: `"hunyuan-exp"`; otherwise: `"cloudbase"` | Enrolled: `hunyuan-2.0-instruct-20251111` (the 成长计划 default). Otherwise: pick a text model with the user, then verify/enable it in the `"cloudbase"` group via `DescribeAIModels` → `DescribeManagedAIModelList` → `UpdateAIModel` | Plan not enrolled → point to `https://docs.cloudbase.net/ai/ai-inspire-plan`; resource pack missing → purchase link |
+| User requests a `hunyuan-*` model                                                                | **小程序成长计划** enrollment                                                                        | `"hunyuan-exp"` (plan-exclusive Token pack billing) | `hunyuan-2.0-instruct-20251111` if present; otherwise verify via `DescribeAIModels({ GroupName: "hunyuan-exp" }).Models[]` and `UpdateAIModel` to enable                                                                               | Not enrolled → enroll first, or switch to `"cloudbase"` + a non-hunyuan model                                       |
+| User requests `deepseek-*` / `glm-*` / `kimi-*` / `minimax-*` / other non-hunyuan managed models | **Token Credits 资源包** activation                                                                  | `"cloudbase"`                                       | Do NOT assume the model is already enabled. `DescribeAIModels` → if missing, `DescribeManagedAIModelList` for the canonical `Model` string → `UpdateAIModel` with `Status: 1` (full-replacement `Models[]`)                            | Resource pack not activated → purchase link                                                                         |
+| User requests a third-party / self-hosted (non-managed) model                                    | Skip billing eligibility and go to "Custom onboarding"                                               | Custom GroupName (must start with `custom-`)        | Registered via `CreateAIModel.Models[]`                                                                                                                                                                                                | Offer both console + `CreateAIModel` paths                                                                          |
 
 3. Check 小程序成长计划 enrollment:
 
@@ -110,7 +110,7 @@ callCloudApi({
   params: {
     ActivityNames: ["ai_miniprogram_inspire_plan"], // PascalCase preferred; switch to camelCase if InvalidParameter is returned
   },
-})
+});
 ```
 
 **Hit criterion:** the response's `attendRecords` contains at least one entry where `activityName === "ai_miniprogram_inspire_plan"` and `envId` matches the current environment. On hit, default to `createModel("hunyuan-exp")` + `hunyuan-2.0-instruct-20251111`; billing uses the plan-exclusive Token pack `pkg_hunyuan_token_la_inspire_100m`.
@@ -126,7 +126,7 @@ callCloudApi({
   params: {
     EnvId: "<current envId>",
   },
-})
+});
 ```
 
 **Hit criterion:** `envPostpayPackageInfoList` contains an entry whose `postpayPackageId` starts with `pkg_tcb_tokencredits_`, has `status ∉ [3, 4]` (not expired, not disabled), and `versionSwitchStatus` is not in a blocking state.
@@ -148,7 +148,7 @@ callCloudApi({
   service: "tcb",
   action: "DescribeAIModels",
   params: { EnvId: "<envId>" },
-})
+});
 ```
 
 Returns `AIModelGroups: AIModelGroup[]`. Each `AIModelGroup` has `GroupName` (e.g. `cloudbase` / `hunyuan-exp` / your custom group), `Type` (`builtin` / `custom`), `Models: [{ Model, EnableMCP, Tags }]`, and `Status` (1=on / 2=off). Group readiness = all three of: the `GroupName` exists + `Status === 1` + the target `Model` is present in `Models[]`.
@@ -165,11 +165,11 @@ callCloudApi({
     Status: 1, // 1=on, 2=off
     Models: [
       { Model: "deepseek-v4-flash", EnableMCP: false },
-      { Model: "deepseek-v3.2", EnableMCP: false },   // append the new model to enable
+      { Model: "deepseek-v3.2", EnableMCP: false }, // append the new model to enable
     ],
     // ⚠️ `Models` is a FULL REPLACEMENT, not incremental; merge the old list + new entries before passing.
   },
-})
+});
 ```
 
 3. Once both steps pass, only THEN write `wx.cloud.extend.AI.createModel("<GroupName>")` in the Mini Program code, and pass a `model` value that exists in that group's `Models[]`.
@@ -186,17 +186,17 @@ The `provider` argument of `wx.cloud.extend.AI.createModel(provider)` equals the
 
 ### A. 小程序成长计划 exclusive (default when enrolled)
 
-| createModel provider | Default model | Other available models | Notes |
-|----------------------|---------------|------------------------|-------|
-| `"hunyuan-exp"` | `hunyuan-2.0-instruct-20251111` | Additional hunyuan SKUs (e.g. instruct / thinking / turbos / role variants) — **query at runtime** via `DescribeAIModels({ GroupName: "hunyuan-exp" }).Models[]`, do NOT hard-code | Legacy `Type=builtin` GroupName; billed via `pkg_hunyuan_token_la_inspire_100m`; do NOT use without 成长计划 enrollment |
+| createModel provider | Default model                   | Other available models                                                                                                                                                             | Notes                                                                                                                   |
+| -------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `"hunyuan-exp"`      | `hunyuan-2.0-instruct-20251111` | Additional hunyuan SKUs (e.g. instruct / thinking / turbos / role variants) — **query at runtime** via `DescribeAIModels({ GroupName: "hunyuan-exp" }).Models[]`, do NOT hard-code | Legacy `Type=builtin` GroupName; billed via `pkg_hunyuan_token_la_inspire_100m`; do NOT use without 成长计划 enrollment |
 
 ### B. Main managed group (Token Credits pack scenario, recommended default)
 
 The `"cloudbase"` GroupName is backed by **Tencent Cloud TokenHub**, a unified managed pool that covers multiple first-party and third-party vendors — including the **Hunyuan** family (HY 2.0 Instruct, HY 2.0 Think, Hunyuan-role, Hy3 preview, …), **DeepSeek** family (DeepSeek-V4-Pro, DeepSeek-V4-Flash, Deepseek-v3.2, Deepseek-v3.1, Deepseek-r1-0528, Deepseek-v3-0324, …), **Zhipu GLM** (GLM-5, GLM-5-Turbo, GLM-5.1, GLM-5V-Turbo), **Kimi** (K2.5, K2.6), **MiniMax** (M2.5, M2.7) and more. The roster evolves over time, so **do not hard-code the list in application code** — always discover it at runtime.
 
-| createModel provider | Model readiness | How to enable a model | Notes |
-|----------------------|-----------------|-----------------------|-------|
-| `"cloudbase"` | **No model is enabled by default** — always check `DescribeAIModels({ GroupName: "cloudbase" }).Models[]` first | 1) Fetch the authoritative catalog + pricing via `DescribeManagedAIModelList` (do NOT guess the `Model` string). 2) Call `UpdateAIModel` with `Status: 1` and a full-replacement `Models[]` that includes the target model | Unified managed group (`Type=builtin`), Remark `"腾讯云开发"`, depends on a `pkg_tcb_tokencredits_*` resource pack |
+| createModel provider | Model readiness                                                                                                 | How to enable a model                                                                                                                                                                                                      | Notes                                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `"cloudbase"`        | **No model is enabled by default** — always check `DescribeAIModels({ GroupName: "cloudbase" }).Models[]` first | 1) Fetch the authoritative catalog + pricing via `DescribeManagedAIModelList` (do NOT guess the `Model` string). 2) Call `UpdateAIModel` with `Status: 1` and a full-replacement `Models[]` that includes the target model | Unified managed group (`Type=builtin`), Remark `"腾讯云开发"`, depends on a `pkg_tcb_tokencredits_*` resource pack |
 
 > ⚠️ Common Mini Program mistake: writing `createModel("deepseek")` / `createModel("hunyuan")` / `createModel("glm")` / `createModel("kimi")` / `createModel("minimax")` / `createModel("custom")`. All wrong — those are **vendor / model names**, not provider / GroupName. The provider must be one of the `GroupName` values returned by `DescribeAIModels`. New projects always use the unified `"cloudbase"` managed group and select the concrete vendor model via the `model` field.
 
@@ -230,23 +230,24 @@ callCloudApi({
   action: "CreateAIModel",
   params: {
     EnvId: "<current envId>",
-    GroupName: "custom-openai-compat",  // ⚠️ MUST start with "custom-" (e.g. custom-kimi, custom-moonshot) to avoid colliding with built-in / vendor GroupNames; this becomes the value passed to createModel(provider)
+    GroupName: "custom-openai-compat", // ⚠️ MUST start with "custom-" (e.g. custom-kimi, custom-moonshot) to avoid colliding with built-in / vendor GroupNames; this becomes the value passed to createModel(provider)
     BaseUrl: "https://api.example.com/v1",
     Models: [
       { Model: "gpt-4o-mini", EnableMCP: false },
-      { Model: "gpt-4o",       EnableMCP: false },
+      { Model: "gpt-4o", EnableMCP: false },
     ],
     Remark: "Internal OpenAI-compatible endpoint",
-    Status: 1,                         // 1=on, 2=off
+    Status: 1, // 1=on, 2=off
     Secret: {
       // Key / ApiKey: pick one; OpenAI-compatible endpoints usually use ApiKey
       ApiKey: "<vendor-api-key>",
     },
   },
-})
+});
 ```
 
 After registration:
+
 - Run `DescribeAIModels` to confirm the `GroupName` exists with `Status=1` and the target `Model` appears in `Models[]`.
 - In the Mini Program, call `wx.cloud.extend.AI.createModel("custom-openai-compat")` and pass a registered model name (e.g. `"gpt-4o-mini"`) as the `model` field.
 - To add or modify models later, use `UpdateAIModel` (remember `Models` is a **full replacement**; `Status` uses 1/2 as on/off). To delete an entire custom group, use `DeleteAIModel` (custom groups only; batch via `GroupNames.N`).
@@ -266,10 +267,10 @@ After registration:
 ```js
 // app.js
 App({
-  onLaunch: function() {
+  onLaunch: function () {
     wx.cloud.init({ env: "<YOUR_ENV_ID>" });
-  }
-})
+  },
+});
 ```
 
 ---
@@ -284,13 +285,13 @@ App({
 const model = wx.cloud.extend.AI.createModel("hunyuan-exp");
 
 const res = await model.generateText({
-  model: "hunyuan-2.0-instruct-20251111",  // plan-enrolled default
+  model: "hunyuan-2.0-instruct-20251111", // plan-enrolled default
   messages: [{ role: "user", content: "hi" }],
 });
 
 // ⚠️ Return value is the RAW model response, NOT wrapped like JS/Node SDK
-console.log(res.choices[0].message.content);  // access via choices array
-console.log(res.usage);                        // token usage
+console.log(res.choices[0].message.content); // access via choices array
+console.log(res.usage); // token usage
 ```
 
 ---
@@ -306,19 +307,23 @@ const model = wx.cloud.extend.AI.createModel("hunyuan-exp");
 
 // ⚠️ Parameters MUST be wrapped in a `data` object
 const res = await model.streamText({
-  data: {                              // ⚠️ Required wrapper
-    model: "hunyuan-2.0-instruct-20251111",  // plan-enrolled default
-    messages: [{ role: "user", content: "hi" }]
+  data: {
+    // ⚠️ Required wrapper
+    model: "hunyuan-2.0-instruct-20251111", // plan-enrolled default
+    messages: [{ role: "user", content: "hi" }],
   },
-  onText: (text) => {                  // Optional: incremental text callback
+  onText: (text) => {
+    // Optional: incremental text callback
     console.log("New text:", text);
   },
-  onEvent: ({ data }) => {             // Optional: raw event callback
+  onEvent: ({ data }) => {
+    // Optional: raw event callback
     console.log("Event:", data);
   },
-  onFinish: (fullText) => {            // Optional: completion callback
+  onFinish: (fullText) => {
+    // Optional: completion callback
     console.log("Done:", fullText);
-  }
+  },
 });
 
 // Async iteration is also available
@@ -329,7 +334,8 @@ for await (let str of res.textStream) {
 // Check for completion via eventStream
 for await (let event of res.eventStream) {
   console.log(event);
-  if (event.data === "[DONE]") {       // ⚠️ Check for [DONE] to stop
+  if (event.data === "[DONE]") {
+    // ⚠️ Check for [DONE] to stop
     break;
   }
 }
@@ -360,15 +366,15 @@ try {
 
 ## API Comparison: JS/Node SDK vs WeChat Mini Program
 
-| Feature | JS/Node SDK | WeChat Mini Program |
-|---------|-------------|---------------------|
-| **Namespace** | `app.ai()` | `wx.cloud.extend.AI` |
-| **generateText params** | Direct object | Direct object |
-| **generateText return** | `{ text, usage, messages }` | Raw: `{ choices, usage }` |
-| **streamText params** | Direct object | ⚠️ Wrapped in `data: {...}` |
-| **streamText return** | `{ textStream, dataStream }` | `{ textStream, eventStream }` |
-| **Callbacks** | Not supported | `onText`, `onEvent`, `onFinish` |
-| **Image generation** | Node SDK only | Not available |
+| Feature                 | JS/Node SDK                  | WeChat Mini Program             |
+| ----------------------- | ---------------------------- | ------------------------------- |
+| **Namespace**           | `app.ai()`                   | `wx.cloud.extend.AI`            |
+| **generateText params** | Direct object                | Direct object                   |
+| **generateText return** | `{ text, usage, messages }`  | Raw: `{ choices, usage }`       |
+| **streamText params**   | Direct object                | ⚠️ Wrapped in `data: {...}`     |
+| **streamText return**   | `{ textStream, dataStream }` | `{ textStream, eventStream }`   |
+| **Callbacks**           | Not supported                | `onText`, `onEvent`, `onFinish` |
+| **Image generation**    | Node SDK only                | Not available                   |
 
 ---
 
@@ -378,16 +384,17 @@ try {
 
 ```ts
 interface WxStreamTextInput {
-  data: {                              // ⚠️ Required wrapper object
+  data: {
+    // ⚠️ Required wrapper object
     model: string;
     messages: Array<{
       role: "user" | "system" | "assistant";
       content: string;
     }>;
   };
-  onText?: (text: string) => void;     // incremental text callback
-  onEvent?: (prop: { data: string }) => void;  // raw event callback
-  onFinish?: (text: string) => void;   // completion callback
+  onText?: (text: string) => void; // incremental text callback
+  onEvent?: (prop: { data: string }) => void; // raw event callback
+  onFinish?: (text: string) => void; // completion callback
 }
 ```
 
@@ -395,11 +402,12 @@ interface WxStreamTextInput {
 
 ```ts
 interface WxStreamTextResult {
-  textStream: AsyncIterable<string>;   // incremental text stream
-  eventStream: AsyncIterable<{         // raw event stream
+  textStream: AsyncIterable<string>; // incremental text stream
+  eventStream: AsyncIterable<{
+    // raw event stream
     event?: unknown;
     id?: unknown;
-    data: string;                      // "[DONE]" when complete
+    data: string; // "[DONE]" when complete
   }>;
 }
 ```

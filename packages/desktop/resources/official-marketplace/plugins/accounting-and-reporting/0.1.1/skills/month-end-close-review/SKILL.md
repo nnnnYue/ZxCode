@@ -19,7 +19,7 @@ The deliverable is a close package workbook. **Its citation vehicle is cell comm
 Ask for what is missing by name rather than working around it:
 
 - **试算平衡表** with 期初 / 本期借方 / 本期贷方 / 期末 — the minimum, and nothing here runs without it.
-- **关账清单** (the company's own checklist, if one exists) — the review is against *their* process, not a generic one.
+- **关账清单** (the company's own checklist, if one exists) — the review is against _their_ process, not a generic one.
 - **上期试算平衡表**, for the comparisons in Step 4 and Step 5.
 - **总账或明细账** for any account the sweep flags — asked for when needed, not up front.
 - **会计政策或集团手册**, where one exists.
@@ -43,16 +43,16 @@ List any account you could not classify. Unclassified accounts are named, never 
 
 ### Step 2: The arithmetic checks — these run first because everything else assumes them
 
-| 检查 | 关系 |
-|---|---|
-| 试算平衡 | 借方合计 = 贷方合计 |
+| 检查       | 关系                                              |
+| ---------- | ------------------------------------------------- |
+| 试算平衡   | 借方合计 = 贷方合计                               |
 | 发生额勾稽 | 期初余额 + 本期借方 − 本期贷方 = 期末余额(逐科目) |
-| 层级勾稽 | 末级科目合计 = 上级科目余额 |
-| 期初连续性 | 本期期初 = 上期期末(逐科目) |
+| 层级勾稽   | 末级科目合计 = 上级科目余额                       |
+| 期初连续性 | 本期期初 = 上期期末(逐科目)                       |
 
 Any of these failing is a 🔴 blocker by definition and is reported with both figures and the difference. **Do not proceed to interpret balances that do not foot** — every subsequent finding would be built on them.
 
-**And do not investigate them here either.** This step establishes *that* something does not tie; finding *why* is `ledger-reconciliation`'s work, which matches transactions, classifies the difference, and traces it to a voucher. Report the gap, name that skill, and stop — running the decomposition inline would put a second implementation of the same matching logic in the same plugin, and the two would drift with nothing in the build to detect it. Where the failure is 期初不连续 and the prior-period trial balance was provided, say which side moved; that is still a location, not an investigation.
+**And do not investigate them here either.** This step establishes _that_ something does not tie; finding _why_ is `ledger-reconciliation`'s work, which matches transactions, classifies the difference, and traces it to a voucher. Report the gap, name that skill, and stop — running the decomposition inline would put a second implementation of the same matching logic in the same plugin, and the two would drift with nothing in the build to detect it. Where the failure is 期初不连续 and the prior-period trial balance was provided, say which side moved; that is still a location, not an investigation.
 
 An account that could not be mapped to a caption at all, or a chart that changed between periods, goes to `account-mapping` rather than being resolved by judgement here.
 

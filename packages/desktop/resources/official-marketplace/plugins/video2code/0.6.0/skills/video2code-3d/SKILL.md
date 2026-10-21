@@ -8,7 +8,7 @@ description: 3D/WebGL extension for the video2code workflow. Load this ADDITIONA
 Extends the base `video2code` workflow for WebGL pages. **The whole point: don't rewrite the
 engine, write the scene.** The `default-3d` template already ships a correct renderer / rAF
 wall-clock loop / `scroll→t` / camera rig / post-processing / forensic hooks. Your job is the
-*content* — the particles, shaders, geometry, materials, and camera choreography that match THIS
+_content_ — the particles, shaders, geometry, materials, and camera choreography that match THIS
 video. That content is exactly the coding this task exists to exercise; the engine is not.
 
 ## 0. You are here because Phase-1 observation saw a WebGL page
@@ -22,26 +22,27 @@ exactly one meaning: the scene was never built. "I decided I didn't need a three
 one" is not a route out of the 3D template; it is the decision this skill exists to prevent.
 
 **Hard rules:**
+
 - **Raw three.js only.** No react-three-fiber / drei — it diverges from the recipes below.
 - **NEVER build a canvas-2D pseudo-3D engine** (hand-rolled perspective projection, fake depth
   sorting). This is the #1 quality failure. If it reads as 3D on screen, use three.js.
 - **NEVER ship the source's own rendered pixels as the scene** (backdrop clip, frame sequence,
-  blitted frames). See *The scene layer is always `{render}`* below — this one voids the task.
+  blitted frames). See _The scene layer is always `{render}`_ below — this one voids the task.
 - Card flip / slight tilt / parallax that a single CSS `transform: perspective()` covers is **not**
   a WebGL page — stay in base `video2code`, don't pull in three.
 
 ## 1. Selection table — observed effect → approach
 
-| Observed | Approach | Module |
-|---|---|---|
-| 3D objects/particles in perspective | three.js scene | `scene/Scene.ts` |
-| Particle field, points swarming/morphing | particle recipe (§2) | `scene/particles.ts` |
-| Volumetric light / bloom / glow | EffectComposer + UnrealBloom + fog | `engine/kit/composer.ts` |
-| Camera flies along a path (scroll-driven) | spline cam + BEAT table | `engine/kit/cameraRig.ts` |
-| Product / real 3D model, orbitable | GLTF load + orbit controls | `engine/kit/model.ts` |
-| Shader background / gradient / aurora / fluid | fullscreen quad + ShaderMaterial | `scene/` + `shaders/` |
-| Infinite-detail fractal zoom | raymarch fullscreen quad (advanced) | `scene/` + `shaders/` |
-| Card flip / slight 3D tilt | CSS 3D transform — **not three** | back to base skill |
+| Observed                                      | Approach                            | Module                    |
+| --------------------------------------------- | ----------------------------------- | ------------------------- |
+| 3D objects/particles in perspective           | three.js scene                      | `scene/Scene.ts`          |
+| Particle field, points swarming/morphing      | particle recipe (§2)                | `scene/particles.ts`      |
+| Volumetric light / bloom / glow               | EffectComposer + UnrealBloom + fog  | `engine/kit/composer.ts`  |
+| Camera flies along a path (scroll-driven)     | spline cam + BEAT table             | `engine/kit/cameraRig.ts` |
+| Product / real 3D model, orbitable            | GLTF load + orbit controls          | `engine/kit/model.ts`     |
+| Shader background / gradient / aurora / fluid | fullscreen quad + ShaderMaterial    | `scene/` + `shaders/`     |
+| Infinite-detail fractal zoom                  | raymarch fullscreen quad (advanced) | `scene/` + `shaders/`     |
+| Card flip / slight 3D tilt                    | CSS 3D transform — **not three**    | back to base skill        |
 
 ## 2. Effect recipes — copy the PATTERN, author the video-specific parts
 
@@ -51,12 +52,14 @@ colour, and timing are yours to read off the frames.
 
 **Particle morph (85% of pages) — the flagship.** Reverse-engineering this from video is nearly
 impossible; the corpus universally does:
+
 ```
 // 1. draw the target shape/text to an offscreen 2D canvas
 // 2. sample its pixels → array of target positions (xyz)
 // 3. each particle lerps from a seeded random start toward its target, + simplex noise drift
 // count: read density off the video. corpus median ~thousands, p90 ~40k. Start ~8–12k, scale to fit.
 ```
+
 Use `ctx.rng()` for reproducible starts, `simplex-noise` (preinstalled) for drift.
 
 **Bloom starter (42%).** In `scene.init`: `const { composer } = createBloomComposer(renderer,
@@ -65,6 +68,7 @@ scene, camera, { strength: 0.8, radius: 0.4, threshold: 0.85 })`; override `rend
 
 **Spline camera + BEAT (46%).** Camera state is a **pure function of scroll progress t**, not a
 GSAP timeline (corpus uses 0 gsap):
+
 ```
 const { camPath, lookPath } = createSplinePair([...Vector3], [...Vector3])  // engine/kit/beats
 // per frame: camera.position.copy(camPath.getPoint(u)); camera.lookAt(lookPath.getPoint(u))
@@ -73,6 +77,7 @@ const { camPath, lookPath } = createSplinePair([...Vector3], [...Vector3])  // e
 // (clamp01/smoothstep/remap/lerpFields); the table's stations, keyframes, and how phases
 // stack/switch are video-specific — write them in scene/beats.ts.
 ```
+
 This is fps-independent and lets `?t=` freeze any beat for verification. Scene values the HUD must
 display (readouts, probe hits, active chapter) go through `createHudStore<T>` (engine/kit/hudBridge);
 you define the fields.
@@ -112,6 +117,7 @@ The verification browser is either **hardware-GL** (GPU batch — WebGL at real-
 **software-rendered** (SwiftShader, ~1.5–20 fps). Tell them apart from your first capture: a
 recording that plays back smooth and real-time = hardware GL; single-digit janky fps = software.
 Write for the software case from frame one — the same code must survive both:
+
 - **Wall-clock drive everything** off `dt`/elapsed (the loop already clamps dt) — never advance by
   frame count. Physics: integrate `dt` in fixed substeps inside `update`.
 - **pixelRatio ≤ 1** (already set); honour `ctx.forensic.lite` → antialias off, particle count
@@ -129,7 +135,7 @@ Write for the software case from frame one — the same code must survive both:
   hudBridge (`createHudStore<T>` scene→React) / composer / model / text. Use what the archetype
   needs, ignore the rest. A raymarch page may use none of them.
 - `scene/Scene.ts` — **YOUR WORK**. Implement `SceneModule { init(ctx)/update(t,dt)/render?()/
-  resize?()/dispose() }`. `ctx = { renderer, scene, camera, clock, sizes, rng, signals, forensic }`.
+resize?()/dispose() }`. `ctx = { renderer, scene, camera, clock, sizes, rng, signals, forensic }`.
   Delete the `PlaceholderScene`.
 - `hud/Hud.tsx` — 2D overlay (Tailwind, `pointer-events:none`), **fixed chrome only** (logo, nav,
   telemetry, scroll pill). Content that moves with scroll — hero copy, chapter cards — lives in the
@@ -189,21 +195,21 @@ Tier-1 `fail` on some rows, a **Tier-0 void** on the whole run: nothing downstre
 anything, because the artifact contains none of the work the task exists to exercise.
 
 **One legitimate seam — a `VideoTexture` whose content is itself footage.** Real sites sometimes
-play a video file *as a texture inside* the scene (a screen, a poster, a backdrop plane). The
+play a video file _as a texture inside_ the scene (a screen, a poster, a backdrop plane). The
 scene layer stays `{render}` — the geometry, camera, lighting and the texture's carrier mesh are
 yours to write — but that texture's content follows the base `{footage}` rules: declare it on its
 plan line with the source clip range and `asset=`, ship the clip as the texture source, and let
-the audit reconcile it. This is footage material *inside* a rendered scene — not the barred move,
+the audit reconcile it. This is footage material _inside_ a rendered scene — not the barred move,
 which is shipping the scene's own rendered pixels.
 
 **Two arguments will occur to you on a hard source. Both are wrong:**
 
-- *"The source's own rendered pixels aren't a flat gradient or a painted approximation — so the
-  render-tier check above doesn't bite."* True as written, and irrelevant. That check enumerates
+- _"The source's own rendered pixels aren't a flat gradient or a painted approximation — so the
+  render-tier check above doesn't bite."_ True as written, and irrelevant. That check enumerates
   bad **substitutes for rendering**; it presupposes you rendered. Replaying the source is not a
   worse render, it is the absence of one, and it is **further** from passing than the crudest
   hand-authored scene, not closer.
-- *"Video backdrops make the SRC|REP composites nearly pixel-identical, so they score better."*
+- _"Video backdrops make the SRC|REP composites nearly pixel-identical, so they score better."_
   Also true, and the reason this is barred rather than merely discouraged. The composite is a
   proxy for having rebuilt the scene; the source's own pixels beat every honest rebuild on that
   proxy while containing zero of the thing it proxies for. A perfect score obtained this way is
@@ -211,7 +217,7 @@ which is shipping the scene's own rendered pixels.
 
 **What to do instead when the source is genuinely out of reach** — photoreal underwater
 environments, crowd simulations, thousands of animated agents, film-grade lighting. Author the
-scene at the fidelity you *can* reach: right archetype (particles / raymarch / spline camera),
+scene at the fidelity you _can_ reach: right archetype (particles / raymarch / spline camera),
 right depth cues, right palette, right motion character and rhythm. Then take the shortfall
 honestly in `out/report.md` Known-gaps ("source is a photoreal reef with ~thousands of fish; the
 replica is a stylised particle field at matched density and drift"), and let the affected rows

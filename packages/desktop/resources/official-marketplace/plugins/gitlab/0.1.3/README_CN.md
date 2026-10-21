@@ -15,11 +15,11 @@
 
 ## Skills
 
-| Skill | ZxCode 命令 | 说明 |
-|-------|------------|------|
-| setup | `/gitlab:setup [hostname]` | 检查 `glab`、引导登录并确认当前账号 |
-| glab | `/gitlab:glab` | GitLab 官方通用 CLI 与 API 工作流指导 |
-| glab-stack | `/gitlab:glab-stack` | GitLab 官方实验性 Stacked MR 工作流指导 |
+| Skill      | ZxCode 命令                | 说明                                    |
+| ---------- | -------------------------- | --------------------------------------- |
+| setup      | `/gitlab:setup [hostname]` | 检查 `glab`、引导登录并确认当前账号     |
+| glab       | `/gitlab:glab`             | GitLab 官方通用 CLI 与 API 工作流指导   |
+| glab-stack | `/gitlab:glab-stack`       | GitLab 官方实验性 Stacked MR 工作流指导 |
 
 使用自然语言提出 GitLab 任务时，也可以自动激活对应 Skill，不要求必须输入斜杠命令。
 

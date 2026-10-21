@@ -130,15 +130,15 @@ tcb hosting download / ./hosting-backup --dir --env-id <envId>
 
 ## Common Options
 
-| Option | Description |
-|--------|-------------|
-| `-e, --env-id <envId>` | Target environment ID |
-| `--yes` | Skip interactive confirmation |
-| `--json` | JSON output for scripting |
-| `--dry-run` | Preview mode (delete only) |
-| `-d, --dir` | Operate on directory |
-| `-l, --limit <n>` | Max items returned (default 50) |
-| `--offset <n>` | Skip N items (default 0) |
+| Option                 | Description                     |
+| ---------------------- | ------------------------------- |
+| `-e, --env-id <envId>` | Target environment ID           |
+| `--yes`                | Skip interactive confirmation   |
+| `--json`               | JSON output for scripting       |
+| `--dry-run`            | Preview mode (delete only)      |
+| `-d, --dir`            | Operate on directory            |
+| `-l, --limit <n>`      | Max items returned (default 50) |
+| `--offset <n>`         | Skip N items (default 0)        |
 
 ---
 
@@ -156,12 +156,12 @@ tcb hosting download <cloudPath> [localPath] --env-id <id>  # Download files
 
 ## Common Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| "Hosting not enabled" | Hosting service not activated | Run `tcb hosting detail -e <envId>` to auto-enable |
-| File still accessible after delete | CDN cache delay (5-10 min) | Wait or flush CDN cache in console |
-| `meta.total` looks wrong | Directories (Size=0) excluded from count | This is expected behavior |
-| Deploy has no effect | Deploying to wrong path or env | Verify `--env-id` and cloud path; run `tcb hosting list` to check |
+| Error                              | Cause                                    | Fix                                                               |
+| ---------------------------------- | ---------------------------------------- | ----------------------------------------------------------------- |
+| "Hosting not enabled"              | Hosting service not activated            | Run `tcb hosting detail -e <envId>` to auto-enable                |
+| File still accessible after delete | CDN cache delay (5-10 min)               | Wait or flush CDN cache in console                                |
+| `meta.total` looks wrong           | Directories (Size=0) excluded from count | This is expected behavior                                         |
+| Deploy has no effect               | Deploying to wrong path or env           | Verify `--env-id` and cloud path; run `tcb hosting list` to check |
 
 ---
 

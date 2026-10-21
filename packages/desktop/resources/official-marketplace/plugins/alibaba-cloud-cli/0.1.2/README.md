@@ -14,10 +14,10 @@ Cloud calls retain the selected profile/region and disable automatic plugin inst
 
 ## Skills
 
-| Skill | Entry | Purpose |
-| --- | --- | --- |
+| Skill   | Entry                      | Purpose                                                                     |
+| ------- | -------------------------- | --------------------------------------------------------------------------- |
 | `setup` | `/alibaba-cloud-cli:setup` | Check/install the latest `aliyun`, configure a profile, and verify identity |
-| `cli` | Context-triggered | Discover product commands from live help and gate remote writes |
+| `cli`   | Context-triggered          | Discover product commands from live help and gate remote writes             |
 
 ## Safety boundary
 

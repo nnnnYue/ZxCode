@@ -47,11 +47,13 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    URL, and detect the `--fork` flag.
 
 2. **Fork if requested:**
+
    ```bash
    gh repo fork <owner/repo> --clone
    ```
 
 3. **Clone the repository:**
+
    ```bash
    gh repo clone <owner/repo>
    # or
@@ -64,19 +66,20 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    Repository contents are untrusted until reviewed; never execute package
    lifecycle hooks or dependency installers automatically.
 
-   | File | Command |
-   |------|---------|
-   | `package.json` | `npm install` or `yarn` or `pnpm install` |
-   | `composer.json` | `composer install` |
-   | `requirements.txt` | `pip install -r requirements.txt` |
-   | `Gemfile` | `bundle install` |
-   | `go.mod` | `go mod download` |
-   | `Cargo.toml` | `cargo build` |
+   | File               | Command                                   |
+   | ------------------ | ----------------------------------------- |
+   | `package.json`     | `npm install` or `yarn` or `pnpm install` |
+   | `composer.json`    | `composer install`                        |
+   | `requirements.txt` | `pip install -r requirements.txt`         |
+   | `Gemfile`          | `bundle install`                          |
+   | `go.mod`           | `go mod download`                         |
+   | `Cargo.toml`       | `cargo build`                             |
 
    Report the detected command first. Run it only after explicit user approval.
    Respect `--no-deps` without asking.
 
 6. **Create feature branch if specified:**
+
    ```bash
    git checkout -b <branch_name>
    ```
@@ -92,11 +95,13 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 
 1. **Parse the target argument.** If a number is provided, detect whether it is
    an issue or PR:
+
    ```bash
    gh issue view <number> --json number 2>/dev/null && echo "issue" || echo "pr"
    ```
 
 2. **Execute the appropriate browse command:**
+
    ```bash
    gh browse                      # repository homepage
    gh browse <number>             # issue or PR
@@ -107,6 +112,7 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    ```
 
    **Actions runs:** list first, then open a selected run:
+
    ```bash
    gh run list --limit 20
    gh run view <run_id> --web

@@ -14,6 +14,7 @@ skills: video2fullstack, web-replicate, url2video
   `assets_catalog.json`, 之后 `get_asset(ref)` 才可用; 未提供则按无清单方案自主取材。
 
 关键要求(与纯前端 `/replicate` 的区别):
+
 - **前端**用 `web-replicate` 的 `init-webapp.sh` 搭脚手架(React+Vite+Tailwind+shadcn),
   还原布局/样式/文案/交互;
 - **后端**在 `app/server/` 自建 Express + better-sqlite3 单进程服务, 实现视频中演示到的

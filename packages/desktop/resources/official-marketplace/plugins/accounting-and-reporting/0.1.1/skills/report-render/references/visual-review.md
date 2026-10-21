@@ -34,15 +34,15 @@ python3 -m fin_report.verify "$DELIVER/报告.pdf" --render "$BUILD/qa" --json
 
 What the numbers decide, and how:
 
-| Criterion | Signal | Verdict |
-|---|---|---|
-| Page renders blank | `ink[i] ≤ 0.08%` with page text present | `fail` — font not embedded |
-| Page genuinely empty | `ink[i] ≤ 0.08%`, no page text | `fail` — stray page break |
-| Page nearly empty | `ink[i] < 0.5%` | `fail` — stranded caption or heading |
-| **Page ends early** | `foot_gaps[i] ≥ 78mm` (104mm+ is a deferred exhibit) | `fail` unless accepted **in `<BUILD>/qa/layout-review.md` on a `版面自检` line**, with the mm figure as evidence (build record, never printed in the deliverable) |
-| **Last page is a list remainder** | last page ≥ 70% of column unused **and** the `来源` heading is on an earlier page | `fail` — a page spent on a few entries a tighter list absorbs |
-| CJK reached the text layer | `cjk_chars > 0` | `fail` at zero |
-| `[n]` are real annotations | `markers > 0, links_internal == 0` | `fail` |
+| Criterion                         | Signal                                                                            | Verdict                                                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page renders blank                | `ink[i] ≤ 0.08%` with page text present                                           | `fail` — font not embedded                                                                                                                                        |
+| Page genuinely empty              | `ink[i] ≤ 0.08%`, no page text                                                    | `fail` — stray page break                                                                                                                                         |
+| Page nearly empty                 | `ink[i] < 0.5%`                                                                   | `fail` — stranded caption or heading                                                                                                                              |
+| **Page ends early**               | `foot_gaps[i] ≥ 78mm` (104mm+ is a deferred exhibit)                              | `fail` unless accepted **in `<BUILD>/qa/layout-review.md` on a `版面自检` line**, with the mm figure as evidence (build record, never printed in the deliverable) |
+| **Last page is a list remainder** | last page ≥ 70% of column unused **and** the `来源` heading is on an earlier page | `fail` — a page spent on a few entries a tighter list absorbs                                                                                                     |
+| CJK reached the text layer        | `cjk_chars > 0`                                                                   | `fail` at zero                                                                                                                                                    |
+| `[n]` are real annotations        | `markers > 0, links_internal == 0`                                                | `fail`                                                                                                                                                            |
 
 What the numbers **cannot** decide — mark these `Unverified` on every page:
 
@@ -50,12 +50,12 @@ What the numbers **cannot** decide — mark these `Unverified` on every page:
 - a title or source line printed twice (both copies are correct text in
   correct positions — this is the canonical check-proof defect);
 - modules overlapping, or content past its container. **Text drawn over text
-  *inside a figure* is now measured** — `charts.save` refuses it — so what is left
+  _inside a figure_ is now measured** — `charts.save` refuses it — so what is left
   here is overlap between page-level blocks, which nothing measures;
 - a table that lost its header across a break;
 - a figure separated from its caption;
 - vertical rules in a document table; palette coherence;
-- tofu — `cjk_chars > 0` says CJK is in the *text layer*, not that glyphs drew.
+- tofu — `cjk_chars > 0` says CJK is in the _text layer_, not that glyphs drew.
 
 The foot gap is the one that matters most here, because it is the **only**
 automated signal for a half-empty page: a page missing its bottom 40% still

@@ -46,11 +46,11 @@ Keep the evidence type exact: visible cell text is `单元格正文`; an attache
 
 ### Step 2: The totals difference — stated before it is explained
 
-| | 金额 | 源 |
-|---|---|---|
-| A 方合计 | | [文件·标签页] |
-| B 方合计 | | [文件·标签页] |
-| **差异** | | [测算] |
+|          | 金额 | 源            |
+| -------- | ---- | ------------- |
+| A 方合计 |      | [文件·标签页] |
+| B 方合计 |      | [文件·标签页] |
+| **差异** |      | [测算]        |
 
 Both sides `[披露]`, the difference `[测算]`. This figure is the target: everything below must add back to it exactly, and the workbook proves it with a formula.
 
@@ -66,13 +66,13 @@ Report the counts and amounts at each pass. A matching rate stated without its r
 
 ### Step 4: Classify every unmatched item by cause
 
-| 类别 | 含义 | 必须写明 |
-|---|---|---|
-| 时间性 | 双方都会记,只是期间不同 — 在途、未达账项、跨期确认 | **预计在哪一期消除** |
-| 口径 | 双方口径不同 — 含税与否、总额净额、权责与收付 | **口径差异本身,及是否应长期存在** |
-| 错账 | 一方记错 — 金额、方向、科目、重复入账 | **哪一方、错在哪、涉及凭证** |
-| 遗漏 | 一方未记 | **哪一方、为何未记** |
-| 未查明 | 尚未定位 | **金额,以及已排除的可能** |
+| 类别   | 含义                                               | 必须写明                          |
+| ------ | -------------------------------------------------- | --------------------------------- |
+| 时间性 | 双方都会记,只是期间不同 — 在途、未达账项、跨期确认 | **预计在哪一期消除**              |
+| 口径   | 双方口径不同 — 含税与否、总额净额、权责与收付      | **口径差异本身,及是否应长期存在** |
+| 错账   | 一方记错 — 金额、方向、科目、重复入账              | **哪一方、错在哪、涉及凭证**      |
+| 遗漏   | 一方未记                                           | **哪一方、为何未记**              |
+| 未查明 | 尚未定位                                           | **金额,以及已排除的可能**         |
 
 `未查明` is a legitimate row and it is never zero by construction. What it must never be is a plug: it holds only what you actually could not locate, and its size is stated in the commentary and in the coverage block.
 

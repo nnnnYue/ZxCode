@@ -131,9 +131,7 @@ import type {
   ZCodeTaskTerminalOutcome,
 } from "../session/zcodeTaskService.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import {
-  AUTOMATION_MUTATION_TOOL_NAMES,
-} from "#src/zcode-agent/automationToolPolicy.js";
+import { AUTOMATION_MUTATION_TOOL_NAMES } from "#src/zcode-agent/automationToolPolicy.js";
 import type { ISettingService } from "#src/setting/setting.js";
 import type {
   SessionMessageDeliveryResult,
@@ -2547,24 +2545,33 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
-
     // fork：grouped-task 方法 stub（域功能在 fork UI 暂不暴露，仅满足接口合同）
-    async createTaskGroup(params?: { title?: string; color?: ZCodeTaskGroupColor }): Promise<ZCodeTaskGroup> {
+    async createTaskGroup(params?: {
+      title?: string;
+      color?: ZCodeTaskGroupColor;
+    }): Promise<ZCodeTaskGroup> {
       throw new Error("grouped-task: not available in community edition");
     },
     async renameTaskGroup(_params: { groupId: string; title: string }): Promise<ZCodeTaskGroup> {
       throw new Error("grouped-task: not available");
     },
-    async updateTaskGroupColor(_params: { groupId: string; color: ZCodeTaskGroupColor }): Promise<ZCodeTaskGroup> {
+    async updateTaskGroupColor(_params: {
+      groupId: string;
+      color: ZCodeTaskGroupColor;
+    }): Promise<ZCodeTaskGroup> {
       throw new Error("grouped-task: not available");
     },
     async deleteTaskGroup(_params: { groupId: string }): Promise<void> {
       throw new Error("grouped-task: not available");
     },
-    async listGroupedTaskViewStructure(_params: { workspaceScopes: ZCodeTaskListWorkspaceScope[] }): Promise<ZCodeGroupedTaskViewStructure> {
+    async listGroupedTaskViewStructure(_params: {
+      workspaceScopes: ZCodeTaskListWorkspaceScope[];
+    }): Promise<ZCodeGroupedTaskViewStructure> {
       return { groups: [], members: [], topLevelOrders: [] };
     },
-    async applyGroupedTaskViewOrder(_params: ZCodeGroupedTaskViewOrderInput): Promise<ZCodeGroupedTaskView> {
+    async applyGroupedTaskViewOrder(
+      _params: ZCodeGroupedTaskViewOrderInput,
+    ): Promise<ZCodeGroupedTaskView> {
       return { nodes: [] };
     },
     async listArchivedTasks(params): Promise<ZCodeTaskMeta[]> {

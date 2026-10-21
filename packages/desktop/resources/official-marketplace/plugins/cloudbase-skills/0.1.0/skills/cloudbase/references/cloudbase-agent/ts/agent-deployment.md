@@ -10,14 +10,14 @@ Do **NOT** use `createFunction` or `manageCloudRun` for Agent deployment.
 
 ## Why HTTP Cloud Functions First
 
-| Dimension | HTTP Cloud Functions | CloudRun |
-|-----------|---------------------|----------|
-| SSE Streaming | ✅ Native support | ✅ Supported |
-| WebSocket | ✅ Native support | ✅ Supported |
-| Deployment Complexity | Low (no Dockerfile needed) | High (container config required) |
-| Cost | Pay-per-invocation, scales to zero | Pay-per-instance-hour |
-| Cold Start | Yes, mitigated with provisioned instances | Yes, mitigated with min instances |
-| Supported Runtimes | Node.js, Python | Any |
+| Dimension             | HTTP Cloud Functions                      | CloudRun                          |
+| --------------------- | ----------------------------------------- | --------------------------------- |
+| SSE Streaming         | ✅ Native support                         | ✅ Supported                      |
+| WebSocket             | ✅ Native support                         | ✅ Supported                      |
+| Deployment Complexity | Low (no Dockerfile needed)                | High (container config required)  |
+| Cost                  | Pay-per-invocation, scales to zero        | Pay-per-instance-hour             |
+| Cold Start            | Yes, mitigated with provisioned instances | Yes, mitigated with min instances |
+| Supported Runtimes    | Node.js, Python                           | Any                               |
 
 ## Deployment Steps (HTTP Cloud Functions)
 
@@ -91,13 +91,13 @@ chmod +x scf_bootstrap
 
 ## Environment Variables
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `OPENAI_API_KEY` | ✅ | OpenAI API key or compatible service key |
-| `OPENAI_BASE_URL` | ✅ | API base URL, e.g. `https://api.openai.com/v1` |
-| `OPENAI_MODEL` | ✅ | Model name, e.g. `gpt-4o` or `gpt-3.5-turbo` |
-| `LOG_LEVEL` | ❌ | Log level: `trace`/`debug`/`info`/`warn`/`error`/`fatal` (default: `info`) |
-| `ENABLE_CORS` | ❌ | Set to `true` to enable CORS (local dev only) |
+| Variable          | Required | Purpose                                                                    |
+| ----------------- | -------- | -------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`  | ✅       | OpenAI API key or compatible service key                                   |
+| `OPENAI_BASE_URL` | ✅       | API base URL, e.g. `https://api.openai.com/v1`                             |
+| `OPENAI_MODEL`    | ✅       | Model name, e.g. `gpt-4o` or `gpt-3.5-turbo`                               |
+| `LOG_LEVEL`       | ❌       | Log level: `trace`/`debug`/`info`/`warn`/`error`/`fatal` (default: `info`) |
+| `ENABLE_CORS`     | ❌       | Set to `true` to enable CORS (local dev only)                              |
 
 ## When to Use CloudRun Instead
 
@@ -127,14 +127,14 @@ CMD ["node", "src/index.js"]
 
 ## Summary
 
-| Decision | Choice |
-|----------|--------|
-| **Deployment tool** | `manageAgent` MCP tool (MUST USE) |
-| **Node.js runtime** | Node.js 20.19 (MUST USE, `runtime="Nodejs20.19"`) |
+| Decision               | Choice                                                             |
+| ---------------------- | ------------------------------------------------------------------ |
+| **Deployment tool**    | `manageAgent` MCP tool (MUST USE)                                  |
+| **Node.js runtime**    | Node.js 20.19 (MUST USE, `runtime="Nodejs20.19"`)                  |
 | **Dependency install** | `installDependency=true` (MUST SET, or get `ERR_MODULE_NOT_FOUND`) |
-| **Default platform** | HTTP Cloud Functions |
-| **Fallback platform** | CloudRun (only for special requirements) |
-| **Startup script** | `scf_bootstrap` — `#!/bin/sh` + `node src/index.js` |
-| **Port** | Listen on port `9000` |
-| **CORS** | Production uses API gateway; local dev via `ENABLE_CORS` env var |
-| **Module system** | ES Modules (`"type": "module"` in package.json) |
+| **Default platform**   | HTTP Cloud Functions                                               |
+| **Fallback platform**  | CloudRun (only for special requirements)                           |
+| **Startup script**     | `scf_bootstrap` — `#!/bin/sh` + `node src/index.js`                |
+| **Port**               | Listen on port `9000`                                              |
+| **CORS**               | Production uses API gateway; local dev via `ENABLE_CORS` env var   |
+| **Module system**      | ES Modules (`"type": "module"` in package.json)                    |

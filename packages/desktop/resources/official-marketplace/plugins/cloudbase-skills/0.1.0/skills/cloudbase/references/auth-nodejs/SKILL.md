@@ -73,7 +73,6 @@ When you load this skill to work on a task:
 1. **Clarify the runtime and responsibility**
 
    Ask the user:
-
    - Where does this Node code run?
      - CloudBase 云函数
      - Long‑running Node service using CloudBase
@@ -83,7 +82,6 @@ When you load this skill to work on a task:
      - **Bridge their own user system** into CloudBase via custom login?
 
 2. **Confirm CloudBase environment and SDK**
-
    - Ask for:
      - `env` – CloudBase environment ID
    - Install the latest `@cloudbase/node-sdk` from npm if it is not already available.
@@ -97,20 +95,17 @@ When you load this skill to work on a task:
    ```
 
 3. **Pick the relevant scenario from this file**
-
    - For **caller identity inside a function**, use the `getUserInfo` scenarios.
    - For **full user profile or admin lookup**, use the `getEndUserInfo` and `queryUserInfo` scenarios.
    - For **client systems that already have their own users**, use the **custom login ticket** scenarios built on `createTicket`.
    - For **logging / security**, use the `getClientIP` scenario.
 
 4. **Follow Node SDK API shapes exactly**
-
    - Treat all `auth.*` methods and parameter shapes in this file as canonical.
    - You may change variable names and framework (e.g. Express vs 云函数 handler), but **do not change SDK method names or parameter fields**.
    - If you see a method in older code that is not listed here or in the Node SDK docs mirror, treat it as suspect and avoid using it.
 
 5. **If you are unsure about an API**
-
    - Consult the official CloudBase Auth Node SDK documentation.
    - Only use methods and shapes that appear in the official documentation.
    - If you cannot find an API you want:
@@ -130,22 +125,18 @@ CloudBase Auth separates **where users log in** from **where backend code runs**
 In practice, Node code usually does one or more of:
 
 1. **Identify the current caller**
-
    - In 云函数, use `auth.getUserInfo()` to read `uid`, `openId`, and `customUserId`.
    - Use this identity for **authorization decisions**, logging, and personalisation.
 
 2. **Look up other users**
-
    - Use `auth.getEndUserInfo(uid)` when you know the CloudBase `uid`.
    - Use `auth.queryUserInfo({ platform, platformId, uid? })` when you only have login identifiers such as phone, email, username, or a custom ID.
 
 3. **Issue custom login tickets**
-
    - When you already have your own user system, your Node backend can call `auth.createTicket(customUserId, options)` and return the ticket to a trusted client.
    - The client (typically Web) then uses this ticket with the Web SDK to log the user into CloudBase without forcing them to sign up again.
 
 4. **Log client IP for security**
-
    - In 云函数, `auth.getClientIP()` returns the caller IP, which you can use for audit logs, anomaly detection, or access control.
 
 The scenarios later in this file turn these responsibilities into explicit, copy‑pasteable patterns.
@@ -374,8 +365,8 @@ exports.main = async (event, context) => {
   const customUserId = "your-customUserId";
 
   const ticket = auth.createTicket(customUserId, {
-    refresh: 3600 * 1000,       // access_token refresh interval (ms)
-    expire: 24 * 3600 * 1000,   // ticket expiration time (ms)
+    refresh: 3600 * 1000, // access_token refresh interval (ms)
+    expire: 24 * 3600 * 1000, // ticket expiration time (ms)
   });
 
   // Return the ticket to the trusted client (e.g. via HTTP response)

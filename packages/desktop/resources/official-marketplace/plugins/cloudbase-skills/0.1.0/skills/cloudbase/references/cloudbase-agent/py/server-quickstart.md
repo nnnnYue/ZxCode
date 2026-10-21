@@ -38,12 +38,14 @@ async def openai_endpoint(request: OpenAIChatCompletionRequest):
 ```
 
 **Advantages:**
+
 - Full control over route paths
 - Easy to add custom middleware per route
 - Clear separation of concerns
 - Ideal for complex multi-agent systems
 
 **Use when:**
+
 - You need custom route structures
 - You want fine-grained control
 - You're building complex applications
@@ -78,12 +80,14 @@ main_app.mount("/my-agent", agent_fastapi)
 ```
 
 **Advantages:**
+
 - Automatic health check endpoints
 - Built-in OpenAI compatibility
 - Less boilerplate code
 - Modular agent deployment
 
 **Use when:**
+
 - You want automatic health checks
 - You're deploying multiple agents
 - You need both CloudBase Agent native and OpenAI endpoints
@@ -107,12 +111,14 @@ AgentServiceApp().run(
 ```
 
 **Advantages:**
+
 - Extremely simple (one line!)
 - Perfect for prototyping
 - Automatic CORS and health checks
 - No boilerplate needed
 
 **Use when:**
+
 - You have a single agent
 - You want the fastest way to start
 - You don't need custom routes
@@ -129,26 +135,27 @@ from cloudbase_agent.server import AgentCreatorResult
 
 def create_agent() -> AgentCreatorResult:
     """Create agent with optional cleanup."""
-    
+
     agent = LangGraphAgent(
         name="my-agent",
         description="A helpful assistant",
         graph=build_workflow(),
         use_callbacks=True
     )
-    
+
     # Optional: Add callbacks
     agent.add_callback(ConsoleLogger())
-    
+
     # Optional: Define cleanup function
     def cleanup():
         # Close connections, release resources, etc.
         print("Cleanup completed")
-    
+
     return {"agent": agent, "cleanup": cleanup}
 ```
 
 **Why use creator functions?**
+
 - Agent instance is created fresh per request
 - Ensures proper isolation
 - Automatic cleanup after request completes
@@ -213,10 +220,10 @@ def create_assistant_agent() -> AgentCreatorResult:
         graph=assistant_workflow,
         use_callbacks=True
     )
-    
+
     def cleanup():
         print(f"Cleanup for {agent.name}")
-    
+
     return {"agent": agent, "cleanup": cleanup}
 
 
@@ -226,10 +233,10 @@ def main():
         title="CloudBase Agent Multi-Agent Server",
         version="1.0.0"
     )
-    
+
     # Install exception handlers (required for Method 1)
     install_exception_handlers(app)
-    
+
     # Add CORS
     app.add_middleware(
         CORSMiddleware,
@@ -238,31 +245,31 @@ def main():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Chat bot endpoints
     @app.post("/chatbot/send-message")
     async def chatbot_send_message(request: RunAgentInput):
         return await create_send_message_adapter(create_chat_agent, request)
-    
+
     @app.post("/chatbot/chat/completions")
     async def chatbot_openai(request: OpenAIChatCompletionRequest):
         return await create_openai_adapter(create_chat_agent, request)
-    
+
     # Assistant endpoints
     @app.post("/assistant/send-message")
     async def assistant_send_message(request: RunAgentInput):
         return await create_send_message_adapter(create_assistant_agent, request)
-    
+
     @app.post("/assistant/chat/completions")
     async def assistant_openai(request: OpenAIChatCompletionRequest):
         return await create_openai_adapter(create_assistant_agent, request)
-    
+
     # Health check
     @app.get("/healthz")
     def healthz():
         from datetime import datetime
         import platform
-        
+
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -273,7 +280,7 @@ def main():
                 {"name": "assistant", "endpoints": ["/assistant/send-message", "/assistant/chat/completions"]},
             ]
         }
-    
+
     uvicorn.run(app, host="0.0.0.0", port=9000)
 
 
@@ -347,25 +354,25 @@ Add callbacks to your agent for real-time monitoring:
 ```python
 class ConsoleLogger:
     """Log agent events to console."""
-    
+
     async def on_text_message_content(self, event, buffer):
         print(f"[AI] {buffer}", end="", flush=True)
-    
+
     async def on_tool_call_args(self, event, buffer, partial_args):
         tool_name = getattr(event, "tool_name", "unknown")
         if partial_args:
             print(f"\n[TOOL] {tool_name}: {partial_args}")
-    
+
     async def on_run_started(self, event):
         print(f"\n{'=' * 60}")
         print(f"Run Started: {event.run_id}")
         print(f"{'=' * 60}")
-    
+
     async def on_run_finished(self, event):
         print(f"\n{'=' * 60}")
         print(f"Run Finished: {event.run_id}")
         print(f"{'=' * 60}\n")
-    
+
     async def on_run_error(self, event):
         print(f"\nERROR: {getattr(event, 'message', 'Unknown')}\n")
 
@@ -376,10 +383,10 @@ def create_agent() -> AgentCreatorResult:
         graph=build_workflow(),
         use_callbacks=True  # Enable callbacks
     )
-    
+
     # Add console logger
     agent.add_callback(ConsoleLogger())
-    
+
     return {"agent": agent}
 ```
 

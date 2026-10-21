@@ -37,17 +37,13 @@ function invokeJsapiPay(paymentParams) {
       return;
     }
 
-    window.WeixinJSBridge.invoke(
-      "getBrandWCPayRequest",
-      paymentParams,
-      (res) => {
-        if (res.err_msg === "get_brand_wcpay_request:ok") {
-          resolve(res);
-          return;
-        }
-        reject(new Error(res.err_msg || "JSAPI payment failed"));
-      },
-    );
+    window.WeixinJSBridge.invoke("getBrandWCPayRequest", paymentParams, (res) => {
+      if (res.err_msg === "get_brand_wcpay_request:ok") {
+        resolve(res);
+        return;
+      }
+      reject(new Error(res.err_msg || "JSAPI payment failed"));
+    });
   });
 }
 ```

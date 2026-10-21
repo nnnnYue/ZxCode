@@ -20,8 +20,8 @@ Component({
   methods: {
     onSend() {
       this.agui.sendMessage(this.data.inputText);
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -29,49 +29,52 @@ Component({
 
 ```typescript
 createAGUIBehavior({
-  transport,              // Transport instance (CloudbaseTransport)
-  messages: [],           // Initial message history
-  tools: [{               // Client tools the agent can invoke
-    name: "get_weather",
-    description: "Get weather",
-    parameters: { type: "object", properties: { city: { type: "string" } } },
-    handler: async ({ args }) => ({ temp: 72 })
-  }],
-  threadId: "custom-id",  // Custom thread ID (auto-generated if omitted)
-  contexts: [],           // Additional context objects
-  onRawEvent: (event) => {} // Callback for each raw AG-UI event
-})
+  transport, // Transport instance (CloudbaseTransport)
+  messages: [], // Initial message history
+  tools: [
+    {
+      // Client tools the agent can invoke
+      name: "get_weather",
+      description: "Get weather",
+      parameters: { type: "object", properties: { city: { type: "string" } } },
+      handler: async ({ args }) => ({ temp: 72 }),
+    },
+  ],
+  threadId: "custom-id", // Custom thread ID (auto-generated if omitted)
+  contexts: [], // Additional context objects
+  onRawEvent: (event) => {}, // Callback for each raw AG-UI event
+});
 ```
 
-## Namespace Methods (this.agui.*)
+## Namespace Methods (this.agui.\*)
 
-| Method | Description |
-|--------|-------------|
-| `init({ transport, threadId? })` | Initialize transport at runtime |
-| `sendMessage(text \| Message[])` | Send message and run agent |
-| `appendMessage(message)` | Add message without running agent |
-| `setMessages(messages)` | Replace entire message history |
-| `reset()` | Reset to initial state |
-| `setThreadId(id)` | Change thread ID |
-| `addTool(tool)` | Register a client tool |
-| `removeTool(name)` | Remove tool by name |
-| `updateTool(name, updates)` | Update tool properties |
-| `clearTools()` | Remove all tools |
+| Method                           | Description                       |
+| -------------------------------- | --------------------------------- |
+| `init({ transport, threadId? })` | Initialize transport at runtime   |
+| `sendMessage(text \| Message[])` | Send message and run agent        |
+| `appendMessage(message)`         | Add message without running agent |
+| `setMessages(messages)`          | Replace entire message history    |
+| `reset()`                        | Reset to initial state            |
+| `setThreadId(id)`                | Change thread ID                  |
+| `addTool(tool)`                  | Register a client tool            |
+| `removeTool(name)`               | Remove tool by name               |
+| `updateTool(name, updates)`      | Update tool properties            |
+| `clearTools()`                   | Remove all tools                  |
 
-## State Getters (this.agui.* or this.data.agui.*)
+## State Getters (this.agui._ or this.data.agui._)
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `messages` | `Message[]` | Raw message history |
-| `uiMessages` | `UIMessage[]` | Messages formatted for UI rendering |
-| `isRunning` | `boolean` | Agent is processing |
-| `runId` | `string \| null` | Current run ID |
-| `activeToolCalls` | `ToolCallState[]` | Tool calls in progress |
-| `error` | `AGUIClientError \| null` | Last error |
-| `threadId` | `string` | Current thread ID |
-| `tools` | `Tool[]` | Registered tools (definitions only) |
-| `contexts` | `Context[]` | Context objects |
-| `config` | `CreateAGUIBehaviorOptions` | Current configuration |
+| Property          | Type                        | Description                         |
+| ----------------- | --------------------------- | ----------------------------------- |
+| `messages`        | `Message[]`                 | Raw message history                 |
+| `uiMessages`      | `UIMessage[]`               | Messages formatted for UI rendering |
+| `isRunning`       | `boolean`                   | Agent is processing                 |
+| `runId`           | `string \| null`            | Current run ID                      |
+| `activeToolCalls` | `ToolCallState[]`           | Tool calls in progress              |
+| `error`           | `AGUIClientError \| null`   | Last error                          |
+| `threadId`        | `string`                    | Current thread ID                   |
+| `tools`           | `Tool[]`                    | Registered tools (definitions only) |
+| `contexts`        | `Context[]`                 | Context objects                     |
+| `config`          | `CreateAGUIBehaviorOptions` | Current configuration               |
 
 ## CloudbaseTransport
 
@@ -81,7 +84,7 @@ Production transport for WeChat Cloud Development:
 import { CloudbaseTransport } from "@cloudbase/agent-ui-miniprogram";
 
 const transport = new CloudbaseTransport({
-  botId: "bot-xxxxxx"  // From Cloud Development console
+  botId: "bot-xxxxxx", // From Cloud Development console
 });
 ```
 
@@ -99,10 +102,10 @@ Component({
   lifetimes: {
     attached() {
       this.agui.init({
-        transport: new CloudbaseTransport({ botId: "my-bot" })
+        transport: new CloudbaseTransport({ botId: "my-bot" }),
       });
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -119,15 +122,15 @@ Component({
         parameters: {
           type: "object",
           properties: { title: { type: "string" } },
-          required: ["title"]
+          required: ["title"],
         },
         handler: async ({ args }) => {
           wx.showToast({ title: args.title });
           return { success: true };
-        }
+        },
       });
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -142,7 +145,10 @@ interface UIMessage {
   parts: (TextPart | ToolPart)[];
 }
 
-interface TextPart { type: "text"; text: string; }
+interface TextPart {
+  type: "text";
+  text: string;
+}
 interface ToolPart {
   type: "tool";
   toolCallId: string;
@@ -153,4 +159,3 @@ interface ToolPart {
   error?: AGUIClientError;
 }
 ```
-

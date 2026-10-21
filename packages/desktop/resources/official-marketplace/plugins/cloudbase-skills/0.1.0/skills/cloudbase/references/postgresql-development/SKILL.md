@@ -47,16 +47,16 @@ If this environment only installed the current skill, start from the CloudBase m
 
 CloudBase PG (`app.rdb()`, `app.storage.from('bucket')`) uses **different API method names** than CloudBase NoSQL (`app.database()`, `app.uploadFile()`). Low-capability models often paste legacy NoSQL/auth snippets from training; reject that path immediately. If this task is PG-backed, **do not** write `app.database()`, `db.collection(...)`, `app.uploadFile()`, `getLoginState()`, or route guards based on `auth.getUser()`. Use `app.rdb()`, PG storage v3, and `auth.getSession()` instead. If you are used to writing `.where()`, `.orderBy()`, `.count()` from other ORMs or NoSQL — **stop and read the table below**.
 
-| ❌ Do NOT use these (NoSQL / ORM habits) | ✅ Use these in PG mode |
-|------------------------------------------|------------------------|
-| `.where({ field: value })` | `.match({ field: value })` or `.eq("field", value)` |
-| `.where("field", "ilike", "%v%")` | `.ilike("field", "%v%")` |
-| `.orderBy("field", { ascending: false })` | `.order("field", { ascending: false })` |
-| `.count()` | `.select("*", { count: "exact" })` — count is in response |
-| `.offset(n)` | `.range(from, to)` |
-| `app.uploadFile()` (legacy NoSQL upload) | `app.storage.from('bucket').upload(key, file)` |
+| ❌ Do NOT use these (NoSQL / ORM habits)  | ✅ Use these in PG mode                                      |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| `.where({ field: value })`                | `.match({ field: value })` or `.eq("field", value)`          |
+| `.where("field", "ilike", "%v%")`         | `.ilike("field", "%v%")`                                     |
+| `.orderBy("field", { ascending: false })` | `.order("field", { ascending: false })`                      |
+| `.count()`                                | `.select("*", { count: "exact" })` — count is in response    |
+| `.offset(n)`                              | `.range(from, to)`                                           |
+| `app.uploadFile()` (legacy NoSQL upload)  | `app.storage.from('bucket').upload(key, file)`               |
 | `app.getTempFileURL()` (legacy NoSQL URL) | `app.storage.from('bucket').createSignedUrl(key, expiresIn)` |
-| `app.storage.from()` (no bucket name) | `app.storage.from('bucket')` — **must** pass bucket name |
+| `app.storage.from()` (no bucket name)     | `app.storage.from('bucket')` — **must** pass bucket name     |
 
 **If you find yourself typing `.where()` or `.orderBy()` or `.count()` — stop and use the correct method from the right column.**
 
@@ -90,6 +90,7 @@ CloudBase PG (`app.rdb()`, `app.storage.from('bucket')`) uses **different API me
    - `DROP TABLE IF EXISTS ... CASCADE` and recreate (only when data loss is acceptable, e.g. disposable/evaluation environments).
    - Do NOT rely on `CREATE TABLE IF NOT EXISTS` silent skip — it will cause all downstream CRUD queries to fail with wrong field names.
    - After DDL, re-query the schema and compare every column name used by frontend code, insert/update payloads, filters, ordering, and RLS policies.
+
 5. Check username-password auth before coding login:
    - Call `queryAppAuth(action="getLoginConfig")`.
    - If `loginMethods.usernamePassword !== true`, call `manageAppAuth(action="patchLoginStrategy", patch={ usernamePassword: true })`.
@@ -140,6 +141,7 @@ CloudBase PG (`app.rdb()`, `app.storage.from('bucket')`) uses **different API me
 ## JS SDK v3 PostgreSQL Patterns
 
 **Table name rules (important):**
+
 - ✅ `db.from("articles")` — recommended
 - ✅ `db.from("public.articles")` — also valid (single schema prefix)
 - ❌ `db.from("public.public.articles")` — WRONG, double schema prefix, will fail with `PGRST205`
@@ -185,20 +187,20 @@ Common query helpers: `.eq()`, `.neq()`, `.gt()`, `.gte()`, `.lt()`, `.lte()`, `
 
 CloudBase PG (`app.rdb()`) uses **postgREST-style** query helpers, **NOT** CloudBase NoSQL (`app.database()`) API and **NOT** common ORM conventions. Do NOT use:
 
-| ❌ Wrong (NoSQL / ORM habit) | ✅ Correct (postgREST / PG) |
-|-----------------------------|---------------------------|
-| `.where({ field: value })` | `.match({ field: value })` 或 `.eq("field", value)` |
-| `.where("field", "ilike", "%v%")` | `.ilike("field", "%v%")` |
-| `.orderBy("field", { ascending: false })` | `.order("field", { ascending: false })` |
-| `.count()` | `.select("*", { count: "exact" })` — 通过 `select` 的 `count` 参数获取总数，返回结果中有 `count` 字段 |
-| `.offset(n)` | `.range(from, to)` — 注意 range 是包含两端的分页 |
+| ❌ Wrong (NoSQL / ORM habit)              | ✅ Correct (postgREST / PG)                                                                           |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `.where({ field: value })`                | `.match({ field: value })` 或 `.eq("field", value)`                                                   |
+| `.where("field", "ilike", "%v%")`         | `.ilike("field", "%v%")`                                                                              |
+| `.orderBy("field", { ascending: false })` | `.order("field", { ascending: false })`                                                               |
+| `.count()`                                | `.select("*", { count: "exact" })` — 通过 `select` 的 `count` 参数获取总数，返回结果中有 `count` 字段 |
+| `.offset(n)`                              | `.range(from, to)` — 注意 range 是包含两端的分页                                                      |
 
 **Golden rule**: `app.rdb()` 的查询链只使用上方 "Common query helpers" 列出的 helper 方法。如果你习惯写 `.where()` / `.orderBy()` / `.count()`，请立即改用对应的 postgREST 方法。Supabase 的 `@supabase/postgrest-js` 同样不使用这些方法名。
 
 Storage (v3): use `app.storage.from('<bucket>').upload('<key>', file)` — check installed SDK surface before copying:
 
 ```ts
-const { data } = await app.storage.from('covers').upload(`${file.name}`, file);
+const { data } = await app.storage.from("covers").upload(`${file.name}`, file);
 ```
 
 ### Bucket existence is mandatory (Supabase parity)
@@ -212,12 +214,12 @@ CloudBase PG storage uses the `pgstore` backend and follows the same model as Su
 
 Failure-mode cheat sheet (read DevTools network tab on the FAILED `POST .../v1/storages/get-objects-upload-info`):
 
-| `code` returned by `/v1/storages/get-objects-upload-info` | Meaning | Fix |
-| -------------------------------------------------------- | ------- | --- |
-| `STORAGE_BUCKET_NOT_FOUND` | The bucket in the path does not exist in this PG environment. | Create the bucket via management surface, then retry. |
-| `STORAGE_PERMISSION_DENIED` | The bucket exists but RLS on `storage.objects` blocks the upload. | Run `managePgDatabase(action="execute", confirm=true)` to configure storage RLS. See `cloud-storage-web/SKILL.md` "Post-bucket: storage RLS". |
-| `INVALID_PARAM` for bucket/key | The SDK/API did not receive a valid bucket/key pair (for example `from()` missing the bucket, or key is empty). | Use `app.storage.from('covers').upload('a.png', file)`; bucket goes in `from()`, key goes in `upload()`. |
-| `STORAGE_CONTENT_LENGTH_REQUIRED` | Your code stripped or omitted the `Content-Length` signed header. | Pass `headers: { 'Content-Length': String(file.size) }` to `uploadFile`, or use `app.storage.from('<bucket>').upload('<key>', file)` with a `Blob`/`File` so the SDK fills it in. |
+| `code` returned by `/v1/storages/get-objects-upload-info` | Meaning                                                                                                         | Fix                                                                                                                                                                               |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STORAGE_BUCKET_NOT_FOUND`                                | The bucket in the path does not exist in this PG environment.                                                   | Create the bucket via management surface, then retry.                                                                                                                             |
+| `STORAGE_PERMISSION_DENIED`                               | The bucket exists but RLS on `storage.objects` blocks the upload.                                               | Run `managePgDatabase(action="execute", confirm=true)` to configure storage RLS. See `cloud-storage-web/SKILL.md` "Post-bucket: storage RLS".                                     |
+| `INVALID_PARAM` for bucket/key                            | The SDK/API did not receive a valid bucket/key pair (for example `from()` missing the bucket, or key is empty). | Use `app.storage.from('covers').upload('a.png', file)`; bucket goes in `from()`, key goes in `upload()`.                                                                          |
+| `STORAGE_CONTENT_LENGTH_REQUIRED`                         | Your code stripped or omitted the `Content-Length` signed header.                                               | Pass `headers: { 'Content-Length': String(file.size) }` to `uploadFile`, or use `app.storage.from('<bucket>').upload('<key>', file)` with a `Blob`/`File` so the SDK fills it in. |
 
 If you see `PUT https://undefined/` and `net::ERR_NAME_NOT_RESOLVED` in DevTools, that is the symptom of one of the three rows above — the upstream metadata response had no `uploadUrl` field, and the SDK fed `undefined` into a follow-up `PUT`. Always inspect the upstream `get-objects-upload-info` response first; do not chase the `https://undefined/` URL itself.
 

@@ -32,10 +32,10 @@ Call this skill **after** completing a CloudBase implementation task, before dec
 
 The skill runs in two layers:
 
-| Layer | Method | Speed | What it catches |
-|-------|--------|-------|-----------------|
-| **Lint (optional)** | No executable script is shipped. If the user approves running lint, review the code block in `references/lint-rules/README.md`, copy it to a temporary local `cloudbase-lint.mjs`, then run `node cloudbase-lint.mjs --project-dir <path>` | Seconds | Deterministic regex checks — wrong API calls, missing configs, pattern mismatches |
-| **LLM review** | Read each rule's "LLM 检查" section, inspect code semantically | Variable | Semantic issues — route guard logic, RLS completeness, architecture-level problems |
+| Layer               | Method                                                                                                                                                                                                                                     | Speed    | What it catches                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------- |
+| **Lint (optional)** | No executable script is shipped. If the user approves running lint, review the code block in `references/lint-rules/README.md`, copy it to a temporary local `cloudbase-lint.mjs`, then run `node cloudbase-lint.mjs --project-dir <path>` | Seconds  | Deterministic regex checks — wrong API calls, missing configs, pattern mismatches  |
+| **LLM review**      | Read each rule's "LLM 检查" section, inspect code semantically                                                                                                                                                                             | Variable | Semantic issues — route guard logic, RLS completeness, architecture-level problems |
 
 ## Rule index
 

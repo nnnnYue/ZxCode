@@ -19,7 +19,7 @@ import {
   LanggraphAgent,
   ClientStateAnnotation,
   ClientState,
-  CloudBaseSaver  // Tencent CloudBase checkpointer
+  CloudBaseSaver, // Tencent CloudBase checkpointer
 } from "@cloudbase/agent-adapter-langgraph";
 ```
 
@@ -29,8 +29,8 @@ import {
 import { LanggraphAgent } from "@cloudbase/agent-adapter-langgraph";
 
 const agent = new LanggraphAgent({
-  compiledWorkflow: graph,  // compiled StateGraph (required)
-  logger: myLogger,         // optional
+  compiledWorkflow: graph, // compiled StateGraph (required)
+  logger: myLogger, // optional
 });
 ```
 
@@ -66,7 +66,7 @@ run({
 
     const checkpointer = new CloudBaseSaver({
       db: app.database(),
-      userId,  // Multi-tenant isolation
+      userId, // Multi-tenant isolation
     });
 
     const graph = workflow.compile({ checkpointer });
@@ -102,10 +102,10 @@ async function chatNode(state: ClientState) {
 function shouldContinue(state: ClientState): "tools" | "end" {
   const lastMessage = state.messages[state.messages.length - 1];
   if (lastMessage.tool_calls?.length > 0) {
-    const hasServerToolCall = lastMessage.tool_calls.some(tc => serverToolNames.has(tc.name));
-    if (hasServerToolCall) return "tools";  // Server executes
+    const hasServerToolCall = lastMessage.tool_calls.some((tc) => serverToolNames.has(tc.name));
+    if (hasServerToolCall) return "tools"; // Server executes
   }
-  return "end";  // Client tool or no tool → end, client handles
+  return "end"; // Client tool or no tool → end, client handles
 }
 ```
 
@@ -122,13 +122,13 @@ import { RunnableConfig } from "@langchain/core/runnables";
 async function chatNode(state: ClientState, config?: RunnableConfig) {
   const model = new ChatOpenAI({ model: "gpt-4o" });
   const modelWithTools = model.bindTools([...(state.client?.tools || [])], {
-    parallel_tool_calls: false,  // Recommended: avoid race conditions
+    parallel_tool_calls: false, // Recommended: avoid race conditions
   });
 
-  const response = await modelWithTools.invoke([
-    new SystemMessage({ content: "You are a helpful assistant." }),
-    ...state.messages,
-  ], config);
+  const response = await modelWithTools.invoke(
+    [new SystemMessage({ content: "You are a helpful assistant." }), ...state.messages],
+    config,
+  );
 
   return new Command({ goto: END, update: { messages: [response] } });
 }
@@ -150,8 +150,8 @@ import { LanggraphAgent } from "@cloudbase/agent-adapter-langgraph";
 
 run({
   createAgent: () => ({
-    agent: new LanggraphAgent({ compiledWorkflow: graph })
+    agent: new LanggraphAgent({ compiledWorkflow: graph }),
   }),
-  port: 3000
+  port: 3000,
 });
 ```

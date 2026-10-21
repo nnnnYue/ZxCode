@@ -6,5 +6,5 @@ export default function Hud() {
       <header className="text-sm uppercase tracking-widest opacity-70">REPLACE ME — HUD</header>
       <footer className="text-xs opacity-50">scroll ↓</footer>
     </div>
-  )
+  );
 }

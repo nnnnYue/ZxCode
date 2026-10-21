@@ -1476,7 +1476,9 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
       deviceMid: dependencies.deviceMid,
       deviceName: dependencies.deviceName,
       appVersion: dependencies.appVersion,
-    } as import("@zcode/shared").BuildWebRemoteControlV1PairingQrUrlOptions & { baseUrl: string } as import("@zcode/shared").BuildWebRemoteControlExternalQrUrlOptions);
+    } as import("@zcode/shared").BuildWebRemoteControlV1PairingQrUrlOptions & {
+      baseUrl: string;
+    } as import("@zcode/shared").BuildWebRemoteControlExternalQrUrlOptions);
   }
 
   return {

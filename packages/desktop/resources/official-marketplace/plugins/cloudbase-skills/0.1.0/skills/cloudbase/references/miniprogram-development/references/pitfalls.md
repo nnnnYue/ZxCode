@@ -7,17 +7,20 @@ This file captures high-frequency mistakes observed in real projects. Use these 
 **Problem**: Many base libraries and WeChat DevTools versions do not support optional chaining (`obj?.prop`) or nullish coalescing (`??`).
 
 **Correct approach**:
+
 - Use traditional `if` checks or `&&` / `||` patterns.
 - Prefer `wx.getSystemInfoSync()` + version checks only when truly needed.
 
 **Example to avoid**:
+
 ```js
-const name = user?.name ?? 'Guest';   // Often breaks
+const name = user?.name ?? "Guest"; // Often breaks
 ```
 
 **Safe alternative**:
+
 ```js
-const name = (user && user.name) || 'Guest';
+const name = (user && user.name) || "Guest";
 ```
 
 ## 2. TDesign Component Styling (Especially `::after`)
@@ -25,11 +28,13 @@ const name = (user && user.name) || 'Guest';
 **Problem**: TDesign components use pseudo-elements for borders, icons, and states. Overriding with simple class selectors often fails.
 
 **Key points**:
+
 - Use CSS custom properties (variables) provided by TDesign when possible.
 - Target `::after` and `::before` carefully with high specificity or `!important` only as last resort.
 - Test on real device — DevTools preview can hide rendering differences.
 
 **Recommended pattern**:
+
 ```css
 /* Prefer variables first */
 .t-button {
@@ -47,6 +52,7 @@ const name = (user && user.name) || 'Guest';
 **Problem**: Canvas drawing + saving to cloud storage frequently fails due to permission or context issues.
 
 **Checklist**:
+
 - Use `wx.createCanvasContext` (2D) or `wx.createOffscreenCanvas` correctly for the target base lib.
 - Request `scope.writePhotosAlbum` or use `canvasToTempFilePath` + `wx.cloud.uploadFile` with proper auth.
 - For cloud storage, ensure the file path uses the correct env and the storage permission rule allows the openid or role.
@@ -59,6 +65,7 @@ Saving canvas as image then uploading without handling the temporary file path c
 **Problem**: Developer tools environment does not match the actual cloud environment used in code.
 
 **Prevention**:
+
 - Always verify `project.config.json` → `cloudbaseRoot` and `appid`.
 - Use `wx.cloud.init({ env: 'your-real-env-id' })` explicitly.
 - After changing cloud environment in DevTools, restart the simulator.
@@ -67,6 +74,7 @@ Saving canvas as image then uploading without handling the temporary file path c
 ## 5. General Recommendation
 
 When generating mini program code that touches CloudBase:
+
 1. Read this pitfalls file first.
 2. Apply the Change Safety Protocol before any modification.
 3. For upload/publish flows, complete the Deployment Gate checklist.

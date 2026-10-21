@@ -16,13 +16,13 @@ python3 <plugin_root>/skills/env-setup/scripts/env_doctor.py --fix
 
 ## 依赖与影响
 
-| Requirement | Dead without it |
-|---|---|
-| Python ≥3.10；同一解释器内有 `mcp==1.9.0`, `opencv-python-headless`, `numpy`, `pillow` | MCP 部署/视频工具，抽帧、contact sheet、still/composite；MCP 2.x 已移除插件使用的 Server API |
-| `ffmpeg` + `ffprobe` | video MCP 的视频摄入、裁剪、时长探测；以及 url2video 把内置浏览器录出的 WebM 转成交付用的 MP4（主流程必经，不是可选后处理） |
-| Node.js ≥20 + npm | webapp 构建 |
-| npm registry reachable | 安装 webapp 依赖 |
-| ZxCode IAB + Browser Use recording API | URL 浏览、截图、交互和录制 |
+| Requirement                                                                            | Dead without it                                                                                                             |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Python ≥3.10；同一解释器内有 `mcp==1.9.0`, `opencv-python-headless`, `numpy`, `pillow` | MCP 部署/视频工具，抽帧、contact sheet、still/composite；MCP 2.x 已移除插件使用的 Server API                                |
+| `ffmpeg` + `ffprobe`                                                                   | video MCP 的视频摄入、裁剪、时长探测；以及 url2video 把内置浏览器录出的 WebM 转成交付用的 MP4（主流程必经，不是可选后处理） |
+| Node.js ≥20 + npm                                                                      | webapp 构建                                                                                                                 |
+| npm registry reachable                                                                 | 安装 webapp 依赖                                                                                                            |
+| ZxCode IAB + Browser Use recording API                                                 | URL 浏览、截图、交互和录制                                                                                                  |
 
 Playwright、`playwright install chromium` 和独立 Chromium **不是依赖**。浏览器能力由 ZxCode
 内置 Browser Use 提供，版本不支持时应升级 ZxCode，不要在插件环境里补装浏览器。

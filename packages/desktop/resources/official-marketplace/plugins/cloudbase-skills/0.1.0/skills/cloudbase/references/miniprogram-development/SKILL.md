@@ -15,6 +15,7 @@ If this environment only installed the current skill, start from the CloudBase m
 Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
 
 **Cross-cutting protocols** (required before code changes or uploads):
+
 - Change Safety Protocol: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/change-safety-protocol.md`
 - Deployment Gate: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/deployment-gate.md`
 
@@ -60,6 +61,7 @@ Use this skill for **WeChat Mini Program development** when you need to:
 - Integrate CloudBase in a mini program project when explicitly needed
 
 **Do NOT use for:**
+
 - Web frontend development (use `web-development`)
 - Pure backend service development (use `cloudrun-development` or `cloud-functions` as appropriate)
 - UI design-only tasks without mini program development context (use `ui-design`)

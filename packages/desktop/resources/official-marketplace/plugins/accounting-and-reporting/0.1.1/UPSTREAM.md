@@ -7,11 +7,11 @@ guardrail block are generated upstream from a single source, and upstream's
 build fails if a vendored copy diverges. Do not edit those directories here: an
 edit is invisible to that check and is overwritten on the next sync.
 
-| | |
-|---|---|
-| Upstream version | `0.3.1` |
-| Upstream author | `Anthropic FSI` |
-| Published version | `0.1.1` |
+|                      |                                                  |
+| -------------------- | ------------------------------------------------ |
+| Upstream version     | `0.3.1`                                          |
+| Upstream author      | `Anthropic FSI`                                  |
+| Published version    | `0.1.1`                                          |
 | Vendored from commit | `bcca8301b92f8218a6ab5c1f3fafea360512fac7+dirty` |
 
 ## Owned by this repository

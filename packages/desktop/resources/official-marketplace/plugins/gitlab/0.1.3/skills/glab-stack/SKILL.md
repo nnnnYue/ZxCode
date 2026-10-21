@@ -78,23 +78,23 @@ For precise control over which files go into a diff, stage with `git add <files>
 
 ## Quick reference
 
-| Task | Command |
-| ---- | ------- |
-| Create a new stack | `glab stack create <stack-name>` |
-| Save staged changes as a new diff | `glab stack save -m "description"` |
-| Stage all tracked files and save | `glab stack save -a -m "description"` |
-| Stage all files (incl. untracked) and save | `glab stack save . -m "description"` |
-| Amend the current diff | `glab stack amend -m "description"` |
-| Amend with all tracked files staged | `glab stack amend -a -m "description"` |
-| Push branches and create/update MRs | `glab stack sync` |
-| Sync and set reviewer/assignee/label | `glab stack sync --reviewer <user> --assignee <user> --label <label>` |
-| Rebase stack onto latest base branch | `glab stack sync --update-base` |
-| List all diffs in the current stack | `glab stack list` |
-| Go to the oldest diff | `glab stack first` |
-| Go to the newest diff | `glab stack last` |
-| Step toward main | `glab stack prev` |
-| Step away from main | `glab stack next` |
-| Switch to a different stack | `glab stack switch <stack-name>` |
+| Task                                       | Command                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------- |
+| Create a new stack                         | `glab stack create <stack-name>`                                      |
+| Save staged changes as a new diff          | `glab stack save -m "description"`                                    |
+| Stage all tracked files and save           | `glab stack save -a -m "description"`                                 |
+| Stage all files (incl. untracked) and save | `glab stack save . -m "description"`                                  |
+| Amend the current diff                     | `glab stack amend -m "description"`                                   |
+| Amend with all tracked files staged        | `glab stack amend -a -m "description"`                                |
+| Push branches and create/update MRs        | `glab stack sync`                                                     |
+| Sync and set reviewer/assignee/label       | `glab stack sync --reviewer <user> --assignee <user> --label <label>` |
+| Rebase stack onto latest base branch       | `glab stack sync --update-base`                                       |
+| List all diffs in the current stack        | `glab stack list`                                                     |
+| Go to the oldest diff                      | `glab stack first`                                                    |
+| Go to the newest diff                      | `glab stack last`                                                     |
+| Step toward main                           | `glab stack prev`                                                     |
+| Step away from main                        | `glab stack next`                                                     |
+| Switch to a different stack                | `glab stack switch <stack-name>`                                      |
 
 ## Core workflow
 

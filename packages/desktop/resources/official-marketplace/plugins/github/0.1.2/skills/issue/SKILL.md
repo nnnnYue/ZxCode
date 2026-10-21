@@ -51,43 +51,55 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 3. **Generate issue body** based on type:
 
    **Bug Report:**
+
    ```markdown
    ## Description
+
    Brief description of the bug
 
    ## Steps to Reproduce
+
    1. Step one
    2. Step two
 
    ## Expected Behavior
+
    What should happen
 
    ## Actual Behavior
+
    What actually happens
 
    ## Environment
+
    - OS:
    - Version:
    ```
 
    **Feature Request:**
+
    ```markdown
    ## Description
+
    Brief description of the feature
 
    ## Use Case
+
    Why this feature is needed
 
    ## Proposed Solution
+
    How it could be implemented
 
    ## Alternatives Considered
+
    Other approaches
    ```
 
 4. **Create the issue safely:** Write the title and generated body to separate
    temporary files. Show the verified repository, title, and labels and require
    confirmation. Then read the title into a quoted variable and run:
+
    ```bash
    issue_title=$(<"$title_file")
    gh issue create --title "$issue_title" --body-file <body_file> [--label <validated_label>]
@@ -120,15 +132,18 @@ gh issue close <number> --reason <completed_or_not_planned>
 ### Labels
 
 **List:**
+
 ```bash
 gh label list
 ```
+
 Show name, color, and description for each label plus a total count.
 
 **Create:** Parse `--color <hex>` (default: random) and
 `--description <text>`. Write the label name, color, and description to
 separate temporary files, validate the color as six hexadecimal characters,
 then load each file into a quoted variable:
+
 ```bash
 label_name=$(<"$name_file")
 label_color=$(<"$color_file")
@@ -140,6 +155,7 @@ gh label create "$label_name" --color "$label_color" --description "$label_descr
 prompt for the new name, color, or description, load each supplied value from
 its temporary file, and pass only quoted variables. Omit flags whose values
 were not supplied:
+
 ```bash
 gh label edit "$label_name" [--name "$new_label_name"] \
   [--color "$label_color"] [--description "$label_description"]
@@ -147,11 +163,13 @@ gh label edit "$label_name" [--name "$new_label_name"] \
 
 **Delete:** Require explicit confirmation first. Show the verified repository
 and label name and warn that deletion removes it from every issue and PR:
+
 ```bash
 gh label delete "$label_name" --yes
 ```
 
 **Add/remove on an issue or PR:** Resolve the resource type before editing:
+
 ```bash
 if gh pr view <number> --json number >/dev/null 2>&1; then
   gh pr edit <number> --add-label "$labels"      # or --remove-label
@@ -167,15 +185,18 @@ When suggesting labels, prefer common conventions such as `bug` (#d73a4a),
 ### Milestones
 
 **List:**
+
 ```bash
 gh api repos/{owner}/{repo}/milestones --jq '.[] | [.number, .title, .state, .due_on, .open_issues, .closed_issues] | @tsv'
 ```
+
 Show number, title, state, due date, and progress
 (`closed_issues / total * 100`), with an overdue warning when past due.
 
 **Create:** Gather the title (required), description, and due date
 (`YYYY-MM-DD`). Write title and description to separate temporary files,
 validate the date format, and load the files into quoted variables:
+
 ```bash
 milestone_title=$(<"$title_file")
 milestone_description=$(<"$description_file")
@@ -186,15 +207,18 @@ gh api "repos/{owner}/{repo}/milestones" \
 ```
 
 **View:**
+
 ```bash
 gh api repos/{owner}/{repo}/milestones/<number>
 gh issue list --milestone "$milestone_title"
 ```
+
 Show title, description, state, due date, and progress.
 
 **Edit:** Fetch the current milestone, prompt for changes, load text fields
 from temporary files, validate the date, and include only fields the user
 requested to change:
+
 ```bash
 gh api "repos/{owner}/{repo}/milestones/<number>" -X PATCH \
   [-f title="$milestone_title"] \
@@ -203,6 +227,7 @@ gh api "repos/{owner}/{repo}/milestones/<number>" -X PATCH \
 ```
 
 **Close:**
+
 ```bash
 gh api repos/{owner}/{repo}/milestones/<number> -X PATCH -f state="closed"
 ```
@@ -210,11 +235,13 @@ gh api repos/{owner}/{repo}/milestones/<number> -X PATCH -f state="closed"
 **Delete:** Warn that deleting a milestone removes it from all associated
 issues and cannot be undone. Require explicit confirmation showing the
 verified repository, milestone number, and title, then:
+
 ```bash
 gh api repos/{owner}/{repo}/milestones/<number> -X DELETE
 ```
 
 **Assign an issue to a milestone:**
+
 ```bash
 gh issue edit <issue_number> --milestone "$milestone_title"
 # Remove from milestone:

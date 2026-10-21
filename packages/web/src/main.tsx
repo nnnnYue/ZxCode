@@ -572,7 +572,8 @@ function createWebPlatform(options?: {
     // fork：openFeedback/openCommunity 已从平台合同剔除。
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),    notifyRendererReady: () => {},
+    openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
+    notifyRendererReady: () => {},
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
         return;
@@ -1088,7 +1089,9 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       listStyles: async () => ({ styles: [] }),
       getUserStylesDirectory: async () => ({ path: "" }),
     }),
-    sourceServerWorkspaceService: createEmptyHomeOnlyService<RootServices["sourceServerWorkspaceService"]>({}),
+    sourceServerWorkspaceService: createEmptyHomeOnlyService<
+      RootServices["sourceServerWorkspaceService"]
+    >({}),
     settingsSyncService:
       createUnsupportedHomeOnlyService<RootServices["settingsSyncService"]>("settingsSyncService"),
   };

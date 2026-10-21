@@ -71,13 +71,13 @@ Use CloudBase Run when the task needs a deployed backend service rather than a s
 
 ## Mode selection
 
-| Dimension | Function mode | Container mode |
-| --- | --- | --- |
-| Best for | Fast start, Node.js service patterns, built-in framework, Agent flows | Existing containers, arbitrary runtimes, custom system dependencies |
-| Port model | Framework-managed local mode, deployed service still follows platform rules | App must listen on injected `PORT` |
-| Dockerfile | Not required | Required |
-| Local run through tools | Supported | Not supported |
-| Typical use | Streaming APIs, low-latency backend, Agent service | Custom language stack, migrated container app |
+| Dimension               | Function mode                                                               | Container mode                                                      |
+| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Best for                | Fast start, Node.js service patterns, built-in framework, Agent flows       | Existing containers, arbitrary runtimes, custom system dependencies |
+| Port model              | Framework-managed local mode, deployed service still follows platform rules | App must listen on injected `PORT`                                  |
+| Dockerfile              | Not required                                                                | Required                                                            |
+| Local run through tools | Supported                                                                   | Not supported                                                       |
+| Typical use             | Streaming APIs, low-latency backend, Agent service                          | Custom language stack, migrated container app                       |
 
 ## How to use this skill (for a coding agent)
 
@@ -140,7 +140,12 @@ Use CloudBase Run when the task needs a deployed backend service rather than a s
 ### Local run (Function mode)
 
 ```json
-{ "action": "run", "serverName": "my-svc", "targetPath": "/abs/ws/my-svc", "runOptions": { "port": 3000 } }
+{
+  "action": "run",
+  "serverName": "my-svc",
+  "targetPath": "/abs/ws/my-svc",
+  "runOptions": { "port": 3000 }
+}
 ```
 
 ### Deploy

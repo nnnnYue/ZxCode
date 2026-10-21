@@ -1383,7 +1383,6 @@ export function createZCodeAgentService(
     return created;
   }
 
-
   function getSessionsIndexFrameEmitter(workspace: ZCodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = sessionsIndexFrameEmitters.get(key);

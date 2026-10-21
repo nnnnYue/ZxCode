@@ -28,11 +28,11 @@ exposing the secret.
 
 ## Skills
 
-| Skill | ZxCode command | Description |
-|-------|---------------|-------------|
-| setup | `/gitlab:setup [hostname]` | Verify `glab`, guide login, and confirm the active account |
-| glab | `/gitlab:glab` | Official general GitLab CLI workflow and API guidance |
-| glab-stack | `/gitlab:glab-stack` | Official guidance for experimental stacked merge requests |
+| Skill      | ZxCode command             | Description                                                |
+| ---------- | -------------------------- | ---------------------------------------------------------- |
+| setup      | `/gitlab:setup [hostname]` | Verify `glab`, guide login, and confirm the active account |
+| glab       | `/gitlab:glab`             | Official general GitLab CLI workflow and API guidance      |
+| glab-stack | `/gitlab:glab-stack`       | Official guidance for experimental stacked merge requests  |
 
 Natural-language GitLab tasks can also activate the relevant skill without an
 explicit slash command.

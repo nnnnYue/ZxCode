@@ -80,9 +80,17 @@ preparing → capturing → finalizing → completed
   { type: "scrollTo", selector: "#features", durationMs: 900, delayAfterMs: 1000 },
   { type: "scroll", deltaY: 700, durationMs: 700 },
   { type: "wheel", deltaY: 240, times: 3, intervalMs: 120 },
-  { type: "drag", path: [{x:100,y:300},{x:300,y:260},{x:500,y:320}], durationMs: 900 },
-  { type: "waitFor", selector: "#result", state: "visible", timeoutMs: 3000 }
-]
+  {
+    type: "drag",
+    path: [
+      { x: 100, y: 300 },
+      { x: 300, y: 260 },
+      { x: 500, y: 320 },
+    ],
+    durationMs: 900,
+  },
+  { type: "waitFor", selector: "#result", state: "visible", timeoutMs: 3000 },
+];
 ```
 
 编排规则：

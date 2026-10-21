@@ -22,17 +22,17 @@
 
 ## 技能列表
 
-| 技能 | 说明 |
-|------|------|
-| setup | 检测并安装插件的 CLI 依赖：Obsidian CLI 官方注册流程、defuddle、knap |
-| obsidian-markdown | 创建和编辑 Obsidian 风格 Markdown：双链、嵌入、callout、属性 |
-| obsidian-bases | 创建和编辑 `.base` 文件：视图、筛选、公式、汇总 |
-| json-canvas | 创建和编辑 `.canvas` 白板文件：节点、连线、分组；支持从文本内容生成 MindMap/自由布局画布 |
-| mermaid-visualizer | 把文本转为专业 Mermaid 图（流程、思维导图、时序、状态），内置语法防错规则 |
-| excalidraw-diagram | 生成手绘风格 Excalidraw 图，三种模式：Obsidian `.md`、标准 `.excalidraw`、动画 |
-| obsidian-cli | 读写、搜索、管理运行中 Obsidian 库的笔记；支持插件/主题开发调试 |
-| defuddle | 从网页提取干净正文为 Markdown，去掉导航广告等杂质以节省 token |
-| knap | 用模板和 JSON/CSV 数据渲染 Markdown 笔记，支持批量生成 |
+| 技能               | 说明                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| setup              | 检测并安装插件的 CLI 依赖：Obsidian CLI 官方注册流程、defuddle、knap                     |
+| obsidian-markdown  | 创建和编辑 Obsidian 风格 Markdown：双链、嵌入、callout、属性                             |
+| obsidian-bases     | 创建和编辑 `.base` 文件：视图、筛选、公式、汇总                                          |
+| json-canvas        | 创建和编辑 `.canvas` 白板文件：节点、连线、分组；支持从文本内容生成 MindMap/自由布局画布 |
+| mermaid-visualizer | 把文本转为专业 Mermaid 图（流程、思维导图、时序、状态），内置语法防错规则                |
+| excalidraw-diagram | 生成手绘风格 Excalidraw 图，三种模式：Obsidian `.md`、标准 `.excalidraw`、动画           |
+| obsidian-cli       | 读写、搜索、管理运行中 Obsidian 库的笔记；支持插件/主题开发调试                          |
+| defuddle           | 从网页提取干净正文为 Markdown，去掉导航广告等杂质以节省 token                            |
+| knap               | 用模板和 JSON/CSV 数据渲染 Markdown 笔记，支持批量生成                                   |
 
 技能会在相关场景自动触发（例如编辑 `.base` 文件、把网页文章存入 vault），也可以显式调用，例如 `/obsidian:obsidian-markdown`、`/obsidian:knap`。
 

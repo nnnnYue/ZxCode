@@ -42,6 +42,7 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 ### Create
 
 1. **Validate and resolve branches:**
+
    ```bash
    git check-ref-format --branch <head_branch>
    git check-ref-format --branch <base_branch>
@@ -49,18 +50,23 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    git rev-parse --verify "<base_branch>^{commit}" ||
      git rev-parse --verify "origin/<base_branch>^{commit}"
    ```
+
    If no base branch was supplied, obtain it from:
+
    ```bash
    gh repo view --json defaultBranchRef --jq .defaultBranchRef.name
    ```
+
    Store the successfully resolved local or `origin/` base ref as
    `<resolved_base_ref>` and use it consistently in subsequent `git log`
    commands.
 
 2. **Check if head branch has commits ahead of base:**
+
    ```bash
    git log <resolved_base_ref>..<head_branch> --oneline
    ```
+
    If there are none, report "Error: No commits between <base> and <head>".
 
 3. **Generate PR title and description:** Analyze the commits between base and
@@ -86,6 +92,7 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 4. **Ensure the head exists remotely:** Check whether the head branch has an
    upstream. If it does not, show the repository and branch and ask for
    confirmation before:
+
    ```bash
    git push -u origin <head_branch>
    ```
@@ -97,11 +104,13 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 
 6. **Create the PR safely:** Read the title from its file into a quoted
    variable and pass the body by file:
+
    ```bash
    pr_title=$(<"$title_file")
    gh pr create --base <base_branch> --head <head_branch> \
      --title "$pr_title" --body-file <description_file>
    ```
+
    If the PR already exists, report the existing PR URL instead.
 
 7. **Report the PR URL** to the user.
@@ -114,11 +123,13 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    authenticated user.
 
 2. **Build and execute query:**
+
    ```bash
    gh pr list [--author <user>] [--assignee <user>] [--state <state>] [--label <label>] [--base <branch>] [--limit 30]
    ```
 
    For reviewer filter (not directly supported):
+
    ```bash
    gh pr list --search "review-requested:<user>"
    ```
@@ -135,23 +146,29 @@ Useful queries to suggest: PRs awaiting your review
 ### Checkout
 
 1. **Protect local changes:** Inspect:
+
    ```bash
    git status --porcelain
    ```
+
    If dirty, stop and ask the user whether to stash, commit, or cancel. Never
    stash automatically. If the user chooses stash:
+
    ```bash
    git stash push -u -m "github:pr checkout <pr_number>"
    git stash list --format='%gd %H %s' -n 1
    ```
+
    Record the exact stash selector and hash and report them to the user.
 
 2. **Checkout the PR:**
+
    ```bash
    gh pr checkout <pr_number>
    ```
 
 3. **Display PR info:**
+
    ```bash
    gh pr view <pr_number> --json title,author,state,body,reviewDecision
    ```
@@ -165,6 +182,7 @@ Useful queries to suggest: PRs awaiting your review
 ### Review
 
 1. **Fetch PR details and diff summary:**
+
    ```bash
    gh pr view <pr_number> --json title,author,files,additions,deletions,commits
    gh pr view <pr_number> --json additions,deletions,files \
@@ -186,9 +204,11 @@ Useful queries to suggest: PRs awaiting your review
 5. **Submit exactly one review:** Write the comment to a temporary Markdown
    file so untrusted review text is not interpolated into a shell command.
    Choose exactly one action flag and run:
+
    ```bash
    gh pr review <pr_number> <action_flag> --body-file <comment_file>
    ```
+
    `<action_flag>` must be exactly one of `--approve`, `--comment`, or
    `--request-changes`.
 
@@ -201,10 +221,12 @@ acknowledge good work when approving.
 ### Merge
 
 1. **Check PR status:**
+
    ```bash
    gh pr view <pr_number> \
      --json number,title,url,state,baseRefName,headRefName,headRefOid,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup
    ```
+
    Save `headRefOid` as `<reviewed_head_sha>`.
 
 2. **Verify merge requirements:** PR is open, mergeable (no conflicts),
@@ -222,10 +244,12 @@ acknowledge good work when approving.
    explicitly confirms this exact operation.
 
 5. **Merge the reviewed commit only:** Choose exactly one strategy flag and run:
+
    ```bash
    gh pr merge <pr_number> <strategy_flag> \
      --match-head-commit <reviewed_head_sha> [--delete-branch]
    ```
+
    `<strategy_flag>` must be exactly one of `--squash`, `--rebase`, or
    `--merge`. If GitHub reports that the head commit changed, stop and repeat
    the review/readiness checks against the new SHA; never retry without showing

@@ -259,7 +259,8 @@ export function registerRemoteIpcHandlers(options: {
             reusedConnectionTarget = descriptor.reusedConnectionTarget;
           },
         },
-      );      return {
+      );
+      return {
         success: true,
         sessionId,
         ...(reusedConnectionTarget ? { reusedConnectionTarget } : {}),

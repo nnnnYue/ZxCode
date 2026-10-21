@@ -22,17 +22,17 @@ Before installation or environment changes — during setup, or when the `defudd
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| setup | Verify and install the plugin's CLI dependencies: official Obsidian CLI registration, defuddle, and knap |
-| obsidian-markdown | Create and edit Obsidian Flavored Markdown with wikilinks, embeds, callouts, and properties |
-| obsidian-bases | Create and edit `.base` files with views, filters, formulas, and summaries |
-| json-canvas | Create and edit `.canvas` whiteboard files with nodes, edges, and groups; generate MindMap or freeform canvases from text content |
-| mermaid-visualizer | Turn text into professional Mermaid diagrams (flows, mindmaps, sequence, state) with built-in syntax-error prevention |
-| excalidraw-diagram | Generate hand-drawn style Excalidraw diagrams in three modes: Obsidian `.md`, standard `.excalidraw`, and animated |
-| obsidian-cli | Read, create, search, and manage notes in a running Obsidian vault; plugin/theme development support |
-| defuddle | Extract clean markdown from web pages, stripping navigation and ads to save tokens |
-| knap | Render markdown notes from templates and JSON/CSV data, including batch generation |
+| Skill              | Description                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| setup              | Verify and install the plugin's CLI dependencies: official Obsidian CLI registration, defuddle, and knap                          |
+| obsidian-markdown  | Create and edit Obsidian Flavored Markdown with wikilinks, embeds, callouts, and properties                                       |
+| obsidian-bases     | Create and edit `.base` files with views, filters, formulas, and summaries                                                        |
+| json-canvas        | Create and edit `.canvas` whiteboard files with nodes, edges, and groups; generate MindMap or freeform canvases from text content |
+| mermaid-visualizer | Turn text into professional Mermaid diagrams (flows, mindmaps, sequence, state) with built-in syntax-error prevention             |
+| excalidraw-diagram | Generate hand-drawn style Excalidraw diagrams in three modes: Obsidian `.md`, standard `.excalidraw`, and animated                |
+| obsidian-cli       | Read, create, search, and manage notes in a running Obsidian vault; plugin/theme development support                              |
+| defuddle           | Extract clean markdown from web pages, stripping navigation and ads to save tokens                                                |
+| knap               | Render markdown notes from templates and JSON/CSV data, including batch generation                                                |
 
 Skills are invoked automatically when relevant (e.g. editing a `.base` file or saving a web article into your vault). You can also trigger them explicitly, for example `/obsidian:obsidian-markdown` or `/obsidian:knap`.
 

@@ -13,14 +13,5 @@
   "homepage": "https://github.com/WecomTeam/wecom-cli",
   "repository": "https://github.com/WecomTeam/wecom-cli",
   "license": "MIT",
-  "keywords": [
-    "wecom",
-    "wechat-work",
-    "wecom-cli",
-    "message",
-    "docs",
-    "sheets",
-    "calendar",
-    "todo"
-  ]
+  "keywords": ["wecom", "wechat-work", "wecom-cli", "message", "docs", "sheets", "calendar", "todo"]
 }

@@ -19,12 +19,12 @@
 2. 如果启用了 RLS，是否为每张表创建了对应的策略（policy）？
 3. 检查策略是否覆盖了目标业务场景：
 
-| 操作 | admin 策略 | editor 策略 |
-|------|-----------|------------|
+| 操作   | admin 策略   | editor 策略                        |
+| ------ | ------------ | ---------------------------------- |
 | SELECT | 所有文章可见 | 所有文章可见（或仅自己的？按需求） |
-| INSERT | 可创建 | 可创建（author_id = uid） |
-| UPDATE | 可更新所有 | 仅更新自己的（author_id = uid） |
-| DELETE | 可删除所有 | 仅删除自己的（author_id = uid） |
+| INSERT | 可创建       | 可创建（author_id = uid）          |
+| UPDATE | 可更新所有   | 仅更新自己的（author_id = uid）    |
+| DELETE | 可删除所有   | 仅删除自己的（author_id = uid）    |
 
 4. **检查策略中是否使用了 `current_user` 或 `current_setting(...)`？** 这是常见错误！`current_user` 返回的是数据库角色名（如 `authenticated`），不是 CloudBase 认证用户 ID。必须使用 `auth.uid()`。
 5. 检查策略是否使用了 `auth.uid()` 来获取当前用户 ID？

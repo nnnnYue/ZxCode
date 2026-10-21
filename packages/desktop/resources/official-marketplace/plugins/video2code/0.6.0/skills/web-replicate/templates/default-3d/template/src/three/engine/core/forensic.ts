@@ -4,24 +4,24 @@
 //   ?lite       降载模式 (粒子减半 / 关后处理 / 关 AA), scene 自行读取 forensic.lite
 //   ?autodemo   自动演示 (无交互也走完 BEAT), scene 自行读取 forensic.autodemo
 export interface Forensic {
-  frozenT: number | null
-  freeze: boolean
-  lite: boolean
-  autodemo: boolean
+  frozenT: number | null;
+  freeze: boolean;
+  lite: boolean;
+  autodemo: boolean;
 }
 
 export function createForensic(search: string = window.location.search): Forensic {
-  const p = new URLSearchParams(search)
-  const traw = p.get('t')
-  let frozenT: number | null = null
-  if (traw !== null && traw !== '') {
-    const v = Number(traw)
-    if (Number.isFinite(v)) frozenT = Math.min(1, Math.max(0, v))
+  const p = new URLSearchParams(search);
+  const traw = p.get("t");
+  let frozenT: number | null = null;
+  if (traw !== null && traw !== "") {
+    const v = Number(traw);
+    if (Number.isFinite(v)) frozenT = Math.min(1, Math.max(0, v));
   }
   return {
     frozenT,
-    freeze: p.has('freeze'),
-    lite: p.has('lite'),
-    autodemo: p.has('autodemo'),
-  }
+    freeze: p.has("freeze"),
+    lite: p.has("lite"),
+    autodemo: p.has("autodemo"),
+  };
 }

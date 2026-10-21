@@ -92,7 +92,6 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["promptAttachmentTransferService", IPromptAttachmentTransferService],
 ] as const satisfies readonly [keyof IServiceAccessor, ServiceDescriptor<unknown>][];
 
-
 export function resolveServerProjectService(params: {
   connectionServices: IServiceAccessor;
   serverId: string;

@@ -16,18 +16,18 @@
 
 ## Skills
 
-| Skill | ZxCode 命令 | 说明 |
-|-------|------------|------|
-| setup | `/github:setup` | 检查 `gh`、引导浏览器登录并确认当前账号 |
-| commit | `/github:commit` | 根据暂存区变更创建 Conventional Commit |
-| pr | `/github:pr <create\|list\|checkout\|review\|merge>` | 创建、列出、检出、Review 或合并 Pull Request |
-| issue | `/github:issue [create\|view\|list\|close\|label\|milestone]` | 管理 Issue 及其标签、Milestone |
-| release | `/github:release` | 创建带变更日志的 GitHub Release |
-| workflow-run | `/github:workflow-run` | 列出、触发、观察或查看 Actions 运行 |
-| secret | `/github:secret` | 列出、设置或删除仓库 Secret |
-| repo | `/github:repo <clone\|browse>` | 克隆/派生仓库，或在浏览器中打开 GitHub 资源 |
-| gist | `/github:gist` | 创建、查看、编辑或删除 Gist |
-| codespace | `/github:codespace` | 创建和连接 Codespaces |
+| Skill        | ZxCode 命令                                                   | 说明                                         |
+| ------------ | ------------------------------------------------------------- | -------------------------------------------- |
+| setup        | `/github:setup`                                               | 检查 `gh`、引导浏览器登录并确认当前账号      |
+| commit       | `/github:commit`                                              | 根据暂存区变更创建 Conventional Commit       |
+| pr           | `/github:pr <create\|list\|checkout\|review\|merge>`          | 创建、列出、检出、Review 或合并 Pull Request |
+| issue        | `/github:issue [create\|view\|list\|close\|label\|milestone]` | 管理 Issue 及其标签、Milestone               |
+| release      | `/github:release`                                             | 创建带变更日志的 GitHub Release              |
+| workflow-run | `/github:workflow-run`                                        | 列出、触发、观察或查看 Actions 运行          |
+| secret       | `/github:secret`                                              | 列出、设置或删除仓库 Secret                  |
+| repo         | `/github:repo <clone\|browse>`                                | 克隆/派生仓库，或在浏览器中打开 GitHub 资源  |
+| gist         | `/github:gist`                                                | 创建、查看、编辑或删除 Gist                  |
+| codespace    | `/github:codespace`                                           | 创建和连接 Codespaces                        |
 
 ## 示例
 

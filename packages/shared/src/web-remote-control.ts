@@ -126,7 +126,6 @@ export interface WebRemoteControlV2QrParams {
 // 3.15.1-ce.1 原样回填，保持与 relay 服务端逐字段一致。
 // ============================================================================
 
-
 /** fork：relay v1 心跳参数（desktop transport 使用）。 */
 export const WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS = 30_000;
 export const WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS = 10_000;

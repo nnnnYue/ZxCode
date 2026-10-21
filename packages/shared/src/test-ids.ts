@@ -792,5 +792,7 @@ export function virtualProjectActionTestId(actionId: string, context = false): s
   const scoped = context && (actionId.startsWith("files-") || actionId === "create-task");
   return `${TID_VIRTUAL_PROJECT_ACTION_PREFIX}-${scoped ? "context-" : ""}${actionId}`;
 }
-export const TID_SIDE_PANE_FULL_VIEW_ANSWER_BUBBLE_CLOSE = "side-pane-full-view-answer-bubble-close";
-export const TID_SIDE_PANE_FULL_VIEW_MENU_OPEN_CONVERSATION = "side-pane-full-view-menu-open-conversation";
+export const TID_SIDE_PANE_FULL_VIEW_ANSWER_BUBBLE_CLOSE =
+  "side-pane-full-view-answer-bubble-close";
+export const TID_SIDE_PANE_FULL_VIEW_MENU_OPEN_CONVERSATION =
+  "side-pane-full-view-menu-open-conversation";

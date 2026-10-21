@@ -34,6 +34,7 @@ This creates the project at `<project-dir>/app` (override with env `PROJECT_PATH
 > project directory.** npm (v7+) replaces the symlinked `node_modules` with a real
 > directory and re-installs tens of thousands of small files onto slow network storage —
 > it exhausts the disk's file-count quota and takes 10+ minutes. Rules:
+>
 > - Adding a package: **edit `package.json` to add the dependency, then run**
 >   `bash <plugin_root>/skills/web-replicate/scripts/relink-node-modules.sh <project-dir>/app`
 >   — it installs the updated dependency set on local disk and re-links in seconds.
@@ -60,6 +61,7 @@ cd app && npm run build 2>&1
 ```
 
 **Output** (`app/dist/`):
+
 - `index.html` — entry point
 - `assets/index-[hash].js` / `assets/index-[hash].css` — bundles
 - files from `public/` copied verbatim (e.g. `public/assets/...` → `/assets/...`)

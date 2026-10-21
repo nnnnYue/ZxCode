@@ -286,12 +286,24 @@ export function resolveWebRemoteControlScreenCopy(
   failure: WebRemoteControlFailure,
   locale: WebRemoteControlScreenLocale,
 ): WebRemoteControlScreenCopy {
-    const copySet = WEB_REMOTE_CONTROL_SCREEN_COPY[locale] as Record<string, WebRemoteControlScreenCopy>;
+  const copySet = WEB_REMOTE_CONTROL_SCREEN_COPY[locale] as Record<
+    string,
+    WebRemoteControlScreenCopy
+  >;
   return (
     copySet[failure.reason] ??
     copySet["unexpected-error"] ??
     Object.values(copySet)[0] ??
-    ({ tone: "danger", badge: "", title: failure.reason, description: "", detailLabel: "", nextStepsTitle: "", nextSteps: [], action: "" } as WebRemoteControlScreenCopy)
+    ({
+      tone: "danger",
+      badge: "",
+      title: failure.reason,
+      description: "",
+      detailLabel: "",
+      nextStepsTitle: "",
+      nextSteps: [],
+      action: "",
+    } as WebRemoteControlScreenCopy)
   );
 }
 

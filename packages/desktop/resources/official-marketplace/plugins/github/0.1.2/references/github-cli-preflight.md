@@ -95,6 +95,7 @@ After authentication and identity verification:
   `<host>/<owner/repo>`. If it cannot be resolved, stop and ask the user to
   identify the repository. Never infer a repository only from the current
   directory name or a PR/issue number.
+
 - Set `GH_HOST` to the verified `<host>` for every subsequent `gh` invocation.
 - For repository-scoped workflows, also set `GH_REPO` to the verified
   `<host>/<owner/repo>`.

@@ -4,13 +4,13 @@
 
 Each scan directory contains four semantic JSON documents and one derived Markdown projection:
 
-| File | Role |
-| --- | --- |
+| File                 | Role                                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
 | `scan-manifest.json` | Scan identity, project fingerprint, requested depth, timestamps, engine version, and artifact names |
-| `findings.json` | Normalized deterministic findings and business-logic candidates |
-| `coverage.json` | Per-phase status, limitations, and deferred work |
-| `seal.json` | SHA-256 digests of the three semantic documents |
-| `report.md` | Human-readable projection; it is not part of the semantic seal |
+| `findings.json`      | Normalized deterministic findings and business-logic candidates                                     |
+| `coverage.json`      | Per-phase status, limitations, and deferred work                                                    |
+| `seal.json`          | SHA-256 digests of the three semantic documents                                                     |
+| `report.md`          | Human-readable projection; it is not part of the semantic seal                                      |
 
 The seal detects local artifact mutation. It is not a digital signature, publisher identity, runtime attestation, or proof that the desktop host loaded a particular release.
 

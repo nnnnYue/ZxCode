@@ -20,6 +20,7 @@ If this environment only installed the current skill, start from the CloudBase m
 Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `cloud-functions` or `cloudrun-development`, use the standalone fallback URL shown next to that reference.
 
 **Cross-cutting protocols** (load for deployment and change operations):
+
 - Change Safety Protocol: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/change-safety-protocol.md`
 - Deployment Gate: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/deployment-gate.md`
 
@@ -36,21 +37,22 @@ Keep local `references/...` paths for files that ship with the current skill dir
    After deploying or modifying any resource, run the corresponding list/detail
    command to confirm the change took effect.
 
-3. **Dry-run before destructive actions.**
+4. **Dry-run before destructive actions.**
    Use `--dry-run` for delete/overwrite operations. Show the preview to the user
    and wait for explicit confirmation before executing.
 
-4. **Confirm environment first.**
+5. **Confirm environment first.**
    Always verify envId with the user before operations. Run `tcb env use <envId>`
    to avoid accidentally modifying production.
 
-5. **Recover from errors, don't loop.**
+6. **Recover from errors, don't loop.**
    If a command fails after 2-3 attempts, check the exit code (`$?`), read the
    error message, consult `tcb docs search`, and try a different approach.
 
 ## When to use this skill
 
 Use when the user wants to manage CloudBase resources via command line:
+
 - Deploy/debug cloud functions, web apps, CloudRun services
 - Manage storage, hosting, databases (NoSQL/MySQL)
 - Configure permissions, CORS, domains, routing
@@ -78,18 +80,18 @@ Use when the user wants to manage CloudBase resources via command line:
 
 ## Routing
 
-| User Task | Read |
-|-----------|------|
-| Login, env switching, tcb docs, error diagnosis | `references/core.md` |
-| Deploy/debug cloud functions | `references/functions.md` |
-| Deploy web app (React/Vue/Next.js) | `references/app.md` |
-| Deploy CloudRun service | `references/cloudrun.md` |
-| Deploy static site | `references/hosting.md` |
-| Upload/download files, ACL rules | `references/storage.md` |
-| NoSQL (MongoDB) database operations | `references/nosql.md` |
-| MySQL database operations | `references/mysql.md` |
-| Roles, policies, access control | `references/permission.md` |
-| CORS, custom domains, routing rules | `references/access.md` |
+| User Task                                       | Read                       |
+| ----------------------------------------------- | -------------------------- |
+| Login, env switching, tcb docs, error diagnosis | `references/core.md`       |
+| Deploy/debug cloud functions                    | `references/functions.md`  |
+| Deploy web app (React/Vue/Next.js)              | `references/app.md`        |
+| Deploy CloudRun service                         | `references/cloudrun.md`   |
+| Deploy static site                              | `references/hosting.md`    |
+| Upload/download files, ACL rules                | `references/storage.md`    |
+| NoSQL (MongoDB) database operations             | `references/nosql.md`      |
+| MySQL database operations                       | `references/mysql.md`      |
+| Roles, policies, access control                 | `references/permission.md` |
+| CORS, custom domains, routing rules             | `references/access.md`     |
 
 ## Quick workflow
 

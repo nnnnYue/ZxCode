@@ -105,11 +105,7 @@ export async function getCurrentUser() {
 
   return {
     uid,
-    displayName:
-      user.user_metadata?.username ||
-      user.username ||
-      user.email ||
-      uid,
+    displayName: user.user_metadata?.username || user.username || user.email || uid,
   };
 }
 ```

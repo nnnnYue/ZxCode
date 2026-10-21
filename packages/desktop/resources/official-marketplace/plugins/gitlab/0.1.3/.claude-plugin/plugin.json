@@ -13,12 +13,5 @@
   "homepage": "https://docs.gitlab.com/cli/",
   "repository": "https://gitlab.com/gitlab-org/cli",
   "license": "MIT",
-  "keywords": [
-    "gitlab",
-    "glab",
-    "merge-request",
-    "issue",
-    "ci-cd",
-    "gitlab-api"
-  ]
+  "keywords": ["gitlab", "glab", "merge-request", "issue", "ci-cd", "gitlab-api"]
 }

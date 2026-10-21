@@ -15,6 +15,7 @@ If this environment only installed the current skill, start from the CloudBase m
 Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
 
 **Cross-cutting protocols** (required for public exposure and code changes):
+
 - Change Safety Protocol: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/change-safety-protocol.md`
 - Deployment Gate: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/deployment-gate.md`
 
@@ -112,14 +113,14 @@ Use these rules whenever you are writing the function code itself:
 
 ## Quick decision table
 
-| Question | Choose |
-| --- | --- |
-| Triggered by SDK calls or timers? | Event Function |
-| Needs browser-facing HTTP endpoint? | HTTP Function |
-| Needs SSE or WebSocket service? | HTTP Function |
+| Question                                                                                         | Choose                                                              |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Triggered by SDK calls or timers?                                                                | Event Function                                                      |
+| Needs browser-facing HTTP endpoint?                                                              | HTTP Function                                                       |
+| Needs SSE or WebSocket service?                                                                  | HTTP Function                                                       |
 | Needs custom system libraries / arbitrary runtime, but still SCF request-driven + scale-to-zero? | HTTP Function with `Runtime: CustomImage` (deploy from a TCR image) |
-| Needs long-lived container runtime or custom system environment? | CloudRun |
-| Only needs HTTP access for an existing Event Function? | Event Function + gateway access |
+| Needs long-lived container runtime or custom system environment?                                 | CloudRun                                                            |
+| Only needs HTTP access for an existing Event Function?                                           | Event Function + gateway access                                     |
 
 ## How to use this skill (for a coding agent)
 
@@ -162,14 +163,14 @@ Use these rules whenever you are writing the function code itself:
 
 ## Function types comparison
 
-| Feature | Event Function | HTTP Function |
-| --- | --- | --- |
-| Primary trigger | SDK call, timer, event | HTTP request |
-| Entry shape | `exports.main(event, context)` | web server with `req` / `res` |
-| Port | No port | Must listen on `9000` |
-| `scf_bootstrap` | Not required | Required |
-| Dependencies | Auto-installed from `package.json` | Must be packaged with function code |
-| Best for | serverless handlers, scheduled jobs | APIs, SSE, WebSocket, browser-facing services |
+| Feature         | Event Function                      | HTTP Function                                 |
+| --------------- | ----------------------------------- | --------------------------------------------- |
+| Primary trigger | SDK call, timer, event              | HTTP request                                  |
+| Entry shape     | `exports.main(event, context)`      | web server with `req` / `res`                 |
+| Port            | No port                             | Must listen on `9000`                         |
+| `scf_bootstrap` | Not required                        | Required                                      |
+| Dependencies    | Auto-installed from `package.json`  | Must be packaged with function code           |
+| Best for        | serverless handlers, scheduled jobs | APIs, SSE, WebSocket, browser-facing services |
 
 ## Minimal code skeletons
 
@@ -227,10 +228,19 @@ function sendOptions(res) {
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = "";
-    req.on("data", (chunk) => { raw += chunk; });
+    req.on("data", (chunk) => {
+      raw += chunk;
+    });
     req.on("end", () => {
-      if (!raw) { resolve({}); return; }
-      try { resolve(JSON.parse(raw)); } catch (e) { resolve({}); }
+      if (!raw) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch (e) {
+        resolve({});
+      }
     });
     req.on("error", reject);
   });
@@ -294,22 +304,29 @@ The `scf_bootstrap` binary path must match the runtime — see the full mapping 
 - `queryFunctions(action="getFunctionLogDetail", requestId="xxx")` — fetch the detail of one log entry
 
 **`queryFunctions` vs `queryLogs`**:
+
 - `queryFunctions` queries execution logs of a single cloud function and requires `functionName`
 - `queryLogs` searches CLS (cross-service log aggregation) using CLS query syntax
 
 **Examples**:
+
 ```javascript
 // List recent logs for cloud function "my-function"
-queryFunctions(action="listFunctionLogs", functionName="my-function", limit=10)
+queryFunctions((action = "listFunctionLogs"), (functionName = "my-function"), (limit = 10));
 
 // Inspect the log detail for a specific request id
-queryFunctions(action="getFunctionLogDetail", requestId="abc-123")
+queryFunctions((action = "getFunctionLogDetail"), (requestId = "abc-123"));
 
 // Cross-service error search via CLS
-queryLogs(action="searchLogs", queryString='(src:app OR src:system) AND log:"ERROR"', service="tcb")
+queryLogs(
+  (action = "searchLogs"),
+  (queryString = '(src:app OR src:system) AND log:"ERROR"'),
+  (service = "tcb"),
+);
 ```
 
 `queryLogs` `queryString` follows CLS syntax (see https://cloud.tencent.com/document/api/876/128127). The examples below are starting points; adapt them to the concrete log content of your query:
+
 - Function logs: `(src:app OR src:system) AND log:"START RequestId"`
 - Aggregated function request status: `| select request_id, max(status_code) as status where ((request_id='xxxx' AND retry_num=0) AND retry_num=0) AND status_code!=202 group by request_id, retry_num`
 - Document database (NoSQL): `module:database`

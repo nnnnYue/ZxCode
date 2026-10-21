@@ -61,10 +61,12 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    creation. A secret gist does not require this extra disclosure gate.
 
 5. **Create the gist non-interactively:**
+
    ```bash
    gist_description=$(<"$description_file")
    gh gist create "$content_file" --desc "$gist_description" [--public]
    ```
+
    `GH_HOST` from the preflight is mandatory because `gh gist` does not accept
    a repository or hostname flag.
 
@@ -103,6 +105,7 @@ gh gist delete <gist_id> --yes
 ## Output Format
 
 After creation:
+
 ```
 Created gist: https://gist.github.com/<username>/<id>
 

@@ -36,15 +36,15 @@ CLI auto-completes: detect framework -> infer build command + output dir -> uplo
 
 ### Supported Frameworks
 
-| Framework | Detection signal | Default build cmd | Default output dir |
-|-----------|-----------------|-------------------|-------------------|
-| React | `react-scripts` in package.json | `npm run build` | `build` |
-| Vue | `@vue/cli-service` / `vite` | `npm run build` | `dist` |
-| Vite | `vite` in devDependencies | `npm run build` | `dist` |
-| Next.js | `next` in dependencies | `npm run build` | `.next` |
-| Nuxt | `nuxt` in dependencies | `npm run build` | `.output` |
-| Angular | `@angular/core` | `ng build` | `dist/<name>` |
-| Static | No build tool detected | _(none)_ | `.` |
+| Framework | Detection signal                | Default build cmd | Default output dir |
+| --------- | ------------------------------- | ----------------- | ------------------ |
+| React     | `react-scripts` in package.json | `npm run build`   | `build`            |
+| Vue       | `@vue/cli-service` / `vite`     | `npm run build`   | `dist`             |
+| Vite      | `vite` in devDependencies       | `npm run build`   | `dist`             |
+| Next.js   | `next` in dependencies          | `npm run build`   | `.next`            |
+| Nuxt      | `nuxt` in dependencies          | `npm run build`   | `.output`          |
+| Angular   | `@angular/core`                 | `ng build`        | `dist/<name>`      |
+| Static    | No build tool detected          | _(none)_          | `.`                |
 
 > ⚠️ If framework is not detected (`Cannot auto-detect project framework`), specify explicitly with `--framework react --build-command "npm run build" --output-dir dist`.
 
@@ -134,15 +134,15 @@ Auto-saved after first deployment:
 }
 ```
 
-| Field | Notes |
-|-------|-------|
-| `serviceName` | Auto-inferred from directory name if not specified |
-| `installCommand` | ⚠️ Omitted = skipped in `--yes`/`--json` mode (unless `package.json` exists) |
-| `buildCommand` | Auto-detected; omit to skip build |
-| `outputDir` | ⚠️ Use `./dist` for builds, `./` for static-only. Always use `./` prefix |
-| `deployPath` | Defaults to `/<serviceName>`. Only non-default values are saved to config |
-| `envVariables` | ⚠️ Build-time only — injected during `npm run build`, NOT at runtime. Never put secrets here |
-| `ignore` | Resolved from `cloudbaserc.json` location. `node_modules`/`.git` always excluded |
+| Field            | Notes                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `serviceName`    | Auto-inferred from directory name if not specified                                           |
+| `installCommand` | ⚠️ Omitted = skipped in `--yes`/`--json` mode (unless `package.json` exists)                 |
+| `buildCommand`   | Auto-detected; omit to skip build                                                            |
+| `outputDir`      | ⚠️ Use `./dist` for builds, `./` for static-only. Always use `./` prefix                     |
+| `deployPath`     | Defaults to `/<serviceName>`. Only non-default values are saved to config                    |
+| `envVariables`   | ⚠️ Build-time only — injected during `npm run build`, NOT at runtime. Never put secrets here |
+| `ignore`         | Resolved from `cloudbaserc.json` location. `node_modules`/`.git` always excluded             |
 
 ---
 
@@ -160,26 +160,26 @@ tcb app delete <name> --env-id <id>          # Delete app
 
 Key flags:
 
-| Flag | Purpose |
-|------|---------|
-| `--framework <name>` | Override auto-detection |
+| Flag                    | Purpose                                       |
+| ----------------------- | --------------------------------------------- |
+| `--framework <name>`    | Override auto-detection                       |
 | `--build-command <cmd>` | Override build command (empty string to skip) |
-| `--output-dir <dir>` | Override output directory |
-| `--deploy-path <path>` | CDN mount path (default: `/<serviceName>`) |
-| `--cwd <path>` | Project directory for monorepo |
-| `--force` | Skip overwrite confirmation |
-| `--yes` | Skip all interactive prompts |
-| `--json` | JSON output for CI/CD |
-| `--verbose` | Verbose output for debugging |
+| `--output-dir <dir>`    | Override output directory                     |
+| `--deploy-path <path>`  | CDN mount path (default: `/<serviceName>`)    |
+| `--cwd <path>`          | Project directory for monorepo                |
+| `--force`               | Skip overwrite confirmation                   |
+| `--yes`                 | Skip all interactive prompts                  |
+| `--json`                | JSON output for CI/CD                         |
+| `--verbose`             | Verbose output for debugging                  |
 
 ### `--yes` / `--json` Auto-detection Logic
 
-| Parameter | Auto-detection |
-|-----------|----------------|
-| `installCommand` | Has `package.json`? -> `npm install`; otherwise skip |
-| `buildCommand` | Detect `build`/`pack`/`prebuild` script; otherwise skip |
-| `outputDir` | Has build command? -> `./dist`; otherwise `./` |
-| `deployPath` | Default `/<serviceName>` |
+| Parameter        | Auto-detection                                          |
+| ---------------- | ------------------------------------------------------- |
+| `installCommand` | Has `package.json`? -> `npm install`; otherwise skip    |
+| `buildCommand`   | Detect `build`/`pack`/`prebuild` script; otherwise skip |
+| `outputDir`      | Has build command? -> `./dist`; otherwise `./`          |
+| `deployPath`     | Default `/<serviceName>`                                |
 
 > ⚠️ `--yes` without `--env-id` hangs in CI — non-interactive mode cannot open the environment selector. Always pass both.
 
@@ -189,15 +189,15 @@ To skip build entirely in CI: `tcb deploy my-app --env-id env-xxx --build-comman
 
 ## Common Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| Build failed (`FAILED`) | Wrong build command, missing deps, Node.js mismatch | Check `failReason` via `--json`; verify local build works; cloud uses Node 18 |
-| Framework not detected | No framework signature in `package.json` | Specify `--framework`, `--build-command`, `--output-dir` explicitly |
-| Directory not found | `--cwd` or `root` points to non-existent path | Verify path with `ls`; use relative path |
-| Build timeout (5 min) | Large upload or slow build | Add `ignore` patterns; check for accidental `node_modules` upload |
-| Name conflict prompt | App already exists | Use `--force` or `--yes` to skip; creates new version |
-| URL unreachable after deploy | CDN propagation or bad `outputDir` | Wait 1-2 min; verify `outputDir` contains `index.html` |
-| Env ID required | `--yes`/`--json` without `--env-id` | Always pass `--env-id` in non-interactive mode |
+| Error                        | Cause                                               | Fix                                                                           |
+| ---------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Build failed (`FAILED`)      | Wrong build command, missing deps, Node.js mismatch | Check `failReason` via `--json`; verify local build works; cloud uses Node 18 |
+| Framework not detected       | No framework signature in `package.json`            | Specify `--framework`, `--build-command`, `--output-dir` explicitly           |
+| Directory not found          | `--cwd` or `root` points to non-existent path       | Verify path with `ls`; use relative path                                      |
+| Build timeout (5 min)        | Large upload or slow build                          | Add `ignore` patterns; check for accidental `node_modules` upload             |
+| Name conflict prompt         | App already exists                                  | Use `--force` or `--yes` to skip; creates new version                         |
+| URL unreachable after deploy | CDN propagation or bad `outputDir`                  | Wait 1-2 min; verify `outputDir` contains `index.html`                        |
+| Env ID required              | `--yes`/`--json` without `--env-id`                 | Always pass `--env-id` in non-interactive mode                                |
 
 ---
 

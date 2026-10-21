@@ -78,7 +78,7 @@ To target a specific environment:
 
 ```javascript
 const db = wx.cloud.database({
-  env: "test"
+  env: "test",
 });
 ```
 

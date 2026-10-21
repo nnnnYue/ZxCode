@@ -9,7 +9,12 @@
       "llm": "prohibited",
       "semgrep": "prohibited",
       "defaultTokenBudget": 0,
-      "lifecycle": { "checkpoint": "none", "phaseCheckpoint": "none", "resume": "none", "cancel": "none" },
+      "lifecycle": {
+        "checkpoint": "none",
+        "phaseCheckpoint": "none",
+        "resume": "none",
+        "cancel": "none"
+      },
       "performance": {
         "preToolUse": { "maxDiffLines": 500, "p95TargetMs": 300, "hardTimeoutMs": 1000 },
         "stop": { "maxChangedFiles": 20, "p95TargetMs": 2000 }

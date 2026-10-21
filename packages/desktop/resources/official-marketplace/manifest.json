@@ -17,11 +17,7 @@
         "packages/desktop/resources/official-marketplace/plugins/cloudbase-skills/0.1.0",
         "../../../resources/official-marketplace/plugins/cloudbase-skills/0.1.0"
       ],
-      "runtimeTopLevelPaths": [
-        "LICENSE",
-        "README_CN.md",
-        "UPSTREAM.md"
-      ],
+      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "UPSTREAM.md"],
       "listing": {
         "description_i18n": {
           "en": "CloudBase development skills and MCP integration for building, deploying, and troubleshooting Web, WeChat Mini Program, database, cloud function, CloudRun, storage, and AI projects.",
@@ -46,11 +42,7 @@
         "packages/desktop/resources/official-marketplace/plugins/mimosa/1.0.3",
         "../../../resources/official-marketplace/plugins/mimosa/1.0.3"
       ],
-      "runtimeTopLevelPaths": [
-        "LICENSE",
-        "payload",
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["LICENSE", "payload", "README_CN.md"],
       "listing": {
         "displayName": "Code Security Protection",
         "displayName_i18n": {
@@ -80,11 +72,7 @@
         "packages/desktop/resources/official-marketplace/plugins/github/0.1.2",
         "../../../resources/official-marketplace/plugins/github/0.1.2"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md",
-        "references",
-        "UPSTREAM.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md", "references", "UPSTREAM.md"],
       "listing": {
         "description_i18n": {
           "en": "GitHub CLI workflows for commits, pull requests, issues, releases, Actions, repositories, Codespaces, and other GitHub resources.",
@@ -110,13 +98,7 @@
         "packages/desktop/resources/official-marketplace/plugins/video2code/0.6.0",
         "../../../resources/official-marketplace/plugins/video2code/0.6.0"
       ],
-      "runtimeTopLevelPaths": [
-        "LICENSE",
-        "mcp",
-        "README_CN.md",
-        "requirements.txt",
-        "tests"
-      ],
+      "runtimeTopLevelPaths": ["LICENSE", "mcp", "README_CN.md", "requirements.txt", "tests"],
       "listing": {
         "description_i18n": {
           "en": "Records WebM through ZxCode's built-in Browser Use WebView and converts it to MP4 with ffmpeg for video/URL replication; no Playwright or external Chromium required.",
@@ -142,10 +124,7 @@
         "packages/desktop/resources/official-marketplace/plugins/accounting-and-reporting/0.1.1",
         "../../../resources/official-marketplace/plugins/accounting-and-reporting/0.1.1"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md",
-        "UPSTREAM.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md", "UPSTREAM.md"],
       "listing": {
         "displayName": "核算与报告",
         "displayName_i18n": {
@@ -176,12 +155,7 @@
         "packages/desktop/resources/official-marketplace/plugins/gitlab/0.1.3",
         "../../../resources/official-marketplace/plugins/gitlab/0.1.3"
       ],
-      "runtimeTopLevelPaths": [
-        "LICENSE",
-        "README_CN.md",
-        "references",
-        "UPSTREAM.md"
-      ],
+      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "references", "UPSTREAM.md"],
       "listing": {
         "description_i18n": {
           "en": "GitLab CLI workflows based on GitLab's official Agent Skills for merge requests, issues, CI/CD, repositories, releases, and API operations.",
@@ -207,9 +181,7 @@
         "packages/desktop/resources/official-marketplace/plugins/alibaba-cloud-cli/0.1.2",
         "../../../resources/official-marketplace/plugins/alibaba-cloud-cli/0.1.2"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md"],
       "listing": {
         "displayName": "Alibaba Cloud CLI",
         "displayName_i18n": {
@@ -240,9 +212,7 @@
         "packages/desktop/resources/official-marketplace/plugins/lark-cli/0.1.2",
         "../../../resources/official-marketplace/plugins/lark-cli/0.1.2"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md"],
       "listing": {
         "displayName": "Lark CLI",
         "displayName_i18n": {
@@ -273,9 +243,7 @@
         "packages/desktop/resources/official-marketplace/plugins/tencent-meeting-cli/0.1.3",
         "../../../resources/official-marketplace/plugins/tencent-meeting-cli/0.1.3"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md"],
       "listing": {
         "displayName": "Tencent Meeting CLI",
         "displayName_i18n": {
@@ -306,9 +274,7 @@
         "packages/desktop/resources/official-marketplace/plugins/dingtalk-cli/0.1.1",
         "../../../resources/official-marketplace/plugins/dingtalk-cli/0.1.1"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md"],
       "listing": {
         "displayName": "DingTalk CLI",
         "displayName_i18n": {
@@ -340,9 +306,7 @@
         "packages/desktop/resources/official-marketplace/plugins/wecom-cli/0.1.1",
         "../../../resources/official-marketplace/plugins/wecom-cli/0.1.1"
       ],
-      "runtimeTopLevelPaths": [
-        "README_CN.md"
-      ],
+      "runtimeTopLevelPaths": ["README_CN.md"],
       "listing": {
         "displayName": "WeCom CLI",
         "displayName_i18n": {
@@ -374,11 +338,7 @@
         "packages/desktop/resources/official-marketplace/plugins/obsidian/0.1.2",
         "../../../resources/official-marketplace/plugins/obsidian/0.1.2"
       ],
-      "runtimeTopLevelPaths": [
-        "LICENSE",
-        "README_CN.md",
-        "UPSTREAM.md"
-      ],
+      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "UPSTREAM.md"],
       "listing": {
         "displayName": "Obsidian",
         "displayName_i18n": {

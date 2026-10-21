@@ -4,11 +4,11 @@ Use this reference when an HTTP Function must run from a **container image** ins
 
 ## When to choose Custom Image (vs the other two HTTP options)
 
-| Deployment form | Choose when | How it deploys |
-| --- | --- | --- |
-| **Managed runtime** (default, see `http-functions.md`) | Plain Node.js / Python, dependencies are simple | `manageFunctions(createFunction)` + `scf_bootstrap` + zip |
-| **Custom Image** (this file) | Need custom system libraries / arbitrary runtime, but still want SCF request-driven execution and scale-to-zero | CloudApp custom build → TCR → SCF image function |
-| **CloudRun container** (see `cloudrun-development`) | Long-lived process, persistent connections, listens on injected `PORT` | `manageCloudRun` |
+| Deployment form                                        | Choose when                                                                                                     | How it deploys                                            |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Managed runtime** (default, see `http-functions.md`) | Plain Node.js / Python, dependencies are simple                                                                 | `manageFunctions(createFunction)` + `scf_bootstrap` + zip |
+| **Custom Image** (this file)                           | Need custom system libraries / arbitrary runtime, but still want SCF request-driven execution and scale-to-zero | CloudApp custom build → TCR → SCF image function          |
+| **CloudRun container** (see `cloudrun-development`)    | Long-lived process, persistent connections, listens on injected `PORT`                                          | `manageCloudRun`                                          |
 
 Keep Custom Image HTTP Functions distinct from CloudRun containers — both use a Dockerfile, but:
 
@@ -57,7 +57,7 @@ manageFunctions({
   func: {
     name: "my-scf-func",
     type: "HTTP",
-    runtime: "CustomImage"
+    runtime: "CustomImage",
   },
   imageConfig: {
     imageType: "enterprise",
@@ -66,8 +66,8 @@ manageFunctions({
     command: "python",
     args: "-u app.py",
     imagePort: 9000,
-    containerImageAccelerate: true
-  }
+    containerImageAccelerate: true,
+  },
 });
 ```
 
@@ -82,22 +82,22 @@ manageFunctions({
   imageConfig: {
     imageType: "enterprise",
     imageUri: "ccr.ccs.tencentyun.com/your-ns/demo-app:demo-app-002",
-    registryId: "tcr-xxxxxxxx"
-  }
+    registryId: "tcr-xxxxxxxx",
+  },
 });
 ```
 
 ### `imageConfig` fields
 
-| Field | Required | Notes |
-| --- | --- | --- |
-| `imageUri` | yes | Full address **with tag**: `{domain}/{ns}/{image}:{tag}`. Never `:latest`. |
-| `imageType` | — | `"enterprise"` (TCR enterprise) or `"personal"`. Defaults to `enterprise`. |
-| `registryId` | enterprise only | TCR instance id `tcr-xxxxxxxx`. Required when `imageType=enterprise`. |
-| `command` | — | Overrides `ENTRYPOINT`. Omit to use the Dockerfile default. |
-| `args` | — | Overrides `CMD`, space-separated. |
-| `imagePort` | — | Web Server: `9000` (default). Job-style image: `-1`. |
-| `containerImageAccelerate` | — | Image acceleration; enable for large images to cut cold-start time. |
+| Field                      | Required        | Notes                                                                      |
+| -------------------------- | --------------- | -------------------------------------------------------------------------- |
+| `imageUri`                 | yes             | Full address **with tag**: `{domain}/{ns}/{image}:{tag}`. Never `:latest`. |
+| `imageType`                | —               | `"enterprise"` (TCR enterprise) or `"personal"`. Defaults to `enterprise`. |
+| `registryId`               | enterprise only | TCR instance id `tcr-xxxxxxxx`. Required when `imageType=enterprise`.      |
+| `command`                  | —               | Overrides `ENTRYPOINT`. Omit to use the Dockerfile default.                |
+| `args`                     | —               | Overrides `CMD`, space-separated.                                          |
+| `imagePort`                | —               | Web Server: `9000` (default). Job-style image: `-1`.                       |
+| `containerImageAccelerate` | —               | Image acceleration; enable for large images to cut cold-start time.        |
 
 After deploy, confirm readiness with `queryFunctions(action="getFunctionDetail", functionName="my-scf-func")` and look for `Status=Active`. For public/browser access, create gateway access explicitly with `manageGateway(action="createAccess", type="HTTP")` and set the function security rule (anonymous login is disabled by default — see `http-functions.md`).
 
@@ -137,12 +137,12 @@ CMD ["python", "-u", "app.py"]
 
 SCF image constraints:
 
-| Constraint | Detail |
-| --- | --- |
-| Web Server functions listen on `9000` | The SCF gateway sends HTTP requests into the container on this port. |
-| The image must start an HTTP server on its own | Not a CLI tool, not a blocking script. |
-| Image size ideally ≤ 500MB | Large images cold-start slowly; enable `containerImageAccelerate`. |
-| Container start ≤ health-check timeout | Default 60s. |
+| Constraint                                     | Detail                                                               |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| Web Server functions listen on `9000`          | The SCF gateway sends HTTP requests into the container on this port. |
+| The image must start an HTTP server on its own | Not a CLI tool, not a blocking script.                               |
+| Image size ideally ≤ 500MB                     | Large images cold-start slowly; enable `containerImageAccelerate`.   |
+| Container start ≤ health-check timeout         | Default 60s.                                                         |
 
 ## TCR credentials (Stage A push, raw API)
 
@@ -161,15 +161,15 @@ Security red lines:
 
 Use these inside `CustomSteps` commands:
 
-| Variable | Meaning |
-| --- | --- |
-| `$CLOUDBASE_SERVICE_NAME` | Service name (= the `ServiceName` input) |
-| `$CLOUDBASE_VERSION_NAME` | Version name — **use this as the image tag**; available at build time, unique, traceable |
-| `$CLOUDBASE_VERSION_NUMBER` | Numeric version (e.g. `001`) |
-| `$CLOUDBASE_ENV_ID` | Environment id |
-| `$BUILD_TYPE` | `zip` / `git` |
-| `$ZIP_FILE_URL` | Zip download URL (injected automatically in zip mode) |
-| `$API_SECRET_ID` `$API_SECRET_KEY` `$API_TOKEN` | STS credentials (never print) |
+| Variable                                        | Meaning                                                                                  |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `$CLOUDBASE_SERVICE_NAME`                       | Service name (= the `ServiceName` input)                                                 |
+| `$CLOUDBASE_VERSION_NAME`                       | Version name — **use this as the image tag**; available at build time, unique, traceable |
+| `$CLOUDBASE_VERSION_NUMBER`                     | Numeric version (e.g. `001`)                                                             |
+| `$CLOUDBASE_ENV_ID`                             | Environment id                                                                           |
+| `$BUILD_TYPE`                                   | `zip` / `git`                                                                            |
+| `$ZIP_FILE_URL`                                 | Zip download URL (injected automatically in zip mode)                                    |
+| `$API_SECRET_ID` `$API_SECRET_KEY` `$API_TOKEN` | STS credentials (never print)                                                            |
 
 - Reserved prefixes that must NOT be declared in `Env`: `API_*`, `CLOUDBASE_*`, `CODE_*`, `BUILD_TYPE`, `ZIP_FILE_URL`.
 - Do NOT reference non-existent variables such as `$BUILD_ID`, `$CLOUDBASE_BUILD_ID`, `$CLOUDBASE_VERSION` — use `$CLOUDBASE_VERSION_NAME` for the tag.
@@ -178,26 +178,26 @@ Use these inside `CustomSteps` commands:
 
 ### Stage A (build)
 
-| Symptom | Likely cause |
-| --- | --- |
-| `Source 不能为空` | `Source.Type` empty; zip flow must set `"zip"` |
-| `Commands 和 CustomSteps 不能同时为空` | Provide at least one `CustomSteps` entry |
-| COS upload 403 | Missing one of the `UploadHeaders`, or the upload URL expired (>15 min) |
-| `检出 ZIP 包` failed | `CosTimestamp` missing or wrong (must reuse the `UnixTimestamp` from step ①) |
-| `docker push :tag` empty tag | Used a non-existent variable; use `$CLOUDBASE_VERSION_NAME` |
-| `docker login unauthorized` | TCR namespace not authorized; check `TCR_INSTANCE_ID` |
-| `AuthFailure.SignatureFailure` | Push script `REGION` does not match the TCR instance region |
+| Symptom                                | Likely cause                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| `Source 不能为空`                      | `Source.Type` empty; zip flow must set `"zip"`                               |
+| `Commands 和 CustomSteps 不能同时为空` | Provide at least one `CustomSteps` entry                                     |
+| COS upload 403                         | Missing one of the `UploadHeaders`, or the upload URL expired (>15 min)      |
+| `检出 ZIP 包` failed                   | `CosTimestamp` missing or wrong (must reuse the `UnixTimestamp` from step ①) |
+| `docker push :tag` empty tag           | Used a non-existent variable; use `$CLOUDBASE_VERSION_NAME`                  |
+| `docker login unauthorized`            | TCR namespace not authorized; check `TCR_INSTANCE_ID`                        |
+| `AuthFailure.SignatureFailure`         | Push script `REGION` does not match the TCR instance region                  |
 
 ### Stage B (deploy)
 
-| Symptom | Likely cause |
-| --- | --- |
-| `ResourceNotFound.ImageConfig` | `imageUri` does not exist or the tag is wrong |
-| `InvalidParameterValue.ImageUri` | Wrong format; must be `{domain}/{ns}/{image}:{tag}` |
-| SCF image pull timeout | TCR and SCF are not in the same region |
-| SCF image pull denied | `SCF_QcsRole` not authorized to pull from TCR |
-| Function start timeout (60s) | Image too large or startup too slow; enable image acceleration / slim the image |
-| Port 9000 no response | Dockerfile `EXPOSE` / `CMD` does not actually start an HTTP server on 9000 |
+| Symptom                          | Likely cause                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------- |
+| `ResourceNotFound.ImageConfig`   | `imageUri` does not exist or the tag is wrong                                   |
+| `InvalidParameterValue.ImageUri` | Wrong format; must be `{domain}/{ns}/{image}:{tag}`                             |
+| SCF image pull timeout           | TCR and SCF are not in the same region                                          |
+| SCF image pull denied            | `SCF_QcsRole` not authorized to pull from TCR                                   |
+| Function start timeout (60s)     | Image too large or startup too slow; enable image acceleration / slim the image |
+| Port 9000 no response            | Dockerfile `EXPOSE` / `CMD` does not actually start an HTTP server on 9000      |
 
 ## Best practices
 

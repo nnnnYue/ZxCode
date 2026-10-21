@@ -284,10 +284,7 @@ export { IGenUiService } from "./gen-ui/contract.js";
 export type { GenUiPrepareParams } from "./gen-ui/contract.js";
 
 export { ISourceServerWorkspaceService } from "./source-server-workspace/sourceServerWorkspace.js";
-export type {
-  BotRemoteWorkspaceResolver,
-  BotRemoteWorkspaceResolution,
-} from "./bots/bots.js";
+export type { BotRemoteWorkspaceResolver, BotRemoteWorkspaceResolution } from "./bots/bots.js";
 export { ITaskGroupService } from "#src/task-groups/contract.js";
 export type {
   TaskGroup,

@@ -23,6 +23,7 @@ Use this skill for **AI agent development** when you need to:
 - Build production-ready agent servers with FastAPI
 
 **Do NOT use for:**
+
 - Simple AI model calling without agent capabilities (use `ai-model-*` skills)
 - CloudBase cloud functions (use `cloud-functions` skill)
 - CloudRun backend services without agent features (use `cloudrun-development` skill)
@@ -45,29 +46,29 @@ Use this skill for **AI agent development** when you need to:
 > must be completed AND verified before proceeding to the next step.
 > Do NOT call `manageAgent` until all blocking steps pass.
 
-| Step | Task | Document | Blocking? |
-|------|------|----------|-----------|
-| 0 | **Choose adapter & write agent code** | See "Adapter Selection" below | — |
-| 1 | **Ensure Python 3.10** | [agent-deployment](agent-deployment.md) § Step 1 | ✅ BLOCKING |
-| 2 | **Build env/ (one-shot)** | [agent-deployment](agent-deployment.md) § Step 2 | ✅ BLOCKING |
-| 3 | **Verify env/ integrity** | [agent-deployment](agent-deployment.md) § Step 3 | ✅ BLOCKING |
-| 4 | **Deploy with manageAgent** | [agent-deployment](agent-deployment.md) § Step 4 | — |
+| Step | Task                                  | Document                                         | Blocking?   |
+| ---- | ------------------------------------- | ------------------------------------------------ | ----------- |
+| 0    | **Choose adapter & write agent code** | See "Adapter Selection" below                    | —           |
+| 1    | **Ensure Python 3.10**                | [agent-deployment](agent-deployment.md) § Step 1 | ✅ BLOCKING |
+| 2    | **Build env/ (one-shot)**             | [agent-deployment](agent-deployment.md) § Step 2 | ✅ BLOCKING |
+| 3    | **Verify env/ integrity**             | [agent-deployment](agent-deployment.md) § Step 3 | ✅ BLOCKING |
+| 4    | **Deploy with manageAgent**           | [agent-deployment](agent-deployment.md) § Step 4 | —           |
 
 ### Adapter Selection (Step 0)
 
-| Framework | Read | Install |
-|-----------|------|---------|
-| LangGraph (stateful graphs) | [adapter-langgraph](adapter-langgraph.md) | `cloudbase-agent-langgraph` |
-| CrewAI (multi-agent crews) | [adapter-development](adapter-development.md) | `cloudbase-agent-crewai` |
-| Coze platform | [adapter-coze](adapter-coze.md) | `cloudbase-agent-coze` |
-| Custom / raw FastAPI | [server-quickstart](server-quickstart.md) + [adapter-development](adapter-development.md) | `cloudbase-agent-server` |
+| Framework                   | Read                                                                                      | Install                     |
+| --------------------------- | ----------------------------------------------------------------------------------------- | --------------------------- |
+| LangGraph (stateful graphs) | [adapter-langgraph](adapter-langgraph.md)                                                 | `cloudbase-agent-langgraph` |
+| CrewAI (multi-agent crews)  | [adapter-development](adapter-development.md)                                             | `cloudbase-agent-crewai`    |
+| Coze platform               | [adapter-coze](adapter-coze.md)                                                           | `cloudbase-agent-coze`      |
+| Custom / raw FastAPI        | [server-quickstart](server-quickstart.md) + [adapter-development](adapter-development.md) | `cloudbase-agent-server`    |
 
 ### Additional References (read on demand, NOT required for deployment)
 
-| Task | Read |
-|------|------|
+| Task                                        | Read                                      |
+| ------------------------------------------- | ----------------------------------------- |
 | Server setup, middleware, multi-agent, CORS | [server-quickstart](server-quickstart.md) |
-| Authentication and user context | [authentication](authentication.md) |
+| Authentication and user context             | [authentication](authentication.md)       |
 
 ## Quick Start (Framework-Agnostic)
 
@@ -161,6 +162,7 @@ pip install cloudbase-agent-crewai      # CrewAI integration
 ```
 
 **Import Note**: All packages share the `cloudbase_agent` namespace:
+
 ```python
 # After installing cloudbase-agent-langgraph, import from cloudbase_agent
 from cloudbase_agent.langgraph import LangGraphAgent
@@ -173,15 +175,15 @@ from cloudbase_agent.tools import create_bash_tool
 Based on what the user needs, read the corresponding reference document.
 **Only read the relevant reference — don't load all of them.**
 
-| User Need | Reference | What It Covers |
-|-----------|-----------|---------------|
-| **Deploying agent to CloudBase** | Read [agent-deployment](agent-deployment.md) | **manageAgent MCP tool (MUST USE)**, 4-step blocking pipeline, Python 3.10, env/ build, verification |
-| Server setup, deployment, middleware, multi-agent, CORS | Read `references/server.md` | AgentServiceApp 3 deployment methods, middleware (generator/yield/onion model), multi-agent server, Agent Creator pattern, health checks |
-| LangGraph agent, callbacks, tool proxy, HITL, checkpoints | Read [adapter-langgraph](adapter-langgraph.md) | LangGraphAgent constructor, AgentCallback protocol, ToolProxy, human-in-the-loop with interrupt(), TDAICheckpointSaver, client-defined tools |
-| Tools: bash, filesystem, code execution, MCP, custom tools | Read `references/tools.md` | create_bash_tool, 8 file tools, code executors, MCPToolkit/CloudBaseMCPServer, @tool decorator, BaseTool, framework adapters |
-| Memory, persistence, short/long-term, MySQL, MongoDB | Read `references/storage.md` | InMemoryMemory, TDAIMemory, MySQLMemory, MongoDBMemory, TDAILongTermMemory, Mem0LongTermMemory, LangGraph checkpoint |
-| Tracing, monitoring, Langfuse, OpenTelemetry | Read `references/observability.md` | ConsoleTraceConfig, OTLPTraceConfig, setup_observability, env vars, manual observation spans |
-| Common patterns, JWT auth, MCP integration, production | Read `references/recipes.md` | JWT middleware, MCP + LangGraph, production deployment, adding tools to agents, client-defined tools |
+| User Need                                                  | Reference                                      | What It Covers                                                                                                                               |
+| ---------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Deploying agent to CloudBase**                           | Read [agent-deployment](agent-deployment.md)   | **manageAgent MCP tool (MUST USE)**, 4-step blocking pipeline, Python 3.10, env/ build, verification                                         |
+| Server setup, deployment, middleware, multi-agent, CORS    | Read `references/server.md`                    | AgentServiceApp 3 deployment methods, middleware (generator/yield/onion model), multi-agent server, Agent Creator pattern, health checks     |
+| LangGraph agent, callbacks, tool proxy, HITL, checkpoints  | Read [adapter-langgraph](adapter-langgraph.md) | LangGraphAgent constructor, AgentCallback protocol, ToolProxy, human-in-the-loop with interrupt(), TDAICheckpointSaver, client-defined tools |
+| Tools: bash, filesystem, code execution, MCP, custom tools | Read `references/tools.md`                     | create_bash_tool, 8 file tools, code executors, MCPToolkit/CloudBaseMCPServer, @tool decorator, BaseTool, framework adapters                 |
+| Memory, persistence, short/long-term, MySQL, MongoDB       | Read `references/storage.md`                   | InMemoryMemory, TDAIMemory, MySQLMemory, MongoDBMemory, TDAILongTermMemory, Mem0LongTermMemory, LangGraph checkpoint                         |
+| Tracing, monitoring, Langfuse, OpenTelemetry               | Read `references/observability.md`             | ConsoleTraceConfig, OTLPTraceConfig, setup_observability, env vars, manual observation spans                                                 |
+| Common patterns, JWT auth, MCP integration, production     | Read `references/recipes.md`                   | JWT middleware, MCP + LangGraph, production deployment, adding tools to agents, client-defined tools                                         |
 
 ## Key Imports Quick Reference
 
@@ -228,13 +230,13 @@ my-agent-project/
 
 ## Environment Variables
 
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | OpenAI API key |
-| `AUTO_TRACES_STDOUT` | Enable console tracing (`true`) |
-| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Langfuse keys |
-| `TDAI_ENDPOINT` / `TDAI_API_KEY` | TDAI memory/checkpoint endpoint |
-| `SCF_RUNTIME_PORT` | CloudBase runtime port (set automatically during deployment) |
+| Variable                                      | Purpose                                                      |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| `OPENAI_API_KEY`                              | OpenAI API key                                               |
+| `AUTO_TRACES_STDOUT`                          | Enable console tracing (`true`)                              |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Langfuse keys                                                |
+| `TDAI_ENDPOINT` / `TDAI_API_KEY`              | TDAI memory/checkpoint endpoint                              |
+| `SCF_RUNTIME_PORT`                            | CloudBase runtime port (set automatically during deployment) |
 
 ## Key Design Decisions
 

@@ -2632,8 +2632,7 @@ export async function migrateApplicationStorage(
     await automations.ensureReady();
     await tasks.ensureReady();
     return {
-      backupSkipped:
-        tasks.migrationBackupSkipped || automations.migrationBackupSkipped,
+      backupSkipped: tasks.migrationBackupSkipped || automations.migrationBackupSkipped,
     };
   } finally {
     tasks.close();

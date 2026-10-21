@@ -2,11 +2,11 @@
 
 Three independent modules for configuring external access to CloudBase environments:
 
-| Module | Commands | Purpose |
-|--------|----------|---------|
-| **CORS** | `tcb cors list/add/rm` | Security domains for cross-origin access |
-| **Domains** | `tcb domains ls/add/rm` | Bind/unbind custom domains with TLS |
-| **Routes** | `tcb routes list/add/edit/delete` | Map request paths to backend services |
+| Module      | Commands                          | Purpose                                  |
+| ----------- | --------------------------------- | ---------------------------------------- |
+| **CORS**    | `tcb cors list/add/rm`            | Security domains for cross-origin access |
+| **Domains** | `tcb domains ls/add/rm`           | Bind/unbind custom domains with TLS      |
+| **Routes**  | `tcb routes list/add/edit/delete` | Map request paths to backend services    |
 
 > ⚠️ Routes require the domain to exist first — use the system default domain or bind one via `tcb domains add` before creating routes.
 
@@ -186,17 +186,17 @@ tcb routes delete api.example.com -e <envId> -p /api/users --yes
 
 ### Route JSON fields
 
-| Field | Required | Description |
-|-------|:--------:|-------------|
-| `domain` | ✅ | System default or custom-bound domain |
-| `routes[].path` | ✅ | Route path (no wildcards) |
-| `routes[].upstreamResourceType` | ✅ (add) | Backend service type |
-| `routes[].upstreamResourceName` | ✅ (add) | Backend service name |
-| `routes[].enable` | | Enable route (default: true) |
-| `routes[].enableAuth` | | Enable auth (default: false) |
-| `routes[].enableSafeDomain` | | Enable CORS domain check (default: true) |
-| `routes[].pathRewrite.prefix` | | Path rewrite prefix |
-| `routes[].qpsPolicy.qpsTotal` | | Total QPS limit (max 500) |
+| Field                           | Required | Description                              |
+| ------------------------------- | :------: | ---------------------------------------- |
+| `domain`                        |    ✅    | System default or custom-bound domain    |
+| `routes[].path`                 |    ✅    | Route path (no wildcards)                |
+| `routes[].upstreamResourceType` | ✅ (add) | Backend service type                     |
+| `routes[].upstreamResourceName` | ✅ (add) | Backend service name                     |
+| `routes[].enable`               |          | Enable route (default: true)             |
+| `routes[].enableAuth`           |          | Enable auth (default: false)             |
+| `routes[].enableSafeDomain`     |          | Enable CORS domain check (default: true) |
+| `routes[].pathRewrite.prefix`   |          | Path rewrite prefix                      |
+| `routes[].qpsPolicy.qpsTotal`   |          | Total QPS limit (max 500)                |
 
 ---
 
@@ -270,15 +270,15 @@ tcb routes delete <domain> -e <envId> -p <path> --yes
 
 ## Common Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `域名 xxx 不存在` | Route references unbound domain | Use system default domain, or `domains add` first |
-| `域名下有路由绑定` | Trying to unbind domain with routes | Delete all routes on that domain first |
-| `路径 xxx 已存在` | Duplicate path on `routes add` | Use `routes edit` to modify existing route |
-| `请提供 -p 参数` | `routes delete` missing path | Add `-p <path>` parameter |
-| `域名 xxx 已存在` | Duplicate CORS/domain add | Skip, or remove then re-add |
-| `证书 xxx 不存在` | Invalid cert ID | Get correct ID from Tencent Cloud SSL console |
-| `域名未备案` | Domain lacks ICP filing | Complete ICP filing first |
+| Error              | Cause                               | Fix                                               |
+| ------------------ | ----------------------------------- | ------------------------------------------------- |
+| `域名 xxx 不存在`  | Route references unbound domain     | Use system default domain, or `domains add` first |
+| `域名下有路由绑定` | Trying to unbind domain with routes | Delete all routes on that domain first            |
+| `路径 xxx 已存在`  | Duplicate path on `routes add`      | Use `routes edit` to modify existing route        |
+| `请提供 -p 参数`   | `routes delete` missing path        | Add `-p <path>` parameter                         |
+| `域名 xxx 已存在`  | Duplicate CORS/domain add           | Skip, or remove then re-add                       |
+| `证书 xxx 不存在`  | Invalid cert ID                     | Get correct ID from Tencent Cloud SSL console     |
+| `域名未备案`       | Domain lacks ICP filing             | Complete ICP filing first                         |
 
 ---
 
