@@ -4,8 +4,6 @@ import {
   ZCODE_PROTOCOL_NAME,
   ZCODE_PROTOCOL_VERSION,
   zcodeComputerUseOperationEventSchema,
-  zcodeProviderRuntimeHeadersRequestParamsSchema,
-  zcodeProviderRuntimeHeadersResponseSchema,
   zcodeProtocolMethods,
   zcodeProtocolMessageSchema,
   zcodeProcessResourceSampleSchema,
@@ -973,50 +971,8 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
-  it.each(["start-plan", "individual-coding-plan", "team-coding-plan", "off-peak"] as const)(
-    "runtime headers 直接接受 Registry zhipu access mode: %s",
-    (mode) => {
-      const parsed = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-        requestId: `request-${mode}`,
-        sessionId: "sess_1",
-        workspace,
-        modelSelection: model,
-        providerId: `account:${mode}`,
-        accountAccess: {
-          type: "zhipu-account",
-          accountType: "bigmodel",
-          mode,
-          entitled: true,
-        },
-        reason: "model-request",
-      });
-
-      expect(parsed.accountAccess).toEqual({
-        type: "zhipu-account",
-        accountType: "bigmodel",
-        mode,
-        entitled: true,
-      });
-    },
-  );
-
-  it("runtime headers 拒绝已经退出 Registry 的旧 planKind Access 形状", () => {
-    expect(() =>
-      zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
-        requestId: "request-legacy",
-        sessionId: "sess_1",
-        workspace,
-        modelSelection: model,
-        providerId: "account:legacy",
-        accountAccess: {
-          type: "zhipu-account",
-          accountType: "bigmodel",
-          planKind: "team-coding-plan",
-        },
-        reason: "model-request",
-      }),
-    ).toThrow();
-  });
+  // 注：runtime headers 请求参数 schema（zcodeProviderRuntimeHeadersRequestParamsSchema）
+  // 属账号请求安全域，已随 7b02617d 剔除（REMOVALS 第八条）；对应的直接/拒绝用例一并移除。
 
   it("parses subagent mirrored tool updates with explicit protocol metadata", () => {
     const scheduled = zcodeSessionEventSchema.parse({

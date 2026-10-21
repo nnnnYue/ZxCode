@@ -61,7 +61,7 @@ describe("external relay QR helpers", () => {
       zcode_type: "bootstrap-response",
       requestId: "bootstrap-1",
       success: true,
-      result: { windowControlSessionId: "sid-1", workspaces: [] },
+      result: { windowControlSessionId: "sid-1", workspaces: [], tasks: [] },
     };
     expect(parseWebRemoteControlAppPayload(response)).not.toBeNull();
     const result = { ...response.result, desktopAppVersion: "3.12.2" };
@@ -685,7 +685,12 @@ it("MRO03：可见任务报告包含完整地址和传输代际，离开必须�
       zcode_type: "bootstrap-response",
       requestId: "b",
       success: true,
-      result: { windowControlSessionId: "session", workspaces: [], mobileTaskViewEpoch: "pair-1" },
+      result: {
+        windowControlSessionId: "session",
+        workspaces: [],
+        tasks: [],
+        mobileTaskViewEpoch: "pair-1",
+      },
     }),
   ).toMatchObject({ result: { mobileTaskViewEpoch: "pair-1" } });
 });
