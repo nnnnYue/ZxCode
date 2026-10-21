@@ -124,6 +124,8 @@ export interface ZCodeEndpointUrls {
   origin: string;
   apiBaseUrl: string;
   remoteUrl: string;
+  /** fork：手机远控 relay WS 地址（v1 自部署 relay / 官方 relay 兼容）。 */
+  relayWsUrl?: string;
 }
 
 export interface BuildZCodeEndpointUrlsOptions {
@@ -144,6 +146,7 @@ export function buildZCodeEndpointUrls(
     origin: normalizedOrigin,
     apiBaseUrl: `${normalizedOrigin}/api/v1`,
     remoteUrl: `${normalizedOrigin}/remote/${remoteVersion}`,
+    relayWsUrl: resolveWebRemoteControlRelayWsUrl({ endpointOrigin: normalizedOrigin }),
   };
 }
 
