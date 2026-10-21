@@ -1454,8 +1454,8 @@ async function bootstrapExternalRelayWebRemoteControl(params: URLSearchParams): 
 
   const transport = new WebRemoteControlTerminalTransport({
     relayWsUrl: resolveExternalRelayWsUrl(),
-    deviceSid: relayParams.deviceSid,
-    passHash: (relayParams as Record<string, unknown>).passHash as string | undefined,
+    deviceSid: relayParams.deviceSid ?? "",
+    passHash: ((relayParams as Record<string, unknown>).passHash as string | undefined) ?? "",
     deviceMid: relayParams.deviceMid,
     appVersion: relayParams.appVersion,
     authProvider: createBrowserWebRemoteControlRelayAuthProvider(),
