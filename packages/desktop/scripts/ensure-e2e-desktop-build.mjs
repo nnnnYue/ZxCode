@@ -51,7 +51,7 @@ export const DEFAULT_E2E_DESKTOP_BUILD_INPUTS = [
   "tsconfig.base.json",
   "packages/desktop/scripts/build-metadata.mjs",
   "scripts/builtin-provider-config.mjs",
-  "config/provider/zcode-builtin.json",
+  "config/provider/zxcode-builtin.json",
   "config/provider/zcode-builtin.test.json",
   "packages/provider-node/src/zcode-builtin-release.ts",
   "packages/desktop/scripts/run-production-build.mjs",

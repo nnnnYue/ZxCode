@@ -45,7 +45,7 @@ describe("process provider registry runtime", () => {
     const root = await temporaryDirectory();
     const builtin = JSON.parse(
       await readFile(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );
@@ -115,7 +115,7 @@ describe("process provider registry runtime", () => {
     const root = await temporaryDirectory();
     const builtin = JSON.parse(
       await readFile(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );
@@ -150,7 +150,7 @@ describe("process provider registry runtime", () => {
     const root = await temporaryDirectory();
     const runtime = await startProcessProviderRegistryRuntime({
       [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: fileURLToPath(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
       ),
       [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
     });
@@ -280,7 +280,7 @@ describe("process provider registry runtime", () => {
 
   it("Personal 文件损坏时保留原文件并以内存空配置启动", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
+    const zcodeBuiltinFilePath = join(root, "zxcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
     await writeFile(
       zcodeBuiltinFilePath,
@@ -306,7 +306,7 @@ describe("process provider registry runtime", () => {
 
   it("从进程环境启动一份 Registry，并由调用方持有生命周期", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
+    const zcodeBuiltinFilePath = join(root, "zxcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
     await writeFile(
       zcodeBuiltinFilePath,
@@ -437,7 +437,7 @@ describe("process provider registry runtime", () => {
 
   it("Standalone 从账号凭据生成 Account Overlay，并在请求前返回当前 API Key", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
+    const zcodeBuiltinFilePath = join(root, "zxcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
     const credentialStore = createSharedZCodeCredentialStore({
       baseDir: join(root, "home"),
@@ -575,7 +575,7 @@ describe("process provider registry runtime", () => {
 
   it("Standalone 首次账号凭据读取失败时仍以 fail-closed Account 启动 Personal API Provider", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
+    const zcodeBuiltinFilePath = join(root, "zxcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
     await writeFile(
       zcodeBuiltinFilePath,
@@ -633,7 +633,7 @@ describe("process provider registry runtime", () => {
 
   it("只有显式开启 Standalone 导入时才迁移旧 CLI 用户 Provider", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
+    const zcodeBuiltinFilePath = join(root, "zxcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
     const legacyFilePath = join(root, "legacy-cli.json");
     await writeFile(

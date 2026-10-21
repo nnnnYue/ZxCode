@@ -93,7 +93,7 @@ test("includes the production ZCode Built-in Provider Config as a SEA asset", as
     JSON.parse(await readFile(zcodeBuiltinFilePath, "utf8")),
     JSON.parse(
       await readFile(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     ),

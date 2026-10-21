@@ -182,7 +182,7 @@ const E2E_APP_PROVIDER_CONFIG_FILE = resolve(E2E_APP_CONFIG_DIR, "provider_confi
 // bundled release，模型配置初始化直接失败。E2E 明确注入同一份只读基线。
 const E2E_DEFAULT_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE = resolve(
   REPO_ROOT,
-  "config/provider/zcode-builtin.json",
+  "config/provider/zxcode-builtin.json",
 );
 const INITIAL_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE =
   process.env.ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE?.trim();

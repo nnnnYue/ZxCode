@@ -9,7 +9,7 @@ import { createServerHostServices, disposeServiceResourcesAndWait } from "../../
 const home = process.env.HOME!;
 const host = await createServerHostServices({
   sourceServerId: "server-owner",
-  zcodeBuiltinProviderConfigFilePath: resolve("config/provider/zcode-builtin.json"),
+  zcodeBuiltinProviderConfigFilePath: resolve("config/provider/zxcode-builtin.json"),
 });
 try {
   const db = new DatabaseSync(join(home, ".zcode/v2/tasks-index.sqlite"), { readOnly: true });

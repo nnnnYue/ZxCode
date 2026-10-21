@@ -25,7 +25,7 @@ const templates = [
 ] as const;
 
 describe("MiMo API 与 Token Plan 官方模板", () => {
-  it.each(["zcode-builtin.json", "zcode-builtin.test.json"])(
+  it.each(["zxcode-builtin.json", "zcode-builtin.test.json"])(
     "%s 两模板复用模型规则，个人地址与旧身份不变",
     async (filename) => {
       const source = new NodeZCodeBuiltinProviderConfigSource({

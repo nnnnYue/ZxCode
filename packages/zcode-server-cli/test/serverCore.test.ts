@@ -45,7 +45,7 @@ describe("runServerCore startup wiring", () => {
     "runtime",
     "provider",
     "bundled",
-    "zcode-builtin.json",
+    "zxcode-builtin.json",
   );
   const savedEnv = new Map<string, string | undefined>();
   const listenersBefore = new Map<string, Function[]>();

@@ -86,7 +86,7 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
       ),
     }));
     personal.dispose();
-    const builtin = resolve("../../config/provider/zcode-builtin.json");
+    const builtin = resolve("../../config/provider/zxcode-builtin.json");
     // fork：NodeProviderRegistryRuntimeOptions 已无 watch 选项（内置目录不再远端刷新）。
     const runtime = new NodeProviderRegistryRuntime({
       personalFilePath,

@@ -12,7 +12,7 @@ import { startProcessProviderRegistryRuntime } from "../src/app/process-provider
 
 const OUTPUT_BUDGET = 24_000;
 const builtinPath = fileURLToPath(
-  new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+  new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
 );
 
 describe("CLI 旧输出上限从首次导入到请求", () => {

@@ -7,7 +7,7 @@ import {
   ProviderConfigMap,
   ProviderConfigResolver,
   ProviderConfig,
-  ZhipuAccountAccessConfig,
+  ApiKeyAccessConfig,
   createRegistryModelConfig,
   createRegistryProviderConfig,
   type ModelSelection,
@@ -19,7 +19,7 @@ import { legacyReasoningLevelRenames } from "../src/legacy-reasoning-level-renam
 
 const source = new NodeZCodeBuiltinProviderConfigSource({
   bundledFilePath: fileURLToPath(
-    new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+    new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
   ),
   watch: false,
 });
@@ -51,7 +51,7 @@ function view(
     providers: new ProviderConfigMap([
       [
         "account:bigmodel-individual-coding-plan",
-        new ProviderConfig({ access: new ZhipuAccountAccessConfig({ entitled: true }) }),
+        new ProviderConfig({ access: new ApiKeyAccessConfig() }),
       ],
     ]),
     states: {

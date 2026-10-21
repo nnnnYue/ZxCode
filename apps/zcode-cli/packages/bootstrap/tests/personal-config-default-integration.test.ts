@@ -27,7 +27,7 @@ describe("Todo104 CLI 同文件默认选择", () => {
       ZCODE_CREDENTIAL_SECRET: "todo104-fixture-only",
       ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
       ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
       ),
     };
     const repository = new NodePersonalProviderConfigRepository({
@@ -93,7 +93,7 @@ describe("Todo104 CLI 同文件默认选择", () => {
     await writeFile(legacyPath, oldInput);
     const env = {
       ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
       ),
       ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
     };

@@ -27,7 +27,7 @@ import {
 
 const temporaryDirectories: string[] = [];
 const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
-  new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+  new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
 );
 
 afterEach(async () => {
@@ -229,11 +229,11 @@ describe("@zcode/provider-node", () => {
     });
 
     expect(repeatedPath).toBe(firstPath);
-    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "zcode-builtin.json"));
+    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "zxcode-builtin.json"));
     expect(secondPath).toBe(firstPath);
     expect(JSON.parse(await readFile(secondPath, "utf8"))).toEqual(JSON.parse(secondContent));
     expect(await readdir(join(root, "runtime", "provider", "bundled"))).toEqual([
-      "zcode-builtin.json",
+      "zxcode-builtin.json",
     ]);
   });
 

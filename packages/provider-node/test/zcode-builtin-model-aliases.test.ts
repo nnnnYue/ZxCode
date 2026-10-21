@@ -5,7 +5,7 @@ import { compileModelOptionMaps } from "@zcode/model-option-map";
 import { parseModelConfig } from "@zcode/provider";
 
 describe("发布模型规则的前后缀与覆盖顺序", () => {
-  it.each(["zcode-builtin.json", "zcode-builtin.test.json"])(
+  it.each(["zxcode-builtin.json", "zcode-builtin.test.json"])(
     "%s：默认容量由通用规则提供，专用型号与 Personal 保留覆盖权",
     async (filename) => {
       const source = new NodeZCodeBuiltinProviderConfigSource({

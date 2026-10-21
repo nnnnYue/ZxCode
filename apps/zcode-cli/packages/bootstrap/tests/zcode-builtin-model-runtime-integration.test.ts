@@ -19,7 +19,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ApiProviderModelRuntime } from "../src/app/provider-registry-model-runtime.js";
 
 const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
-  new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+  new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
 );
 const source = new NodeZCodeBuiltinProviderConfigSource({
   bundledFilePath: zcodeBuiltinProviderConfigFilePath,

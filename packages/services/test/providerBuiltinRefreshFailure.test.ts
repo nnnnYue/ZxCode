@@ -21,7 +21,10 @@ async function setup(active = false) {
   const bundled = join(root, "bundled.json");
   const activePath = join(root, "active.json");
   const release = JSON.parse(
-    await readFile(new URL("../../../config/provider/zcode-builtin.json", import.meta.url), "utf8"),
+    await readFile(
+      new URL("../../../config/provider/zxcode-builtin.json", import.meta.url),
+      "utf8",
+    ),
   );
   release.revision = 1;
   await writeFile(bundled, JSON.stringify(release));

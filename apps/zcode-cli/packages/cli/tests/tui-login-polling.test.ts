@@ -75,7 +75,7 @@ async function fixture(t: TestContext, providerId: "zai" | "bigmodel" = "bigmode
     ZCODE_CREDENTIAL_SECRET: "test-encryption-key",
     ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: resolve(
       import.meta.dirname,
-      "../../../../../config/provider/zcode-builtin.json",
+      "../../../../../config/provider/zxcode-builtin.json",
     ),
     ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalFile,
   };
