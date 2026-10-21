@@ -2,7 +2,7 @@
 // docs/dynamic-workflow/launch.md「Data path」）。
 import { describe, expect, it } from "vitest";
 import {
-  ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT,
+  ZCODE_WORKFLOWS_RUNS_MAX_LIMIT,
   zcodeProtocolMethods,
   zcodeSavedWorkflowMetaSchema,
   zcodeWorkflowsDeleteParamsSchema,
@@ -157,14 +157,14 @@ describe("zcode-protocol saved workflows", () => {
       zcodeWorkflowsRunsParamsSchema.parse({
         workspace,
         name: "x",
-        limit: ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT,
+        limit: ZCODE_WORKFLOWS_RUNS_MAX_LIMIT,
       }).name,
     ).toBe("x");
     expect(() => zcodeWorkflowsRunsParamsSchema.parse({ workspace, limit: 0 })).toThrow();
     expect(() =>
       zcodeWorkflowsRunsParamsSchema.parse({
         workspace,
-        limit: ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT + 1,
+        limit: ZCODE_WORKFLOWS_RUNS_MAX_LIMIT + 1,
       }),
     ).toThrow();
     expect(() => zcodeWorkflowsRunsParamsSchema.parse({ workspace, limit: 1.5 })).toThrow();

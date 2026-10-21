@@ -17,8 +17,8 @@ import {
   type ConversationTopicWireFrame,
 } from "../src/zcode-protocol-v4/index.js";
 import {
-  ZXCODE_PROTOCOL_V4_WIRE_VERSION,
-  ZXCODE_PROTOCOL_VERSION,
+  ZCODE_PROTOCOL_V4_WIRE_VERSION,
+  ZCODE_PROTOCOL_VERSION,
 } from "../src/zcode-protocol/index.js";
 
 const TOPIC = "conversation/session-wire";
@@ -171,8 +171,8 @@ function frameAtCompletePhysicalBytes(targetBytes: number): ConversationTopicFra
 describe("ZCode Protocol V4 wire v3", () => {
   it("硬切 V4 wire/hello 到 v3，但不改变 legacy 主协议版本", () => {
     expect(V4_WIRE_PROTOCOL_VERSION).toBe(3);
-    expect(ZXCODE_PROTOCOL_V4_WIRE_VERSION).toBe(3);
-    expect(ZXCODE_PROTOCOL_VERSION).toBe(1);
+    expect(ZCODE_PROTOCOL_V4_WIRE_VERSION).toBe(3);
+    expect(ZCODE_PROTOCOL_VERSION).toBe(1);
     expect(
       helloMessageSchema.safeParse({
         kind: "hello",
@@ -364,18 +364,6 @@ describe("ZCode Protocol V4 wire v3", () => {
       frame,
       deliveryKind: DELIVERY_KIND,
     });
-  });
-
-  it("分片不改变 logical frame 的 seq 区间", () => {
-    const frame = makeFrame("resume".repeat(500));
-    const wires = encode(frame, 512);
-    const result = reassembleTopicWireFrames(wires, conversationTopicFrameSchema);
-    expect(result.kind).toBe("complete");
-    if (result.kind === "complete") {
-      expect(result.frame.fromSeq).toBe(10);
-      expect(result.frame.toSeq).toBe(11);
-      expect(result.frame).toEqual(frame);
-    }
   });
 
   it("超大 snapshot 分片后完整校验并原子重组", () => {

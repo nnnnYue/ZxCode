@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-  ZXCODE_PROTOCOL_NAME,
-  ZXCODE_PROTOCOL_VERSION,
+  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  ZCODE_PROTOCOL_NAME,
+  ZCODE_PROTOCOL_VERSION,
   zcodeComputerUseOperationEventSchema,
+  zcodeProviderRuntimeHeadersRequestParamsSchema,
+  zcodeProviderRuntimeHeadersResponseSchema,
   zcodeProtocolMethods,
   zcodeProtocolMessageSchema,
   zcodeProcessResourceSampleSchema,
@@ -971,9 +973,50 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
-  // fork 已剔除 provider runtime header refresh 交互（账号请求期鉴权链路随 OAuth/账号 provider
-  // 一并移除）：zcodeProviderRuntimeHeaders* schema 与 interaction/requestProviderRuntimeHeaders
-  // method 不再存在，上游对应用例随之删除。
+
+    "runtime headers 直接接受 Registry zhipu access mode: %s",
+    (mode) => {
+      const parsed = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
+        requestId: `request-${mode}`,
+        sessionId: "sess_1",
+        workspace,
+        modelSelection: model,
+        providerId: `account:${mode}`,
+        accountAccess: {
+          type: "zhipu-account",
+          accountType: "bigmodel",
+          mode,
+          entitled: true,
+        },
+        reason: "model-request",
+      });
+
+      expect(parsed.accountAccess).toEqual({
+        type: "zhipu-account",
+        accountType: "bigmodel",
+        mode,
+        entitled: true,
+      });
+    },
+  );
+
+  it("runtime headers 拒绝已经退出 Registry 的旧 planKind Access 形状", () => {
+    expect(() =>
+      zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
+        requestId: "request-legacy",
+        sessionId: "sess_1",
+        workspace,
+        modelSelection: model,
+        providerId: "account:legacy",
+        accountAccess: {
+          type: "zhipu-account",
+          accountType: "bigmodel",
+          planKind: "team-coding-plan",
+        },
+        reason: "model-request",
+      }),
+    ).toThrow();
+  });
 
   it("parses subagent mirrored tool updates with explicit protocol metadata", () => {
     const scheduled = zcodeSessionEventSchema.parse({
@@ -1182,8 +1225,8 @@ describe("ZCode Protocol", () => {
   it("parses a server-authoritative session state snapshot", () => {
     const snapshot = zcodeSessionStateSnapshotSchema.parse({
       protocol: {
-        name: ZXCODE_PROTOCOL_NAME,
-        version: ZXCODE_PROTOCOL_VERSION,
+        name: ZCODE_PROTOCOL_NAME,
+        version: ZCODE_PROTOCOL_VERSION,
       },
       session: {
         sessionId: "sess_1",
@@ -2626,7 +2669,7 @@ describe("ZCode Protocol", () => {
   });
 
   it("keeps runtime preference compatibility by defaulting missing fields", () => {
-    expect(DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
+    expect(DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({
         nativeSearchEnhancementsEnabled: true,
@@ -2634,7 +2677,7 @@ describe("ZCode Protocol", () => {
     ).toMatchObject({
       askUserQuestionAutoResolutionEnabled: true,
       memoryEnabled: false,
-      modelContextBudgetStrategy: DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     });
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({
