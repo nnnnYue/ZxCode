@@ -918,3 +918,9 @@ exceptions:
       - packages/ui/src/settings/DynamicWorkflowModeSetting.tsx
       - packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
     reason: Admitted upstream files edited only to let the user's dynamic workflow mode choice always win and keep the settings row visible; adopting packages/shared/src and packages/ui/src needs a separate module boundary refactor.
+  - id: fork-bot-remote-workspace-bridge-restored
+    rule: unmanaged-new-file
+    paths:
+      - packages/services/src/bots/botRemoteWorkspaceBridge.ts
+      - packages/services/src/bots/botRemoteRuntimeServices.ts
+    reason: fork 3.15.1-ce.1 发版树既有文件，随桌面 src 恢复 fork 版一并找回（手机远控 Bot 远端 workspace 的 main↔host 协议桥接）；上游 3.16.2 已用 bot-project-runtime 重构该链路，services/src/bots 整目录接管需要独立的模块边界重构。

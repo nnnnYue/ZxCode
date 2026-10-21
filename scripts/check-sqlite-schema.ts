@@ -9,7 +9,8 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { TaskIndexRepo } from "../packages/services/src/session/taskIndexRepo.js";
 import { AutomationRepo } from "../packages/services/src/session/automationRepo.js";
-import { OffPeakTaskRepo } from "../packages/services/src/session/offPeakTaskRepo.js";
+// fork：OffPeakTaskRepo 属 REMOVALS 剔除域，上游 3.16.2 的该模块未合入，
+// 这里不参与建表；schema 基线重新生成后不含 off_peak 专表（tasks.off_peak_task_id 列保留）。
 import { getTasksIndexDatabasePath, setDataBaseDir } from "../packages/services/src/paths.js";
 import { SQLITE_MIGRATIONS } from "../apps/zcode-cli/packages/adapters/src/storage/session-store/migrations.js";
 import { sqliteMigrations } from "../packages/shared/src/sqlite-migrations/index.js";
@@ -24,7 +25,7 @@ await exec("git", ["rev-parse", "--verify", `${base}^{commit}`]);
 const directory = await mkdtemp(join(tmpdir(), "zcode-schema-check-"));
 const cli = new DatabaseSync(":memory:");
 setDataBaseDir(directory);
-const repos = [new AutomationRepo(), new OffPeakTaskRepo(), new TaskIndexRepo()];
+const repos = [new AutomationRepo(), new TaskIndexRepo()];
 try {
   for (const repo of repos) await repo.ensureReady();
   const app = new DatabaseSync(getTasksIndexDatabasePath(), { readOnly: true });
