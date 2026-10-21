@@ -62,8 +62,9 @@ export const relayControlHelloSchema = z
   .object({
     type: z.literal("relay-control-hello"),
     deviceId: nonEmptyStringSchema,
-    /** deployment token；relay 用常量时间比较校验，失败即断开。 */
-    relayToken: nonEmptyStringSchema,
+    // Bugfix: 鉴权实际走 HTTP Authorization header；桌面未配置 token 时发送空串，
+    // 这里若要求非空，无 token 部署的 relay 会以 hello-required 关闭连接并陷入无限重连。
+    relayToken: z.string(),
     version: nonEmptyStringSchema,
   })
   .strict();

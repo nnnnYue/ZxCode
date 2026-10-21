@@ -117,7 +117,6 @@ export default defineConfig({
             // Gen UI 目录回归位于源码旁，默认入口也必须执行，避免只在手动定向运行时生效。
             "packages/shared/src/node/genUiPaths.test.ts",
             "packages/services/src/gen-ui/**/*.test.ts",
-            "scripts/assert-safe-cua-helper-zip.test.mjs",
             "scripts/ci/ci-telemetry-keyword-guard.test.mjs",
           ],
           exclude: ["packages/desktop/test/e2e/**", "packages/zcode-cua/**", ...forkIsolatedTests],
@@ -138,7 +137,8 @@ export default defineConfig({
           sequence: { groupOrder: 1 },
         },
       },
-      "packages/zcode-cua/vitest.config.ts",
+      // fork 已剔除 zcode-cua 域（上游合并残留目录里没有 vitest.config.ts），
+      // 保留该 projects 引用会让任何 vitest 运行直接启动失败。
     ],
     coverage: {
       provider: "v8",

@@ -275,6 +275,7 @@ Example structure for operation recording:
    - ✅ Cloud functions have full access regardless of permission type
 
 3. **Configuration Workflow**:
+
    ```
    Create collection → Configure security rules → Write code → Test
    ```
