@@ -41,10 +41,7 @@ export function createSourceSettingsServiceCollection(
       ICredentialService,
       read(ICredentialService, (accessor) => accessor.credentialService),
     )
-    .register(
-    )
-    .register(
-    )
+
     .register(
       ISettingService,
       read(ISettingService, (accessor) => accessor.settingService),
