@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 30,
+  "revision": 31,
   "config": {
     "providerConfigRules": {
       "templateRules": [
@@ -178,16 +178,7 @@
               "type": "anthropic-messages",
               "baseUrl": "https://api.minimaxi.com/anthropic"
             },
-            "builtinModelIds": [
-              "MiniMax-M3",
-              "MiniMax-M2.7",
-              "MiniMax-M2.7-highspeed",
-              "MiniMax-M2.5",
-              "MiniMax-M2.5-highspeed",
-              "MiniMax-M2.1",
-              "MiniMax-M2.1-highspeed",
-              "MiniMax-M2"
-            ],
+            "builtinModelIds": ["MiniMax-M3.1-Flash", "MiniMax-M3"],
             "logo": {
               "type": "builtin",
               "key": "minimax"
@@ -1727,6 +1718,22 @@
             "optionSpecs": {
               "maxOutputTokens": {
                 "max": 32000
+              }
+            }
+          }
+        },
+        {
+          "modelMatch": ".*MiniMax-M3\\.1-Flash(?:[.\\-:/\\[].*)?",
+          "config": {
+            "properties": {
+              "contextWindow": 1000000
+            },
+            "optionSpecs": {
+              "reasoningLevel": {
+                "values": ["low", "high", "max"]
+              },
+              "maxOutputTokens": {
+                "max": 128000
               }
             }
           }
@@ -4348,17 +4355,24 @@
           }
         },
         {
-          "modelId": "MiniMax-M2.7",
+          "modelId": "MiniMax-M3.1-Flash",
           "templateId": "minimax",
           "config": {
             "enabled": true
           }
         },
         {
+          "modelId": "MiniMax-M2.7",
+          "templateId": "minimax",
+          "config": {
+            "enabled": false
+          }
+        },
+        {
           "modelId": "MiniMax-M2.7-highspeed",
           "templateId": "minimax",
           "config": {
-            "enabled": true
+            "enabled": false
           }
         },
         {

@@ -170,8 +170,8 @@ describe("ZCode Built-in Provider Config 完整性", () => {
         snapshot.providerTemplates?.get("moonshot-kimi")?.config.builtinModelIds.slice(0, 3),
       ).toEqual(["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]);
       expect(
-        snapshot.providerTemplates?.get("minimax")?.config.builtinModelIds.slice(0, 3),
-      ).toEqual(["MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed"]);
+        snapshot.providerTemplates?.get("minimax")?.config.builtinModelIds.slice(0, 2),
+      ).toEqual(["MiniMax-M3.1-Flash", "MiniMax-M3"]);
       for (const providerId of ["qwen-alibaba-model-studio-cn", "qwen-alibaba-model-studio-intl"]) {
         expect(
           snapshot.providerTemplates?.get(providerId)?.config.builtinModelIds.slice(0, 2),
@@ -295,6 +295,24 @@ describe("ZCode Built-in Provider Config 完整性", () => {
           supportsVideo: true,
         },
       });
+
+      // MiniMax-M3.1-Flash：族规则命中后由专用规则覆盖容量与 Reasoning 档位。
+      const minimaxM31Flash = resolve(
+        "minimax",
+        "MiniMax-M3.1-Flash",
+        "anthropic-messages",
+        "https://api.minimaxi.com/anthropic",
+      );
+      expect(minimaxM31Flash.properties?.toJSON()).toMatchObject({
+        contextWindow: 1_000_000,
+        inputFormat: {
+          supportsText: true,
+          supportsImage: true,
+          supportsVideo: true,
+        },
+      });
+      expect(minimaxM31Flash.optionSpecs?.maxOutputTokens).toMatchObject({ max: 128_000 });
+      expect(minimaxM31Flash.optionSpecs?.reasoningLevel?.values).toEqual(["low", "high", "max"]);
     } finally {
       source.dispose();
     }
