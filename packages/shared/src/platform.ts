@@ -489,7 +489,9 @@ export interface RemoteSessionReconnectedEvent {
 }
 
 /** fork：Bot 重连事件类型别名（fork UI 用旧名引用 RemoteSessionReconnectedEvent）。 */
-export type BotRemoteWorkspaceReconnectedEvent = RemoteSessionReconnectedEvent;
+export interface BotRemoteWorkspaceReconnectedEvent extends RemoteSessionReconnectedEvent {
+  target?: import("./remoteTarget.js").RemoteTarget;
+}
 
 export interface EmbeddedBrowserOpenUrlRequest {
   url: string;
