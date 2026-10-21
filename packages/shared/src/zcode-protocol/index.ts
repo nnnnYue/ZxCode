@@ -2779,7 +2779,6 @@ export const zcodeUserInputResponseSchema = z
   .strict();
 export type ZCodeUserInputResponse = z.infer<typeof zcodeUserInputResponseSchema>;
 
-
 /** 请求取消只作用于同 workspace/session 的这一轮凭据刷新。 */
 export const zcodeProviderRuntimeHeadersCancelledSchema = z
   .object({
