@@ -86,6 +86,7 @@ If registration does not stick, platform notes from the official docs:
 
   Leftover `# Added by Obsidian` lines in `~/.zprofile` from an older
   registration can be deleted safely.
+
 - **Windows** — registration adds Obsidian to the user PATH and uses the
   `Obsidian.com` terminal redirector installed next to `Obsidian.exe`.
   Restart the terminal after registering.

@@ -43,6 +43,7 @@ const uploadedUrlOrFileID = result.url || result.fileID;
 ## 根因
 
 浏览器直传 CloudBase 存储需要：
+
 1. 环境已开通存储资源
 2. 当前访问 `host:port` 在安全域名白名单中
 3. Vite 默认 `localhost:5173` 不在默认白名单中

@@ -46,12 +46,14 @@ Keep local `references/...` paths for files that ship with the current skill dir
 ### SDK Code vs MCP Tools
 
 **When to write SDK code (use this skill):**
+
 - The task explicitly asks to "modify code" or "use SDK"
 - The task asks to implement app/frontend logic
 - The task mentions specific SDK methods like `db.collection().add()`, `.get()`, `.update()`
 - The context shows an existing Web project with SDK initialization (e.g., `index.js` already has `cloudbase.init()`)
 
 **When to use MCP tools instead:**
+
 - The task asks to manage CloudBase resources (create collection, set permissions, etc.)
 - The task involves admin/management operations without writing app code
 - The task mentions tools like `writeNoSqlDatabaseContent`, `managePermissions`, etc.
@@ -94,7 +96,7 @@ Use it for:
 import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
-  env: "your-env-id"
+  env: "your-env-id",
 });
 
 const db = app.database();
@@ -147,9 +149,7 @@ Important rules:
 ### Simple query
 
 ```javascript
-const result = await db.collection("todos")
-  .where({ completed: false })
-  .get();
+const result = await db.collection("todos").where({ completed: false }).get();
 ```
 
 ### Create and capture document ID
@@ -158,7 +158,7 @@ const result = await db.collection("todos")
 const result = await db.collection("posts").add({
   title: "New article",
   content: "...",
-  createdAt: new Date()
+  createdAt: new Date(),
 });
 
 const articleId = result._id;
@@ -167,19 +167,13 @@ const articleId = result._id;
 ### Ordered pagination
 
 ```javascript
-const result = await db.collection("posts")
-  .orderBy("createdAt", "desc")
-  .skip(20)
-  .limit(10)
-  .get();
+const result = await db.collection("posts").orderBy("createdAt", "desc").skip(20).limit(10).get();
 ```
 
 ### Field selection
 
 ```javascript
-const result = await db.collection("users")
-  .field({ name: true, email: true, _id: false })
-  .get();
+const result = await db.collection("users").field({ name: true, email: true, _id: false }).get();
 ```
 
 ## Best practices

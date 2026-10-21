@@ -3,7 +3,7 @@ name: cloudbase-agent
 description: Build and deploy AI agents with CloudBase Agent SDK (TypeScript & Python). Implements the AG-UI protocol for streaming agent-UI communication. Use when deploying agent servers, using LangGraph/LangChain/CrewAI adapters, building custom adapters, understanding AG-UI protocol events, or building web/mini-program UI clients. Supports both TypeScript (@cloudbase/agent-server) and Python (cloudbase-agent-server via FastAPI).
 version: 2.23.11
 alwaysApply: false
-allowed-tools: 
+allowed-tools:
 disable: false
 ---
 
@@ -20,14 +20,13 @@ Keep local `references/...` paths for files that ship with the current skill dir
 
 This skill supports **TypeScript** and **Python**. Determine the language first, then read the corresponding skill file. If the user does not explicitly specify which programming language to use, TypeScript must be enforced.
 
-
 ## Step 1: Determine Language
 
-| Signal | Language |
-|--------|----------|
+| Signal                                  | Language       |
+| --------------------------------------- | -------------- |
 | User says "TypeScript", "Node.js", "TS" | **TypeScript** |
-| User says "Python", "FastAPI", "pip" | **Python** |
-| No clear signal | **TypeScript** |
+| User says "Python", "FastAPI", "pip"    | **Python**     |
+| No clear signal                         | **TypeScript** |
 
 ## Step 2: Read the Language-Specific Skill File
 

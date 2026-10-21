@@ -1,4 +1,5 @@
 import { querySessionDebug } from "./session-debug.js";
+import { offPeakControlParamsSchema, offPeakControlResultSchema } from "@zcode/shared";
 import { createNodeNetworkCapture } from "@zcode/shared/node";
 import { networkCaptureControlSchema, zcodeProtocolNotifications } from "@zcode/shared";
 import {
@@ -110,7 +111,9 @@ import {
 } from "./mcp-ui/index.js";
 import { listPluginUiSurfaces } from "./plugin-ui-surfaces.js";
 import { updateInteractionPreferences } from "./interaction-preferences.js";
+import { refreshProviderRegistry, updateAccountProviderConfig } from "./account-provider-config.js";
 import { updateModelIoPreferences } from "./model-io-preferences.js";
+import { updateOffPeakToolPolicy } from "./off-peak-tool-policy.js";
 import { updateDynamicWorkflowPolicy } from "./dynamic-workflow-policy.js";
 import { grantWorkspaceHookTrustForProtocol } from "./workspace-hook-trust.js";
 import {
@@ -237,6 +240,11 @@ export class ZCodeProtocolAgentServer {
   private readonly runtimeResources: ProtocolRuntimeResources;
   private shutdownPromise?: Promise<void>;
   readonly browserControlPort: BrowserControlPort;
+  /**
+   * 官方 MCP 身份头端口所需的最小上下文。
+   * MCP 连接池的构造早于 server，需要在 server 就绪后回填闭包持有的引用——
+   * 与 v4Gateway 同样的构造顺序收口方式。只暴露 requestClient，不外泄整个 context。
+   */
   /** MCP server 发起的 elicitation/create → 用户提问。 */
   requestMcpElicitation(
     request: McpElicitationRequest,
@@ -290,6 +298,7 @@ export class ZCodeProtocolAgentServer {
       appRuntimePreferences: {
         askUserQuestionAutoResolutionEnabled: true,
         modelIoFullRetentionEnabled: false,
+        offPeakToolEnabled: false,
         // 动态工作流灰度门 fail-closed：Host 必须显式 workspace/updateDynamicWorkflowPolicy
         // 才开启。
         dynamicWorkflowEnabled: false,
@@ -393,13 +402,38 @@ export class ZCodeProtocolAgentServer {
       this.cleanupClientRequest(pending);
       pending.reject(error);
     }
+    // Bug 原因：Server Core 被 SIGKILL 后，Agent 的 stdin 虽然收到 EOF，但连接关闭
+    // 只拒绝了反向请求，没有打断已经进入 Bash/工具循环的前台执行。transport 会继续
+    // 等待该请求自然结束，旧 Agent 因而成为 PPID 1 的孤儿并在新 Core generation 之外
+    // 继续写文件。协议 owner 消失就是本进程全部前台执行的终止边界，必须同步取消。
+    for (const record of this.context.sessions.values()) {
+      try {
+        record.app.runtime.stopActiveForegroundExecution?.({
+          reason: "ZCode Protocol owner disconnected",
+        });
+      } catch (cause) {
+        this.logger?.warn("Failed to stop foreground execution after protocol disconnect", {
+          errorType: cause instanceof Error ? cause.name : typeof cause,
+          sessionId: record.app.sessionId,
+        });
+      }
+      record.activeAbortController?.abort(error);
+    }
+    for (const controller of this.workspaceGenerateTextControllers.values()) {
+      controller.abort(error);
+    }
+    this.workspaceGenerateTextControllers.clear();
+    for (const controller of this.pluginOperationControllers.values()) {
+      controller.abort(error);
+    }
+    this.pluginOperationControllers.clear();
   }
 
   /** 进程资源关闭，不使用会删除产品会话/发布 session.removed 的 session/close。 */
   shutdown(): Promise<void> {
     if (this.shutdownPromise) return this.shutdownPromise;
     this.shutdownPromise = this.runtimeResources.close();
-    const error = new Error("ZxCode Protocol runtime stopping");
+    const error = new Error("ZCode Protocol runtime stopping");
     this.disconnectClient(error);
     this.messageSink = undefined;
     this.clearPostResponseMessages();
@@ -468,10 +502,10 @@ export class ZCodeProtocolAgentServer {
         if (control.success) this.networkCapture.setCaptureId(control.data.captureId);
         return undefined;
       }
-      this.logger?.debug("ZxCode Protocol notification ignored", {
+      this.logger?.debug("ZCode Protocol notification ignored", {
         event: "zcode_protocol.notification.ignored",
         method: message.method,
-        module: "bootstrap.zxcode_protocol",
+        module: "bootstrap.zcode_protocol",
       });
     }
     return undefined;
@@ -560,6 +594,14 @@ export class ZCodeProtocolAgentServer {
         return await this.requireV4Gateway().plans(request.params);
       case V4_METHODS.backgroundBashOutput:
         return await this.requireV4Gateway().backgroundBashOutput(request.params);
+      case V4_METHODS.offPeakControl: {
+        const params = offPeakControlParamsSchema.parse(request.params);
+        const record = this.context.sessions.get(params.sessionId);
+        // 生命周期只存在于驻留 runtime；换票不能恢复冷会话或重放原始输入。
+        return offPeakControlResultSchema.parse(
+          record ? await record.app.runtime.controlOffPeakExecution(params) : { accepted: false },
+        );
+      }
       case V4_METHODS.conversationFileChanges:
         return await this.requireV4Gateway().fileChanges(request.params);
       case V4_METHODS.conversationFileRewindPreview:
@@ -612,6 +654,8 @@ export class ZCodeProtocolAgentServer {
         return this.requireV4Gateway().handleCommand(request.params);
       case V4_METHODS.commandsQuery:
         return this.requireV4Gateway().queryCommands(request.params);
+      case V4_METHODS.sessionsIndexReconcile:
+        return this.requireV4Gateway().reconcileSessions(request.params);
       case zcodeProtocolMethods.sessionCreate:
         return await createSession(this.context, request.params, request.trace);
       case zcodeProtocolMethods.sessionResume:
@@ -669,10 +713,16 @@ export class ZCodeProtocolAgentServer {
         }
         return grantResult;
       }
+      case zcodeProtocolMethods.providerUpdateAccountConfig:
+        return await updateAccountProviderConfig(this.context, request.params);
+      case zcodeProtocolMethods.providerRefreshRegistry:
+        return await refreshProviderRegistry(this.context, request.params);
       case zcodeProtocolMethods.workspaceUpdateInteractionPreferences:
         return await updateInteractionPreferences(this.context, request.params);
       case zcodeProtocolMethods.workspaceUpdateModelIoPreferences:
         return await updateModelIoPreferences(this.context, request.params);
+      case zcodeProtocolMethods.workspaceUpdateOffPeakToolPolicy:
+        return await updateOffPeakToolPolicy(this.context, request.params);
       case zcodeProtocolMethods.workspaceUpdateDynamicWorkflowPolicy:
         return await updateDynamicWorkflowPolicy(this.context, request.params);
       case zcodeProtocolMethods.workspaceGenerateText:
@@ -758,7 +808,7 @@ export class ZCodeProtocolAgentServer {
       case zcodeProtocolMethods.processChildProcesses:
         return listChildProcesses(this.context.deps.mcpTelemetry?.listProcesses() ?? []);
       case zcodeProtocolMethods.runtimeCapabilities:
-        return { independentPlanState: true };
+        return { independentPlanState: true, historyFirst: true };
       case zcodeProtocolMethods.pluginsMarketplaceAdd:
         return await this.withPluginOperationSignal(request, (signal) =>
           addPluginMarketplace(this.context, request.params, signal),
@@ -896,7 +946,7 @@ export class ZCodeProtocolAgentServer {
     if (!this.messageSink) {
       throw new ProtocolRequestError(
         PROTOCOL_CLIENT_REQUEST_ERROR_CODES.noClientAttached,
-        `No ZxCode Protocol client is attached for ${method}`,
+        `No ZCode Protocol client is attached for ${method}`,
       );
     }
 
@@ -935,7 +985,7 @@ export class ZCodeProtocolAgentServer {
               PROTOCOL_CLIENT_REQUEST_ERROR_CODES.timedOut,
               `Client request timed out: ${method}`,
               {
-                timeoutMs: options.timeoutMs,
+              timeoutMs: options.timeoutMs,
               },
             ),
           );

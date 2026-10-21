@@ -241,6 +241,8 @@ function getFailureDescription(
       });
     case "unexpected-error":
       return formatMessage({ id: "webRemoteControl.failure.unexpectedError" });
+    default:
+      return null;
   }
 }
 

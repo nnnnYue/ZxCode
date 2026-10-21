@@ -14,6 +14,10 @@ import {
   IZCodeTaskService,
   IZCodeAgentService,
   IZCodeSessionService,
+  IProjectService,
+  ITaskGroupService,
+  ISourceServerWorkspaceService,
+  IRemoteProjectService,
   ICuaPermissionService,
   IBotsService,
   IFileWatcherService,
@@ -37,6 +41,10 @@ import {
   ISettingsSyncService,
   IPromptAttachmentTransferService,
   IWindowControllerService,
+  IWindowProjectService,
+  IWindowRemoteProjectService,
+  IWindowProjectChangesService,
+  type WindowProjectDirectoryServices,
   type IServiceAccessor,
 } from "@zcode/services";
 
@@ -46,6 +54,7 @@ import {
  * 新增服务只需在此添加一个 getter。
  */
 export class RemoteServiceAccess implements IServiceAccessor {
+  readonly windowProjectDirectory?: WindowProjectDirectoryServices;
   readonly fileService: IFileService;
   readonly mediaPreviewService: IMediaPreviewService;
   readonly gitService: IGitService;
@@ -60,6 +69,10 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly windowControllerService: IWindowControllerService;
   readonly zcodeAgentService: IZCodeAgentService;
   readonly zcodeSessionService: IZCodeSessionService;
+  readonly taskGroupService: ITaskGroupService;
+  readonly projectService: IProjectService;
+  readonly remoteProjectService: IRemoteProjectService;
+  readonly sourceServerWorkspaceService: ISourceServerWorkspaceService;
   // cuaPermissionService 在 IServiceAccessor 上是可选（远端/bots host 不提供），但桌面 renderer
   // 经 RPC 一定能拿到（main host 始终注册此 descriptor；非 macOS / 未启用时方法返回 available:false）。
   readonly cuaPermissionService: ICuaPermissionService;
@@ -87,7 +100,24 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly settingsSyncService: ISettingsSyncService;
   readonly promptAttachmentTransferService: IPromptAttachmentTransferService;
 
-  constructor(channelClient: IChannelClient) {
+  constructor(
+    channelClient: IChannelClient,
+    options: { sourceServerManagementService?: boolean; windowProjectDirectory?: boolean } = {},
+  ) {
+    // 远端工作区的 project 必须保留 Source 语义；只有显式能力才创建完整窗口目录组。
+    if (options.windowProjectDirectory) {
+      this.windowProjectDirectory = {
+        projectService: ProxyChannel.toService(
+          channelClient.getChannel(IWindowProjectService.channelName),
+        ),
+        remoteProjectService: ProxyChannel.toService(
+          channelClient.getChannel(IWindowRemoteProjectService.channelName),
+        ),
+        changesService: ProxyChannel.toService(
+          channelClient.getChannel(IWindowProjectChangesService.channelName),
+        ),
+      };
+    }
     this.fileService = ProxyChannel.toService<IFileService>(
       channelClient.getChannel(IFileService.channelName),
     );
@@ -128,6 +158,18 @@ export class RemoteServiceAccess implements IServiceAccessor {
     );
     this.zcodeAgentService = ProxyChannel.toService<IZCodeAgentService>(
       channelClient.getChannel(IZCodeAgentService.channelName),
+    );
+    this.remoteProjectService = ProxyChannel.toService<IRemoteProjectService>(
+      channelClient.getChannel(IRemoteProjectService.channelName),
+    );
+    this.taskGroupService = ProxyChannel.toService<ITaskGroupService>(
+      channelClient.getChannel(ITaskGroupService.channelName),
+    );
+    this.projectService = ProxyChannel.toService<IProjectService>(
+      channelClient.getChannel(IProjectService.channelName),
+    );
+    this.sourceServerWorkspaceService = ProxyChannel.toService<ISourceServerWorkspaceService>(
+      channelClient.getChannel(ISourceServerWorkspaceService.channelName),
     );
     this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
       channelClient.getChannel(IZCodeSessionService.channelName),

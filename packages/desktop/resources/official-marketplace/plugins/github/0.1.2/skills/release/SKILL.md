@@ -38,29 +38,33 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    confirmed installation, authentication, active identity, and repository.
    Fetching tags changes local refs, so explain that and run it only as part of
    an explicitly requested release workflow:
+
    ```bash
    git fetch --tags
    ```
 
 2. **Validate and resolve the release target:**
    - Validate the version as a Git tag with `git check-ref-format
-     "refs/tags/<version>"`.
+"refs/tags/<version>"`.
    - If `--target` was supplied, resolve it to an exact commit SHA.
    - Otherwise resolve the repository default branch, then its exact commit SHA.
 
 3. **Check if tag already exists:**
+
    ```bash
    git tag -l "$version"
    gh release view "$version" 2>/dev/null
    ```
 
 4. **Find previous release tag, excluding the version being created:**
+
    ```bash
    git describe --tags --abbrev=0 --exclude "$version" 2>/dev/null ||
      echo "No previous tag"
    ```
 
 5. **Generate changelog** against the resolved target commit:
+
    ```bash
    git log <previous_tag>..<target_sha> --pretty=format:"%h %s" --no-merges
    ```
@@ -82,6 +86,7 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 
 9. **Create the release:** Read the title from its file into a quoted variable
    and always pass the exact target SHA:
+
    ```bash
    release_title=$(<"$title_file")
    gh release create "$version" \
@@ -100,19 +105,24 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
 ## What's Changed
 
 ### Features
+
 - feat: description (#PR)
 - feat(scope): description (#PR)
 
 ### Bug Fixes
+
 - fix: description (#PR)
 
 ### Performance
+
 - perf: description (#PR)
 
 ### Breaking Changes
+
 - **BREAKING:** description
 
 ### Other Changes
+
 - chore: description
 - refactor: description
 

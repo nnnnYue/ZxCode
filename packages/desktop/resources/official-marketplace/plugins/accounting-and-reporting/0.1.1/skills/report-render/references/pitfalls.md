@@ -37,7 +37,7 @@ without `registerFontFamily` plus `addMapping`, reportlab has no idea the two ar
 related, so `<b>text</b>` falls back to the regular face. Nothing warns you.
 
 **Bold does not resolve in matplotlib.** `fontweight="bold"` is resolved through
-the font's *metadata*, not its outlines. A static weight instantiated from a
+the font's _metadata_, not its outlines. A static weight instantiated from a
 variable font keeps the source's name table, so a genuine 700-weight file can
 still report subfamily "Regular", PostScript name "…-Thin", and a clear macStyle
 bold bit. Two such files both claim to be the same font and matplotlib picks
@@ -51,7 +51,7 @@ PostScript-outline OTFs outright. Instantiate static weights with fontTools.
 spec-bound to printable ASCII, and reportlab enforces it, raising
 `TTFError: psName=b'\xe9\xbb\x91\xe4\xbd\x93-Regular' contains invalid character`
 — an ASCII-escaped byte string, so the name is not even readable as 黑体 in the
-message. This bites precisely the fonts most likely to be *found* on a
+message. This bites precisely the fonts most likely to be _found_ on a
 Chinese-configured machine (黑体, 宋体, 微软雅黑), and `_retag` used to build the
 PostScript name from the family name verbatim, so repairing a font did not fix it.
 `fonts._ps_safe` now keeps only ASCII alphanumerics for nameID 6 and leaves the
@@ -85,12 +85,12 @@ does not render `[n]` link markup. A long Chinese cell silently overflows its
 column. Wrap every cell in a `Paragraph`.
 
 **`%` in a `%`-formatted string.** If you build text with the `%` operator, a
-literal percent must be `%%` — and `%%` does *not* collapse in a plain string
+literal percent must be `%%` — and `%%` does _not_ collapse in a plain string
 that never goes through `%`, so it ships as a visible double percent. Prefer
 f-strings and the problem disappears.
 
 **`&` in a URL prints as an entity.** reportlab's paragraph parser reads a bare
-`&` as the start of an XML entity and *repairs* the unterminated one by inserting
+`&` as the start of an XML entity and _repairs_ the unterminated one by inserting
 a semicolon, so a query-string URL interpolated into markup comes out as
 `…?code=25025B700173&lan;=zh&device;=pc` — three characters that were never in
 the source, in the one field whose whole job is to be copied. The `/Link`
@@ -115,11 +115,11 @@ copy wants 「」or "" anyway.
 **reportlab's CJK line breaker is Japanese, and it cuts a `[标签]` in half.** Two
 separate defects out of one function, and neither errors:
 
-* `cjkFragSplit` imports `ALL_CANNOT_END` and **never uses it**. `[` is in that
+- `cjkFragSplit` imports `ALL_CANNOT_END` and **never uses it**. `[` is in that
   set, so a line ended `…固定汇率+4%[` and the next opened `披露]` — six times in
   one 12-page 业绩点评. The same cut in a citation marker turns `[12]` into `[1` /
   `2]`, which reads as a different source.
-* Its prohibition set is `ALL_CANNOT_START`, which is Japanese: `、。）」` are in it,
+- Its prohibition set is `ALL_CANNOT_START`, which is Japanese: `、。）」` are in it,
   the **Chinese** `，；：！？…` are not, so those get pushed onto the next line and
   open it. And the hang rule fires for one character only — "we won't do two or
   more though", says the source — so a chained closer like `）。` hangs the bracket
@@ -147,8 +147,8 @@ happened to tag a figure in that paragraph.
 caption above it. Pick one: the caption, because it flows with the text, is
 styled by the document, and can carry `[n]` links.
 
-**The same source printed twice.** A source note inside the figure *and* as a
-note line under it — or, on a table, a 来源 row inside it *and* a note beneath.
+**The same source printed twice.** A source note inside the figure _and_ as a
+note line under it — or, on a table, a 来源 row inside it _and_ a note beneath.
 State it once, and **the note line is the one place**: it is selectable text, it
 can carry a clickable `[n]`, and it reflows. So pass the source to
 `rep.figure(..., note=...)` / `rep.table(..., note=...)` and do not call
@@ -181,7 +181,7 @@ subtlest one here. reportlab's `handle_keepWithNext` extends a heading's group t
 the following flowable only if `_ktAllow` admits it, and `_ktAllow` rejects
 `_ContainerSpace` — of which `KeepTogether` is a subclass. So a heading with
 `keepWithNext=1` followed by `KeepTogether([caption, image, note])` gets a group
-containing *only the heading*, and strands at the foot of a page. Nothing errors,
+containing _only the heading_, and strands at the foot of a page. Nothing errors,
 and it only shows at some content lengths: a sweep measured 4 of 15 filler
 lengths stranded. Verified against reportlab 4.5.1.
 
@@ -190,7 +190,7 @@ Fix: group content that always fits in a **one-cell borderless `Table`** instead
 do this to something that can overflow a page: reportlab then loops instead of
 splitting or raising (a 45-row table wrapped this way hung, with `splitInRow=1`
 making no difference). Long tables therefore keep `KeepTogether` and take the
-heading *inside* the group instead. `fin_report` does exactly this — `_atomic()`
+heading _inside_ the group instead. `fin_report` does exactly this — `_atomic()`
 for figures and callouts, `KeepTogether` plus an optional `heading=` for tables —
 and `selftest.py`'s `orphan_heading_sweep` is the regression test.
 
@@ -216,7 +216,7 @@ all four block kinds (`para` / `table` / `callout` / `bullets`) and is the
 regression test — 0/15 on every path after the fix.
 
 **A rule between a heading and its content breaks the chain.** `h1` emits a
-heading then an `HRFlowable`; the heading's `keepWithNext` binds to the *rule*, so
+heading then an `HRFlowable`; the heading's `keepWithNext` binds to the _rule_, so
 without the rule also carrying `keepWithNext` the pair strands together one line
 above the content.
 
@@ -228,7 +228,7 @@ section.
 half-empty pages, and the one that survives every check. `_atomic()` makes
 caption+image+note unsplittable, and platypus has no float mechanism — a story is
 strictly linear — so when the space left on the page is smaller than the group,
-the whole group moves to the next page and *nothing flows back into the hole*.
+the whole group moves to the next page and _nothing flows back into the hole_.
 This is where platypus and LaTeX part company: LaTeX defers the float but keeps
 filling the current page with body text, which is why papers read as compact.
 Measured: the group reaches ~103mm (88mm cap + ~15mm of caption, note and
@@ -242,18 +242,18 @@ down to the point where the chart's own labels would fall below
 that it keeps natural size and takes the break after all, because an illegible
 exhibit is worse than a gap. Three things about it are load-bearing:
 
-* It re-measures from natural size on **every** `wrap`. reportlab wraps a
+- It re-measures from natural size on **every** `wrap`. reportlab wraps a
   flowable more than once (keepWithNext, then the frame, then again on the next
   page if it moved); scaling from the current size compounds, and the built size
   would then depend on how many times reportlab happened to ask.
-* The floor is derived from `fig_w_in` and `base_pt` in the chart sidecar, not
+- The floor is derived from `fig_w_in` and `base_pt` in the chart sidecar, not
   from a flat percentage — a chart is authored at some width and displayed
   narrower, so every label in it is already scaled by that ratio. **The two
   sparse density tiers sit below the floor** (a two-bar chart at 92mm off a 6.4in
   canvas prints 10.5pt labels at 5.9pt), so those figures have no shrink budget
   at all. That is intended: the fix for them is a smaller canvas, not more
   scaling.
-* Natural size must still fit a full page, which `FIG_H_CAP` guarantees. Without
+- Natural size must still fit a full page, which `FIG_H_CAP` guarantees. Without
   that the "keep natural size and move" branch would hand reportlab a block that
   fits nowhere — see the looping failure two entries up.
 
@@ -292,7 +292,7 @@ exhibit and no page label.
 ## Verification
 
 **Greyscale QA renders.** If you convert a page to greyscale to measure ink, save
-the *colour* image — otherwise every QA page looks monochrome and hides any
+the _colour_ image — otherwise every QA page looks monochrome and hides any
 palette or contrast defect from the person reviewing it.
 
 **Standard-14 fonts are not an embedding failure.** reportlab puts Helvetica in
@@ -314,7 +314,7 @@ footer rule and page number sit below `MARGIN_B`, so a whole-page scan finds ink
 on every page and reports no gap anywhere.
 
 **A document-wide flag cannot diagnose a per-page defect.** The blank-page check
-used to test whether *the document* had a text layer, then blamed every blank page
+used to test whether _the document_ had a text layer, then blamed every blank page
 on font embedding. A stray `PageBreak` leaving one empty page in an otherwise
 normal report therefore produced "the classic embedded-font failure" and sent
 anyone debugging it after a font that was fine. Per-page character counts split

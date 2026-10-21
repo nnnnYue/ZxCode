@@ -221,7 +221,7 @@ storage = Storage(backend="redis", serializer=PickleSerializer())
 class CustomSerializer:
     def serialize(self, obj):
         return msgpack.packb(obj)
-    
+
     def deserialize(self, data):
         return msgpack.unpackb(data)
 
@@ -278,7 +278,7 @@ await migrate_storage(
 class SessionManager:
     def __init__(self, storage: Storage):
         self.storage = storage.namespace("sessions")
-    
+
     async def create_session(self, user_id: str) -> str:
         session_id = generate_session_id()
         await self.storage.set(
@@ -287,7 +287,7 @@ class SessionManager:
             ttl=3600  # 1 hour
         )
         return session_id
-    
+
     async def get_session(self, session_id: str) -> dict | None:
         return await self.storage.get(session_id)
 ```
@@ -298,10 +298,10 @@ class SessionManager:
 async def rate_limit(user_id: str, limit: int = 100, window: int = 3600):
     key = f"rate_limit:{user_id}"
     count = await storage.get(key) or 0
-    
+
     if count >= limit:
         raise RateLimitError("Too many requests")
-    
+
     await storage.set(key, count + 1, ttl=window)
 ```
 

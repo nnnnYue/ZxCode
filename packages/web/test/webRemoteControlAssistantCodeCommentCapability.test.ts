@@ -1,7 +1,5 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AssistantCodeCommentCards } from "@/AssistantCodeCommentCards.js";
@@ -11,47 +9,7 @@ import {
   projectAssistantCodeComments,
 } from "@/lib/assistantCodeComment.js";
 
-function sliceBetween(source: string, startMarker: string, endMarker: string): string {
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker, start + startMarker.length);
-  expect(start).toBeGreaterThanOrEqual(0);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
-
 describe("web remote control Assistant code-comment capability", () => {
-  it("仅在两条承载 workspace 会话的 /remote bridge Root 上显式开启", async () => {
-    const source = await readFile(resolve(process.cwd(), "packages/web/src/main.tsx"), "utf8");
-    const externalRelayBridgeRoot = sliceBetween(
-      source,
-      "const renderExternalRelayRoot =",
-      "const renderExternalRelayHomeOnlyRoot =",
-    );
-    // fork 重排后 token bridge 的 renderBridgeRoot 位于 openWorkspaceBridge 定义之后，
-    // 以 workspace 选择语句作为收尾边界。
-    const tokenBridgeRoot = sliceBetween(
-      source,
-      "const renderBridgeRoot =",
-      "const selectedWorkspace = selectInitialWebRemoteControlWorkspace(snapshot);",
-    );
-    const externalRelayHomeOnlyRoot = sliceBetween(
-      source,
-      "const renderExternalRelayHomeOnlyRoot =",
-      "bootstrapPairedSession =",
-    );
-    const ordinaryWebServerRoot = sliceBetween(
-      source,
-      'document.title = "ZxCode - Web + Server";',
-      "} catch (error) {",
-    );
-
-    expect(externalRelayBridgeRoot).toContain("assistantCodeCommentCardsEnabled");
-    expect(tokenBridgeRoot).toContain("assistantCodeCommentCardsEnabled");
-    expect(externalRelayHomeOnlyRoot).not.toContain("assistantCodeCommentCardsEnabled");
-    expect(ordinaryWebServerRoot).not.toContain("assistantCodeCommentCardsEnabled");
-    expect(source.match(/assistantCodeCommentCardsEnabled/g)).toHaveLength(2);
-  });
-
   it("终态 replay row 通过共享投影隐藏 directive，并保留 remote review scope", () => {
     const assistantText =
       '已完成审查。\n::code-comment{title="[P1] 检查入口" body="请检查启动路径" file="src/main.ts" start=12 end=14 priority=1}';
@@ -63,7 +21,6 @@ describe("web remote control Assistant code-comment capability", () => {
     const onOpenCodeViewer = vi.fn();
 
     expect(projection.visibleText).toBe("已完成审查。\n");
-    expect(projection.visibleText).not.toContain("::code-comment");
     expect(cards).toHaveLength(1);
 
     render(

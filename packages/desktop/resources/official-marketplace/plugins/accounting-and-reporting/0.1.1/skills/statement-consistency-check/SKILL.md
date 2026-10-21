@@ -51,23 +51,23 @@ Record the file name and version. Every finding below cites it.
 
 ### Step 2: Within-statement checks
 
-| 报表 | 检查 |
-|---|---|
-| 资产负债表 | 资产合计 = 负债合计 + 所有者权益合计;各分类小计 = 明细行合计;流动/非流动划分完整 |
-| 利润表 | 逐级结转到净利润;归母 + 少数股东 = 净利润 |
-| 现金流量表 | 经营 + 投资 + 筹资 + 汇率影响 = 现金净增加额;各类小计 = 明细行合计 |
-| 所有者权益变动表 | 期初 + 本期增减 = 期末,逐列;合计列 = 各列之和 |
+| 报表             | 检查                                                                             |
+| ---------------- | -------------------------------------------------------------------------------- |
+| 资产负债表       | 资产合计 = 负债合计 + 所有者权益合计;各分类小计 = 明细行合计;流动/非流动划分完整 |
+| 利润表           | 逐级结转到净利润;归母 + 少数股东 = 净利润                                        |
+| 现金流量表       | 经营 + 投资 + 筹资 + 汇率影响 = 现金净增加额;各类小计 = 明细行合计               |
+| 所有者权益变动表 | 期初 + 本期增减 = 期末,逐列;合计列 = 各列之和                                    |
 
 ### Step 3: Cross-statement checks — where sets actually break
 
-| 关系 | 两端 |
-|---|---|
+| 关系       | 两端                                                                   |
+| ---------- | ---------------------------------------------------------------------- |
 | 净利润结转 | 利润表净利润 = 权益变动表本期综合收益中的净利润 = 现金流量表间接法起点 |
-| 未分配利润 | 期初 + 净利润 − 分配 = 期末,且与资产负债表未分配利润一致 |
-| 现金 | 现金流量表期末余额 = 资产负债表货币资金 ± 受限资金等调节项 |
-| 现金变动 | 现金净增加额 = 资产负债表货币资金期末 − 期初 ± 同一调节项 |
-| 权益 | 权益变动表期末合计 = 资产负债表所有者权益合计 |
-| 少数股东 | 权益变动表少数股东权益期末 = 资产负债表少数股东权益 |
+| 未分配利润 | 期初 + 净利润 − 分配 = 期末,且与资产负债表未分配利润一致               |
+| 现金       | 现金流量表期末余额 = 资产负债表货币资金 ± 受限资金等调节项             |
+| 现金变动   | 现金净增加额 = 资产负债表货币资金期末 − 期初 ± 同一调节项              |
+| 权益       | 权益变动表期末合计 = 资产负债表所有者权益合计                          |
+| 少数股东   | 权益变动表少数股东权益期末 = 资产负债表少数股东权益                    |
 
 **Report the cash tie and the explanation status separately.** Where 货币资金 contains restricted balances or items that are not cash equivalents, only an explicit reconciling line in the statement set or an existing reconciliation schedule prepared as part of that set can make the face tie pass. A note may identify why the amounts differ, but it does not insert the missing line into the cash flow statement. Never subtract the note amount, construct an adjusted cash figure, or otherwise complete the preparer's reconciliation. If the difference is supported by a note but no explicit reconciling line exists, report `差额已定位但表内未调节` and grade it 🔴 as a presentation/disclosure defect; do not report `一致` or `处理正确`. An unsupported difference remains `未解释差异`.
 

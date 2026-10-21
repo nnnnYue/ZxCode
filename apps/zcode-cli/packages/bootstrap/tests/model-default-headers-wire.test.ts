@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_ZXCODE_ENDPOINT_ORIGIN } from "@zcode/shared";
 import {
   createSessionId,
   InMemorySessionEventStore,
@@ -82,7 +81,7 @@ function createFixture(
   );
   if (!provider.ok || !model.ok) throw new Error("invalid header fixture");
   const executionConfig = createRuntimeAiSdkModelExecutionConfig(
-    options.env ?? { ZXCODE_APP_VERSION: CLIENT_VERSION },
+    options.env ?? { ZCODE_APP_VERSION: CLIENT_VERSION, ZCODE_ENV: "production" },
     { sourceTitle: options.sourceTitle ?? "electron", appVersion: options.appVersion },
   );
   const adapter = createModelAdapter({ executionConfig, env: {} });
@@ -186,21 +185,20 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
         } else await model.generateText(requestInput);
         expect(requests).toHaveLength(1);
         const headers = requests[0]!.headers;
-        // fork 去平台化后默认头只剩归因三元组 + agent 代号头；指纹头已删。
-        expect(headers.get("user-agent")).toContain(`ZxCode/${CLIENT_VERSION}`);
-        expect(headers.get("x-title")).toBe("ZxCode@electron");
-        expect(headers.get("http-referer")).toBe(DEFAULT_ZXCODE_ENDPOINT_ORIGIN);
-        expect(headers.get("x-zxcode-agent")).toBe("glm");
+        expect(headers.get("user-agent")).toContain(`ZCode/${CLIENT_VERSION}`);
+        expect(headers.get("x-zcode-app-version")).toBe(CLIENT_VERSION);
+        expect(headers.get("x-title")).toBe("Z Code@electron");
+        expect(headers.get("http-referer")).toBe("https://zcode.z.ai");
+        expect(headers.get("x-zcode-agent")).toBe("glm");
+        expect(headers.get("x-release-channel")).toBe("production");
         for (const key of [
-          "x-zxcode-app-version",
-          "x-release-channel",
           "x-client-language",
           "x-client-timezone",
           "x-platform",
           "x-os-category",
           "x-os-version",
         ])
-          expect(headers.get(key)).toBeNull();
+          expect(headers.get(key)).toBeTruthy();
         expect(headers.get("authorization")).toBe("Bearer fixture-key");
         expect(headers.has("x-device-mid")).toBe(false);
         expect(headers.has("x-openrouter-title")).toBe(false);
@@ -217,7 +215,7 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
   ])("按真实 URL 匹配 OpenRouter，不按 Provider 名称：%s", async (baseUrl, matches) => {
     const { model, requests } = createFixture({ baseUrl, apiType: "openai-chat-completions" });
     await model.generateText(requestInput);
-    expect(requests[0]!.headers.get("x-openrouter-title")).toBe(matches ? "ZxCode" : null);
+    expect(requests[0]!.headers.get("x-openrouter-title")).toBe(matches ? "ZCode" : null);
     expect(requests[0]!.headers.get("x-openrouter-categories")).toBe(
       matches ? "programming-app" : null,
     );
@@ -234,7 +232,7 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
     await model.generateText(requestInput);
     expect(requests[0]!.headers.get("x-title")).toBe("User Title");
     expect(requests[0]!.headers.get("user-agent")).toMatch(/^Custom\/1(?: |$)/);
-    expect(requests[0]!.headers.get("user-agent")).not.toContain("ZxCode/");
+    expect(requests[0]!.headers.get("user-agent")).not.toContain("ZCode/");
     expect(requests[0]!.headers.get("x-openrouter-title")).toBe("User Router");
     expect(requests[0]!.headers.get("http-referer")).toBe("https://user.example.test");
     expect(headers["x-title"]).toBe("User Title");
@@ -243,13 +241,13 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
   it.each([
     { env: {}, sourceTitle: "cli" as const, appVersion: "1.2.3", expected: "1.2.3" },
     {
-      env: { ZXCODE_APP_VERSION: "3.12.0" },
+      env: { ZCODE_APP_VERSION: "3.12.0" },
       sourceTitle: "electron" as const,
       appVersion: "0.13.3",
       expected: "3.12.0",
     },
     {
-      env: { ZXCODE_APP_VERSION: "bad\r\nheader" },
+      env: { ZCODE_APP_VERSION: "bad\r\nheader" },
       sourceTitle: "cli" as const,
       appVersion: "1.2.3",
       expected: undefined,
@@ -259,12 +257,13 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
     const { model, requests } = createFixture(options);
     await model.generateText(requestInput);
     expect(requests[0]!.headers.get("user-agent")).toContain(
-      `ZxCode/${options.expected ?? "unknown"}`,
+      `ZCode/${options.expected ?? "unknown"}`,
     );
-    expect(requests[0]!.headers.get("x-title")).toBe(`ZxCode@${options.sourceTitle}`);
+    expect(requests[0]!.headers.get("x-zcode-app-version")).toBe(options.expected ?? null);
+    expect(requests[0]!.headers.get("x-title")).toBe(`Z Code@${options.sourceTitle}`);
   });
 
-  it("真实 Runtime 标题 sidecar 沿公共工厂携带版本、other 类型和会话追踪", async () => {
+  it("真实 Runtime 标题 sidecar 沿公共工厂携带版本、宿主类型和会话追踪", async () => {
     const { model, requests } = createFixture();
     const sessionId = createSessionId("header-title-session");
     const updateSession = vi.fn(async (input) => input);
@@ -302,10 +301,13 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
       ),
     );
     expect(requests).toHaveLength(1);
-    expect(requests[0]!.headers.get("x-zxcode-session-type")).toBe("other");
+    expect(requests[0]!.headers.get("x-zcode-app-version")).toBe(CLIENT_VERSION);
+    // 标题用途不改变宿主会话分类；两个 Header 分别表达归属和用途。
+    expect(requests[0]!.headers.get("x-zcode-session-type")).toBe("main");
+    expect(requests[0]!.headers.get("x-zcode-query-source")).toBe("session_title");
     // 既有请求归因会去掉内部 sess_ 前缀；本次不改变服务端看到的会话身份格式。
     expect(requests[0]!.headers.get("x-session-id")).toBe("header-title-session");
-    expect(requests[0]!.headers.get("x-zxcode-trace-id")).toBeTruthy();
+    expect(requests[0]!.headers.get("x-zcode-trace-id")).toBeTruthy();
     expect(JSON.stringify(await requests[0]!.json())).toContain(
       "This is a title-generation task, not a conversation.",
     );

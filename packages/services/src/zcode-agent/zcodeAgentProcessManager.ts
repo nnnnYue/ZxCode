@@ -111,6 +111,7 @@ interface ManagedZCodeAgentProcess {
   client: ZCodeProtocolClient;
   child: ChildProcessWithoutNullStreams;
   cleanupPromise?: Promise<void>;
+  exitDiagnosticsCompleted: Promise<void>;
   exited: boolean;
   firstCleanupReason?: AgentProcessCleanupReason;
   idleTimer?: ReturnType<typeof setTimeout>;
@@ -752,7 +753,10 @@ export class ZCodeAgentProcessManager {
     let cleanupCompleted = false;
     const cleanupPromise = managed.client
       .disposeAndWait()
-      .then(() => {
+      .then(async () => {
+        // 进程树回收可能先于异步 exit 监听器返回；必须等 stderr/退出事件完成，
+        // 否则 Host 会提前释放所有权，关闭调用方看不到最后一条诊断。
+        await managed.exitDiagnosticsCompleted;
         cleanupCompleted = true;
         log("ZxCode agent process cleanup completed", {
           workspaceKey: managed.runtimeIdentity.workspaceKey,
@@ -1114,10 +1118,12 @@ export class ZCodeAgentProcessManager {
       ...(this.lane ? { lane: this.lane } : {}),
       workspaceKey,
     };
+    const exitDiagnostics = Promise.withResolvers<void>();
     const managed: ManagedZCodeAgentProcess = {
       child,
       client,
       exited: false,
+      exitDiagnosticsCompleted: exitDiagnostics.promise,
       readyReported: false,
       runtimeIdentity,
       runtimeInstanceId,
@@ -1224,6 +1230,7 @@ export class ZCodeAgentProcessManager {
         }),
       );
       if (child.pid == null) {
+        exitDiagnostics.resolve();
         this.ownedProcesses.delete(managed);
       }
     });

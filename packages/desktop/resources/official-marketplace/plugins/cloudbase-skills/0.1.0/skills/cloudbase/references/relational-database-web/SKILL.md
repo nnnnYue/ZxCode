@@ -75,7 +75,7 @@ npm install @cloudbase/js-sdk
 import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
-  env: "your-env-id"
+  env: "your-env-id",
 });
 
 const auth = app.auth;
@@ -116,7 +116,7 @@ const db = app.rdb();
 import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
-  env: "your-env-id"
+  env: "your-env-id",
 });
 
 export const db = app.rdb();

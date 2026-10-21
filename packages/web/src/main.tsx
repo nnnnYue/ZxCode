@@ -352,7 +352,6 @@ async function requestWebRemoteControlWorkspaces(
 
   return {
     workspaces: payload.workspaces,
-    tasks: payload.tasks,
     activeWorkspaceKey:
       payload.mobileViewState?.activeWorkspaceKey ?? payload.initialViewState?.activeWorkspaceKey,
     activeTaskId: payload.mobileViewState?.activeTaskId ?? payload.initialViewState?.activeTaskId,
@@ -462,7 +461,7 @@ function createWebPlatform(options?: {
           : Promise.reject(new Error("Temporary text attachments require a desktop host")),
     onRemoteConnectionLog: () => () => {},
     onRemoteSessionClosed: () => () => {},
-    onBotRemoteWorkspaceReconnected: () => () => {},
+    onRemoteSessionReconnected: () => () => {},
     // Web 端无多窗口管理
     activateOrSetWorkspace: () => Promise.resolve({ activated: false }),
     // Bugfix: Web 远程控制模式虽然复用了 web UI，但它背后其实挂着 desktop。
@@ -570,24 +569,10 @@ function createWebPlatform(options?: {
     openExternal: (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    // Fork 已移除 web 反馈入口配置；platform 接口仍要求该方法，保留空实现。
-    openFeedback: async () => {},
-    openCommunity: async () => {
-      const locale = document.documentElement.lang === "en-US" ? "en-US" : "zh-CN";
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      if (!communityUrl) {
-        return;
-      }
-      window.open(communityUrl, "_blank", "noopener,noreferrer");
-    },
-    canOpenCommunity: async (locale) => {
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      return typeof communityUrl === "string" && communityUrl.length > 0;
-    },
+    // fork：openFeedback/openCommunity 已从平台合同剔除。
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    onPaymentCallback: () => () => {},
     notifyRendererReady: () => {},
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
@@ -889,7 +874,6 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
     }),
     update: async () => {},
     updateDataBaseDir: async () => {},
-    ensureDefaultProject: async (path: string) => ({ path, created: false }),
     // 自定义模型请求头默认值是 Desktop 本地设置；web 远控首页无 host 桥，返回空默认。
     getModelRequestHeaderDefaults: async () => [],
   };
@@ -1105,6 +1089,9 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       listStyles: async () => ({ styles: [] }),
       getUserStylesDirectory: async () => ({ path: "" }),
     }),
+    sourceServerWorkspaceService: createEmptyHomeOnlyService<
+      RootServices["sourceServerWorkspaceService"]
+    >({}),
     settingsSyncService:
       createUnsupportedHomeOnlyService<RootServices["settingsSyncService"]>("settingsSyncService"),
   };
@@ -1247,8 +1234,8 @@ async function bootstrapExternalRelayWebRemoteControl(params: URLSearchParams): 
     return;
   }
 
-  seedWebRemoteControlThemePreference(relayParams.theme);
-  seedStableWebRemoteControlClientId(relayParams.deviceSid);
+  // fork：v2 QR 参数不再携带主题；保持默认主题种子。
+  seedStableWebRemoteControlClientId(relayParams.deviceSid ?? "");
 
   let bootstrapping = false;
   let recovering = false;
@@ -1470,8 +1457,8 @@ async function bootstrapExternalRelayWebRemoteControl(params: URLSearchParams): 
 
   const transport = new WebRemoteControlTerminalTransport({
     relayWsUrl: resolveExternalRelayWsUrl(),
-    deviceSid: relayParams.deviceSid,
-    passHash: relayParams.passHash,
+    deviceSid: relayParams.deviceSid ?? "",
+    passHash: ((relayParams as Record<string, unknown>).passHash as string | undefined) ?? "",
     deviceMid: relayParams.deviceMid,
     appVersion: relayParams.appVersion,
     authProvider: createBrowserWebRemoteControlRelayAuthProvider(),

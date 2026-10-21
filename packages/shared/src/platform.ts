@@ -1,4 +1,4 @@
-/* eslint-disable max-lines -- 跨端 platform contract 集中声明 renderer 能力；OAuth 与 browser lifecycle 必须保持 desktop/web 类型合同，本 MR 不拆分平台边界。 */
+/* eslint-disable max-lines -- 跨端 platform contract 集中声明 renderer 能力；browser lifecycle 必须保持 desktop/web 类型合同，本 MR 不拆分平台边界。 */
 import type {
   DockerConnectOptions,
   RemoteTarget,
@@ -14,11 +14,11 @@ import type {
   SaveCliMcpToUserDirectoryRequest,
 } from "./mcp.js";
 import type {
+  WebRemoteControlAuthStateChange,
   WebRemoteControlContext,
   WebRemoteControlReconnectWorkspaceResult,
   WebRemoteControlStartOperationResult,
   WebRemoteControlStatus,
-  WebRemoteControlTaskTarget,
   WebRemoteControlReconnectWorkspaceRequest,
   WebRemoteControlWorkspaceTarget,
 } from "./web-remote-control.js";
@@ -471,6 +471,26 @@ export interface RemoteSessionClosedEvent {
   reason: "host-exit";
   exitCode: number | null;
   signal: string | null;
+  error?: string;
+  /** true = Source transport 仍在自动恢复预算内，UI 不得做终态失败收口。 */
+  recoverable?: boolean;
+  recoveryAttempt?: number;
+  recoveryLimit?: number;
+  recoveryBudgetExhausted?: boolean;
+  reasonCode?: string;
+  retryable?: boolean;
+}
+
+export interface RemoteSessionReconnectedEvent {
+  previousSessionId: string;
+  sessionId: string;
+  workspacePath: string;
+  workspaceIdentity: string;
+}
+
+/** fork：Bot 重连事件类型别名（fork UI 用旧名引用 RemoteSessionReconnectedEvent）。 */
+export interface BotRemoteWorkspaceReconnectedEvent extends RemoteSessionReconnectedEvent {
+  target?: import("./remoteTarget.js").RemoteTarget;
 }
 
 export interface EmbeddedBrowserOpenUrlRequest {
@@ -563,19 +583,13 @@ export interface EmbeddedBrowserSitePermissionResetRequest {
   origin: string;
 }
 
-export interface BotRemoteWorkspaceReconnectedEvent {
-  sessionId: string;
-  workspacePath: string;
-  workspaceIdentity: string;
-  target: RemoteTarget;
-}
-
 export interface ConnectRemoteRequest {
   target: RemoteTarget;
   requestId?: string;
   workspacePath?: string;
   workspaceIdentity?: string;
   connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+  confirmSourceServerInstall?: boolean;
 }
 
 export interface CancelPendingRemoteConnectionRequest {
@@ -586,7 +600,27 @@ export interface BindRemoteWorkspaceSessionContextRequest {
   remoteSessionId: string;
   workspacePath: string;
   workspaceIdentity?: string;
+  workspacePurpose?: import("./workspacePurpose.js").WorkspacePurpose;
 }
+
+export interface BindRemoteWorkspaceSessionContextResult {
+  sourceServerId?: string;
+  remoteSessionId: string;
+  workspacePath: string;
+  workspaceIdentity: string;
+  workspacePurpose?: import("./workspacePurpose.js").WorkspacePurpose;
+  /** Desktop 专用的 tab 原地换代提示；不是任务路由身份，手机 replayable 客户端忽略。 */
+  previousWorkspaceIdentity?: string;
+}
+
+export type BindRemoteWorkspaceSessionContextIpcResult =
+  | { success: true; result: BindRemoteWorkspaceSessionContextResult }
+  | {
+      success: false;
+      error: string;
+      reasonCode?: string;
+      retryable?: boolean;
+    };
 
 export const DesktopCommandIds = {
   NewTask: "newTask",
@@ -640,7 +674,6 @@ export interface MobileRelayStatus {
   /** 最近一次控制连接失败原因；连上后清空。 */
   lastError?: string;
 }
-
 /** 请求签发一次性手机远控授权链接的入参；main 侧会按窗口 workspace 映射校验。 */
 export interface MobileRelayGrantRequest {
   workspacePath: string;
@@ -648,7 +681,6 @@ export interface MobileRelayGrantRequest {
   /** 远程 workspace 的 logical session；本地工作区留空。 */
   remoteSessionId?: string;
 }
-
 /** 授权链接签发结果；url 形如 https://<relay>/?remote=<grantId>。 */
 export interface MobileRelayGrantResult {
   success: boolean;
@@ -669,6 +701,9 @@ export interface MobileRelayGrantResult {
  * 业务服务（文件、终端、凭据等）走 IServiceAccessor 的 RPC 通道。
  */
 export interface IPlatformService {
+  /** 是否支持当前客户端本机文件的默认应用与目录操作；Web 不具备此能力。 */
+  canOpenLocalFiles?: boolean;
+
   /** 当前平台的文件选择框是否能返回 agent 可访问的本地绝对路径 */
   canSelectFilePath?: boolean;
 
@@ -680,6 +715,9 @@ export interface IPlatformService {
 
   /** 打开系统目录选择框，返回选中路径或 null */
   selectDirectory(): Promise<string | null>;
+
+  /** 打开系统多目录选择框，返回 Host 可访问的本地路径；取消返回空数组，Web 不提供 */
+  selectDirectories?(): Promise<string[]>;
 
   /** 打开系统文件选择框，返回选中文件路径或 null */
   selectFile(): Promise<string | null>;
@@ -706,7 +744,7 @@ export interface IPlatformService {
   createLocalMediaPreviewUrl?(path: string): string;
 
   /**
-   * 在宿主 ~/.zxcode 临时目录创建文本附件文件。
+   * 在宿主 ~/.zcode 临时目录创建文本附件文件。
    * 手机远控必须通过 shared-host/platform proxy 写到桌面宿主，避免大文本进入 prompt payload。
    */
   createTempTextAttachment?(
@@ -727,8 +765,10 @@ export interface IPlatformService {
   /** 订阅远程 workspace session 关闭事件，返回 disposer */
   onRemoteSessionClosed(handler: (event: RemoteSessionClosedEvent) => void): () => void;
 
-  /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
-  onBotRemoteWorkspaceReconnected(
+  /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
+  onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
+  /** fork：Bot 重连事件（onRemoteSessionReconnected 别名，fork UI 用旧名）。 */
+  onBotRemoteWorkspaceReconnected?(
     handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
   ): () => void;
 
@@ -740,11 +780,27 @@ export interface IPlatformService {
     options: RemoteTarget,
     requestId?: string,
     context?: {
-      workspacePath: string;
+      workspacePath?: string;
       workspaceIdentity?: string;
       connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+      confirmSourceServerInstall?: boolean;
     },
-  ): Promise<{ success: boolean; error?: string; sessionId?: string }>;
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    reasonCode?: string;
+    retryable?: boolean;
+    sessionId?: string;
+    /** 本次直接复用的在线连接目标，凭据不参与认证也不得持久化。 */
+    reusedConnectionTarget?: RemoteTarget;
+    /** 安装/升级等待时由 Host 确认的实际连接线路。 */
+    profileId?: string;
+    /** WSL 安装/升级等待使用本次已解析身份；预览失败也不能重新选择系统默认值。 */
+    resolvedWslTarget?: Required<WSLConnectOptions>;
+  }>;
+
+  /** Desktop-only：请求在线 Source 的无 workspace 配置 attachment。 */
+  requestSourceSettingsAttachment?(sourceServerId: string): Promise<{ attachmentId: string }>;
 
   /** 取消当前窗口尚未建立完成的远程连接（可选：Web 平台可忽略） */
   cancelPendingRemoteConnection?(requestId?: string): Promise<void>;
@@ -752,7 +808,7 @@ export interface IPlatformService {
   /** 将 canonical workspace 身份绑定到已创建的远程 logical session。 */
   bindRemoteWorkspaceSessionContext?(
     context: BindRemoteWorkspaceSessionContextRequest,
-  ): Promise<void>;
+  ): Promise<BindRemoteWorkspaceSessionContextResult>;
 
   /** 为当前 workspace 开启 Web 远程控制能力 */
   startWebRemoteControl(
@@ -769,6 +825,9 @@ export interface IPlatformService {
 
   /** 查询当前窗口 Web 远程控制状态 */
   getWebRemoteControlStatus(): Promise<WebRemoteControlStatus>;
+
+  /** 桌面 OAuth 会话通知；main 独立重读凭据后决定是否恢复远控。 */
+  notifyWebRemoteControlAuthStateChanged?(change: WebRemoteControlAuthStateChange): void;
 
   /** 订阅当前窗口 Web 远程控制状态变化；旧平台可不实现，UI 会保留轮询兜底 */
   onWebRemoteControlStatusChanged?(handler: (status: WebRemoteControlStatus) => void): () => void;
@@ -806,35 +865,10 @@ export interface IPlatformService {
   /** 打开外部 URL（用于 OAuth 跳转浏览器） */
   openExternal(url: string): void;
 
-  /** 查询自部署手机远控 relay 的连接状态；普通 Web 平台返回 supported:false。 */
-  getMobileRelayStatus?(): Promise<MobileRelayStatus>;
-
-  /** 上报当前窗口 active workspace 三元组（手机远控 relay presence 数据源）。 */
-  syncWindowWorkspace?(payload: {
-    workspacePath: string;
-    workspaceIdentity?: string;
-    workspaceKey: string;
-  }): void;
-
-  /**
-   * 请求 relay 签发一次性手机远控授权链接（TTL 内单次使用）。
-   * 普通平台未实现；Desktop 由 main 的 relay 客户端经控制连接签发。
-   */
-  requestMobileRelayGrant?(payload: MobileRelayGrantRequest): Promise<MobileRelayGrantResult>;
-
   /** 按系统应用标识读取真实 App 图标；非 Desktop 平台可不实现。 */
   getApplicationIcon?(
     request: string | ApplicationIconRequest,
   ): Promise<ApplicationIconInfo | null>;
-
-  /** 打开反馈入口，由平台自行解析最终地址 */
-  openFeedback(): Promise<void>;
-
-  /** 打开用户社群入口，由平台自行解析当前语言对应渠道 */
-  openCommunity(): Promise<void>;
-
-  /** 查询当前语言下是否存在可用的用户社群入口 */
-  canOpenCommunity(locale: Locale): Promise<boolean>;
 
   /** 在系统文件管理器中打开指定路径 */
   openInFileManager(path: string): Promise<{ success: boolean; error?: string }>;
@@ -857,14 +891,27 @@ export interface IPlatformService {
   /** 从权限浮窗把 Helper.app 拖进 macOS 权限列表。Desktop only。 */
   startCuaHelperPermissionDrag?(): void;
 
-  /**
-   * 注册支付 deep link 回调监听
-   * @returns disposer 函数，调用后只移除当前回调
-   */
-  onPaymentCallback(callback: (url: string) => void): () => void;
-
   /** 通知 main process renderer 已就绪，触发缓存的冷启动 deep link 转发 */
   notifyRendererReady(): void;
+
+  /** 查询自部署手机远控 relay 的连接状态；普通 Web 平台返回 supported:false。 */
+  getMobileRelayStatus?(): Promise<MobileRelayStatus>;
+  /** 上报当前窗口 active workspace 三元组（手机远控 relay presence 数据源）。 */
+  syncWindowWorkspace?(payload: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+    workspaceKey: string;
+  }): void;
+  /**
+   * 请求 relay 签发一次性手机远控授权链接（TTL 内单次使用）。
+   * 普通平台未实现；Desktop 由 main 的 relay 客户端经控制连接签发。
+   */
+  requestMobileRelayGrant?(payload: MobileRelayGrantRequest): Promise<MobileRelayGrantResult>;
+  /** 弹出系统对话框选择一个本地应用（macOS .app / Windows .exe）注册为自定义打开方式。
+   *  仅桌面端提供；用户取消或路径非法返回 null。 */
+  selectAndAddCustomEditor?(): Promise<EditorInfo | null>;
+  /** 删除一个已注册的自定义打开方式（editorId 以 "custom:" 开头）。仅桌面端提供。 */
+  removeCustomEditor?(editorId: string): Promise<{ success: boolean }>;
 
   /** 触发任务状态对应的系统通知，由宿主环境决定是否真正展示 */
   showTaskNotification(payload: TaskNotificationPayload): void;
@@ -878,11 +925,13 @@ export interface IPlatformService {
   /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程（用于跨窗口去重） */
   syncWindowTabs(paths: string[]): void;
 
+  /** fork：同步当前窗口可供 Web 远程控制展示的 task 快照（手机任务列表）；Web 不实现。 */
+  syncWebRemoteControlTasks?(
+    tasks: import("./web-remote-control.js").WebRemoteControlTaskTarget[],
+  ): void;
+
   /** 同步当前窗口里 Web 远程控制允许切换的 workspace；Web fallback 可忽略 */
   syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
-
-  /** 同步当前窗口里 Web 远程控制可展示的 task 快照；Web fallback 可忽略 */
-  syncWebRemoteControlTasks?(tasks: WebRemoteControlTaskTarget[]): void;
 
   /** 注册 Web 远程控制手机端请求重连 workspace 的回调，返回 disposer */
   onWebRemoteControlReconnectWorkspace?(
@@ -1104,8 +1153,8 @@ export interface IPlatformService {
   /** 宿主系统语言；桌面端由 main 进程读取，Web 端可回退到 navigator.language。 */
   getSystemLocale?(): Promise<Locale>;
 
-  /** 获取系统中已安装的编辑器/终端列表（含图标） */
-  getInstalledEditors(): Promise<EditorInfo[]>;
+  /** 获取已安装编辑器/终端；传文件路径时追加匹配类型的本机应用（含图标）。 */
+  getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;
 
   /** 用指定编辑器打开路径 */
   openInEditor(
@@ -1113,13 +1162,6 @@ export interface IPlatformService {
     path: string,
     options?: OpenInEditorOptions,
   ): Promise<{ success: boolean; error?: string }>;
-
-  /** 弹出系统对话框选择一个本地应用（macOS .app / Windows .exe）注册为自定义打开方式。
-   *  仅桌面端提供；用户取消或路径非法返回 null。 */
-  selectAndAddCustomEditor?(): Promise<EditorInfo | null>;
-
-  /** 删除一个已注册的自定义打开方式（editorId 以 "custom:" 开头）。仅桌面端提供。 */
-  removeCustomEditor?(editorId: string): Promise<{ success: boolean }>;
 
   /** 执行桌面窗口级命令（标题栏菜单、缩放、窗口控制等）。
    *  返回值直通 main 进程 handler 的 return（大多数命令无返回值；

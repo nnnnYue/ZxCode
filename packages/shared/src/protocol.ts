@@ -2,11 +2,12 @@ import type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 import type { RemoteResourcePackageSelection } from "./remoteResourcePackages.js";
 import type { ProviderFamilyDomain } from "./model-provider-family.js";
 import type { ProviderFamilyConnectionSelectionSettings } from "./provider-family-connection-selection.js";
+import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
-import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
 import type { CustomModelRequestHeaderEntry } from "./zcode-source-headers.js";
-import type { ZCodeProvider } from "./providers.js";
+import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
+import type { AppToolSearchMode } from "./app-runtime-preferences.js";
 
 // ── Domain types ──
 
@@ -79,7 +80,7 @@ export type Locale = "zh-CN" | "en-US";
 /** 界面语言偏好；system 表示跟随当前运行端系统语言。 */
 export type LocalePreference = "system" | Locale;
 
-/** ZxCode 运行中继续输入时的交互行为 */
+/** ZCode 运行中继续输入时的交互行为 */
 export type ZCodeInteractionBehavior = "queue" | "guide";
 
 /** 桌面端 Electron 自动更新发布通道。 */
@@ -180,6 +181,8 @@ export type RemoteTargetSnapshot =
 export interface RemoteWorkspaceSessionSnapshot {
   /** 远程 workspace 的真实绝对路径 */
   workspacePath: string;
+  /** 用户可见的 workspace 分类；旧远端快照缺失时按 project 兼容读取。 */
+  workspacePurpose?: WorkspacePurpose;
   /** 发起远程连接时的本机 workspace 路径，仅用于 MCP filesystem 路径改写。 */
   localWorkspacePath?: string;
   /** 远程 workspace 的稳定身份键（authority + canonicalPath）。 */
@@ -220,7 +223,7 @@ export type ResourceUsageBaseGroupKey = "main" | "gpu" | "renderer" | "host" | "
 /** 资源管理器中的一个进程行（CPU 为整机归一化百分比，内存为字节） */
 export interface ResourceUsageProcess {
   pid: number;
-  /** 进程显示名，如 zxcode-main / zxcode-agent-zcode-demo / node_repl */
+  /** 进程显示名，如 zcode-main / zcode-agent-zcode-demo / node_repl */
   name: string;
   category: ResourceUsageCategory;
   groupKey: string;
@@ -291,6 +294,8 @@ export interface AppSettings {
    * 模型 API 请求自定义头开关；关闭（缺省）时模型请求只携带默认来源头，编辑器在设置页隐藏。
    * 行为见 specs/custom-request-headers.md。
    */
+  /** fork：动态工作流用户档位（跟随/启用）；由设置页写入、Host 读取。 */
+  dynamicWorkflowEnabled?: boolean;
   customModelRequestHeadersEnabled?: boolean;
   /**
    * 用户自定义的模型请求头（有序列表；同名不区分大小写覆盖默认来源头）。
@@ -299,7 +304,7 @@ export interface AppSettings {
   customModelRequestHeaders?: CustomModelRequestHeaderEntry[];
   /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
-   * 只影响内置浏览器出口，不影响 ZxCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
+   * 只影响内置浏览器出口，不影响 ZCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
    */
   embeddedBrowserAllowInsecureCertificates?: boolean;
   /** 人类用户主动打开 Browser tab 时的一次性显示偏好；Agent Browser Use 不读写。 */
@@ -310,20 +315,16 @@ export interface AppSettings {
    * 关闭后按钮不再渲染，且不因重启或版本更新自愈，仅能在设置页重新开启。
    */
   computerUseComposerEntryHidden?: boolean;
-  /** 自动归档已完成旧任务的总开关 */
+  /** 自动归档旧会话的总开关 */
   taskAutoArchiveEnabled?: boolean;
+  /** 自动归档修复后的一次性关闭标记；只用于设置迁移，不参与归档判断。 */
+  taskAutoArchiveResetVersion?: 1;
   /** 自动归档阈值；当任务最后更新时间早于该天数时允许被归档 */
   taskAutoArchiveOlderThanDays?: number;
   /** 桌面端关闭窗口时隐藏到托盘驻留（Windows/Linux；spec：docs/desktop/linux-close-to-tray.md） */
   closeToTrayOnWindows?: boolean;
   /** 存在执行中的闲时任务时阻止系统闲置休眠（手动开关，防不了合盖）。 */
   keepAwakeWhileRunning?: boolean;
-  /**
-   * 动态工作流（实验功能）总开关；见 specs/dynamic-workflow-setting-toggle.md。
-   * 去平台化后替代原 z.ai 远端灰度配置：main 在 fork Host 时按构建档位把它折算进
-   * ZXCODE_DYNAMIC_WORKFLOW_MODE env，Host 进程粒度生效（重启应用 / 新窗口 / 重连后生效）。
-   */
-  dynamicWorkflowEnabled?: boolean;
   /** Windows 关闭到托盘默认值是否已执行过一次性迁移；只用于设置迁移，不参与业务判断。 */
   closeToTrayOnWindowsMigrationInitialized?: boolean;
   /**
@@ -355,7 +356,7 @@ export interface AppSettings {
   toolGroupingTerminalEnabled?: boolean;
   /** 是否把连续的 Write/Edit/ApplyPatch 工具调用聚合成 Changes。 */
   toolGroupingChangesEnabled?: boolean;
-  /** ZxCode 运行中继续输入时，是排队到下一轮，还是引导到下一次工具调用后运行 */
+  /** ZCode 运行中继续输入时，是排队到下一轮，还是引导到下一次工具调用后运行 */
   zcodeInteractionBehavior?: ZCodeInteractionBehavior;
   /** Agent 提问五分钟无人回答时是否允许自动继续；缺失按开启兼容旧配置。 */
   askUserQuestionAutoResolutionEnabled?: boolean;
@@ -370,14 +371,16 @@ export interface AppSettings {
   enabledBuiltinAgentCliProviders?: ZCodeProvider[];
   /** 设置页中每个 Provider Family 当前唯一的结构化连接选择。 */
   providerFamilyConnectionSelections?: ProviderFamilyConnectionSelectionSettings;
-  /** 历史 ZAI / BigModel provider family 运行域；仅由一次性迁移与兼容读取维护。 */
+  /** 用户通过 WelcomeScreen 成功连接后确认的 ZAI / BigModel provider family 运行域。 */
   providerFamilyDomain?: ProviderFamilyDomain;
   /** 最近一次设置或清空 providerFamilyDomain 的时间。 */
   providerFamilyDomainUpdatedAt?: number;
-  /** 旧 provider 连接状态是否已经尝试迁移到 providerFamilyDomain。 */
+  /** 旧 oauth/provider 状态是否已经尝试迁移到 providerFamilyDomain。 */
   providerFamilyDomainMigrated?: boolean;
   /** 新建或冷恢复 Session 是否为 Bash 注入 bfs/ugrep 增强；默认启用。 */
   nativeSearchEnhancementsEnabled?: boolean;
+  /** 新建或冷恢复时读取；已有 Runtime 保持原策略。 */
+  toolSearchMode?: AppToolSearchMode;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */
   memoryEnabled?: boolean;
   onboardingOccupation?:
@@ -397,13 +400,36 @@ export interface AppSettings {
     | "other"
     | null;
   proactiveSuggestionsEnabled?: boolean;
-  /** 上次关闭时的完整 workspace 会话（含本地与远端 workspace） */
+  /** 新版只保存活动执行目录；不表达项目/连接成员，null 表示明确清空。 */
+  lastActiveWorkspace?: PersistedWorkspaceSessionEntry | null;
+  /** Host 从项目/本机入口派生，供旧版降级读取；新版不作为入口真相。 */
   lastWorkspaceSession?: PersistedWorkspaceSessionEntry[];
+  /** 每个 Source Server 已解析的 canonical conversation backing workspace。 */
+  remoteConversationWorkspaceBySourceServerId?: Record<
+    string,
+    {
+      workspacePath: string;
+      lastResolvedAt: number;
+    }
+  >;
+  /** R3 控制端已识别的 Source Server；运行态仍由远端 Server 权威提供。 */
+  sourceServers?: import("./source-server/contracts.js").SourceServerRecord[];
+  /** R3 到达 Source Server 的线路；只保存 credential key，不保存 secret。 */
+  connectionProfiles?: import("./source-server/contracts.js").ConnectionProfile[];
+  /** R3 workspace 打开历史；连接线路与 workspace 实体分离。 */
+  sourceServerWorkspaceHistory?: import("./source-server/contracts.js").SourceServerWorkspaceHistoryEntry[];
+  /** 桌面端启动时是否执行 Source Server 静默重连；缺失按 true 兼容旧设置。 */
+  remoteStartupAutoReconnectEnabled?: boolean;
+  sourceServerDirectoryMigrationVersion?: 1;
+  /** 旧客户端只接受 2；保留回滚兼容，新介绍不使用该字段判断已读。 */
+  remoteBoundaryOnboardingVersion?: 2;
+  /** 仅表示用户明确确认持续运行介绍。 */
+  remoteBoundaryIntroAcknowledgedVersion?: 1;
   /** 上次关闭时激活的 tab 索引 */
   lastActiveTabIndex?: number;
   /** 每个 workspace 的最后活跃 taskId，下次打开自动恢复 */
   lastActiveTaskByWorkspace?: Record<string, string>;
-  /** 数据目录的根路径（替代 homedir），默认为 os.homedir()；.zxcode/v2 后缀不变 */
+  /** 数据目录的根路径（替代 homedir），默认为 os.homedir()；.zcode/v2 后缀不变 */
   dataBaseDir?: string;
   /** 自动更新安装完成后，等待首次启动展示的版本说明 */
   pendingPostUpdateReleaseNotes?: {
@@ -422,6 +448,12 @@ export interface AppSettings {
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
   /** 外部 Web 远控 relay 的非敏感设备身份；passHash 必须存 credentialService。 */
+  /** V2 非敏感注册身份；JWT 和一次性 token 不持久化于 AppSettings。 */
+  webRemoteControlRelayV2Device?: {
+    deviceSid: string;
+    userId: string;
+    endpointOrigin: string;
+  };
   webRemoteControlExternalRelayDevice?: {
     deviceSid: string;
   };
@@ -431,6 +463,6 @@ export interface AppSettings {
     workspaceIdentity?: string;
     initialTaskId?: string;
   };
-  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZXCODE_BASE_URL env 管理。 */
+  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
   zcodeEndpointOrigin?: string;
 }

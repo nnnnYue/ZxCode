@@ -16,6 +16,7 @@ Recording is done by ZxCode's built-in Browser Use WebView, which produces WebM 
    ```
 
    `/video2code:env-check --fix` additionally installs the items the doctor can safely provision (pip packages, `node_modules` warm-up). It never installs system software such as `ffmpeg` or Node.js — those are printed as instructions for you to run.
+
 3. Replicate from a local recording:
 
    ```text
@@ -27,27 +28,28 @@ Recording is done by ZxCode's built-in Browser Use WebView, which produces WebM 
    ```text
    /video2code:replicate https://example.com
    ```
+
 4. Review the three deliverables under `out/`: `plan.md` (the replication contract), `verify.jsonl` (per-item verification evidence), and `report.md` (the final report). The built app lands in `app/`, and recordings in `recordings/`.
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `/video2code:env-check [--fix]` | Environment doctor: Python video packages, `ffmpeg`/`ffprobe`, Node/npm, npm registry reachability, webapp template cache. |
-| `/video2code:record <url> [name]` | Record a live site's motion with the built-in WebView to WebM, then transcode to `recordings/<name>.mp4`. |
-| `/video2code:replicate <video-or-url> [catalog.json]` | Front-end replication: observe → slice → plan → build → verify against a recording of your own build. |
-| `/video2code:replicate-fullstack <video-or-url> [catalog.json]` | Full-stack replication: the same flow plus an Express/SQLite backend, verified by both recording and `curl`. |
+| Command                                                         | What it does                                                                                                               |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `/video2code:env-check [--fix]`                                 | Environment doctor: Python video packages, `ffmpeg`/`ffprobe`, Node/npm, npm registry reachability, webapp template cache. |
+| `/video2code:record <url> [name]`                               | Record a live site's motion with the built-in WebView to WebM, then transcode to `recordings/<name>.mp4`.                  |
+| `/video2code:replicate <video-or-url> [catalog.json]`           | Front-end replication: observe → slice → plan → build → verify against a recording of your own build.                      |
+| `/video2code:replicate-fullstack <video-or-url> [catalog.json]` | Full-stack replication: the same flow plus an Express/SQLite backend, verified by both recording and `curl`.               |
 
 ## Skills
 
-| Skill | Role |
-| --- | --- |
-| `env-setup` | The single entry point for environment checks and provisioning. |
-| `url2video` | URL → WebM (built-in WebView) → MP4 (`ffmpeg`), with a survey/scripting/review loop. |
-| `video2code` | The base replication workflow: layout, visual style, interactions, animations. |
-| `video2code-3d` | Additive extension for WebGL/three.js pages: effect recipes, software-render budget, 3D verification rules. |
-| `video2fullstack` | Replicate a recorded site as a working front-end **and** back-end project. |
-| `web-replicate` | Scaffolds the React + TypeScript + Vite + Tailwind v4 + shadcn/ui project. |
+| Skill             | Role                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `env-setup`       | The single entry point for environment checks and provisioning.                                             |
+| `url2video`       | URL → WebM (built-in WebView) → MP4 (`ffmpeg`), with a survey/scripting/review loop.                        |
+| `video2code`      | The base replication workflow: layout, visual style, interactions, animations.                              |
+| `video2code-3d`   | Additive extension for WebGL/three.js pages: effect recipes, software-render budget, 3D verification rules. |
+| `video2fullstack` | Replicate a recorded site as a working front-end **and** back-end project.                                  |
+| `web-replicate`   | Scaffolds the React + TypeScript + Vite + Tailwind v4 + shadcn/ui project.                                  |
 
 `video2code` and `web-replicate` are designed to be loaded together. `video2code-3d` loads as a third skill only when the reference page turns out to be a real WebGL scene.
 
@@ -71,13 +73,13 @@ Two stdio MCP servers, declared in both [`.mcp.json`](./.mcp.json) and the plugi
 
 All four are `command` hooks running `python3` against scripts in [`hooks/`](./hooks).
 
-| Event | Script | Behavior |
-| --- | --- | --- |
-| `SessionStart` (`startup\|clear\|compact`) | `env_check.py` | Reports the plugin root and any missing dependencies into session context, and warms the webapp template in the background. **Never blocks.** |
-| `UserPromptSubmit` | `check_video_input.py` | If the prompt mentions a local video path, injects ingest guidance. Detection and cheap probes only — no frame extraction. Advisory. |
-| `UserPromptSubmit` | `check_url_input.py` | If the prompt has a site URL *and* a task word (replicate/record/复刻/录制/…), injects `url2video` guidance. Advisory; suppressed when a local video path is also present. |
-| `PreToolUse` (`Write\|Edit`) | `check_plan_first.py` | **Blocks** writes under `app/src/` while `out/plan.md` does not exist, so component code cannot be written before the contract. Everything else passes. The same rule self-releases after three consecutive blocks. |
-| `Stop` | `check_closeout.py` | **Blocks** turn-end when the replication contract is not closed out, reusing `skills/video2code/scripts/contract_audit.py` so there is one copy of the rules. Skipped entirely when `out/plan.md` is absent or `V2C_NO_CLOSEOUT_HOOK=1`. |
+| Event                                      | Script                 | Behavior                                                                                                                                                                                                                                 |
+| ------------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SessionStart` (`startup\|clear\|compact`) | `env_check.py`         | Reports the plugin root and any missing dependencies into session context, and warms the webapp template in the background. **Never blocks.**                                                                                            |
+| `UserPromptSubmit`                         | `check_video_input.py` | If the prompt mentions a local video path, injects ingest guidance. Detection and cheap probes only — no frame extraction. Advisory.                                                                                                     |
+| `UserPromptSubmit`                         | `check_url_input.py`   | If the prompt has a site URL _and_ a task word (replicate/record/复刻/录制/…), injects `url2video` guidance. Advisory; suppressed when a local video path is also present.                                                               |
+| `PreToolUse` (`Write\|Edit`)               | `check_plan_first.py`  | **Blocks** writes under `app/src/` while `out/plan.md` does not exist, so component code cannot be written before the contract. Everything else passes. The same rule self-releases after three consecutive blocks.                      |
+| `Stop`                                     | `check_closeout.py`    | **Blocks** turn-end when the replication contract is not closed out, reusing `skills/video2code/scripts/contract_audit.py` so there is one copy of the rules. Skipped entirely when `out/plan.md` is absent or `V2C_NO_CLOSEOUT_HOOK=1`. |
 
 ## Requirements
 
@@ -106,10 +108,10 @@ Enabling this plugin grants code-execution trust. Concretely, it will:
 
 ## User configuration
 
-| Setting | Default | Effect |
-| --- | --- | --- |
-| `media_resolution` | `medium` | Per-frame resolution tier for frames inlined by `clip_video`: `low` (~70 tokens/frame), `medium` (~256), `high` (~786). |
-| `clip_max_frames` | `400` | Cap on frames extracted across all segments of one `clip_video` call; over the cap, frame rate is reduced proportionally. |
+| Setting            | Default  | Effect                                                                                                                    |
+| ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `media_resolution` | `medium` | Per-frame resolution tier for frames inlined by `clip_video`: `low` (~70 tokens/frame), `medium` (~256), `high` (~786).   |
+| `clip_max_frames`  | `400`    | Cap on frames extracted across all segments of one `clip_video` call; over the cap, frame rate is reduced proportionally. |
 
 Both are passed to the MCP servers as `V2C_MEDIA_RESOLUTION` and `V2C_CLIP_MAX_FRAMES`.
 

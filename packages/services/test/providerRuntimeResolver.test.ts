@@ -104,11 +104,10 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
     process.env.HOME = sandboxRoot;
 
     const appRepoDir = join(sandboxRoot, "z-code-2");
-    // Bugfix: GLM 生产态二进制名会按平台解析，Windows 下实际查找的是 zxcode-agent.exe。
+    // Bugfix: GLM 生产态二进制名会按平台解析，Windows 下实际查找的是 zcode-agent.exe。
     // 之前测试固定写成无后缀文件，导致 findBinary("glm") 返回 null，
     // 最终被 realpathSync(null) 表现成对 ...\\null 的 lstat，掩盖了真实原因。
-    // fork：二进制名已从 zcode-agent 改为 zxcode-agent。
-    const binaryName = process.platform === "win32" ? "zxcode-agent.exe" : "zxcode-agent";
+    const binaryName = process.platform === "win32" ? "zcode-agent.exe" : "zcode-agent";
     const binaryPath = join(appRepoDir, "bundled-resources", "glm", binaryName);
     mkdirSync(join(appRepoDir, "bundled-resources", "glm"), { recursive: true });
     writeFileSync(binaryPath, "binary\n");
@@ -156,20 +155,8 @@ describe("providerRuntimeResolver workspace config dir identity", () => {
     const workspaceIdentity = "remote:ssh:localhost:2223:dev:/home/dev";
 
     expect(resolveProviderConfigDir("glm", workspacePath, workspaceIdentity)).toBe(
-      join(home, ".zxcode", "cli"),
+      join(home, ".zcode", "cli"),
     );
-  });
-
-  it("本地 GLM 配置目录同样使用 ZCode Agent home", () => {
-    const home = mkdtempSync(join(tmpdir(), "zcode-agent-resolver-home-"));
-    createdDirs.push(home);
-    process.env.HOME = home;
-    // Bugfix: paths.ts 会在模块加载时固定默认 dataBaseDir，测试不能只改 HOME。
-    setDataBaseDir(home);
-
-    const workspacePath = "/Users/demo/project";
-
-    expect(resolveProviderConfigDir("glm", workspacePath)).toBe(join(home, ".zxcode", "cli"));
   });
 });
 

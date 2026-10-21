@@ -17,9 +17,9 @@ import {
 import { mcpAppsSamplingParamsSchema, mcpAppsSamplingResultSchema } from "../mcp-apps/sampling.js";
 import { mcpAppInstanceSchema } from "../mcp-apps/instance.js";
 export { conversationQuoteSchema, conversationQuotesSchema } from "../conversationSelection.js";
-/* oxlint-disable eslint(max-lines) -- ZxCode Protocol schema 需要单文件导出，方便 app 与 agent 共享同一份协议契约。 */
+/* oxlint-disable eslint(max-lines) -- ZCode Protocol schema 需要单文件导出，方便 app 与 agent 共享同一份协议契约。 */
 // ── 旧协议删除边界──────────────────────
-// 剩余 ~257 个导出：旧 ZxCode Protocol 方法契约、请求/响应/事件 schema、
+// 剩余 ~257 个导出：旧 ZCode Protocol 方法契约、请求/响应/事件 schema、
 // session/workspace state snapshot 投影等（承重类型已迁 zcode-protocol-legacy-types.ts）。
 // 已连根删除的死词（词表+schema+两侧实现）：session/steer、session/rewind、
 // session/rewindCascade、session/previewFileRewind、session/applyFileRewind、
@@ -37,6 +37,8 @@ import { zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
 import { completeModelPropertiesDataSchema } from "../model-config.js";
 import { modelExecutionSchema } from "../model-execution.js";
+export type { ModelExecutionSelectionFallback } from "../model-execution.js";
+export * from "../off-peak-execution.js";
 import { modelSelectionSchema } from "../model-selection.js";
 import { APP_USAGE_RANGES, appUsageSnapshotSchema } from "../usage-stats.js";
 import { DYNAMIC_WORKFLOW_MODES } from "../dynamic-workflow-feature.js";
@@ -44,9 +46,6 @@ import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
 // 后台详情共享精简的只读响应 schema，不携带命令或计时元数据。
 export * from "../background-bash-output.js";
 export * from "../process-diagnostic.js";
-// 修复：上游 v3.15.1 合并在这一段重复粘贴了一组 import（bots/model-config/
-// model-execution/model-selection/usage-stats/snapshot 各两份），属语法级冲突，
-// 导致 oxc/tsc 解析失败、bootstrap 全部测试与 shared 类型检查被阻断；这里只保留一份。
 export { attachmentSourceKindSchema, type AttachmentSourceKind } from "../attachment-source.js";
 import { PROTOCOL_V4_LIMITS } from "../zcode-protocol-v4/core.js";
 
@@ -82,8 +81,10 @@ import {
 } from "../browser-use/backend.js";
 import { browserClientModeSchema, browserCommandSchema } from "../browser-use/commands.js";
 import { browserCommandResultSchema } from "../browser-use/result.js";
+import { appToolSearchModeSchema } from "../app-runtime-preferences.js";
 import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
 import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
+import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
 import {
   zcodeSyntheticUserMessageSourceSchema as legacyZcodeSyntheticUserMessageSourceSchema,
   zcodeDeliveryKindSchema,
@@ -116,11 +117,19 @@ export {
   type HookInvocationRow,
 } from "../zcode-protocol-v4/rows.js";
 
-export const ZXCODE_PROTOCOL_NAME = "ZxCode Protocol" as const;
-export const ZXCODE_PROTOCOL_VERSION = 1 as const;
+export {
+  sessionsIndexReconcileParamsSchema,
+  sessionsIndexReconcileResultSchema,
+  type SessionsIndexReconcileParams,
+  type SessionsIndexReconcileResult,
+} from "../zcode-protocol-v4/sessions-index.js";
+
+export const ZCODE_PROTOCOL_NAME = "ZCode Protocol" as const;
+export const ZCODE_PROTOCOL_VERSION = 1 as const;
 // V4 wire 与 legacy 主协议并存；禁止为了 V4 physical framing 改写 legacy 版本。
-export const ZXCODE_PROTOCOL_V4_WIRE_VERSION = 3 as const;
+export const ZCODE_PROTOCOL_V4_WIRE_VERSION = 3 as const;
 export const zcodeRuntimeCapabilitiesSchema = z.object({
+  historyFirst: z.boolean().optional(),
   independentPlanState: z.boolean().optional(),
 });
 export const zcodeProtocolErrorCodes = {
@@ -445,6 +454,7 @@ export type ZCodeProtocolMessage = z.infer<typeof zcodeProtocolMessageSchema>;
 
 export const zcodeProtocolNotifications = {
   storageStartup: "startup/storageState",
+  providerRuntimeHeadersCancelled: "interaction/providerRuntimeHeadersCancelled",
   mcpTelemetry: "process/mcpTelemetry",
   mcpResourceSamples: "process/mcpResourceSamples",
   toolExecResource: "process/toolExecResource",
@@ -564,7 +574,7 @@ export const zcodeMcpTelemetryEventSchema = z.discriminatedUnion("kind", [
 export type ZCodeMcpTelemetryEvent = z.infer<typeof zcodeMcpTelemetryEventSchema>;
 
 /** MCP 每五分钟只探测一次，周期由生产者与设备总量过期判据共用。 */
-export const ZXCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
+export const ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
 
 export const zcodeMcpResourceSampleSchema = z
   .object({
@@ -747,6 +757,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       env: z.array(zcodeProtocolMcpEntrySchema),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      alwaysLoad: z.boolean().optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -759,6 +770,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       oauth: zcodeProtocolMcpOAuthSchema.optional(),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      alwaysLoad: z.boolean().optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -1146,6 +1158,53 @@ export const zcodeModelOptionSchema = z
   .strict();
 export type ZCodeModelOption = z.infer<typeof zcodeModelOptionSchema>;
 
+export const zcodeAccountAccessSchema = z.discriminatedUnion("planKind", [
+  z
+    .object({
+      type: z.literal("zhipu-account"),
+      family: z.enum(["zai", "bigmodel"]),
+      planKind: z.literal("start-plan"),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("zhipu-account"),
+      family: z.enum(["zai", "bigmodel"]),
+      planKind: z.literal("individual-coding-plan"),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("zhipu-account"),
+      family: z.enum(["zai", "bigmodel"]),
+      planKind: z.literal("team-coding-plan"),
+      productId: nonEmptyString,
+      organizationId: nonEmptyString,
+      projectId: nonEmptyString,
+    })
+    .strict(),
+]);
+export type ZCodeAccountAccess = z.infer<typeof zcodeAccountAccessSchema>;
+
+/** Active Model 固定的账号访问类别；当前商品和 Team scope 由账号服务在请求期解析。 */
+export const zcodeProviderAccountAccessSchema = z
+  .object({
+    type: z.literal("zhipu-account"),
+    accountType: z.enum(["zai", "bigmodel"]),
+    // `highspeed` 指加速卡这一账号访问类别（隐藏 Provider + 免签网关），与模型名
+    // GLM-5.1-Highspeed 无关，仅字面重合。见 docs/highspeed/highspeed-access-mode-migration.md。
+    mode: z.enum([
+      "start-plan",
+      "individual-coding-plan",
+      "team-coding-plan",
+      "off-peak",
+      "highspeed",
+    ]),
+    entitled: z.boolean(),
+  })
+  .strict();
+export type ZCodeProviderAccountAccess = z.infer<typeof zcodeProviderAccountAccessSchema>;
+
 export type ZCodeSessionMode = z.infer<typeof zcodeSessionModeSchema>;
 export type ZCodeSessionKind = z.infer<typeof zcodeSessionKindSchema>;
 export type ZCodeSessionGoal = z.infer<typeof zcodeSessionGoalSchema>;
@@ -1315,8 +1374,8 @@ export const zcodeSessionStateSnapshotSchema = z
   .object({
     protocol: z
       .object({
-        name: z.literal(ZXCODE_PROTOCOL_NAME),
-        version: z.literal(ZXCODE_PROTOCOL_VERSION),
+        name: z.literal(ZCODE_PROTOCOL_NAME),
+        version: z.literal(ZCODE_PROTOCOL_VERSION),
       })
       .strict(),
     session: zcodeSessionInfoSchema,
@@ -1862,6 +1921,7 @@ export const zcodeDynamicWorkflowModeSchema = z.enum(DYNAMIC_WORKFLOW_MODES);
 
 export const zcodeSessionCreateParamsSchema = z
   .object({
+    additionalDirectories: z.array(nonEmptyString).max(256).optional(),
     sessionId: nonEmptyString.optional(),
     workspace: zcodeWorkspaceRefSchema,
     parentSessionId: nonEmptyString.optional(),
@@ -1876,7 +1936,9 @@ export const zcodeSessionCreateParamsSchema = z
     importedHistory: zcodeSessionImportHistorySchema.optional(),
     // host 只按本地服务装配/远程/端形态决定是否注册工具，不读取灰度；
     // 缺省不下发 = 不注册；灰度与套餐准入在实际创建的 Host handler 校验。
-    // 动态工作流灰度：host 裁决后下发，缺省不下发 = 不注册工作流工具簇（fail-closed）。
+    offPeakToolEnabled: z.boolean().optional(),
+    // 动态工作流灰度：与 offPeakToolEnabled 同一
+    // 模式——host 裁决后下发，缺省不下发 = 不注册工作流工具簇（fail-closed）。
     dynamicWorkflowEnabled: z.boolean().optional(),
     // 灰度 mode 随布尔同行下发（launch.md「On demand: activation」）：`onDemand` 让 CLI 把十个
     // 工具推迟到会话首次 `/workflow` 才注册；缺席 = 按布尔行事（alwaysOn），供旧 Host 配对。
@@ -1887,6 +1949,7 @@ export type ZCodeSessionCreateParams = z.infer<typeof zcodeSessionCreateParamsSc
 
 export const zcodeSessionResumeParamsSchema = z
   .object({
+    additionalDirectories: z.array(nonEmptyString).max(256).optional(),
     sessionId: nonEmptyString,
     workspace: zcodeWorkspaceRefSchema.optional(),
     // 旧 session 尚无 runtime/model_selection entry 时，由同 task 的索引元数据提供迁移 hint。
@@ -1895,6 +1958,8 @@ export const zcodeSessionResumeParamsSchema = z
     // 冷恢复重建 runtime 时必须沿用 create 的工具面约束（否则会绕过 allow/deny，尤其 CUA 会话）。
     toolAllowlist: z.array(nonEmptyString).optional(),
     toolDenylist: z.array(nonEmptyString).optional(),
+    // 与 create 同语义；resume 不带会导致冷恢复丢 Off-Peak 工具面。
+    offPeakToolEnabled: z.boolean().optional(),
     // 与 create 同语义；resume 不带会导致冷恢复丢工作流工具簇。
     dynamicWorkflowEnabled: z.boolean().optional(),
     dynamicWorkflowMode: zcodeDynamicWorkflowModeSchema.optional(),
@@ -1905,9 +1970,7 @@ export type ZCodeSessionResumeParams = z.infer<typeof zcodeSessionResumeParamsSc
 export const zcodeSessionListParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema.optional(),
-    // 显式身份查询包含隐藏会话；普通列表仍只返回主任务，避免索引修复激活 runtime。
     sessionIds: z.array(nonEmptyString).min(1).max(64).optional(),
-    includeArchived: z.boolean().default(false),
     limit: z.number().int().positive().optional(),
   })
   .strict();
@@ -1998,7 +2061,7 @@ export const zcodeSubagentsReadRuntimeConfigParamsSchema = z
   .object({ sessionId: nonEmptyString })
   .strict();
 
-export const ZXCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS = 15_000;
+export const ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS = 15_000;
 
 export const zcodeSessionRequestRuntimePreferencesParamsSchema = z
   .object({
@@ -2010,7 +2073,7 @@ export type ZCodeSessionRequestRuntimePreferencesParams = z.infer<
   typeof zcodeSessionRequestRuntimePreferencesParamsSchema
 >;
 
-export const DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY = "preflight-v1" as const;
+export const DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY = "preflight-v1" as const;
 
 // 3.12.2：legacy 仅为旧协议接收兼容；Runtime 一律归一为上面的共享默认策略。
 export const zcodeModelContextBudgetStrategySchema = z.enum(["legacy", "preflight-v1"]);
@@ -2018,14 +2081,16 @@ export type ZCodeModelContextBudgetStrategy = z.infer<typeof zcodeModelContextBu
 
 export const zcodeSessionRuntimePreferencesResultSchema = z
   .object({
+    additionalDirectories: z.array(nonEmptyString).max(256).optional(),
     nativeSearchEnhancementsEnabled: z.boolean(),
+    toolSearchMode: appToolSearchModeSchema.default("off"),
     subagentRuntimeConfigEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().default(false),
     askUserQuestionAutoResolutionEnabled: z.boolean().default(true),
     integratedTerminalShell: integratedTerminalShellSelectionSchema.optional(),
     // 兼容旧 Host：缺少字段时在协议解析边界使用当前默认策略。
     modelContextBudgetStrategy: zcodeModelContextBudgetStrategySchema.default(
-      DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     ),
   })
   .strict();
@@ -2462,6 +2527,56 @@ export type ZCodeProviderTestModelConnectivityResult = z.infer<
   typeof zcodeProviderTestModelConnectivityResultSchema
 >;
 
+export const zcodeProviderUpdateAccountConfigParamsSchema = z
+  .object({
+    revision: nonEmptyString,
+    basedOnZCodeBuiltinRevision: nonEmptyString,
+    // Provider Config 的字段校验由 @zcode/provider 负责；协议层只约束可传输信封。
+    providers: z.record(z.string(), z.unknown()),
+    // 账号状态与 Overlay 必须一起传递，否则 Worker 会丢失非当前套餐的执行门禁。
+    states: z.record(
+      z.string(),
+      z
+        .object({
+          availability: z.enum(["available", "pending", "unavailable", "unknown"]),
+          entitled: z.boolean(),
+          unavailableReason: accountProviderUnavailableReasonSchema.optional(),
+          current: z.boolean().optional(),
+          connectionKey: z.string().optional(),
+          effectiveAt: z.number().finite().optional(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+export const zcodeProviderUpdateAccountConfigResultSchema = z
+  .object({
+    // 收到账号结果不代表配套 Built-in 已到达；应用版本只能读取 Registry 快照。
+    receivedRevision: nonEmptyString,
+    providerCount: z.number().int().nonnegative(),
+    status: z.enum(["received", "unchanged"]),
+  })
+  .strict();
+export type ZCodeProviderUpdateAccountConfigResult = z.infer<
+  typeof zcodeProviderUpdateAccountConfigResultSchema
+>;
+/** Worker 从所属 Environment 的正式 Config Store 重建进程内 Provider Registry。 */
+export const zcodeProviderRefreshRegistryParamsSchema = z
+  .object({
+    reason: nonEmptyString,
+  })
+  .strict();
+export const zcodeProviderRefreshRegistryResultSchema = z
+  .object({
+    refreshed: z.literal(true),
+  })
+  .strict();
+export type ZCodeProviderRefreshRegistryParams = z.infer<
+  typeof zcodeProviderRefreshRegistryParamsSchema
+>;
+export type ZCodeProviderRefreshRegistryResult = z.infer<
+  typeof zcodeProviderRefreshRegistryResultSchema
+>;
 export const zcodeInteractionPreferencesSchema = z
   .object({
     askUserQuestionAutoResolutionEnabled: z.boolean(),
@@ -2516,6 +2631,26 @@ export const zcodeWorkspaceUpdateModelIoPreferencesResultSchema = z
   .strict();
 export type ZCodeWorkspaceUpdateModelIoPreferencesResult = z.infer<
   typeof zcodeWorkspaceUpdateModelIoPreferencesResultSchema
+>;
+
+export const zcodeWorkspaceUpdateOffPeakToolPolicyParamsSchema = z
+  .object({
+    workspace: zcodeWorkspaceRefSchema,
+    enabled: z.boolean(),
+  })
+  .strict();
+export type ZCodeWorkspaceUpdateOffPeakToolPolicyParams = z.infer<
+  typeof zcodeWorkspaceUpdateOffPeakToolPolicyParamsSchema
+>;
+
+export const zcodeWorkspaceUpdateOffPeakToolPolicyResultSchema = z
+  .object({
+    workspace: zcodeWorkspaceRefSchema,
+    enabled: z.boolean(),
+  })
+  .strict();
+export type ZCodeWorkspaceUpdateOffPeakToolPolicyResult = z.infer<
+  typeof zcodeWorkspaceUpdateOffPeakToolPolicyResultSchema
 >;
 
 // 动态工作流灰度门禁：workspace 级事实，
@@ -2644,6 +2779,95 @@ export const zcodeUserInputResponseSchema = z
   .strict();
 export type ZCodeUserInputResponse = z.infer<typeof zcodeUserInputResponseSchema>;
 
+
+/** 请求取消只作用于同 workspace/session 的这一轮凭据刷新。 */
+export const zcodeProviderRuntimeHeadersCancelledSchema = z
+  .object({
+    requestId: nonEmptyString,
+    sessionId: nonEmptyString,
+    workspace: zcodeWorkspaceRefSchema,
+  })
+  .strict();
+export type ZCodeProviderRuntimeHeadersCancelled = z.infer<
+  typeof zcodeProviderRuntimeHeadersCancelledSchema
+>;
+
+export const zcodeProviderRuntimeHeadersResponseSchema = z.discriminatedUnion("headersApplied", [
+  z
+    .object({
+      headersApplied: z.literal(true),
+      // 合并重接：成功必须携带当前请求的鉴权材料，不依赖旧 Registry 已被写入。
+      requestAuth: z
+        .object({
+          apiKey: nonEmptyString.optional(),
+          apiKeyId: z.string().trim().min(1).optional(),
+          accountScope: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/)
+            .optional(),
+          headers: z.record(nonEmptyString, nonEmptyString).optional(),
+        })
+        .strict(),
+      errorMessage: nonEmptyString.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      headersApplied: z.literal(false),
+      errorMessage: nonEmptyString.optional(),
+    })
+    .strict(),
+]);
+export type ZCodeProviderRuntimeHeadersResponse = z.infer<
+  typeof zcodeProviderRuntimeHeadersResponseSchema
+>;
+
+// ── 官方 Server MCP 鉴权──
+// Agent 进程不是用户身份权威：它把 (pluginId, mcpKey, targetOrigin) 报给 host，由 host
+// 解析当前 Coding Plan 凭证并回传本次请求的身份头。请求侧不含任何秘密。
+// 与 interaction/requestProviderRuntimeHeaders 同类：Agent 发起、host 自动响应、零 UI。
+export const zcodeOfficialMcpAuthHeadersRequestParamsSchema = z
+  .object({
+    requestId: nonEmptyString,
+    workspace: zcodeWorkspaceRefSchema,
+    pluginId: nonEmptyString,
+    mcpKey: nonEmptyString,
+    targetOrigin: nonEmptyString,
+  })
+  .strict();
+export type ZCodeOfficialMcpAuthHeadersRequestParams = z.infer<
+  typeof zcodeOfficialMcpAuthHeadersRequestParamsSchema
+>;
+
+/**
+ * 失败原因必须可枚举，避免调用方按文本分流；因此响应不含 errorMessage。
+ *
+ * `official_mcp_origin_untrusted` 是 host 侧二次校验的拒绝原因：`targetOrigin` 不等于当前
+ * ZCode API origin。判定只看 origin，`pluginId` / `mcpKey` 仅用于日志归属。与"未登录/无凭据"
+ * 分开，才能在排查时区分"被拒绝"和"没身份"。
+ */
+export const zcodeOfficialMcpAuthFailureReasonSchema = z.enum(
+  OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS,
+);
+
+export const zcodeOfficialMcpAuthHeadersResponseSchema = z.discriminatedUnion("ok", [
+  z
+    .object({
+      ok: z.literal(true),
+      headers: z.record(z.string(), z.string()),
+    })
+    .strict(),
+  z
+    .object({
+      ok: z.literal(false),
+      reason: zcodeOfficialMcpAuthFailureReasonSchema,
+    })
+    .strict(),
+]);
+export type ZCodeOfficialMcpAuthHeadersResponse = z.infer<
+  typeof zcodeOfficialMcpAuthHeadersResponseSchema
+>;
+
 // ── Plugin management (list + enable/disable) ──
 // 镜像 @zcode/contracts 的 PluginMetadata, 仅保留 UI 需要的可序列化字段。
 export const zcodePluginOptionValueSchema = z.union([z.string(), z.number(), z.boolean()]);
@@ -2698,6 +2922,21 @@ export const zcodePluginComponentGroupSchema = z
   .strict();
 export type ZCodePluginComponentGroup = z.infer<typeof zcodePluginComponentGroupSchema>;
 
+export const zcodePluginUiSurfaceSchema = z
+  .object({
+    pluginId: nonEmptyString,
+    pluginName: nonEmptyString,
+    id: nonEmptyString.max(128),
+    title: z.union([nonEmptyString, z.record(z.string(), z.string())]),
+    icon: z.string().optional(),
+    // 运行时 namespaced server 名（plugin:<name>:<server>），可直接用于 mcp/uiReadResource。
+    server: nonEmptyString,
+    resourceUri: nonEmptyString.max(2048),
+    availability: z.literal("session"),
+  })
+  .strict();
+export type ZCodePluginUiSurface = z.infer<typeof zcodePluginUiSurfaceSchema>;
+
 export const zcodePluginInfoSchema = z
   .object({
     id: nonEmptyString,
@@ -2717,6 +2956,7 @@ export const zcodePluginInfoSchema = z
     // 权威组件清单（名称 + 可选描述），由 CLI 对插件根目录枚举得出，与启用态无关。
     // 详情 UI 直接展示，取代旧的「数量取协议、名称靠 UI 侧 join」脆弱方案。optional 兼容旧 payload。
     components: z.array(zcodePluginComponentGroupSchema).optional(),
+    uiSurfaces: z.array(zcodePluginUiSurfaceSchema).optional(),
     declaredMcpServerNames: z.array(z.string()).optional(),
     hostMcpServerNames: z.array(z.string()).optional(),
     mcpServerNames: z.array(z.string()),
@@ -2759,20 +2999,6 @@ export type ZCodePluginsListResult = z.infer<typeof zcodePluginsListResultSchema
 
 // ── 插件 UI 面板入口──
 // 工作区级只读投影：已启用插件清单 `ui.surfaces[]` 的合法条目；插件启停后 host 重新拉取。
-export const zcodePluginUiSurfaceSchema = z
-  .object({
-    pluginId: nonEmptyString,
-    pluginName: nonEmptyString,
-    id: nonEmptyString.max(128),
-    title: z.union([nonEmptyString, z.record(z.string(), z.string())]),
-    icon: z.string().optional(),
-    // 运行时 namespaced server 名（plugin:<name>:<server>），可直接用于 mcp/uiReadResource。
-    server: nonEmptyString,
-    resourceUri: nonEmptyString.max(2048),
-    availability: z.literal("session"),
-  })
-  .strict();
-export type ZCodePluginUiSurface = z.infer<typeof zcodePluginUiSurfaceSchema>;
 export const zcodePluginsListUiSurfacesParamsSchema = z
   .object({ workspace: zcodeWorkspaceRefSchema })
   .strict();
@@ -2881,7 +3107,7 @@ export type ZCodeSkillsReferenceCatalogResult = z.infer<
 
 // ── 已保存工作流的 GUI 中枢──
 // workspace 级、无会话的五个方法，照 skills/referenceCatalog 的先例：每次调用现扫
-// `<cwd>/.zxcode/workflows/`（挂载时快照会漏掉手改的文件）。形状与 @zcode/contracts 的
+// `<cwd>/.zcode/workflows/`（挂载时快照会漏掉手改的文件）。形状与 @zcode/contracts 的
 // saved-workflow.ts 逐字对齐——依赖方向是 contracts → shared，所以这里结构化地再声明一遍，
 // 而不是 import；两边的 strict 形状由 bootstrap 侧的协议测试互相钉住。
 export const zcodeSavedWorkflowArgTypeSchema = z.enum(["string", "number", "boolean", "json"]);
@@ -2912,7 +3138,7 @@ export const zcodeSavedWorkflowMetaSchema = z
   })
   .strict();
 export type ZCodeSavedWorkflowMeta = z.infer<typeof zcodeSavedWorkflowMetaSchema>;
-// 作用域两档：项目档落 `<cwd>/.zxcode/workflows/`、全局档落 agent 机器的 `~/.zxcode/workflows/`。作用域由文件所在目录推得，frontmatter 不存 scope。
+// 作用域两档：项目档落 `<cwd>/.zcode/workflows/`、全局档落 agent 机器的 `~/.zcode/workflows/`。作用域由文件所在目录推得，frontmatter 不存 scope。
 export const zcodeSavedWorkflowScopeSchema = z.enum(["project", "global"]);
 export type ZCodeSavedWorkflowScope = z.infer<typeof zcodeSavedWorkflowScopeSchema>;
 export const zcodeSavedWorkflowEntrySchema = z
@@ -2949,7 +3175,7 @@ const zcodeSavedWorkflowFailureSchema = z
 export const zcodeWorkflowsListParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema,
-    // 缺省即 `project`（本项目档）。给 `global` 时改扫本机 `~/.zxcode/workflows/`；此时 `workspace`
+    // 缺省即 `project`（本项目档）。给 `global` 时改扫本机 `~/.zcode/workflows/`；此时 `workspace`
     // 仍必填，但只是**载体运行时**——协议处理器对全局档不读它的路径。
     scope: zcodeSavedWorkflowScopeSchema.optional(),
   })
@@ -3021,13 +3247,13 @@ export const zcodeWorkflowsDeleteResultSchema = z.union([
 ]);
 export type ZCodeWorkflowsDeleteResult = z.infer<typeof zcodeWorkflowsDeleteResultSchema>;
 
-export const ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT = 50;
+export const ZCODE_WORKFLOWS_RUNS_MAX_LIMIT = 50;
 export const zcodeWorkflowsRunsParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema,
     /** 只要这个名字的 run（`dwf_run.name` 字面等值）；缺省即本项目全部 run。 */
     name: nonEmptyString.optional(),
-    limit: z.number().int().min(1).max(ZXCODE_WORKFLOWS_RUNS_MAX_LIMIT),
+    limit: z.number().int().min(1).max(ZCODE_WORKFLOWS_RUNS_MAX_LIMIT),
     // 缺省 `project`：只查 `dwf_run.cwd === workspacePath` 的 run。`global` 时**不**按 cwd 过滤，
     // 跨所有项目取该名字的运行历史（全局工作流在任何项目里跑，历史因此跨 cwd）；结果行带 `cwd`
     // 供 GUI 标项目。`workspace` 语义同 list（全局档只当载体）。
@@ -3138,7 +3364,7 @@ export type ZCodeWorkflowsMoveResult = z.infer<typeof zcodeWorkflowsMoveResultSc
 // 完成卡的「直接保存」走这条：**不收脚本，只收 runId**——要写的那份正文是这次 run 实际执行的
 // 脚本，agent 从 journal 记录（`scriptText`）里读。脚本不经 GUI 走一圈有两个后果值得写下来：
 // 修订过的 run 存下的是**结算它的**那一份，而工具行入参被快照裁成预览的老对话也照样存得出
-// 同样的字节。名字合法性、覆盖、遮蔽与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
+// 同样的字节。名字合法性、覆盖、遮��与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
 /** 另一档已有同名定义（遮蔽事实）；与 contracts 的 SavedWorkflowShadowing 逐字对齐。 */
 export const zcodeSavedWorkflowShadowingSchema = z.enum(["hides_global", "hidden_by_project"]);
 export type ZCodeSavedWorkflowShadowing = z.infer<typeof zcodeSavedWorkflowShadowingSchema>;
@@ -3296,6 +3522,7 @@ export const zcodePluginStoreListingSchema = z
     descriptionI18n: z.record(z.string(), z.string()).optional(),
     icon: z.string().optional(),
     category: z.string().optional(),
+    publisherType: z.enum(["official", "community"]).optional(),
     author: z.string().optional(),
     authorUrl: z.string().optional(),
     homepage: z.string().optional(),
@@ -3784,6 +4011,76 @@ export type ZCodeAutomationDeleteProtocolParams = z.infer<typeof zcodeAutomation
 export const zcodeAutomationDeleteResultSchema = z.object({ deleted: z.boolean() }).strict();
 export type ZCodeAutomationDeleteProtocolResult = z.infer<typeof zcodeAutomationDeleteResultSchema>;
 
+// ---- Off-Peak（闲时任务）会话内创建协议----
+// 与 automation 兄弟并列（独立域，禁止互相复用标记/表）。workspace 由 host 端从
+// 当前 session 注入，不进协议参数（对称 automation/create）。permissionMode 只开放产品
+// 四档词表（D29-4）；缺省解析在 host 端（D49-4：yolo / allowed_models 末位 / 最高推理档）。
+export const zcodeOffPeakPermissionModeSchema = z.enum([
+  "build",
+  "edit",
+  "plan",
+  "yolo",
+  "guarded",
+]);
+export type ZCodeOffPeakProtocolPermissionMode = z.infer<typeof zcodeOffPeakPermissionModeSchema>;
+
+export const zcodeOffPeakCreateParamsSchema = z
+  .object({
+    title: nonEmptyString,
+    prompt: nonEmptyString,
+    permissionMode: zcodeOffPeakPermissionModeSchema.optional(),
+    model: nonEmptyString.optional(),
+    thoughtLevel: nonEmptyString.optional(),
+    // 会话内创建绑定当前会话（对齐 automation/create 的 targetTaskId），由 CLI 端口填入。
+    boundSessionId: nonEmptyString.optional(),
+  })
+  .strict();
+export type ZCodeOffPeakCreateProtocolParams = z.infer<typeof zcodeOffPeakCreateParamsSchema>;
+
+// 协议侧任务快照：轮尾卡片与 OffPeakList 的最小字段面。
+// 不暴露 serverTicketId（跨边界禁带）。
+export const zcodeOffPeakTaskSnapshotSchema = z
+  .object({
+    offPeakTaskId: nonEmptyString,
+    title: z.string(),
+    status: z.enum(["queued", "paused", "running", "completed", "failed", "cancelled"]),
+    queuePosition: z.number().int().positive().optional(),
+    sessionId: nonEmptyString.optional(),
+    createdAt: z.number().int().nonnegative(),
+  })
+  .strict();
+export type ZCodeOffPeakTaskProtocolSnapshot = z.infer<typeof zcodeOffPeakTaskSnapshotSchema>;
+
+// 失败分类跨协议保真（镜像 shared OffPeakTaskCreateResult 的判别联合，错误不降级为字符串）。
+// model 白名单预校失败复用 client_validation 分类 + errorCode "model_not_allowed"，不扩分类枚举。
+export const zcodeOffPeakCreateResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), task: zcodeOffPeakTaskSnapshotSchema }).strict(),
+  z
+    .object({
+      ok: z.literal(false),
+      failureStage: z.enum(["client_validation", "ticket_request", "local_persist"]),
+      errorCategory: z.enum([
+        "client_validation",
+        "eligibility_3101",
+        "quota_3103",
+        "network",
+        "invalid_response",
+        "local_persist",
+        "unknown",
+      ]),
+      errorCode: z.string(),
+    })
+    .strict(),
+]);
+export type ZCodeOffPeakCreateProtocolResult = z.infer<typeof zcodeOffPeakCreateResultSchema>;
+
+export const zcodeOffPeakListParamsSchema = z.object({}).strict();
+export type ZCodeOffPeakListProtocolParams = z.infer<typeof zcodeOffPeakListParamsSchema>;
+export const zcodeOffPeakListResultSchema = z
+  .object({ tasks: z.array(zcodeOffPeakTaskSnapshotSchema) })
+  .strict();
+export type ZCodeOffPeakListProtocolResult = z.infer<typeof zcodeOffPeakListResultSchema>;
+
 export const zcodeProtocolMethods = {
   runtimeCapabilities: "runtime/capabilities",
   computerUseOperationEvent: "computer-use/operation-event",
@@ -3824,10 +4121,15 @@ export const zcodeProtocolMethods = {
   sessionSetMode: "session/setMode",
   workspaceReadPresentation: "workspace/readPresentation",
   workspaceHookTrustGrant: "workspace/hooks/trustGrant",
+  // 进程级 Account Provider Config 与 workspace 运行目录分离。
+  providerUpdateAccountConfig: "provider/updateAccountConfig",
+  providerRefreshRegistry: "provider/refreshRegistry",
   workspaceUpdateInteractionPreferences: "workspace/updateInteractionPreferences",
   workspaceUpdateModelIoPreferences: "workspace/updateModelIoPreferences",
-  // 动态工作流灰度门禁：workspace 级事实，由 host 在 agent 就绪时同步；
-  // 旧 CLI method-not-found → host 降级忽略。
+  // Off-Peak 工具面门禁是 workspace 级事实（灰度 + 本地/远程），由 host 在 agent 就绪时同步；
+  // CLI 对 legacy create/resume 与 v4 冷恢复统一读取。旧 CLI method-not-found → host 降级忽略。
+  workspaceUpdateOffPeakToolPolicy: "workspace/updateOffPeakToolPolicy",
+  // 动态工作流灰度门禁：同 Off-Peak 的同步模式。
   workspaceUpdateDynamicWorkflowPolicy: "workspace/updateDynamicWorkflowPolicy",
   // LLM 执行面在 CLI，直连不可行；消费仅 services 内部
   // （commit message），待 v4 workspace 查询/命令面覆盖后移除。
@@ -3893,10 +4195,13 @@ export const zcodeProtocolMethods = {
   automationCheckTaskBinding: "automation/checkTaskBinding",
   automationList: "automation/list",
   automationDelete: "automation/delete",
+  // Off-Peak 会话内创建：与 automation 兄弟并列的独立方法族。
+  offPeakCreate: "offPeak/create",
+  offPeakList: "offPeak/list",
   // @deprecated：host 消费已清零（zcodeAgentService 改走 v4/usage/stats）。
   // 仅剩 CLI server 的 wire 兼容 case；随旧词整体删除时一并移除。
   usageStats: "usage/stats",
-  // ZxCode Protocol 对 agent 只暴露 session-first 方法；task 是 UI 投影概念，不能泄露进协议方法名。
+  // ZCode Protocol 对 agent 只暴露 session-first 方法；task 是 UI 投影概念，不能泄露进协议方法名。
   // @deprecated：host 已改走 v4/conversation/usage；后续与 usage/stats 一并移除。
   sessionUsage: "session/usage",
   // 资源管理器：CLI 回报其 MCP 子进程 pid 与插件归属（纯内存，无 I/O），采样在 Host 侧完成。
@@ -3904,6 +4209,8 @@ export const zcodeProtocolMethods = {
   processNetworkCapture: "process/networkCapture",
   interactionRequestPermission: "interaction/requestPermission",
   interactionRequestUserInput: "interaction/requestUserInput",
+  interactionRequestProviderRuntimeHeaders: "interaction/requestProviderRuntimeHeaders",
+  interactionRequestOfficialMcpAuthHeaders: "interaction/requestOfficialMcpAuthHeaders",
   // browser-use 反向请求由 agent 发起，host 转给 main 中的 CDP executor。
   interactionBrowserList: "interaction/browserList",
   interactionBrowserExecute: "interaction/browserExecute",
@@ -4006,6 +4313,12 @@ export const zcodeProtocolSessionMethodContracts = {
 
 export type ZCodeProtocolSessionMethodContract =
   (typeof zcodeProtocolSessionMethodContracts)[keyof typeof zcodeProtocolSessionMethodContracts];
+
+// 启动入口的独立存储命令与严格结果 schema，和 CLI 共用一份契约。
+export {
+  STORAGE_MIGRATION_COMMAND,
+  storageMigrationReportSchema,
+} from "../sqlite-migrations/contract.js";
 
 /** 仅存储准备子进程的私有控制帧，原始路径不进入业务事件或遥测。 */
 export const zcodeStoragePreparationFrameSchema = z.discriminatedUnion("method", [

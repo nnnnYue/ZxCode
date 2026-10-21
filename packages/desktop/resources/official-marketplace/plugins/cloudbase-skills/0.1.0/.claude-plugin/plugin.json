@@ -10,11 +10,5 @@
     "name": "TencentCloudBase",
     "url": "https://github.com/TencentCloudBase/cloudbase-skills"
   },
-  "keywords": [
-    "cloudbase",
-    "tencent-cloud",
-    "wechat",
-    "serverless",
-    "mcp"
-  ]
+  "keywords": ["cloudbase", "tencent-cloud", "wechat", "serverless", "mcp"]
 }

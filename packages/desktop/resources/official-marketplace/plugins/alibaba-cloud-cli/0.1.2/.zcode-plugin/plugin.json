@@ -13,13 +13,5 @@
   "homepage": "https://www.alibabacloud.com/help/en/cli/",
   "repository": "https://github.com/aliyun/aliyun-cli",
   "license": "Apache-2.0",
-  "keywords": [
-    "alibaba-cloud",
-    "aliyun",
-    "aliyun-cli",
-    "cloud",
-    "ecs",
-    "oss",
-    "ram"
-  ]
+  "keywords": ["alibaba-cloud", "aliyun", "aliyun-cli", "cloud", "ecs", "oss", "ram"]
 }

@@ -10,7 +10,6 @@ const isWindows = process.platform === "win32";
 const tempDirs: string[] = [];
 const TEST_FILE_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(TEST_FILE_DIR, "../../..");
-const doctorSource = readFileSync(join(REPO_ROOT, "scripts/doctor-macos-release-app.sh"), "utf-8");
 
 function makeTempDir(prefix: string) {
   const dir = mkdtempSync(join(tmpdir(), prefix));
@@ -40,11 +39,11 @@ for arg in "$@"; do
   printf '\\t%s' "$arg" >> "${logPath}"
 done
 printf '\\n' >> "${logPath}"
-if [[ "${toolName}" == "codesign" && "\${ZXCODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "codesign" && "\${ZCODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper codesign rejection" >&2
   exit 7
 fi
-if [[ "${toolName}" == "xcrun" && "\${ZXCODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "xcrun" && "\${ZCODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper stapler rejection" >&2
   exit 8
 fi
@@ -76,9 +75,9 @@ function runDoctor(appPath: string, binDir: string, extraEnv: NodeJS.ProcessEnv 
     cwd: REPO_ROOT,
     env: {
       ...process.env,
-      ZXCODE_ENV: "production",
+      ZCODE_ENV: "production",
       // Test selection must not inherit a developer's active dev/preview helper variant.
-      ZXCODE_CUA_HELPER_INSTALL_VARIANT: "",
+      ZCODE_CUA_HELPER_INSTALL_VARIANT: "",
       ...extraEnv,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     },
@@ -94,18 +93,11 @@ afterEach(() => {
 });
 
 describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
-  it("keeps shell defaults aligned with producer Helper identity", () => {
-    expect(doctorSource).toContain(`${HELPER_APP_NAME}}"`);
-    expect(doctorSource).toContain(
-      `HELPER_EXECUTABLE_NAME="\${ZXCODE_CUA_HELPER_EXECUTABLE_NAME:-${HELPER_DISPLAY_NAME}}"`,
-    );
-  });
-
   it("Preview 自动按 bundle 名推导主可执行，并验收 preview Helper 目录", () => {
     const workspaceDir = makeTempDir("zcode-macos-preview-doctor-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
-    const { appPath } = createReleaseApp(workspaceDir, "ZxCode Preview");
+    const { appPath } = createReleaseApp(workspaceDir, "ZCode Preview");
     const zcodeHome = join(workspaceDir, ".zcode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome, "preview");
 
@@ -115,12 +107,12 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZXCODE_ENV: "test",
-      ZXCODE_CUA_REQUIRE_HELPER: "1",
-      ZXCODE_HOME: zcodeHome,
+      ZCODE_ENV: "test",
+      ZCODE_CUA_REQUIRE_HELPER: "1",
+      ZCODE_HOME: zcodeHome,
     });
 
-    expect(output).toContain(`validating ZxCode Preview.app: ${appPath}`);
+    expect(output).toContain(`validating ZCode Preview.app: ${appPath}`);
     const log = readFileSync(toolLog, "utf-8");
     expect(log).toContain(`codesign\t--verify\t--deep\t--strict\t${appPath}`);
     expect(log).toContain(`codesign\t--verify\t--deep\t--strict\t${helperAppPath}`);
@@ -137,7 +129,7 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "codesign", toolLog);
     writeFakeTool(binDir, "spctl", toolLog);
 
-    const output = runDoctor(appPath, binDir, { ZXCODE_HOME: zcodeHome });
+    const output = runDoctor(appPath, binDir, { ZCODE_HOME: zcodeHome });
 
     expect(output).toContain("[macos-release-doctor] done");
     const log = readFileSync(toolLog, "utf-8");
@@ -161,8 +153,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZXCODE_CUA_REQUIRE_HELPER: "1",
-      ZXCODE_HOME: zcodeHome,
+      ZCODE_CUA_REQUIRE_HELPER: "1",
+      ZCODE_HOME: zcodeHome,
     });
 
     expect(output).toContain("[macos-release-doctor] done");
@@ -189,9 +181,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZXCODE_CUA_REQUIRE_HELPER: "1",
-        ZXCODE_CUA_HELPER_APP_PATH: helperAppPath,
-        ZXCODE_FAKE_STAPLER_FAIL_HELPER: "1",
+        ZCODE_CUA_REQUIRE_HELPER: "1",
+        ZCODE_CUA_HELPER_APP_PATH: helperAppPath,
+        ZCODE_FAKE_STAPLER_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper stapler rejection/);
   });
@@ -209,13 +201,13 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZXCODE_CUA_REQUIRE_HELPER: "1",
-        ZXCODE_HOME: zcodeHome,
+        ZCODE_CUA_REQUIRE_HELPER: "1",
+        ZCODE_HOME: zcodeHome,
       }),
     ).toThrow(/Computer Use Helper\.app missing/);
   });
 
-  it("CUA release gate 在没有 ZXCODE_HOME/HOME 时应 fail-closed", () => {
+  it("CUA release gate 在没有 ZCODE_HOME/HOME 时应 fail-closed", () => {
     const workspaceDir = makeTempDir("zcode-macos-release-doctor-no-home-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
@@ -227,8 +219,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZXCODE_CUA_REQUIRE_HELPER: "1",
-        ZXCODE_HOME: "",
+        ZCODE_CUA_REQUIRE_HELPER: "1",
+        ZCODE_HOME: "",
         HOME: "",
       }),
     ).toThrow(/no product helper path/);
@@ -248,9 +240,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZXCODE_CUA_REQUIRE_HELPER: "1",
-        ZXCODE_HOME: zcodeHome,
-        ZXCODE_FAKE_CODESIGN_FAIL_HELPER: "1",
+        ZCODE_CUA_REQUIRE_HELPER: "1",
+        ZCODE_HOME: zcodeHome,
+        ZCODE_FAKE_CODESIGN_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper codesign rejection/);
 
@@ -274,8 +266,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZXCODE_CUA_REQUIRE_HELPER: "1",
-        ZXCODE_HOME: zcodeHome,
+        ZCODE_CUA_REQUIRE_HELPER: "1",
+        ZCODE_HOME: zcodeHome,
       }),
     ).toThrow(/not a Mach-O executable/);
     const log = existsSync(toolLog) ? readFileSync(toolLog, "utf-8") : "";

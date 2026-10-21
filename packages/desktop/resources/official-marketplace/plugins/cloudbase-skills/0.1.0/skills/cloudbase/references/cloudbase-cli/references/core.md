@@ -77,23 +77,23 @@ tcb login
 
 Sub-accounts need these CAM policies to use the CLI:
 
-| Policy | Purpose |
-|--------|---------|
-| `QcloudAccessForTCBRole` | TCB access to cloud resources |
-| `QcloudAccessForTCBRoleInAccessCloudBaseRun` | TCB access to VPC/CVM for CloudRun |
-| `QcloudCamReadOnlyAccess` | Required for web/device code login; without it, only API key login works |
+| Policy                                       | Purpose                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------ |
+| `QcloudAccessForTCBRole`                     | TCB access to cloud resources                                            |
+| `QcloudAccessForTCBRoleInAccessCloudBaseRun` | TCB access to VPC/CVM for CloudRun                                       |
+| `QcloudCamReadOnlyAccess`                    | Required for web/device code login; without it, only API key login works |
 
 > ⚠️ If sub-account device/web login fails, grant `QcloudCamReadOnlyAccess` or switch to `--apiKeyId / --apiKey`.
 
 ### Auth Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `Not logged in` | Run `tcb login` |
-| Cannot open browser / browser loop | Use default device code flow (no `--flow` flag) |
-| Device code not working in CI | Use `--apiKeyId / --apiKey` credential login |
-| Sub-account web/device login fails | Grant `QcloudCamReadOnlyAccess`, or use key login |
-| Permission denied on resources | Check sub-account CAM policies for the specific TCB resource |
+| Issue                              | Solution                                                     |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `Not logged in`                    | Run `tcb login`                                              |
+| Cannot open browser / browser loop | Use default device code flow (no `--flow` flag)              |
+| Device code not working in CI      | Use `--apiKeyId / --apiKey` credential login                 |
+| Sub-account web/device login fails | Grant `QcloudCamReadOnlyAccess`, or use key login            |
+| Permission denied on resources     | Check sub-account CAM policies for the specific TCB resource |
 
 ---
 
@@ -203,17 +203,18 @@ Know exact command + all flags?
 
 ### Anti-patterns
 
-| Anti-pattern | Do instead |
-|-------------|-----------|
-| Guessing a flag name | `tcb docs list` -> `tcb docs read <module>` first |
-| Running full deploy to "test" if it works | Use `--dry-run` |
-| Repeating same failed command with same flags | Re-read docs, change flags |
-| Assuming v2.x flag names still work | Query docs after version upgrade |
-| Jumping to `tcb docs read <path>` without listing | Start with `tcb docs list` |
+| Anti-pattern                                      | Do instead                                        |
+| ------------------------------------------------- | ------------------------------------------------- |
+| Guessing a flag name                              | `tcb docs list` -> `tcb docs read <module>` first |
+| Running full deploy to "test" if it works         | Use `--dry-run`                                   |
+| Repeating same failed command with same flags     | Re-read docs, change flags                        |
+| Assuming v2.x flag names still work               | Query docs after version upgrade                  |
+| Jumping to `tcb docs read <path>` without listing | Start with `tcb docs list`                        |
 
 ### --help First Rule (MANDATORY)
 
 **Before using ANY `tcb` command for the first time, run `<command> --help` to check:**
+
 - Parameter names and formats
 - Required vs optional parameters
 - Official API doc URLs (many commands include Tencent Cloud API links)
@@ -277,32 +278,32 @@ tcb app deploy --config-file config/staging.json
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `envId` | string | **Yes** | CloudBase environment ID (`env-` prefix). Override with `--env-id` |
-| `functionRoot` | string | No | Base directory for cloud functions. Default: `"functions"` |
-| `functions` | array | No | Cloud function configs (see below) |
-| `servers` | array | No | CloudRun service configs (see below) |
-| `app` | object | No | Web app hosting config (see below) |
+| Field          | Type   | Required | Description                                                        |
+| -------------- | ------ | -------- | ------------------------------------------------------------------ |
+| `envId`        | string | **Yes**  | CloudBase environment ID (`env-` prefix). Override with `--env-id` |
+| `functionRoot` | string | No       | Base directory for cloud functions. Default: `"functions"`         |
+| `functions`    | array  | No       | Cloud function configs (see below)                                 |
+| `servers`      | array  | No       | CloudRun service configs (see below)                               |
+| `app`          | object | No       | Web app hosting config (see below)                                 |
 
 ### `functions` Array — Essential Fields
 
 Each entry is an `ICloudFunction`:
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `name` | string | (required) | Function name, unique in env |
-| `handler` | string | — | Entry point, e.g. `"index.main"` |
-| `runtime` | string | auto-detected | `Nodejs18.15`, `Python3.9`, `Go1.8`, `Java11`, etc. |
-| `timeout` | number | `3` | Execution timeout in seconds (1-900) |
-| `memorySize` | number | `256` | Memory in MB (128-3008, multiples of 128) |
-| `type` | string | `"Event"` | `"Event"` (background) or `"HTTP"` (web-accessible) |
-| `envVariables` | object | `{}` | Runtime env vars (`process.env.*` / `os.environ[]`) |
-| `triggers` | array | `[]` | Timer, COS, API Gateway triggers |
-| `installDependency` | boolean | `true` | Auto-install deps before deploy |
-| `vpc` | object | — | `{ vpcId, subnetId }` for VPC access |
-| `dir` | string | `functionRoot/name` | Custom code directory |
-| `ignore` | string[] | `[]` | Glob patterns to exclude from deploy |
+| Field               | Type     | Default             | Description                                         |
+| ------------------- | -------- | ------------------- | --------------------------------------------------- |
+| `name`              | string   | (required)          | Function name, unique in env                        |
+| `handler`           | string   | —                   | Entry point, e.g. `"index.main"`                    |
+| `runtime`           | string   | auto-detected       | `Nodejs18.15`, `Python3.9`, `Go1.8`, `Java11`, etc. |
+| `timeout`           | number   | `3`                 | Execution timeout in seconds (1-900)                |
+| `memorySize`        | number   | `256`               | Memory in MB (128-3008, multiples of 128)           |
+| `type`              | string   | `"Event"`           | `"Event"` (background) or `"HTTP"` (web-accessible) |
+| `envVariables`      | object   | `{}`                | Runtime env vars (`process.env.*` / `os.environ[]`) |
+| `triggers`          | array    | `[]`                | Timer, COS, API Gateway triggers                    |
+| `installDependency` | boolean  | `true`              | Auto-install deps before deploy                     |
+| `vpc`               | object   | —                   | `{ vpcId, subnetId }` for VPC access                |
+| `dir`               | string   | `functionRoot/name` | Custom code directory                               |
+| `ignore`            | string[] | `[]`                | Glob patterns to exclude from deploy                |
 
 > ⚠️ For sensitive values, use `tcb secrets` instead of `envVariables`.
 
@@ -310,13 +311,15 @@ Each entry is an `ICloudFunction`:
 
 ```json
 {
-  "functions": [{
-    "name": "my-function",
-    "handler": "index.main",
-    "runtime": "Nodejs18.15",
-    "timeout": 30,
-    "envVariables": { "NODE_ENV": "production" }
-  }]
+  "functions": [
+    {
+      "name": "my-function",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "timeout": 30,
+      "envVariables": { "NODE_ENV": "production" }
+    }
+  ]
 }
 ```
 
@@ -326,9 +329,7 @@ Each entry is an `ICloudFunction`:
 
 ```json
 {
-  "servers": [
-    { "type": "node", "name": "api-service", "path": "services/api" }
-  ]
+  "servers": [{ "type": "node", "name": "api-service", "path": "services/api" }]
 }
 ```
 
@@ -336,17 +337,17 @@ Each entry is an `ICloudFunction`:
 
 ### `app` Object — `ICloudAppConfig`
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `serviceName` | string | (required) | Service name, unique in env, used in URLs |
-| `framework` | string | auto-detected | `react`, `vue`, `nextjs`, `nuxt`, `static`, etc. |
-| `root` | string | `"."` | App code directory (relative to project root) |
-| `installCommand` | string | framework-dependent | Empty string `""` = skip |
-| `buildCommand` | string | framework-dependent | Empty string `""` = skip build |
-| `outputDir` | string | `"dist"` | Build output dir. For static hosting: `"./"` |
-| `deployPath` | string | `/<serviceName>` | URL path. Only non-default values are saved to config |
-| `envVariables` | object | `{}` | Build-time environment variables |
-| `ignore` | string[] | `[]` | Files/dirs to exclude from deploy |
+| Field            | Type     | Default             | Description                                           |
+| ---------------- | -------- | ------------------- | ----------------------------------------------------- |
+| `serviceName`    | string   | (required)          | Service name, unique in env, used in URLs             |
+| `framework`      | string   | auto-detected       | `react`, `vue`, `nextjs`, `nuxt`, `static`, etc.      |
+| `root`           | string   | `"."`               | App code directory (relative to project root)         |
+| `installCommand` | string   | framework-dependent | Empty string `""` = skip                              |
+| `buildCommand`   | string   | framework-dependent | Empty string `""` = skip build                        |
+| `outputDir`      | string   | `"dist"`            | Build output dir. For static hosting: `"./"`          |
+| `deployPath`     | string   | `/<serviceName>`    | URL path. Only non-default values are saved to config |
+| `envVariables`   | object   | `{}`                | Build-time environment variables                      |
+| `ignore`         | string[] | `[]`                | Files/dirs to exclude from deploy                     |
 
 **Minimal app example:**
 
@@ -387,15 +388,15 @@ export TCB_FRAMEWORK=vue            # Override framework detection
 
 CloudBase CLI uses structured exit codes for CI/CD and agent error handling.
 
-| Code | Meaning | Typical Scenario | Recovery |
-|------|---------|-----------------|----------|
-| 0 | Success | — | — |
-| 1 | General error | Uncategorized exception | Check message, investigate |
-| 2 | Auth failed | Not logged in, token expired | `tcb login` |
-| 3 | Invalid input | Missing/malformed params | Check `--help`, fix params |
-| 4 | Resource not found | Wrong envId, missing function/collection | Verify with `tcb env list` / `tcb fn list` |
-| 5 | Cloud API error | Network timeout, SDK error | Retry with backoff |
-| 6 | Local file error | `cloudbaserc.json` missing/corrupt | Check config, `tcb init` |
+| Code | Meaning            | Typical Scenario                         | Recovery                                   |
+| ---- | ------------------ | ---------------------------------------- | ------------------------------------------ |
+| 0    | Success            | —                                        | —                                          |
+| 1    | General error      | Uncategorized exception                  | Check message, investigate                 |
+| 2    | Auth failed        | Not logged in, token expired             | `tcb login`                                |
+| 3    | Invalid input      | Missing/malformed params                 | Check `--help`, fix params                 |
+| 4    | Resource not found | Wrong envId, missing function/collection | Verify with `tcb env list` / `tcb fn list` |
+| 5    | Cloud API error    | Network timeout, SDK error               | Retry with backoff                         |
+| 6    | Local file error   | `cloudbaserc.json` missing/corrupt       | Check config, `tcb init`                   |
 
 ### Agent Error Handling Strategy
 
@@ -431,23 +432,27 @@ tcb fn deploy || {
 > 每次 CLI 操作前的核心检查清单
 
 ### Environment Setup
+
 - [ ] `tcb --version` >= 3.0.0
 - [ ] `tcb login` completed (token valid)
 - [ ] Target envId confirmed with user
 - [ ] `tcb env use <envId>` executed
 
 ### Before Any Command
+
 - [ ] Run `<command> --help` for any new command
 - [ ] Check API doc links in help output (use `web_fetch` if available)
 - [ ] Verify parameter names/formats match help
 
 ### Destructive Operations
+
 - [ ] `--dry-run` to preview first
 - [ ] Show preview to user
 - [ ] Wait for explicit confirmation
 - [ ] Re-run without `--dry-run` only after "yes"
 
 ### Error Handling
+
 - [ ] Check exit code (`$?`)
 - [ ] Apply targeted recovery per exit code table above
 - [ ] Escalate to user after 2-3 failed attempts

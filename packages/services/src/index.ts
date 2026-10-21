@@ -1,5 +1,6 @@
 // Descriptors & collection (browser-safe)
 export { type ServiceDescriptor, createServiceDescriptor } from "./descriptors.js";
+export type { ServiceExposurePolicy } from "./collection.js";
 export { ServiceCollection } from "./collection.js";
 export {
   IModelSelectionService,
@@ -70,27 +71,31 @@ export type {
   ZCodeModelTrajectoryMessage,
   ZCodeModelTrajectoryRecord,
   ZCodeModelTrajectoryUsage,
-  ZCodeTaskListKind,
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-  ZCodeTaskListSortBy,
-  ZCodeTaskListWorkspaceScope,
   ZCodeTaskReadyOutcome,
-  ZCodeGroupedTaskRef,
-  ZCodeGroupedTaskView,
-  ZCodeGroupedTaskViewNode,
-  ZCodeGroupedTaskViewOrderInput,
-  ZCodeGroupedTaskViewQuery,
-  ZCodeGroupedTaskViewStructure,
-  ZCodeGroupedTaskViewStructureMember,
-  ZCodeGroupedTaskViewStructureTopOrder,
-  ZCodeGroupedTaskViewTopLevelNodeRef,
+} from "./session/zcodeTaskService.js";
+// fork：分组任务视图类型仍由 session/zcodeTaskListTypes 承载（上游 3.16 已删，fork UI 继续使用）。
+export type {
   ZCodeTaskGroup,
   ZCodeTaskGroupColor,
-} from "./session/zcodeTaskService.js";
-export type { ZCodeTaskListItem } from "./session/zcodeTaskListTypes.js";
+  ZCodeGroupedTaskRef,
+  ZCodeGroupedTaskViewNode,
+  ZCodeGroupedTaskView,
+  ZCodeGroupedTaskViewQuery,
+  ZCodeGroupedTaskViewStructureMember,
+  ZCodeGroupedTaskViewStructureTopOrder,
+  ZCodeGroupedTaskViewStructure,
+  ZCodeGroupedTaskViewOrderInput,
+  ZCodeGroupedTaskViewTopLevelNodeRef,
+  ZCodeTaskListKind,
+  ZCodeTaskListSortBy,
+  ZCodeTaskListWorkspaceScope,
+  ZCodeTaskListQuery,
+  ZCodeTaskListItem,
+  ZCodeTaskListResult,
+} from "./session/zcodeTaskListTypes.js";
 
 export { IWindowControllerService } from "./window-controller/windowController.js";
+export type { WindowHostTaskUnreadSignal } from "#src/window-controller/windowController.js";
 export type {
   WindowHostControllerFrame,
   WindowHostControllerMutation,
@@ -277,3 +282,43 @@ export { createHighspeedMockTransport } from "./highspeed/highspeedMockTransport
 
 export { IGenUiService } from "./gen-ui/contract.js";
 export type { GenUiPrepareParams } from "./gen-ui/contract.js";
+
+export { ISourceServerWorkspaceService } from "./source-server-workspace/sourceServerWorkspace.js";
+export type { BotRemoteWorkspaceResolver, BotRemoteWorkspaceResolution } from "./bots/bots.js";
+export { ITaskGroupService } from "#src/task-groups/contract.js";
+export type {
+  TaskGroup,
+  TaskGroupColor,
+  TaskGroupStructure,
+  GroupTaskRef,
+  GroupNode,
+  MoveGroupNode,
+} from "#src/task-groups/contract.js";
+export { IRemoteProjectService } from "#src/remote-projects/contract.js";
+export type {
+  RemoteProjectDirectory,
+  RemoteProjectEntry,
+  RemoteProjectHost,
+} from "#src/remote-projects/contract.js";
+export {
+  ISourceServerManagementService,
+  type UpdateConnectionProfileInput,
+} from "./source-server-management/sourceServerManagement.js";
+export {
+  IWindowProjectService,
+  IWindowRemoteProjectService,
+  IWindowProjectChangesService,
+  type WindowProjectDirectoryServices,
+} from "#src/window-project-directory/contract.js";
+export { createWindowProjectChangesService } from "#src/window-project-directory/index.js";
+export type { StorageRootSpec } from "./storage/contract.js";
+export { IProjectService, LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project/contract.js";
+export type {
+  ProjectTree,
+  ProjectTask,
+  ProjectTaskRef,
+  VirtualProject,
+  ProjectRoot,
+  SaveProjectInput,
+  ProjectDirectories,
+} from "#src/project/contract.js";

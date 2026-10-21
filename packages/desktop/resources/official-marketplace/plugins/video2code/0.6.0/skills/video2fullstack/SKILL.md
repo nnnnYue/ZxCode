@@ -8,7 +8,7 @@ description: Replicating a website shown in an operation-recording video as a FU
 Faithfully replicate the website demonstrated in the reference video. Two equally weighted goals:
 
 1. **Frontend fidelity** — layout + visual style + real text content + interactions + animations, same as classic video2code.
-2. **Backend fidelity** — the *behaviors* the video proves are server-driven must be served by a **real HTTP API with persistent storage** in your replica. A pixel-perfect page whose data is hardcoded in components is a FAILED task, no matter how good it looks.
+2. **Backend fidelity** — the _behaviors_ the video proves are server-driven must be served by a **real HTTP API with persistent storage** in your replica. A pixel-perfect page whose data is hardcoded in components is a FAILED task, no matter how good it looks.
 
 The video is an **operation recording**: a user driving the site through a journey. Every observable consequence of an operation (price changes when a SKU is selected, an item appearing in the cart on another page, a validation error on submit) is evidence about the backend. Extracting that evidence is as much your job as reading the layout.
 
@@ -31,22 +31,22 @@ The video is an **operation recording**: a user driving the site through a journ
 
 ## Stack — one server process, boring choices
 
-| Layer | Use | Notes |
-|---|---|---|
-| Frontend | React + TypeScript + Vite + Tailwind | same as video2code; framer-motion/gsap only if the motion needs it |
-| Backend | Node: **Express** (or Hono) | plain REST JSON API under `/api/*` |
-| Storage | **better-sqlite3**; fallback: a JSON file store you flush on write | if better-sqlite3 fails to build in this container, do NOT burn rounds — fall back immediately. The requirement is *server-side persistence across page reloads*, not a specific engine |
-| Serving | **ONE process**: the API server also statically serves the built frontend (`dist/`) | `node server/index.mjs` listens on **port 3000**, serves `/api/*` + static files + SPA fallback |
+| Layer    | Use                                                                                 | Notes                                                                                                                                                                                   |
+| -------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend | React + TypeScript + Vite + Tailwind                                                | same as video2code; framer-motion/gsap only if the motion needs it                                                                                                                      |
+| Backend  | Node: **Express** (or Hono)                                                         | plain REST JSON API under `/api/*`                                                                                                                                                      |
+| Storage  | **better-sqlite3**; fallback: a JSON file store you flush on write                  | if better-sqlite3 fails to build in this container, do NOT burn rounds — fall back immediately. The requirement is _server-side persistence across page reloads_, not a specific engine |
+| Serving  | **ONE process**: the API server also statically serves the built frontend (`dist/`) | `node server/index.mjs` listens on **port 3000**, serves `/api/*` + static files + SPA fallback                                                                                         |
 
 Frontend components get ALL dynamic data from `/api/*` via fetch — products, cart, orders. Seed data lives in the database (a `seed` script or auto-seed on first boot), never inline in JSX. Hardcoding into components what the video shows coming from a server is the defining anti-pattern of this skill.
 
 ## File contract — what "done" means
 
-| File | What | When |
-|---|---|---|
-| `out/plan.md` | Design spec. Every observable concern is one line tagged `[S#]` (static) / `[D#]` (dynamic) / `[B#]` (backend behavior), with measured numbers and source timestamps. Plus a **Backend design** section: entity tables, API endpoint list, seed-data plan. | End of Phase 3, **before any app code** |
-| `out/verify.jsonl` | Append-only log, one JSON object per check: `{"id":"B2","result":"pass"|"fail"|"defer","evidence":"<path or command>","measured":{...},"reason":"<required for fail/defer>"}`. Fixes append a new line for the same id; never edit old lines. | Live during Phase 4 |
-| `out/report.md` | What shipped, how to run it (`npm install && npm run build && npm start`), API summary, deferred list with reasons. | Last act |
+| File               | What                                                                                                                                                                                                                                                       | When                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `out/plan.md`      | Design spec. Every observable concern is one line tagged `[S#]` (static) / `[D#]` (dynamic) / `[B#]` (backend behavior), with measured numbers and source timestamps. Plus a **Backend design** section: entity tables, API endpoint list, seed-data plan. | End of Phase 3, **before any app code** |
+| `out/verify.jsonl` | Append-only log, one JSON object per check: `{"id":"B2","result":"pass"                                                                                                                                                                                    | "fail"                                  | "defer","evidence":"<path or command>","measured":{...},"reason":"<required for fail/defer>"}`. Fixes append a new line for the same id; never edit old lines. | Live during Phase 4 |
+| `out/report.md`    | What shipped, how to run it (`npm install && npm run build && npm start`), API summary, deferred list with reasons.                                                                                                                                        | Last act                                |
 
 Done = every `[S#]`/`[D#]`/`[B#]` id in plan.md has a final `pass`/`defer` line in verify.jsonl, `npm run build` passes, the server starts and answers, and report.md exists. Never `defer` a check you did not attempt.
 
@@ -115,8 +115,9 @@ Seed: 4+ products with the SKUs/prices/stock states visible in the video
 ```
 
 Tag rules:
+
 - `[S]`/`[D]` rules are unchanged from video2code: one frozen frame can prove it → `[S]`; truth lives in coupling to time/scroll/pointer → `[D]`. Doubt → `[D]`.
-- **`[B]` test: where does the truth live?** If the behavior is about *data* — its value, its persistence, its validation, its consistency across pages — it is `[B]`, and the truth must live **on the server** in your replica. A thing can be both `[D]` (the animation) and `[B]` (the data change); tag both.
+- **`[B]` test: where does the truth live?** If the behavior is about _data_ — its value, its persistence, its validation, its consistency across pages — it is `[B]`, and the truth must live **on the server** in your replica. A thing can be both `[D]` (the animation) and `[B]` (the data change); tag both.
 - Every entity/coupling named in the Behavior observation maps to ≥1 `[B#]` line. Silent omission = failure.
 - `[S#]`/`[D#]`/`[B#]` are three independent gapless sequences; every line cites its source timestamp(s).
 
@@ -125,21 +126,23 @@ Tag rules:
 **4.1 Seed todos** — one write, all pending: build todos (scaffold app+server / seed db / assets / pages / interactions / build / server boot) → one `verify-S#`/`verify-D#`/`verify-B#` todo per plan tag → `summary-final`.
 
 **4.2 Build** — the scaffold at `app/` is ready; fill in backend contract first (tables in `db.mjs`/`seed.mjs` + routes in `routes.mjs`), then frontend pages against it. Incremental edits, parallel Writes for independent files. Then:
+
 1. `cd app && npm run build` — must pass (no `npm create`/`npm install` needed unless you added a package).
 2. Boot the real thing — 后台起服务（`run_in_background` 的 bash 跑 `node server/index.mjs`，日志落 `/tmp/server.log`），然后 `curl -s http://localhost:3000/api/health` 和 `curl -s http://localhost:3000 | head -30` — API answers AND built frontend is served.
 3. 按 `control-browser` 用 IAB 打开 `http://localhost:3000`，等 `domcontentloaded`，`domSnapshot()`/`tab.screenshot()` 确认可达与视觉状态。
 
 **4.3 Verify sweep — one id at a time, fixes deferred and batched:**
+
 - `verify-S*`: 在同一 IAB tab 里走到对应页面/状态 → `tab.screenshot()`，与源帧对比（要出正式对照证据就用 `composite_view(source=<源帧>, replica=<截图>)`）。The pass line must carry a `diffs` array naming the discrepancies you found (or `[]` **after** stating what you compared: layout boxes, colors, copy, counts). A pass that names nothing and compares nothing is invalid — graded runs reject it.
 - `verify-D*`: capture the MOTION — `tab.recording.start({ actions, ... })`（编排规则同 video2code §4.5：`scrollTo` 定位 + ≤1 屏的 `scroll` 步拍 coupling、`move` 做 sweep、settleMs/delayAfterMs 留静置），录成 WebM 后 `still_crops(recording, [t...])` 取节拍帧，与源 clip 并排（`composite_view` beats 一条命令出 SRC|REP strip）。End-state screenshot alone never passes a `[D]`.
 - `verify-B*`: evidence must be **server-side, two-pronged**:
   1. **API prong**: `curl` the endpoint and show the data (`curl -s localhost:3000/api/cart` after an add-to-cart shows the item; a POST with a missing field returns the 4xx + error body).
   2. **Journey prong**: 同一 IAB tab 用 Browser Use 动作（snapshot-proven locator / `tab.cua`）重演视频里的操作，并断言后果**跨整页刷新**（重新 `goto` 同一 URL 或 `tab.playwright.reload()` — fresh JS context）或跨页面仍然成立：`domSnapshot()`/`tab.screenshot()` 里要看到数据还在，e.g. add to cart → goto /cart → item present → reload → still present.
-  - **What can never pass a `[B]`**: component state, props, localStorage, a mocked fetch, data compiled into the bundle. If killing and restarting the server would lose the state *and* the video shows it persisting, it's a fail. If the frontend renders it but `/api/*` never returns it, it's a fail.
+  - **What can never pass a `[B]`**: component state, props, localStorage, a mocked fetch, data compiled into the bundle. If killing and restarting the server would lose the state _and_ the video shows it persisting, it's a fail. If the frontend renders it but `/api/*` never returns it, it's a fail.
 - One JSON line appended per judged check, at the moment of judgment; `fail` → `pass` only with fresh evidence from this fix round; ≤2 fix rounds then `defer` with reason. Never fabricate evidence you did not capture.
 
 **4.4 Coverage pass (mandatory — your plan is not the ground truth, the video is):**
-Re-Read ~12 evenly spaced contact-sheet frames asking one question per frame: *"what UI surfaces or entry points are visible here that no plan tag covers?"* Nav items, icon buttons (a grid icon opening a launcher panel!), badges, dropdowns, modals, footer columns all count. For each untagged finding: append a new `[S/D/B]` line to plan.md (appending at this stage is expected, not a failure) and verify it like any other id, or `defer` it with a reason. Then append `{"id":"COV1","result":"pass","measured":{"frames_reviewed":N,"new_tags":[...]}}`. The real-run failure this exists to catch: the video flashes an icon that opens a 9-app grid; the replica ships without the entry point and every planned check still passes.
+Re-Read ~12 evenly spaced contact-sheet frames asking one question per frame: _"what UI surfaces or entry points are visible here that no plan tag covers?"_ Nav items, icon buttons (a grid icon opening a launcher panel!), badges, dropdowns, modals, footer columns all count. For each untagged finding: append a new `[S/D/B]` line to plan.md (appending at this stage is expected, not a failure) and verify it like any other id, or `defer` it with a reason. Then append `{"id":"COV1","result":"pass","measured":{"frames_reviewed":N,"new_tags":[...]}}`. The real-run failure this exists to catch: the video flashes an icon that opens a 9-app grid; the replica ships without the entry point and every planned check still passes.
 
 **4.5 Contract sweep (mandatory, mechanical):**
 `grep -rhoE '"/api/[A-Za-z0-9_/${}:.-]*"' app/src | sort -u` → for every path the frontend fetches, `curl` it (with a plausible id where parameterized): **non-404, JSON**. Reverse direction: every route in `routes.mjs` is either fetched by the frontend or listed in report.md as API-only. Append `{"id":"C1","result":...,"measured":{"frontend_paths":[...],"unserved":[...],"unfetched":[...]}}`. Any frontend fetch that 404s is a `fail` you must fix — endpoint-name drift that silently renders empty UI is the #1 observed real-run failure of this skill.
@@ -151,6 +154,7 @@ Re-Read ~12 evenly spaced contact-sheet frames asking one question per frame: *"
 Frontend ones (unchanged from video2code): coding before observation/plan; ambiguities "(none)" while the video clearly has motion; visible effects never tagged; `[S]`-tagging scroll/pointer couplings; lorem ipsum; broken/hotlinked images; build failing at close-out; verifying `[D]` with an end-state screenshot; claiming verification you didn't perform.
 
 Backend ones (new, and the reason this skill exists):
+
 - **The pure-frontend cop-out**: shipping a beautiful SPA where products/cart/orders are hardcoded arrays or localStorage. That is a failed task even if every `[S]`/`[D]` passes.
 - Data in JSX/TS constants instead of the database seed; components that don't fetch.
 - An "API" that only has GET routes when the video shows writes (add to cart, submit order).

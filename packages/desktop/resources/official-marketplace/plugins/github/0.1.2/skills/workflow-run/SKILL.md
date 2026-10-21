@@ -49,14 +49,17 @@ Show workflow names, states, and IDs.
 ### Trigger Workflow
 
 1. **List available workflows:**
+
    ```bash
    gh workflow list
    ```
 
 2. **Inspect the workflow and collect inputs:**
+
    ```bash
    gh workflow view <workflow>
    ```
+
    Collect every required input from the user. Do not guess deployment
    environments, release versions, or other sensitive values. Write the input
    object as JSON to a temporary file using a JSON-aware tool.
@@ -70,6 +73,7 @@ Show workflow names, states, and IDs.
 
 5. **Run the workflow non-interactively:** If the workflow has inputs, pass the
    JSON file. If it has no inputs, omit `--json` and stdin entirely:
+
    ```bash
    # With inputs
    gh workflow run "$workflow" --ref "$workflow_ref" --json < "$inputs_file"
@@ -81,6 +85,7 @@ Show workflow names, states, and IDs.
 6. **Find this dispatch, not merely the latest run:** Poll for a
    `workflow_dispatch` run created after the recorded timestamp and matching
    the workflow and exact commit SHA. For a branch ref, also filter by branch:
+
    ```bash
    gh run list --workflow "$workflow" \
      --event workflow_dispatch \
@@ -90,6 +95,7 @@ Show workflow names, states, and IDs.
      --limit 20 \
      --json databaseId,createdAt,event,headBranch,headSha,workflowName,url
    ```
+
    For a tag or commit ref, omit `--branch` and verify the returned
    `headBranch`/`headSha` fields explicitly.
    If zero or multiple plausible runs remain, report the ambiguity and ask the
@@ -134,6 +140,7 @@ gh run view <run_id> --log-failed
 ## Common Workflows
 
 Detect and suggest common workflows:
+
 - `ci.yml` / `test.yml` - CI/Testing
 - `build.yml` - Build
 - `deploy.yml` / `release.yml` - Deployment

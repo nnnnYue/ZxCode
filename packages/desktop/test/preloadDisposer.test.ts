@@ -1,5 +1,6 @@
 import { InternalChannels, PlatformChannels } from "@zcode/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parseRemoteWorkspaceServicePortMessage } from "../src/renderer/src/remoteWorkspaceServicePortBridge.js";
 
 /**
  * 验证 preload bridge 中 onFocusTab / onNewTab / onOpenBrowserUrl / onNewTask / onOpenWorkspace
@@ -41,9 +42,9 @@ function stubProcessPlatform(platform: NodeJS.Platform): void {
 
 vi.mock("electron", () => ({
   contextBridge: {
-    // preload 还会暴露插件 UI 沙箱的 zcodePluginSandbox；这里只截获 window.zxcode 本身（fork 命名，上游为 zcode）。
+    // preload 还会暴露插件 UI 沙箱的 zcodePluginSandbox；这里只截获 window.zcode 本身。
     exposeInMainWorld: (name: string, api: Record<string, unknown>) => {
-      if (name === "zxcode") exposedApi = api as Record<string, (...args: unknown[]) => unknown>;
+      if (name === "zcode") exposedApi = api as Record<string, (...args: unknown[]) => unknown>;
     },
     executeInMainWorld: () => false,
   },
@@ -83,27 +84,13 @@ describe("preload IPC disposer", () => {
     return exposedApi;
   }
 
-  it("onFocusTab 返回 disposer，调用后移除 ipcRenderer 监听", async () => {
-    const api = await loadPreload();
-    const callback = vi.fn();
-    const dispose = api.onFocusTab(callback) as () => void;
-    expect(typeof dispose).toBe("function");
-
-    // 验证注册了监听
-    expect(mockIpcRenderer.on).toHaveBeenCalled();
-
-    // 调用 dispose
-    dispose();
-    expect(mockIpcRenderer.removeListener).toHaveBeenCalled();
-  });
-
   it("preload 初始化时会上报当前窗口控制区 zoom 信息", async () => {
     stubProcessPlatform("darwin");
     mockWebFrame.getZoomFactor.mockReturnValue(1.21);
 
     await loadPreload();
 
-    expect(mockIpcSend).toHaveBeenCalledWith("zxcode:window-controls-overlay-ready", {
+    expect(mockIpcSend).toHaveBeenCalledWith("zcode:window-controls-overlay-ready", {
       zoomLevel: 2,
       metrics: { leftPaddingPx: 79 },
     });
@@ -115,7 +102,7 @@ describe("preload IPC disposer", () => {
 
     await loadPreload();
 
-    expect(mockIpcSend).toHaveBeenCalledWith("zxcode:window-controls-overlay-ready", {
+    expect(mockIpcSend).toHaveBeenCalledWith("zcode:window-controls-overlay-ready", {
       zoomLevel: 2,
       metrics: { rightPaddingPx: 112, titleBarHeightPx: 58 },
     });
@@ -142,6 +129,55 @@ describe("preload IPC disposer", () => {
       attachmentId: "attachment-b",
     });
   });
+
+  it("把 Main 的完整 remote workspace scope 转发给 Renderer", async () => {
+    await loadPreload();
+    const scopedPortHandler = Array.from(
+      listeners.get(InternalChannels.ScopedServicePort) ?? [],
+    ).at(-1);
+    expect(scopedPortHandler).toBeDefined();
+
+    const port = {} as MessagePort;
+    const payload = {
+      attachmentId: "attachment-project",
+      sessionId: "project-session",
+      target: { kind: "docker", container: "dev" } as const,
+      sourceServerId: "source-1",
+      workspacePath: "/remote/project",
+      workspaceIdentity: "remote:server:source-1:/remote/project",
+      workspacePurpose: "project" as const,
+    };
+
+    scopedPortHandler?.({ ports: [port] }, payload);
+
+    expect(window.postMessage).toHaveBeenCalledWith(
+      {
+        type: InternalChannels.ScopedServicePort,
+        ...payload,
+      },
+      "*",
+      [port],
+    );
+    const forwardedMessage = vi
+      .mocked(window.postMessage)
+      .mock.calls.find(
+        ([message]) =>
+          typeof message === "object" &&
+          message !== null &&
+          "type" in message &&
+          message.type === InternalChannels.ScopedServicePort,
+      )?.[0];
+    expect(
+      parseRemoteWorkspaceServicePortMessage({
+        data: forwardedMessage,
+        ports: [port],
+      } as unknown as MessageEvent),
+    ).toEqual({
+      ...payload,
+      port,
+    });
+  });
+
   it("onNewTab 返回 disposer，调用后移除 ipcRenderer 监听", async () => {
     const api = await loadPreload();
     const callback = vi.fn();
@@ -281,9 +317,120 @@ describe("preload IPC disposer", () => {
     expect(mockIpcSend).toHaveBeenCalledWith(PlatformChannels.SyncWindowUnreadCount, 3);
   });
 
-  // fork：自动更新链路（onUpdateReady / onUpdateStateChanged / onPostUpdateReleaseNotes /
-  // getUpdateState / acknowledgePostUpdateReleaseNotes）已随功能剔除，preload 不再暴露
-  // 对应 API，上游 v3.15.1 的 UpdateReady 缓存/回放用例一并删除。
+  it("onUpdateReady 会在 dispose 后停止接收后续更新", async () => {
+    const api = await loadPreload();
+    const callback = vi.fn();
+    const dispose = api.onUpdateReady(callback) as () => void;
+    expect(typeof dispose).toBe("function");
+
+    const handlers = Array.from(listeners.get(PlatformChannels.UpdateReady) ?? []);
+    expect(handlers.length).toBeGreaterThan(0);
+
+    for (const handler of handlers) {
+      handler({}, "0.1.25");
+    }
+    expect(callback).toHaveBeenCalledWith("0.1.25");
+
+    callback.mockClear();
+    dispose();
+
+    for (const handler of handlers) {
+      handler({}, "0.1.26");
+    }
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("onUpdateReady 缓存会在更新状态变回 idle 后清除", async () => {
+    const api = await loadPreload();
+    const readyHandlers = Array.from(listeners.get(PlatformChannels.UpdateReady) ?? []);
+    const stateHandlers = Array.from(listeners.get(PlatformChannels.UpdateStateChanged) ?? []);
+    expect(readyHandlers.length).toBeGreaterThan(0);
+    expect(stateHandlers.length).toBeGreaterThan(0);
+
+    for (const handler of readyHandlers) {
+      handler({}, "0.1.25");
+    }
+    const replayBeforeClear = vi.fn();
+    const disposeBeforeClear = api.onUpdateReady(replayBeforeClear) as () => void;
+    expect(replayBeforeClear).toHaveBeenCalledWith("0.1.25");
+    disposeBeforeClear();
+
+    // 修复原因：main 在 staging error 后会广播 idle 清掉 ready；preload 如果继续
+    // 缓存旧 UpdateReady，新订阅的 renderer 仍会展示不可安装的“重启以更新”。
+    for (const handler of stateHandlers) {
+      handler({}, { kind: "idle", enabled: true });
+    }
+
+    const replayAfterClear = vi.fn();
+    const disposeAfterClear = api.onUpdateReady(replayAfterClear) as () => void;
+    expect(replayAfterClear).not.toHaveBeenCalled();
+    disposeAfterClear();
+  });
+
+  it("onUpdateStateChanged 晚注册时会立即回放最近一次状态", async () => {
+    const api = await loadPreload();
+    const handlers = Array.from(listeners.get(PlatformChannels.UpdateStateChanged) ?? []);
+    expect(handlers.length).toBeGreaterThan(0);
+
+    const payload = {
+      kind: "download-progress",
+      enabled: false,
+      progress: "42",
+    };
+    for (const handler of handlers) {
+      handler({}, payload);
+    }
+
+    const callback = vi.fn();
+    const dispose = api.onUpdateStateChanged(callback) as () => void;
+    expect(callback).toHaveBeenCalledWith(payload);
+    dispose();
+  });
+
+  it("onPostUpdateReleaseNotes 晚注册时会立即回放最近一次 payload", async () => {
+    const api = await loadPreload();
+    const handlers = Array.from(listeners.get(PlatformChannels.PostUpdateReleaseNotes) ?? []);
+    expect(handlers.length).toBeGreaterThan(0);
+
+    for (const handler of handlers) {
+      handler(
+        {},
+        {
+          version: "0.1.25",
+          title: "Release v0.1.25",
+          markdown: "# Release v0.1.25\n\n- add popup",
+        },
+      );
+    }
+
+    const callback = vi.fn();
+    const dispose = api.onPostUpdateReleaseNotes(callback) as () => void;
+    expect(callback).toHaveBeenCalledWith({
+      version: "0.1.25",
+      title: "Release v0.1.25",
+      markdown: "# Release v0.1.25\n\n- add popup",
+    });
+    dispose();
+  });
+
+  it("getUpdateState invokes update-state IPC", async () => {
+    const api = await loadPreload();
+
+    await api.getUpdateState();
+
+    expect(mockIpcRenderer.invoke).toHaveBeenCalledWith(PlatformChannels.GetUpdateState);
+  });
+
+  it("acknowledgePostUpdateReleaseNotes 会通过对应 IPC 频道回传版本号", async () => {
+    const api = await loadPreload();
+
+    await api.acknowledgePostUpdateReleaseNotes("0.1.25");
+
+    expect(mockIpcRenderer.invoke).toHaveBeenCalledWith(
+      PlatformChannels.AcknowledgePostUpdateReleaseNotes,
+      "0.1.25",
+    );
+  });
 
   it("dispose 后回调不再被触发", async () => {
     const api = await loadPreload();

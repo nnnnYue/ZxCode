@@ -4,15 +4,15 @@ FastAPI-based HTTP server with dual-protocol support (AG-UI + OpenAI).
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
-| `AgentServiceApp` | FastAPI wrapper with CORS, healthz, middleware |
-| `create_send_message_adapter` | AG-UI native SSE streaming adapter |
-| `create_openai_adapter` | OpenAI-compatible `/chat/completions` adapter |
-| `RunAgentInput` | Request model (messages, thread_id, run_id, state, tools, context, forwarded_props) |
-| `OpenAIChatCompletionRequest` | OpenAI-compatible request model |
-| `AgentCreatorResult` | TypedDict: `{"agent": ..., "cleanup": optional_fn}` |
-| `HealthzConfig` | Health check config (service_name, version, custom_checks) |
+| Export                        | Purpose                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `AgentServiceApp`             | FastAPI wrapper with CORS, healthz, middleware                                      |
+| `create_send_message_adapter` | AG-UI native SSE streaming adapter                                                  |
+| `create_openai_adapter`       | OpenAI-compatible `/chat/completions` adapter                                       |
+| `RunAgentInput`               | Request model (messages, thread_id, run_id, state, tools, context, forwarded_props) |
+| `OpenAIChatCompletionRequest` | OpenAI-compatible request model                                                     |
+| `AgentCreatorResult`          | TypedDict: `{"agent": ..., "cleanup": optional_fn}`                                 |
+| `HealthzConfig`               | Health check config (service_name, version, custom_checks)                          |
 
 ## Three Deployment Methods
 
@@ -63,12 +63,12 @@ AgentServiceApp(
 
 ## AgentServiceApp Methods
 
-| Method | Returns | Purpose |
-|--------|---------|---------|
-| `.set_cors_config(allow_origins, allow_credentials, allow_methods, allow_headers)` | self | Configure CORS |
-| `.use(middleware)` | self | Register middleware (generator pattern) |
-| `.build(create_agent, base_path, enable_cors, enable_openai_endpoint, enable_healthz, healthz_config)` | FastAPI | Build configured app |
-| `.run(create_agent, base_path, host, port, enable_openai_endpoint, enable_healthz, healthz_config)` | None | Build + run with uvicorn |
+| Method                                                                                                 | Returns | Purpose                                 |
+| ------------------------------------------------------------------------------------------------------ | ------- | --------------------------------------- |
+| `.set_cors_config(allow_origins, allow_credentials, allow_methods, allow_headers)`                     | self    | Configure CORS                          |
+| `.use(middleware)`                                                                                     | self    | Register middleware (generator pattern) |
+| `.build(create_agent, base_path, enable_cors, enable_openai_endpoint, enable_healthz, healthz_config)` | FastAPI | Build configured app                    |
+| `.run(create_agent, base_path, host, port, enable_openai_endpoint, enable_healthz, healthz_config)`    | None    | Build + run with uvicorn                |
 
 ## Middleware Pattern
 
@@ -82,9 +82,9 @@ def my_middleware(input_data: RunAgentInput, request: Request):
         if not input_data.forwarded_props:
             input_data.forwarded_props = {}
         input_data.forwarded_props["user_id"] = decode_jwt(auth[7:])
-    
+
     yield  # Control passes to agent
-    
+
     # Post-processing (runs after agent, optional)
     print("Request completed")
 
@@ -101,10 +101,10 @@ Factory function called per-request. Supports optional cleanup callback:
 def create_agent() -> AgentCreatorResult:
     db = connect_database()
     agent = LangGraphAgent(graph=workflow, name="my-agent")
-    
+
     def cleanup():
         db.close()  # Guaranteed to run after stream completes
-    
+
     return {"agent": agent, "cleanup": cleanup}
 ```
 

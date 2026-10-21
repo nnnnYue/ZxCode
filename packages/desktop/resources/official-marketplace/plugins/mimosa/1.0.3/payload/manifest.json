@@ -42,11 +42,7 @@
     "nativeHost": {
       "enabled": false
     },
-    "supportedSurfaces": [
-      "zcode-hooks",
-      "cli",
-      "mcp"
-    ],
+    "supportedSurfaces": ["zcode-hooks", "cli", "mcp"],
     "vscodeIncluded": false,
     "layout": "node-single-artifact/v1",
     "embeddedKeyBoundary": "obfuscated-node-module/cost-raising-only"

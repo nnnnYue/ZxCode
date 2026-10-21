@@ -5,6 +5,7 @@
 ## When This Protocol Applies
 
 You must follow this protocol for any of the following:
+
 - Changes to data models, fields, query conditions, or schemas
 - Modifications to permissions, security rules, or access control
 - Changes to authentication flows, login methods, or user management
@@ -16,6 +17,7 @@ You must follow this protocol for any of the following:
 ## Required Steps (Non-Negotiable)
 
 1. **Before making any edits**, explicitly declare the impact in one clear sentence:
+
    > This change affects: [specific files / fields / permissions / contracts / behavior]
 
 2. **Obtain explicit user confirmation** before proceeding with any code or configuration changes.
@@ -35,12 +37,15 @@ You must follow this protocol for any of the following:
 ## Recommended Response Templates
 
 **Before editing:**
+
 > This change affects: [xxx]. Do you confirm I should proceed?
 
 **After verification:**
+
 > Syntax check and minimal verification case completed. Change is effective.
 
 **When escalation triggers:**
+
 > The same issue has recurred 3 times. Stopping incremental fixes. Root cause analysis: ...
 
 ## Purpose
@@ -48,4 +53,5 @@ You must follow this protocol for any of the following:
 This protocol exists to eliminate endless correction loops and repeated trial-and-error. It enforces structured thinking and significantly reduces decision entropy while maintaining very low token cost.
 
 **Usage instruction:**
+
 > Before any non-trivial code or configuration change, strictly follow the Change Safety Protocol in `cloudbase-platform/references/protocols/change-safety-protocol.md`.

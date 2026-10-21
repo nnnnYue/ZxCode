@@ -10,13 +10,7 @@
     "name": "Mimosa"
   },
   "license": "MIT",
-  "keywords": [
-    "security",
-    "code-scanning",
-    "hooks",
-    "mcp",
-    "sdlc"
-  ],
+  "keywords": ["security", "code-scanning", "hooks", "mcp", "sdlc"],
   "commands": "payload/commands",
   "skills": "payload/skills",
   "userConfig": {

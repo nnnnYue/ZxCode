@@ -16,10 +16,10 @@ The wrapper's two Skills work without upstream Skills. If separately requested, 
 
 ## Skills
 
-| Skill | Entry | Purpose |
-| --- | --- | --- |
+| Skill   | Entry                 | Purpose                                                                    |
+| ------- | --------------------- | -------------------------------------------------------------------------- |
 | `setup` | `/dingtalk-cli:setup` | Check/install the latest `dws`, authenticate; upstream Skills are optional |
-| `cli` | Context-triggered | Use CLI capabilities for messages, docs, tables, calendar, and tasks |
+| `cli`   | Context-triggered     | Use CLI capabilities for messages, docs, tables, calendar, and tasks       |
 
 ## Safety boundary
 

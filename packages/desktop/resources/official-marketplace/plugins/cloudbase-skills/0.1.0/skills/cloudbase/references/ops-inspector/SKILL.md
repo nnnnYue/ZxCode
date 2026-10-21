@@ -64,9 +64,9 @@ Keep local `references/...` paths for files that ship with the current skill dir
 
 The skill supports two modes based on user intent:
 
-| Mode | When to use | Scope |
-|------|-------------|-------|
-| **Full inspection** | User asks for a general health check / 巡检 / 全面检查 | All resource types in the environment |
+| Mode                    | When to use                                                     | Scope                                    |
+| ----------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| **Full inspection**     | User asks for a general health check / 巡检 / 全面检查          | All resource types in the environment    |
 | **Targeted inspection** | User reports a specific error or asks about a specific resource | One resource type or a specific resource |
 
 ### Full Inspection Workflow
@@ -96,6 +96,7 @@ queryFunctions(action="listFunctions")
 ```
 
 For each function, check:
+
 - **Status**: Is the function in an active/deployed state?
 - **Recent errors**: `queryFunctions(action="listFunctionLogs", functionName="<name>", startTime="<recent>")`
 - **Common issues**:
@@ -111,6 +112,7 @@ queryCloudRun(action="list")
 ```
 
 For each service, check:
+
 - **Status**: Is the service running?
 - **Detail**: `queryCloudRun(action="detail", detailServerName="<name>")`
 - **Common issues**:
@@ -127,6 +129,7 @@ queryLogs(action="searchLogs", queryString="ERROR", service="tcbr", startTime="<
 ```
 
 Look for patterns:
+
 - Repeated error messages (same error many times)
 - Cascading failures (errors in multiple services around the same time)
 - Timeout patterns
@@ -144,24 +147,29 @@ Generate a structured report:
 ## Overall Health: ✅ Healthy / ⚠️ Warnings Found / ❌ Issues Found
 
 ### Cloud Functions
+
 | Function | Status | Recent Errors | Severity |
-|----------|--------|---------------|----------|
-| ... | ... | ... | ... |
+| -------- | ------ | ------------- | -------- |
+| ...      | ...    | ...           | ...      |
 
 ### CloudRun Services
+
 | Service | Status | Issues | Severity |
-|---------|--------|--------|----------|
-| ... | ... | ... | ... |
+| ------- | ------ | ------ | -------- |
+| ...     | ...    | ...    | ...      |
 
 ### Error Log Summary
+
 - Total errors in last 24h: N
 - Top error patterns: ...
 
 ## Recommendations
+
 1. ...
 2. ...
 
 ## Console Links
+
 - Cloud Functions: https://tcb.cloud.tencent.com/dev?envId=${envId}#/scf
 - CloudRun: https://tcb.cloud.tencent.com/dev?envId=${envId}#/platform-run
 - Logs: https://tcb.cloud.tencent.com/dev?envId=${envId}#/devops/log
@@ -187,42 +195,42 @@ This skill follows AIOps principles for intelligent inspection:
 
 ### Severity Levels
 
-| Level | Icon | Meaning |
-|-------|------|---------|
-| Critical | ❌ | Service is down or data is at risk; requires immediate action |
-| Warning | ⚠️ | Errors detected but service is still partially functional; investigate soon |
-| Info | ℹ️ | No errors found; informational status only |
-| Healthy | ✅ | Resource is operating normally |
+| Level    | Icon | Meaning                                                                     |
+| -------- | ---- | --------------------------------------------------------------------------- |
+| Critical | ❌   | Service is down or data is at risk; requires immediate action               |
+| Warning  | ⚠️   | Errors detected but service is still partially functional; investigate soon |
+| Info     | ℹ️   | No errors found; informational status only                                  |
+| Healthy  | ✅   | Resource is operating normally                                              |
 
 ### Preferred Tool Map
 
-| Operation | MCP Tool Call |
-|-----------|---------------|
-| Check environment | `envQuery(action="info")` |
-| Check CLS status | `queryLogs(action="checkLogService")` |
-| List cloud functions | `queryFunctions(action="listFunctions")` |
-| Get function detail | `queryFunctions(action="getFunctionDetail", functionName="<name>")` |
-| Get function logs | `queryFunctions(action="listFunctionLogs", functionName="<name>", startTime="<time>", endTime="<time>")` |
-| Get function log detail | `queryFunctions(action="getFunctionLogDetail", requestId="<id>")` |
-| List CloudRun services | `queryCloudRun(action="list")` |
-| Get CloudRun detail | `queryCloudRun(action="detail", detailServerName="<name>")` |
-| Search CLS logs | `queryLogs(action="searchLogs", queryString="<query>", service="tcb\|tcbr", startTime="<time>", endTime="<time>")` |
-| Check NoSQL structure | `readNoSqlDatabaseStructure(action="listCollections")` |
-| Check PostgreSQL context | `queryPgDatabase(action="context")` |
-| Check PostgreSQL metadata | `queryPgDatabase(action="metadata", limit=20)` |
-| Check MySQL status | `queryMysqlDatabase(action="getContext")` |
+| Operation                 | MCP Tool Call                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Check environment         | `envQuery(action="info")`                                                                                          |
+| Check CLS status          | `queryLogs(action="checkLogService")`                                                                              |
+| List cloud functions      | `queryFunctions(action="listFunctions")`                                                                           |
+| Get function detail       | `queryFunctions(action="getFunctionDetail", functionName="<name>")`                                                |
+| Get function logs         | `queryFunctions(action="listFunctionLogs", functionName="<name>", startTime="<time>", endTime="<time>")`           |
+| Get function log detail   | `queryFunctions(action="getFunctionLogDetail", requestId="<id>")`                                                  |
+| List CloudRun services    | `queryCloudRun(action="list")`                                                                                     |
+| Get CloudRun detail       | `queryCloudRun(action="detail", detailServerName="<name>")`                                                        |
+| Search CLS logs           | `queryLogs(action="searchLogs", queryString="<query>", service="tcb\|tcbr", startTime="<time>", endTime="<time>")` |
+| Check NoSQL structure     | `readNoSqlDatabaseStructure(action="listCollections")`                                                             |
+| Check PostgreSQL context  | `queryPgDatabase(action="context")`                                                                                |
+| Check PostgreSQL metadata | `queryPgDatabase(action="metadata", limit=20)`                                                                     |
+| Check MySQL status        | `queryMysqlDatabase(action="getContext")`                                                                          |
 
 ### Common CLS Query Patterns
 
-| Scenario | queryString |
-|----------|-------------|
-| All errors | `ERROR` |
-| Function timeout | `timeout OR 超时` |
-| Function OOM | `OOM OR out of memory OR 内存超限` |
-| CloudRun crash | `crash OR OOMKilled OR Error` |
+| Scenario                 | queryString                           |
+| ------------------------ | ------------------------------------- |
+| All errors               | `ERROR`                               |
+| Function timeout         | `timeout OR 超时`                     |
+| Function OOM             | `OOM OR out of memory OR 内存超限`    |
+| CloudRun crash           | `crash OR OOMKilled OR Error`         |
 | Specific function errors | `functionName:<name> AND level:ERROR` |
-| 5xx HTTP errors | `statusCode:>499` |
-| Cold start issues | `coldStart OR 冷启动` |
+| 5xx HTTP errors          | `statusCode:>499`                     |
+| Cold start issues        | `coldStart OR 冷启动`                 |
 
 ### Time Range Guidance
 

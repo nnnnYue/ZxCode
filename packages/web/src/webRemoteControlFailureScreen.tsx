@@ -273,7 +273,7 @@ const WEB_REMOTE_CONTROL_SCREEN_COPY = {
   },
 } satisfies Record<
   WebRemoteControlScreenLocale,
-  Record<WebRemoteControlFailureReason, WebRemoteControlScreenCopy>
+  { [K in WebRemoteControlFailureReason]?: WebRemoteControlScreenCopy }
 >;
 
 export function resolveWebRemoteControlScreenLocale(
@@ -286,7 +286,25 @@ export function resolveWebRemoteControlScreenCopy(
   failure: WebRemoteControlFailure,
   locale: WebRemoteControlScreenLocale,
 ): WebRemoteControlScreenCopy {
-  return WEB_REMOTE_CONTROL_SCREEN_COPY[locale][failure.reason];
+  const copySet = WEB_REMOTE_CONTROL_SCREEN_COPY[locale] as Record<
+    string,
+    WebRemoteControlScreenCopy
+  >;
+  return (
+    copySet[failure.reason] ??
+    copySet["unexpected-error"] ??
+    Object.values(copySet)[0] ??
+    ({
+      tone: "danger",
+      badge: "",
+      title: failure.reason,
+      description: "",
+      detailLabel: "",
+      nextStepsTitle: "",
+      nextSteps: [],
+      action: "",
+    } as WebRemoteControlScreenCopy)
+  );
 }
 
 function resolveToneClassName(tone: WebRemoteControlScreenCopy["tone"]): {

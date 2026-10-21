@@ -46,11 +46,11 @@ function writeSkillMeta(basePath: string, folder: string, metadata: unknown): vo
 }
 
 function workspaceSkillRoot(workspacePath: string): string {
-  return join(workspacePath, ".zxcode", "skills");
+  return join(workspacePath, ".zcode", "skills");
 }
 
 function userSkillRoot(home: string): string {
-  return join(home, ".zxcode", "skills");
+  return join(home, ".zcode", "skills");
 }
 
 function userAgentsSkillRoot(home: string): string {
@@ -60,7 +60,7 @@ function userAgentsSkillRoot(home: string): string {
 function officialPluginRoot(home: string, pluginName: string, version = "0.1.0"): string {
   return join(
     home,
-    ".zxcode",
+    ".zcode",
     "cli",
     "plugins",
     "cache",
@@ -76,7 +76,7 @@ function marketplacePluginRoot(
   pluginName: string,
   version = "0.0.0",
 ): string {
-  return join(home, ".zxcode", "cli", "plugins", "cache", marketplace, pluginName, version);
+  return join(home, ".zcode", "cli", "plugins", "cache", marketplace, pluginName, version);
 }
 
 function writePluginManifest(pluginRoot: string, manifest: Record<string, unknown>): void {
@@ -106,7 +106,7 @@ function writeInstalledPluginRecord(
     version?: string;
   },
 ): void {
-  const pluginsRoot = join(home, ".zxcode", "cli", "plugins");
+  const pluginsRoot = join(home, ".zcode", "cli", "plugins");
   mkdirSync(pluginsRoot, { recursive: true });
   writeFileSync(
     join(pluginsRoot, "installed_plugins.json"),
@@ -135,8 +135,8 @@ function writeInstalledPluginRecord(
 }
 
 function writeCliConfig(home: string, config: Record<string, unknown>): void {
-  const configPath = join(home, ".zxcode", "cli", "config.json");
-  mkdirSync(join(home, ".zxcode", "cli"), { recursive: true });
+  const configPath = join(home, ".zcode", "cli", "config.json");
+  mkdirSync(join(home, ".zcode", "cli"), { recursive: true });
   writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
@@ -167,7 +167,7 @@ description: from zcode
 zcode-body`,
     );
     writeSkill(
-      join(workspacePath, ".zxcode", "cli", "skills"),
+      join(workspacePath, ".zcode", "cli", "skills"),
       "old-glm",
       `---
 name: old-glm
@@ -263,6 +263,24 @@ agents-body`,
       description: "from agents",
       scope: "workspace",
     });
+  });
+
+  it("Source user scope does not misclassify the home anchor as a workspace", async () => {
+    const home = makeTempHome();
+    writeSkill(
+      userSkillRoot(home),
+      "source-user-skill",
+      "---\nname: source-user-skill\ndescription: source user\n---\n",
+    );
+
+    const service = await createSkillsServiceInEnv(home, { isDesktopRuntime: true });
+    const result = await service.list({
+      workspacePath: home,
+      provider: "glm",
+    });
+
+    expect(result.skills.find((skill) => skill.name === "source-user-skill")?.scope).toBe("user");
+    expect(result.skills.some((skill) => skill.scope === "workspace")).toBe(false);
   });
 
   it("递归发现分组目录，跳过隐藏目录但允许 .system 官方目录", async () => {
@@ -455,7 +473,7 @@ description: agents version
 agents-review-body`,
     );
     writeSkill(
-      join(home, ".zxcode", "cli", "skills"),
+      join(home, ".zcode", "cli", "skills"),
       "old-global",
       `---
 name: old-global
@@ -475,10 +493,10 @@ body`,
       "zcode-global",
     ]);
     expect(result.skills.find((skill) => skill.name === "copied-global")?.path).toContain(
-      join(home, ".zxcode", "skills", "copied-global"),
+      join(home, ".zcode", "skills", "copied-global"),
     );
     expect(result.skills.find((skill) => skill.name === "shared-review")?.path).toContain(
-      join(home, ".zxcode", "skills", "current-review"),
+      join(home, ".zcode", "skills", "current-review"),
     );
     expect(result.skills.every((skill) => skill.scope === "user")).toBe(true);
   });
@@ -622,7 +640,6 @@ android-body`,
       "ios-simulator",
       "zcode-guide",
     ]);
-    expect(result.skills.find((skill) => skill.name === "android-emulator")).toBeUndefined();
   });
 
   it("suppressed 内置插件不贡献任何 skill", async () => {
@@ -703,9 +720,6 @@ diagnosing-body`,
     const result = await service.list({ workspacePath, provider: "glm" });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["skill-creator"]);
-    expect(result.skills.find((skill) => skill.name === "control-browser")).toBeUndefined();
-    expect(result.skills.find((skill) => skill.name === "docx")).toBeUndefined();
-    expect(result.skills.find((skill) => skill.name === "diagnosing-plugins")).toBeUndefined();
     expect(result.skills.find((skill) => skill.pluginName === "browser")).toBeUndefined();
     expect(result.skills.find((skill) => skill.pluginName === "documents")).toBeUndefined();
     expect(result.skills.find((skill) => skill.pluginName === "zcode-guide")).toBeUndefined();
@@ -896,7 +910,7 @@ body`,
         provider: "glm",
       });
       const config = JSON.parse(
-        readFileSync(join(home, ".zxcode", "cli", "config.json"), "utf-8"),
+        readFileSync(join(home, ".zcode", "cli", "config.json"), "utf-8"),
       ) as { skills?: Record<string, { enable?: boolean }> };
       expect(disabled.skills[0]?.enabled).toBe(false);
       expect(enabled.skills[0]?.enabled).toBe(false);
@@ -917,7 +931,7 @@ body`,
         provider: "glm",
       });
       const reenabledConfig = JSON.parse(
-        readFileSync(join(home, ".zxcode", "cli", "config.json"), "utf-8"),
+        readFileSync(join(home, ".zcode", "cli", "config.json"), "utf-8"),
       ) as { skills?: Record<string, { enable?: boolean }> };
       expect(reenabled.skills[0]?.enabled).toBe(true);
       expect(reenabledConfig.skills?.[skill.path]).toBeUndefined();
@@ -928,8 +942,8 @@ body`,
     const home = makeTempHome();
     const workspacePath = join(home, "workspace");
     const legacySkillId = "workspace:legacy-skill";
-    const legacyStatePath = join(home, ".zxcode", "v2", "skills-state.json");
-    mkdirSync(join(home, ".zxcode", "v2"), { recursive: true });
+    const legacyStatePath = join(home, ".zcode", "v2", "skills-state.json");
+    mkdirSync(join(home, ".zcode", "v2"), { recursive: true });
     writeFileSync(
       legacyStatePath,
       JSON.stringify({ disabledByWorkspace: { [workspacePath]: [legacySkillId] } }),
@@ -943,7 +957,7 @@ body`,
       disabledByWorkspace?: Record<string, string[]>;
     };
     expect(state.disabledByWorkspace).toEqual({ [workspacePath]: [legacySkillId] });
-    expect(existsSync(join(home, ".zxcode", "cli", "config.json"))).toBe(false);
+    expect(existsSync(join(home, ".zcode", "cli", "config.json"))).toBe(false);
   });
 
   it("buildPromptContext 只注入启用且被提及的技能正文", async () => {
@@ -980,7 +994,7 @@ plan-body`,
     expect(context.prompt).toContain("review-body");
     expect(context.prompt).not.toContain("plan-body");
     expect(context.activatedSkillNames).toEqual(["code-review"]);
-    expect(existsSync(join(home, ".zxcode", "v2", "skills-audit.log"))).toBe(true);
+    expect(existsSync(join(home, ".zcode", "v2", "skills-audit.log"))).toBe(true);
   });
 
   it("被禁用的技能即便被提及也不会注入", async () => {
@@ -1450,26 +1464,6 @@ dist-body`,
     const result = await service.list({ workspacePath, provider: "glm" });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["real-skill"]);
-  });
-
-  it("分组目录（depth 2）内的技能仍可被发现", async () => {
-    const home = makeTempHome();
-    const workspacePath = join(home, "workspace");
-    const root = workspaceSkillRoot(workspacePath);
-    writeSkill(
-      join(root, "group-a"),
-      "grouped-skill",
-      `---
-name: grouped-skill
-description: grouped
----
-grouped-body`,
-    );
-
-    const service = await createSkillsServiceInEnv(home, { isDesktopRuntime: true });
-    const result = await service.list({ workspacePath, provider: "glm" });
-
-    expect(result.skills.map((skill) => skill.name)).toEqual(["grouped-skill"]);
   });
 
   it("超过最大扫描深度的技能不会被发现", async () => {

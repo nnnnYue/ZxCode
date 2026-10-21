@@ -60,7 +60,7 @@ run({
 
     const checkpointer = new CloudBaseSaver({
       db: app.database(),
-      userId,  // Multi-tenant isolation
+      userId, // Multi-tenant isolation
     });
 
     const lcAgent = createLangchainAgent({

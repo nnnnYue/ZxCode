@@ -3,27 +3,30 @@
 ## Color Palette
 
 ### Primary Colors
-| Purpose | Color | Hex |
-|---------|-------|-----|
-| Main Title | Deep Blue | `#1e40af` |
-| Subtitle | Medium Blue | `#3b82f6` |
-| Body Text | Dark Gray | `#374151` |
-| Emphasis | Orange | `#f59e0b` |
-| Success | Green | `#10b981` |
-| Warning | Red | `#ef4444` |
+
+| Purpose    | Color       | Hex       |
+| ---------- | ----------- | --------- |
+| Main Title | Deep Blue   | `#1e40af` |
+| Subtitle   | Medium Blue | `#3b82f6` |
+| Body Text  | Dark Gray   | `#374151` |
+| Emphasis   | Orange      | `#f59e0b` |
+| Success    | Green       | `#10b981` |
+| Warning    | Red         | `#ef4444` |
 
 ### Background Colors
-| Purpose | Color | Hex |
-|---------|-------|-----|
-| Light Blue | Background | `#dbeafe` |
-| Light Gray | Neutral | `#f3f4f6` |
-| Light Orange | Highlight | `#fef3c7` |
-| Light Green | Success | `#d1fae5` |
-| Light Purple | Accent | `#ede9fe` |
+
+| Purpose      | Color      | Hex       |
+| ------------ | ---------- | --------- |
+| Light Blue   | Background | `#dbeafe` |
+| Light Gray   | Neutral    | `#f3f4f6` |
+| Light Orange | Highlight  | `#fef3c7` |
+| Light Green  | Success    | `#d1fae5` |
+| Light Purple | Accent     | `#ede9fe` |
 
 ## Element Types
 
 ### Rectangle
+
 ```json
 {
   "type": "rectangle",
@@ -43,6 +46,7 @@
 ```
 
 ### Text
+
 ```json
 {
   "type": "text",
@@ -60,6 +64,7 @@
 ```
 
 ### Arrow
+
 ```json
 {
   "type": "arrow",
@@ -68,7 +73,10 @@
   "y": 140,
   "width": 100,
   "height": 0,
-  "points": [[0, 0], [100, 0]],
+  "points": [
+    [0, 0],
+    [100, 0]
+  ],
   "strokeColor": "#374151",
   "strokeWidth": 2,
   "startArrowhead": null,
@@ -77,6 +85,7 @@
 ```
 
 ### Ellipse
+
 ```json
 {
   "type": "ellipse",
@@ -92,6 +101,7 @@
 ```
 
 ### Diamond
+
 ```json
 {
   "type": "diamond",
@@ -107,13 +117,17 @@
 ```
 
 ### Line
+
 ```json
 {
   "type": "line",
   "id": "unique-id",
   "x": 100,
   "y": 100,
-  "points": [[0, 0], [200, 100]],
+  "points": [
+    [0, 0],
+    [200, 100]
+  ],
   "strokeColor": "#374151",
   "strokeWidth": 2
 }
@@ -139,13 +153,13 @@
 
 ## Font Family Values
 
-| Value | Font Name |
-|-------|-----------|
-| 1 | Virgil (hand-drawn) |
-| 2 | Helvetica |
-| 3 | Cascadia |
-| 4 | Assistant |
-| 5 | Excalifont (recommended) |
+| Value | Font Name                |
+| ----- | ------------------------ |
+| 1     | Virgil (hand-drawn)      |
+| 2     | Helvetica                |
+| 3     | Cascadia                 |
+| 4     | Assistant                |
+| 5     | Excalifont (recommended) |
 
 ## Fill Styles
 

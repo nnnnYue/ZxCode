@@ -43,6 +43,18 @@ function useGrantCountdown(expiresAt: number | undefined): number {
   return remainingSeconds;
 }
 
+/**
+ * Bugfix: 裸域名（如 relay.example.com）过不了设置校验的 URL 检查，保存会直接弹
+ * "保存手机远控设置失败"。保存入口统一补全 https:// 前缀，并回写草稿让用户看到生效地址。
+ */
+export function normalizeServerUrlDraft(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
 export function MobileRelaySettingsSection({
   isDesktop,
   workspacePath,
@@ -88,10 +100,17 @@ export function MobileRelaySettingsSection({
     async (next: { enabled?: boolean; serverUrl?: string; token?: string }) => {
       setSavingConnection(true);
       try {
+        const serverUrl =
+          next.serverUrl !== undefined
+            ? normalizeServerUrlDraft(next.serverUrl)
+            : relaySettings?.serverUrl;
+        if (next.serverUrl !== undefined) {
+          setServerUrlDraft(serverUrl ?? "");
+        }
         await updateSettings({
           mobileRelay: {
             enabled: next.enabled ?? relaySettings?.enabled ?? false,
-            serverUrl: next.serverUrl ?? relaySettings?.serverUrl,
+            serverUrl: serverUrl ?? relaySettings?.serverUrl,
             token: next.token ?? relaySettings?.token,
           },
         });

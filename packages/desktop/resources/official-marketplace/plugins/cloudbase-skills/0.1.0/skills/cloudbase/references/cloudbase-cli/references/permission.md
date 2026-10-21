@@ -2,11 +2,11 @@
 
 CloudBase access control has **three independent layers** — know which one to use before running any command:
 
-| Layer | Command | Controls |
-|-------|---------|----------|
+| Layer                   | Command                  | Controls                                                                   |
+| ----------------------- | ------------------------ | -------------------------------------------------------------------------- |
 | **Resource Permission** | `tcb permission get/set` | Access level on a specific resource (table, collection, function, storage) |
-| **Role** | `tcb role ...` | Policy bundles + member assignments (identity dimension) |
-| **User** | `tcb user ...` | Account attributes only (name, email, status) — NOT role binding |
+| **Role**                | `tcb role ...`           | Policy bundles + member assignments (identity dimension)                   |
+| **User**                | `tcb user ...`           | Account attributes only (name, email, status) — NOT role binding           |
 
 > ⚠️ Role policies and resource permissions are **two parallel systems with NO automatic sync**. Changing a role policy does NOT affect `permission get` results, and vice versa. Audit both separately.
 
@@ -57,6 +57,7 @@ tcb permission set collection:posts --rule '{"read": true, "write": false}' --en
 ```
 
 **Combination rules:**
+
 - Must provide at least `--level` or `--rule`
 - `--rule` without `--level` => auto `custom`; `custom` level requires `--rule`
 - `function` only supports `custom`
@@ -64,12 +65,12 @@ tcb permission set collection:posts --rule '{"read": true, "write": false}' --en
 
 ### Allowed levels by resource type
 
-| Resource | Levels |
-|----------|--------|
-| `table` | `readonly`, `private`, `adminwrite`, `adminonly` |
+| Resource     | Levels                                                     |
+| ------------ | ---------------------------------------------------------- |
+| `table`      | `readonly`, `private`, `adminwrite`, `adminonly`           |
 | `collection` | `readonly`, `private`, `adminwrite`, `adminonly`, `custom` |
-| `function` | `custom` only |
-| `storage` | `readonly`, `private`, `adminwrite`, `adminonly`, `custom` |
+| `function`   | `custom` only                                              |
+| `storage`    | `readonly`, `private`, `adminwrite`, `adminonly`, `custom` |
 
 ---
 
@@ -87,9 +88,9 @@ tcb role get --id <roleId> --detail --env-id <envId>
 
 ### Step 2 — Create or update (parameter sets differ!)
 
-| Action | Policies param | Members param |
-|--------|---------------|---------------|
-| `role create` | `--policies` | `--users` |
+| Action        | Policies param                         | Members param                    |
+| ------------- | -------------------------------------- | -------------------------------- |
+| `role create` | `--policies`                           | `--users`                        |
 | `role update` | `--add-policies` / `--remove-policies` | `--add-users` / `--remove-users` |
 
 > ⚠️ Do NOT use `--add-policies` with `create`, or `--policies` with `update` — they will fail.
@@ -142,11 +143,11 @@ tcb role update --id <roleId> --add-policies '[
 
 ### Step 4 — System role constraints
 
-| Role Type | Modify users | Modify policies | Modify name |
-|-----------|:---:|:---:|:---:|
-| 管理员 (Admin) | ✅ | ❌ | ❌ |
-| 注册用户/组织成员/匿名用户/所有用户 | ❌ | ✅ | ❌ |
-| Custom roles | ✅ | ✅ | ✅ |
+| Role Type                           | Modify users | Modify policies | Modify name |
+| ----------------------------------- | :----------: | :-------------: | :---------: |
+| 管理员 (Admin)                      |      ✅      |       ❌        |     ❌      |
+| 注册用户/组织成员/匿名用户/所有用户 |      ❌      |       ✅        |     ❌      |
+| Custom roles                        |      ✅      |       ✅        |     ✅      |
 
 ### Step 5 — Delete roles
 
@@ -197,13 +198,13 @@ tcb user update u_temp --status BLOCKED --env-id <envId>
 
 ## Decision Guide
 
-| Goal | Command |
-|------|---------|
-| Change a resource's access level | `permission set` |
-| Manage access policies for an identity group | `role create/update` |
-| Assign user to a role | `role create --users` (new) or `role update --add-users` (existing) |
-| Change user profile/status | `user update` |
-| Full audit | `role list --detail` + `permission get` on key resources |
+| Goal                                         | Command                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------- |
+| Change a resource's access level             | `permission set`                                                    |
+| Manage access policies for an identity group | `role create/update`                                                |
+| Assign user to a role                        | `role create --users` (new) or `role update --add-users` (existing) |
+| Change user profile/status                   | `user update`                                                       |
+| Full audit                                   | `role list --detail` + `permission get` on key resources            |
 
 ---
 
@@ -231,14 +232,14 @@ tcb user delete <uids...>             # Delete users (max 100)
 
 ## Common Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| "请且仅传入一个查询条件" | `role get` with multiple or zero query conditions | Use exactly one of `--id`/`--identity`/`--name` |
-| "资源类型不支持权限级别" | `permission set` level incompatible with resource type | Check allowed levels table above |
-| "权限级别为 custom 时，需要提供 --rule" | Missing `--rule` with custom level | Add `--rule` JSON |
-| JSON parse error | `--policies`/`--add-policies` not valid JSON array | Validate JSON before execution |
-| Role update silently fails | Violating system role constraints | Check system role table — admin can't change policies, etc. |
-| "不存在的命令" | Using `permission list` or `role detail` | Correct: `permission get` / `role get` |
+| Error                                   | Cause                                                  | Fix                                                         |
+| --------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| "请且仅传入一个查询条件"                | `role get` with multiple or zero query conditions      | Use exactly one of `--id`/`--identity`/`--name`             |
+| "资源类型不支持权限级别"                | `permission set` level incompatible with resource type | Check allowed levels table above                            |
+| "权限级别为 custom 时，需要提供 --rule" | Missing `--rule` with custom level                     | Add `--rule` JSON                                           |
+| JSON parse error                        | `--policies`/`--add-policies` not valid JSON array     | Validate JSON before execution                              |
+| Role update silently fails              | Violating system role constraints                      | Check system role table — admin can't change policies, etc. |
+| "不存在的命令"                          | Using `permission list` or `role detail`               | Correct: `permission get` / `role get`                      |
 
 ---
 

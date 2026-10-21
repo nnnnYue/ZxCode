@@ -47,9 +47,11 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    - Otherwise, ask user
 
 2. **Check for devcontainer:**
+
    ```bash
    gh api repos/{owner}/{repo}/contents/.devcontainer
    ```
+
    Report if devcontainer exists.
 
 3. **Prompt for options:**
@@ -65,12 +67,14 @@ Before any workflow step, read `../../references/github-cli-preflight.md` and co
    selected options. Use `--default-permissions` so extra devcontainer
    permissions do not open a prompt; if those permissions are required, stop
    and explain that the user must review them explicitly.
+
    ```bash
    gh codespace create --repo <owner/repo> --default-permissions \
      [--branch <branch>] [--machine <type>] [--location <region>]
    ```
 
 6. **Report creation:**
+
    ```
    Created codespace: <name>
    Machine: 2-core, 4GB RAM
@@ -90,6 +94,7 @@ gh codespace list
 ```
 
 Format output:
+
 ```
 Name                 Repository        Branch    State     Machine
 ─────────────────────────────────────────────────────────────────
@@ -131,6 +136,7 @@ gh api --method DELETE "user/codespaces/$codespace_name"
 ## Machine Types
 
 Common machine types:
+
 - `basicLinux` - 2 cores, 4GB RAM
 - `standardLinux` - 4 cores, 8GB RAM
 - `premiumLinux` - 8 cores, 16GB RAM

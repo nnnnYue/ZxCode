@@ -8,9 +8,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/scan-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/scan-hook.mjs"],
             "timeoutMs": 120000,
             "statusMessage": "Mimosa 正在检查候选代码…"
           }
@@ -22,9 +20,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/git-gate-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/git-gate-hook.mjs"],
             "timeoutMs": 120000,
             "statusMessage": "Mimosa 正在检查命令与 Git 门禁…"
           }
@@ -38,9 +34,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/scan-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/scan-hook.mjs"],
             "timeoutMs": 120000
           }
         ]
@@ -51,9 +45,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/git-gate-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/git-gate-hook.mjs"],
             "timeoutMs": 120000
           }
         ]
@@ -65,9 +57,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/prompt-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/prompt-hook.mjs"],
             "timeoutMs": 30000
           }
         ]
@@ -79,9 +69,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/session-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/session-hook.mjs"],
             "timeoutMs": 120000,
             "statusMessage": "Mimosa 正在准备项目安全上下文…"
           }
@@ -94,9 +82,7 @@
           {
             "type": "process",
             "command": "node",
-            "args": [
-              "${ZXCODE_PLUGIN_ROOT}/payload/hooks/stop-hook.mjs"
-            ],
+            "args": ["${ZXCODE_PLUGIN_ROOT}/payload/hooks/stop-hook.mjs"],
             "timeoutMs": 120000,
             "statusMessage": "Mimosa 正在复查本轮改动…"
           }

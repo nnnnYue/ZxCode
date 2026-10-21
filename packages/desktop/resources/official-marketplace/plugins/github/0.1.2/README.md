@@ -25,18 +25,18 @@ creating/deleting Codespaces.
 
 ## Skills
 
-| Skill | ZxCode command | Description |
-|-------|---------------|-------------|
-| setup | `/github:setup` | Verify `gh`, guide browser login, and confirm the active account |
-| commit | `/github:commit` | Create a Conventional Commit from staged changes |
-| pr | `/github:pr <create\|list\|checkout\|review\|merge>` | Create, list, check out, review, or merge pull requests |
-| issue | `/github:issue [create\|view\|list\|close\|label\|milestone]` | Manage issues plus their labels and milestones |
-| release | `/github:release` | Create a GitHub Release with changelog notes |
-| workflow-run | `/github:workflow-run` | List, trigger, watch, or inspect Actions runs |
-| secret | `/github:secret` | List, set, or delete repository secrets |
-| repo | `/github:repo <clone\|browse>` | Clone/fork a repository or open GitHub resources in the browser |
-| gist | `/github:gist` | Create, view, edit, or delete gists |
-| codespace | `/github:codespace` | Create and connect to Codespaces |
+| Skill        | ZxCode command                                                | Description                                                      |
+| ------------ | ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| setup        | `/github:setup`                                               | Verify `gh`, guide browser login, and confirm the active account |
+| commit       | `/github:commit`                                              | Create a Conventional Commit from staged changes                 |
+| pr           | `/github:pr <create\|list\|checkout\|review\|merge>`          | Create, list, check out, review, or merge pull requests          |
+| issue        | `/github:issue [create\|view\|list\|close\|label\|milestone]` | Manage issues plus their labels and milestones                   |
+| release      | `/github:release`                                             | Create a GitHub Release with changelog notes                     |
+| workflow-run | `/github:workflow-run`                                        | List, trigger, watch, or inspect Actions runs                    |
+| secret       | `/github:secret`                                              | List, set, or delete repository secrets                          |
+| repo         | `/github:repo <clone\|browse>`                                | Clone/fork a repository or open GitHub resources in the browser  |
+| gist         | `/github:gist`                                                | Create, view, edit, or delete gists                              |
+| codespace    | `/github:codespace`                                           | Create and connect to Codespaces                                 |
 
 ## Examples
 

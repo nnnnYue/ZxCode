@@ -18,14 +18,41 @@ import { AiSdkModelAdapter } from "../src/model/runner.js";
 
 describe("Published MCS and search final Anthropic wire", () => {
   it.each([
+    [
+      "account:zai-start-plan",
+      "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
+      "GLM-5.3-Flash",
+      true,
+      true,
+    ],
+    [
+      "account:bigmodel-start-plan",
+      "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
+      "GLM-5.3-Flash",
+      true,
+      true,
+    ],
+    [
+      "account:zai-offpeak-idle-plan",
+      "https://zcode.z.ai/api/v1/off-peak/anthropic",
+      "GLM-5.3-Flash",
+      true,
+      false,
+    ],
+    [
+      "account:bigmodel-offpeak-idle-plan",
+      "https://zcode.z.ai/api/v1/off-peak/anthropic",
+      "GLM-5.3-Flash",
+      true,
+      false,
+    ],
     ["fixture", "https://api.anthropic.com/v1", "claude-sonnet-5", false, true],
     ["fixture", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", true, false],
     ["personal-off", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", false, false],
   ] as const)("%s / %s / %s", async (providerId, baseUrl, modelId, mcs, search) => {
     const release = JSON.parse(
       await readFile(
-        // fork 生产配置改名为 zxcode-builtin.json（coding plan 账号规则已剔除）。
-        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
         "utf8",
       ),
     );
@@ -64,7 +91,17 @@ describe("Published MCS and search final Anthropic wire", () => {
       });
     });
     try {
-      const adapter = new AiSdkModelAdapter({ env: {}, retry: { maxAttempts: 1 } });
+      const adapter = new AiSdkModelAdapter({
+        env: {},
+        retry: { maxAttempts: 1 },
+        // 本用例验证模型配置与 wire；安全端口注入离线透传，独立安全契约用例覆盖官方版本校验。
+        requestSecurityState: {
+          createExecution: () => ({
+            protectTransport: ({ transport }) => transport,
+            take: () => [],
+          }),
+        },
+      });
       const model = adapter.createModel({
         providerId: createModelProviderId(providerId),
         modelId: createModelId(modelId),
@@ -75,6 +112,7 @@ describe("Published MCS and search final Anthropic wire", () => {
           reasoningLevel: config.optionSpecs!.reasoningLevel!.values!.at(-1)!,
         },
       });
+      expect(model.properties.supportsNativeWebSearch).toBe(search);
       await model.generateText({
         messages: buildProviderRequestMessages({
           useMidConversationSystem: model.properties.supportsMidConversationSystem,

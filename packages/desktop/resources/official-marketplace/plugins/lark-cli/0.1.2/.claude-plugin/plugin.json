@@ -13,14 +13,5 @@
   "homepage": "https://github.com/larksuite/cli",
   "repository": "https://github.com/larksuite/cli",
   "license": "MIT",
-  "keywords": [
-    "feishu",
-    "lark",
-    "lark-cli",
-    "docs",
-    "sheets",
-    "base",
-    "calendar",
-    "messaging"
-  ]
+  "keywords": ["feishu", "lark", "lark-cli", "docs", "sheets", "base", "calendar", "messaging"]
 }

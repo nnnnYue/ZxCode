@@ -34,10 +34,10 @@ tcb storage rules update  Update storage ACL rules
 
 ⚠️ `storage delete`, `storage get-acl`, `storage set-acl` are **deprecated** — use the new commands:
 
-| Old (deprecated) | New command |
-|-------------------|-------------|
-| `storage delete` | `storage rm` |
-| `storage get-acl` | `storage rules get` |
+| Old (deprecated)  | New command            |
+| ----------------- | ---------------------- |
+| `storage delete`  | `storage rm`           |
+| `storage get-acl` | `storage rules get`    |
 | `storage set-acl` | `storage rules update` |
 
 ---
@@ -110,11 +110,11 @@ tcb storage rm folder/ --dir -e <envId>                # Directory
 
 ### Wildcard rules
 
-| Pattern | Meaning |
-|---------|---------|
-| `*` | Match any filename in current directory (not across `/`) |
-| `**` | Match any path including `/` (recursive) |
-| `?` | Match single character (not `/`) |
+| Pattern | Meaning                                                  |
+| ------- | -------------------------------------------------------- |
+| `*`     | Match any filename in current directory (not across `/`) |
+| `**`    | Match any path including `/` (recursive)                 |
+| `?`     | Match single character (not `/`)                         |
 
 ```bash
 # Only root-level .log files
@@ -166,13 +166,13 @@ tcb storage rules update --acl CUSTOM \
 
 ### Predefined ACL types
 
-| ACL value | Read | Write | Use case |
-|-----------|------|-------|----------|
-| `READONLY` | Everyone | Creator + admin | Public assets (images, documents) |
-| `PRIVATE` | Creator + admin | Creator + admin | User private data (default) |
-| `ADMINWRITE` | Everyone | Admin only | Read-only public resources |
-| `ADMINONLY` | Admin only | Admin only | Sensitive internal data |
-| `CUSTOM` | Per rule | Per rule | Fine-grained access control |
+| ACL value    | Read            | Write           | Use case                          |
+| ------------ | --------------- | --------------- | --------------------------------- |
+| `READONLY`   | Everyone        | Creator + admin | Public assets (images, documents) |
+| `PRIVATE`    | Creator + admin | Creator + admin | User private data (default)       |
+| `ADMINWRITE` | Everyone        | Admin only      | Read-only public resources        |
+| `ADMINONLY`  | Admin only      | Admin only      | Sensitive internal data           |
+| `CUSTOM`     | Per rule        | Per rule        | Fine-grained access control       |
 
 ### Custom rule format
 
@@ -181,14 +181,15 @@ tcb storage rules update --acl CUSTOM \
 ```
 
 At least one of `read` or `write` must be present. Condition values:
+
 - `true` — unrestricted
 - `false` — deny all
 - Expression string — evaluated per request
 
-| Variable | Description |
-|----------|-------------|
-| `auth.openid` | OpenID of the currently authenticated user |
-| `resource.openid` | OpenID of the user who uploaded the file |
+| Variable          | Description                                |
+| ----------------- | ------------------------------------------ |
+| `auth.openid`     | OpenID of the currently authenticated user |
+| `resource.openid` | OpenID of the user who uploaded the file   |
 
 **Example rules:**
 
@@ -251,27 +252,27 @@ tcb storage cp old-path/config.json new-path/config.json --move -e <envId>
 
 ## Common Errors
 
-| Error / Symptom | Cause | Fix |
-|-----------------|-------|-----|
-| `cloudPath cannot start with /` | Leading `/` in cloud path | Remove the leading `/` |
-| `FILE_NOT_FOUND` | File doesn't exist or wrong path | Check with `tcb storage list`; ensure no leading `/`; use `--dir` for folders |
-| Partial upload (`failedCount > 0`) | Network issues on large batch | Retry: `--times 5 --interval 1000`; check `cloudbase-error.log` |
-| Delete hangs in CI | Confirmation prompt blocking | Add `--force` |
-| `cp` destination already exists | Target file present | Use `--force` (overwrite) or `--skip-existing` |
-| `cp` silently skips subdirectories | `cp` is file-only | Loop over `tcb storage list` and copy each file |
-| `command not found: delete` | Deprecated command | Use `tcb storage rm` |
-| `command not found: get-acl` | Deprecated command | Use `tcb storage rules get` / `rules update` |
+| Error / Symptom                    | Cause                            | Fix                                                                           |
+| ---------------------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| `cloudPath cannot start with /`    | Leading `/` in cloud path        | Remove the leading `/`                                                        |
+| `FILE_NOT_FOUND`                   | File doesn't exist or wrong path | Check with `tcb storage list`; ensure no leading `/`; use `--dir` for folders |
+| Partial upload (`failedCount > 0`) | Network issues on large batch    | Retry: `--times 5 --interval 1000`; check `cloudbase-error.log`               |
+| Delete hangs in CI                 | Confirmation prompt blocking     | Add `--force`                                                                 |
+| `cp` destination already exists    | Target file present              | Use `--force` (overwrite) or `--skip-existing`                                |
+| `cp` silently skips subdirectories | `cp` is file-only                | Loop over `tcb storage list` and copy each file                               |
+| `command not found: delete`        | Deprecated command               | Use `tcb storage rm`                                                          |
+| `command not found: get-acl`       | Deprecated command               | Use `tcb storage rules get` / `rules update`                                  |
 
 ### JSON output key fields
 
-| Command | Key fields |
-|---------|-----------|
-| `storage rm` (success) | `{ deletedCount, files }` |
+| Command                  | Key fields                                               |
+| ------------------------ | -------------------------------------------------------- |
+| `storage rm` (success)   | `{ deletedCount, files }`                                |
 | `storage rm` (not found) | `{ error: true, code: "FILE_NOT_FOUND", notFoundPaths }` |
-| `storage list` | `[{ key, lastModified, eTag, size }]` + `total` |
-| `storage url` | `{ url, expires }` |
-| `storage detail` | `{ size, type, date, eTag }` |
-| `storage rules get` | `{ acl, aclDesc, rule }` |
+| `storage list`           | `[{ key, lastModified, eTag, size }]` + `total`          |
+| `storage url`            | `{ url, expires }`                                       |
+| `storage detail`         | `{ size, type, date, eTag }`                             |
+| `storage rules get`      | `{ acl, aclDesc, rule }`                                 |
 
 ### Debugging tips
 

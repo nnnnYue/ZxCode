@@ -35,7 +35,7 @@
 
 控制帧（桌面 ↔ relay，JSON over WS）：
 
-- `RelayControlHello{deviceId, relayToken, version}` → `RelayControlAck{deviceId}`
+- `RelayControlHello{deviceId, relayToken, version}` → `RelayControlAck{deviceId}`（鉴权只看 HTTP `Authorization` 头；`relayToken` 允许为空串，仅为兼容字段保留）
 - `RelayHeartbeat{at}` / `RelayHeartbeatAck{at}`
 - `RelayPresenceUpdate{windows[]}`（windowId/workspacePath/workspaceIdentity/workspaceKey）
 - `RelayIssueGrantRequest{requestId, target}` → `RelayIssueGrantResponse{requestId, ok, grantId?, expiresAt?, error?}`

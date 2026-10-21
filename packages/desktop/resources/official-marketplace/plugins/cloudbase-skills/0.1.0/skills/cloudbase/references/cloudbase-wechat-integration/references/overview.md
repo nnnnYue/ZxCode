@@ -26,13 +26,13 @@ Use this skill for the application-side work around those integrations:
 
 ## Scenario Map
 
-| User wording | Route |
-| --- | --- |
-| 小程序支付, 微信支付, `wx.requestPayment` | `mini-program-pay.md` |
-| 公众号支付, JSAPI 支付, 微信内网页支付 | `official-account-jsapi-pay.md` |
-| Native 支付, 扫码支付, 二维码支付 | `native-qr-pay.md` |
-| 公众号授权, openid, userinfo, OAuth | `official-account-oauth.md` |
-| 回调失败, 404, 凭证, openid 不匹配 | `troubleshooting.md` |
+| User wording                              | Route                           |
+| ----------------------------------------- | ------------------------------- |
+| 小程序支付, 微信支付, `wx.requestPayment` | `mini-program-pay.md`           |
+| 公众号支付, JSAPI 支付, 微信内网页支付    | `official-account-jsapi-pay.md` |
+| Native 支付, 扫码支付, 二维码支付         | `native-qr-pay.md`              |
+| 公众号授权, openid, userinfo, OAuth       | `official-account-oauth.md`     |
+| 回调失败, 404, 凭证, openid 不匹配        | `troubleshooting.md`            |
 
 ## Console-First Setup Checklist
 

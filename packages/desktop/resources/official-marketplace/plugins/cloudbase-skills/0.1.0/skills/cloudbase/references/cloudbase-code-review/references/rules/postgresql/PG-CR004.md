@@ -33,11 +33,11 @@
 CloudBase PG Web 场景推荐使用以下模式：
 
 ```typescript
-const storage = app.storage.from(bucketName)
-const { data, error } = await storage.upload(path, file)
+const storage = app.storage.from(bucketName);
+const { data, error } = await storage.upload(path, file);
 
 if (error) {
-  throw new Error(error.message || "上传失败")
+  throw new Error(error.message || "上传失败");
 }
 ```
 
@@ -45,13 +45,13 @@ if (error) {
 
 ```typescript
 // ❌ app.storage 不是函数
-const storage = app.storage()
+const storage = app.storage();
 
 // ⚠️ PG Web 场景不推荐优先使用旧式顶层上传 API
-await app.uploadFile({ cloudPath, filePath: file })
+await app.uploadFile({ cloudPath, filePath: file });
 
 // ⚠️ 参数形态不符合推荐 Storage v3 API
-await storage.upload({ cloudPath, filePath: file })
+await storage.upload({ cloudPath, filePath: file });
 ```
 
 ## 边界

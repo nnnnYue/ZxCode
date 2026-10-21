@@ -21,37 +21,37 @@
 
 ```tsx
 // components/auth-guard.tsx — Client Component
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import cloudbase from "@cloudbase/js-sdk"
+import { useEffect, useState } from "react";
+import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
   env: process.env.NEXT_PUBLIC_CLOUDBASE_ENV_ID!,
   region: process.env.NEXT_PUBLIC_CLOUDBASE_REGION || "ap-shanghai",
   accessKey: process.env.NEXT_PUBLIC_CLOUDBASE_ACCESS_KEY!,
   auth: { detectSessionInUrl: true },
-})
-const auth = app.auth
+});
+const auth = app.auth;
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     auth.getSession().then(({ data }) => {
       if (data?.session) {
-        setSession(data.session)
+        setSession(data.session);
         // Store access_token in cookie for API route verification
-        document.cookie = `cloudbase_token=${data.session.access_token}; path=/; max-age=3600`
+        document.cookie = `cloudbase_token=${data.session.access_token}; path=/; max-age=3600`;
       }
-      setLoading(false)
-    })
-  }, [])
+      setLoading(false);
+    });
+  }, []);
 
-  if (loading) return <div>Loading...</div>
-  if (!session) return <div>Please sign in</div>
-  return <>{children}</>
+  if (loading) return <div>Loading...</div>;
+  if (!session) return <div>Please sign in</div>;
+  return <>{children}</>;
 }
 ```
 
@@ -59,15 +59,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
 ```tsx
 // app/api/protected/route.ts — Server-side Route Handler
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("cloudbase_token")?.value
+  const token = request.cookies.get("cloudbase_token")?.value;
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   // Verify token with Node SDK or forward to your backend
-  return NextResponse.json({ data: "protected resource" })
+  return NextResponse.json({ data: "protected resource" });
 }
 ```
 
@@ -93,10 +93,10 @@ Use `@cloudbase/node-sdk` (Node.js SDK), **not** `@cloudbase/js-sdk` (which is b
 
 ```ts
 // cloudbase.module.ts
-import { Module, Global } from "@nestjs/common"
-import tcb from "@cloudbase/node-sdk"
+import { Module, Global } from "@nestjs/common";
+import tcb from "@cloudbase/node-sdk";
 
-export const CLOUDBASE = "CLOUDBASE"
+export const CLOUDBASE = "CLOUDBASE";
 
 const cloudbaseProvider = {
   provide: CLOUDBASE,
@@ -104,14 +104,14 @@ const cloudbaseProvider = {
     const app = tcb.init({
       env: process.env.CLOUDBASE_ENV_ID!,
       // credentials: require("/path/to/tcb_custom_login.json"), // only for custom login
-    })
+    });
     return {
       app,
       auth: app.auth(),
       // db: app.database(), // for NoSQL
-    }
+    };
   },
-}
+};
 
 @Global()
 @Module({
@@ -125,26 +125,26 @@ export class CloudBaseModule {}
 
 ```ts
 // auth.guard.ts
-import { Injectable, CanActivate, ExecutionContext, Inject } from "@nestjs/common"
-import { CLOUDBASE } from "./cloudbase.module"
+import { Injectable, CanActivate, ExecutionContext, Inject } from "@nestjs/common";
+import { CLOUDBASE } from "./cloudbase.module";
 
 @Injectable()
 export class CloudBaseAuthGuard implements CanActivate {
   constructor(@Inject(CLOUDBASE) private cloudbase: any) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest()
-    const token = request.headers.authorization?.replace("Bearer ", "")
-    if (!token) return false
+    const request = context.switchToHttp().getRequest();
+    const token = request.headers.authorization?.replace("Bearer ", "");
+    if (!token) return false;
 
     try {
       // Verify the session via Node SDK
       // Note: Node SDK does not have a direct "verify token" method —
       // forward the token to a cloud function or use the HTTP API for validation
-      request.user = { token }
-      return true
+      request.user = { token };
+      return true;
     } catch {
-      return false
+      return false;
     }
   }
 }
@@ -154,19 +154,19 @@ export class CloudBaseAuthGuard implements CanActivate {
 
 ```ts
 // main.ts
-import { NestFactory } from "@nestjs/core"
-import { AppModule } from "./app.module"
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: process.env.CORS_ORIGIN || "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-  })
-  await app.listen(9000) // CloudBase HTTP Functions expect port 9000
+  });
+  await app.listen(9000); // CloudBase HTTP Functions expect port 9000
 }
-bootstrap()
+bootstrap();
 ```
 
 ### Deployment

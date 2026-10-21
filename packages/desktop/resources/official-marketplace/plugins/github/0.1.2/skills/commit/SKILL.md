@@ -17,6 +17,7 @@ Create a commit for the currently staged changes following Conventional Commits 
    - The scope (component/module affected)
 
 3. **Write commit message** following Conventional Commits:
+
    ```
    <type>(<scope>): <description>
 

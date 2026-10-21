@@ -40,6 +40,7 @@ gh secret list
 ```
 
 Format output:
+
 ```
 Secret Name          Updated
 ───────────────────────────
@@ -61,11 +62,12 @@ Note: Secret values are never displayed.
 2. **Validate secret name:**
    - Must start with letter or underscore
    - Can only contain alphanumeric and underscores
-   - Cannot start with GITHUB_ prefix
+   - Cannot start with GITHUB\_ prefix
 
 3. **Set the secret without putting its value in argv:**
    Show the verified repository and secret name and require explicit
    confirmation before reading or submitting the value. Then run:
+
    ```bash
    # From an existing environment variable (do not echo the value)
    secret_env_name="<ENV_VAR_NAME>"
@@ -86,6 +88,7 @@ Note: Secret values are never displayed.
    name. Do not delete until the user confirms that exact target.
 
 2. **Delete:**
+
    ```bash
    gh secret delete <name>
    ```
@@ -106,15 +109,18 @@ Note: Secret values are never displayed.
    `../../scripts/secret_sync.py` relative to this Skill's installed directory.
    Its preview and apply commands share one parser and reject duplicate,
    multiline, ambiguous, symlink, or non-regular inputs. It prints names only.
+
    ```bash
    python3 <plugin_root>/scripts/secret_sync.py preview --file "$secret_file"
    ```
+
    Record the `SHA256` value printed to stderr as `<preview_sha256>`. This
    digest binds the later import to the exact file the user reviewed.
 
 3. **Show preview:** Compare the exact names with `gh secret list` if the user
    needs new/existing status. Never claim per-name created/updated results
    unless that comparison was actually performed.
+
    ```
    Will sync the following secrets:
    - API_KEY (new)
@@ -130,12 +136,14 @@ Note: Secret values are never displayed.
 
 5. **Import the same validated file:** Pass the verified repository explicitly.
    The helper sends each value to `gh secret set` through stdin, never argv.
+
    ```bash
    python3 <plugin_root>/scripts/secret_sync.py apply \
      --file "$secret_file" \
      --repo "<host>/<owner>/<repo>" \
      --expect-sha256 <preview_sha256>
    ```
+
    If the file changed after preview, the helper stops and requires a new
    preview and confirmation.
 

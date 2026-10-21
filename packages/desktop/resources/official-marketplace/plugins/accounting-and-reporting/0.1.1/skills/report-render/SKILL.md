@@ -16,8 +16,8 @@ not needed.
 ## Which format
 
 **The house formatting policy decides, not this skill.** The one question that
-settles it is what happens to the file next: someone *reads* it as it stands, or
-someone *edits* it. A report for circulation, a rated view, a client deliverable
+settles it is what happens to the file next: someone _reads_ it as it stands, or
+someone _edits_ it. A report for circulation, a rated view, a client deliverable
 — PDF. A working paper, a memo, a discussion draft, a notes package pending
 review — DOCX, because the recipient's next act is to write in it. Short-form
 stays Markdown in the conversation. An explicit request always wins.
@@ -45,13 +45,13 @@ document's.
 
 So, per document, pick one column and stay in it:
 
-| | Chinese document | English document |
-|---|---|---|
-| Sources heading | `## 来源` | `## Sources` |
-| Coverage heading | `## 覆盖范围与局限` | `## Coverage and Limitations` |
-| Source tier | `〔一手〕` / `〔二手〕` | `〔Primary〕` / `〔Secondary〕` |
-| Coverage states | `有记录` / `检索范围内未发现` / `源不可用` | `On record` / `Not found within the search scope` / `Source unavailable` |
-| Provenance tags | `[披露]` `[测算]` `[预期]` `[推断]` `[媒体]` | `[Reported]` `[Est.]` `[Consensus]` `[Inferred]` `[Media]` |
+|                  | Chinese document                             | English document                                                         |
+| ---------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| Sources heading  | `## 来源`                                    | `## Sources`                                                             |
+| Coverage heading | `## 覆盖范围与局限`                          | `## Coverage and Limitations`                                            |
+| Source tier      | `〔一手〕` / `〔二手〕`                      | `〔Primary〕` / `〔Secondary〕`                                          |
+| Coverage states  | `有记录` / `检索范围内未发现` / `源不可用`   | `On record` / `Not found within the search scope` / `Source unavailable` |
+| Provenance tags  | `[披露]` `[测算]` `[预期]` `[推断]` `[媒体]` | `[Reported]` `[Est.]` `[Consensus]` `[Inferred]` `[Media]`               |
 
 Tags are the literal strings in that table. A paraphrase — `[已披露]`,
 `[一致预期]`, `[已测算]` — is not a tag, and every downstream check reads it as
@@ -308,7 +308,7 @@ rep.refs.cite("天眼查", "企业基础画像（工商登记/行业分类/经�
 
 **Provenance tags go through `rep.chip()`, never hand-written markup.** A tag
 and a citation are different things and are emitted by different calls:
-`cite()` says *where it is written down*, `chip()` says *how we know it*. Chip
+`cite()` says _where it is written down_, `chip()` says _how we know it_. Chip
 wherever data classes sit close together — tables, variance columns, KPI strips,
 valuation summaries — and remember that `[测算]`, `[推断]` and `[媒体]` are never
 optional in any format, because a citation cannot convey them.
@@ -399,7 +399,7 @@ It also reports two **per-page** numbers you must read, not skim:
   this**: a page missing its bottom 40% still renders ~9% ink. The cover and the
   page before a section that owns its own page are exempt and never reported.
 - **the last page** is exempt from that floor — a document has to stop somewhere —
-  but **only up to a point**: once it is ~70% blank it is reported as a *stub*,
+  but **only up to a point**: once it is ~70% blank it is reported as a _stub_,
   because whatever is on it was pushed there and belongs on the page before. Close
   it by tightening the block that overflowed, not by reordering anything. That
   exemption used to be unconditional, and a 12-page report whose page 12 held a
@@ -480,7 +480,7 @@ go in `layout-review.md`. Legal and scope statements — 分析师底稿、评�
 不构成投资建议、数据截至 — are not QA and stay where they are.
 
 **Name the gate you actually ran, not the one you wish you had run.** The rule
-above bars inventing a per-page verdict; this one bars inventing the *process*.
+above bars inventing a per-page verdict; this one bars inventing the _process_.
 `视觉复核` / `visual review` describes exactly one path — the canary read
 correctly and you looked at `$BUILD/qa/*.png`. A numeric review is called
 `数值版式检查`, and a run that did both says so separately, with the round count
@@ -533,7 +533,7 @@ rm -rf "$BUILD"
 
 What must not be in the delivered directory when you hand it over:
 
-- `qa/p01.png …` — the per-page renders from `--render`. They exist to be looked  at, once, by you.
+- `qa/p01.png …` — the per-page renders from `--render`. They exist to be looked at, once, by you.
 - `_chart_meta.json` — `charts.py`'s density sidecar. An input to sizing, not an
   artifact.
 - the chart `.png` files themselves, unless the user asked for the figures
@@ -559,7 +559,7 @@ that succeeded and a delivery that happened are two different facts** — the ru
 that leaves the report in a scaffolding directory reports success just as
 confidently as the one that hands it over. If the user asked for the figures or
 the page renders too, they are
-named deliverables and stay — the rule is that nothing arrives *unasked*.
+named deliverables and stay — the rule is that nothing arrives _unasked_.
 
 ## Fonts
 

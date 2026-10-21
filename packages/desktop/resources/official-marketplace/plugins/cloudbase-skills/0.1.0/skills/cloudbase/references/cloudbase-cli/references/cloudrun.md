@@ -195,13 +195,13 @@ tcb cloudrun run --dry-run true --env-id <envId>
 
 ### Function-based vs Container-based
 
-| Capability | Function-based | Container-based |
-|-----------|---------------|----------------|
-| `tcb cloudrun run` (local) | Supported | Not supported |
-| Custom Dockerfile | No | Yes |
-| Port configuration | Auto-detected | Must specify `--port` |
-| Hot reload | `--hot-reload true` | Not supported |
-| Agent mode | Supported | Not supported |
+| Capability                 | Function-based      | Container-based       |
+| -------------------------- | ------------------- | --------------------- |
+| `tcb cloudrun run` (local) | Supported           | Not supported         |
+| Custom Dockerfile          | No                  | Yes                   |
+| Port configuration         | Auto-detected       | Must specify `--port` |
+| Hot reload                 | `--hot-reload true` | Not supported         |
+| Agent mode                 | Supported           | Not supported         |
 
 ---
 
@@ -263,13 +263,13 @@ Key flags: `--force` (skip confirmation), `--traffic` (canary mode on deploy), `
 
 ## Common Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| Local run fails for container service | `tcb cloudrun run` is function-only | Use Docker to test container services locally |
-| New version gets no traffic | Deployed with `--traffic` (canary mode) | Explicitly shift traffic with `tcb cloudrun traffic set` |
-| Deploy prompt hangs in CI | Missing `--force` flag | Always use `--force` for non-interactive pipelines |
-| Secret not available in container | Secret set after deploy | Redeploy the service after changing secrets |
-| Download missing config | Download only includes source code | Runtime config (env vars, secrets) not included |
+| Error                                 | Cause                                   | Fix                                                      |
+| ------------------------------------- | --------------------------------------- | -------------------------------------------------------- |
+| Local run fails for container service | `tcb cloudrun run` is function-only     | Use Docker to test container services locally            |
+| New version gets no traffic           | Deployed with `--traffic` (canary mode) | Explicitly shift traffic with `tcb cloudrun traffic set` |
+| Deploy prompt hangs in CI             | Missing `--force` flag                  | Always use `--force` for non-interactive pipelines       |
+| Secret not available in container     | Secret set after deploy                 | Redeploy the service after changing secrets              |
+| Download missing config               | Download only includes source code      | Runtime config (env vars, secrets) not included          |
 
 ---
 

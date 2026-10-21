@@ -32,7 +32,6 @@ What that boundary means in practice, and none of it softens as a workflow gets 
 
 A draft prepared this way is the ordinary output of a reporting accountant: the finance lead reviews it, takes responsibility for it, and only then does it become anything else. What this skill must never do is present its own output as already reviewed, already compliant, or ready to file.
 
-
 ## Before anything else
 
 - **试算平衡表** — 期初 / 本期借方 / 本期贷方 / 期末, at 末级科目 level.
@@ -54,11 +53,11 @@ Parse with Python (openpyxl / pandas) through Bash. Read back sheet, header row,
 
 Then, before any caption is populated:
 
-| 检查 | 关系 |
-|---|---|
-| 试算平衡 | 借方合计 = 贷方合计 |
-| 层级 | 末级科目合计 = 上级余额 |
-| 期初连续性 | 本期期初 = 上期期末 |
+| 检查       | 关系                    |
+| ---------- | ----------------------- |
+| 试算平衡   | 借方合计 = 贷方合计     |
+| 层级       | 末级科目合计 = 上级余额 |
+| 期初连续性 | 本期期初 = 上期期末     |
 
 **A trial balance that does not foot does not become statements.** Report the gap and stop; `month-end-close-review` and `ledger-reconciliation` are where it gets resolved.
 

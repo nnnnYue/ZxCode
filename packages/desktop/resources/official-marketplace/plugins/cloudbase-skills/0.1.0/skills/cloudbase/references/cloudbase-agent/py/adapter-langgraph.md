@@ -26,6 +26,7 @@ pip install cloudbase-agent-langgraph cloudbase-agent-server langgraph langchain
 ```
 
 This installs:
+
 - `cloudbase-agent-langgraph` - LangGraph adapter
 - `langgraph` - LangGraph framework
 - `langchain` - LangChain core
@@ -51,12 +52,12 @@ def chat_node(state: State, config, writer):
     chat_model = ChatOpenAI(model="gpt-4o-mini")
     system = SystemMessage(content="You are a helpful assistant.")
     messages = [system, *state["messages"]]
-    
+
     chunks = []
     for chunk in chat_model.stream(messages, config):
         writer({"messages": [chunk]})  # Stream to client
         chunks.append(chunk)
-    
+
     return {"messages": chunks}
 
 # Build workflow
@@ -65,7 +66,7 @@ def build_workflow():
     graph.add_node("chat", chat_node)
     graph.add_edge(START, "chat")
     graph.add_edge("chat", END)
-    
+
     memory = MemorySaver()
     return graph.compile(checkpointer=memory)
 
@@ -115,10 +116,10 @@ agent = LangGraphAgent(
     description="Advanced agent with full configuration",
     graph=compiled_graph,
     use_callbacks=True,
-    
+
     # Add callbacks
     callbacks=[ConsoleLogger(), MetricsCollector()],
-    
+
     # Add tool proxy for permission control
     tool_proxy=permission_checker,
 )
@@ -178,17 +179,17 @@ from langgraph.types import StreamWriter
 
 def chat_node(state: State, config, writer: StreamWriter):
     """Node with streaming support."""
-    
+
     chat_model = ChatOpenAI(model="gpt-4o-mini")
-    
+
     chunks = []
     for chunk in chat_model.stream(messages, config):
         # Stream chunk to client immediately
         writer({"messages": [chunk]})
-        
+
         # Collect for final state
         chunks.append(chunk)
-    
+
     # Return collected chunks for state
     return {"messages": chunks}
 ```
@@ -198,12 +199,12 @@ def chat_node(state: State, config, writer: StreamWriter):
 ```python
 def chat_node(state: State, config, writer: StreamWriter = None):
     """Node with fallback for missing writer."""
-    
+
     # Provide no-op fallback
     if writer is None:
         def writer(x):
             pass
-    
+
     # Use writer safely
     for chunk in chat_model.stream(messages):
         writer({"messages": [chunk]})
@@ -223,7 +224,7 @@ from langgraph.checkpoint.memory import MemorySaver
 def build_workflow():
     graph = StateGraph(State)
     # ... add nodes and edges ...
-    
+
     memory = MemorySaver()  # In-memory storage
     return graph.compile(checkpointer=memory)
 ```
@@ -257,7 +258,7 @@ checkpointer = PostgresSaver.from_conn_string(
 def build_workflow():
     graph = StateGraph(State)
     # ... add nodes and edges ...
-    
+
     return graph.compile(checkpointer=checkpointer)
 ```
 
@@ -276,14 +277,14 @@ class State(MessagesState):
 
 def chat_node(state: State, config, writer):
     chat_model = ChatOpenAI(model="gpt-4o-mini")
-    
+
     # Get and bind tools
     tools = state.get("tools", [])
     if tools:
         # Convert tool definitions to OpenAI format
         tools_list = [convert_to_openai_function(tool) for tool in tools]
         chat_model = chat_model.bind_tools(tools_list)
-    
+
     # Use model with tools
     for chunk in chat_model.stream(messages, config):
         writer({"messages": [chunk]})
@@ -322,24 +323,24 @@ curl -X POST http://localhost:9000/send-message \
 ```python
 class MyCallback:
     """Custom callback for monitoring."""
-    
+
     async def on_text_message_content(self, event, buffer):
         """Called when text message content is streaming."""
         print(f"AI: {buffer}")
-    
+
     async def on_tool_call_args(self, event, buffer, partial_args):
         """Called when tool call arguments are parsed."""
         tool_name = getattr(event, "tool_name", "unknown")
         print(f"Tool: {tool_name}, Args: {partial_args}")
-    
+
     async def on_run_started(self, event):
         """Called when agent run starts."""
         print(f"Started: {event.run_id}")
-    
+
     async def on_run_finished(self, event):
         """Called when agent run finishes."""
         print(f"Finished: {event.run_id}")
-    
+
     async def on_run_error(self, event):
         """Called when an error occurs."""
         print(f"Error: {getattr(event, 'message', 'Unknown')}")
@@ -416,12 +417,12 @@ def chat_node(state: State, config, writer):
     chat_model = ChatOpenAI(model="gpt-4o-mini")
     system = SystemMessage(content="You are a helpful assistant.")
     messages = [system, *state["messages"]]
-    
+
     chunks = []
     for chunk in chat_model.stream(messages, config):
         writer({"messages": [chunk]})
         chunks.append(chunk)
-    
+
     # Check if approval is needed
     final_message = chunks[-1] if chunks else AIMessage(content="")
     if "sensitive" in final_message.content.lower():
@@ -432,7 +433,7 @@ def chat_node(state: State, config, writer):
                 "content": final_message.content
             }
         }
-    
+
     return {"messages": chunks}
 
 def approval_node(state: State, config, writer):
@@ -456,10 +457,10 @@ def should_wait_approval(state: State) -> str:
 def build_workflow():
     """Build human-in-the-loop workflow."""
     graph = StateGraph(State)
-    
+
     graph.add_node("chat", chat_node)
     graph.add_node("approval", approval_node)
-    
+
     graph.add_edge(START, "chat")
     graph.add_conditional_edges(
         "chat",
@@ -469,7 +470,7 @@ def build_workflow():
             END: END
         }
     )
-    
+
     memory = MemorySaver()
     return graph.compile(
         checkpointer=memory,
@@ -529,7 +530,7 @@ for chunk in chunks:
 def chat_node(state, config, writer=None):
     if writer is None:
         writer = lambda x: None
-    
+
     # Use writer safely
     writer({"messages": [chunk]})
 

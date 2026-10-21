@@ -35,7 +35,7 @@ Correct:
 ```javascript
 await db.collection("todos").add({
   title: "Buy milk",
-  completed: false
+  completed: false,
 });
 ```
 
@@ -44,7 +44,7 @@ Wrong:
 ```javascript
 await db.collection("todos").add({
   title: "Buy milk",
-  _openid: "manual-value"
+  _openid: "manual-value",
 });
 ```
 

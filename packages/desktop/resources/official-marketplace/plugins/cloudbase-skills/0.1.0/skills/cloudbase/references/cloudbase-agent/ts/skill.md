@@ -23,6 +23,7 @@ Use this skill for **AI agent development** when you need to:
 - Build WeChat Mini Program UIs for AI agent interactions
 
 **Do NOT use for:**
+
 - Simple AI model calling without agent capabilities (use `ai-model-*` skills)
 - CloudBase cloud functions (use `cloud-functions` skill)
 - CloudRun backend services without agent features (use `cloudrun-development` skill)
@@ -49,16 +50,16 @@ Use this skill for **AI agent development** when you need to:
 
 ## Routing
 
-| Task | Read |
-|------|------|
-| Deploy agent to CloudBase (**read this first**) | [agent-deployment](agent-deployment.md) |
-| Deploy agent server (@cloudbase/agent-server) | [server-quickstart](server-quickstart.md) |
-| Use LangGraph adapter | [adapter-langgraph](adapter-langgraph.md) |
-| Use LangChain adapter | [adapter-langchain](adapter-langchain.md) |
-| Build custom adapter | [adapter-development](adapter-development.md) |
-| Understand AG-UI protocol | [agui-protocol](agui-protocol.md) |
-| Build UI client (Web or Mini Program) | [ui-clients](ui-clients.md) |
-| Deep-dive @cloudbase/agent-ui-miniprogram | [ui-miniprogram](ui-miniprogram.md) |
+| Task                                            | Read                                          |
+| ----------------------------------------------- | --------------------------------------------- |
+| Deploy agent to CloudBase (**read this first**) | [agent-deployment](agent-deployment.md)       |
+| Deploy agent server (@cloudbase/agent-server)   | [server-quickstart](server-quickstart.md)     |
+| Use LangGraph adapter                           | [adapter-langgraph](adapter-langgraph.md)     |
+| Use LangChain adapter                           | [adapter-langchain](adapter-langchain.md)     |
+| Build custom adapter                            | [adapter-development](adapter-development.md) |
+| Understand AG-UI protocol                       | [agui-protocol](agui-protocol.md)             |
+| Build UI client (Web or Mini Program)           | [ui-clients](ui-clients.md)                   |
+| Deep-dive @cloudbase/agent-ui-miniprogram       | [ui-miniprogram](ui-miniprogram.md)           |
 
 ## Quick Start
 
@@ -83,5 +84,3 @@ run({
   port: 9000,
 });
 ```
-
-

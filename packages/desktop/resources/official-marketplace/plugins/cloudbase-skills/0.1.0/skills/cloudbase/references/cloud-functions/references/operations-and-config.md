@@ -25,8 +25,8 @@ callCloudApi({
     Offset: 0,
     Limit: 10,
     StartTime: "2024-01-01 00:00:00",
-    EndTime: "2024-01-01 23:59:59"
-  }
+    EndTime: "2024-01-01 23:59:59",
+  },
 });
 ```
 
@@ -39,8 +39,8 @@ callCloudApi({
   params: {
     StartTime: "2024-01-01 00:00:00",
     EndTime: "2024-01-01 23:59:59",
-    LogRequestId: "request-id-from-log-list"
-  }
+    LogRequestId: "request-id-from-log-list",
+  },
 });
 ```
 
@@ -73,8 +73,8 @@ callCloudApi({
     AuthSwitch: 2,
     PathTransmission: 2,
     EnableRegion: true,
-    Domain: "*"
-  }
+    Domain: "*",
+  },
 });
 ```
 
@@ -97,18 +97,18 @@ Do not overwrite function environment variables blindly.
 ```javascript
 const current = await queryFunctions({
   action: "getFunctionDetail",
-  functionName: "functionName"
+  functionName: "functionName",
 });
 
 const mergedEnvVariables = {
   ...current.EnvVariables,
-  ...newEnvVariables
+  ...newEnvVariables,
 };
 
 await manageFunctions({
   action: "updateFunctionConfig",
   functionName: "functionName",
-  envVariables: mergedEnvVariables
+  envVariables: mergedEnvVariables,
 });
 ```
 
@@ -141,18 +141,18 @@ Examples:
 
 Prefer the converged entrances below, but translate historical names when they appear in old prompts or old docs.
 
-| Historical name | Current action |
-| --- | --- |
-| `getFunctionList` | `queryFunctions(action="listFunctions")` |
-| `createFunction` | `manageFunctions(action="createFunction")` |
-| `updateFunctionCode` | `manageFunctions(action="updateFunctionCode")` |
-| `updateFunctionConfig` | `manageFunctions(action="updateFunctionConfig")` |
-| `getFunctionLogs` | `queryFunctions(action="listFunctionLogs")` |
-| `getFunctionLogDetail` | `queryFunctions(action="getFunctionLogDetail")` |
-| `manageFunctionTriggers` | `manageFunctions(action="createFunctionTrigger"|"deleteFunctionTrigger")` |
-| `readFunctionLayers` | `queryFunctions(action="listLayers"|"listLayerVersions"|"getLayerVersionDetail"|"listFunctionLayers")` |
-| `writeFunctionLayers` | `manageFunctions(action="createLayerVersion"|"deleteLayerVersion"|"attachLayer"|"detachLayer"|"updateFunctionLayers")` |
-| `createFunctionHTTPAccess` | `manageGateway(action="createAccess")` |
+| Historical name            | Current action                                   |
+| -------------------------- | ------------------------------------------------ | ------------------------- | ----------------------- | ---------------------- | ------------------------ |
+| `getFunctionList`          | `queryFunctions(action="listFunctions")`         |
+| `createFunction`           | `manageFunctions(action="createFunction")`       |
+| `updateFunctionCode`       | `manageFunctions(action="updateFunctionCode")`   |
+| `updateFunctionConfig`     | `manageFunctions(action="updateFunctionConfig")` |
+| `getFunctionLogs`          | `queryFunctions(action="listFunctionLogs")`      |
+| `getFunctionLogDetail`     | `queryFunctions(action="getFunctionLogDetail")`  |
+| `manageFunctionTriggers`   | `manageFunctions(action="createFunctionTrigger"  | "deleteFunctionTrigger")` |
+| `readFunctionLayers`       | `queryFunctions(action="listLayers"              | "listLayerVersions"       | "getLayerVersionDetail" | "listFunctionLayers")` |
+| `writeFunctionLayers`      | `manageFunctions(action="createLayerVersion"     | "deleteLayerVersion"      | "attachLayer"           | "detachLayer"          | "updateFunctionLayers")` |
+| `createFunctionHTTPAccess` | `manageGateway(action="createAccess")`           |
 
 ## CLI fallback
 

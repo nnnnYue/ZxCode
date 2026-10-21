@@ -160,11 +160,11 @@ async def custom_operation(param: str):
     # Current span auto-created
     span = get_current_span()
     span.set_attribute("param_length", len(param))
-    
+
     # Nested spans
     with trace("sub_operation"):
         result = await sub_operation(param)
-    
+
     span.set_attribute("result_size", len(result))
     return result
 ```
@@ -277,7 +277,7 @@ from cloudbase_agent.server.health import HealthCheck, HealthStatus
 
 class DatabaseHealthCheck(HealthCheck):
     name = "database"
-    
+
     async def check(self) -> HealthStatus:
         try:
             await db.execute("SELECT 1")
@@ -359,7 +359,7 @@ from cloudbase_agent.server.observability import RequestTracker
 
 async def handle_request(request):
     tracker = RequestTracker(request)
-    
+
     try:
         result = await process_request(request.data)
         tracker.success(result)

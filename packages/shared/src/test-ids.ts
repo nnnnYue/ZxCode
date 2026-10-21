@@ -742,3 +742,57 @@ export const TID_START_PLAN_RECOMMENDATION_DIALOG = "start-plan-recommendation-d
 
 /** 用户反馈的诊断日志授权开关 */
 export const TID_FEEDBACK_LOGS_OPT_IN = "feedback-logs-opt-in";
+
+// fork+上游 3.16：side-pane full view 等新增 test-id。
+export const TID_OFFPEAK_ACTION_CONTINUE = "offpeak-action-continue";
+export const TID_OFFPEAK_ACTION_DELETE = "offpeak-action-delete";
+export const TID_OFFPEAK_ACTION_PAUSE = "offpeak-action-pause";
+export const TID_OFFPEAK_CARD = "offpeak-card";
+export const TID_OFFPEAK_CARD_MENU = "offpeak-card-menu";
+export const TID_OFFPEAK_CARD_SESSION = "offpeak-card-session";
+export const TID_OFFPEAK_CREATE_BUTTON = "offpeak-create-button";
+export const TID_OFFPEAK_EDIT_SUBMIT = "offpeak-edit-submit";
+export const TID_OFFPEAK_EDIT_VIEW = "offpeak-edit-view";
+export const TID_OFFPEAK_FORM_INSTRUCTIONS = "offpeak-form-instructions";
+export const TID_OFFPEAK_FORM_TITLE = "offpeak-form-title";
+export const TID_OFFPEAK_TAB = "offpeak-tab";
+export const TID_PROJECT_PINNED_TASKS = "project-pinned-tasks";
+export const TID_REMOTE_NEW_CONNECTION_PREVIEW = "remote-new-connection-preview";
+export const TID_REMOTE_PROJECT_HOST = "remote-project-host";
+export const TID_SETTINGS_TOOL_SEARCH_OPTION = "settings-tool-search-option";
+export const TID_SETTINGS_TOOL_SEARCH_SELECT = "settings-tool-search-select";
+export const TID_SIDE_PANE_FULL_VIEW_ANSWER_BUBBLE = "side-pane-full-view-answer-bubble";
+export const TID_SIDE_PANE_FULL_VIEW_BUBBLE = "side-pane-full-view-floating-bubble";
+export const TID_SIDE_PANE_FULL_VIEW_CONVERSATION_TAB = "side-pane-full-view-conversation-tab";
+export const TID_SIDE_PANE_FULL_VIEW_DRAWER = "side-pane-full-view-floating-drawer";
+export const TID_SIDE_PANE_FULL_VIEW_EXPAND = "side-pane-full-view-floating-expand";
+export const TID_SIDE_PANE_FULL_VIEW_HANDLE = "side-pane-full-view-floating-handle";
+export const TID_SIDE_PANE_FULL_VIEW_HEADER = "side-pane-full-view-floating-header";
+export const TID_SIDE_PANE_FULL_VIEW_HOST = "side-pane-full-view-host";
+export const TID_SIDE_PANE_FULL_VIEW_MENU_MINIMIZE = "side-pane-full-view-menu-minimize";
+export const TID_SIDE_PANE_FULL_VIEW_MINIMIZE = "side-pane-full-view-floating-minimize";
+export const TID_SIDE_PANE_FULL_VIEW_RUNNING = "side-pane-full-view-floating-running";
+export const TID_SIDE_PANE_FULL_VIEW_TOGGLE = "side-pane-full-view-toggle";
+export const TID_SSH_CONFIG_ALIAS_CHIP = "remote-ssh-config-alias-chip";
+export const TID_SSH_CONFIG_IMPORT = "remote-ssh-config-import";
+export const TID_VIRTUAL_PROJECT_ACTIONS = "virtual-project-actions";
+export const TID_VIRTUAL_PROJECT_ACTION_PREFIX = "virtual-project";
+export const TID_VIRTUAL_PROJECT_ADD = "virtual-project-add";
+export const TID_VIRTUAL_PROJECT_CREATE_TASK = "virtual-project-create-task";
+export const TID_VIRTUAL_PROJECT_FILES = "virtual-project-files";
+export const TID_VIRTUAL_PROJECT_MENU = "virtual-project-menu";
+export const TID_VIRTUAL_PROJECT_NEW_TASK = "virtual-project-new-task";
+export const TID_VIRTUAL_PROJECT_ROW = "virtual-project-row";
+export const TID_VIRTUAL_PROJECT_TASKS = "virtual-project-tasks";
+export const TID_VIRTUAL_PROJECT_TOGGLE = "virtual-project-toggle";
+export const TID_VIRTUAL_PROJECT_UNREAD = "virtual-project-unread";
+
+// fork+上游 3.16 补齐缺失 test-id/helper。
+export function virtualProjectActionTestId(actionId: string, context = false): string {
+  const scoped = context && (actionId.startsWith("files-") || actionId === "create-task");
+  return `${TID_VIRTUAL_PROJECT_ACTION_PREFIX}-${scoped ? "context-" : ""}${actionId}`;
+}
+export const TID_SIDE_PANE_FULL_VIEW_ANSWER_BUBBLE_CLOSE =
+  "side-pane-full-view-answer-bubble-close";
+export const TID_SIDE_PANE_FULL_VIEW_MENU_OPEN_CONVERSATION =
+  "side-pane-full-view-menu-open-conversation";

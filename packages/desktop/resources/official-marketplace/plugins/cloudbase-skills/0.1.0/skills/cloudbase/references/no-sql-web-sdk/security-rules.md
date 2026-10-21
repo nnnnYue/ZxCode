@@ -11,6 +11,7 @@ This document covers how to configure security rules for CloudBase NoSQL databas
 **Scope note:** The detailed semantics in this document apply only to CloudBase **NoSQL database collections** with `resourceType: "noSqlDatabase"`. Examples such as `doc._openid`, `auth.openid`, query-condition subset validation, and `create` / `update` / `delete` JSON rule templates are **not** generic rules for `function`, `storage`, or `sqlDatabase` resources.
 
 **Official references:**
+
 - General security rules overview: `https://cloud.tencent.com/document/product/876/41802`
 - NoSQL database security rules: `https://docs.cloudbase.net/database/security-rules`
 - Cloud function security rules: `https://docs.cloudbase.net/cloud-function/security-rules`
@@ -23,11 +24,13 @@ This document covers how to configure security rules for CloudBase NoSQL databas
 For query or update operations, the **input query conditions must be a subset of the security rules**. The system does **not** actually fetch data from the database. Instead, it validates whether the input query conditions form a subset of the security rules. If the query conditions are not a subset of the rules, it indicates an attempt to access data without permission, and the operation will be **directly rejected**.
 
 **Example:**
+
 - If you define a read/write rule: `auth.openid == doc._openid`
 - This means the query condition's `_openid` must equal the current user's `openid` (provided by the system-assigned, non-tamperable `auth.openid`)
 - If the query condition doesn't include this constraint, it indicates an attempt to access records where `_openid` is not equal to the user's own, which will be rejected by the backend
 
 **Key Points:**
+
 - Security rules **validate** queries, they don't **filter** results
 - The system performs **rule matching** before any database access
 - Query conditions must match or be more restrictive than the security rule
@@ -42,10 +45,10 @@ CloudBase provides a multi-layered data permission management mechanism that ens
 
 CloudBase data permission management includes two levels:
 
-| Permission Type | Control Granularity | Applicable Scenarios | Configuration Complexity |
-|----------------|---------------------|----------------------|--------------------------|
-| **Basic Permission Control** | Collection level | Simple permission needs | Low |
-| **Security Rules** | Document level | Complex business logic | High |
+| Permission Type              | Control Granularity | Applicable Scenarios    | Configuration Complexity |
+| ---------------------------- | ------------------- | ----------------------- | ------------------------ |
+| **Basic Permission Control** | Collection level    | Simple permission needs | Low                      |
+| **Security Rules**           | Document level      | Complex business logic  | High                     |
 
 ### Basic Permission Control
 
@@ -54,12 +57,12 @@ Configure permissions for each collection in the [CloudBase Platform](https://tc
 
 **Permission Options:**
 
-| Permission Type | Applicable Scenarios | Usage Recommendation |
-|----------------|----------------------|----------------------|
-| **Read all data, modify own data** | Public content, such as articles, products | Suitable for content display applications |
-| **Read and modify own data** | Private data, such as user profiles | Suitable for personal information management |
-| **Read all data, cannot modify** | Configuration data, such as system settings | Suitable for read-only configuration and reference data |
-| **No permission** | Sensitive data, such as financial information | Suitable for sensitive data requiring server-side processing |
+| Permission Type                    | Applicable Scenarios                          | Usage Recommendation                                         |
+| ---------------------------------- | --------------------------------------------- | ------------------------------------------------------------ |
+| **Read all data, modify own data** | Public content, such as articles, products    | Suitable for content display applications                    |
+| **Read and modify own data**       | Private data, such as user profiles           | Suitable for personal information management                 |
+| **Read all data, cannot modify**   | Configuration data, such as system settings   | Suitable for read-only configuration and reference data      |
+| **No permission**                  | Sensitive data, such as financial information | Suitable for sensitive data requiring server-side processing |
 
 ### Security Rules (CUSTOM)
 
@@ -68,6 +71,7 @@ Configure permissions for each collection in the [CloudBase Platform](https://tc
 Security rules provide more flexible, extensible, and fine-grained permission control capabilities, supporting dynamic permission judgment based on document content.
 
 **Core Features:**
+
 - **Document-level control**: Can decide access permissions based on specific document content
 - **Expression-driven**: Uses programming-like expressions to define permission logic
 - **Dynamic permissions**: Supports dynamic permission judgment based on user identity, time, and data content
@@ -100,6 +104,7 @@ Use CUSTOM when you need fine-grained control based on document data, user ident
 **Important:** When developing applications that need permission control, you **MUST** call `managePermissions(action="updateResourcePermission")` to configure database security rules. Do not assume permissions are already configured.
 
 Compatibility note:
+
 - Canonical plugin name: `permissions`
 - Legacy plugin aliases `security-rule`, `security-rules`, `secret-rule`, `secret-rules`, and `access-control` still resolve to the `permissions` plugin
 - Legacy tools `readSecurityRule` and `writeSecurityRule` are removed; use `queryPermissions` and `managePermissions`
@@ -113,7 +118,7 @@ Compatibility note:
 await managePermissions({
   action: "updateResourcePermission",
   resourceType: "noSqlDatabase",
-  resourceId: "collectionName",  // Collection name
+  resourceId: "collectionName", // Collection name
   permission: "PRIVATE",
   // securityRule parameter not needed for simple permissions
 });
@@ -129,7 +134,7 @@ await managePermissions({
   action: "updateResourcePermission",
   resourceType: "noSqlDatabase",
   resourceId: "posts",
-  permission: "READONLY"
+  permission: "READONLY",
 });
 
 // Example 2: Private collection (only creator and admin)
@@ -137,7 +142,7 @@ await managePermissions({
   action: "updateResourcePermission",
   resourceType: "noSqlDatabase",
   resourceId: "userSettings",
-  permission: "PRIVATE"
+  permission: "PRIVATE",
 });
 
 // Example 3: Public read, admin-only write
@@ -145,7 +150,7 @@ await managePermissions({
   action: "updateResourcePermission",
   resourceType: "noSqlDatabase",
   resourceId: "announcements",
-  permission: "ADMINWRITE"
+  permission: "ADMINWRITE",
 });
 
 // Example 4: Admin-only access
@@ -153,7 +158,7 @@ await managePermissions({
   action: "updateResourcePermission",
   resourceType: "noSqlDatabase",
   resourceId: "adminLogs",
-  permission: "ADMINONLY"
+  permission: "ADMINONLY",
 });
 ```
 
@@ -162,6 +167,7 @@ await managePermissions({
 ### When to Use CUSTOM
 
 Use CUSTOM rules when you need:
+
 - User-specific data access (e.g., users can only read/write their own documents)
 - Complex conditions based on document fields
 - Time-based access control
@@ -183,17 +189,18 @@ Custom security rules use JSON structure with operation types as keys and condit
 
 **Operation Types:**
 
-| Operation Type | Description | Default Value | Example Scenarios |
-|----------------|-------------|---------------|-------------------|
-| **read** | Read documents | `false` | Query, get documents |
-| **write** | Write documents (general) | `false` | Default rule when specific write operations are not specified |
-| **create** | Create documents | Inherits `write` | Add new data |
-| **update** | Update documents | Inherits `write` | Modify existing data |
-| **delete** | Delete documents | Inherits `write` | Delete data |
+| Operation Type | Description               | Default Value    | Example Scenarios                                             |
+| -------------- | ------------------------- | ---------------- | ------------------------------------------------------------- |
+| **read**       | Read documents            | `false`          | Query, get documents                                          |
+| **write**      | Write documents (general) | `false`          | Default rule when specific write operations are not specified |
+| **create**     | Create documents          | Inherits `write` | Add new data                                                  |
+| **update**     | Update documents          | Inherits `write` | Modify existing data                                          |
+| **delete**     | Delete documents          | Inherits `write` | Delete data                                                   |
 
 > 💡 Note: If specific write operation rules (create/update/delete) are not specified, the `write` rule will be automatically used.
 
 **Condition Values:**
+
 - `true` or `false`: Simple boolean permission
 - Expression string: JavaScript-like expression that evaluates to true/false
 
@@ -201,22 +208,23 @@ Custom security rules use JSON structure with operation types as keys and condit
 
 Custom rules can use these predefined variables:
 
-| Variable | Type | Description | Example |
-|----------|------|-------------|---------|
-| `auth` | Object | User authentication info (null if not logged in) | `auth.openid`, `auth.uid` |
-| `doc` | Object | Document data or query conditions | `doc.userId`, `doc.status` |
-| `request` | Object | Request information | `request.data` |
-| `now` | Number | Current timestamp in milliseconds | `now > doc.expireTime` |
+| Variable  | Type   | Description                                      | Example                    |
+| --------- | ------ | ------------------------------------------------ | -------------------------- |
+| `auth`    | Object | User authentication info (null if not logged in) | `auth.openid`, `auth.uid`  |
+| `doc`     | Object | Document data or query conditions                | `doc.userId`, `doc.status` |
+| `request` | Object | Request information                              | `request.data`             |
+| `now`     | Number | Current timestamp in milliseconds                | `now > doc.expireTime`     |
 
 **User Identity Information (auth):**
 
-| Field | Type | Description | Applicable Scenarios |
-|-------|------|-------------|---------------------|
-| **openid** | String | WeChat user OpenID | WeChat Mini Program login |
-| **uid** | String | User unique ID | Web login |
-| **loginType** | String | Login method | Distinguish different login channels |
+| Field         | Type   | Description        | Applicable Scenarios                 |
+| ------------- | ------ | ------------------ | ------------------------------------ |
+| **openid**    | String | WeChat user OpenID | WeChat Mini Program login            |
+| **uid**       | String | User unique ID     | Web login                            |
+| **loginType** | String | Login method       | Distinguish different login channels |
 
 **LoginType Values:**
+
 - `WECHAT_PUBLIC`: WeChat Official Account
 - `WECHAT_OPEN`: WeChat Open Platform
 - `ANONYMOUS`: Anonymous login (disabled by default for new environments)
@@ -224,9 +232,11 @@ Custom rules can use these predefined variables:
 - `CUSTOM`: Custom login
 
 **Request Object:**
+
 - `request.data`: Data object passed in the request (only available for create/update operations)
 
 **Doc Object:**
+
 - Contains all fields of the current document being accessed
 - For queries, `doc` represents the query conditions
 
@@ -240,6 +250,7 @@ The `_openid` field is **automatically managed by the CloudBase SDK** and should
 - **Security Rules Usage**: In security rules, you can reference `doc._openid` to check the document's owner, but you cannot modify it through write operations
 
 **Example:**
+
 ```javascript
 // Correct: Do not include _openid in write operations
 await db.collection('todos').add({
@@ -272,9 +283,9 @@ await managePermissions({
   resourceId: "userTodos",
   permission: "CUSTOM",
   securityRule: JSON.stringify({
-    "read": "auth.uid == doc.user_id",
-    "write": "auth.uid == doc.user_id"
-  })
+    read: "auth.uid == doc.user_id",
+    write: "auth.uid == doc.user_id",
+  }),
 });
 ```
 
@@ -287,11 +298,11 @@ await managePermissions({
   resourceId: "publicPosts",
   permission: "CUSTOM",
   securityRule: JSON.stringify({
-    "read": true,
-    "create": "auth != null",
-    "update": "auth.uid == doc.author_id",
-    "delete": "auth.uid == doc.author_id"
-  })
+    read: true,
+    create: "auth != null",
+    update: "auth.uid == doc.author_id",
+    delete: "auth.uid == doc.author_id",
+  }),
 });
 ```
 
@@ -306,23 +317,24 @@ await managePermissions({
   resourceId: "publicPosts",
   permission: "CUSTOM",
   securityRule: JSON.stringify({
-    "read": true,
-    "create": "auth != null",
-    "update": "doc.author_id == auth.uid",
-    "delete": "doc.author_id == auth.uid"
-  })
+    read: true,
+    create: "auth != null",
+    update: "doc.author_id == auth.uid",
+    delete: "doc.author_id == auth.uid",
+  }),
 });
 ```
 
 And update through an explicit owner subset:
 
 ```javascript
-await db.collection('publicPosts')
+await db
+  .collection("publicPosts")
   .where({
     _id: postId,
-    author_id: '{openid}'
+    author_id: "{openid}",
   })
-  .update({ title: 'Updated Title' });
+  .update({ title: "Updated Title" });
 ```
 
 **Example 3: Prevent price modification on update**
@@ -334,11 +346,12 @@ await managePermissions({
   resourceId: "orders",
   permission: "CUSTOM",
   securityRule: JSON.stringify({
-    "read": "auth.uid == doc.user_id",
-    "create": "auth != null",
-    "update": "auth.uid == doc.user_id && (doc.price == request.data.price || request.data.price == undefined)",
-    "delete": false
-  })
+    read: "auth.uid == doc.user_id",
+    create: "auth != null",
+    update:
+      "auth.uid == doc.user_id && (doc.price == request.data.price || request.data.price == undefined)",
+    delete: false,
+  }),
 });
 ```
 
@@ -351,10 +364,10 @@ await managePermissions({
   resourceId: "userData",
   permission: "CUSTOM",
   securityRule: JSON.stringify({
-    "read": "auth.uid == doc.user_id",
-    "write": "auth.uid == doc.user_id",
-    "delete": false  // Only admin can delete (admin bypasses rules)
-  })
+    read: "auth.uid == doc.user_id",
+    write: "auth.uid == doc.user_id",
+    delete: false, // Only admin can delete (admin bypasses rules)
+  }),
 });
 ```
 
@@ -366,20 +379,20 @@ Custom rules support JavaScript-like expressions:
 
 **Supported Operators:**
 
-| Operator | Description | Example | Example Explanation (Collection Query) |
-|----------|-------------|---------|----------------------------------------|
-| **==** | Equal to | `auth.uid == 'zzz'` | User's uid is zzz |
-| **!=** | Not equal to | `auth.uid != 'zzz'` | User's uid is not zzz |
-| **>** | Greater than | `doc.age > 10` | Query condition's age property is greater than 10 |
-| **>=** | Greater than or equal | `doc.age >= 10` | Query condition's age property is greater than or equal to 10 |
-| **<** | Less than | `doc.age < 10` | Query condition's age property is less than 10 |
-| **<=** | Less than or equal | `doc.age <= 10` | Query condition's age property is less than or equal to 10 |
-| **in** | Exists in collection | `auth.uid in ['zzz','aaa']` | User's uid is one of ['zzz','aaa'] |
-| **!(xx in [])** | Does not exist in collection | `!(auth.uid in ['zzz','aaa'])` | User's uid is not any of ['zzz','aaa'] |
-| **&&** | Logical AND | `auth.uid == 'zzz' && doc.age > 10` | User's uid is zzz AND query condition's age property is greater than 10 |
-| **\|\|** | Logical OR | `auth.uid == 'zzz' \|\| doc.age > 10` | User's uid is zzz OR query condition's age property is greater than 10 |
-| **.** | Object element access | `auth.uid` | User's uid |
-| **[]** | Array access operator | `get('database.collection_a.user')[auth.uid] == 'zzz'` | In collection_a, document with id 'user', key is user uid, property value is zzz |
+| Operator        | Description                  | Example                                                | Example Explanation (Collection Query)                                           |
+| --------------- | ---------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| **==**          | Equal to                     | `auth.uid == 'zzz'`                                    | User's uid is zzz                                                                |
+| **!=**          | Not equal to                 | `auth.uid != 'zzz'`                                    | User's uid is not zzz                                                            |
+| **>**           | Greater than                 | `doc.age > 10`                                         | Query condition's age property is greater than 10                                |
+| **>=**          | Greater than or equal        | `doc.age >= 10`                                        | Query condition's age property is greater than or equal to 10                    |
+| **<**           | Less than                    | `doc.age < 10`                                         | Query condition's age property is less than 10                                   |
+| **<=**          | Less than or equal           | `doc.age <= 10`                                        | Query condition's age property is less than or equal to 10                       |
+| **in**          | Exists in collection         | `auth.uid in ['zzz','aaa']`                            | User's uid is one of ['zzz','aaa']                                               |
+| **!(xx in [])** | Does not exist in collection | `!(auth.uid in ['zzz','aaa'])`                         | User's uid is not any of ['zzz','aaa']                                           |
+| **&&**          | Logical AND                  | `auth.uid == 'zzz' && doc.age > 10`                    | User's uid is zzz AND query condition's age property is greater than 10          |
+| **\|\|**        | Logical OR                   | `auth.uid == 'zzz' \|\| doc.age > 10`                  | User's uid is zzz OR query condition's age property is greater than 10           |
+| **.**           | Object element access        | `auth.uid`                                             | User's uid                                                                       |
+| **[]**          | Array access operator        | `get('database.collection_a.user')[auth.uid] == 'zzz'` | In collection_a, document with id 'user', key is user uid, property value is zzz |
 
 ### Supported Database Commands
 
@@ -387,47 +400,48 @@ Security rules support the following database commands:
 
 **Logic Commands:**
 
-| Command | Description |
-|---------|-------------|
-| `or` | `\|\|` Logical OR |
-| `and` | `&&` Logical AND |
+| Command | Description       |
+| ------- | ----------------- |
+| `or`    | `\|\|` Logical OR |
+| `and`   | `&&` Logical AND  |
 
 **Query Commands:**
 
-| Command | Description |
-|---------|-------------|
-| `eq` | `==` |
-| `ne` / `neq` | `!=` |
-| `gt` | `>` |
-| `gte` | `>=` |
-| `lt` | `<` |
-| `lte` | `<=` |
-| `in` | `in` |
-| `nin` | `!(in [])` |
+| Command      | Description |
+| ------------ | ----------- |
+| `eq`         | `==`        |
+| `ne` / `neq` | `!=`        |
+| `gt`         | `>`         |
+| `gte`        | `>=`        |
+| `lt`         | `<`         |
+| `lte`        | `<=`        |
+| `in`         | `in`        |
+| `nin`        | `!(in [])`  |
 
 **Update Commands:**
 
-| Command | Description |
-|---------|-------------|
-| `set` | Overwrite write, `{key: set(object)}` |
-| `remove` | Delete field, `{key: remove()}` |
+| Command  | Description                           |
+| -------- | ------------------------------------- |
+| `set`    | Overwrite write, `{key: set(object)}` |
+| `remove` | Delete field, `{key: remove()}`       |
 
 **Example Expressions:**
+
 ```javascript
 // User ID matches document owner
-"auth.uid == doc.user_id"
+"auth.uid == doc.user_id";
 
 // User is authenticated
-"auth != null"
+"auth != null";
 
 // User ID in allowed list
-"auth.uid in ['admin1', 'admin2']"
+"auth.uid in ['admin1', 'admin2']";
 
 // Complex condition
-"auth.uid == doc.user_id && doc.status == 'active'"
+"auth.uid == doc.user_id && doc.status == 'active'";
 
 // Price not modified or undefined
-"doc.price == request.data.price || request.data.price == undefined"
+"doc.price == request.data.price || request.data.price == undefined";
 ```
 
 ### Built-in Functions
@@ -443,6 +457,7 @@ The `get()` function allows accessing other document data during permission veri
 **Usage Examples:**
 
 **Role-based Permission Control:**
+
 ```json
 {
   "read": "get('database.user_roles.' + auth.uid).role in ['admin', 'editor']",
@@ -483,6 +498,7 @@ Security rules are expression strings, so use concatenation:
 ```
 
 **Admin-or-owner control:**
+
 ```json
 {
   "update": "get('database.users.' + auth.uid).role == 'admin' || doc.authorId == auth.uid",
@@ -504,6 +520,7 @@ If this collection only needs simple owner-only writes, `READONLY` may be enough
 For that CMS pattern, `.doc(id).update()` / `.doc(id).remove()` is a validated path, as long as article documents really store `authorId` and `user_roles` documents are keyed by `uid`.
 
 **Associated Data Permissions:**
+
 ```json
 {
   "read": "auth.uid == get('database.projects.' + doc.projectId).owner"
@@ -513,6 +530,7 @@ For that CMS pattern, `.doc(id).update()` / `.doc(id).remove()` is a validated p
 **Usage Limitations:**
 
 > **Important:** When using the `get()` function, note the following limitations:
+
 - **Variable restrictions in get parameters**: Variables `doc` that exist in get parameters must appear in query conditions in `==` or `in` format. If using `in` format, only `in` with a single value is allowed, i.e., `doc.shopId in array, array.length == 1`
 - Maximum 3 `get` functions per expression
 - Maximum access to 10 different documents
@@ -522,6 +540,7 @@ For that CMS pattern, `.doc(id).update()` / `.doc(id).remove()` is a validated p
 **Billing Notes:**
 
 > **Important:** Security rules themselves are not charged, but additional data access by security rules will be counted in billing:
+
 - **get() function**: Each `get()` produces additional data access
 - **Document ID queries for all write operations**: All write operations for document ID queries produce one data access
 - **Variable usage**: When not using variables, each `get()` produces one read operation. When using variables, each `get()` produces one read operation for each variable value. For example: rule `get(\`database.collection.${doc._id}\`).test`, when querying `_.or([{_id:1},{_id:2},{_id:3},{_id:4},{_id:5}])` will produce 5 reads. The system will cache reads for the same doc and field.
@@ -554,12 +573,13 @@ For that CMS pattern, `.doc(id).update()` / `.doc(id).remove()` is a validated p
 
 **CRITICAL ERROR: Using ADMINWRITE with Frontend SDK**
 
-| Error Scenario | Symptoms | Root Cause | Correct Approach |
-|---------------|----------|------------|------------------|
+| Error Scenario                                | Symptoms                                                           | Root Cause                                                                                           | Correct Approach                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Using `ADMINWRITE` for cart/order collections | `.add()` or `.update()` fails<br>Keeps loading or permission error | "ADMIN" in `ADMINWRITE` refers to cloud function environment<br>Frontend SDK has no admin privileges | Use `CUSTOM` rules<br>`{"read": "auth.uid != null", "write": "auth.uid != null"}` |
-| Using `PRIVATE` for product collections | Product list disappears after login | `PRIVATE` only allows creator and admin to read<br>Regular users have no permission | Use `READONLY`<br>All users can read, creator and admin can write |
+| Using `PRIVATE` for product collections       | Product list disappears after login                                | `PRIVATE` only allows creator and admin to read<br>Regular users have no permission                  | Use `READONLY`<br>All users can read, creator and admin can write                 |
 
 **Key Understanding**:
+
 - `ADMINWRITE` = Cloud functions have write access, Frontend SDK **can only read**
 - `CUSTOM` = Configurable read/write permissions for Frontend SDK
 - `READONLY` = All users (including anonymous) can read, creator and admin can write. Note: although `READONLY` permits anonymous reads at the ACL level, anonymous login is disabled by default for new environments — callers still need an active login method to obtain a session.
@@ -595,6 +615,7 @@ In actual use, queries are mainly divided into two types: **document ID queries*
 For query or update operations, the input query conditions **must be a subset** of the security rules. The system does **not** actually fetch data from the database. Instead, it validates whether the input query conditions form a subset of the security rules. If the query conditions are not a subset of the rules, it indicates an attempt to access data without permission, and the operation will be **directly rejected**.
 
 **Key Points:**
+
 - Security rules **validate** queries, they don't **filter** results
 - Query conditions must match or be more restrictive than the security rule
 - Missing required conditions in queries will result in permission denied errors
@@ -611,6 +632,7 @@ For query or update operations, the input query conditions **must be a subset** 
 **Operation Types Affected:**
 
 The following operation types are subject to rule matching validation:
+
 - **read**: Query conditions must be a subset of the read rule
 - **write**: Query conditions must be a subset of the write rule (general write operations)
 - **update**: Query conditions must be a subset of the update rule (or write rule if update is not specified)
@@ -706,6 +728,7 @@ In query conditions, if the key is `_openid` and the value is `{openid}`, or if 
 Since `doc()` operations (doc.get, doc.set, etc.) only specify `_id`, their query conditions only include `{_id: "xxx"}`, which in most cases will not satisfy the subset requirement of security rules (unless reading under `"read": true` or writing under `"write": true`). Therefore, they need to be converted to equivalent forms where query conditions include security rules or their subsets.
 
 **Operation Types Affected:**
+
 - **read, update, delete**: If security rules contain `doc` restrictions, the system will first read the document data from the database once, then judge whether it complies with security rules.
 - **create**: Will validate whether the written data complies with security rule restrictions.
 - **update**: Only validates existing document data in the database, does not validate written data; does not guarantee atomicity of this operation.
@@ -726,7 +749,7 @@ let queryRes = db.collection('collection_a').doc('ccc').get()
 // Complies with security rules (rewritten as where query)
 let queryRes = db.collection('collection_a')
     .where({
-        _id: "ccc", 
+        _id: "ccc",
         _openid: "{openid}"  // Template variable automatically replaced
     })
     .get()
@@ -755,6 +778,7 @@ db.collection('posts')
 **All users can read, only creator and admin can write:**
 
 For WeChat login:
+
 ```json
 {
   "read": true,
@@ -763,6 +787,7 @@ For WeChat login:
 ```
 
 For non-WeChat login (Web):
+
 ```json
 {
   "read": true,
@@ -773,6 +798,7 @@ For non-WeChat login (Web):
 **Only creator and admin can read/write:**
 
 For WeChat login:
+
 ```json
 {
   "read": "doc._openid == auth.openid",
@@ -781,6 +807,7 @@ For WeChat login:
 ```
 
 For non-WeChat login (Web):
+
 ```json
 {
   "read": "doc._openid == auth.uid",
@@ -789,6 +816,7 @@ For non-WeChat login (Web):
 ```
 
 **All users can read, only admin can write:**
+
 ```json
 {
   "read": true,
@@ -797,6 +825,7 @@ For non-WeChat login (Web):
 ```
 
 **Only admin can read/write:**
+
 ```json
 {
   "read": false,
@@ -805,6 +834,7 @@ For non-WeChat login (Web):
 ```
 
 ### Pattern 2: Public Read, Authenticated Write
+
 ```json
 {
   "read": true,
@@ -813,6 +843,7 @@ For non-WeChat login (Web):
 ```
 
 ### Pattern 3: Public Read, Owner Write
+
 ```json
 {
   "read": true,
@@ -823,6 +854,7 @@ For non-WeChat login (Web):
 ```
 
 ### Pattern 4: Immutable After Creation
+
 ```json
 {
   "read": true,
@@ -835,6 +867,7 @@ For non-WeChat login (Web):
 ### Pattern 5: Complex Business Logic
 
 **Article Publishing System:**
+
 ```json
 {
   "read": "doc.published == true || doc.author == auth.uid",
@@ -845,6 +878,7 @@ For non-WeChat login (Web):
 ```
 
 **Collaborative Document System:**
+
 ```json
 {
   "read": "auth.uid in doc.readers || auth.uid in doc.editors || doc.owner == auth.uid",
@@ -855,6 +889,7 @@ For non-WeChat login (Web):
 ### Pattern 6: Time-Based Control
 
 **Time-Limited Activity Data:**
+
 ```json
 {
   "read": "now >= doc.startTime && now <= doc.endTime",
@@ -863,6 +898,7 @@ For non-WeChat login (Web):
 ```
 
 ### Pattern 7: Data Owner Pattern
+
 ```json
 {
   "read": "doc._openid == auth.openid",
@@ -882,6 +918,7 @@ For non-WeChat login (Web):
   - if `result.code` or `result.message` exists, especially `DATABASE_PERMISSION_DENIED`, treat it as a real backend rejection
 
 ### Pattern 8: Status-Based Permissions
+
 ```json
 {
   "read": "doc.status == 'published' || doc.author == auth.uid",
@@ -895,10 +932,10 @@ When database operations fail due to permissions:
 
 ```javascript
 try {
-  const result = await db.collection('protected').get();
+  const result = await db.collection("protected").get();
 } catch (error) {
-  if (error.code === 'PERMISSION_DENIED') {
-    console.error('Permission denied: User does not have access');
+  if (error.code === "PERMISSION_DENIED") {
+    console.error("Permission denied: User does not have access");
     // Handle permission error
   }
 }
@@ -911,6 +948,7 @@ You can use CloudBase data models and custom security rules to implement role-ba
 ### Example: Collaborative Writing Application
 
 **Business Requirements:**
+
 - Each story has one owner; stories can be shared with writers
 - Writers have all access permissions that commenters have, plus can edit story content
 - Owners can edit any part of the story and control other users' access permissions
@@ -920,6 +958,7 @@ You can use CloudBase data models and custom security rules to implement role-ba
 
 **stories Collection:**
 Each story document:
+
 ```json
 {
   "id": "storyid",
@@ -930,6 +969,7 @@ Each story document:
 
 **roles Collection:**
 Each role document tracks user roles for a story:
+
 ```json
 {
   "id": "storyid",
@@ -944,6 +984,7 @@ Each role document tracks user roles for a story:
 
 **comments Collection:**
 Each comment document:
+
 ```json
 {
   "id": "commentId",
@@ -957,6 +998,7 @@ Each comment document:
 
 **roles Collection Rules:**
 Owners can change roles, allow story writers to read roles:
+
 ```json
 {
   "write": "doc.roles[auth.uid] === 'owner'",
@@ -966,6 +1008,7 @@ Owners can change roles, allow story writers to read roles:
 
 **stories Collection Rules:**
 Owners and story writers can change stories, others can read stories:
+
 ```json
 {
   "read": true,
@@ -975,6 +1018,7 @@ Owners and story writers can change stories, others can read stories:
 
 **comments Collection Rules:**
 Allow everyone to post comments. Only comment owners can update and delete comments:
+
 ```json
 {
   "read": true,
@@ -995,12 +1039,12 @@ Allow everyone to post comments. Only comment owners can update and delete comme
 
 ### Choose Based on Business Complexity
 
-| Business Scenario | Recommended Solution | Reason |
-|------------------|---------------------|--------|
-| Simple application | Basic permission control | Simple configuration, meets basic needs |
-| Complex business logic | Security rules | Flexible expressions, supports complex judgment |
-| Enterprise application | Role permissions + Basic permissions | Organization support, clear permission hierarchy |
-| High security requirements | Security rules + Role permissions | Multi-layer protection, fine-grained control |
+| Business Scenario          | Recommended Solution                 | Reason                                           |
+| -------------------------- | ------------------------------------ | ------------------------------------------------ |
+| Simple application         | Basic permission control             | Simple configuration, meets basic needs          |
+| Complex business logic     | Security rules                       | Flexible expressions, supports complex judgment  |
+| Enterprise application     | Role permissions + Basic permissions | Organization support, clear permission hierarchy |
+| High security requirements | Security rules + Role permissions    | Multi-layer protection, fine-grained control     |
 
 ### Permission Configuration Recommendations
 

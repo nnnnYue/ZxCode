@@ -73,11 +73,11 @@ tcb db execute -e <envId> --sql "UPDATE users SET status = 'inactive' WHERE id =
 
 ### `tcb db execute` options
 
-| Option | Description |
-|--------|-------------|
-| `-s, --sql <sql>` | Required — the SQL statement |
-| `--read-only` | Run in read-only mode |
-| `--json` | Rows for SELECT; affected-row info for mutations |
+| Option            | Description                                      |
+| ----------------- | ------------------------------------------------ |
+| `-s, --sql <sql>` | Required — the SQL statement                     |
+| `--read-only`     | Run in read-only mode                            |
+| `--json`          | Rows for SELECT; affected-row info for mutations |
 
 ---
 
@@ -114,6 +114,7 @@ tcb db instance restart -e <envId> --instance-id <instanceId>
 ```
 
 ⚠️ Restart causes **service interruption**. Only use when:
+
 - Instance is unresponsive
 - Configuration changes require restart
 - User explicitly confirms after understanding impact
@@ -152,10 +153,10 @@ tcb db backup restore -e <envId> --strategy snapRollback --backup-id <backupId>
 tcb db backup restore -e <envId> --strategy timeRollback --expect-time "2024-03-15 14:00:00"
 ```
 
-| Strategy | Required flag | Use case |
-|----------|--------------|----------|
-| `snapRollback` | `--backup-id` | Restore from a known backup artifact |
-| `timeRollback` | `--expect-time` | Roll back to a verified timestamp |
+| Strategy       | Required flag   | Use case                             |
+| -------------- | --------------- | ------------------------------------ |
+| `snapRollback` | `--backup-id`   | Restore from a known backup artifact |
+| `timeRollback` | `--expect-time` | Roll back to a verified timestamp    |
 
 ⚠️ Restore is a **cluster-level** operation. Confirm scope and impact with the user.
 
@@ -194,16 +195,16 @@ tcb db monitor slow-query -e <envId> --instance-id <instanceId> \
 
 ### `monitor slow-query` options
 
-| Option | Description |
-|--------|-------------|
-| `--instance-id` | Required in `--json` mode |
-| `--start`, `--end` | Time range filter |
-| `--threshold` | Local filter in seconds |
-| `--order-by` | `QueryTime`, `LockTime`, `RowsExamined`, or `RowsSent` |
-| `--order-by-type` | `asc` or `desc` |
-| `--database` | Filter by database name |
-| `--username` | Filter by user |
-| `--limit`, `--offset` | Pagination |
+| Option                | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `--instance-id`       | Required in `--json` mode                              |
+| `--start`, `--end`    | Time range filter                                      |
+| `--threshold`         | Local filter in seconds                                |
+| `--order-by`          | `QueryTime`, `LockTime`, `RowsExamined`, or `RowsSent` |
+| `--order-by-type`     | `asc` or `desc`                                        |
+| `--database`          | Filter by database name                                |
+| `--username`          | Filter by user                                         |
+| `--limit`, `--offset` | Pagination                                             |
 
 **Analysis strategy:** Sort by `QueryTime` first → pivot to `RowsExamined` to find inefficient scans → filter by `--database` or `--username` for shared workloads.
 
@@ -251,16 +252,16 @@ tcb db backup drop -e <envId> --backup-id <backupId> --yes
 
 ## Common Errors
 
-| Error / Symptom | Cause | Fix |
-|-----------------|-------|-----|
-| Missing instance in `--json` mode | `--instance-id` omitted | Add `--instance-id <id>` explicitly |
-| `config set` fails silently in JSON mode | Missing `--yes` | Add `--yes` to skip suppressed prompt |
-| `--sql` missing | No SQL statement provided | Add `--sql "..."` |
-| Backup restore validation error | Strategy/flag mismatch | `snapRollback` → `--backup-id`; `timeRollback` → `--expect-time` |
-| `--cpu`/`--memory` missing | Incomplete resize | Both `--cpu` and `--memory` are required |
-| `UPDATE`/`DELETE` affects all rows | Missing `WHERE` clause | Always add a `WHERE` condition |
-| No rows returned for mutation | Expected result set from INSERT/UPDATE | Mutations return affected-row info, not rows |
-| Timeout on large queries | Query scans too many rows | Add indexes, use `LIMIT`, or narrow the `WHERE` clause |
+| Error / Symptom                          | Cause                                  | Fix                                                              |
+| ---------------------------------------- | -------------------------------------- | ---------------------------------------------------------------- |
+| Missing instance in `--json` mode        | `--instance-id` omitted                | Add `--instance-id <id>` explicitly                              |
+| `config set` fails silently in JSON mode | Missing `--yes`                        | Add `--yes` to skip suppressed prompt                            |
+| `--sql` missing                          | No SQL statement provided              | Add `--sql "..."`                                                |
+| Backup restore validation error          | Strategy/flag mismatch                 | `snapRollback` → `--backup-id`; `timeRollback` → `--expect-time` |
+| `--cpu`/`--memory` missing               | Incomplete resize                      | Both `--cpu` and `--memory` are required                         |
+| `UPDATE`/`DELETE` affects all rows       | Missing `WHERE` clause                 | Always add a `WHERE` condition                                   |
+| No rows returned for mutation            | Expected result set from INSERT/UPDATE | Mutations return affected-row info, not rows                     |
+| Timeout on large queries                 | Query scans too many rows              | Add indexes, use `LIMIT`, or narrow the `WHERE` clause           |
 
 ---
 

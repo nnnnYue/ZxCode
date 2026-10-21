@@ -42,6 +42,7 @@ When your IDE does not support native MCP, use **mcporter** as the CLI.
 **Step 1 — Check**: `npx mcporter list | grep cloudbase`
 
 **Step 2 — Configure** (if not found): create `config/mcporter.json` in the project root:
+
 ```json
 {
   "mcpServers": {
@@ -100,6 +101,7 @@ Query available plans, create environments, change plans, and renew:
   `npx mcporter call cloudbase.manageEnv action=listPackages --output json`
 
 - **Create a new environment**:
+
   ```
   npx mcporter call cloudbase.manageEnv action=create alias=my-env packageId=baas_personal resources='["flexdb","storage","function","postgresql"]' duration=1 confirm=yes --output json
   ```

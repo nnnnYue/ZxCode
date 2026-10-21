@@ -16,10 +16,10 @@ Upstream Skills are optional. Confirm the desired subset and target directory be
 
 ## Skills
 
-| Skill | Entry | Purpose |
-| --- | --- | --- |
+| Skill   | Entry             | Purpose                                                                    |
+| ------- | ----------------- | -------------------------------------------------------------------------- |
 | `setup` | `/lark-cli:setup` | Check/install the latest `lark-cli`, configure the app, and complete OAuth |
-| `cli` | Context-triggered | Use CLI capabilities for docs, sheets, Base, calendar, and messaging |
+| `cli`   | Context-triggered | Use CLI capabilities for docs, sheets, Base, calendar, and messaging       |
 
 ## Safety boundary
 

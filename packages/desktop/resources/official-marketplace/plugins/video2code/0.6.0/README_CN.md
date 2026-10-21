@@ -16,6 +16,7 @@
    ```
 
    `/video2code:env-check --fix` 会额外把体检脚本能安全处理的项装上（pip 包、`node_modules` 预热）。它不会擅自安装 `ffmpeg`、Node.js 这类系统软件——那些只会打印安装命令，由你自己执行。
+
 3. 从本地录屏复刻：
 
    ```text
@@ -27,27 +28,28 @@
    ```text
    /video2code:replicate https://example.com
    ```
+
 4. 检查 `out/` 下的三件套：`plan.md`（复刻契约）、`verify.jsonl`（逐项验证证据）、`report.md`（最终报告）。构建出的应用在 `app/`，录像在 `recordings/`。
 
 ## 命令
 
-| 命令 | 作用 |
-| --- | --- |
-| `/video2code:env-check [--fix]` | 环境体检：Python 视频包、`ffmpeg`/`ffprobe`、Node/npm、npm registry 连通性、webapp 模板缓存。 |
-| `/video2code:record <url> [输出名]` | 用内置 WebView 把网站动效录成 WebM，再转码成 `recordings/<name>.mp4`。 |
-| `/video2code:replicate <视频或URL> [catalog.json]` | 前端复刻：观察 → 切片 → 计划 → 构建 → 给自己的成果录像对照验证。 |
-| `/video2code:replicate-fullstack <视频或URL> [catalog.json]` | 全栈复刻：在上面流程之上加一个 Express/SQLite 后端，用录像和 `curl` 双叉验证。 |
+| 命令                                                         | 作用                                                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `/video2code:env-check [--fix]`                              | 环境体检：Python 视频包、`ffmpeg`/`ffprobe`、Node/npm、npm registry 连通性、webapp 模板缓存。 |
+| `/video2code:record <url> [输出名]`                          | 用内置 WebView 把网站动效录成 WebM，再转码成 `recordings/<name>.mp4`。                        |
+| `/video2code:replicate <视频或URL> [catalog.json]`           | 前端复刻：观察 → 切片 → 计划 → 构建 → 给自己的成果录像对照验证。                              |
+| `/video2code:replicate-fullstack <视频或URL> [catalog.json]` | 全栈复刻：在上面流程之上加一个 Express/SQLite 后端，用录像和 `curl` 双叉验证。                |
 
 ## Skills
 
-| Skill | 职责 |
-| --- | --- |
-| `env-setup` | 环境体检与安装的唯一入口。 |
-| `url2video` | URL → WebM（内置 WebView）→ MP4（`ffmpeg`），含踩点、编排、审片闭环。 |
-| `video2code` | 基础复刻工作流：布局、视觉风格、交互、动画。 |
-| `video2code-3d` | 面向 WebGL/three.js 页面的叠加扩展：效果配方库、无 GPU 软渲染预算、3D 专属验证规则。 |
-| `video2fullstack` | 把操作录屏复刻成前后端俱全的可运行项目。 |
-| `web-replicate` | 脚手架 React + TypeScript + Vite + Tailwind v4 + shadcn/ui 项目。 |
+| Skill             | 职责                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `env-setup`       | 环境体检与安装的唯一入口。                                                           |
+| `url2video`       | URL → WebM（内置 WebView）→ MP4（`ffmpeg`），含踩点、编排、审片闭环。                |
+| `video2code`      | 基础复刻工作流：布局、视觉风格、交互、动画。                                         |
+| `video2code-3d`   | 面向 WebGL/three.js 页面的叠加扩展：效果配方库、无 GPU 软渲染预算、3D 专属验证规则。 |
+| `video2fullstack` | 把操作录屏复刻成前后端俱全的可运行项目。                                             |
+| `web-replicate`   | 脚手架 React + TypeScript + Vite + Tailwind v4 + shadcn/ui 项目。                    |
 
 `video2code` 与 `web-replicate` 设计为成对加载。只有在参考页面确认是真 WebGL 场景时，才把 `video2code-3d` 作为第三个 skill 加载。
 
@@ -71,13 +73,13 @@
 
 四个都是 `command` 类型，用 `python3` 执行 [`hooks/`](./hooks) 下的脚本。
 
-| 事件 | 脚本 | 行为 |
-| --- | --- | --- |
-| `SessionStart`（`startup\|clear\|compact`） | `env_check.py` | 把插件根路径和缺失依赖清单输出进会话上下文，并在后台预热 webapp 模板。**从不阻塞。** |
-| `UserPromptSubmit` | `check_video_input.py` | prompt 里出现本地视频路径时注入摄入引导。只做检测和廉价探测，不抽帧。仅提示。 |
-| `UserPromptSubmit` | `check_url_input.py` | prompt 里同时出现网站 URL **和**任务词（复刻/录制/replicate/record…）时注入 `url2video` 引导。仅提示；本地视频路径与 URL 并存时不注入。 |
-| `PreToolUse`（`Write\|Edit`） | `check_plan_first.py` | `out/plan.md` 不存在时**拦住**对 `app/src/` 的写入，保证组件代码不会先于契约落地。其余写入一律放行；同规则连拦 3 次后自动放行。 |
-| `Stop` | `check_closeout.py` | 复刻契约未闭环时**拦住**收尾，规则复用 `skills/video2code/scripts/contract_audit.py`，避免两份实现漂移。`out/plan.md` 不存在或 `V2C_NO_CLOSEOUT_HOOK=1` 时整体跳过。 |
+| 事件                                        | 脚本                   | 行为                                                                                                                                                                 |
+| ------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SessionStart`（`startup\|clear\|compact`） | `env_check.py`         | 把插件根路径和缺失依赖清单输出进会话上下文，并在后台预热 webapp 模板。**从不阻塞。**                                                                                 |
+| `UserPromptSubmit`                          | `check_video_input.py` | prompt 里出现本地视频路径时注入摄入引导。只做检测和廉价探测，不抽帧。仅提示。                                                                                        |
+| `UserPromptSubmit`                          | `check_url_input.py`   | prompt 里同时出现网站 URL **和**任务词（复刻/录制/replicate/record…）时注入 `url2video` 引导。仅提示；本地视频路径与 URL 并存时不注入。                              |
+| `PreToolUse`（`Write\|Edit`）               | `check_plan_first.py`  | `out/plan.md` 不存在时**拦住**对 `app/src/` 的写入，保证组件代码不会先于契约落地。其余写入一律放行；同规则连拦 3 次后自动放行。                                      |
+| `Stop`                                      | `check_closeout.py`    | 复刻契约未闭环时**拦住**收尾，规则复用 `skills/video2code/scripts/contract_audit.py`，避免两份实现漂移。`out/plan.md` 不存在或 `V2C_NO_CLOSEOUT_HOOK=1` 时整体跳过。 |
 
 ## 环境要求
 
@@ -106,10 +108,10 @@ python3 skills/env-setup/scripts/env_doctor.py --fix
 
 ## 用户配置
 
-| 配置项 | 默认值 | 作用 |
-| --- | --- | --- |
+| 配置项             | 默认值   | 作用                                                                                                     |
+| ------------------ | -------- | -------------------------------------------------------------------------------------------------------- |
 | `media_resolution` | `medium` | `clip_video` 内联给模型的每帧分辨率档位：`low`（约 70 token/帧）、`medium`（约 256）、`high`（约 786）。 |
-| `clip_max_frames` | `400` | 一次 `clip_video` 调用所有 segment 累计抽帧上限；超出后按比例降帧。 |
+| `clip_max_frames`  | `400`    | 一次 `clip_video` 调用所有 segment 累计抽帧上限；超出后按比例降帧。                                      |
 
 两者以 `V2C_MEDIA_RESOLUTION` 和 `V2C_CLIP_MAX_FRAMES` 传给 MCP 服务。
 

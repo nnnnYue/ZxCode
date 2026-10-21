@@ -4,42 +4,44 @@
 
 ## 分级响应（核心理念：不是所有东西都强制改）
 
-| 场景 | 响应 | 机制 |
-|---|---|---|
-| AI 准备写入的代码里有**明确高危**（自己拼的 SQL/命令注入…） | **写入前强制阻断 + 让 AI 修** | PreToolUse hook → 默认 `permissionDecision=deny`，问题/修复回灌 agent |
-| AI 新代码**"用了"既有的危险代码**（调用别处定义的危险函数 / 跨文件污点） | **只告警，不强改** | hook 附带跨文件告警（非阻断）/ MCP `project` 参数 |
-| **既有项目本身**的风险（用户没动的老代码） | **只报告** | SessionStart hook → 开场给"项目风险地图" |
-| 单轮任务准备结束 | **复查本轮改动并回灌修复** | UserPromptSubmit 保存基线；Stop hook → 只审查本轮真实 diff 的新增/修改行 |
-| agent 用 Bash/heredoc 直接写源码 | **拒绝旁路，要求改用 Write/Edit 进入候选代码扫描** | PreToolUse(Bash) |
-| agent 准备提交或推送 | **提交前分级安全门：高危拒绝、中危确认、低危提示** | PreToolUse(Bash) → `--deep` 项目审计 |
-| agent 想主动做普通自查 | **静态项目审计，零 GLM token** | `/mimosa-scan` → `mimosa audit <dir>` |
-| 发布前或用户明确要求深度审计 | **Mimosa 密封深扫** | `/mimosa-deep-audit` / `$mimosa-security-scan` → MCP 深扫与状态查询 |
+| 场景                                                                     | 响应                                               | 机制                                                                     |
+| ------------------------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| AI 准备写入的代码里有**明确高危**（自己拼的 SQL/命令注入…）              | **写入前强制阻断 + 让 AI 修**                      | PreToolUse hook → 默认 `permissionDecision=deny`，问题/修复回灌 agent    |
+| AI 新代码**"用了"既有的危险代码**（调用别处定义的危险函数 / 跨文件污点） | **只告警，不强改**                                 | hook 附带跨文件告警（非阻断）/ MCP `project` 参数                        |
+| **既有项目本身**的风险（用户没动的老代码）                               | **只报告**                                         | SessionStart hook → 开场给"项目风险地图"                                 |
+| 单轮任务准备结束                                                         | **复查本轮改动并回灌修复**                         | UserPromptSubmit 保存基线；Stop hook → 只审查本轮真实 diff 的新增/修改行 |
+| agent 用 Bash/heredoc 直接写源码                                         | **拒绝旁路，要求改用 Write/Edit 进入候选代码扫描** | PreToolUse(Bash)                                                         |
+| agent 准备提交或推送                                                     | **提交前分级安全门：高危拒绝、中危确认、低危提示** | PreToolUse(Bash) → `--deep` 项目审计                                     |
+| agent 想主动做普通自查                                                   | **静态项目审计，零 GLM token**                     | `/mimosa-scan` → `mimosa audit <dir>`                                    |
+| 发布前或用户明确要求深度审计                                             | **Mimosa 密封深扫**                                | `/mimosa-deep-audit` / `$mimosa-security-scan` → MCP 深扫与状态查询      |
 
 MCP 仅用于用户明确发起的密封深扫；日常写入保护与普通审计仍由本地 Hook 和 CLI 完成。
 
 ## 组件
 
-| 文件 | 作用 |
-|---|---|
-| `hooks/prompt-hook.mjs` | UserPromptSubmit：保存源码基线，并对 URL/XML/SQL/凭据需求注入精简的生成前安全约束 |
-| `hooks/scan-hook.mjs` | PreToolUse：写入前扫描并拦截高危；PostToolUse：可选跨文件提示 |
-| `hooks/session-hook.mjs` | SessionStart：开场注入项目风险地图（快速静态，跳过 semgrep） |
-| `hooks/stop-hook.mjs` | Stop：任务收尾时复查本轮真实 diff；默认只为新增、跨会话未报告的确定性 high 触发一次安全修复回合；同时保留结构化证据、状态、不可覆盖历史和 finding ledger |
-| `hooks/ledger-client.mjs` | Hook 与 CLI ledger 的窄适配层；只传相对位置、状态和证据哈希，不传 prompt、源码或绝对路径 |
-| `hooks/git-gate-hook.mjs` | 阻止 Bash 直接写源码旁路；`git commit/push` 前运行 L3 深度项目审计 |
-| `dist/mcp/server.js` | MCP server，仅提供深扫及状态生命周期 |
-| `commands/mimosa-scan.md` | `/mimosa-scan` 手动扫描 |
-| `commands/mimosa-deep-audit.md` | `/mimosa-deep-audit` 宿主模型深审编排（不依赖 Skill 自动发现） |
-| `skills/mimosa-security-scan/` | Skill-aware 宿主使用的同版深审工作流与 sealed scan 合同 |
+| 文件                            | 作用                                                                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hooks/prompt-hook.mjs`         | UserPromptSubmit：保存源码基线，并对 URL/XML/SQL/凭据需求注入精简的生成前安全约束                                                                        |
+| `hooks/scan-hook.mjs`           | PreToolUse：写入前扫描并拦截高危；PostToolUse：可选跨文件提示                                                                                            |
+| `hooks/session-hook.mjs`        | SessionStart：开场注入项目风险地图（快速静态，跳过 semgrep）                                                                                             |
+| `hooks/stop-hook.mjs`           | Stop：任务收尾时复查本轮真实 diff；默认只为新增、跨会话未报告的确定性 high 触发一次安全修复回合；同时保留结构化证据、状态、不可覆盖历史和 finding ledger |
+| `hooks/ledger-client.mjs`       | Hook 与 CLI ledger 的窄适配层；只传相对位置、状态和证据哈希，不传 prompt、源码或绝对路径                                                                 |
+| `hooks/git-gate-hook.mjs`       | 阻止 Bash 直接写源码旁路；`git commit/push` 前运行 L3 深度项目审计                                                                                       |
+| `dist/mcp/server.js`            | MCP server，仅提供深扫及状态生命周期                                                                                                                     |
+| `commands/mimosa-scan.md`       | `/mimosa-scan` 手动扫描                                                                                                                                  |
+| `commands/mimosa-deep-audit.md` | `/mimosa-deep-audit` 宿主模型深审编排（不依赖 Skill 自动发现）                                                                                           |
+| `skills/mimosa-security-scan/`  | Skill-aware 宿主使用的同版深审工作流与 sealed scan 合同                                                                                                  |
 
 ## 安装
 
 1. 构建并组装（在 Mimosa 仓库根目录）：
+
    ```bash
    npm install
    npm run build:cli && npm run build:mcp
    node scripts/build-plugin.mjs
    ```
+
    产物在 `mimosa-zcode/`，已自包含 `dist/cli.js` 与 `dist/mcp/server.js`。
 
 2. 安装进 ZxCode：设置 → 插件管理 → 添加本地路径 `…/mimosa-zxcode`，启用后重启会话。
@@ -70,11 +72,13 @@ node ~/.zxcode/mimosa-zcode/dist/cli.js mcp disable  # 深审结束后关闭并�
 ## 配置
 
 **userConfig（插件设置）**
+
 - `engine`：深度自查静态引擎。`native`（默认）仅运行 Mimosa Native；`semgrep` 是显式外部模式；`auto`、`builtin` 保持兼容。写入前 Hook 始终 Native-only。
 
 > MCP 不需要额外的模型密钥或模型配置。
 
 **环境变量**
+
 - `MIMOSA_HOOK_BLOCK=graded|ask|deny|warn`：写入前门禁模式。默认 `graded`，当前 blocking 级别的 high 必须 `deny`；`ask` 仅用于显式兼容/演示，允许用户确认后落盘，不是安全默认值。
 - `MIMOSA_HOOK_FAILURE_MODE=open|strict`：扫描基础设施异常或覆盖不完整时的处理。默认 `open` 会显示 `INCONCLUSIVE` 并由 Stop 复核；高保障项目用 `strict`，使候选缺失、扫描失败、坏输出或 partial coverage 在写入前直接 `deny`。也可用 `MIMOSA_HOOK_STRICT=1`。
 - `MIMOSA_GIT_GATE_FAILURE_MODE=open|strict`：单独控制 commit/push 前项目扫描不完整时是否阻断；未设置时继承 `MIMOSA_HOOK_FAILURE_MODE`。

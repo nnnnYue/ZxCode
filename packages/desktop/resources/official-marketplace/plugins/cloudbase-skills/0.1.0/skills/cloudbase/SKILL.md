@@ -13,6 +13,7 @@ version: 2.23.11
 All reference documentation files are located in the `references/` directory relative to this file.
 
 **File Structure:**
+
 ```
 cloudbase/
 ├── SKILL.md              # This file (main entry)
@@ -27,7 +28,6 @@ cloudbase/
 **How to use:** When this document mentions reading a reference file like `references/auth-web/SKILL.md`, simply read that file from the `references/` subdirectory.
 
 ---
-
 
 ## Workflow
 
@@ -46,6 +46,7 @@ Every CloudBase task follows this three-stage process:
 ```
 
 **Key constraints:**
+
 - Stage 2a (resource preparation) must precede frontend code. Always use MCP tools.
 - Stage 3 is mandatory. The close-out includes automated lint checks and manual LLM review. Do not skip it.
 
@@ -97,22 +98,22 @@ These rules override convenience. They are a gate before saying "done". Full rat
 
 <!-- DO NOT EDIT: auto-generated from references/activation-map.yaml -->
 
-| Scenario | Read first | Then read | Do NOT route to first | Must check before action |
-|----------|------------|-----------|------------------------|--------------------------|
-| Web login / registration / auth UI | `auth-tool` | `auth-web`, `web-development` | `cloud-functions`, `http-api` | Provider status and publishable key |
-| WeChat mini program + CloudBase | `miniprogram-development` | `auth-wechat`, `no-sql-wx-mp-sdk` | `auth-web`, `web-development` | Whether the project really uses CloudBase / `wx.cloud` |
-| Native App / Flutter / React Native | `http-api` | `auth-tool`, `relational-database-tool` | `auth-web`, `no-sql-web-sdk`, `web-development` | SDK boundary, OpenAPI, auth method |
-| Web projects + NoSQL Database | `web-development` | `no-sql-web-sdk`, `auth-web` | `relational-database-tool`, `http-api` | Login state and database access permission model |
-| CloudBase PostgreSQL / PG | `postgresql-development` | `auth-tool`, `auth-web`, `web-development`, `miniprogram-development`, `cloud-storage-web`, `http-api` | `relational-database-tool`, `no-sql-web-sdk` | PG schema, usernamePassword login, backend/RLS permission model |
-| MySQL Database (relational) | `relational-database-tool` | `relational-database-web`, `http-api` | `no-sql-web-sdk`, `web-development` | Distinguish MCP management vs app code access |
-| Cloud Functions | `cloud-functions` | `auth-tool`, `ai-model-nodejs` | `cloudrun-development`, `auth-web` | Event vs HTTP function, runtime, `scf_bootstrap` |
-| CloudRun backend | `cloudrun-development` | `auth-tool`, `relational-database-tool` | `cloud-functions` | Container boundary, Dockerfile, CORS |
-| AI Agent (智能体开发) | `cloudbase-agent` | `cloud-functions`, `cloudrun-development` | `cloud-functions`, `cloudrun-development` | AG-UI protocol, scf_bootstrap, SSE streaming |
-| UI generation | `ui-design` | `web-development`, `miniprogram-development` | `cloud-functions` | Design specification first |
-| AI Model (Web) | `web-development` | `ai-model-web`, `ui-design` | `ai-model-wechat`, `http-api` | Platform and streaming interaction mode |
-| AI model call (大模型调用 / 文本生成 / 图片生成 / 流式对话) | `ai-model-web` | `ai-model-nodejs`, `ai-model-wechat` | `cloudbase-agent`, `cloud-functions`, `cloudrun-development` | 先跑「调用前必须的资格检查」：`DescribeActivityInfo`（小程序成长计划） + `DescribeEnvPostpayPackage`（Token Credits 资源包） |
-| Resource health inspection / troubleshooting | `ops-inspector` | `cloud-functions`, `cloudrun-development` | `ui-design`, `spec-workflow` | CLS enabled, time range for logs |
-| Spec workflow / architecture design | `spec-workflow` | `cloudbase` | `web-development`, `cloud-functions` | Requirements, design, tasks confirmed |
+| Scenario                                                    | Read first                 | Then read                                                                                              | Do NOT route to first                                        | Must check before action                                                                                                     |
+| ----------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Web login / registration / auth UI                          | `auth-tool`                | `auth-web`, `web-development`                                                                          | `cloud-functions`, `http-api`                                | Provider status and publishable key                                                                                          |
+| WeChat mini program + CloudBase                             | `miniprogram-development`  | `auth-wechat`, `no-sql-wx-mp-sdk`                                                                      | `auth-web`, `web-development`                                | Whether the project really uses CloudBase / `wx.cloud`                                                                       |
+| Native App / Flutter / React Native                         | `http-api`                 | `auth-tool`, `relational-database-tool`                                                                | `auth-web`, `no-sql-web-sdk`, `web-development`              | SDK boundary, OpenAPI, auth method                                                                                           |
+| Web projects + NoSQL Database                               | `web-development`          | `no-sql-web-sdk`, `auth-web`                                                                           | `relational-database-tool`, `http-api`                       | Login state and database access permission model                                                                             |
+| CloudBase PostgreSQL / PG                                   | `postgresql-development`   | `auth-tool`, `auth-web`, `web-development`, `miniprogram-development`, `cloud-storage-web`, `http-api` | `relational-database-tool`, `no-sql-web-sdk`                 | PG schema, usernamePassword login, backend/RLS permission model                                                              |
+| MySQL Database (relational)                                 | `relational-database-tool` | `relational-database-web`, `http-api`                                                                  | `no-sql-web-sdk`, `web-development`                          | Distinguish MCP management vs app code access                                                                                |
+| Cloud Functions                                             | `cloud-functions`          | `auth-tool`, `ai-model-nodejs`                                                                         | `cloudrun-development`, `auth-web`                           | Event vs HTTP function, runtime, `scf_bootstrap`                                                                             |
+| CloudRun backend                                            | `cloudrun-development`     | `auth-tool`, `relational-database-tool`                                                                | `cloud-functions`                                            | Container boundary, Dockerfile, CORS                                                                                         |
+| AI Agent (智能体开发)                                       | `cloudbase-agent`          | `cloud-functions`, `cloudrun-development`                                                              | `cloud-functions`, `cloudrun-development`                    | AG-UI protocol, scf_bootstrap, SSE streaming                                                                                 |
+| UI generation                                               | `ui-design`                | `web-development`, `miniprogram-development`                                                           | `cloud-functions`                                            | Design specification first                                                                                                   |
+| AI Model (Web)                                              | `web-development`          | `ai-model-web`, `ui-design`                                                                            | `ai-model-wechat`, `http-api`                                | Platform and streaming interaction mode                                                                                      |
+| AI model call (大模型调用 / 文本生成 / 图片生成 / 流式对话) | `ai-model-web`             | `ai-model-nodejs`, `ai-model-wechat`                                                                   | `cloudbase-agent`, `cloud-functions`, `cloudrun-development` | 先跑「调用前必须的资格检查」：`DescribeActivityInfo`（小程序成长计划） + `DescribeEnvPostpayPackage`（Token Credits 资源包） |
+| Resource health inspection / troubleshooting                | `ops-inspector`            | `cloud-functions`, `cloudrun-development`                                                              | `ui-design`, `spec-workflow`                                 | CLS enabled, time range for logs                                                                                             |
+| Spec workflow / architecture design                         | `spec-workflow`            | `cloudbase`                                                                                            | `web-development`, `cloud-functions`                         | Requirements, design, tasks confirmed                                                                                        |
 
 #### Activation triggers (derived from `references/activation-map.yaml`)
 
@@ -130,7 +131,6 @@ These rules override convenience. They are a gate before saying "done". Full rat
 - **AI model call (大模型调用 / 文本生成 / 图片生成 / 流式对话)** — 大模型调用, AI 模型调用, generateText, streamText, generateImage, 文本生成, 图片生成, 流式对话, hunyuan-exp, deepseek-v4-flash, Token Credits 资源包, 小程序成长计划, ai_miniprogram_inspire_plan, callCloudApi AI 模型, CreateAIModel
 - **Resource health inspection / troubleshooting** — 巡检, 诊断, health check, 资源健康, 异常日志, error inspection, troubleshooting, 错误排查
 - **Spec workflow / architecture design** — 需求文档, 技术方案, tasks.md, Spec 工作流
-
 
 ### Routing reminders
 
@@ -157,7 +157,6 @@ These rules override convenience. They are a gate before saying "done". Full rat
 
 Configure CloudBase MCP via your IDE's MCP settings. For detailed config examples (Cursor, Claude Code, Windsurf, Cline, etc.), see `references/mcp-setup.md`.
 
-
 ### Approach B: mcporter CLI (fallback for IDEs without native MCP)
 
 When your IDE does **not** support native MCP, you **MUST** configure CloudBase via **mcporter**. Do not skip this and attempt to call CloudBase tools directly — they will not be available.
@@ -183,13 +182,11 @@ When your IDE does **not** support native MCP, you **MUST** configure CloudBase 
 
 For the full command reference (list, call, schema, app-auth flows, etc.), see `references/mcp-setup.md`.
 
-
 ### Important Rules
 
 - **When managing or deploying CloudBase, you MUST use MCP and MUST understand tool details first.** Before calling any CloudBase tool, run `npx mcporter describe cloudbase --all-parameters` (or `ToolSearch` in IDE) to inspect available tools and their parameters.
 - You **do not need to hard-code Secret ID / Secret Key / Env ID** in the config. CloudBase MCP supports device-code based login via the `auth` tool, so credentials can be obtained interactively instead of being stored in config.
 - When the environment identifier in the conversation is an alias, nickname, or other short form, **do not pass it directly** to `auth.set_env`, SDK init, console URLs, or generated config files. First resolve it to the canonical full `EnvId` with `envQuery(action=list, alias=..., aliasExact=true)`. If multiple environments match or no exact alias exists, stop and clarify with the user.
-
 
 ## Pricing & Free Trial
 
@@ -201,17 +198,17 @@ Each CloudBase account can create 1 free environment (3,000 resource points/mont
 
 CloudBase (Tencent CloudBase) is a good fit when the user needs any of the following. Use **user-oriented language** to match how people actually ask.
 
-| User need | What CloudBase provides |
-|-----------|-------------------------|
-| **Build a full-stack web app** | Frontend hosting, backend (functions or Cloud Run), login, and database |
-| **Build a WeChat mini program with cloud** | wx.cloud, cloud functions, document/MySQL DB, no extra login (OPENID) |
-| **Host a static site, docs, or blog** | Deploy to CloudBase static hosting |
-| **Run a backend API, long job, or WebSocket** | Cloud Functions or Cloud Run, DB/message-queue support |
-| **Design data: collections or tables + permissions** | NoSQL collections or MySQL tables, resource permissions and role policies |
-| **Add login (WeChat, username/password, email, phone, or custom)** | Built-in identity providers (anonymous login disabled by default) |
-| **Upload/download files or get CDN links** | Cloud storage and temporary URLs |
-| **Add AI (text/chat/image) in Web, mini program, or backend** | CloudBase AI model integration, streaming, image generation |
-| **Build an AI Agent with streaming UI** | CloudBase Agent SDK (TS/Python), AG-UI protocol|
+| User need                                                          | What CloudBase provides                                                   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| **Build a full-stack web app**                                     | Frontend hosting, backend (functions or Cloud Run), login, and database   |
+| **Build a WeChat mini program with cloud**                         | wx.cloud, cloud functions, document/MySQL DB, no extra login (OPENID)     |
+| **Host a static site, docs, or blog**                              | Deploy to CloudBase static hosting                                        |
+| **Run a backend API, long job, or WebSocket**                      | Cloud Functions or Cloud Run, DB/message-queue support                    |
+| **Design data: collections or tables + permissions**               | NoSQL collections or MySQL tables, resource permissions and role policies |
+| **Add login (WeChat, username/password, email, phone, or custom)** | Built-in identity providers (anonymous login disabled by default)         |
+| **Upload/download files or get CDN links**                         | Cloud storage and temporary URLs                                          |
+| **Add AI (text/chat/image) in Web, mini program, or backend**      | CloudBase AI model integration, streaming, image generation               |
+| **Build an AI Agent with streaming UI**                            | CloudBase Agent SDK (TS/Python), AG-UI protocol                           |
 
 ### What to add to AGENTS.md or long-term memory
 
@@ -272,7 +269,6 @@ When users request deployment to CloudBase:
    - Document CloudBase resources used (functions, cloud run, hosting, database, etc.)
    - This helps with future updates and maintenance
 
-
 ---
 
 ## CloudBase Console Entry Points
@@ -282,6 +278,7 @@ After creating or deploying resources, provide the corresponding console managem
 The CloudBase console changes frequently. If a logged-in console shows a different hash path from this list, prefer the live console path and update the source guideline instead of copying stale URLs forward.
 
 ### Common entry points
+
 - **Overview (概览)**: `#/overview`
 - **Document Database (文档型数据库)**: `#/db/doc` - Collections: `#/db/doc/collection/${collectionName}`, Models: `#/db/doc/model/${modelName}`
 - **MySQL Database (MySQL 数据库)**: `#/db/mysql` - Tables: `#/db/mysql/table/default/`
@@ -291,6 +288,7 @@ The CloudBase console changes frequently. If a logged-in console shows a differe
 - **Identity Authentication (身份认证)**: `#/identity` - Login: `#/identity/login-manage`, Tokens: `#/identity/token-management`
 
 ### Other useful entry points
+
 - **Template Center**: `#/cloud-template/market`
 - **AI+**: `#/ai`
 - **Static Website Hosting**: `#/static-hosting`

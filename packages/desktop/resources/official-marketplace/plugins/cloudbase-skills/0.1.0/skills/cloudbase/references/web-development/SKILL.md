@@ -15,6 +15,7 @@ If this environment only installed the current skill, start from the CloudBase m
 Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
 
 **Cross-cutting protocols** (required before code changes or static hosting publish):
+
 - Change Safety Protocol: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/change-safety-protocol.md`
 - Deployment Gate: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/deployment-gate.md`
 
@@ -112,6 +113,7 @@ Use this skill for Web engineering work such as:
 - Integrating CloudBase Web SDK and static hosting when the project needs CloudBase capabilities
 
 **Do NOT use for:**
+
 - UI direction or visual system design only; use `ui-design`
 - Mini program development; use `miniprogram-development`
 - Backend service implementation; use `cloudrun-development` or `cloud-functions`
@@ -186,11 +188,13 @@ Use this section only when the Web project needs CloudBase platform features.
 - **SPA routing (History mode)**: when using React Router / Vue Router in History mode (not hash mode), configure the CloudBase static hosting **"404 error document"** to `index.html`. Otherwise refreshing or directly visiting any sub-route returns `NoSuchKey` / 404 error, because the static hosting looks for a file at that path instead of falling through to `index.html` for the SPA to handle routing.
 
   Use the MCP tool to apply this:
+
   ```json
   manageHosting({ action: "setWebsiteDocument", indexDocument: "index.html", errorDocument: "index.html" })
   ```
 
   Then verify with:
+
   ```json
   queryHosting({ action: "websiteConfig" })
   ```
@@ -205,5 +209,5 @@ const app = cloudbase.init({
   env: "your-full-env-id", // Canonical full CloudBase environment ID resolved from envQuery or the console
 });
 
-const auth = app.auth
+const auth = app.auth;
 ```

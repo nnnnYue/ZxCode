@@ -23,7 +23,8 @@ const MAX_PRIVATE_ASSET_COUNT = 64;
 const MAX_PRIVATE_ASSET_PACK_BYTES = 64 * 1024 * 1024;
 // build-protected replaces this only for signed delivery packages. Keeping an
 // unsigned developer build supported makes local protection debugging possible.
-const integrityPublicKeyPem = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAed1gHCLSatReM8maWfsdvWfTc40E8Gj6ZD5V5gKtN0E=\n-----END PUBLIC KEY-----\n";
+const integrityPublicKeyPem =
+  "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAed1gHCLSatReM8maWfsdvWfTc40E8Gj6ZD5V5gKtN0E=\n-----END PUBLIC KEY-----\n";
 let packageIntegrityChecked = false;
 let inheritedProtectionKey = null;
 
@@ -49,13 +50,13 @@ function listFiles(dir, base = dir, out = []) {
     if (entry === ".DS_Store") continue;
     const file = path.join(dir, entry);
     const stat = fs.lstatSync(file);
-    if (stat.isSymbolicLink()) throw new Error(`交付包不允许符号链接：${path.relative(base, file)}`);
+    if (stat.isSymbolicLink())
+      throw new Error(`交付包不允许符号链接：${path.relative(base, file)}`);
     if (stat.isDirectory()) listFiles(file, base, out);
     else if (stat.isFile()) {
       if (stat.nlink > 1) throw new Error(`交付包不允许硬链接：${path.relative(base, file)}`);
       out.push(path.relative(base, file).split(path.sep).join("/"));
-    }
-    else throw new Error(`交付包包含不支持的文件类型：${path.relative(base, file)}`);
+    } else throw new Error(`交付包包含不支持的文件类型：${path.relative(base, file)}`);
   }
   return out;
 }
@@ -63,7 +64,8 @@ function listFiles(dir, base = dir, out = []) {
 function isCanonicalProtectedRelativePath(relative) {
   if (typeof relative !== "string" || relative.length === 0 || relative.length > 1024) return false;
   if (!/^[A-Za-z0-9._/-]+$/.test(relative)) return false;
-  if (relative.startsWith("/") || /^[A-Za-z]:/.test(relative) || relative.includes("\\")) return false;
+  if (relative.startsWith("/") || /^[A-Za-z]:/.test(relative) || relative.includes("\\"))
+    return false;
   const parts = relative.split("/");
   if (parts.some((part) => !part || part === "." || part === "..")) return false;
   return path.posix.normalize(relative) === relative;
@@ -74,12 +76,16 @@ function verifyProtectedPackage() {
   try {
     // 共享载荷多平台布局:清单在 mimosa-zcode/manifest.json,只覆盖共享载荷子树。
     // 旧单树布局:清单在包根 <root>/manifest.json。二者按 manifest.json 存在与否择一。
-    const sharedRoot = path.dirname(__dirname);          // mimosa-zxcode
-    const legacyRoot = path.dirname(sharedRoot);         // <root>
-    const protectedRoot = fs.existsSync(path.join(sharedRoot, "manifest.json")) ? sharedRoot : legacyRoot;
+    const sharedRoot = path.dirname(__dirname); // mimosa-zxcode
+    const legacyRoot = path.dirname(sharedRoot); // <root>
+    const protectedRoot = fs.existsSync(path.join(sharedRoot, "manifest.json"))
+      ? sharedRoot
+      : legacyRoot;
     const manifest = JSON.parse(fs.readFileSync(path.join(protectedRoot, "manifest.json"), "utf8"));
     const integrity = manifest?.integrity;
-    const expectedFingerprint = createHash("sha256").update(integrityPublicKeyPem, "utf8").digest("hex");
+    const expectedFingerprint = createHash("sha256")
+      .update(integrityPublicKeyPem, "utf8")
+      .digest("hex");
     if (
       manifest?.schema !== "mimosa-protected-build/v1" ||
       manifest?.protection?.integritySignatureRequired !== true ||
@@ -87,11 +93,18 @@ function verifyProtectedPackage() {
       integrity?.algorithm !== "Ed25519" ||
       integrity?.publicKeySha256 !== expectedFingerprint ||
       typeof integrity?.signature !== "string" ||
-      !verify(null, manifestBytes(manifest), integrityPublicKeyPem, Buffer.from(integrity.signature, "base64"))
+      !verify(
+        null,
+        manifestBytes(manifest),
+        integrityPublicKeyPem,
+        Buffer.from(integrity.signature, "base64"),
+      )
     ) {
       throw new Error("manifest Ed25519 签名无效");
     }
-    const actualFiles = listFiles(protectedRoot).filter((name) => name !== "manifest.json").sort();
+    const actualFiles = listFiles(protectedRoot)
+      .filter((name) => name !== "manifest.json")
+      .sort();
     const declared = Array.isArray(manifest.files) ? manifest.files : [];
     const declaredPaths = declared.map((file) => file.path).sort();
     if (JSON.stringify(actualFiles) !== JSON.stringify(declaredPaths)) {
@@ -102,7 +115,10 @@ function verifyProtectedPackage() {
         throw new Error("manifest 含非法文件路径");
       }
       const contents = fs.readFileSync(path.join(protectedRoot, file.path));
-      if (contents.length !== file.bytes || createHash("sha256").update(contents).digest("hex") !== file.sha256) {
+      if (
+        contents.length !== file.bytes ||
+        createHash("sha256").update(contents).digest("hex") !== file.sha256
+      ) {
         throw new Error(`文件哈希不匹配：${file.path}`);
       }
     }
@@ -156,7 +172,11 @@ function protectionKey() {
     } finally {
       if (raw) raw.fill(0);
       if (encoded) encoded.fill(0);
-      try { fs.closeSync(Number(inheritedFd)); } catch { /* already closed */ }
+      try {
+        fs.closeSync(Number(inheritedFd));
+      } catch {
+        /* already closed */
+      }
     }
   }
   const embeddedKey = String(process.env.MIMOSA_PROTECT_KEY_B64 || "").trim();
@@ -182,15 +202,12 @@ function protectionKey() {
     /* 无嵌入密钥或读取失败,继续走下方 key 文件回退 */
   }
   const keyFile =
-    process.env.MIMOSA_PROTECT_KEY_FILE ||
-    path.join(os.homedir(), ".mimosa", "protection.key");
+    process.env.MIMOSA_PROTECT_KEY_FILE || path.join(os.homedir(), ".mimosa", "protection.key");
   let stat;
   try {
     stat = fs.lstatSync(keyFile);
   } catch {
-    throw new Error(
-      `Mimosa 保护密钥不存在：${keyFile}；请设置 MIMOSA_PROTECT_KEY_FILE`
-    );
+    throw new Error(`Mimosa 保护密钥不存在：${keyFile}；请设置 MIMOSA_PROTECT_KEY_FILE`);
   }
   if (stat.isSymbolicLink() || !stat.isFile()) {
     throw new Error(`Mimosa 保护密钥必须是非符号链接普通文件：${keyFile}`);
@@ -229,10 +246,7 @@ function decrypt(payload, key, expectedArtifactId) {
   const decipher = createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAAD(id);
   decipher.setAuthTag(tag);
-  const plain = Buffer.concat([
-    decipher.update(payload.subarray(offset)),
-    decipher.final(),
-  ]);
+  const plain = Buffer.concat([decipher.update(payload.subarray(offset)), decipher.final()]);
   // v2 = 加密前 gzip;解密后 gunzip 还原。v1 保持原样(向后兼容)。
   return version === 2 ? gunzipSync(plain) : plain;
 }
@@ -399,12 +413,25 @@ function semgrepRequested() {
   const env = process.env;
   if (String(env.MIMOSA_SEMGREP_LOCAL_RULES || "").trim()) return true;
   if (String(env.MIMOSA_SEMGREP_PATH || "").trim()) return true;
-  if (String(env.MIMOSA_ENGINE || "").trim().toLowerCase() === "semgrep") return true;
+  if (
+    String(env.MIMOSA_ENGINE || "")
+      .trim()
+      .toLowerCase() === "semgrep"
+  )
+    return true;
   const argv = Array.isArray(process.argv) ? process.argv : [];
   for (let i = 0; i < argv.length; i += 1) {
-    const token = String(argv[i] || "").trim().toLowerCase();
+    const token = String(argv[i] || "")
+      .trim()
+      .toLowerCase();
     if (token === "--engine=semgrep") return true;
-    if (token === "--engine" && String(argv[i + 1] || "").trim().toLowerCase() === "semgrep") return true;
+    if (
+      token === "--engine" &&
+      String(argv[i + 1] || "")
+        .trim()
+        .toLowerCase() === "semgrep"
+    )
+      return true;
   }
   return false;
 }

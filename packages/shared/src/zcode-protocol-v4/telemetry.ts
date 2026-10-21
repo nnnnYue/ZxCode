@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeTelemetrySkillName } from "../pluginTelemetry.js";
 import { zcodeSyntheticUserMessageSourceSchema } from "../zcode-protocol-legacy-types.js";
 import { timestampSchema } from "./core.js";
 
@@ -136,9 +137,18 @@ const toolLifecycleFactSchema = z
     agentType: z.string().optional(),
     childSessionId: z.string().min(1).optional(),
     background: z.boolean().optional(),
+    skillName: z
+      .string()
+      .refine(
+        (value) => sanitizeTelemetrySkillName(value) === value,
+        "skillName must be a bounded, safe resolved Skill identifier",
+      )
+      .optional(),
     skillQualifiedName: z.string().min(1).optional(),
     skillPluginId: z.string().min(1).optional(),
-    skillSource: z.enum(["agents", "zxcode", "bundled", "plugin", "remote"]).optional(),
+    pluginId: z.string().min(1).max(256).optional(),
+    pluginComponent: z.enum(["skill", "mcp"]).optional(),
+    skillSource: z.enum(["agents", "zcode", "bundled", "plugin", "remote"]).optional(),
     performance: toolPerformanceFactSchema.optional(),
     automationId: z.string().min(1).optional(),
   })

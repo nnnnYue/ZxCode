@@ -5,7 +5,7 @@ import type { ConversationSnapshot } from "@zcode/shared/zcode-protocol-v4";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { pendingCommandRegistry, type PendingCommandEntry } from "@/v4/pendingCommandRegistry.js";
-import { SessionPane } from "@/v4/SessionPane.js";
+import { SessionPane, type SessionPaneProps } from "@/v4/SessionPane.js";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 
 type ProjectionState = {
@@ -31,7 +31,10 @@ vi.mock("@/v4/PendingCommandRecoveryBanner.js", () => ({
   },
 }));
 
-// 会话创建埋点（sessionCreateTelemetry）已随遥测剔除；本文件只保留发送链路行为断言。
+const sessionCreateCapture = vi.hoisted(() => ({ report: vi.fn(async () => {}) }));
+vi.mock("@/lib/sessionCreateTelemetry.js", () => ({
+  reportSessionCreate: sessionCreateCapture.report,
+}));
 
 const projectionState = vi.hoisted(() => ({
   current: null as ProjectionState | null,
@@ -128,6 +131,13 @@ const prewarmHookInputs = vi.hoisted(() => ({
 }));
 
 const servicesMock = vi.hoisted(() => ({
+  projectService: {
+    resolveSessionDirectories: vi.fn(async (task) => ({
+      ...task,
+      projectId: null,
+      additionalDirectories: [],
+    })),
+  },
   highspeedCardService: {
     // 本文件使用会在用例结束后销毁的极简 DOM；保持无关 Highspeed 查询 pending，
     // 避免其 Promise 回调在 window 清理后再次唤醒 React scheduler。
@@ -214,6 +224,7 @@ vi.mock("@/hooks/useSettingService.js", () => ({
 }));
 
 vi.mock("@/hooks/useServices.js", () => ({
+  useComposerClientNamespace: () => "desktop",
   useOptionalServices: () => null,
   useServices: () => servicesMock,
 }));
@@ -282,6 +293,13 @@ vi.mock("@/v4/composer/useDraftSessionPrewarm.js", () => ({
     prewarmHookInputs.current.push(params);
     return {
       binding: prewarmHookInputs.binding,
+      waitForSession: async () => {
+        if (prewarmHookInputs.binding) return prewarmHookInputs.binding;
+        const ack = (await params.dispatchCommand("createSession", {}, null)) as {
+          result: { sessionId: string };
+        };
+        return { sessionId: ack.result.sessionId, beginPromotion: () => true, promote: vi.fn() };
+      },
     };
   },
 }));
@@ -507,7 +525,11 @@ function installMinimalDom() {
   return createMinimalElement(documentMock, "div");
 }
 
-function renderPane(root: Root, sessionId: string | null): void {
+function renderPane(
+  root: Root,
+  sessionId: string | null,
+  props: Partial<SessionPaneProps> = {},
+): void {
   act(() => {
     root.render(
       createElement(
@@ -517,6 +539,7 @@ function renderPane(root: Root, sessionId: string | null): void {
           paneId: "workspace-main",
           sessionId,
           workspacePath: "/workspace",
+          ...props,
         }),
       ),
     );
@@ -524,6 +547,8 @@ function renderPane(root: Root, sessionId: string | null): void {
 }
 
 beforeEach(() => {
+  servicesMock.projectService.resolveSessionDirectories.mockClear();
+  sessionCreateCapture.report.mockClear();
   recoveryCapture.entries = [];
   recoveryCapture.onResend = null;
   prewarmHookInputs.binding = null;
@@ -537,7 +562,12 @@ beforeEach(() => {
   conversationMock.lease.store.expectAcceptedInputProjection.mockClear();
   conversationMock.currentLayer = null;
   conversationMock.currentSendCommand = null;
-  conversationMock.sendCommand.mockClear();
+  conversationMock.sendCommand.mockReset();
+  conversationMock.sendCommand.mockImplementation(async (envelope) => ({
+    commandId: envelope.commandId,
+    revisionAtDecision: 1,
+    status: "accepted" as const,
+  }));
   prewarmHookInputs.current = [];
   scrollFocus.composerProps = null;
   scrollFocus.queueProps = null;
@@ -563,14 +593,44 @@ afterEach(() => {
 });
 
 describe("SessionPane composer continuity", () => {
+  it.each([
+    ["selection_side_chat", true, "parent"],
+    ["interactive", false, "session-1"],
+    ["fork", false, "session-1"],
+  ] as const)("%s 发送按自身语义解析 Recent 归属", async (_kind, selectionSideChat, ownerId) => {
+    const root = createRoot(installMinimalDom());
+    mountedRoots.push(root);
+    projectionState.current = {
+      ...projectionState.current,
+      snapshot: { ...makeDraftSnapshot(), sessionId: "session-1" },
+    };
+    servicesMock.projectService.resolveSessionDirectories.mockImplementationOnce(async (task) => {
+      if (selectionSideChat && task.taskId === "session-1")
+        throw new Error("project.remote-project-required");
+      return { ...task, projectId: null, additionalDirectories: [] };
+    });
+    renderPane(root, "session-1", { selectionSideChat, rootSessionId: "parent" });
+    await act(async () => {
+      await scrollFocus.composerProps?.onSendText("follow up");
+    });
+    expect(servicesMock.projectService.resolveSessionDirectories).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: ownerId }),
+      expect.any(String),
+    );
+    expect(conversationMock.sendCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "sendText", sessionId: "session-1" }),
+    );
+  });
+
   it.each(["group", "project", "session"] as const)(
-    "%s 首发走空创建 + sendText 两段式，打开后跟随发送不再空创建",
+    "%s 首发只在 accepted 后报告，打开和后续发送不报告",
     async (source) => {
       const store = useZCodeSessionStore.getState();
       store.startDraft("/workspace", undefined, undefined, { createSource: source });
       const root = createRoot(installMinimalDom());
       mountedRoots.push(root);
       renderPane(root, null);
+      expect(sessionCreateCapture.report).not.toHaveBeenCalled();
       conversationMock.sendCommand.mockImplementationOnce(async (envelope) => ({
         commandId: envelope.commandId,
         revisionAtDecision: 1,
@@ -582,19 +642,52 @@ describe("SessionPane composer continuity", () => {
       });
       // Highspeed 统一了首发链路：无附件首发也走「空 createSession + sendText」两段式，
       // 好让抽卡 admission 拿到真实 sessionId，因此首发 message_id 是 sendText 的 commandId
-      // （calls[1]），不是空创建的 commandId（calls[0]）。
+      // （calls[1]），不是空创建的 commandId（calls[0]）。埋点不变量仍成立：accepted 后只报一次。
       const firstSendCalls = conversationMock.sendCommand.mock.calls;
       expect(firstSendCalls).toHaveLength(2);
+      expect(sessionCreateCapture.report).toHaveBeenCalledExactlyOnceWith(
+        null,
+        expect.objectContaining({
+          sessionId: `created-${source}`,
+          messageId: firstSendCalls[1]![0].commandId,
+          source,
+        }),
+      );
       renderPane(root, `created-${source}`);
       await act(async () => {
         await scrollFocus.composerProps?.onSendText("follow up");
       });
-      // 跟随发送只新增一条 sendText，不再触发空创建。
-      expect(conversationMock.sendCommand.mock.calls).toHaveLength(3);
+      expect(sessionCreateCapture.report).toHaveBeenCalledTimes(1);
     },
   );
 
-  it.each(["hello", "/goal explain"])("预热首发 %s 只发实际输入，不先空创建", async (text) => {
+  it.each(["accepted", "rejected"] as const)("Goal 首发 %s 时只按 ACK 统计", async (status) => {
+    const root = createRoot(installMinimalDom());
+    mountedRoots.push(root);
+    renderPane(root, null);
+    conversationMock.sendCommand.mockImplementationOnce(async (envelope) => ({
+      commandId: envelope.commandId,
+      revisionAtDecision: 1,
+      status: "accepted" as const,
+      result: { type: "createSession", sessionId: "goal-created" },
+    }));
+    conversationMock.sendCommand.mockResolvedValueOnce({
+      commandId: "goal-command",
+      revisionAtDecision: 1,
+      status,
+    } as never);
+    await act(async () => {
+      await scrollFocus.composerProps?.onSendText("/goal explain the test");
+    });
+    expect(sessionCreateCapture.report).toHaveBeenCalledTimes(status === "accepted" ? 1 : 0);
+    if (status === "accepted")
+      expect(sessionCreateCapture.report).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ messageId: "goal-command" }),
+      );
+  });
+
+  it.each(["hello", "/goal explain"])("预热首发 %s 携带实际输入 commandId", async (text) => {
     prewarmHookInputs.binding = {
       sessionId: "prewarmed",
       beginPromotion: () => true,
@@ -606,9 +699,11 @@ describe("SessionPane composer continuity", () => {
     await act(async () => {
       await scrollFocus.composerProps?.onSendText(text);
     });
-    const calls = conversationMock.sendCommand.mock.calls;
-    expect(calls).toHaveLength(1);
-    expect(calls[0]![0].commandId).toBeTruthy();
+    const commandId = conversationMock.sendCommand.mock.calls[0]![0].commandId;
+    expect(sessionCreateCapture.report).toHaveBeenCalledExactlyOnceWith(
+      null,
+      expect.objectContaining({ sessionId: "prewarmed", messageId: commandId }),
+    );
   });
 
   it("先空创建再首发使用 sendText ID，不用空创建 ID", async () => {
@@ -629,6 +724,10 @@ describe("SessionPane composer continuity", () => {
     const calls = conversationMock.sendCommand.mock.calls;
     expect(calls).toHaveLength(2);
     expect(calls[0]![0].commandId).not.toBe(calls[1]![0].commandId);
+    expect(sessionCreateCapture.report).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ messageId: calls[1]![0].commandId }),
+    );
   });
 
   it("用户确认恢复重发使用新 accepted ID，不用旧命令 ID", async () => {
@@ -660,9 +759,26 @@ describe("SessionPane composer continuity", () => {
       });
       const newId = conversationMock.sendCommand.mock.calls[0]![0].commandId;
       expect(newId).not.toBe("old-command");
+      expect(sessionCreateCapture.report).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ sessionId: "recovered", messageId: newId }),
+      );
     } finally {
       replay.mockRestore();
     }
+  });
+
+  it("首发传输失败不产生 session_create", async () => {
+    const root = createRoot(installMinimalDom());
+    mountedRoots.push(root);
+    renderPane(root, null);
+    conversationMock.sendCommand.mockRejectedValueOnce(new Error("transport offline"));
+    await act(async () => {
+      await expect(scrollFocus.composerProps?.onSendText("create session")).rejects.toThrow(
+        "transport offline",
+      );
+    });
+    expect(sessionCreateCapture.report).not.toHaveBeenCalled();
   });
 
   it("/goal 沿用点击发送时冻结的 Submission，不在异步准备后回读草稿", async () => {
@@ -833,7 +949,12 @@ describe("SessionPane composer continuity", () => {
       loadingOlder: false,
     };
     renderPane(root, "session-1");
-    conversationMock.sendCommand.mockClear();
+    conversationMock.sendCommand.mockReset();
+    conversationMock.sendCommand.mockImplementation(async (envelope) => ({
+      commandId: envelope.commandId,
+      revisionAtDecision: 1,
+      status: "accepted" as const,
+    }));
 
     await act(async () => {
       await scrollFocus.composerProps?.onSendText("立即执行", {
@@ -850,9 +971,6 @@ describe("SessionPane composer continuity", () => {
           requestedDelivery: "startNow",
         }),
       }),
-    );
-    expect(conversationMock.sendCommand).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: "sendQueuedNow" }),
     );
     expect(conversationMock.lease.store.expectAcceptedInputProjection).toHaveBeenCalledWith(
       conversationMock.sendCommand.mock.calls[0]?.[0].commandId,
@@ -908,7 +1026,12 @@ describe("SessionPane composer continuity", () => {
       expect.objectContaining({ type: "compact", sessionId: "session-1" }),
     );
 
-    conversationMock.sendCommand.mockClear();
+    conversationMock.sendCommand.mockReset();
+    conversationMock.sendCommand.mockImplementation(async (envelope) => ({
+      commandId: envelope.commandId,
+      revisionAtDecision: 1,
+      status: "accepted" as const,
+    }));
     await act(async () => {
       await scrollFocus.composerProps?.onSendText("新消息", {
         heldQueueDisposition: "clearQueueAndSend",

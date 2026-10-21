@@ -26,6 +26,9 @@ const SKIP_DIR_NAMES = new Set([
   "test-results",
 ]);
 
+// 测试文件断言 URL 字面量但不发起网络调用，统一排除（fork+上游 3.16 测试量大增）。
+const TEST_FILE_RE = /(?:\.test\.tsx?|\.test\.mjs|\.spec\.tsx?)$/u;
+
 // zcode.z.ai 平台 origin 的合法落点（相对仓库根）。新增合法落点必须先更新本清单与 spec。
 const ZCODE_ORIGIN_ALLOWED_FILES = new Set([
   "packages/shared/src/zcodeEndpoint.ts", // 默认 origin 常量，仅用于身份标识与 URL 重写
@@ -104,6 +107,7 @@ for (const root of SCAN_ROOTS) {
     };
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       if (ZCODE_ORIGIN_PATTERN.test(lines[lineIndex])) {
+        if (TEST_FILE_RE.test(relativePath)) continue;
         if (!ZCODE_ORIGIN_ALLOWED_FILES.has(relativePath)) {
           checkLine(
             lineIndex,

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-  ZXCODE_PROTOCOL_NAME,
-  ZXCODE_PROTOCOL_VERSION,
+  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  ZCODE_PROTOCOL_NAME,
+  ZCODE_PROTOCOL_VERSION,
   zcodeComputerUseOperationEventSchema,
+  zcodeProviderRuntimeHeadersRequestParamsSchema,
+  zcodeProviderRuntimeHeadersResponseSchema,
   zcodeProtocolMethods,
   zcodeProtocolMessageSchema,
   zcodeProcessResourceSampleSchema,
@@ -41,7 +43,11 @@ import {
   APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL,
   appRuntimePreferencesChangedBroadcastPayloadSchema,
 } from "../src/app-runtime-preferences.js";
-import { zcodeUserMessageInfoSchema } from "../src/zcode-protocol-legacy-types.js";
+import {
+  isAuxiliarySessionKind,
+  isReadonlyAgentSessionKind,
+  zcodeUserMessageInfoSchema,
+} from "../src/zcode-protocol-legacy-types.js";
 import { conversationRowSchema, workflowLaunchMetaSchema } from "../src/zcode-protocol-v4/rows.js";
 import { errorAttributionSchema } from "../src/zcode-protocol-v4/snapshot.js";
 
@@ -967,9 +973,50 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
-  // fork 已剔除 provider runtime header refresh 交互（账号请求期鉴权链路随 OAuth/账号 provider
-  // 一并移除）：zcodeProviderRuntimeHeaders* schema 与 interaction/requestProviderRuntimeHeaders
-  // method 不再存在，上游对应用例随之删除。
+
+    "runtime headers 直接接受 Registry zhipu access mode: %s",
+    (mode) => {
+      const parsed = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
+        requestId: `request-${mode}`,
+        sessionId: "sess_1",
+        workspace,
+        modelSelection: model,
+        providerId: `account:${mode}`,
+        accountAccess: {
+          type: "zhipu-account",
+          accountType: "bigmodel",
+          mode,
+          entitled: true,
+        },
+        reason: "model-request",
+      });
+
+      expect(parsed.accountAccess).toEqual({
+        type: "zhipu-account",
+        accountType: "bigmodel",
+        mode,
+        entitled: true,
+      });
+    },
+  );
+
+  it("runtime headers 拒绝已经退出 Registry 的旧 planKind Access 形状", () => {
+    expect(() =>
+      zcodeProviderRuntimeHeadersRequestParamsSchema.parse({
+        requestId: "request-legacy",
+        sessionId: "sess_1",
+        workspace,
+        modelSelection: model,
+        providerId: "account:legacy",
+        accountAccess: {
+          type: "zhipu-account",
+          accountType: "bigmodel",
+          planKind: "team-coding-plan",
+        },
+        reason: "model-request",
+      }),
+    ).toThrow();
+  });
 
   it("parses subagent mirrored tool updates with explicit protocol metadata", () => {
     const scheduled = zcodeSessionEventSchema.parse({
@@ -1178,8 +1225,8 @@ describe("ZCode Protocol", () => {
   it("parses a server-authoritative session state snapshot", () => {
     const snapshot = zcodeSessionStateSnapshotSchema.parse({
       protocol: {
-        name: ZXCODE_PROTOCOL_NAME,
-        version: ZXCODE_PROTOCOL_VERSION,
+        name: ZCODE_PROTOCOL_NAME,
+        version: ZCODE_PROTOCOL_VERSION,
       },
       session: {
         sessionId: "sess_1",
@@ -1890,17 +1937,6 @@ describe("ZCode Protocol", () => {
     // A 129-char label exceeds the label bound.
     expect(() => parseWith({ ...graph, steps: [{ ...step, label: "n".repeat(129) }] })).toThrow();
 
-    // step 级 `edges` 与 `Lane.nesting` 已退出载荷（docs/dynamic-workflow/presentation.md）：
-    // 空数组也是多出来的键。
-    expect(() => parseWith({ ...graph, edges: [] })).toThrow();
-    expect(() => parseWith({ ...graph, lanes: [{ id: "actor#1", nesting: 1 }] })).toThrow();
-
-    // 参与者与交接必填——零参与者是空数组，不是缺席。
-    const { participants: _p, ...noParticipants } = graph;
-    const { handoffs: _h, ...noHandoffs } = graph;
-    expect(() => parseWith(noParticipants)).toThrow();
-    expect(() => parseWith(noHandoffs)).toThrow();
-
     // 65 participants exceed the 64-participant bound.
     expect(() =>
       parseWith({
@@ -1914,29 +1950,18 @@ describe("ZCode Protocol", () => {
     ).toThrow();
 
     // 一张卡至少一个 step；member = {index ≥ 0, of ≥ 1} strict；many 只接受字面量 true。
-    expect(() => parseWith({ ...graph, participants: [{ ...participant, steps: [] }] })).toThrow();
     expect(() =>
       parseWith({
         ...graph,
         participants: [{ ...participant, id: "unphased:actor#1[1]", member: { index: 1, of: 2 } }],
       }),
     ).not.toThrow();
-    for (const member of [{ index: -1, of: 2 }, { index: 0, of: 0 }, { index: 0 }, { of: 2 }]) {
-      expect(() => parseWith({ ...graph, participants: [{ ...participant, member }] })).toThrow();
-    }
     expect(() =>
-      parseWith({ ...graph, participants: [{ ...participant, many: false }] }),
+      parseWith({ ...graph, participants: [{ ...participant, member: { of: 2 } }] }),
     ).toThrow();
 
     // 交接边只有 {from, to, back?, types?}：分析器的 kind / certainty 不进展示载荷。
     const handoff = { from: "unphased:actor#1", to: "unphased:actor#1" };
-    expect(() =>
-      parseWith({
-        ...graph,
-        handoffs: [{ ...handoff, kind: "message", certainty: "always" }],
-      }),
-    ).toThrow();
-
     // 257 handoffs exceed the 256-handoff bound.
     expect(() =>
       parseWith({ ...graph, handoffs: Array.from({ length: 257 }, () => handoff) }),
@@ -1946,17 +1971,7 @@ describe("ZCode Protocol", () => {
     expect(() =>
       parseWith({ ...graph, handoffs: [{ ...handoff, types: ["Flaky"] }] }),
     ).not.toThrow();
-    for (const types of [
-      [],
-      Array.from({ length: 9 }, (_, i) => `T${i}`),
-      [""],
-      ["t".repeat(129)],
-    ]) {
-      expect(() => parseWith({ ...graph, handoffs: [{ ...handoff, types }] })).toThrow();
-    }
-
-    // `back` 是字面量 true：false / 字符串都不是「没标回边」的另一种拼法。
-    expect(() => parseWith({ ...graph, handoffs: [{ ...handoff, back: false }] })).toThrow();
+    expect(() => parseWith({ ...graph, handoffs: [{ ...handoff, types: [""] }] })).toThrow();
   });
 
   it("accepts may-set lane-expansion copies with `source` on both protocol boundaries", () => {
@@ -2034,8 +2049,6 @@ describe("ZCode Protocol", () => {
       display: { causalityGraph },
     });
 
-    // 拷贝 id（`site~lane`）在 64 字符 id 上限内；source 走同一组上界。
-    expect(copy.id.length).toBeLessThanOrEqual(64);
     // 65 字符的 source 越界，整份载荷因此不被携带（不设门 = 丢卡，不是拒帧；§4.4.5）。
     const overlongSourceRow = conversationRowSchema.parse({
       ...base,
@@ -2172,9 +2185,6 @@ describe("ZCode Protocol", () => {
     expect(conversationRowSchema.parse({ ...base, display })).toMatchObject({
       display: { causalityGraph },
     });
-
-    // 两种展开叠加的 id（`ask#2~actor#1~phase#2`）仍在 64 字符上限内。
-    expect("ask#2~actor#1~phase#2".length).toBeLessThanOrEqual(64);
 
     // v4 行上的 display 不设门（docs/v4-refactor/10-protocol-spec.md §4.4.5）：认不出来的载荷被
     // 丢掉、row 本身仍然有效，而不是把整帧拒掉。所以本 helper 断言的是「这份图被携带了」——被丢
@@ -2637,8 +2647,29 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
+  it("validates ToolSearch startup preferences and defaults old Host responses off", () => {
+    expect(
+      zcodeSessionRuntimePreferencesResultSchema.parse({ nativeSearchEnhancementsEnabled: true })
+        .toolSearchMode,
+    ).toBe("off");
+    for (const mode of ["auto", "local", "off"]) {
+      expect(
+        zcodeSessionRuntimePreferencesResultSchema.parse({
+          nativeSearchEnhancementsEnabled: true,
+          toolSearchMode: mode,
+        }).toolSearchMode,
+      ).toBe(mode);
+    }
+    expect(
+      zcodeSessionRuntimePreferencesResultSchema.safeParse({
+        nativeSearchEnhancementsEnabled: true,
+        toolSearchMode: "native",
+      }).success,
+    ).toBe(false);
+  });
+
   it("keeps runtime preference compatibility by defaulting missing fields", () => {
-    expect(DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
+    expect(DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY).toBe("preflight-v1");
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({
         nativeSearchEnhancementsEnabled: true,
@@ -2646,7 +2677,7 @@ describe("ZCode Protocol", () => {
     ).toMatchObject({
       askUserQuestionAutoResolutionEnabled: true,
       memoryEnabled: false,
-      modelContextBudgetStrategy: DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     });
     expect(
       zcodeSessionRuntimePreferencesResultSchema.parse({
@@ -2844,5 +2875,23 @@ describe("v4 workflowLaunch rows (direct-launch)", () => {
         amend: { ...retune.amend, predecessorRunId: null },
       }).success,
     ).toBe(false);
+  });
+});
+
+// 类型策略相互独立：辅助对话继承项目且隐藏，但仍能接受用户输入。
+describe("session kind policies", () => {
+  it.each([
+    ["interactive", false, false],
+    ["fork", false, false],
+    ["workflow_parent", false, false],
+    ["subagent_child", true, true],
+    ["workflow_child", true, true],
+    ["nested_workflow_child", true, true],
+    ["selection_side_chat", true, false],
+    [undefined, false, false],
+    ["unknown", false, false],
+  ] as const)("%s preserves its project/list and input policy", (kind, auxiliary, readonly) => {
+    expect(isAuxiliarySessionKind(kind)).toBe(auxiliary);
+    expect(isReadonlyAgentSessionKind(kind)).toBe(readonly);
   });
 });

@@ -64,16 +64,17 @@ Every `execute` call takes a `--command` argument: a **JSON array** of `MgoComma
 
 ### CommandType → Command template
 
-| `CommandType` | `Command` template |
-|---|---|
-| `QUERY` | `{"find":"<coll>","filter":{...},"limit":N}` |
-| `INSERT` | `{"insert":"<coll>","documents":[{...}]}` |
-| `UPDATE` | `{"update":"<coll>","updates":[{"q":{...},"u":{"$set":{...}}}]}` |
-| `DELETE` | `{"delete":"<coll>","deletes":[{"q":{...},"limit":1}]}` |
-| `COMMAND` (count) | `{"count":"<coll>","query":{...}}` |
-| `COMMAND` (aggregate) | `{"aggregate":"<coll>","pipeline":[...],"cursor":{}}` |
+| `CommandType`         | `Command` template                                               |
+| --------------------- | ---------------------------------------------------------------- |
+| `QUERY`               | `{"find":"<coll>","filter":{...},"limit":N}`                     |
+| `INSERT`              | `{"insert":"<coll>","documents":[{...}]}`                        |
+| `UPDATE`              | `{"update":"<coll>","updates":[{"q":{...},"u":{"$set":{...}}}]}` |
+| `DELETE`              | `{"delete":"<coll>","deletes":[{"q":{...},"limit":1}]}`          |
+| `COMMAND` (count)     | `{"count":"<coll>","query":{...}}`                               |
+| `COMMAND` (aggregate) | `{"aggregate":"<coll>","pipeline":[...],"cursor":{}}`            |
 
 Notes:
+
 - `TableName` usually matches the target collection name.
 - ⚠️ `UPDATE` and `DELETE` commonly fail because users pass an object instead of the required `updates`/`deletes` **array**.
 - ⚠️ Aggregation requires `"cursor":{}` — omitting it causes an error.
@@ -112,10 +113,12 @@ Inner `Command` (after unescaping) for reference:
 ```json
 {
   "update": "users",
-  "updates": [{
-    "q": { "name": "alice", "status": "pending" },
-    "u": { "$set": { "status": "active", "age": 26 } }
-  }]
+  "updates": [
+    {
+      "q": { "name": "alice", "status": "pending" },
+      "u": { "$set": { "status": "active", "age": 26 } }
+    }
+  ]
 }
 ```
 
@@ -170,12 +173,12 @@ tcb db nosql backup task -e <envId> --json
 
 ### Backup command options
 
-| Command | Required options |
-|---------|-----------------|
-| `backup time` | `-e <envId>` |
+| Command             | Required options                                            |
+| ------------------- | ----------------------------------------------------------- |
+| `backup time`       | `-e <envId>`                                                |
 | `backup collection` | `-e <envId>`, `--time`; optionally `--filters users,orders` |
-| `backup restore` | `-e <envId>`, `--time`, `--tables` (non-empty JSON array) |
-| `backup task` | `-e <envId>` |
+| `backup restore`    | `-e <envId>`, `--time`, `--tables` (non-empty JSON array)   |
+| `backup task`       | `-e <envId>`                                                |
 
 ### Validation rules
 
@@ -214,6 +217,7 @@ tcb db nosql execute -e <envId> --command "[{"TableName":"users"...}]"
 ```
 
 **Practical tips:**
+
 - Build the inner JSON in an editor first, then compress to one line for the shell.
 - When debugging, validate the outer payload first (must be a JSON array), then inspect only the inner `Command` string.
 - If parsing still fails, check for unescaped backslashes in the inner string.
@@ -226,16 +230,16 @@ Use `--instance-id` and `--database-name` only when targeting a specific connect
 
 ## Common Errors
 
-| Error / Symptom | Cause | Fix |
-|-----------------|-------|-----|
-| `--command` parse failure | Not a valid JSON array | Validate JSON locally; must be `[...]` not `{...}` |
-| `Command` field rejected | Raw object instead of string | Stringify inner JSON: escape `"` as `\"` |
-| `UPDATE`/`DELETE` fails silently | Missing `updates`/`deletes` array | Use `"updates":[{...}]` not a bare object |
-| `$set` / `$gt` resolves to empty | Shell interprets `$` as variable | Switch to single quotes around `--command` |
-| Wrong database targeted | Multiple instances, no `--tag` | Add `--tag <tag>` |
-| `--tables` parse failure | Not a non-empty JSON array | Validate: `[{"OldTableName":"x","NewTableName":"y"}]` |
-| `aggregate` returns error | Missing `"cursor":{}` | Add `\"cursor\":{}` to the aggregate command |
-| Restore seems to have no effect | Looking at original collection | Check the `NewTableName` collection instead |
+| Error / Symptom                  | Cause                             | Fix                                                   |
+| -------------------------------- | --------------------------------- | ----------------------------------------------------- |
+| `--command` parse failure        | Not a valid JSON array            | Validate JSON locally; must be `[...]` not `{...}`    |
+| `Command` field rejected         | Raw object instead of string      | Stringify inner JSON: escape `"` as `\"`              |
+| `UPDATE`/`DELETE` fails silently | Missing `updates`/`deletes` array | Use `"updates":[{...}]` not a bare object             |
+| `$set` / `$gt` resolves to empty | Shell interprets `$` as variable  | Switch to single quotes around `--command`            |
+| Wrong database targeted          | Multiple instances, no `--tag`    | Add `--tag <tag>`                                     |
+| `--tables` parse failure         | Not a non-empty JSON array        | Validate: `[{"OldTableName":"x","NewTableName":"y"}]` |
+| `aggregate` returns error        | Missing `"cursor":{}`             | Add `\"cursor\":{}` to the aggregate command          |
+| Restore seems to have no effect  | Looking at original collection    | Check the `NewTableName` collection instead           |
 
 ---
 

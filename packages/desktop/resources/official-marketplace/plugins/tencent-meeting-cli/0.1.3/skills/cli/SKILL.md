@@ -15,11 +15,11 @@ description: Use Tencent Meeting CLI (tmeet) to query or manage meetings, record
 tmeet --help
 ```
 
-| 任务 | 按需读取 |
-| --- | --- |
+| 任务                       | 按需读取               |
+| -------------------------- | ---------------------- |
 | 会议查询、创建、修改、取消 | `tmeet meeting --help` |
-| 录制、转写、智能纪要 | `tmeet record --help` |
-| 参会报告 | `tmeet report --help` |
+| 录制、转写、智能纪要       | `tmeet record --help`  |
+| 参会报告                   | `tmeet report --help`  |
 
 例如查询会议时先运行 `tmeet meeting list --help`。该命令列出进行中或即将开始的会议；历史会议从实时帮助中的 `list-ended` 或 `search` 入口选择。其他能力从顶层帮助发现，未出现的命令不要直接执行。
 

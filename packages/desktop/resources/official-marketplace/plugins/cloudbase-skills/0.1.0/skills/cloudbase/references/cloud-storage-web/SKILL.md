@@ -82,11 +82,11 @@ Just like Supabase Storage, CloudBase Storage requires the target bucket to exis
 
 Mental model parity with Supabase:
 
-| Step | Supabase | CloudBase |
-| ---- | -------- | --------- |
-| Create bucket | `supabase.storage.createBucket('covers', { public: true })` (admin-side, with service role) | In PG mode, create a `storage.buckets` bucket through PG storage HTTP API / CLI / console / SQL on `storage.buckets` when appropriate. The browser SDK cannot create one. |
-| Upload | `supabase.storage.from('covers').upload('a.png', file)` | **PG 模式**: `app.storage.from('covers').upload('a.png', file)` — `from(bucketName)` 指定 pgstore 存储桶。<br>**非 PG 模式**: `app.storage.from().upload('covers/a.png', file)` — bucket 名作为路径第一段。|
-| Bucket missing error | `Bucket not found` | Browser sees `STORAGE_BUCKET_NOT_FOUND` (PG) or `STORAGE_NOT_EXIST` (NoSQL), then a follow-up `PUT https://undefined/` because the SDK still tries to PUT a missing `metadata.url`. |
+| Step                 | Supabase                                                                                    | CloudBase                                                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create bucket        | `supabase.storage.createBucket('covers', { public: true })` (admin-side, with service role) | In PG mode, create a `storage.buckets` bucket through PG storage HTTP API / CLI / console / SQL on `storage.buckets` when appropriate. The browser SDK cannot create one.                                   |
+| Upload               | `supabase.storage.from('covers').upload('a.png', file)`                                     | **PG 模式**: `app.storage.from('covers').upload('a.png', file)` — `from(bucketName)` 指定 pgstore 存储桶。<br>**非 PG 模式**: `app.storage.from().upload('covers/a.png', file)` — bucket 名作为路径第一段。 |
+| Bucket missing error | `Bucket not found`                                                                          | Browser sees `STORAGE_BUCKET_NOT_FOUND` (PG) or `STORAGE_NOT_EXIST` (NoSQL), then a follow-up `PUT https://undefined/` because the SDK still tries to PUT a missing `metadata.url`.                         |
 
 Required pre-upload steps in any task that needs browser uploads:
 
@@ -104,11 +104,13 @@ Do not silently swallow upload failures. If `uploadCoverImage()` rejects, the pa
 In PG / pgstore environments, use `app.storage.from('covers').upload(key, file)` for uploads and `app.storage.from('covers').createSignedUrl(path, expiresIn)` for getting access URLs.
 
 Do NOT use the legacy NoSQL APIs in PG mode:
+
 - ❌ `app.uploadFile()` — 这是旧 NoSQL 的上传 API
 - ❌ `app.getTempFileURL()` — 这是旧 NoSQL 的获取 URL 方式
 - ❌ `app.storage.from().upload('covers/file', file)` — 没有传 bucket 名
 
 Use instead:
+
 - ✅ `app.storage.from('covers').upload('file', file)` — PG 模式上传
 - ✅ `app.storage.from('covers').createSignedUrl('file', 3600)` — 获取签名 URL（返回 `fullSignedURL` 字段）
 
@@ -139,6 +141,7 @@ CREATE POLICY "users_manage_own" ON storage.objects
 ```
 
 Key points:
+
 - `storage.objects` RLS is **separate** from CloudBase legacy NoSQL storage security rules (`managePermissions` / `ModifyStorageSafeRule`). In PG mode, always configure storage RLS via PG SQL, not the legacy security rule API.
 - Without these policies, the browser receives `STORAGE_PERMISSION_DENIED` when calling `app.storage.from('covers').upload()` in PG mode.
 - Use `IF NOT EXISTS` in a `DO $$` block when re-applying to avoid "policy already exists" errors on re-run.
@@ -160,7 +163,7 @@ Typical tasks:
 import cloudbase from "@cloudbase/js-sdk";
 
 const app = cloudbase.init({
-  env: "your-env-id"
+  env: "your-env-id",
 });
 ```
 
@@ -182,7 +185,7 @@ Initialization rules:
 ```javascript
 const result = await app.uploadFile({
   cloudPath: "uploads/avatar.jpg",
-  filePath: selectedFile
+  filePath: selectedFile,
 });
 ```
 
@@ -207,7 +210,7 @@ await app.uploadFile({
   onUploadProgress: ({ loaded, total }) => {
     const percent = Math.round((loaded * 100) / total);
     console.log(percent);
-  }
+  },
 });
 ```
 
@@ -218,9 +221,9 @@ const result = await app.getTempFileURL({
   fileList: [
     {
       fileID: "cloud://env-id/uploads/avatar.jpg",
-      maxAge: 3600
-    }
-  ]
+      maxAge: 3600,
+    },
+  ],
 });
 ```
 
@@ -231,14 +234,15 @@ Typical upload + preview flow:
 ```javascript
 const uploadResult = await app.uploadFile({
   cloudPath: "uploads/avatar.jpg",
-  filePath: selectedFile
+  filePath: selectedFile,
 });
 
 const tempUrlResult = await app.getTempFileURL({
-  fileList: [{ fileID: uploadResult.fileID, maxAge: 3600 }]
+  fileList: [{ fileID: uploadResult.fileID, maxAge: 3600 }],
 });
 
-const previewUrl = tempUrlResult.fileList?.[0]?.tempFileURL || tempUrlResult.fileList?.[0]?.download_url;
+const previewUrl =
+  tempUrlResult.fileList?.[0]?.tempFileURL || tempUrlResult.fileList?.[0]?.download_url;
 if (!previewUrl) {
   throw new Error("Failed to resolve temporary file URL after upload");
 }
@@ -248,7 +252,7 @@ if (!previewUrl) {
 
 ```javascript
 await app.deleteFile({
-  fileList: ["cloud://env-id/uploads/old-avatar.jpg"]
+  fileList: ["cloud://env-id/uploads/old-avatar.jpg"],
 });
 ```
 
@@ -258,7 +262,7 @@ Always inspect per-file results before assuming deletion succeeded.
 
 ```javascript
 await app.downloadFile({
-  fileID: "cloud://env-id/uploads/report.pdf"
+  fileID: "cloud://env-id/uploads/report.pdf",
 });
 ```
 
@@ -303,7 +307,7 @@ Typical examples:
 try {
   const result = await app.uploadFile({
     cloudPath: "uploads/file.jpg",
-    filePath: selectedFile
+    filePath: selectedFile,
   });
   console.log(result.fileID);
 } catch (error) {

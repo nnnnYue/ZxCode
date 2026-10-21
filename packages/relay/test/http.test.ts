@@ -243,6 +243,34 @@ describe("relay http server", () => {
     }
   });
 
+  it("无 token 部署：桌面 hello 携带空 relayToken 也能建立控制连接", async () => {
+    const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
+    try {
+      // 桌面端未配置 token 时 relayToken 发送空串；修复前 schema 要求非空，
+      // hello 解析失败被当作未握手关闭（1002 hello-required），桌面陷入无限重连。
+      const ws = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/host-control`);
+      const inbox: unknown[] = [];
+      ws.on("message", (raw) => inbox.push(JSON.parse(String(raw))));
+      await once(ws, "open");
+      ws.send(
+        JSON.stringify({
+          type: "relay-control-hello",
+          deviceId: "device-no-token",
+          relayToken: "",
+          version: ZXCODE_RELAY_PROTOCOL_VERSION,
+        }),
+      );
+      await waitFor(() => inbox.some((m) => (m as { type?: string }).type === "relay-control-ack"));
+      const ack = inbox.find((m) => (m as { type?: string }).type === "relay-control-ack") as {
+        deviceId?: string;
+      };
+      expect(ack.deviceId).toBe("device-no-token");
+      ws.close();
+    } finally {
+      await relay.close();
+    }
+  });
+
   it("静态托管：未配置 webRoot 返回引导页", async () => {
     const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
     try {

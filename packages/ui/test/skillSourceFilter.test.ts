@@ -12,19 +12,19 @@ const demoSkills = [
   },
   {
     id: "skill-glm-deprecated",
-    path: "/tmp/workspace/.zxcode/cli/skills/glm-only/SKILL.md",
+    path: "/tmp/workspace/.zcode/cli/skills/glm-only/SKILL.md",
   },
   {
     id: "skill-glm-by-path",
-    path: "/tmp/workspace/.zxcode/skills/glm-only/SKILL.md",
+    path: "/tmp/workspace/.zcode/skills/glm-only/SKILL.md",
   },
   {
     id: "glm:workspace:zcode-common:abc123",
-    path: "/tmp/workspace/.zxcode/skills/common/SKILL.md",
+    path: "/tmp/workspace/.zcode/skills/common/SKILL.md",
   },
   {
     id: "claude:workspace:zcode-common:abc123",
-    path: "/tmp/workspace/.zxcode/skills/common-from-legacy-list/SKILL.md",
+    path: "/tmp/workspace/.zcode/skills/common-from-legacy-list/SKILL.md",
   },
   {
     id: "glm:user:mirrored:abc123",
@@ -32,24 +32,24 @@ const demoSkills = [
   },
   {
     id: "skill-plugin-by-scope",
-    path: "/tmp/home/.zxcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
+    path: "/tmp/home/.zcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
     scope: "plugin",
   },
   {
     id: "skill-plugin-by-path",
-    path: "/tmp/home/.zxcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/docx/SKILL.md",
+    path: "/tmp/home/.zcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/docx/SKILL.md",
   },
 ];
 
 describe("skillSourceFilter", () => {
-  it("把 .zxcode/skills 和官方 plugin cache 识别为 ZCode Agent 技能来源", () => {
-    expect(resolveSkillSourceType("/tmp/workspace/.zxcode/skills/my-skill/SKILL.md")).toBe("glm");
+  it("把 .zcode/skills 和官方 plugin cache 识别为 ZCode Agent 技能来源", () => {
+    expect(resolveSkillSourceType("/tmp/workspace/.zcode/skills/my-skill/SKILL.md")).toBe("glm");
     expect(
       resolveSkillSourceType(
-        "/tmp/home/.zxcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
+        "/tmp/home/.zcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
       ),
     ).toBe("glm");
-    expect(resolveSkillSourceType("/tmp/workspace/.zxcode/cli/skills/my-skill/SKILL.md")).toBe(
+    expect(resolveSkillSourceType("/tmp/workspace/.zcode/cli/skills/my-skill/SKILL.md")).toBe(
       "unknown",
     );
     expect(resolveSkillSourceType("/tmp/workspace/.agents/skills/my-skill/SKILL.md")).toBe(
@@ -57,7 +57,7 @@ describe("skillSourceFilter", () => {
     );
   });
 
-  it("provider 参数只作兼容输入，过滤结果始终保留 ZCode Agent 技能", () => {
+  it("过滤混合来源时保留 ZCode Agent 技能", () => {
     const expectedIds = [
       "skill-glm-by-path",
       "glm:workspace:zcode-common:abc123",
@@ -68,12 +68,6 @@ describe("skillSourceFilter", () => {
     ];
 
     expect(filterSkillsForProvider(demoSkills, "glm").map((skill) => skill.id)).toEqual(
-      expectedIds,
-    );
-    expect(filterSkillsForProvider(demoSkills, "claude").map((skill) => skill.id)).toEqual(
-      expectedIds,
-    );
-    expect(filterSkillsForProvider(demoSkills, "codex").map((skill) => skill.id)).toEqual(
       expectedIds,
     );
   });

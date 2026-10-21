@@ -86,12 +86,12 @@ wb.save(f"{DELIVER}/model.xlsx")   # DELIVER = the caller's delivery directory
   column. (Documents are the opposite — see `formatting.md`.)
 - **Numbers right-aligned, text left-aligned.** Headers align with their column.
 - **No hardcodes in calc cells.** Every calculation cell is a formula; every input lives on an Inputs tab.
-- **A number typed *inside* a formula is still a hardcode — being in a formula does
+- **A number typed _inside_ a formula is still a hardcode — being in a formula does
   not launder it.** `=6173.8194+1.1194` looks compliant and is not: the two figures
   are retrieved values with no cell of their own, so neither can be coloured blue,
   neither can carry its own source comment, and a reader cannot change one and see
   the model move. This is the loophole in the rule above, and it reads as satisfying
-  it — "the cell *is* a formula". Put each retrieved figure in its own input cell
+  it — "the cell _is_ a formula". Put each retrieved figure in its own input cell
   with its own comment, then have the formula reference those cells:
   `=Inputs!B12+Inputs!B13`.
   - The only literals a formula may carry are **structural constants a reader would
@@ -101,18 +101,18 @@ wb.save(f"{DELIVER}/model.xlsx")   # DELIVER = the caller's delivery directory
   - The tell is a **multi-decimal literal in a formula** — `6173.8194`, `0.0865`.
     Structural constants are short and round.
 - **A value you derived from other cells in this workbook is a calc cell, whatever
-  it is a value *of*.** The exemption for retrieved inputs covers what you fetched,
+  it is a value _of_.** The exemption for retrieved inputs covers what you fetched,
   not what you worked out from it: a 毛利润 that is 收入−成本, a 下行情景 that is
   基准×0.7, a 净利率 you divided out, a subtotal, a YoY. If a reader changes the
   cell it came from and your number does not move, the model is decoration.
   **The tell is a full-precision float in an uncommented cell** —
   `722.4499999999998`, `0.09799999999999999`, `0.0271925445165585`. Read the raw
   value, not the display: every observed instance sat behind a `#,##0.0` or `0.0%`
-  format, which is exactly why none was ever caught. A *commented* cell at that
+  format, which is exactly why none was ever caught. A _commented_ cell at that
   precision is different and fine — vendor APIs return their fields that way, and a
   retrieved 涨跌幅 of `3.357724446617073` is faithful rather than computed.
 - **Every hardcoded input carries a source comment**: `Source: <System or
-  Document>, <Date>, <Reference>, <URL>`. A calculated cell carries a formula,
+Document>, <Date>, <Reference>, <URL>`. A calculated cell carries a formula,
   which is its own provenance — a source comment on a calculated cell means a
   hardcode is hiding in it. In a screen or roster workbook the per-row `来源编号`
   column carries this instead — see "Two classes of workbook" below.
@@ -145,9 +145,9 @@ Vehicle instead:
 1. **A `来源` worksheet, that exact sheet name** — last tab in the book. One row
    per distinct source, numbered so data rows can point at it:
 
-   | 编号 | 一手/二手 | 发布主体 · 文档或系统名 | 指标/字段 | 日期(发布日) | 检索于 | URL |
-   |---|---|---|---|---|---|---|
-   | 1 | 一手 | 同花顺 iFinD · 债券静态档案 | 债券简称/发行人/到期日([债券代码]) | — | 2026-08-12 | … |
+   | 编号 | 一手/二手 | 发布主体 · 文档或系统名     | 指标/字段                          | 日期(发布日) | 检索于     | URL |
+   | ---- | --------- | --------------------------- | ---------------------------------- | ------------ | ---------- | --- |
+   | 1    | 一手      | 同花顺 iFinD · 债券静态档案 | 债券简称/发行人/到期日([债券代码]) | —            | 2026-08-12 | …   |
 
    **「发布主体 · 文档或系统名」填数据来源方,不填接口名** —— 写机构
    （同花顺 iFinD / 万得 / 万得基金 / 天眼查）加上取的是什么数据,像上表那样
@@ -202,7 +202,7 @@ your source citations. Pass `--write-back` only if you want the recalculated fil
 and a `.bak` is written first.
 
 ```json
-{"status": "success", "total_errors": 0, "total_formulas": 42}
+{ "status": "success", "total_errors": 0, "total_formulas": 42 }
 ```
 
 Exit codes are meaningful, so `&&` chains behave: `0` success, `2` errors_found,

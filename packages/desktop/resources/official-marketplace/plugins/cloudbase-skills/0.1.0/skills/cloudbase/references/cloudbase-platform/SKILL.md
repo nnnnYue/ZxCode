@@ -15,6 +15,7 @@ If this environment only installed the current skill, start from the CloudBase m
 Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
 
 **Cross-cutting protocols** (always load these when doing code changes or deployments in standalone mode):
+
 - Change Safety Protocol: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/change-safety-protocol.md`
 - Deployment Gate: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudbase-platform/references/protocols/deployment-gate.md`
 
@@ -109,13 +110,14 @@ Use this skill for **CloudBase platform knowledge** when you need to:
 
 When working with domain-related tasks, use the correct tool based on the requirement:
 
-| Requirement | Tool | Parameters | Purpose |
-|-------------|------|------------|---------|
-| **Security Domain (安全域名)** | `envDomainManagement` | `action`, `domains` (array of host:port strings) | CORS/request source validation for browser uploads. No certificate involved. |
-| **Custom Domain (自定义域名)** | `manageGateway(action="bindCustomDomain")` | `domain` (string), `certificateId` (string) | Public HTTPS access with SSL certificate. Requires certId from SSL console. |
-| **Delete Custom Domain** | `manageGateway(action="deleteCustomDomain")` | `domain` (string) | Remove custom domain binding. |
+| Requirement                    | Tool                                         | Parameters                                       | Purpose                                                                      |
+| ------------------------------ | -------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **Security Domain (安全域名)** | `envDomainManagement`                        | `action`, `domains` (array of host:port strings) | CORS/request source validation for browser uploads. No certificate involved. |
+| **Custom Domain (自定义域名)** | `manageGateway(action="bindCustomDomain")`   | `domain` (string), `certificateId` (string)      | Public HTTPS access with SSL certificate. Requires certId from SSL console.  |
+| **Delete Custom Domain**       | `manageGateway(action="deleteCustomDomain")` | `domain` (string)                                | Remove custom domain binding.                                                |
 
 **Key indicators for choosing the right tool:**
+
 - Task mentions "certificate ID" or "SSL" → Use `manageGateway(action="bindCustomDomain")`
 - Task mentions "浏览器上传" or "CORS" or "安全域名" → Use `envDomainManagement`
 - Task mentions "public access" or "HTTPS" with domain → Use `manageGateway`
@@ -130,11 +132,12 @@ When a task explicitly requires recording operation steps or results to a file (
 4. Include both successful operations and failed attempts with error messages
 
 Example structure for operation recording:
+
 ```json
 {
   "steps": [
-    {"action": "listDomains", "success": true, "message": "Found 3 domains"},
-    {"action": "bindDomain", "success": false, "message": "Certificate not found"}
+    { "action": "listDomains", "success": true, "message": "Found 3 domains" },
+    { "action": "bindDomain", "success": false, "message": "Certificate not found" }
   ],
   "summary": {
     "totalAttempted": 2,
@@ -182,14 +185,15 @@ Example structure for operation recording:
 2. **Environment Management (via manageEnv)**:
    The `manageEnv` tool provides full lifecycle management for CloudBase environments.
 
-   | Action | Description | Key Parameters |
-   |--------|-------------|----------------|
-   | `listPackages` | Query available plans | (none) |
-   | `create` | Create new environment (needs confirm) | `alias`, `packageId`, `resources`, `region`, `duration` |
-   | `modifyPlan` | Change plan (upgrade/downgrade, needs confirm) | `envId`, `packageId` |
-   | `renew` | Renew environment (needs confirm) | `envId`, `duration` |
+   | Action         | Description                                    | Key Parameters                                          |
+   | -------------- | ---------------------------------------------- | ------------------------------------------------------- |
+   | `listPackages` | Query available plans                          | (none)                                                  |
+   | `create`       | Create new environment (needs confirm)         | `alias`, `packageId`, `resources`, `region`, `duration` |
+   | `modifyPlan`   | Change plan (upgrade/downgrade, needs confirm) | `envId`, `packageId`                                    |
+   | `renew`        | Renew environment (needs confirm)              | `envId`, `duration`                                     |
 
    **Creating an environment with specific resources:**
+
    ```
    manageEnv(action="create", alias="my-env", packageId="baas_personal",
              resources=["flexdb","storage","function","postgresql"], confirm="yes")
@@ -204,16 +208,19 @@ Example structure for operation recording:
    - ⚠️ **All paid operations** (create / modifyPlan / renew) require `confirm="yes"`.
 
    **Querying available packages before creating:**
+
    ```
    manageEnv(action="listPackages")
    ```
 
    **Changing plan (e.g. personal → standard):**
+
    ```
    manageEnv(action="modifyPlan", envId="your-env-id", packageId="baas_pf_standard", confirm="yes")
    ```
 
    **Renewing an environment:**
+
    ```
    manageEnv(action="renew", envId="your-env-id", duration=1, confirm="yes")
    ```
@@ -223,6 +230,7 @@ Example structure for operation recording:
 **Important: Authentication methods for different platforms are completely different, must strictly distinguish!**
 
 ### Web Authentication
+
 - **Must use SDK built-in authentication**: CloudBase Web SDK provides complete authentication features
 - **Recommended method**: SMS login with `auth.getVerification()`, for detailed, refer to web auth related docs
 - **Forbidden behavior**: Do not use cloud functions to implement login authentication logic
@@ -232,6 +240,7 @@ Example structure for operation recording:
 - **⚠️ PG RLS: Use `auth.uid()`, NOT `current_user`.** When writing RLS policies for CloudBase PostgreSQL, the user identity must use `auth.uid()` (returns the JWT `sub` / actual user ID). Do NOT use `current_user` or `current_setting(...)` — these PostgreSQL built-in functions return the database role name (e.g. `authenticated`), not the CloudBase auth user ID. CloudBase PG provides four auth helper functions: `auth.uid()`, `auth.role()`, `auth.email()`, `auth.jwt()`. Verify availability with `SELECT proname FROM pg_proc WHERE pronamespace = 'auth'::regnamespace`.
 
 ### Mini Program Authentication
+
 - **Login-free feature**: Mini program CloudBase is naturally login-free, no login flow needed
 - **User identifier**: In cloud functions, get `wxContext.OPENID` via wx-server-sdk
 - **User management**: Manage user data in cloud functions based on openid
@@ -266,9 +275,11 @@ Example structure for operation recording:
    - ✅ Cloud functions have full access regardless of permission type
 
 3. **Configuration Workflow**:
+
    ```
    Create collection → Configure security rules → Write code → Test
    ```
+
    - Use `managePermissions(action="updateResourcePermission")` to configure resource permissions
    - If permissions were just changed, allow a short propagation window (typically 2-5 minutes) before retesting, but do not assume every failure is cache. Re-check the actual rule shape and active client write pattern first.
    - See `no-sql-web-sdk/security-rules.md` for detailed `resourceType="noSqlDatabase"` examples only; do not treat `doc._openid`, `auth.openid`, query-subset validation, or `create` / `update` / `delete` JSON templates as generic rules for functions, storage, or SQL tables
@@ -279,6 +290,7 @@ Example structure for operation recording:
      - Storage security rules: `https://docs.cloudbase.net/storage/security-rules`
 
 Compatibility note:
+
 - Canonical plugin name: `permissions`
 - Legacy plugin aliases `security-rule`, `security-rules`, `secret-rule`, `secret-rules`, and `access-control` still resolve to the `permissions` plugin
 - Legacy tools `readSecurityRule` / `writeSecurityRule` are removed; prefer `queryPermissions` / `managePermissions`
@@ -323,11 +335,13 @@ CloudBase MCP provides role management capabilities through the `queryPermission
 ### Usage Examples
 
 **List all roles:**
+
 ```
 queryPermissions(action="listRoles")
 ```
 
 **Get specific role details:**
+
 ```
 queryPermissions(action="getRole", roleId="role-xxx")
 # or by identity
@@ -337,16 +351,19 @@ queryPermissions(action="getRole", roleName="Developer")
 ```
 
 **Delete a custom role:**
+
 ```
 managePermissions(action="deleteRoles", roleIds=["role-xxx"])
 ```
 
 **Create a custom role:**
+
 ```
 managePermissions(action="createRole", roleName="Developer", roleIdentity="developer", policies=["FunctionsAccess"], memberUids=["user-uid-1"])
 ```
 
 **Update a role (add policies):**
+
 ```
 managePermissions(action="updateRole", roleId="role-xxx", addPolicies=["StoragesAccess"])
 ```
@@ -478,6 +495,7 @@ The CloudBase console is updated frequently. If a live, logged-in console shows 
 ### Quick Reference
 
 When directing users to console pages:
+
 - Use the full URL with environment ID
 - Explain what they can do on each page
 - Provide context about why they need to access that specific page

@@ -35,12 +35,12 @@ Report accounts present in one chart and not the other, in both directions, befo
 
 ### Step 2: Classify every relation — the four cases behave differently
 
-| 关系 | 处理 | 是否需人工确认 |
-|---|---|---|
-| **1:1** | 直接映射 | 否,除非科目性质不同 |
-| **1:N**(一个源科目拆到多个目标) | 需要拆分依据 | **是** |
-| **N:1**(多个源科目并入一个目标) | 直接合并,但信息丢失 | **是** |
-| **无对应** | 新增科目 / 废止科目 / 需新建 | **是** |
+| 关系                            | 处理                         | 是否需人工确认      |
+| ------------------------------- | ---------------------------- | ------------------- |
+| **1:1**                         | 直接映射                     | 否,除非科目性质不同 |
+| **1:N**(一个源科目拆到多个目标) | 需要拆分依据                 | **是**              |
+| **N:1**(多个源科目并入一个目标) | 直接合并,但信息丢失          | **是**              |
+| **无对应**                      | 新增科目 / 废止科目 / 需新建 | **是**              |
 
 **1:N is the one that cannot be automated.** Splitting one balance across several target accounts requires a basis — a subledger, a cost driver, a contract, a historical ratio — and that basis is an input, not something to invent. **Where no basis exists in the file, the row stays unmapped and is reported as such.** Allocating it on a plausible-looking ratio produces a mapping that ties at the total and is wrong at every line.
 

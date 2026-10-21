@@ -110,23 +110,23 @@ This skill is an **advanced modeling path**, not the default path for database w
 
 ### Type mapping
 
-| Business meaning | Mermaid type |
-| --- | --- |
-| text | `string` |
-| number | `number` |
-| boolean | `boolean` |
-| enum | `x-enum` |
-| email | `email` |
-| phone | `phone` |
-| URL | `url` |
-| image | `x-image` |
-| file | `x-file` |
-| rich text | `x-rtf` |
-| date | `date` |
-| datetime | `datetime` |
-| region | `x-area-code` |
-| location | `x-location` |
-| array | `string[]` or another explicit array type |
+| Business meaning | Mermaid type                              |
+| ---------------- | ----------------------------------------- |
+| text             | `string`                                  |
+| number           | `number`                                  |
+| boolean          | `boolean`                                 |
+| enum             | `x-enum`                                  |
+| email            | `email`                                   |
+| phone            | `phone`                                   |
+| URL              | `url`                                     |
+| image            | `x-image`                                 |
+| file             | `x-file`                                  |
+| rich text        | `x-rtf`                                   |
+| date             | `date`                                    |
+| datetime         | `datetime`                                |
+| region           | `x-area-code`                             |
+| location         | `x-location`                              |
+| array            | `string[]` or another explicit array type |
 
 ### Required structure conventions
 

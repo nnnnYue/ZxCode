@@ -61,6 +61,7 @@ declare global {
   interface Window {
     /** 插件 UI 沙箱 preload 命名空间；旧 preload 下为 undefined。 */
     zcodePluginSandbox?: {
+      setExecutionActive?(sandboxId: string, initId: number, active: boolean): Promise<void>;
       supportsRetainedMove?: boolean;
       copyImage?(
         input: import("@zcode/shared/mcp-apps").PluginSandboxCaptureRequest,

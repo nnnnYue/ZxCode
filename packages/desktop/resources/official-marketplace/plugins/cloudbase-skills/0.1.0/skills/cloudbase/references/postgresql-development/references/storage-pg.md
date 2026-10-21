@@ -10,21 +10,22 @@ PG storage stores file metadata in PostgreSQL `storage` schema and enforces perm
 flowchart TD
     A[当前环境是 PG 模式？] -->|是| B[使用 pgstore]
     A -->|否| C[使用旧 COS / NoSQL 存储]
-    
+
     B --> B1{需要做什么？}
     B1 -->|创建 bucket| B2[INSERT INTO storage.buckets<br>或 HTTP API POST /v1/storages/bucket/]
     B1 -->|上传文件| B3[前端 SDK: app.storage.from().upload()<br>或 HTTP API]
     B1 -->|下载/签名| B4[HTTP API POST /v1/storages/object/sign/]
     B1 -->|查询文件| B5[HTTP API / storage.objects 表查询]
     B1 -->|配置权限| B6[ALTER TABLE storage.objects ENABLE RLS<br>CREATE POLICY ...]
-    
+
     C --> C1{需要做什么？}
     C1 -->|上传/下载| C2[manageStorage / queryStorage 工具]
     C1 -->|查询| C3[queryStorage 工具]
 ```
 
 **核心规则：**
-- PG 环境 → 用 `queryPgStorage`（规划方案） +  HTTP API / 前端 SDK（执行）
+
+- PG 环境 → 用 `queryPgStorage`（规划方案） + HTTP API / 前端 SDK（执行）
 - 旧 COS 环境 → 用 `manageStorage` / `queryStorage`（直接执行）
 
 ## Model
@@ -39,16 +40,16 @@ flowchart TD
 
 Supabase 和 CloudBase PG storage 的设计理念高度一致，可以对照理解：
 
-| Concept | Supabase | CloudBase PG |
-|---------|----------|-------------|
-| **Schema** | `storage.buckets` / `storage.objects` | 相同（内置 pgstore schema） |
-| **Anonymous access** | `anon` key (public, safe for client) | `anon` key（即 publishable key） |
-| **Server access** | `service_role` key (secret, bypass RLS) | API Key（`manageAppAuth(action="createApiKey")`） |
-| **User auth** | User JWT from `supabase.auth.signIn()` | User JWT from `auth.signInWithPassword()` 等 |
-| **RLS** | `CREATE POLICY ... ON storage.objects` | 相同 |
-| **Bucket creation** | `supabase.storage.createBucket()` | `INSERT INTO storage.buckets` 或 HTTP API |
-| **Upload** | `supabase.storage.from('b').upload()` | `app.storage.from('b').upload()` |
-| **Signed URL** | `createSignedUrl()` | HTTP API `POST /v1/storages/object/sign/` |
+| Concept              | Supabase                                | CloudBase PG                                      |
+| -------------------- | --------------------------------------- | ------------------------------------------------- |
+| **Schema**           | `storage.buckets` / `storage.objects`   | 相同（内置 pgstore schema）                       |
+| **Anonymous access** | `anon` key (public, safe for client)    | `anon` key（即 publishable key）                  |
+| **Server access**    | `service_role` key (secret, bypass RLS) | API Key（`manageAppAuth(action="createApiKey")`） |
+| **User auth**        | User JWT from `supabase.auth.signIn()`  | User JWT from `auth.signInWithPassword()` 等      |
+| **RLS**              | `CREATE POLICY ... ON storage.objects`  | 相同                                              |
+| **Bucket creation**  | `supabase.storage.createBucket()`       | `INSERT INTO storage.buckets` 或 HTTP API         |
+| **Upload**           | `supabase.storage.from('b').upload()`   | `app.storage.from('b').upload()`                  |
+| **Signed URL**       | `createSignedUrl()`                     | HTTP API `POST /v1/storages/object/sign/`         |
 
 ## JWT Token Acquisition for PG Storage API
 
@@ -66,6 +67,7 @@ flowchart LR
 ```
 
 **获取方式：**
+
 ```
 manageAppAuth(action="createApiKey", name="my-server-key", description="服务端存储用")
 ```
@@ -77,16 +79,18 @@ manageAppAuth(action="createApiKey", name="my-server-key", description="服务�
 用户通过前端登录后获取 JWT，用于浏览器端上传。
 
 **前端登录：**
+
 ```js
 // Web SDK
-import { CloudBase } from '@cloudbase/js-sdk';
-const app = CloudBase.init({ env: 'your-env-id' });
+import { CloudBase } from "@cloudbase/js-sdk";
+const app = CloudBase.init({ env: "your-env-id" });
 await app.auth.signInWithPassword({ username, password });
 // 登录后 app 自动携带 JWT
-await app.storage.from('covers').upload('a.png', file);
+await app.storage.from("covers").upload("a.png", file);
 ```
 
 **手动获取 JWT token：**
+
 ```js
 const token = await app.auth.getAuthHeader();
 // token 形如 { 'x-cloudbase-uid': 'xxx', 'Authorization': 'Bearer xxx' }
@@ -97,6 +101,7 @@ const token = await app.auth.getAuthHeader();
 不需要携带 Authorization 头，或使用 anon key。只能访问 `public` bucket 且 RLS 放行的资源。
 
 **获取 anon key（即 publishable key）：**
+
 ```
 manageAppAuth(action="ensurePublishableKey")
 ```
@@ -132,34 +137,35 @@ searchKnowledgeBase(mode="openapi", apiName="storage")
 ```
 
 或直接查看文档：
+
 - OpenAPI YAML: `https://docs.cloudbase.net/openapi/storage.v1.postgres.openapi.yaml`
 - 文档首页: `https://docs.cloudbase.net/http-api/storage-pg/pg-storage-api`
 
 ### Endpoint Summary
 
-| Category | Method | Endpoint | Description |
-|----------|--------|----------|-------------|
-| **Bucket** | POST | `/v1/storages/bucket/` | Create bucket |
-| | GET | `/v1/storages/bucket/` | List buckets |
-| | GET | `/v1/storages/bucket/{id}` | Get bucket info |
-| | PUT | `/v1/storages/bucket/{id}` | Update bucket |
-| | DELETE | `/v1/storages/bucket/{id}` | Delete bucket (must be empty) |
-| **Object** | POST | `/v1/storages/object/{bucket}/{name}` | Upload |
-| | PUT | `/v1/storages/object/{bucket}/{name}` | Upsert |
-| | GET | `/v1/storages/object/{bucket}/{name}` | Download |
-| | HEAD | `/v1/storages/object/{bucket}/{name}` | Object headers |
-| | DELETE | `/v1/storages/object/{bucket}/{name}` | Delete single |
-| | DELETE | `/v1/storages/object/{bucket}` | Delete batch (max 100) |
-| | POST | `/v1/storages/object/list/{bucket}` | List objects |
-| | POST | `/v1/storages/object/copy` | Copy object |
-| | POST | `/v1/storages/object/move` | Move object |
-| | GET | `/v1/storages/object/info/{bucket}/{name}` | Object metadata |
-| **Signed URL** | POST | `/v1/storages/object/sign/{bucket}/{name}` | Signed download URL (single) |
-| | POST | `/v1/storages/object/sign/{bucket}` | Signed download URL (batch, max 500) |
-| | POST | `/v1/storages/object/upload/sign/{bucket}/{name}` | Signed upload URL |
-| | GET | `/v1/storages/object/sign/{bucket}/{name}` | Download via signed URL |
-| | HEAD | `/v1/storages/object/sign/{bucket}/{name}` | Head via signed URL |
-| | PUT | `/v1/storages/object/upload/sign/{bucket}/{name}` | Upload via signed URL |
+| Category       | Method | Endpoint                                          | Description                          |
+| -------------- | ------ | ------------------------------------------------- | ------------------------------------ |
+| **Bucket**     | POST   | `/v1/storages/bucket/`                            | Create bucket                        |
+|                | GET    | `/v1/storages/bucket/`                            | List buckets                         |
+|                | GET    | `/v1/storages/bucket/{id}`                        | Get bucket info                      |
+|                | PUT    | `/v1/storages/bucket/{id}`                        | Update bucket                        |
+|                | DELETE | `/v1/storages/bucket/{id}`                        | Delete bucket (must be empty)        |
+| **Object**     | POST   | `/v1/storages/object/{bucket}/{name}`             | Upload                               |
+|                | PUT    | `/v1/storages/object/{bucket}/{name}`             | Upsert                               |
+|                | GET    | `/v1/storages/object/{bucket}/{name}`             | Download                             |
+|                | HEAD   | `/v1/storages/object/{bucket}/{name}`             | Object headers                       |
+|                | DELETE | `/v1/storages/object/{bucket}/{name}`             | Delete single                        |
+|                | DELETE | `/v1/storages/object/{bucket}`                    | Delete batch (max 100)               |
+|                | POST   | `/v1/storages/object/list/{bucket}`               | List objects                         |
+|                | POST   | `/v1/storages/object/copy`                        | Copy object                          |
+|                | POST   | `/v1/storages/object/move`                        | Move object                          |
+|                | GET    | `/v1/storages/object/info/{bucket}/{name}`        | Object metadata                      |
+| **Signed URL** | POST   | `/v1/storages/object/sign/{bucket}/{name}`        | Signed download URL (single)         |
+|                | POST   | `/v1/storages/object/sign/{bucket}`               | Signed download URL (batch, max 500) |
+|                | POST   | `/v1/storages/object/upload/sign/{bucket}/{name}` | Signed upload URL                    |
+|                | GET    | `/v1/storages/object/sign/{bucket}/{name}`        | Download via signed URL              |
+|                | HEAD   | `/v1/storages/object/sign/{bucket}/{name}`        | Head via signed URL                  |
+|                | PUT    | `/v1/storages/object/upload/sign/{bucket}/{name}` | Upload via signed URL                |
 
 ## Bucket and key semantics
 
@@ -167,15 +173,15 @@ Use bucket-native SDK semantics:
 
 ```ts
 const { data, error } = await app.storage
-  .from('covers')      // bucket id
-  .upload('a.png', file); // object key inside the bucket
+  .from("covers") // bucket id
+  .upload("a.png", file); // object key inside the bucket
 ```
 
 Do not repeat the bucket in the key:
 
 ```ts
 // Wrong in PG mode
-await app.storage.from('covers').upload('covers/a.png', file);
+await app.storage.from("covers").upload("covers/a.png", file);
 ```
 
 Do not use legacy NoSQL storage APIs for PG storage:
@@ -193,14 +199,14 @@ The browser SDK cannot create buckets. Create the PG storage bucket **before** w
 
 ### `storage.buckets` schema
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `text` | Bucket ID (primary key), e.g. `avatars` |
-| `name` | `text` | Bucket display name (≤ 100 chars) |
-| `public` | `boolean` | Whether public read is allowed (default `false`). Does **not** bypass RLS. |
-| `file_size_limit` | `bigint` | Max file size in bytes |
-| `allowed_mime_types` | `text[]` | Allowed MIME types whitelist |
-| `owner_id` | `text` | Creator user ID |
+| Column               | Type      | Description                                                                |
+| -------------------- | --------- | -------------------------------------------------------------------------- |
+| `id`                 | `text`    | Bucket ID (primary key), e.g. `avatars`                                    |
+| `name`               | `text`    | Bucket display name (≤ 100 chars)                                          |
+| `public`             | `boolean` | Whether public read is allowed (default `false`). Does **not** bypass RLS. |
+| `file_size_limit`    | `bigint`  | Max file size in bytes                                                     |
+| `allowed_mime_types` | `text[]`  | Allowed MIME types whitelist                                               |
+| `owner_id`           | `text`    | Creator user ID                                                            |
 
 ### Via MCP tool (recommended for AI agents)
 
@@ -275,6 +281,7 @@ CREATE POLICY avatars_delete_own ON storage.objects
 ```
 
 Key points:
+
 - `storage.foldername(name)` is a built-in helper that splits `'<uid>/avatar.png'` into `{'<uid>'}`.
 - `auth.uid()` returns the current JWT `sub`.
 - `storage.objects` does **not** need extra `GRANT` — `anon`/`authenticated`/`service_role` already have `ALL`; RLS is the only gate.
@@ -292,7 +299,7 @@ Key points:
 2. 前端或后端上传文件
    // 前端 SDK
    await app.storage.from('crm').upload('contracts/2026/renewal.pdf', file);
-   
+
 3. 在业务表中记录文件元信息
    INSERT INTO crm_attachments (customer_id, file_name, file_size, mime_type, storage_path, category)
    VALUES (1, 'renewal.pdf', 102400, 'application/pdf', 'contracts/2026/renewal.pdf', 'contract');
