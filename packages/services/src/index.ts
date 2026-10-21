@@ -1,5 +1,6 @@
 // Descriptors & collection (browser-safe)
 export { type ServiceDescriptor, createServiceDescriptor } from "./descriptors.js";
+export type { ServiceExposurePolicy } from "./collection.js";
 export { ServiceCollection } from "./collection.js";
 export {
   IModelSelectionService,

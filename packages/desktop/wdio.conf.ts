@@ -1,4 +1,4 @@
-import { createConversationShareMockRoute } from "./test/e2e/helpers/conversation-share-mock-route.js";
+const MANUAL_REVIEW_SPEC_GLOB = "./test/e2e/**/manual-review/**/*.test.ts";
 import {
   loadToolSearchResponses,
   toolSearchResponseStage,
@@ -498,7 +498,7 @@ const configuredE2ESpecs =
   requestedE2ESpecs.length > 0
     ? requestedE2ESpecs
     : manualReviewE2E
-      ? [MANUAL_REVIEW_SPEC_GLOB]
+      ? ["./test/e2e/**/manual-review/**/*.test.ts"]
       : upstreamProviderSpecRequested
         ? [UPSTREAM_PROVIDER_SPEC]
         : ["./test/e2e/**/*.test.ts"];
@@ -1203,9 +1203,7 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
     path: string;
     query: Record<string, string>;
   }> = [];
-  const shareMockRoute = createConversationShareMockRoute();
   codingPlanTeamMockServer = createServer(async (request, response) => {
-    if (await shareMockRoute(request, response)) return;
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     if (url.pathname === "/__e2e/coding-plan/case-mode" && request.method === "POST") {
       const body = await readRequestJson<{ mode?: typeof caseMode }>(request);
@@ -3140,36 +3138,8 @@ function seedE2EStartupState(specs: string[] = []) {
   writeFileSync(
     E2E_APP_CREDENTIALS_FILE,
     JSON.stringify(
-      // 原因：匿名回调失败用例不需要假 JWT；401 过期确认层会遮挡被测登录入口。
-      providerReadinessColdStartFixture ||
-        workerSpecsContain(specs, "oauth-login-failure-cancel.test.ts")
-        ? {}
-        : // Bug 根因：I20 不验证账号登录，却播种假 ZCode JWT；带账号身份的旁路请求
-          // 会把它发往真实控制面，401 随后弹出登录过期对话框并遮挡目标交互。
-          // 该 case 只保留本地 Provider 回放，不注入无关账号身份。
-          builtInSubagentModelOverridesSpec
-          ? {}
-          : subagentLoginCatalogStaleSpec
-            ? {}
-            : oauthCredentialRecoverySpec
-              ? createCorruptOAuthCredentialSeed(authProviderId)
-              : jwtExpiryReauthenticationSpec
-                ? createExpiredJwtOAuthCredentialSeed(authProviderId)
-                : createE2EStartupCredentialSeed({
-                    specs,
-                    accountMock: codingPlanTeamSpec || codingPlanUpgradeE2E,
-                    remoteProfile: process.env.ZCODE_E2E_REMOTE_PROFILE === "1",
-                    legacyAuthToken: E2E_AUTH_TOKEN,
-                    restoredOAuthCredentials: {
-                      "oauth:active_provider": authProviderId,
-                      // 账号 mock 只覆盖选定族；夹带另一个假账号会访问未接管的真实控制面。
-                      [`oauth:${authProviderId}:access_token`]: shouldUseBigmodelAuth
-                        ? "e2e-bigmodel-oauth-token"
-                        : E2E_AUTH_TOKEN,
-                      [`oauth:${authProviderId}:user_info`]: JSON.stringify(E2E_USER_PROFILE),
-                      zcodejwttoken: E2E_AUTH_TOKEN,
-                    },
-                  }),
+      // fork：OAuth/Coding Plan E2E 凭据种子已随域剔除，返回空配置。
+      {},
       null,
       2,
     ),

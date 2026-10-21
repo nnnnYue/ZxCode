@@ -3457,11 +3457,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
               zcodeBuiltinProviderConfigFilePath: msg.zcodeBuiltinProviderConfigFilePath,
               processLifecycleReporter: runtimeProcessLifecycleReporter,
               taskRuntimeReporter: runtimeTaskReporter,
-              feedback: {
-                getDeviceMid: () => msg.deviceMid,
-                apiBaseUrl: msg.feedbackApiBase,
-                createFullLogArchive: createFullFeedbackLogArchiveViaMain,
-              },
+              // fork：反馈域已剔除。
               forwardSessionMessageSendRequested: (request) => {
                 parentPort?.postMessage({
                   type: HostResponseTypes.SessionMessageSendRequested,

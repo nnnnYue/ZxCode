@@ -786,3 +786,11 @@ export const TID_VIRTUAL_PROJECT_ROW = "virtual-project-row";
 export const TID_VIRTUAL_PROJECT_TASKS = "virtual-project-tasks";
 export const TID_VIRTUAL_PROJECT_TOGGLE = "virtual-project-toggle";
 export const TID_VIRTUAL_PROJECT_UNREAD = "virtual-project-unread";
+
+// fork+上游 3.16 补齐缺失 test-id/helper。
+export function virtualProjectActionTestId(actionId: string, context = false): string {
+  const scoped = context && (actionId.startsWith("files-") || actionId === "create-task");
+  return `${TID_VIRTUAL_PROJECT_ACTION_PREFIX}-${scoped ? "context-" : ""}${actionId}`;
+}
+export const TID_SIDE_PANE_FULL_VIEW_ANSWER_BUBBLE_CLOSE = "side-pane-full-view-answer-bubble-close";
+export const TID_SIDE_PANE_FULL_VIEW_MENU_OPEN_CONVERSATION = "side-pane-full-view-menu-open-conversation";
