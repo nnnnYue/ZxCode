@@ -315,3 +315,7 @@ export * from "./attachment-source.js";
 
 export * from "./channel-mention.js";
 export * from "./pluginTelemetry.js";
+// fork 命名别名（zcode-cli 用 ZXCODE_ 前缀引用上游 ZCODE_ 常量）
+export {
+  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+} from "./zcode-protocol/index.js";
