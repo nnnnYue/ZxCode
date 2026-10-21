@@ -13,39 +13,22 @@ import {
 export function useConversationSelectionReferences(options: {
   sessionId: string | null;
   workspaceKey: string;
-  draftScopeKey?: string;
 }) {
   const [references, setReferencesState] = useState<readonly ConversationSelectionReference[]>(() =>
-    getConversationSelectionReferenceScope(
-      options.sessionId,
-      options.workspaceKey,
-      options.draftScopeKey,
-    ),
+    getConversationSelectionReferenceScope(options.sessionId, options.workspaceKey),
   );
   const [limitReason, setLimitReason] = useState<ConversationSelectionLimitReason | null>(() =>
-    getConversationSelectionReferenceLimitReason(
-      options.sessionId,
-      options.workspaceKey,
-      options.draftScopeKey,
-    ),
+    getConversationSelectionReferenceLimitReason(options.sessionId, options.workspaceKey),
   );
 
   useEffect(() => {
     setReferencesState(
-      getConversationSelectionReferenceScope(
-        options.sessionId,
-        options.workspaceKey,
-        options.draftScopeKey,
-      ),
+      getConversationSelectionReferenceScope(options.sessionId, options.workspaceKey),
     );
     setLimitReason(
-      getConversationSelectionReferenceLimitReason(
-        options.sessionId,
-        options.workspaceKey,
-        options.draftScopeKey,
-      ),
+      getConversationSelectionReferenceLimitReason(options.sessionId, options.workspaceKey),
     );
-  }, [options.sessionId, options.workspaceKey, options.draftScopeKey]);
+  }, [options.sessionId, options.workspaceKey]);
 
   const setReferences = useCallback(
     (
@@ -57,16 +40,11 @@ export function useConversationSelectionReferences(options: {
     ) => {
       setReferencesState((current) => {
         const next = typeof update === "function" ? update(current) : update;
-        setConversationSelectionReferenceScope(
-          options.sessionId,
-          options.workspaceKey,
-          next,
-          options.draftScopeKey,
-        );
+        setConversationSelectionReferenceScope(options.sessionId, options.workspaceKey, next);
         return next;
       });
     },
-    [options.sessionId, options.workspaceKey, options.draftScopeKey],
+    [options.sessionId, options.workspaceKey],
   );
 
   useEffect(() => {
@@ -74,29 +52,20 @@ export function useConversationSelectionReferences(options: {
       if (!isConversationSelectionAddEvent(event)) return;
       if (
         event.detail.targetSessionId !== options.sessionId ||
-        event.detail.workspaceKey !== options.workspaceKey ||
-        (options.sessionId === null && event.detail.draftScopeKey !== options.draftScopeKey)
+        event.detail.workspaceKey !== options.workspaceKey
       ) {
         return;
       }
       setReferencesState(
-        getConversationSelectionReferenceScope(
-          options.sessionId,
-          options.workspaceKey,
-          options.draftScopeKey,
-        ),
+        getConversationSelectionReferenceScope(options.sessionId, options.workspaceKey),
       );
       setLimitReason(
-        getConversationSelectionReferenceLimitReason(
-          options.sessionId,
-          options.workspaceKey,
-          options.draftScopeKey,
-        ),
+        getConversationSelectionReferenceLimitReason(options.sessionId, options.workspaceKey),
       );
     };
     window.addEventListener(getConversationSelectionAddEventName(), handleAdd);
     return () => window.removeEventListener(getConversationSelectionAddEventName(), handleAdd);
-  }, [options.sessionId, options.workspaceKey, options.draftScopeKey]);
+  }, [options.sessionId, options.workspaceKey]);
 
   const removeReference = useCallback(
     (id: string) => {
@@ -110,13 +79,9 @@ export function useConversationSelectionReferences(options: {
     setLimitReason(null);
   }, [setReferences]);
   const dismissLimitReason = useCallback(() => {
-    clearConversationSelectionReferenceLimitReason(
-      options.sessionId,
-      options.workspaceKey,
-      options.draftScopeKey,
-    );
+    clearConversationSelectionReferenceLimitReason(options.sessionId, options.workspaceKey);
     setLimitReason(null);
-  }, [options.sessionId, options.workspaceKey, options.draftScopeKey]);
+  }, [options.sessionId, options.workspaceKey]);
 
   return {
     references,

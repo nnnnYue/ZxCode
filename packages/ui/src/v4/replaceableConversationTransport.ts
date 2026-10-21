@@ -116,10 +116,9 @@ export class ReplaceableConversationTransport implements ConversationTransport {
   }
 
   sendCommand(
-    ...params: Parameters<ConversationTransport["sendCommand"]>
+    envelope: Parameters<ConversationTransport["sendCommand"]>[0],
   ): ReturnType<ConversationTransport["sendCommand"]> {
-    // Bug 原因：旧代理只转发 envelope，丢失 projectId，远端任务因而被预留成空归属。
-    return this.current.sendCommand(...params);
+    return this.current.sendCommand(envelope);
   }
 
   queryCommands(

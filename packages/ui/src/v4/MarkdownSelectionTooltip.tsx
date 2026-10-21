@@ -96,7 +96,6 @@ export function MarkdownSelectionTooltip({
       onAddToCurrentTask={() => {
         dispatchConversationSelectionAdd({
           targetSessionId: target.sessionId,
-          draftScopeKey: target.draftScopeKey,
           workspaceKey: target.workspaceKey,
           reference: createReference(),
         });

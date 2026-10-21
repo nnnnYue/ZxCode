@@ -2,7 +2,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings2 } from "lucide-react";
 import type { ZCodeTaskMeta } from "@zcode/shared";
-import { TID_TASK_LIST, TID_TASK_EMPTY, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared/test-ids";
+import { TID_TASK_LIST, TID_TASK_EMPTY, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
 import { toast } from "@/components/ui/toast.js";
@@ -39,22 +39,16 @@ export const TaskList = memo(function TaskList({
   showCreateButton = true,
   showFooter = true,
   showEmptyState = true,
-  taskRowVariant = "default",
-  hoverEnabled = true,
   loading: inputLoading,
   hasMore = false,
   onShowMore,
   onRenameTask,
   onSetTaskPinned,
   onArchiveTask,
-  isArchived = false,
   onSetTaskUnread,
   mobileActiveTaskKey,
   readOnlyReason,
-  onOpenFileTree,
-  organizationActions,
 }: {
-  organizationActions?: React.ReactNode;
   workspacePath: string;
   remoteSessionId?: string;
   workspaceIdentity?: string;
@@ -67,19 +61,15 @@ export const TaskList = memo(function TaskList({
   showCreateButton?: boolean;
   showFooter?: boolean;
   showEmptyState?: boolean;
-  taskRowVariant?: "default" | "timeline";
-  hoverEnabled?: boolean;
   loading?: boolean;
   hasMore?: boolean;
   onShowMore?: () => void;
   onRenameTask: (taskId: string, title: string) => Promise<ZCodeTaskMeta | null>;
   onSetTaskPinned: (taskId: string, pinned: boolean) => Promise<ZCodeTaskMeta | null>;
   onArchiveTask: (taskId: string) => Promise<ZCodeTaskMeta | null>;
-  isArchived?: boolean;
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
   mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
-  onOpenFileTree?: () => void | Promise<void>;
 }) {
   const { intl } = useZCodeIntl();
   const pinnedTaskIdSet = useMemo(
@@ -374,10 +364,7 @@ export const TaskList = memo(function TaskList({
         workspacePath={workspacePath}
         remoteSessionId={remoteSessionId}
         task={task}
-        variant={taskRowVariant}
-        hoverEnabled={hoverEnabled}
         isPinned={isPinned}
-        isArchived={isArchived}
         isActive={isWorkspaceActive && task.taskId === activeTaskId}
         isMobileActive={
           mobileActiveTaskKey ===
@@ -392,7 +379,6 @@ export const TaskList = memo(function TaskList({
         onArchiveTask={handleArchiveTask}
         onMarkTaskAsUnread={handleMarkTaskAsUnread}
         onOpenTaskContextMenu={handleOpenTaskContextMenu}
-        onOpenFileTree={onOpenFileTree}
         actionsDisabled={Boolean(readOnlyReason)}
         actionsDisabledReason={readOnlyReason}
         intl={intl}
@@ -476,8 +462,6 @@ export const TaskList = memo(function TaskList({
                   remoteSessionId={remoteSessionId}
                   task={contextMenuTask}
                   isPinned={pinnedTaskIdSet.has(contextMenuTask.taskId)}
-                  isArchived={isArchived}
-                  organizationActions={organizationActions}
                   intl={intl}
                   onTogglePinTask={handleTogglePinTask}
                   onStartRenameTask={handleStartRenameTask}
@@ -491,15 +475,13 @@ export const TaskList = memo(function TaskList({
           )}
         </div>
         {hasMore && onShowMore ? (
-          <div className="pl-8.5">
-            <button
-              type="button"
-              data-task-list-show-more="true"
-              className="rounded-sm bg-transparent p-0 text-ui-sm text-foreground-subtle outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
+          <div className="cursor-pointer pl-8.5">
+            <span
+              className="text-ui-base text-foreground-subtlest hover:text-foreground-subtle"
               onClick={onShowMore}
             >
               {intl.formatMessage({ id: "taskList.showMore" })}
-            </button>
+            </span>
           </div>
         ) : null}
       </div>

@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL, type AppSettings } from "@zcode/shared";
-import type { IServiceAccessor, ISettingService } from "@zcode/services";
+import type { ISettingService } from "@zcode/services";
 import { useServices } from "./useServices.js";
 import { usePlatform } from "./usePlatform.js";
 
@@ -13,126 +13,121 @@ type SettingsSnapshot = {
   error: unknown | null;
 };
 
-const INITIAL_SETTINGS_SNAPSHOT: SettingsSnapshot = {
-  settings: null,
-  loading: true,
-  error: null,
+interface SettingsStore {
+  snapshot: SettingsSnapshot;
+  inflightRefresh: Promise<void> | null;
+  listeners: Set<(snapshot: SettingsSnapshot) => void>;
+}
+
+// SettingsPage 外层与模型配置页内层可能分别绑定 Local/Remote Service；
+// 共享一份 snapshot/inflight 会让一次 Environment 的刷新结果覆盖另一份事实源。
+// 按 Service 实例隔离 store，保持同一 Environment 内的组件共享，同时阻断跨 Environment 串写。
+const stores = new WeakMap<object, SettingsStore>();
+const unavailableSettingsStore: SettingsStore = {
+  snapshot: {
+    settings: null,
+    loading: true,
+    error: null,
+  },
+  inflightRefresh: null,
+  listeners: new Set(),
 };
-const snapshots = new Map<string, SettingsSnapshot>();
-const inflightRefreshes = new Map<string, Promise<void>>();
-const listenersByKey = new Map<string, Set<(snapshot: SettingsSnapshot) => void>>();
-const defaultCacheKeyByServices = new WeakMap<object, string>();
-let nextDefaultCacheKey = 0;
 
-function resolveSettingsCacheKey(
-  explicitCacheKey: string | undefined,
-  settingService: object | undefined,
-): string {
-  const explicit = explicitCacheKey?.trim();
-  if (explicit) return explicit;
-
-  // 测试/SSR 的最小 ServiceAccessor 可能暂时没有 settingService；不要把 undefined
-  // 作为 WeakMap key 抛出同步异常，真实 Host 服务就绪后仍会使用按服务隔离的缓存键。
-  if (!settingService) return "settings-services:missing";
-
-  const existing = defaultCacheKeyByServices.get(settingService);
-  if (existing) return existing;
-
-  // Bug 原因：默认 cacheKey 曾固定为 "local"。远端 workspace 的 SessionPane 与
-  // Controller SettingsPage 同时挂载时会互相覆盖同一快照，使 Source 选择器消失，
-  // 也可能把本机运行偏好投影到远端。缓存必须跟服务 accessor 的权威边界一致。
-  const created = `settings-services:${++nextDefaultCacheKey}`;
-  defaultCacheKeyByServices.set(settingService, created);
+function getSettingsStore(settingService: ISettingService | undefined): SettingsStore {
+  if (
+    !settingService ||
+    (typeof settingService !== "object" && typeof settingService !== "function")
+  ) {
+    return unavailableSettingsStore;
+  }
+  const existing = stores.get(settingService);
+  if (existing) {
+    return existing;
+  }
+  const created: SettingsStore = {
+    snapshot: {
+      settings: null,
+      loading: true,
+      error: null,
+    },
+    inflightRefresh: null,
+    listeners: new Set(),
+  };
+  stores.set(settingService, created);
   return created;
 }
 
-function getSettingsSnapshot(cacheKey: string): SettingsSnapshot {
-  return snapshots.get(cacheKey) ?? INITIAL_SETTINGS_SNAPSHOT;
-}
-
-function setSettingsSnapshot(cacheKey: string, snapshot: SettingsSnapshot): void {
-  snapshots.set(cacheKey, snapshot);
-  for (const listener of listenersByKey.get(cacheKey) ?? []) {
-    listener(snapshot);
+function emitSettingsSnapshot(store: SettingsStore) {
+  for (const listener of store.listeners) {
+    listener(store.snapshot);
   }
 }
 
-async function refreshSharedSettings(cacheKey: string, getSettings: () => Promise<AppSettings>) {
-  const inflight = inflightRefreshes.get(cacheKey);
-  if (inflight) {
-    return inflight;
+async function refreshSettingsStore(settingService: ISettingService | undefined) {
+  const store = getSettingsStore(settingService);
+  if (!settingService) {
+    return;
+  }
+  if (store.inflightRefresh) {
+    return store.inflightRefresh;
   }
 
-  setSettingsSnapshot(cacheKey, {
-    ...getSettingsSnapshot(cacheKey),
+  store.snapshot = {
+    ...store.snapshot,
     loading: true,
     error: null,
-  });
+  };
+  emitSettingsSnapshot(store);
 
-  const refreshPromise = (async () => {
+  store.inflightRefresh = (async () => {
     try {
-      const result = await getSettings();
-      setSettingsSnapshot(cacheKey, {
+      const result = await settingService.get();
+      store.snapshot = {
         settings: result,
         loading: false,
         error: null,
-      });
+      };
+      emitSettingsSnapshot(store);
     } catch (error) {
-      setSettingsSnapshot(cacheKey, {
-        // 修复原因：设置读取失败时保留旧快照，避免一次刷新错误把已可用的设置页降级为空状态。
-        settings: getSettingsSnapshot(cacheKey).settings,
+      store.snapshot = {
+        // 设置读取失败时保留旧快照，避免一次刷新错误把已可用的设置页降级为空状态。
+        settings: store.snapshot.settings,
         loading: false,
         error,
-      });
+      };
+      emitSettingsSnapshot(store);
     }
   })().finally(() => {
-    inflightRefreshes.delete(cacheKey);
+    store.inflightRefresh = null;
   });
-  inflightRefreshes.set(cacheKey, refreshPromise);
 
-  return refreshPromise;
-}
-
-export async function updateSettingsAndRefreshSnapshot(params: {
-  settingService: Pick<ISettingService, "get" | "update">;
-  patch: Partial<AppSettings>;
-}): Promise<void> {
-  const cacheKey = resolveSettingsCacheKey(undefined, params.settingService);
-  await params.settingService.update(params.patch);
-  await refreshSharedSettings(cacheKey, () => params.settingService.get());
+  return store.inflightRefresh;
 }
 
 /** 获取和更新应用设置 */
-export function useSettings(options: { cacheKey?: string; services?: IServiceAccessor } = {}) {
-  const contextualServices = useServices();
-  // Bug 原因：SettingsPage 可在远端 workspace 的 ServiceProvider 下渲染；若继续隐式取当前
-  // context，“记住 Source 选择”会写入远端 setting，Controller 本地快照随后把选择重置为本机。
-  const settingsServices = options.services ?? contextualServices;
-  const { botsService, broadcastService, settingService, zcodeAgentService } = settingsServices;
+export function useSettings() {
+  const { botsService, broadcastService, settingService, zcodeAgentService } = useServices();
   const platform = usePlatform();
-  const cacheKey = resolveSettingsCacheKey(options.cacheKey, settingService);
-  const [snapshot, setSnapshot] = useState<SettingsSnapshot>(() => getSettingsSnapshot(cacheKey));
+  const settingsStore = getSettingsStore(settingService);
+  const [snapshot, setSnapshot] = useState<SettingsSnapshot>(settingsStore.snapshot);
 
   const refresh = useCallback(async () => {
-    await refreshSharedSettings(cacheKey, () => settingService.get());
-  }, [cacheKey, settingService]);
+    await refreshSettingsStore(settingService);
+  }, [settingService]);
 
   useEffect(() => {
     const listener = (nextSnapshot: SettingsSnapshot) => {
       setSnapshot(nextSnapshot);
     };
 
-    const listeners = listenersByKey.get(cacheKey) ?? new Set();
-    listeners.add(listener);
-    listenersByKey.set(cacheKey, listeners);
-    setSnapshot(getSettingsSnapshot(cacheKey));
+    settingsStore.listeners.add(listener);
+    setSnapshot(settingsStore.snapshot);
     void refresh();
 
     return () => {
-      listeners.delete(listener);
-      if (listeners.size === 0) listenersByKey.delete(cacheKey);
+      settingsStore.listeners.delete(listener);
     };
-  }, [cacheKey, refresh]);
+  }, [refresh, settingsStore]);
 
   useEffect(() => {
     return (
@@ -143,32 +138,21 @@ export function useSettings(options: { cacheKey?: string; services?: IServiceAcc
   }, [platform, refresh]);
 
   const update = useCallback(
-    async (
-      patch: Partial<AppSettings>,
-      expectedAccountSettings?: Parameters<ISettingService["update"]>[1],
-    ) => {
-      try {
-        if (expectedAccountSettings) await settingService.update(patch, expectedAccountSettings);
-        else await settingService.update(patch);
-      } catch (error) {
-        // 原因：CAS 失败后页面仍持有旧快照；重读事实后报告失败，下一次用户重试才有新预期。
-        if (expectedAccountSettings) await refresh();
-        throw error;
-      }
+    async (patch: Partial<AppSettings>) => {
+      await settingService.update(patch);
       platform.syncAppSettings?.(patch);
       await refresh();
       if (
         typeof patch.askUserQuestionAutoResolutionEnabled === "boolean" ||
         typeof patch.modelIoFullRetentionEnabled === "boolean"
       ) {
-        const currentSettings = getSettingsSnapshot(cacheKey).settings;
         const preferences = {
           askUserQuestionAutoResolutionEnabled:
             patch.askUserQuestionAutoResolutionEnabled ??
-            currentSettings?.askUserQuestionAutoResolutionEnabled !== false,
+            settingsStore.snapshot.settings?.askUserQuestionAutoResolutionEnabled !== false,
           modelIoFullRetentionEnabled:
             patch.modelIoFullRetentionEnabled ??
-            currentSettings?.modelIoFullRetentionEnabled === true,
+            settingsStore.snapshot.settings?.modelIoFullRetentionEnabled === true,
         };
         const syncResults = await Promise.allSettled([
           zcodeAgentService.syncAppRuntimePreferences(preferences),
@@ -186,7 +170,15 @@ export function useSettings(options: { cacheKey?: string; services?: IServiceAcc
         }
       }
     },
-    [botsService, broadcastService, cacheKey, settingService, zcodeAgentService, platform, refresh],
+    [
+      botsService,
+      broadcastService,
+      settingService,
+      settingsStore,
+      zcodeAgentService,
+      platform,
+      refresh,
+    ],
   );
 
   return {

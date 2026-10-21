@@ -1,65 +1,32 @@
-import {
-  isZCodeAgentProvider,
-  resolveModelProviderFamilySpecByProviderId,
-  zcodeProviderAccountAccessSchema,
-  type ZCodeProviderAccountAccess,
-  type ZCodeProvider,
-} from "@zcode/shared";
+import { isZCodeAgentProvider, type ZCodeProvider } from "@zcode/shared";
 import type { ModelSelectionView } from "@zcode/services";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
 import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { shouldShowModelVisionBadge } from "@/lib/modelVisionBadge.js";
-
-export interface ModelProviderGroupLabelOptions {
-  apiKeyLabel?: string;
-  apiKeyBadgeLabel?: string;
-  codingPlanLabel?: string;
-  codingPlanBadgeLabel?: string;
-  startPlanLabel?: string;
-  startPlanBadgeLabel?: string;
-  teamPlanBadgeLabel?: string;
-  teamPlanFallbackLabel?: string;
-}
 
 function supportsRegistryApiFormat(
   selectedProvider: ZCodeProvider,
   apiFormat: string | null | undefined,
 ): boolean {
   if (!apiFormat) return false;
-  // 仅剩 glm（ZCode Agent）provider；三方 CLI 的 api format 差异已随 provider 下线。
+  // 仅剩 glm（ZxCode Agent）provider；三方 CLI 的 api format 差异已随 provider 下线。
   return isZCodeAgentProvider(selectedProvider);
 }
 
 export function buildRegistryModelSelectGroups(
   selectedProvider: ZCodeProvider,
   view: ModelSelectionView,
-  labels: ModelProviderGroupLabelOptions = {},
 ): ModelSelectGroup[] {
   return view.providers.flatMap((provider) => {
     if (!supportsRegistryApiFormat(selectedProvider, provider.config.api?.type)) {
       return [];
     }
 
-    const accountAccess = zcodeProviderAccountAccessSchema.safeParse(provider.config.access);
-    const accountPresentation = accountAccess.success
-      ? getRegistryAccountProviderGroupPresentation(provider.providerId, accountAccess.data, labels)
-      : null;
-
-    // 合并菜单仍需区分同名供应商的接入方式；API 标识直接来自 access，不能从名称猜测。
-    const labelBadge =
-      accountPresentation?.labelBadge ??
-      (provider.config.access?.type === "api-key" ||
-      provider.config.access?.type === "zhipu-coding-plan-api-key"
-        ? (labels.apiKeyBadgeLabel ?? "API")
-        : undefined);
-
+    // 账号型 Provider 已下线；分组标题只呈现 Registry provider 自身命名。
     return [
       {
         key: `registry-provider:${provider.providerId}`,
-        label: accountPresentation?.label || provider.providerName?.trim() || provider.providerId,
-        ...(provider.config.logo ? { logo: provider.config.logo } : {}),
-        ...(labelBadge ? { labelBadge } : {}),
-        ...(accountPresentation ? { directItems: true } : {}),
+        label: provider.providerName?.trim() || provider.providerId,
         items: provider.models.map(({ modelId, config }) => ({
           key: `registry-provider:${provider.providerId}:${modelId}`,
           value: encodeCustomModelValue(provider.providerId, modelId),
@@ -75,22 +42,6 @@ export function buildRegistryModelSelectGroups(
       },
     ];
   });
-}
-
-function getRegistryAccountProviderGroupPresentation(
-  providerId: string,
-  access: ZCodeProviderAccountAccess,
-  labels: ModelProviderGroupLabelOptions,
-): Pick<ModelSelectGroup, "label" | "labelBadge"> {
-  const familySpec = resolveModelProviderFamilySpecByProviderId(providerId);
-  const label = familySpec?.label ?? providerId;
-  if (access.mode === "start-plan") {
-    return { label: "Start Plan", labelBadge: labels.startPlanBadgeLabel ?? "Free" };
-  }
-  if (access.mode === "team-coding-plan") {
-    return { label, labelBadge: labels.teamPlanBadgeLabel ?? "Team" };
-  }
-  return { label, labelBadge: labels.codingPlanBadgeLabel ?? "Individual" };
 }
 
 export function resolveModelDisplayName(

@@ -16,12 +16,14 @@ import { isAllWorkspacesAllowed } from "./shared.js";
 export function WorkspaceAccessCard({
   bot,
   workspaceRefs,
+  currentWorkspace,
   loading,
   onPatchAllowedWorkspaces,
   onToggleWorkspaceAccess,
 }: {
   bot: BotConfig;
   workspaceRefs: BotWorkspaceRef[];
+  currentWorkspace: BotWorkspaceRef;
   loading: boolean;
   onPatchAllowedWorkspaces: (allowedWorkspaces: string[]) => Promise<void>;
   onToggleWorkspaceAccess: (workspaceId: string, checked: boolean) => Promise<void>;
@@ -52,16 +54,12 @@ export function WorkspaceAccessCard({
             value={allAllowed ? "all" : "selected"}
             onValueChange={(value) => {
               void onPatchAllowedWorkspaces(
-                value === "all" ? [ALL_BOT_WORKSPACES] : [workspaceRefs[0]!.id],
+                value === "all" ? [ALL_BOT_WORKSPACES] : [currentWorkspace.id],
               );
             }}
-            disabled={loading || workspaceRefs.length === 0}
+            disabled={loading}
           >
-            <SelectTrigger
-              data-testid="bots-project-access-trigger"
-              size="lg"
-              className="w-48 justify-between"
-            >
+            <SelectTrigger size="lg" className="w-48 justify-between">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -6,6 +6,7 @@ import {
   resolveVerticalScrollMaskState,
   type ScrollMaskState,
 } from "@/mentions/components/scrollMask.js";
+import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { ToolLayout } from "@/ToolCallBlocks/ToolLayout.js";
 import { buildCuaSummaryPresentation } from "@/ToolCallBlocks/renderers/cua.js";
 import { CUA_TOOL_ICON } from "@/ToolCallBlocks/renderers/cuaIcon.js";
@@ -47,7 +48,6 @@ function CuaGroupChildren({
   renderAssistantMessage?: CuaGroupRenderProps["renderAssistantMessage"];
   renderReasoning?: CuaGroupRenderProps["renderReasoning"];
 }) {
-  const ToolCallBlock = context.nestedToolRenderer;
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);

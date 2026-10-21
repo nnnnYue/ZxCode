@@ -6,12 +6,12 @@
  * Supports the unified ZxCode Agent MCP source backed by settings directories.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { convertToZCodeAgentMcpServer } from "@zcode/shared";
 import {
+  convertToZCodeAgentMcpServer,
   TID_MCP_OPEN_AUTHORIZATION_BUTTON,
   TID_PLUGIN_MCP_SERVER_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import type {
   RemoteTarget,
   ZCodeAvailablePluginSummary,
@@ -21,11 +21,7 @@ import type {
   ZCodeMcpServerStatusSnapshot,
   ZCodePluginInfo,
 } from "@zcode/shared";
-import {
-  isZCodeAgentMcpStatusModeUnsupportedError,
-  type IServiceAccessor,
-  type IMcpSyncService,
-} from "@zcode/services";
+import { isZCodeAgentMcpStatusModeUnsupportedError, type IMcpSyncService } from "@zcode/services";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
@@ -68,10 +64,9 @@ import { RemoteSyncDialogs, shouldShowRemoteSyncActions } from "@/settings/Remot
 import { useMcpStore } from "@/store/mcpStore.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
-import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useConfigWorkspaceServices as useWorkspaceServices } from "@/workspace-config-catalog/index.js";
+import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
-import type { ConfigWorkspaceTarget } from "@/workspace-config-catalog/index.js";
+import type { WorkspaceTabState } from "@/store/tabStore.js";
 import { getPluginWorkspaceKey } from "@/settings/PluginScopeMenu.js";
 import { ExternalLink, Import, Plus, UploadCloud } from "lucide-react";
 import { SettingsSegmentedTabs } from "@/settings/SettingsSegmentedTabs.js";
@@ -549,15 +544,13 @@ interface McpSettingsSectionProps {
   isWebRemoteControl?: boolean;
   scopeFilter: "user" | "workspace";
   parentScopeKey: string;
-  workspaceTabs: ConfigWorkspaceTarget[];
+  workspaceTabs: WorkspaceTabState[];
   searchQuery: string;
   onVisibleCountChange?: (count: number) => void;
   onEditorOpenChange?: (open: boolean) => void;
   onFormScopeKeyChange?: (scopeKey: string | null) => void;
   onOpenPluginStore?: () => void;
   showMarketplaceBreadcrumb?: boolean;
-  unscopedServices?: IServiceAccessor;
-  cacheAuthorityKey?: string;
 }
 
 export function McpSettingsSection({
@@ -576,8 +569,6 @@ export function McpSettingsSection({
   onFormScopeKeyChange,
   onOpenPluginStore,
   showMarketplaceBreadcrumb = false,
-  unscopedServices,
-  cacheAuthorityKey,
 }: McpSettingsSectionProps) {
   const { intl, locale } = useZCodeIntl();
   const confirmDialog = useConfirmDialog();
@@ -586,7 +577,6 @@ export function McpSettingsSection({
     remoteSessionId,
     workspaceIdentity,
     remoteTarget,
-    { unscopedServices, forceUnscoped: Boolean(cacheAuthorityKey) },
   );
   const platform = usePlatform();
   const baseServices = useBaseWorkspaceServices();
@@ -598,18 +588,16 @@ export function McpSettingsSection({
   const installedPlugins = usePluginManagementStore((state) => state.installedPlugins);
   const pluginStoreWorkspacePath = usePluginManagementStore((state) => state.workspacePath);
   const pluginStoreWorkspaceIdentity = usePluginManagementStore((state) => state.workspaceIdentity);
-  const pluginStoreAuthorityKey = usePluginManagementStore((state) => state.authorityKey);
   const pluginConfigScope = usePluginManagementStore((state) => state.configScope);
   const initializePlugins = usePluginManagementStore((state) => state.initialize);
   const currentProjectPath = useMcpStore((s) => s.currentProjectPath);
   const currentWorkspaceIdentity = useMcpStore((s) => s.currentWorkspaceIdentity);
-  const currentAuthorityKey = useMcpStore((s) => s.currentAuthorityKey);
   const storeActiveWorkspacePath = useTabStore((s) => s.activeWorkspacePath);
   const storeActiveWorkspaceIdentity = useTabStore((s) => s.activeWorkspaceIdentity ?? undefined);
   const activeWorkspacePath = workspacePath ?? storeActiveWorkspacePath;
   const activeWorkspaceIdentity = workspaceIdentity ?? storeActiveWorkspaceIdentity;
-  const activeWorkspaceKey = `${cacheAuthorityKey?.trim() || "workspace"}\0${activeWorkspaceIdentity?.trim() || activeWorkspacePath || ""}`;
-  const currentMcpStoreWorkspaceKey = `${currentAuthorityKey?.trim() || "workspace"}\0${currentWorkspaceIdentity?.trim() || currentProjectPath}`;
+  const activeWorkspaceKey = activeWorkspaceIdentity?.trim() || activeWorkspacePath || "";
+  const currentMcpStoreWorkspaceKey = currentWorkspaceIdentity?.trim() || currentProjectPath;
   // 修复原因：active tab 会先于异步 MCP 目录加载切换；过渡帧不能把 A 的配置和
   // snapshot 投影到 B，更不能让后续 effect 把这些敏感配置发送给 B 的 Agent。
   const mcpStoreMatchesActiveWorkspace =
@@ -768,7 +756,7 @@ export function McpSettingsSection({
       // skipReason 已经覆盖了这个分支，这里只为类型收窄。
       if (!requestedWorkspacePath) return;
       const requestedMcpServers =
-        options?.mcpServers ?? useMcpStore.getState().getEnabledMcpServersForZCode("zcode");
+        options?.mcpServers ?? useMcpStore.getState().getEnabledMcpServersForZCode("zxcode");
       await statusListRefreshQueueRef.current?.request(async () => {
         if (!isRequestCurrent()) {
           return;
@@ -843,20 +831,16 @@ export function McpSettingsSection({
     if (refreshingStatusList) return;
     setRefreshingStatusList(true);
     try {
-      await loadMcpFromUserDirectory(
-        services.mcpSyncService,
-        activeWorkspaceIdentity,
-        cacheAuthorityKey,
-      );
+      await loadMcpFromUserDirectory(services.mcpSyncService, activeWorkspaceIdentity);
       if (activeWorkspacePath && !mcpConfigReadyWorkspaceKey) {
         const loaded = await ensureLoadedForWorkspace(
           activeWorkspacePath,
           services.mcpSyncService,
           activeWorkspaceIdentity,
-          cacheAuthorityKey,
         );
         const state = useMcpStore.getState();
-        const loadedWorkspaceKey = `${state.currentAuthorityKey?.trim() || "workspace"}\0${state.currentWorkspaceIdentity?.trim() || state.currentProjectPath}`;
+        const loadedWorkspaceKey =
+          state.currentWorkspaceIdentity?.trim() || state.currentProjectPath;
         if (loaded && loadedWorkspaceKey === activeWorkspaceKey) {
           setMcpConfigReadyWorkspaceKey(activeWorkspaceKey);
           // ref 只在 render 时同步；这里补写一次，否则同一 tick 内紧接着的请求仍会
@@ -875,7 +859,6 @@ export function McpSettingsSection({
     activeWorkspaceIdentity,
     activeWorkspaceKey,
     activeWorkspacePath,
-    cacheAuthorityKey,
     ensureLoadedForWorkspace,
     loadMcpFromUserDirectory,
     mcpConfigReadyWorkspaceKey,
@@ -902,14 +885,14 @@ export function McpSettingsSection({
       activeWorkspacePath,
       services.mcpSyncService,
       activeWorkspaceIdentity,
-      cacheAuthorityKey,
     )
       .then((loaded) => {
         if (cancelled || !loaded) {
           return;
         }
         const state = useMcpStore.getState();
-        const loadedWorkspaceKey = `${state.currentAuthorityKey?.trim() || "workspace"}\0${state.currentWorkspaceIdentity?.trim() || state.currentProjectPath}`;
+        const loadedWorkspaceKey =
+          state.currentWorkspaceIdentity?.trim() || state.currentProjectPath;
         if (loadedWorkspaceKey === activeWorkspaceKey) {
           setMcpConfigReadyWorkspaceKey(activeWorkspaceKey);
         }
@@ -928,7 +911,6 @@ export function McpSettingsSection({
     activeWorkspaceIdentity,
     activeWorkspaceKey,
     activeWorkspacePath,
-    cacheAuthorityKey,
     ensureLoadedForWorkspace,
     services.mcpSyncService,
   ]);
@@ -941,13 +923,11 @@ export function McpSettingsSection({
       pluginService: services.pluginManagementService,
       workspaceIdentity: activeWorkspaceIdentity,
       workspacePath: activeWorkspacePath,
-      authorityKey: cacheAuthorityKey,
       configScope: scopeFilter,
     });
   }, [
     activeWorkspaceIdentity,
     activeWorkspacePath,
-    cacheAuthorityKey,
     initializePlugins,
     scopeFilter,
     services.pluginManagementService,
@@ -1180,13 +1160,9 @@ export function McpSettingsSection({
       // 远端 MCP 设置页必须和 Skills 一样只展示远端工作区可读写的资源。
       return [];
     }
-    // 插件 store 的 key 必须与 pluginManagementStoreLoading.buildWorkspaceKey 同格式
-    // （authority\0identity|path），否则带 Source authority 的 activeWorkspaceKey 永远匹配不上。
-    const pluginStoreWorkspaceKey = `${pluginStoreAuthorityKey?.trim() || "workspace"}\0${
-      pluginStoreWorkspaceIdentity?.trim() || pluginStoreWorkspacePath || ""
-    }`;
     const pluginStoreMatchesTarget =
-      pluginStoreWorkspaceKey === activeWorkspaceKey && pluginConfigScope === scopeFilter;
+      (pluginStoreWorkspaceIdentity?.trim() || pluginStoreWorkspacePath || "") ===
+        activeWorkspaceKey && pluginConfigScope === scopeFilter;
     if (!pluginStoreMatchesTarget) {
       return [];
     }
@@ -1199,7 +1175,6 @@ export function McpSettingsSection({
     activeWorkspaceKey,
     isRemoteSyncContext,
     pluginConfigScope,
-    pluginStoreAuthorityKey,
     pluginStoreWorkspaceIdentity,
     pluginStoreWorkspacePath,
     plugins,
@@ -1225,8 +1200,6 @@ export function McpSettingsSection({
       filteredServers
         .map((server, index) => ({ index, server }))
         .toSorted((left, right) => {
-          // Bug 原因：Source authority 提交从旧基线重放时恢复了已废弃的「需要关注」分组，
-          // 把诊断分组改版重新拆成两套列表。异常项只在 Installed 内稳定置顶，避免重复分组。
           const leftAttention = Boolean(
             left.server.authorization?.authorizationUrl || left.server.status === "error",
           );
@@ -1281,7 +1254,6 @@ export function McpSettingsSection({
       activeWorkspacePath,
       services.mcpSyncService,
       activeWorkspaceIdentity,
-      cacheAuthorityKey,
     );
     if (!loaded) {
       return;
@@ -1307,7 +1279,6 @@ export function McpSettingsSection({
 
   async function handleDelete(server: ZCodeMcpServer) {
     const confirmed = await confirmDialog({
-      confirmVariant: "destructive",
       title: intl.formatMessage({ id: "settings.mcp.deleteConfirmTitle" }, { name: server.name }),
       description: intl.formatMessage({
         id: "settings.mcp.deleteConfirmDescription",
@@ -1596,11 +1567,7 @@ export function McpSettingsSection({
         settingsSyncService={services.settingsSyncService}
         onOpenChange={setImportDialogOpen}
         onImported={async () => {
-          await loadMcpFromUserDirectory(
-            services.mcpSyncService,
-            activeWorkspaceIdentity,
-            cacheAuthorityKey,
-          );
+          await loadMcpFromUserDirectory(services.mcpSyncService, activeWorkspaceIdentity);
         }}
       />
       <RemoteSyncDialogs
@@ -1621,7 +1588,6 @@ export function McpSettingsSection({
           const loaded = await loadMcpFromUserDirectory(
             services.mcpSyncService,
             activeWorkspaceIdentity,
-            cacheAuthorityKey,
           );
           if (loaded) {
             await requestMcpServerStatusList();

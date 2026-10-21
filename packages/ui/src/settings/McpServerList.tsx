@@ -1,9 +1,10 @@
-import { type McpServerStatus, type ZCodeMcpServer } from "@zcode/shared";
 import {
   TID_MCP_OPEN_AUTHORIZATION_BUTTON,
   TID_MCP_SERVER_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+  type McpServerStatus,
+  type ZCodeMcpServer,
+} from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { Switch } from "@/components/ui/switch.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";

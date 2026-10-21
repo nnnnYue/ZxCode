@@ -1,7 +1,3 @@
-import {
-  RemoteConversationBanner,
-  RemoteConversationDisconnected,
-} from "@/project-sidebar/RemoteConversationDisconnected.js";
 import type { ReactNode } from "react";
 import type {
   GitChangeSourceId,
@@ -37,7 +33,6 @@ export interface V4ChatPaneProps {
   workspacePath: string;
   workspaceIdentity?: string;
   readOnly?: boolean;
-  allowEscapeStopOutsidePane?: boolean;
   compactForRemoteControl?: boolean;
   /** CLI session id；null = draft 首发。 */
   sessionId: string | null;
@@ -87,7 +82,6 @@ export function V4ChatPane({
   workspacePath,
   workspaceIdentity,
   readOnly = false,
-  allowEscapeStopOutsidePane = false,
   compactForRemoteControl = false,
   sessionId,
   provider,
@@ -126,29 +120,10 @@ export function V4ChatPane({
   onSearchResultHighlightDone,
 }: V4ChatPaneProps) {
   return (
-    <V4ConversationProvider
-      sessionId={sessionId ?? null}
-      workspacePath={workspacePath}
-      workspaceIdentity={workspaceIdentity}
-      unavailableFallback={
-        <RemoteConversationDisconnected
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          sessionId={sessionId}
-        />
-      }
-      disconnectedBanner={
-        <RemoteConversationBanner
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          sessionId={sessionId}
-        />
-      }
-    >
+    <V4ConversationProvider workspacePath={workspacePath} workspaceIdentity={workspaceIdentity}>
       <SessionPane
         paneId="workspace-main"
         readOnly={readOnly}
-        allowEscapeStopOutsidePane={allowEscapeStopOutsidePane}
         sessionId={sessionId}
         workspacePath={workspacePath}
         workspaceIdentity={workspaceIdentity}

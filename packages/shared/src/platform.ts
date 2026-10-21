@@ -488,6 +488,9 @@ export interface RemoteSessionReconnectedEvent {
   workspaceIdentity: string;
 }
 
+/** fork：Bot 重连事件类型别名（fork UI 用旧名引用 RemoteSessionReconnectedEvent）。 */
+export type BotRemoteWorkspaceReconnectedEvent = RemoteSessionReconnectedEvent;
+
 export interface EmbeddedBrowserOpenUrlRequest {
   url: string;
   disposition: "default" | "foreground-tab" | "background-tab" | "new-window" | "other";
@@ -762,6 +765,8 @@ export interface IPlatformService {
 
   /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
   onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
+  /** fork：Bot 重连事件（onRemoteSessionReconnected 别名，fork UI 用旧名）。 */
+  onBotRemoteWorkspaceReconnected?(handler: (event: BotRemoteWorkspaceReconnectedEvent) => void): () => void;
 
   /** 检查目录是否已在其他窗口打开；如果是则激活该窗口并切到对应 tab */
   activateOrSetWorkspace(path: string): Promise<{ activated: boolean }>;

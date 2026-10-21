@@ -273,12 +273,6 @@ export interface SessionPaneProps {
   /** deleteSession：删除当前会话后回到 draft（shell 起新草稿）。 */
   onSessionDeleted?: () => void;
   /** 隐藏副屏的 child 已不存在时，由宿主移除对应 tab。 */
-  /** 低基数打开入口（上游 3.16 透传；fork 无 ARMS 打开遥测，仅接收）。 */
-  openTrigger?: string;
-  /** 上游 3.16 透传；fork 无 ARMS 会话遥测，仅接收不消费。 */
-  telemetryVisible?: boolean;
-  /** 上游 3.16：右侧面板关闭时主区 focused pane 可接收对话外 Esc。 */
-  allowEscapeStopOutsidePane?: boolean;
   onSelectionSideChatUnavailable?: () => void;
   /**
    * Focus 层：全局快捷键（Esc stop）与 add-to-chat 事件只路由到
@@ -1184,7 +1178,7 @@ export function SessionPane({
   const openSettingsTab = useOptionalTabStore((state) => state.openSettingsTab);
   const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
   const handleDraftSessionCreated = useCallback(
-    (createdSessionId: string, groupedDraftTask?: GroupedDraftTaskState | null) => {
+    (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
       promoteComposerDraft(createdSessionId);
       // 只有 draft create/promote 的 accepted 边界能继承 grouped placement。
       // fork 和普通任务导航仍复用 onSessionCreated，但不会污染已有 task 的分组排序。
@@ -2553,11 +2547,31 @@ export function SessionPane({
         contextAttachmentCount,
       });
 
+      // `/plan` 首版只消费纯文本。必须在 provider readiness 和任何 command admission 之前
+      // 拒绝附件/context，否则原始 `/plan ...` 会退化成普通 prompt，既绕过产品边界又清空草稿。
+      if (slashCommand?.kind === "unsupportedPlanShortcut") {
+        toast(intl.formatMessage({ id: "chat.plan.attachmentsBlocked" }));
+        return "blocked" as const;
+      }
+
+      // 空 /plan 与模式菜单相同，只编辑当前 Composer，不提前改写 Agent 执行状态。
+      if (slashCommand?.kind === "planShortcut") {
+        handleDraftSwitchMode("plan");
+        if (submission) submission = { ...submission, planEnabled: true };
+        if (!slashCommand.task) return "sent" as const;
+      }
+
       if (!(await ensureDraftModelReadyForSend())) {
         return "blocked" as const;
       }
 
       let effectiveText = text;
+      if (slashCommand?.kind === "planShortcut") {
+        // 命令显式指定本次 Submission 的模式，不能靠另一条 CAS 的先后顺序保证。
+        effectiveText = slashCommand.task;
+        // 命令只负责配置 shortcut；后续必须走普通 sendText，不能进入 goal/compact command 分支。
+        slashCommand = null;
+      }
       // create/send ACK 期间用户可能切换任务或创建另一份 draft。
       // placement 必须绑定发送开始时的稳定 identity，不能在完成回调里读取当前 workspace 草稿。
       const groupedDraftTaskAtSend =
@@ -3953,7 +3967,7 @@ export function SessionPane({
             });
             return;
           }
-          handleDraftSessionCreated(ack.result.sessionId);
+          handleDraftSessionCreated(ack.result.sessionId, replay.clientContext?.groupedDraftTask);
         }
       })
       .catch((error) => {

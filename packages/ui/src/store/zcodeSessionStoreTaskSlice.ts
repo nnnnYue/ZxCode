@@ -861,7 +861,10 @@ export function createTaskSlice(set: SetFn) {
               current.taskUnreadByTaskId;
             const { [taskId]: _removedTaskMeta, ...restOptimisticTaskListByTaskId } =
               current.optimisticTaskListByTaskId;
-
+            const {
+              [taskId]: _removedPromotedGroupedDraftTask,
+              ...restPromotedGroupedDraftTaskByTaskId
+            } = current.promotedGroupedDraftTaskByTaskId;
             const shouldCloseDeletedTask = current.activeTaskId === taskId;
 
             // 删除左侧当前正在查看的任务时，之前只更新了任务列表数据，
@@ -879,6 +882,7 @@ export function createTaskSlice(set: SetFn) {
               taskConfigOptionsStatusByTaskId: restTaskConfigOptionsStatusByTaskId,
               taskUnreadByTaskId: restTaskUnreadByTaskId,
               optimisticTaskListByTaskId: restOptimisticTaskListByTaskId,
+              promotedGroupedDraftTaskByTaskId: restPromotedGroupedDraftTaskByTaskId,
             };
           },
           workspaceIdentity,

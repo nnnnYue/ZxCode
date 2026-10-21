@@ -5,7 +5,7 @@ import {
   TID_V4_TURN_NAVIGATOR_ITEM,
   TID_V4_TURN_NAVIGATOR_TOOLTIP,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import { cn } from "@/components/lib/utils.js";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";

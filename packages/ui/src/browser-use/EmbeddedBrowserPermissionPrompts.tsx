@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { MonitorUp, Paperclip, ShieldAlert, Usb, X } from "lucide-react";
 import {
-  type EmbeddedBrowserPermissionPromptEvent,
-  type EmbeddedBrowserPermissionResolution,
-} from "@zcode/shared";
-import {
   TID_BROWSER_PERMISSION_ALLOW_ALWAYS,
   TID_BROWSER_PERMISSION_ALLOW_ONCE,
   TID_BROWSER_PERMISSION_DENY,
   TID_BROWSER_PERMISSION_DISMISS,
   TID_BROWSER_PERMISSION_PROMPTS,
-} from "@zcode/shared/test-ids";
+  type EmbeddedBrowserPermissionPromptEvent,
+  type EmbeddedBrowserPermissionResolution,
+} from "@zcode/shared";
 import { BrowserPermissionIcon } from "@/browser-use/BrowserPermissionIcon.js";
 import { Button } from "@/components/ui/button.js";
 import {

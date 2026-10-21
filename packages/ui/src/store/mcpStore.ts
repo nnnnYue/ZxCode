@@ -65,7 +65,6 @@ interface McpStoreState {
   statusSnapshots: Record<string, ZCodeMcpServerStatusSnapshot>;
   currentProjectPath: string;
   currentWorkspaceIdentity?: string;
-  currentAuthorityKey?: string;
   enabledStates: Record<string, boolean>;
   deletedPreloadMcpServers: Set<string>;
   isConfigLoaded: boolean;
@@ -74,13 +73,11 @@ interface McpStoreState {
   loadMcpFromUserDirectory: (
     directoryService?: McpDirectoryService | null,
     workspaceIdentity?: string,
-    authorityKey?: string,
   ) => Promise<boolean>;
   ensureLoadedForWorkspace: (
     workspacePath?: string,
     directoryService?: McpDirectoryService | null,
     workspaceIdentity?: string,
-    authorityKey?: string,
   ) => Promise<boolean>;
   saveConfig: () => void;
   addMcpServer: (name: string, config: McpServerConfig) => void;
@@ -137,7 +134,6 @@ interface McpStoreState {
     path: string,
     workspaceIdentity?: string,
     directoryService?: McpDirectoryService | null,
-    authorityKey?: string,
   ) => void;
   getEnabledMcpServersForZCode: (provider: string) => ZCodeAgentMcpServer[];
   checkAllServerStatus: (
@@ -260,7 +256,6 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     statusSnapshots: {},
     currentProjectPath: "",
     currentWorkspaceIdentity: undefined,
-    currentAuthorityKey: undefined,
     enabledStates: {},
     deletedPreloadMcpServers: new Set(),
     isConfigLoaded: false,
@@ -284,15 +279,14 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       });
     },
 
-    loadMcpFromUserDirectory: async (directoryService, workspaceIdentity, authorityKey) => {
+    loadMcpFromUserDirectory: async (directoryService, workspaceIdentity) => {
       if (typeof window === "undefined") {
         return false;
       }
 
       const requestWorkspacePath = get().currentProjectPath || undefined;
       const requestWorkspaceIdentity = workspaceIdentity ?? get().currentWorkspaceIdentity;
-      const requestAuthorityKey = authorityKey ?? get().currentAuthorityKey;
-      const requestWorkspaceKey = `${requestAuthorityKey?.trim() || "workspace"}\0${requestWorkspaceIdentity?.trim() || requestWorkspacePath || ""}`;
+      const requestWorkspaceKey = requestWorkspaceIdentity?.trim() || requestWorkspacePath || "";
       if (loadMcpPromise && loadMcpWorkspaceKey === requestWorkspaceKey) {
         return await loadMcpPromise;
       }
@@ -302,8 +296,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
       const latestWorkspacePath = get().currentProjectPath || undefined;
       const latestWorkspaceIdentity = get().currentWorkspaceIdentity;
-      const latestAuthorityKey = get().currentAuthorityKey;
-      const latestWorkspaceKey = `${latestAuthorityKey?.trim() || "workspace"}\0${latestWorkspaceIdentity?.trim() || latestWorkspacePath || ""}`;
+      const latestWorkspaceKey = latestWorkspaceIdentity?.trim() || latestWorkspacePath || "";
       if (latestWorkspaceKey !== requestWorkspaceKey) {
         // 该调用等待上一轮 load 时已从 B 切到 C；B 调用持有的 remote
         // directoryService 不得继续读取 C，交给 C 自己发起的 ensure/load 调用处理。
@@ -338,7 +331,8 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
             );
           }
           const currentState = get();
-          const currentWorkspaceKey = `${currentState.currentAuthorityKey?.trim() || "workspace"}\0${currentState.currentWorkspaceIdentity?.trim() || currentState.currentProjectPath}`;
+          const currentWorkspaceKey =
+            currentState.currentWorkspaceIdentity?.trim() || currentState.currentProjectPath;
           if (currentWorkspaceKey !== latestWorkspaceKey) {
             // workspace A 的异步目录读取可能晚于切换到 B 才返回；
             // 旧结果包含 env/header/OAuth secret，不能写回共享 store 后被 B 的 Agent 消费。
@@ -364,32 +358,25 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       return await loadMcpPromise;
     },
 
-    ensureLoadedForWorkspace: async (workspacePath, directoryService, workspaceIdentity, authorityKey) => {
+    ensureLoadedForWorkspace: async (workspacePath, directoryService, workspaceIdentity) => {
       if (!get().isConfigLoaded) {
         get().loadConfig();
       }
 
       const normalizedWorkspacePath = workspacePath ?? "";
       const normalizedWorkspaceIdentity = workspaceIdentity?.trim() || undefined;
-      const normalizedAuthorityKey = authorityKey?.trim() || undefined;
       if (
         normalizedWorkspacePath !== get().currentProjectPath ||
-        normalizedWorkspaceIdentity !== get().currentWorkspaceIdentity ||
-        normalizedAuthorityKey !== get().currentAuthorityKey
+        normalizedWorkspaceIdentity !== get().currentWorkspaceIdentity
       ) {
         get().setCurrentProjectPath(
           normalizedWorkspacePath,
           normalizedWorkspaceIdentity,
           directoryService,
-          normalizedAuthorityKey,
         );
       }
 
-      return await get().loadMcpFromUserDirectory(
-        directoryService,
-        normalizedWorkspaceIdentity,
-        normalizedAuthorityKey,
-      );
+      return await get().loadMcpFromUserDirectory(directoryService, normalizedWorkspaceIdentity);
     },
 
     saveConfig: () => {
@@ -614,13 +601,12 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
     getServer: (id) => get().servers.find((s) => s.id === id),
 
-    setCurrentProjectPath: (path, workspaceIdentity, directoryService, authorityKey) => {
+    setCurrentProjectPath: (path, workspaceIdentity, directoryService) => {
       invalidateStatusListRequests();
       const {
         config,
         currentProjectPath,
         currentWorkspaceIdentity,
-        currentAuthorityKey,
         deletedPreloadMcpServers,
         enabledStates,
         isConfigLoaded,
@@ -628,16 +614,12 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
         servers,
       } = get();
       const normalizedWorkspaceIdentity = workspaceIdentity?.trim() || undefined;
-      const normalizedAuthorityKey = authorityKey?.trim() || undefined;
       const workspaceChanged =
-        path !== currentProjectPath ||
-        normalizedWorkspaceIdentity !== currentWorkspaceIdentity ||
-        normalizedAuthorityKey !== currentAuthorityKey;
+        path !== currentProjectPath || normalizedWorkspaceIdentity !== currentWorkspaceIdentity;
       const nextNativeServers = workspaceChanged ? [] : nativeServers;
       set({
         currentProjectPath: path,
         currentWorkspaceIdentity: normalizedWorkspaceIdentity,
-        currentAuthorityKey: normalizedAuthorityKey,
         nativeServers: nextNativeServers,
         statusSnapshots: {},
         servers: buildServerList(
@@ -651,7 +633,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       if (isConfigLoaded && workspaceChanged) {
         // 切换到远程 workspace 后配置加载是异步的；等待期间必须先清空 A 的
         // user-level MCP，不能把其 env/header/OAuth clientSecret 暂存为 B 的可发送配置。
-        void get().loadMcpFromUserDirectory(directoryService, normalizedWorkspaceIdentity, normalizedAuthorityKey);
+        void get().loadMcpFromUserDirectory(directoryService, normalizedWorkspaceIdentity);
       }
     },
 

@@ -7,18 +7,16 @@ import {
   type RefObject,
 } from "react";
 import {
-  type ZCodeApiRetryStatus,
-  type ZCodeConfigOption,
-  type ZCodeConfigSelectValue,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import {
   TID_CHAT_MODE_SELECT_ITEM,
   TID_CHAT_MODE_SELECT_TRIGGER,
   TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM,
   TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
   testId,
-} from "@zcode/shared/test-ids";
+  type ZCodeApiRetryStatus,
+  type ZCodeConfigOption,
+  type ZCodeConfigSelectValue,
+  type ZCodeProvider,
+} from "@zcode/shared";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import {
   Select,

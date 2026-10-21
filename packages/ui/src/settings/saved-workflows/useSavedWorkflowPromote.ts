@@ -81,7 +81,6 @@ export function useSavedWorkflowPromote(params: {
             },
             sessionId: null,
           }),
-          { projectId: target.projectId },
         );
         if (ack.status !== "accepted" || ack.result?.type !== "createSession") {
           logger.warn("[saved-workflow-promote] createSession(firstInput) 被拒", {

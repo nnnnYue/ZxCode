@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { type ZCodeConfigOption, type ZCodeProvider } from "@zcode/shared";
 import {
   TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM,
   TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
   testId,
-} from "@zcode/shared/test-ids";
+  type ZCodeConfigOption,
+  type ZCodeProvider,
+} from "@zcode/shared";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";

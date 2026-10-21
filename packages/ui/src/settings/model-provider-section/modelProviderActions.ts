@@ -24,7 +24,6 @@ export async function confirmAndDeleteModelProvider({
   });
 
   const confirmed = await confirmDialog({
-    confirmVariant: "destructive",
     title: intl.formatMessage(
       { id: "settings.modelProvider.deleteConfirmTitle" },
       { name: getProviderFormLabel(provider) },

@@ -1,15 +1,12 @@
-import { useConfigWorkspaceTargets } from "@/workspace-config-catalog/index.js";
-import { SettingsUserScopeProvider } from "@/settings/SettingsMachine.js";
 /* eslint-disable max-lines -- Hooks 页面聚合 Scope、插件投影、搜索与配置写入流程。 */
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import type { Hook, HookConfig, ZCodeInstalledPluginSummary, ZCodePluginInfo } from "@zcode/shared";
-import type { IHooksService } from "@zcode/services";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
-import { useServices } from "@/hooks/useServices.js";
-import { useConfigWorkspaceServicesResolution as useWorkspaceServicesResolution } from "@/workspace-config-catalog/index.js";
+import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
+import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { invalidateDeferredDraftSessionForRuntimeChange } from "@/lib/zcodeDraftSkillInvalidation.js";
 import { useHooksStore } from "@/store/hooksStore.js";
@@ -22,12 +19,18 @@ import { getWorkspaceKey } from "@/lib/workspaceKey.js";
 import { HooksList, type HookScope, type PluginHookRow } from "./HooksList.js";
 import { useWorkspaceHookInlineTrust } from "./useWorkspaceHookInlineTrust.js";
 import { useWorkspaceHookReviewStore } from "@/store/workspaceHookReviewStore.js";
-import { PluginScopeMenu, getPluginWorkspaceKey } from "@/settings/PluginScopeMenu.js";
+import {
+  PluginScopeMenu,
+  getPluginWorkspaceKey,
+  isPluginScopeWorkspaceConnected,
+} from "@/settings/PluginScopeMenu.js";
 import { PluginLoadingState, PluginSearchEmptyState } from "@/settings/PluginInstallEmptyState.js";
 import {
   resolvePluginDisplayName,
   resolveUniquePluginListingByName,
 } from "@/settings/pluginStoreListing.js";
+import { useTabStore } from "@/store/TabStoreProvider.js";
+import { isWorkspaceTab } from "@/store/tabStore.js";
 import {
   shouldShowWorkspaceHookTrustNotice,
   WorkspaceHookTrustNotice,
@@ -36,7 +39,6 @@ import {
 interface HooksSectionProps {
   workspacePath?: string | null;
   workspaceIdentity?: string;
-  settingsSourceServerId?: string | null;
 }
 
 function isEditableHook(hook: Hook): boolean {
@@ -104,25 +106,6 @@ export function resolveLatestReviewScopeTarget(
   return tab ? { interactionId: latest.interactionId, scopeKey: scopeKeyOf(tab) } : null;
 }
 
-/**
- * Hook 读写目标只由选中的 Scope 条目决定。
- * Bug 根因：选中本地项目（无 identity）时曾用 `??` 回退到活动聊天工作区的 identity，
- * 活动工作区是远端时就把本机路径配上远端身份发往 Source Server，远端 `mkdir '/Users'` 报 EACCES。
- * User Scope 未选项目时仍沿用当前 workspace 路由（R3 §8.2）。
- */
-export function resolveHookScopeTarget(
-  selectedWorkspace: { workspacePath: string; workspaceIdentity?: string } | undefined,
-  workspacePath: string | null | undefined,
-  workspaceIdentity: string | undefined,
-): { workspacePath: string | null | undefined; workspaceIdentity: string | undefined } {
-  return selectedWorkspace
-    ? {
-        workspacePath: selectedWorkspace.workspacePath,
-        workspaceIdentity: selectedWorkspace.workspaceIdentity,
-      }
-    : { workspacePath, workspaceIdentity };
-}
-
 export function buildPluginHookRows(
   plugins: readonly Pick<ZCodePluginInfo, "enabled" | "hookDetails" | "id" | "name">[],
   installedPlugins: readonly Pick<ZCodeInstalledPluginSummary, "id" | "scope">[],
@@ -154,14 +137,9 @@ export function filterPluginHooksByScope(
   );
 }
 
-export function HooksSection({
-  workspacePath,
-  workspaceIdentity,
-  settingsSourceServerId,
-}: HooksSectionProps) {
+export function HooksSection({ workspacePath, workspaceIdentity }: HooksSectionProps) {
   const { intl, locale } = useZCodeIntl();
   const confirmDialog = useConfirmDialog();
-  const currentServices = useServices();
   const hooksState = useHooksStore();
   const plugins = usePluginManagementStore((state) => state.plugins);
   const availablePlugins = usePluginManagementStore((state) => state.availablePlugins);
@@ -175,51 +153,44 @@ export function HooksSection({
   const [viewMode, setViewMode] = useState<"list" | "form">("list");
   const [editingHook, setEditingHook] = useState<Hook | null>(null);
   const [query, setQuery] = useState("");
-  const workspaceTabs = useConfigWorkspaceTargets(settingsSourceServerId);
+  const tabs = useTabStore((state) => state.tabs);
+  const workspaceTabs = useMemo(() => {
+    const seen = new Set<string>();
+    return tabs
+      .filter(isWorkspaceTab)
+      .filter(isPluginScopeWorkspaceConnected)
+      .filter((tab) => {
+        const key = getPluginWorkspaceKey(tab);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [tabs]);
   const [selectedScopeKey, setSelectedScopeKey] = useState("user");
   const deferredQuery = useDeferredValue(query);
   const selectedWorkspace = workspaceTabs.find(
     (tab) => getPluginWorkspaceKey(tab) === selectedScopeKey,
   );
   const activeScope: HookScope = selectedWorkspace ? "project" : "user";
-  const { workspacePath: targetWorkspacePath, workspaceIdentity: targetWorkspaceIdentity } =
-    resolveHookScopeTarget(selectedWorkspace, workspacePath, workspaceIdentity);
+  const targetWorkspacePath = selectedWorkspace?.workspacePath ?? workspacePath;
+  const targetWorkspaceIdentity = selectedWorkspace?.workspaceIdentity ?? workspaceIdentity;
   const targetWorkspaceKey = targetWorkspacePath
     ? getWorkspaceKey(targetWorkspacePath, targetWorkspaceIdentity)
     : null;
-  const cacheAuthorityKey =
-    settingsSourceServerId && !selectedWorkspace
-      ? `source-settings:${settingsSourceServerId}`
-      : undefined;
   const targetServiceResolution = useWorkspaceServicesResolution(
     targetWorkspacePath,
     selectedWorkspace?.remoteSessionId,
     targetWorkspaceIdentity,
     selectedWorkspace?.remoteTarget,
-    {
-      unscopedServices: settingsSourceServerId && !selectedWorkspace ? currentServices : undefined,
-      forceUnscoped: Boolean(settingsSourceServerId && !selectedWorkspace),
-    },
   );
   // Scope 切到另一个远程 workspace 后，路径已切换但 hooks/plugin 服务仍来自
   // 当前激活 workspace。这里让服务 host 与 target 身份同源，等待连接时不发送越界 RPC。
-  const { hooksService: targetHooksService, pluginManagementService } =
-    targetServiceResolution.services;
-  const hooksService = useMemo<IHooksService>(() => {
-    if (!settingsSourceServerId || activeScope !== "user") return targetHooksService;
-    // Bug 原因：Source user scope 需要一个远端路径作 RPC 锚点，但该路径不是 project。
-    // 强制 user-only 合同，避免把 Source home 误当 workspace 并覆盖其 .zcode/config.json。
-    return {
-      loadHooks: (params) => targetHooksService.loadHooks({ ...params, scope: "user" }),
-      saveHooks: (params) => targetHooksService.saveHooks({ ...params, scope: "user" }),
-      ...(targetHooksService.grantWorkspaceHookTrust
-        ? {
-            grantWorkspaceHookTrust:
-              targetHooksService.grantWorkspaceHookTrust.bind(targetHooksService),
-          }
-        : {}),
-    };
-  }, [activeScope, settingsSourceServerId, targetHooksService]);
+  const { hooksService, pluginManagementService } = targetServiceResolution.services;
+  const zcodeSessionService = useZCodeSessionService(
+    targetWorkspacePath ?? undefined,
+    undefined,
+    targetWorkspaceIdentity,
+  );
   // workspace-hook-trust：信任操作绑定到当前选中的 workspace（多 workspace scope 场景
   // 下 review binding 可能属于其他 workspace，此时切换 scope 菜单到对应 workspace）。
   // hooksService 必须传 target 解析结果：scope 选中远程 workspace 时 context 服务指向
@@ -227,7 +198,6 @@ export function HooksSection({
   const { trustActionAvailable, trustingHookId, trustHook } = useWorkspaceHookInlineTrust({
     workspacePath: targetWorkspacePath,
     workspaceIdentity: targetWorkspaceIdentity,
-    authorityKey: cacheAuthorityKey,
     hooksService: targetServiceResolution.rpcReady ? hooksService : undefined,
     rpcReady: targetServiceResolution.rpcReady,
   });
@@ -299,11 +269,9 @@ export function HooksSection({
       targetWorkspacePath ?? undefined,
       targetWorkspaceIdentity,
       hooksService,
-      cacheAuthorityKey,
     );
   }, [
     hooksService,
-    cacheAuthorityKey,
     hooksState.initialize,
     targetServiceResolution.rpcReady,
     targetWorkspaceIdentity,
@@ -315,12 +283,10 @@ export function HooksSection({
     void initializePlugins({
       workspacePath: targetWorkspacePath,
       workspaceIdentity: targetWorkspaceIdentity,
-      authorityKey: cacheAuthorityKey,
       pluginService: pluginManagementService,
     });
   }, [
     initializePlugins,
-    cacheAuthorityKey,
     pluginManagementService,
     targetServiceResolution.rpcReady,
     targetWorkspaceIdentity,
@@ -334,20 +300,17 @@ export function HooksSection({
         targetWorkspacePath ?? undefined,
         targetWorkspaceIdentity,
         hooksService,
-        cacheAuthorityKey,
       ),
       targetWorkspacePath
         ? initializePlugins({
             workspacePath: targetWorkspacePath,
             workspaceIdentity: targetWorkspaceIdentity,
-            authorityKey: cacheAuthorityKey,
             pluginService: pluginManagementService,
           })
         : Promise.resolve(),
     ]);
   }, [
     hooksService,
-    cacheAuthorityKey,
     hooksState.initialize,
     initializePlugins,
     pluginManagementService,
@@ -393,9 +356,10 @@ export function HooksSection({
         reason,
         workspaceIdentity: targetWorkspaceIdentity,
         workspacePath: targetWorkspacePath,
+        zcodeSessionService,
       });
     },
-    [targetWorkspaceIdentity, targetWorkspacePath],
+    [targetWorkspaceIdentity, targetWorkspacePath, zcodeSessionService],
   );
 
   const handleSaveHook = useCallback(
@@ -424,7 +388,6 @@ export function HooksSection({
   const handleDelete = useCallback(
     async (hook: Hook) => {
       const confirmed = await confirmDialog({
-        confirmVariant: "destructive",
         title: intl.formatMessage({ id: "settings.hooks.delete" }),
         description: intl.formatMessage(
           { id: "settings.hooks.deleteDescription" },
@@ -484,26 +447,21 @@ export function HooksSection({
             setViewMode("list");
           }}
         />
-        <SettingsUserScopeProvider
-          target={{ workspaceIdentity }}
-          sourceServerId={settingsSourceServerId}
-        >
-          <HookForm
-            hook={editingHook ?? undefined}
-            workspaceAvailable={Boolean(targetWorkspacePath)}
-            defaultStorageLevel={activeScope}
-            selectedScopeKey={selectedScopeKey}
-            workspaceTabs={workspaceTabs}
-            onScopeKeyChange={setSelectedScopeKey}
-            onSave={handleSaveHook}
-            onDelete={editingHook ? handleDelete : undefined}
-            onCancel={() => {
-              setEditingHook(null);
-              setViewMode("list");
-            }}
-            isEditing={Boolean(editingHook)}
-          />
-        </SettingsUserScopeProvider>
+        <HookForm
+          hook={editingHook ?? undefined}
+          workspaceAvailable={Boolean(targetWorkspacePath)}
+          defaultStorageLevel={activeScope}
+          selectedScopeKey={selectedScopeKey}
+          workspaceTabs={workspaceTabs}
+          onScopeKeyChange={setSelectedScopeKey}
+          onSave={handleSaveHook}
+          onDelete={editingHook ? handleDelete : undefined}
+          onCancel={() => {
+            setEditingHook(null);
+            setViewMode("list");
+          }}
+          isEditing={Boolean(editingHook)}
+        />
       </>
     );
   }
@@ -525,8 +483,6 @@ export function HooksSection({
       <div className="flex min-w-0 flex-wrap items-center gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <PluginScopeMenu
-            userTarget={{ workspaceIdentity }}
-            userSourceServerId={settingsSourceServerId}
             align="start"
             selectedScopeKey={selectedScopeKey}
             workspaceTabs={workspaceTabs}

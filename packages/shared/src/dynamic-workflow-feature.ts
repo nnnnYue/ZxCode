@@ -135,3 +135,9 @@ function resolveDynamicWorkflowOffer(input: {
   if (remoteMode) return createDynamicWorkflowClientConfig(remoteMode, "remote");
   return createDynamicWorkflowClientConfig(DEFAULT_DYNAMIC_WORKFLOW_MODE, "default");
 }
+
+// fork：恢复上游 3.16 删除的动态工作流 offering 判定。
+export function isDynamicWorkflowOffered(config: DynamicWorkflowClientConfig): boolean {
+  const offeredMode = normalizeDynamicWorkflowMode(config.offeredMode);
+  return offeredMode !== undefined && isDynamicWorkflowModeEnabled(offeredMode);
+}

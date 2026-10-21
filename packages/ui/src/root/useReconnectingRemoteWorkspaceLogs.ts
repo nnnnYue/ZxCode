@@ -29,17 +29,17 @@ export function useReconnectingRemoteWorkspaceLogs({
 
   useEffect(() => {
     reconnectingWorkspaceKeysRef.current = reconnectingWorkspaceKeys;
+    const reconnectingWorkspaceKeySet = new Set(reconnectingWorkspaceKeys);
     setLogsByWorkspaceKey((current) => {
-      const nextEntries = Object.entries(current).filter(
-        ([workspaceKey]) => resolveWorkspaceTargetByKey(workspaceKey) !== null,
+      const nextEntries = Object.entries(current).filter(([workspaceKey]) =>
+        reconnectingWorkspaceKeySet.has(workspaceKey),
       );
       if (nextEntries.length === Object.keys(current).length) {
         return current;
       }
       return Object.fromEntries(nextEntries);
     });
-    // 已结束的失败日志仍由此 owner 持有，下一次请求 reset 或移除项目时释放。
-  }, [reconnectingWorkspaceKeys, resolveWorkspaceTargetByKey]);
+  }, [reconnectingWorkspaceKeys]);
 
   useEffect(() => {
     const unsubscribe = platform.onRemoteConnectionLog((entry) => {

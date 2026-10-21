@@ -1,5 +1,4 @@
-import { useCallback } from "react";
-import { TID_V4_RETRY_SUBSCRIBE } from "@zcode/shared/test-ids";
+import { TID_V4_RETRY_SUBSCRIBE } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 

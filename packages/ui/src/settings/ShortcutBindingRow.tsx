@@ -26,7 +26,6 @@ interface ShortcutBindingRowProps {
   bindings: readonly string[];
   /** 该命令是否存在用户覆盖条目（true 时键帽用品牌色标出自定义）。 */
   isOverridden: boolean;
-  saving?: boolean;
   isRecording: boolean;
   recording: RecordingState | null;
   /** Web 端 menu 通道命令：录制入口置灰（默认键被根级回退监听固定消费）。 */
@@ -48,7 +47,6 @@ export function ShortcutBindingRow({
   commandLabel,
   bindings,
   isOverridden,
-  saving = false,
   isRecording,
   recording,
   menuChannelUnavailable,
@@ -62,8 +60,8 @@ export function ShortcutBindingRow({
   // 录制内嵌块：出现在被替换条目 / 追加条目的位置（预览 kbd 抢占焦点）
   function renderRecorder() {
     return (
-      <span className="flex min-w-0 max-w-full flex-col gap-1 break-words">
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="flex items-center gap-2">
           <Keyboard className="size-4 text-foreground-subtle" />
           <kbd
             ref={(el) => {
@@ -73,7 +71,7 @@ export function ShortcutBindingRow({
               el?.focus();
             }}
             tabIndex={-1}
-            className="max-w-full rounded-md bg-surface px-2 py-1 font-mono text-ui-sm outline-none"
+            className="w-fit rounded-md bg-surface px-2 py-1 font-mono text-ui-sm outline-none"
           >
             {recording?.preview ?? intl.formatMessage({ id: "settings.shortcuts.recording" })}
           </kbd>
@@ -92,7 +90,6 @@ export function ShortcutBindingRow({
         )}
         {conflictBinding ? (
           <Button
-            disabled={saving}
             variant="outline"
             size="xs"
             className="w-fit"
@@ -107,18 +104,18 @@ export function ShortcutBindingRow({
   }
 
   /**
-   * 单条绑定行：逐键键帽（复用共享快捷键徽标，h-4/min-w-4 居中，符号与字母尺寸一致）+
+   * 单条绑定行：逐键键帽（shadcn Kbd 同款，h-5/min-w-5 居中，符号与字母尺寸一致）+
    * 铅笔（点击键帽或铅笔即替换该条）。键帽只覆盖文字色（自定义 = 品牌色），不传 bg：
-   * bg-inherit 会覆盖共享徽标底色，且祖先链全透明，
+   * bg-inherit 会经 cn 的 tailwind-merge 覆盖 Kbd 基类 bg-muted 且祖先链全透明，
    * 芯片底色会消失。
    */
   function renderBinding(binding: string, index: number) {
     return (
-      <span key={binding} className="flex min-w-0 max-w-full items-center gap-1.5">
+      <span key={binding} className="flex items-center gap-1.5">
         <button
           type="button"
-          disabled={saving || menuChannelUnavailable}
-          className="min-w-0 rounded-lg px-0 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={menuChannelUnavailable}
+          className="w-fit rounded-lg px-0 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={intl.formatMessage(
             { id: "settings.shortcuts.rebindAria" },
             { command: commandLabel },
@@ -126,7 +123,7 @@ export function ShortcutBindingRow({
           data-testid={`settings-shortcut-bind-${entry.id}-${index}`}
           onClick={() => onRecord(index)}
         >
-          <KbdGroup className="flex-wrap">
+          <KbdGroup>
             {formatShortcutBindingLabelParts(binding).map((part, partIndex) => (
               <Kbd key={`${part}-${partIndex}`} className={isOverridden ? "text-brand" : undefined}>
                 {part}
@@ -137,7 +134,7 @@ export function ShortcutBindingRow({
         <Button
           variant="ghost"
           size="icon-sm"
-          disabled={saving || menuChannelUnavailable}
+          disabled={menuChannelUnavailable}
           aria-label={intl.formatMessage(
             { id: "settings.shortcuts.rebindAria" },
             { command: commandLabel },
@@ -153,14 +150,13 @@ export function ShortcutBindingRow({
 
   return (
     <div
-      // 原因：固定四列在窄屏挤压键位并裁切操作；窄屏分两行，键帽和提示允许换行。
-      className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-t border-border px-4 py-3 text-ui-base first:border-t-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_80px_40px] sm:gap-x-0"
+      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_80px_72px] items-center border-t border-border px-4 py-3 text-ui-base"
       data-testid={`settings-shortcut-row-${entry.id}`}
     >
-      <span className="order-1 flex min-w-0 items-center">
-        <span className="break-words">{commandLabel}</span>
+      <span className="flex min-w-0 items-center">
+        <span className="truncate">{commandLabel}</span>
       </span>
-      <span className="order-3 flex min-w-0 flex-col items-start gap-1.5 sm:order-2">
+      <span className="flex min-w-0 flex-col items-start gap-1.5">
         {bindings.map((binding, index) =>
           isRecording && recording?.mode === "replace" && recording.bindingIndex === index
             ? renderRecorder()
@@ -173,8 +169,8 @@ export function ShortcutBindingRow({
         {bindings.length === 0 && !isRecording ? (
           <button
             type="button"
-            disabled={saving || menuChannelUnavailable}
-            className="min-w-0 rounded-lg px-0 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={menuChannelUnavailable}
+            className="w-fit rounded-lg px-0 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-60"
             aria-label={intl.formatMessage(
               { id: "settings.shortcuts.rebindAria" },
               { command: commandLabel },
@@ -188,7 +184,7 @@ export function ShortcutBindingRow({
       </span>
       {/* 作用域独立成列：global = 全局生效；composer = 仅聊天输入框内生效 */}
       <span
-        className="order-2 text-ui-sm text-foreground-subtle sm:order-3"
+        className="text-ui-sm text-foreground-subtle"
         data-testid={`settings-shortcut-scope-${entry.id}`}
       >
         {entry.scope === "composer"
@@ -196,20 +192,19 @@ export function ShortcutBindingRow({
           : intl.formatMessage({ id: "settings.shortcuts.scopeGlobal" })}
       </span>
       <Button
-        className="order-4 justify-self-end sm:justify-self-start"
         variant="ghost"
-        size="icon-sm"
+        size="icon"
         aria-label={intl.formatMessage(
           { id: "settings.shortcuts.clearAria" },
           { command: commandLabel },
         )}
         // Web 端 menu 通道命令与录制入口同置灰：其默认键被根级回退监听固定消费，
         // 清除成未分配也不会真的失效，放行会产出「显示未分配却仍触发」的分裂状态
-        disabled={saving || menuChannelUnavailable || bindings.length === 0}
+        disabled={menuChannelUnavailable || bindings.length === 0}
         onClick={onClearAll}
         data-testid={`settings-shortcut-clear-${entry.id}`}
       >
-        <Trash2 className="size-3.5" />
+        <Trash2 className="size-4" />
       </Button>
     </div>
   );

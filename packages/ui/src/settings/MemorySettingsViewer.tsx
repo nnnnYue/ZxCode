@@ -14,7 +14,7 @@ import {
   TID_SETTINGS_MEMORY_SEARCH_INPUT,
   TID_SETTINGS_MEMORY_WORKSPACE,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import { Alert, AlertDescription } from "@/components/ui/alert.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { FileDisplayIcon, resolveFileDisplayDescriptor } from "@/lib/fileDisplay.js";

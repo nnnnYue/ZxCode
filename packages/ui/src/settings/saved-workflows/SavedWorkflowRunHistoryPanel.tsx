@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Ban, ChevronRight, CircleCheck, Loader2, TriangleAlert } from "lucide-react";
-import { TID_WORKFLOW_RUN_ROW, type ZCodeSavedWorkflowRun } from "@zcode/shared";
-import { testId } from "@zcode/shared/test-ids";
+import { TID_WORKFLOW_RUN_ROW, testId, type ZCodeSavedWorkflowRun } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { cn } from "@/components/lib/utils.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";

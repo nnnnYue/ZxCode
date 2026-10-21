@@ -1,5 +1,5 @@
 import { cn } from "@/components/lib/utils.js";
-import { TID_PLUGIN_UI_CARD } from "@zcode/shared/test-ids";
+import { TID_PLUGIN_UI_CARD } from "@zcode/shared";
 import type { PluginSandboxHandle } from "@zcode/shared/mcp-apps";
 import { useLayoutEffect, useRef } from "react";
 import { bindPluginUiPage } from "../adapters/pluginUiPageRegistry.js";
@@ -14,7 +14,6 @@ export interface PluginUiCardProps {
   error: string | null;
   /** 侧栏模式撑满容器；内联模式按 height 固定。 */
   fill?: boolean;
-  visible?: boolean;
   loadingLabel: string;
   errorLabel: string;
   /** 错误态的"重新加载"；缺省不显示按钮。 */
@@ -28,10 +27,8 @@ export function PluginUiCard(props: PluginUiCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const node = containerRef.current;
-    // 侧栏收起仍保留锚点，独立浮层不会继承其裁剪与透明度；同步解绑使页面隐藏，实例继续保活。
-    if (node && props.visible !== false)
-      return bindPluginUiPage(props.pageKey, node, props.fill === true);
-  }, [props.pageKey, props.fill, props.visible]);
+    if (node) return bindPluginUiPage(props.pageKey, node, props.fill === true);
+  }, [props.pageKey, props.fill]);
 
   useLayoutEffect(() => {
     const node = containerRef.current;

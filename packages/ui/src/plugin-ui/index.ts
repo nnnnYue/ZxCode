@@ -1,5 +1,4 @@
 export * from "./contract.js";
-export { PluginUiBackgroundHost } from "./adapters/PluginUiBackgroundHost.js";
 export { createPluginUiMessagePortTransport } from "./adapters/messagePortTransport.js";
 export { createPluginUiPagePlane } from "./adapters/pluginUiPagePlane.js";
 export { readPluginUiStyleVariables } from "./adapters/readPluginUiStyleVariables.js";
@@ -39,7 +38,6 @@ export { PluginUiFollowUpDialogHost } from "./components/PluginUiFollowUpDialogH
 export { PluginUiSidePane } from "./PluginUiSidePane.js";
 export {
   PluginUiLauncherItems,
-  SidePaneLauncherRow,
   buildPluginUiLauncherItemId,
 } from "@/plugin-ui/components/PluginUiLauncherItems.js";
 export {
@@ -50,6 +48,3 @@ export {
   openPluginUiSidePane,
   type OpenScopedPluginUiSideTabRequest,
 } from "./sidePane/pluginUiSidePaneTab.js";
-
-export { useMarketPluginUi, type MarketPluginUiTarget } from "./adapters/useMarketPluginUi.js";
-export { useUiPluginRecommendations } from "@/plugin-ui/adapters/useUiPluginRecommendations.js";

@@ -1189,6 +1189,7 @@ export type TaskRealtimeReason =
   // 标题更新（首条消息写 title / 收口后自动标题生成）同样与归属无关且高频，
   // 混在 task_meta_changed 里会让每次发送/收口都触发全局 membership 重拉。
   | "task_title_changed"
+  | "auto_archive"
   | "task_pinned"
   | "task_unpinned"
   | "task_archived"

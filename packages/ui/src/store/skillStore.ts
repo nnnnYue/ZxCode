@@ -9,7 +9,6 @@ import {
 import type { ISkillsService } from "@zcode/services";
 import { shouldExposeE2EStoreBridge } from "@/lib/e2eStoreBridge.js";
 import { logger } from "@/logger.js";
-import { getServiceAuthorityId } from "@/store/serviceAuthorityKey.js";
 
 interface SkillStoreState {
   workspacePath: string | null;
@@ -40,15 +39,13 @@ interface SkillStoreState {
 }
 
 const inFlightSkillLoads = new Map<string, ReturnType<ISkillsService["list"]>>();
-let activeSkillProjectionKey: string | null = null;
-let loadedSkillServiceAuthorityId: number | null = null;
+
 function getSkillLoadKey(
   workspacePath: string,
   provider: ZCodeProvider,
-  skillsService: ISkillsService,
   workspaceIdentity?: string,
 ): string {
-  return `${getServiceAuthorityId(skillsService)}::${workspaceIdentity?.trim() || workspacePath}::${provider}`;
+  return `${workspaceIdentity?.trim() || workspacePath}::${provider}`;
 }
 
 function loadSkillsOnce(
@@ -58,7 +55,7 @@ function loadSkillsOnce(
   workspaceIdentity?: string,
   options: { bypassCache?: boolean } = {},
 ): ReturnType<ISkillsService["list"]> {
-  const key = getSkillLoadKey(workspacePath, provider, skillsService, workspaceIdentity);
+  const key = getSkillLoadKey(workspacePath, provider, workspaceIdentity);
   if (!options.bypassCache) {
     const current = inFlightSkillLoads.get(key);
     if (current) {
@@ -114,12 +111,8 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
       });
       return;
     }
-    const serviceAuthorityId = getServiceAuthorityId(skillsService);
-    const projectionKey = `${serviceAuthorityId}::${normalizedWorkspaceIdentity || workspacePath}::${provider}`;
-    activeSkillProjectionKey = projectionKey;
     const hasCachedSkills =
       currentState.skills.length > 0 &&
-      loadedSkillServiceAuthorityId === serviceAuthorityId &&
       currentState.loadedWorkspacePath === workspacePath &&
       currentState.loadedWorkspaceIdentity === normalizedWorkspaceIdentity &&
       currentState.loadedProvider === provider;
@@ -145,8 +138,6 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
         skillsService,
         normalizedWorkspaceIdentity ?? undefined,
       );
-      if (activeSkillProjectionKey !== projectionKey) return;
-      loadedSkillServiceAuthorityId = serviceAuthorityId;
       set({
         skills: result.skills,
         capability: result.capability,
@@ -156,7 +147,6 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
         loadedProvider: provider,
       });
     } catch (error) {
-      if (activeSkillProjectionKey !== projectionKey) return;
       logger.error("[skills] initialize failed", {
         workspacePath,
         provider,
@@ -179,27 +169,16 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
     const workspaceIdentityFromState =
       workspaceIdentity?.trim() || get().workspaceIdentity || undefined;
     const provider = normalizeAgentProviderToZCodeAgent(get().provider);
-    const serviceAuthorityId = getServiceAuthorityId(skillsService);
-    const projectionKey = `${serviceAuthorityId}::${workspaceIdentityFromState || workspacePath}::${provider}`;
-    activeSkillProjectionKey = projectionKey;
-    const hasCachedSkills =
-      get().skills.length > 0 && loadedSkillServiceAuthorityId === serviceAuthorityId;
-    // Bugfix: 开关技能后会触发 refresh，之前每次都把 loading 置 true，
+    const hasCachedSkills = get().skills.length > 0;
+    // 开关技能后会触发 refresh，之前每次都把 loading 置 true，
     // Settings 列表会先切到“加载中”再切回数据，用户看到整列表闪烁。
     // 这里改成“仅首次无缓存时显示阻塞 loading”，有缓存时后台刷新并保留当前列表。
-    set({
-      skills: hasCachedSkills ? get().skills : [],
-      capability: hasCachedSkills ? get().capability : null,
-      loading: !hasCachedSkills,
-      error: null,
-    });
-    // Bugfix: refresh 必须保证拿到「最新一次」的服务端结果。
-    // 此前直接调 loadSkillsOnce 会复用 in-flight 的旧请求，
+    set({ loading: !hasCachedSkills, error: null });
+    // refresh 必须保证拿到「最新一次」的服务端结果。
+    // 直接调 loadSkillsOnce 会复用 in-flight 的旧请求，
     // 导致复制 skill 到通用目录后 chat mention 仍看到旧列表。
     // 这里在 refresh 时显式跳过 in-flight 缓存，强制发起一次新请求。
-    inFlightSkillLoads.delete(
-      getSkillLoadKey(workspacePath, provider, skillsService, workspaceIdentityFromState),
-    );
+    inFlightSkillLoads.delete(getSkillLoadKey(workspacePath, provider, workspaceIdentityFromState));
     try {
       const result = await loadSkillsOnce(
         workspacePath,
@@ -207,8 +186,6 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
         skillsService,
         workspaceIdentityFromState,
       );
-      if (activeSkillProjectionKey !== projectionKey) return;
-      loadedSkillServiceAuthorityId = serviceAuthorityId;
       set({
         skills: result.skills,
         capability: result.capability,
@@ -218,7 +195,6 @@ export const useSkillStore = create<SkillStoreState>((set, get) => ({
         loadedProvider: provider,
       });
     } catch (error) {
-      if (activeSkillProjectionKey !== projectionKey) return;
       logger.error("[skills] refresh failed", {
         workspacePath,
         provider,

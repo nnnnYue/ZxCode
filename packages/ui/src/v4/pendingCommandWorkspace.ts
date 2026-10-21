@@ -1,13 +1,12 @@
 import type { SessionCreateSource } from "@zcode/shared";
-import type { ComposerRecentReceipt } from "@/lib/composerRecent.js";
+import type { GroupedDraftTaskState } from "@/store/zcodeSessionStoreTypes.js";
+
 export interface PendingCommandClientContext {
-  composer?: ComposerRecentReceipt & { draftId?: string; submittedText?: string };
   workspace?: {
     workspacePath: string;
     workspaceIdentity?: string;
   };
-  projectId?: string | null;
-  taskGroupId?: string | null;
+  groupedDraftTask?: GroupedDraftTaskState;
   sessionCreateSource?: SessionCreateSource;
 }
 

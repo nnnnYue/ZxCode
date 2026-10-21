@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch.js";
 import { toast } from "@/components/ui/toast.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useServices } from "@/hooks/useServices.js";
+import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
 import { logger } from "@/logger.js";
@@ -81,6 +82,11 @@ export function BrowserSettingsSection({
   const { intl } = useZCodeIntl();
   const platform = usePlatform();
   const { pluginManagementService, skillsService } = useServices();
+  const zcodeSessionService = useZCodeSessionService(
+    workspacePath ?? undefined,
+    undefined,
+    workspaceIdentity,
+  );
   const browserUsePlugin = usePluginManagementStore((state) =>
     state.plugins.find((plugin) => plugin.id === OFFICIAL_BROWSER_USE_PLUGIN_ID),
   );
@@ -114,6 +120,7 @@ export function BrowserSettingsSection({
 
   const refreshAfterPluginChange = useCallback(async () => {
     await invalidateDeferredDraftSessionForSkillChange({
+      zcodeSessionService,
       workspacePath,
       workspaceIdentity: normalizedWorkspaceIdentity ?? undefined,
       reason: "settings-browser-use-plugin-enabled",
@@ -132,6 +139,7 @@ export function BrowserSettingsSection({
     skillStoreWorkspacePath,
     skillsService,
     workspacePath,
+    zcodeSessionService,
   ]);
 
   const handleBrowserEnabledChange = useCallback(

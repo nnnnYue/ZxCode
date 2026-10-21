@@ -197,6 +197,7 @@ export type {
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteSessionReconnectedEvent,
+  BotRemoteWorkspaceReconnectedEvent,
   RemoteServiceSession,
   SSHConfigAliasOption,
   TaskNotificationPayload,

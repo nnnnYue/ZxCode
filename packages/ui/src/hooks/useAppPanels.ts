@@ -1,9 +1,3 @@
-import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
-import {
-  openFileManagerSidePane,
-  navigateFileManagerSidePane,
-  type FileManagerTarget,
-} from "@/lib/workspaceSidePane.js";
 /* eslint-disable max-lines */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createUuid } from "@zcode/shared";
@@ -20,11 +14,10 @@ import {
   saveTaskSidePaneMemoryState,
 } from "@/lib/taskSidePaneMemory.js";
 import {
-  ensureSidePaneTab,
   closeSidePaneTab,
-  closeSidePaneTabForScope,
-  closeSidePaneTabs,
-  isSidePaneTabVisibleInScope,
+  closeSidePaneTabForParent,
+  closeVisibleOtherSidePaneTabs,
+  closeVisibleSidePaneTabs,
   closeGitSidePane,
   closeCodeViewerSidePane,
   openWhiteboardSidePane,
@@ -41,8 +34,6 @@ import {
   openWorkflowWorkspaceSidePane,
   openWorkflowArtifactSidePane,
   activateDeveloperToolsSidePane,
-  activatePluginMarketSidePane,
-  activateNewTabSidePane,
   openBrowserSidePane,
   openBrowserPermissionsSidePane,
   openOrActivateBrowserSidePaneByUrl,
@@ -53,6 +44,7 @@ import {
   BROWSER_USE_OPERATION_INDICATOR_DURATION_MS,
   openCodeViewerSidePane,
   openCodeViewerSidePanes,
+  resolveReusableCodeViewerSidePaneTabId,
   activateGitSidePane,
   getActiveSidePaneTab,
   getVisibleSidePaneTabs,
@@ -83,10 +75,14 @@ import {
   type WorkspaceSidePaneState,
   type WorkspaceSidePaneTab,
 } from "@/lib/workspaceSidePane.js";
+import { isSidePaneTabVisibleForParent } from "@/lib/workspaceSidePane.js";
 import { openPluginUiSidePane } from "@/plugin-ui/index.js";
 import type { OpenPluginUiSideTabRequest } from "@/plugin-ui/contract.js";
 import { logger } from "@/logger.js";
 import { getPathLeaf, joinFilePath, toFileUrl } from "@/lib/path.js";
+import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useConfirmDialogStore } from "@/store/confirmDialogStore.js";
+import { getPreviewEditGuard } from "@/store/previewEditGuardStore.js";
 import { shouldOpenWorkflowArtifactInBrowser } from "@/lib/workflowArtifactOpen.js";
 import { useWhiteboardStore } from "@/store/whiteboardStore.js";
 import { useModelTrajectoryOpenBridge } from "@/hooks/useModelTrajectoryOpenBridge.js";
@@ -185,6 +181,7 @@ export function useAppPanels(options: {
   const supportsEmbeddedBrowser = explicitSupportsEmbeddedBrowser ?? Boolean(isDesktop);
   const activeWorkspaceKey = workspaceIdentity?.trim() || workspaceAbsPath;
   const { zcodeAgentService, zcodeSessionService } = useServices();
+  const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const sidePaneMemoryKey = useMemo(
     () =>
@@ -206,7 +203,7 @@ export function useAppPanels(options: {
   const [sidePaneState, setSidePaneState] = useState<WorkspaceSidePaneState | null>(
     initialSidePaneMemoryState.sidePaneState,
   );
-  const [isSidePaneCollapsed, setIsSidePaneCollapsedState] = useState(
+  const [isSidePaneCollapsed, setIsSidePaneCollapsed] = useState(
     getSidePaneCollapsedPreference(initialSidePaneMemoryState, sidePaneOwnerId) ??
       initialSidePaneMemoryState.isSidePaneCollapsed,
   );
@@ -235,26 +232,12 @@ export function useAppPanels(options: {
     isSidePaneCollapsed,
   };
 
-  // 折叠态参与同一批事件的后续决策，统一同步 ref，避免 React 提交前读到旧值。
-  const setIsSidePaneCollapsed = useCallback((value: boolean | ((current: boolean) => boolean)) => {
-    const next =
-      typeof value === "function"
-        ? value(latestSidePaneMemoryRef.current.isSidePaneCollapsed)
-        : value;
-    latestSidePaneMemoryRef.current.isSidePaneCollapsed = next;
-    setIsSidePaneCollapsedState(next);
-  }, []);
-
-  const currentSidePaneScope = useCallback(
-    () => ({
-      workspaceKey: activeWorkspaceKeyRef.current,
-      ownerTaskId: sidePaneOwnerIdRef.current,
-    }),
-    [],
-  );
-
   const revealSidePaneForCurrentOwner = useCallback(() => {
     setIsSidePaneCollapsed(false);
+    latestSidePaneMemoryRef.current = {
+      ...latestSidePaneMemoryRef.current,
+      isSidePaneCollapsed: false,
+    };
     saveTaskSidePaneCollapsedPreference(
       activeSidePaneMemoryKeyRef.current,
       sidePaneOwnerIdRef.current,
@@ -265,11 +248,6 @@ export function useAppPanels(options: {
   const commitSidePaneState = useCallback(
     (updater: (current: WorkspaceSidePaneState | null) => WorkspaceSidePaneState | null) => {
       const next = updater(latestSidePaneMemoryRef.current.sidePaneState);
-      // 关闭末标签必须收敛到收起态；在此补建入口会让 Cmd/Ctrl+W 永远关闭不完。
-      // 仅显式展开空面板时创建 new-tab，后台关闭也不能重新展开面板。
-      if (getVisibleSidePaneTabs(next?.tabs ?? [], currentSidePaneScope()).length === 0) {
-        setIsSidePaneCollapsed(true);
-      }
       // 普通侧栏交互和 BrowserView IPC 可在同一 React batch 内相邻到达。
       // 若只有 BrowserView 更新同步 ref，后到的具体值会覆盖尚未提交的打开、激活或排序更新。
       // 所有侧栏写入口统一先提交 canonical ref，保证交互与 lifecycle 严格按接收顺序合并。
@@ -280,44 +258,20 @@ export function useAppPanels(options: {
       setSidePaneState(next);
       return next;
     },
-    [currentSidePaneScope],
+    [],
   );
 
   const commitOpenedSidePaneState = useCallback(
     (updater: (current: WorkspaceSidePaneState | null) => WorkspaceSidePaneState | null) => {
-      commitSidePaneState((current) => {
-        const next = stampSidePaneTabsOwnership(updater(current), {
+      commitSidePaneState((current) =>
+        stampSidePaneTabsOwnership(updater(current), {
           ownerTaskId: sidePaneOwnerIdRef.current,
           workspaceKey: activeWorkspaceKeyRef.current,
           remoteSessionId: workspaceRemoteSessionId ?? null,
-        });
-        const launcher = getActiveSidePaneTab(current);
-        const opened = getActiveSidePaneTab(next);
-        const scope = currentSidePaneScope();
-        // 新标签页被内容替换，保留原位置；后台或其他对话的打开事件不能消费当前入口。
-        // 插件市场保留返回入口，不属于在新标签页内启动的工具。
-        if (
-          !next ||
-          launcher?.type !== "new-tab" ||
-          !opened ||
-          opened.type === "new-tab" ||
-          opened.type === "plugin-market" ||
-          !isSidePaneTabVisibleInScope(launcher, scope) ||
-          !isSidePaneTabVisibleInScope(opened, scope)
-        )
-          return next;
-        const alreadyOpen = current?.tabs.some((tab) => tab.id === opened.id);
-        return {
-          ...next,
-          tabs: alreadyOpen
-            ? next.tabs.filter((tab) => tab.id !== launcher.id)
-            : next.tabs.flatMap((tab) =>
-                tab.id === launcher.id ? [opened] : tab.id === opened.id ? [] : [tab],
-              ),
-        };
-      });
+        }),
+      );
     },
-    [commitSidePaneState, currentSidePaneScope, workspaceRemoteSessionId],
+    [commitSidePaneState, workspaceRemoteSessionId],
   );
 
   useEffect(() => {
@@ -332,11 +286,11 @@ export function useAppPanels(options: {
     saveTaskSidePaneMemoryState(previousKey, latestSidePaneMemoryRef.current);
     const restored = readTaskSidePaneMemoryState(sidePaneMemoryKey);
     activeSidePaneMemoryKeyRef.current = sidePaneMemoryKey;
-    const collapsed =
-      getSidePaneCollapsedPreference(restored, sidePaneOwnerIdRef.current) ??
-      restored.isSidePaneCollapsed;
-    setIsSidePaneCollapsed(collapsed);
     commitSidePaneState(() => restored.sidePaneState);
+    setIsSidePaneCollapsed(
+      getSidePaneCollapsedPreference(restored, sidePaneOwnerIdRef.current) ??
+        restored.isSidePaneCollapsed,
+    );
   }, [commitSidePaneState, sidePaneMemoryKey]);
 
   useEffect(() => {
@@ -347,6 +301,29 @@ export function useAppPanels(options: {
       );
     };
   }, []);
+
+  const hasVisibleSidePaneTabs = useCallback(
+    (next: WorkspaceSidePaneState | null) =>
+      Boolean(
+        next &&
+        getVisibleSidePaneTabs(next.tabs, {
+          workspaceKey: activeWorkspaceKey,
+          ownerTaskId: sidePaneOwnerId,
+        }).length,
+      ),
+    [activeWorkspaceKey, sidePaneOwnerId],
+  );
+
+  const syncSidePaneCollapsedWithTabs = useCallback(
+    (next: WorkspaceSidePaneState | null) => {
+      if (!hasVisibleSidePaneTabs(next)) {
+        // 生命周期收口不能因为仍有其他可见 tab 就展开面板，否则会覆盖用户对当前
+        // owner 的主动收起偏好；只有没有可见内容时才强制收起空面板。
+        setIsSidePaneCollapsed(true);
+      }
+    },
+    [hasVisibleSidePaneTabs],
+  );
 
   useEffect(() => {
     commitSidePaneState((current) => {
@@ -377,92 +354,117 @@ export function useAppPanels(options: {
     });
   }, [activeTaskId, activeWorkspaceKey, commitSidePaneState, sidePaneOwnerId]);
 
-  const pendingFileManagerTarget = useOptionalTabStore((state) => state.pendingFileManagerTarget);
-  const requestFileManager = useOptionalTabStore((state) => state.requestFileManager);
-  const consumeFileManager = useOptionalTabStore((state) => state.consumeFileManager);
-  const handleOpenFileManager = useCallback(
-    (target?: FileManagerTarget) => {
-      if (
-        target &&
-        !target.temporaryExternalDirectory &&
-        (target.workspaceIdentity?.trim() || target.workspacePath) !== activeWorkspaceKeyRef.current
-      ) {
-        requestFileManager(target);
-        return;
+  // 未保存守卫：编辑中的 code-viewer tab 在被关闭或原位刷新前逐个弹三选确认框。
+  // 保存失败的错误 toast 由 PreviewPane 内部负责（draft 保持编辑态），这里只负责中止流程。
+  const confirmCleanCodeViewerTabsClose = useCallback(
+    async (tabs: readonly WorkspaceSidePaneTab[]): Promise<boolean> => {
+      for (const tab of tabs) {
+        if (tab.type !== "code-viewer") {
+          continue;
+        }
+        const guard = getPreviewEditGuard(tab.id);
+        if (!guard || !guard.isDirty()) {
+          continue;
+        }
+        const choice = await useConfirmDialogStore.getState().requestChoice({
+          title: intl.formatMessage({ id: "codeViewer.unsavedTitle" }),
+          description: intl.formatMessage(
+            { id: "codeViewer.unsavedDescription" },
+            { file: tab.source.path ? getPathLeaf(tab.source.path) : tab.source.title },
+          ),
+          confirmLabel: intl.formatMessage({ id: "codeViewer.unsavedSaveAndClose" }),
+          discardLabel: intl.formatMessage({ id: "codeViewer.unsavedDiscard" }),
+        });
+        if (choice === "cancel" || choice === "dismiss") {
+          return false;
+        }
+        if (choice === "confirm" && !(await guard.save())) {
+          return false;
+        }
       }
-      revealSidePaneForCurrentOwner();
-      commitOpenedSidePaneState((current) =>
-        openFileManagerSidePane(
-          current,
-          target ?? {
-            workspacePath: workspaceAbsPath,
-            ...(workspaceIdentity ? { workspaceIdentity } : {}),
-            ...(workspaceRemoteSessionId ? { workspaceRemoteSessionId } : {}),
-          },
-        ),
-      );
+      return true;
     },
-    [
-      requestFileManager,
-      commitOpenedSidePaneState,
-      revealSidePaneForCurrentOwner,
-      workspaceAbsPath,
-      workspaceIdentity,
-      workspaceRemoteSessionId,
-    ],
-  );
-
-  useEffect(() => {
-    if (!pendingFileManagerTarget) return;
-    const targetKey =
-      pendingFileManagerTarget.workspaceIdentity?.trim() || pendingFileManagerTarget.workspacePath;
-    if (targetKey !== activeWorkspaceKey) return;
-    // 必须在本 hook 恢复目标 workspace 的 pane memory 和 owner 之后消费，不能由子 Shell effect 抢先写入旧桶。
-    if (!consumeFileManager(pendingFileManagerTarget)) return;
-    logger.debug("[FileManager] 在目标工作区打开目录", {
-      workspaceKey: targetKey,
-      ownerTaskId: sidePaneOwnerIdRef.current,
-    });
-    handleOpenFileManager(pendingFileManagerTarget);
-  }, [pendingFileManagerTarget, activeWorkspaceKey, consumeFileManager, handleOpenFileManager]);
-
-  const handleNavigateFileManager = useCallback(
-    (tabId: string, source: CodeViewerSource) => {
-      commitSidePaneState((current) => navigateFileManagerSidePane(current, tabId, source));
-    },
-    [commitSidePaneState],
+    [intl],
   );
 
   const handleOpenCodeViewer = useCallback(
     (source: CodeViewerSource) => {
-      revealSidePaneForCurrentOwner();
-      commitOpenedSidePaneState((current) => {
-        const next = openCodeViewerSidePane(current, source, sidePaneOwnerIdRef.current);
-        const activeTab = getActiveSidePaneTab(next);
-        const activePath =
-          activeTab?.type === "code-viewer" ? (activeTab.source.path ?? "none") : "none";
-        logger.info(
-          `[App] 切换右侧面板 mode=code-viewer workspace=${workspaceAbsPath} title=${source.title} path=${activePath} tabs=${next.tabs.length}`,
-        );
-        return next;
-      });
+      // 同一 sourceKey 的重复打开会原位刷新既有 tab 的 source；编辑中的 draft 属于旧文件内容，
+      // 刷新前必须先过未保存守卫，否则编辑态会被静默重置。
+      const reusableTabId = resolveReusableCodeViewerSidePaneTabId(source);
+      const ownerKey = sidePaneOwnerKey(sidePaneOwnerIdRef.current);
+      const refreshedTab =
+        reusableTabId === null
+          ? undefined
+          : sidePaneState?.tabs.find(
+              (tab) =>
+                tab.type === "code-viewer" &&
+                tab.id === reusableTabId &&
+                sidePaneOwnerKey(tab.ownerTaskId) === ownerKey,
+            );
+      void (async () => {
+        if (refreshedTab && !(await confirmCleanCodeViewerTabsClose([refreshedTab]))) {
+          return;
+        }
+        revealSidePaneForCurrentOwner();
+        commitOpenedSidePaneState((current) => {
+          const next = openCodeViewerSidePane(current, source, sidePaneOwnerIdRef.current);
+          const activeTab = getActiveSidePaneTab(next);
+          const activePath =
+            activeTab?.type === "code-viewer" ? (activeTab.source.path ?? "none") : "none";
+          logger.info(
+            `[App] 切换右侧面板 mode=code-viewer workspace=${workspaceAbsPath} title=${source.title} path=${activePath} tabs=${next.tabs.length}`,
+          );
+          return next;
+        });
+      })();
     },
-    [commitOpenedSidePaneState, revealSidePaneForCurrentOwner, workspaceAbsPath],
+    [
+      commitOpenedSidePaneState,
+      confirmCleanCodeViewerTabsClose,
+      revealSidePaneForCurrentOwner,
+      sidePaneState?.tabs,
+      workspaceAbsPath,
+    ],
   );
 
   const handleOpenCodeViewers = useCallback(
     (sources: readonly CodeViewerSource[]) => {
       if (sources.length === 0) return;
-      revealSidePaneForCurrentOwner();
-      commitOpenedSidePaneState((current) => {
-        const next = openCodeViewerSidePanes(current, sources, sidePaneOwnerIdRef.current, 0);
-        logger.info(
-          `[App] 批量打开右侧预览 workspace=${workspaceAbsPath} sources=${sources.length} tabs=${next.tabs.length}`,
+      // 批量打开同样可能原位刷新编辑中的 tab，逐个过守卫后再提交。
+      const ownerKey = sidePaneOwnerKey(sidePaneOwnerIdRef.current);
+      const refreshedTabs = sources
+        .map(resolveReusableCodeViewerSidePaneTabId)
+        .filter((tabId): tabId is string => tabId !== null)
+        .flatMap((tabId) =>
+          (sidePaneState?.tabs ?? []).filter(
+            (tab) =>
+              tab.type === "code-viewer" &&
+              tab.id === tabId &&
+              sidePaneOwnerKey(tab.ownerTaskId) === ownerKey,
+          ),
         );
-        return next;
-      });
+      void (async () => {
+        if (!(await confirmCleanCodeViewerTabsClose(refreshedTabs))) {
+          return;
+        }
+        revealSidePaneForCurrentOwner();
+        commitOpenedSidePaneState((current) => {
+          const next = openCodeViewerSidePanes(current, sources, sidePaneOwnerIdRef.current, 0);
+          logger.info(
+            `[App] 批量打开右侧预览 workspace=${workspaceAbsPath} sources=${sources.length} tabs=${next.tabs.length}`,
+          );
+          return next;
+        });
+      })();
     },
-    [commitOpenedSidePaneState, revealSidePaneForCurrentOwner, workspaceAbsPath],
+    [
+      commitOpenedSidePaneState,
+      confirmCleanCodeViewerTabsClose,
+      revealSidePaneForCurrentOwner,
+      sidePaneState?.tabs,
+      workspaceAbsPath,
+    ],
   );
 
   const handleOpenBrowserUrl = useCallback(
@@ -516,7 +518,8 @@ export function useAppPanels(options: {
               initialUrl: payload.url,
               ownerTaskId: sourceSessionId,
               workspaceKey: sourceWorkspaceKey,
-              // 这两条路径已有 owner，remoteSessionId 不从当前 UI 借用；必须在创建时冻结。
+              // 这两条路径都带 ownerTaskId，stampSidePaneTabsOwnership 不会再补 scope，
+              // remoteSessionId 必须在创建时就冻结，否则远程下这个 tab 关不掉。
               ...(sourceRemoteSessionId ? { remoteSessionId: sourceRemoteSessionId } : {}),
               activate: isCurrentOwner,
               agentOpened,
@@ -549,7 +552,9 @@ export function useAppPanels(options: {
         sidePaneOwnerIdRef.current,
         workspaceRemoteSessionId,
       );
-      if (!closingActiveBrowser) {
+      if (closingActiveBrowser) {
+        syncSidePaneCollapsedWithTabs(next);
+      } else {
         revealSidePaneForCurrentOwner();
       }
       const nextActiveTab = getActiveSidePaneTab(next);
@@ -562,6 +567,7 @@ export function useAppPanels(options: {
     commitOpenedSidePaneState,
     revealSidePaneForCurrentOwner,
     supportsEmbeddedBrowser,
+    syncSidePaneCollapsedWithTabs,
     workspaceAbsPath,
     workspaceRemoteSessionId,
   ]);
@@ -756,18 +762,21 @@ export function useAppPanels(options: {
         const nextState = closeSidePaneTab(stored.sidePaneState, targetId);
         saveTaskSidePaneMemoryState(targetWorkspaceKey, {
           sidePaneState: nextState,
-          isSidePaneCollapsed: stored.isSidePaneCollapsed,
+          isSidePaneCollapsed: nextState ? stored.isSidePaneCollapsed : true,
         });
         return;
       }
 
-      commitSidePaneState((current) => {
+      let didClose = false;
+      const next = commitSidePaneState((current) => {
         const targetId = findTargetId(current);
         if (!targetId) return current;
-        return closeSidePaneTabForScope(current, targetId, currentSidePaneScope());
+        didClose = true;
+        return closeSidePaneTabForParent(current, targetId, sidePaneOwnerIdRef.current);
       });
+      if (didClose) syncSidePaneCollapsedWithTabs(next);
     });
-  }, [commitSidePaneState, currentSidePaneScope, isDesktop, platform]);
+  }, [commitSidePaneState, isDesktop, platform, syncSidePaneCollapsedWithTabs]);
 
   useEffect(() => {
     if (!isDesktop || !platform?.onBrowserViewSuspend) return;
@@ -801,7 +810,9 @@ export function useAppPanels(options: {
       if (isOfficeMode && !current?.tabs.some((tab) => tab.type === "git")) return current;
       const closingActiveGit = getActiveSidePaneTab(current)?.type === "git";
       const next = toggleGitSidePane(current);
-      if (!closingActiveGit) {
+      if (closingActiveGit) {
+        syncSidePaneCollapsedWithTabs(next);
+      } else {
         revealSidePaneForCurrentOwner();
       }
       const activeTab = getActiveSidePaneTab(next);
@@ -810,7 +821,13 @@ export function useAppPanels(options: {
       );
       return next;
     });
-  }, [isOfficeMode, commitOpenedSidePaneState, revealSidePaneForCurrentOwner, workspaceAbsPath]);
+  }, [
+    isOfficeMode,
+    commitOpenedSidePaneState,
+    revealSidePaneForCurrentOwner,
+    syncSidePaneCollapsedWithTabs,
+    workspaceAbsPath,
+  ]);
 
   const handleOpenGit = useCallback(() => {
     commitOpenedSidePaneState((current) => {
@@ -861,16 +878,6 @@ export function useAppPanels(options: {
     workspaceAbsPath,
     workspaceIdentity,
   ]);
-
-  const handleOpenNewSidePaneTab = useCallback(() => {
-    revealSidePaneForCurrentOwner();
-    commitOpenedSidePaneState(activateNewTabSidePane);
-  }, [commitOpenedSidePaneState, revealSidePaneForCurrentOwner]);
-
-  const handleOpenPluginMarket = useCallback(() => {
-    revealSidePaneForCurrentOwner();
-    commitOpenedSidePaneState(activatePluginMarketSidePane);
-  }, [commitOpenedSidePaneState, revealSidePaneForCurrentOwner]);
 
   const handleOpenDeveloperTools = useCallback(() => {
     revealSidePaneForCurrentOwner();
@@ -1162,7 +1169,7 @@ export function useAppPanels(options: {
           // 归属显式冻结，不靠 stampSidePaneTabsOwnership 盖当前 owner：中枢的产物 chip
           // 先 handleSelectTaskInChat 再 handleOpenWorkflowArtifact，同一个同步块里
           // sidePaneOwnerIdRef 还停在上一条会话上。browser tab 的可见性按 ownerTaskId 收窄
-          // （isSidePaneTabVisibleInScope 的默认分支），盖错了这个 tab 切换落定后就再也看不见。
+          // （getVisibleSidePaneTabsByScope 的默认分支），盖错了这个 tab 切换落定后就再也看不见。
           // 产物 tab 不怕这一手，是因为它按 parentSessionId 收窄。
           ownerTaskId: params.ownerTaskId,
           workspaceKey: params.workspaceKey,
@@ -1313,8 +1320,9 @@ export function useAppPanels(options: {
         if (!current) return current;
         let next: WorkspaceSidePaneState | null = current;
         for (const tabId of closingIds) {
-          next = closeSidePaneTabForScope(next, tabId, currentSidePaneScope());
+          next = closeSidePaneTabForParent(next, tabId, activeTaskId);
         }
+        syncSidePaneCollapsedWithTabs(next);
         return next;
       });
       logger.info("[App] 父任务结束，清理框选副屏会话", {
@@ -1324,9 +1332,10 @@ export function useAppPanels(options: {
       });
     });
   }, [
-    currentSidePaneScope,
+    activeTaskId,
     closeSelectionSideChatRuntime,
     commitSidePaneState,
+    syncSidePaneCollapsedWithTabs,
     workspaceAbsPath,
     workspaceIdentity,
   ]);
@@ -1354,36 +1363,59 @@ export function useAppPanels(options: {
   }, []);
 
   const handleToggleSidePaneCollapse = useCallback(() => {
-    const nextCollapsed = !latestSidePaneMemoryRef.current.isSidePaneCollapsed;
-    setIsSidePaneCollapsed(nextCollapsed);
-    saveTaskSidePaneCollapsedPreference(
-      activeSidePaneMemoryKeyRef.current,
-      sidePaneOwnerIdRef.current,
-      nextCollapsed,
-    );
-    // 与显隐在同一交互内提交，避免先显示特殊空态再由 effect 补建标签。
-    if (!nextCollapsed)
-      commitSidePaneState((current) => ensureSidePaneTab(current, currentSidePaneScope()));
-    logger.info(
-      `[App] ${nextCollapsed ? "收起" : "展开"}右侧面板 workspace=${workspaceAbsPath} tabs=${latestSidePaneMemoryRef.current.sidePaneState?.tabs.length ?? 0}`,
-    );
-  }, [commitSidePaneState, currentSidePaneScope, setIsSidePaneCollapsed, workspaceAbsPath]);
+    setIsSidePaneCollapsed((collapsed) => {
+      const nextCollapsed = !collapsed;
+      // tabs 按 workspace 复用，但顶部收起是用户对当前对话的明确选择；
+      // 记录 owner 偏好，避免切换对话后 scope 解析又被可见 tab 自动展开覆盖。
+      saveTaskSidePaneCollapsedPreference(
+        activeSidePaneMemoryKeyRef.current,
+        sidePaneOwnerIdRef.current,
+        nextCollapsed,
+      );
+      latestSidePaneMemoryRef.current = {
+        ...latestSidePaneMemoryRef.current,
+        isSidePaneCollapsed: nextCollapsed,
+      };
+      logger.info(
+        `[App] ${nextCollapsed ? "收起" : "展开"}右侧面板 workspace=${workspaceAbsPath} tabs=${sidePaneState?.tabs.length ?? 0}`,
+      );
+      return nextCollapsed;
+    });
+  }, [sidePaneState, workspaceAbsPath]);
 
   const handleCloseCodeViewer = useCallback(() => {
     logger.info(`[App] 关闭右侧面板 mode=code-viewer workspace=${workspaceAbsPath}`);
-    commitSidePaneState((current) => {
-      const next = closeCodeViewerSidePane(current);
-      return next;
-    });
-  }, [commitSidePaneState, currentSidePaneScope, setIsSidePaneCollapsed, workspaceAbsPath]);
+    const activeTab = getActiveSidePaneTab(sidePaneState);
+    void (async () => {
+      // 活动 tab 是编辑中且脏的 code-viewer 时，先经三选确认再真正关闭。
+      if (
+        activeTab?.type === "code-viewer" &&
+        !(await confirmCleanCodeViewerTabsClose([activeTab]))
+      ) {
+        return;
+      }
+      commitSidePaneState((current) => {
+        const next = closeCodeViewerSidePane(current);
+        syncSidePaneCollapsedWithTabs(next);
+        return next;
+      });
+    })();
+  }, [
+    commitSidePaneState,
+    confirmCleanCodeViewerTabsClose,
+    sidePaneState,
+    syncSidePaneCollapsedWithTabs,
+    workspaceAbsPath,
+  ]);
 
   const handleCloseGit = useCallback(() => {
     logger.info(`[App] 关闭右侧面板 mode=git workspace=${workspaceAbsPath}`);
     commitSidePaneState((current) => {
       const next = closeGitSidePane(current);
+      syncSidePaneCollapsedWithTabs(next);
       return next;
     });
-  }, [commitSidePaneState, currentSidePaneScope, setIsSidePaneCollapsed, workspaceAbsPath]);
+  }, [commitSidePaneState, syncSidePaneCollapsedWithTabs, workspaceAbsPath]);
 
   const handleActivateSidePaneTab = useCallback(
     (tabId: string) => {
@@ -1436,8 +1468,7 @@ export function useAppPanels(options: {
 
   const rememberClosedSidePaneTabs = useCallback((tabs: WorkspaceSidePaneTab[]) => {
     const restorableTabs = tabs.filter(
-      (tab) =>
-        tab.type !== "selection-side-chat" && tab.type !== "browser-use" && tab.type !== "new-tab",
+      (tab) => tab.type !== "selection-side-chat" && tab.type !== "browser-use",
     );
     if (restorableTabs.length === 0) {
       return;
@@ -1498,93 +1529,139 @@ export function useAppPanels(options: {
     [isDesktop, platform, workspaceRemoteSessionId],
   );
 
-  const closeSelectedSidePaneTabs = useCallback(
-    async (closingTabs: WorkspaceSidePaneTab[], preferredTabId?: string) => {
-      if (closingTabs.length === 0) return;
-      const scope = currentSidePaneScope();
-      if (!(await closeBrowserTabsWithAuthority(closingTabs))) return;
-      for (const tab of closingTabs) {
-        if (tab.type === "selection-side-chat") closeSelectionSideChatRuntime(tab);
-        if (tab.type === "terminal") sidePaneTerminalSessionRegistry.release(tab.id);
-      }
-      rememberClosedSidePaneTabs(closingTabs);
-      const closingIds = closingTabs.map((tab) => tab.id);
-      // Bug 原因：main 确认关闭期间可能切换对话/工作区或新建 tab。归属与关闭目标在点击时
-      // 冻结，完成后写回原 registry；当前可见范围与活动标签则按完成时的 scope 解析。
-      if (scope.workspaceKey !== activeWorkspaceKeyRef.current) {
-        const stored = readTaskSidePaneMemoryState(scope.workspaceKey);
-        const next = closeSidePaneTabs(stored.sidePaneState, closingIds, scope, preferredTabId);
-        saveTaskSidePaneMemoryState(scope.workspaceKey, {
-          sidePaneState: next,
-          isSidePaneCollapsed: stored.isSidePaneCollapsed,
-        });
-      } else {
-        const liveScope = currentSidePaneScope();
-        commitSidePaneState((current) =>
-          closeSidePaneTabs(
-            current,
-            closingIds,
-            liveScope,
-            liveScope.ownerTaskId === scope.ownerTaskId
-              ? (preferredTabId ??
-                  (liveScope.ownerTaskId
-                    ? lastActiveSubagentTabByRootRef.current.get(liveScope.ownerTaskId)
-                    : null))
-              : undefined,
-          ),
-        );
-      }
-      logger.info("[App] 关闭右侧面板标签", { tabIds: closingIds, ...scope });
-    },
-    [
-      closeBrowserTabsWithAuthority,
-      closeSelectionSideChatRuntime,
-      commitSidePaneState,
-      currentSidePaneScope,
-      rememberClosedSidePaneTabs,
-    ],
-  );
-
-  const visibleSidePaneTabs = useCallback(
-    () =>
-      getVisibleSidePaneTabs(
-        latestSidePaneMemoryRef.current.sidePaneState?.tabs ?? [],
-        currentSidePaneScope(),
-      ),
-    [currentSidePaneScope],
-  );
-
   const handleCloseSidePaneTab = useCallback(
     (tabId: string) => {
-      void closeSelectedSidePaneTabs(visibleSidePaneTabs().filter((tab) => tab.id === tabId));
+      const closingTab = sidePaneState?.tabs.find((tab) => tab.id === tabId);
+      if (closingTab?.type === "selection-side-chat") {
+        closeSelectionSideChatRuntime(closingTab);
+      }
+      void (async () => {
+        // 未保存守卫必须先于 browser authority 与状态提交：取消关闭时不能有任何副作用落地。
+        if (!(await confirmCleanCodeViewerTabsClose(closingTab ? [closingTab] : []))) {
+          return;
+        }
+        const authorized = await closeBrowserTabsWithAuthority(closingTab ? [closingTab] : []);
+        if (!authorized) return;
+        if (closingTab) rememberClosedSidePaneTabs([closingTab]);
+        // 保活：显式关闭 terminal tab 必须真回收 PTY/xterm（registry 常驻，不会随卸载自动回收）。
+        if (closingTab?.type === "terminal") {
+          sidePaneTerminalSessionRegistry.release(tabId);
+        }
+        const next = commitSidePaneState((current) =>
+          closeSidePaneTabForParent(
+            current,
+            tabId,
+            activeTaskId,
+            activeTaskId ? lastActiveSubagentTabByRootRef.current.get(activeTaskId) : null,
+          ),
+        );
+        syncSidePaneCollapsedWithTabs(next);
+        const activeTab = getActiveSidePaneTab(next);
+        logger.info(
+          `[App] 关闭右侧面板 tab=${tabId} mode=${activeTab?.type ?? "none"} workspace=${workspaceAbsPath} tabs=${next?.tabs.length ?? 0}`,
+        );
+      })();
     },
-    [closeSelectedSidePaneTabs, visibleSidePaneTabs],
+    [
+      activeTaskId,
+      closeSelectionSideChatRuntime,
+      closeBrowserTabsWithAuthority,
+      commitSidePaneState,
+      confirmCleanCodeViewerTabsClose,
+      rememberClosedSidePaneTabs,
+      sidePaneState?.tabs,
+      syncSidePaneCollapsedWithTabs,
+      workspaceAbsPath,
+    ],
   );
 
   const handleCloseOtherSidePaneTabs = useCallback(
     (tabId: string) => {
-      const tabs = visibleSidePaneTabs();
-      if (!tabs.some((tab) => tab.id === tabId)) return;
-      void closeSelectedSidePaneTabs(
-        tabs.filter((tab) => tab.id !== tabId),
-        tabId,
-      );
+      const visibleTabs =
+        sidePaneState?.tabs.filter((tab) => isSidePaneTabVisibleForParent(tab, activeTaskId)) ?? [];
+      const targetExists = visibleTabs.some((tab) => tab.id === tabId);
+      const closingTabs = targetExists ? visibleTabs.filter((tab) => tab.id !== tabId) : [];
+      void (async () => {
+        // 批量关闭中包含编辑中且脏的 code-viewer tab 时，逐个确认后再提交。
+        if (!(await confirmCleanCodeViewerTabsClose(closingTabs))) {
+          return;
+        }
+        const authorized = await closeBrowserTabsWithAuthority(closingTabs);
+        if (!authorized) return;
+        for (const tab of closingTabs) {
+          if (tab.type === "selection-side-chat") closeSelectionSideChatRuntime(tab);
+        }
+        // 保活：批量关闭其他 tab 时，回收其中 terminal tab 的常驻 PTY/xterm。
+        for (const tab of closingTabs) {
+          if (tab.type === "terminal") {
+            sidePaneTerminalSessionRegistry.release(tab.id);
+          }
+        }
+        rememberClosedSidePaneTabs(closingTabs);
+        commitSidePaneState((current) => {
+          const next = closeVisibleOtherSidePaneTabs(current, tabId, activeTaskId);
+          logger.info(
+            `[App] 关闭其他右侧面板 tab=${tabId} workspace=${workspaceAbsPath} tabs=${next?.tabs.length ?? 0}`,
+          );
+          return next;
+        });
+      })();
     },
-    [closeSelectedSidePaneTabs, visibleSidePaneTabs],
+    [
+      activeTaskId,
+      closeSelectionSideChatRuntime,
+      closeBrowserTabsWithAuthority,
+      commitSidePaneState,
+      confirmCleanCodeViewerTabsClose,
+      rememberClosedSidePaneTabs,
+      sidePaneState?.tabs,
+      workspaceAbsPath,
+    ],
   );
 
   const handleCloseAllSidePaneTabs = useCallback(() => {
-    void closeSelectedSidePaneTabs(visibleSidePaneTabs());
-  }, [closeSelectedSidePaneTabs, visibleSidePaneTabs]);
+    const visibleTabs =
+      sidePaneState?.tabs.filter((tab) => isSidePaneTabVisibleForParent(tab, activeTaskId)) ?? [];
+    void (async () => {
+      // 关闭全部同样先过未保存守卫，避免编辑中的 code-viewer tab 被静默丢弃。
+      if (!(await confirmCleanCodeViewerTabsClose(visibleTabs))) {
+        return;
+      }
+      const authorized = await closeBrowserTabsWithAuthority(visibleTabs);
+      if (!authorized) return;
+      for (const tab of visibleTabs) {
+        if (tab.type === "selection-side-chat") closeSelectionSideChatRuntime(tab);
+      }
+      // 保活：关闭全部 tab 时，回收其中 terminal tab 的常驻 PTY/xterm。
+      for (const tab of visibleTabs) {
+        if (tab.type === "terminal") {
+          sidePaneTerminalSessionRegistry.release(tab.id);
+        }
+      }
+      rememberClosedSidePaneTabs(visibleTabs);
+      commitSidePaneState((current) => {
+        logger.info(`[App] 关闭全部右侧面板 tabs workspace=${workspaceAbsPath}`);
+        const next = closeVisibleSidePaneTabs(current, activeTaskId);
+        syncSidePaneCollapsedWithTabs(next);
+        return next;
+      });
+    })();
+  }, [
+    activeTaskId,
+    closeSelectionSideChatRuntime,
+    closeBrowserTabsWithAuthority,
+    commitSidePaneState,
+    confirmCleanCodeViewerTabsClose,
+    rememberClosedSidePaneTabs,
+    sidePaneState?.tabs,
+    syncSidePaneCollapsedWithTabs,
+    workspaceAbsPath,
+  ]);
 
   const handleReopenClosedSidePaneTab = useCallback(
     (tabId: string) => {
       const item = allRecentClosedSidePaneTabs.find((entry) => entry.tab.id === tabId);
-      if (
-        !item ||
-        !isSidePaneTabVisibleInScope(item.tab, currentSidePaneScope()) ||
-        (isOfficeMode && (item.tab.type === "terminal" || item.tab.type === "git"))
-      )
+      if (!item || (isOfficeMode && (item.tab.type === "terminal" || item.tab.type === "git")))
         return;
 
       // 交互说明：最近关闭列表里的 tab 被点回打开时，需要同步展开右侧面板。
@@ -1614,7 +1691,6 @@ export function useAppPanels(options: {
     [
       isOfficeMode,
       allRecentClosedSidePaneTabs,
-      currentSidePaneScope,
       commitSidePaneState,
       revealSidePaneForCurrentOwner,
       workspaceAbsPath,
@@ -1638,13 +1714,10 @@ export function useAppPanels(options: {
     () =>
       allRecentClosedSidePaneTabs.filter(
         (item) =>
-          isSidePaneTabVisibleInScope(item.tab, {
-            workspaceKey: activeWorkspaceKey,
-            ownerTaskId: sidePaneOwnerId,
-          }) &&
+          isSidePaneTabVisibleForParent(item.tab, activeTaskId) &&
           (!isOfficeMode || (item.tab.type !== "terminal" && item.tab.type !== "git")),
       ),
-    [activeWorkspaceKey, sidePaneOwnerId, allRecentClosedSidePaneTabs, isOfficeMode],
+    [activeTaskId, allRecentClosedSidePaneTabs, isOfficeMode],
   );
 
   return {
@@ -1658,8 +1731,6 @@ export function useAppPanels(options: {
     isSidebarVisible,
     browserNavigationRequest,
     setBrowserNavigationRequest,
-    handleOpenFileManager,
-    handleNavigateFileManager,
     // 回调
     handleOpenCodeViewer,
     handleOpenCodeViewers,
@@ -1672,8 +1743,6 @@ export function useAppPanels(options: {
     handleOpenTreemapping,
     handleOpenWhiteboard,
     handleOpenDeveloperTools,
-    handleOpenPluginMarket,
-    handleOpenNewSidePaneTab,
     handleOpenTerminalTab,
     handleOpenModelTrajectory,
     handleOpenSubagentSession,

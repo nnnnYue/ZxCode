@@ -1,12 +1,12 @@
 import { FolderOpen, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { isDataBaseDirForbiddenWindowsInstallDirError } from "@zcode/shared";
 import {
+  isDataBaseDirForbiddenWindowsInstallDirError,
   TID_SETTINGS_DATA_BASE_DIR_BROWSE,
   TID_SETTINGS_DATA_BASE_DIR_INPUT,
   TID_SETTINGS_DATA_BASE_DIR_SAVE,
   TID_SETTINGS_DATA_BASE_DIR_STATUS,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";

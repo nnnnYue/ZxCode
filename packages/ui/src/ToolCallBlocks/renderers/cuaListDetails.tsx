@@ -1,6 +1,6 @@
 import { AppWindow } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useToolPresentationCapabilities } from "@/ToolCallBlocks/presentationCapabilities.js";
+import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import type { ToolCallBlockRenderContext } from "@/ToolCallBlocks/shared.js";
 import { readToolResultDisplay } from "@/ToolCallBlocks/toolResultDisplay.js";
@@ -118,7 +118,7 @@ export function buildCuaDetailList(
 
 function CuaAppList({ items }: { items: CuaAppItem[] }) {
   const { intl } = useZCodeIntl();
-  const platform = useToolPresentationCapabilities();
+  const platform = useOptionalPlatform();
   const [icons, setIcons] = useState<Record<string, string>>({});
 
   useEffect(() => {

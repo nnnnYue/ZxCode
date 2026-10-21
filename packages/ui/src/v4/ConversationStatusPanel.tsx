@@ -38,7 +38,7 @@ import {
   TID_V4_BACKGROUND_WORK_CANCEL,
   TID_V4_BACKGROUND_WORK_ITEM,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@zcode/shared";
 import type {
   GitChangeSourceId,
   GitRepositorySummary,

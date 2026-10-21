@@ -16,13 +16,13 @@ export function AddMarketplaceSourceDialog({
   open,
   onOpenChange,
   onAddMarketplace,
-  activeOperations,
+  operationId,
   error,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddMarketplace: (source: string) => Promise<boolean>;
-  activeOperations: ReadonlyArray<{ id: string }>;
+  operationId: string | null;
   error?: string | null;
 }) {
   const { intl } = useZCodeIntl();
@@ -32,9 +32,7 @@ export function AddMarketplaceSourceDialog({
   const [source, setSource] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const trimmedSource = source.trim();
-  const adding = activeOperations.some(
-    (operation) => operation.id === `marketplace:add:${trimmedSource}`,
-  );
+  const adding = operationId === `marketplace:add:${trimmedSource}`;
   // 本地输入法 composition 态：部分平台 isComposing 会提前翻 false，靠 ref 兜底，避免候选确认误触发添加。
   const compositionActiveRef = useRef(false);
   // 防重复提交：Enter 与点击共用，避免 store 回写前的窗口里重复发起同一来源的添加。

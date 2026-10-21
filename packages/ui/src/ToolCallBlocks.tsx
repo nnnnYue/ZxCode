@@ -1,7 +1,5 @@
-import { useToolPresentationHostCapabilities } from "@/hooks/useToolPresentationHostCapabilities.js";
-import { ToolPresentationCapabilitiesProvider } from "@/ToolCallBlocks/presentationCapabilities.js";
 import { memo, type ReactNode, useEffect, useMemo, useState } from "react";
-import { TID_CHAT_TOOL_CALL_BLOCK, testId } from "@zcode/shared/test-ids";
+import { TID_CHAT_TOOL_CALL_BLOCK, testId } from "@zcode/shared";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { mapToolStatus } from "@/lib/mapToolStatus.js";
@@ -156,7 +154,6 @@ function ToolCallBlockComponent({
     event: Extract<ConversationCuaGroupEvent, { kind: "reasoning" }>,
   ) => ReactNode;
 }) {
-  const presentationCapabilities = useToolPresentationHostCapabilities(workspacePath);
   const inheritedPluginUi = PluginUi.usePluginUiToolBinding(toolCallNode.toolCall.toolId);
   const pluginUi = providedPluginUi ?? inheritedPluginUi;
   const { toolCall, childToolCalls } = toolCallNode;
@@ -295,7 +292,6 @@ function ToolCallBlockComponent({
 
   const renderContext: ToolCallBlockRenderContext = useMemo(
     () => ({
-      nestedToolRenderer: ToolCallBlock,
       isOfficeMode,
       toolCallNode,
       workspacePath,
@@ -372,38 +368,31 @@ function ToolCallBlockComponent({
     ],
   );
 
-  const ToolCallRenderer = useMemo(() => {
-    const Renderer = resolveToolCallRenderer(renderContext);
-    // 插件声明与 session 绑定已由宿主校验，不能再用通用 renderer 身份截断入口。
-    // 没有合法插件声明时仍保持共同注册表的专用工具优先级。
-    return PluginUi.shouldRenderPluginUi(renderContext) ? PluginUi.PluginUiToolCallBlock : Renderer;
-  }, [renderContext]);
+  const ToolCallRenderer = useMemo(() => resolveToolCallRenderer(renderContext), [renderContext]);
   // early return 必须在所有 hook 之后（见上方注释说明的崩溃原因）
   if (!showTodoToolCalls && identity.family === "todo") {
     return null;
   }
   return (
-    <ToolPresentationCapabilitiesProvider value={presentationCapabilities}>
-      <div
-        className="w-full"
-        data-testid={testId(TID_CHAT_TOOL_CALL_BLOCK, toolCall.toolId)}
-        data-tool-call-id={toolCall.toolId}
-        data-tool-name={toolCall.toolName ?? toolCall.kind ?? ""}
-        data-status={toolCall.status}
-        data-zcode-tool-stream-animate={shouldPlayEntranceAnimation ? "true" : undefined}
-      >
-        {toolCall.kind === "cuaGroup" ? (
-          <CuaGroupToolCallBlock
-            {...renderContext}
-            events={cuaGroupEvents}
-            renderAssistantMessage={renderCuaAssistantMessage}
-            renderReasoning={renderCuaReasoning}
-          />
-        ) : (
-          <ToolCallRenderer {...renderContext} />
-        )}
-      </div>
-    </ToolPresentationCapabilitiesProvider>
+    <div
+      className="w-full"
+      data-testid={testId(TID_CHAT_TOOL_CALL_BLOCK, toolCall.toolId)}
+      data-tool-call-id={toolCall.toolId}
+      data-tool-name={toolCall.toolName ?? toolCall.kind ?? ""}
+      data-status={toolCall.status}
+      data-zcode-tool-stream-animate={shouldPlayEntranceAnimation ? "true" : undefined}
+    >
+      {toolCall.kind === "cuaGroup" ? (
+        <CuaGroupToolCallBlock
+          {...renderContext}
+          events={cuaGroupEvents}
+          renderAssistantMessage={renderCuaAssistantMessage}
+          renderReasoning={renderCuaReasoning}
+        />
+      ) : (
+        <ToolCallRenderer {...renderContext} />
+      )}
+    </div>
   );
 }
 

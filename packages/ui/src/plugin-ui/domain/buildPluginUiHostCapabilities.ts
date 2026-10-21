@@ -18,8 +18,6 @@ export interface PluginUiHostCapabilityInput {
   canDownloadFile: boolean;
   /** 常驻面板实例：宣告 `experimental["zcode/surface"]: { id }`，页面据此判断自己运行在面板里。 */
   surfaceId?: string;
-  /** 窗口恢复键，仅接受宿主派生的不透明摘要。 */
-  surfaceStateKey?: string;
 }
 
 /**
@@ -48,14 +46,7 @@ export function buildPluginUiHostCapabilities(
       ...(input.canSubscribeResources
         ? { [MCP_APPS_RESOURCE_SUBSCRIBE_EXPERIMENTAL_KEY]: {} }
         : {}),
-      ...(input.surfaceId
-        ? {
-            [MCP_APPS_SURFACE_EXPERIMENTAL_KEY]: {
-              id: input.surfaceId,
-              stateKey: input.surfaceStateKey,
-            },
-          }
-        : {}),
+      ...(input.surfaceId ? { [MCP_APPS_SURFACE_EXPERIMENTAL_KEY]: { id: input.surfaceId } } : {}),
     },
   };
 }
