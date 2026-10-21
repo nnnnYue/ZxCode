@@ -176,6 +176,14 @@ import {
   settingsToConfigOptions,
 } from "./zcodeConfigOptions.js";
 import type { CuaProductMcpServerResolver } from "#src/cua-permission-broker/index.js";
+import type {
+  ZCodeTaskGroup,
+  ZCodeTaskGroupColor,
+  ZCodeGroupedTaskView,
+  ZCodeGroupedTaskViewStructure,
+  ZCodeGroupedTaskViewOrderInput,
+  ZCodeTaskListWorkspaceScope,
+} from "#src/session/zcodeTaskListTypes.js";
 import { registerMemoryDiagnosticsProvider } from "#src/memoryDiagnostics.js";
 
 interface CreateZCodeTaskServiceAdapterOptions {
@@ -2554,10 +2562,10 @@ export function createZCodeTaskServiceAdapter(
       throw new Error("grouped-task: not available");
     },
     async listGroupedTaskViewStructure(_params: { workspaceScopes: ZCodeTaskListWorkspaceScope[] }): Promise<ZCodeGroupedTaskViewStructure> {
-      return { groups: [], memberships: [], topLevelOrder: [] };
+      return { groups: [], members: [], topLevelOrders: [] };
     },
     async applyGroupedTaskViewOrder(_params: ZCodeGroupedTaskViewOrderInput): Promise<ZCodeGroupedTaskView> {
-      return { groups: [], memberships: [], topLevelOrder: [] };
+      return { nodes: [] };
     },
     async listArchivedTasks(params): Promise<ZCodeTaskMeta[]> {
       const tasks = await taskIndexRepo.listTaskMetas({
