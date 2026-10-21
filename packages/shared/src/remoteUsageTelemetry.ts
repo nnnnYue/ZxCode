@@ -5,7 +5,9 @@ import {
 } from "./remote-workspace-identity.js";
 
 /** 去平台化后本地保留的最小埋点 payload 形状（原 @zcode/shared telemetry.ts 已删除）。 */
-interface TelemetryEventPayload {
+// fork 修复：desktop 手机远控链路（webRemoteControlManager / desktopWebRemoteControlIpc）
+// 从 @zcode/shared 导入该类型，但基线未加 export（fork 发版树遗留类型债），这里补上。
+export interface TelemetryEventPayload {
   elementName: string;
   eventRegion: string;
   eventType: string;

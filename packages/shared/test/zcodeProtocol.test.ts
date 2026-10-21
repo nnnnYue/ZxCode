@@ -973,7 +973,7 @@ describe("ZCode Protocol", () => {
     ).toThrow();
   });
 
-
+  it.each(["start-plan", "individual-coding-plan", "team-coding-plan", "off-peak"] as const)(
     "runtime headers 直接接受 Registry zhipu access mode: %s",
     (mode) => {
       const parsed = zcodeProviderRuntimeHeadersRequestParamsSchema.parse({

@@ -346,6 +346,8 @@ import { AutomationRepo } from "#src/session/automationRepo.js";
 import type { AppSettings } from "@zcode/shared";
 import { createBotsService } from "./bots/botsService.js";
 import { BotsRepo } from "#src/bots/repo.js";
+// fork：手机远控 Bot 远端 workspace 桥接（host 进程内，走 main↔host 协议）。
+import { createBotRemoteWorkspaceService } from "./bots/botRemoteWorkspaceBridge.js";
 import {
   createBotProjectRuntime,
   type BotProjectConnection,
@@ -2289,6 +2291,10 @@ export function createLocalServices(options: {
   });
   const botsRepo = new BotsRepo();
   const botLog = createServiceLogger("bots");
+  // Bot 远端 workspace 链路双轨：上游 bot-project-runtime（web/server 经
+  // resolveBotProjectConnection 接入）与 fork 桌面的 main↔host 协议桥接
+  // （botRemoteWorkspaceBridge，经 host parentPort 走 BotRemoteWorkspace* 消息）。
+  // fork 桌面不提供 resolveBotProjectConnection，落到桥接链路。
   const botRemoteWorkspaceService = options.resolveBotProjectConnection
     ? createBotProjectRuntime({
         remoteProjectService,
@@ -2319,7 +2325,11 @@ export function createLocalServices(options: {
         },
         warn: (message) => botLog.warn(message),
       })
-    : undefined;
+    : createBotRemoteWorkspaceService({
+        parentPort: options?.parentPort,
+        settingService,
+        credentialService,
+      });
   const fileService = createFileService({
     workspaceFileSearchFilter: options?.workspaceFileSearchFilter,
   });

@@ -193,10 +193,33 @@ export const webRemoteControlMobileDeviceInfoSchema = z.object({
   updatedAt: z.number().finite(),
 });
 
+// fork：手机任务列表 schema（上游 3.16 已删，fork UI 使用）。
+// 注意必须定义在 bootstrap/list schema 之前：它们在对象字面量里直接引用本 schema（运行时求值）。
+export const webRemoteControlTaskTargetSchema = z.object({
+  taskId: nonEmptyStringSchema,
+  title: z.string(),
+  workspacePath: nonEmptyStringSchema,
+  workspaceIdentity: nonEmptyStringSchema.optional(),
+  remoteSessionId: nonEmptyStringSchema.optional(),
+  workspaceLabel: nonEmptyStringSchema,
+  workspaceKind: z.enum(["local", "remote"]),
+  createdAt: z.number().finite(),
+  updatedAt: z.number().finite(),
+  provider: zcodeProviderSchema.optional(),
+  unreadAt: z.number().finite().optional(),
+  displayStatus: z.enum(["idle", "running", "completed", "error"]).optional(),
+  hasBackgroundWork: z.boolean().optional(),
+  workflowActivity: sessionWorkflowActivitySchema.optional(),
+  pinned: z.boolean().optional(),
+  archived: z.boolean().optional(),
+});
+export const webRemoteControlTaskTargetsSchema = z.array(webRemoteControlTaskTargetSchema);
+
 export const webRemoteControlWindowBootstrapResultSchema = z.object({
   windowControlSessionId: nonEmptyStringSchema,
   desktopAppVersion: nonEmptyStringSchema.optional(),
   workspaces: webRemoteControlWorkspaceTargetsSchema,
+  tasks: webRemoteControlTaskTargetsSchema,
   initialViewState: webRemoteControlMobileViewStateSchema.optional(),
   mobileViewState: webRemoteControlMobileViewStateSchema.optional(),
   mobileTaskViewEpoch: webRemoteControlTransportIdSchema.optional(),
@@ -204,6 +227,7 @@ export const webRemoteControlWindowBootstrapResultSchema = z.object({
 
 export const webRemoteControlWorkspaceListResultSchema = z.object({
   workspaces: webRemoteControlWorkspaceTargetsSchema,
+  tasks: webRemoteControlTaskTargetsSchema.optional(),
   activeWorkspaceKey: nonEmptyStringSchema.optional(),
   activeTaskId: nonEmptyStringSchema.optional(),
 });
@@ -667,6 +691,31 @@ export const hostCancelRemoteWorkspaceBindMessageSchema = z
   })
   .strict();
 
+// fork：手机远控 Bot 远端 workspace 链路的 main → host 结果消息（上游 3.16 重构为
+// Source Server 架构后删除；fork 桌面仍按原协议与 main 通信，这里按原契约回填）。
+export const hostBotRemoteWorkspaceReconnectResultMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-reconnect-result"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  sessionId: nonEmptyStringSchema.optional(),
+  error: z.string().optional(),
+});
+
+export const hostBotRemoteWorkspaceConnectionStatusResultMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-connection-status-result"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  connected: z.boolean().optional(),
+  error: z.string().optional(),
+});
+
+export const hostBotRemoteWorkspaceRuntimePortMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-runtime-port"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+
 export const hostDisposeRemoteWorkspaceSessionMessageSchema = z
   .object({
     type: z.literal("dispose-remote-workspace-session"),
@@ -995,6 +1044,9 @@ export const hostIncomingMessageSchema = z.discriminatedUnion("type", [
   hostCuaPipFocusChangedMessageSchema,
   hostApplicationLocaleChangedMessageSchema,
   hostProviderProvisioningExecuteMessageSchema,
+  hostBotRemoteWorkspaceReconnectResultMessageSchema,
+  hostBotRemoteWorkspaceConnectionStatusResultMessageSchema,
+  hostBotRemoteWorkspaceRuntimePortMessageSchema,
 ]);
 
 export const hostRemoteWorkspaceConnectedResponseSchema = z
@@ -1560,8 +1612,37 @@ export type HostResourceUsageSnapshotResultResponse = z.infer<
   typeof hostResourceUsageSnapshotResultResponseSchema
 >;
 
+// fork：手机远控 Bot 远端 workspace 链路的 host → main 请求消息（上游 3.16 重构后删除，
+// fork 桌面 host 按原协议发起，这里按原契约回填）。
+export const hostBotRemoteWorkspaceReconnectRequestResponseSchema = z.object({
+  type: z.literal("bot-remote-workspace-reconnect-request"),
+  requestId: nonEmptyStringSchema,
+  workspacePath: nonEmptyStringSchema,
+  workspaceIdentity: nonEmptyStringSchema,
+  target: remoteTargetSchema,
+});
+
+export const hostBotRemoteWorkspaceConnectionStatusRequestResponseSchema = z.object({
+  type: z.literal("bot-remote-workspace-connection-status-request"),
+  requestId: nonEmptyStringSchema,
+  workspacePath: nonEmptyStringSchema,
+  workspaceIdentity: nonEmptyStringSchema,
+  target: remoteTargetSchema,
+});
+
+export const hostBotRemoteWorkspaceRuntimePortRequestResponseSchema = z.object({
+  type: z.literal("bot-remote-workspace-runtime-port-request"),
+  requestId: nonEmptyStringSchema,
+  workspacePath: nonEmptyStringSchema,
+  workspaceIdentity: nonEmptyStringSchema,
+  target: remoteTargetSchema,
+});
+
 export const hostResponseMessageSchema = z.discriminatedUnion("type", [
   hostProjectWorkspacePreparedResponseSchema,
+  hostBotRemoteWorkspaceReconnectRequestResponseSchema,
+  hostBotRemoteWorkspaceConnectionStatusRequestResponseSchema,
+  hostBotRemoteWorkspaceRuntimePortRequestResponseSchema,
   z.object({ type: z.literal("network-capture-batch"), batch: networkCaptureBatchSchema }).strict(),
   z
     .object({ type: z.literal("database-startup-state"), state: databaseStartupStateSchema })
@@ -1910,23 +1991,4 @@ export const zcodeSessionFileSchema = z.object({
   turnCheckpoints: z.array(zcodePersistedTurnCheckpointSchema).optional(),
 });
 
-// fork：手机任务列表 schema（上游 3.16 已删，fork UI 使用）。
-export const webRemoteControlTaskTargetSchema = z.object({
-  taskId: nonEmptyStringSchema,
-  title: z.string(),
-  workspacePath: nonEmptyStringSchema,
-  workspaceIdentity: nonEmptyStringSchema.optional(),
-  remoteSessionId: nonEmptyStringSchema.optional(),
-  workspaceLabel: nonEmptyStringSchema,
-  workspaceKind: z.enum(["local", "remote"]),
-  createdAt: z.number().finite(),
-  updatedAt: z.number().finite(),
-  provider: zcodeProviderSchema.optional(),
-  unreadAt: z.number().finite().optional(),
-  displayStatus: z.enum(["idle", "running", "completed", "error"]).optional(),
-  hasBackgroundWork: z.boolean().optional(),
-  workflowActivity: sessionWorkflowActivitySchema.optional(),
-  pinned: z.boolean().optional(),
-  archived: z.boolean().optional(),
-});
-export const webRemoteControlTaskTargetsSchema = z.array(webRemoteControlTaskTargetSchema);
+// fork：手机任务列表 schema（上游 3.16 已删，fork UI 使用）——已前移至 bootstrap schema 之前定义。

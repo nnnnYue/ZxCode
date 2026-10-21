@@ -55,6 +55,7 @@ import type {
   PrintPageToPdfResult,
   OpenInEditorOptions,
   RemoteSessionClosedEvent,
+  BotRemoteWorkspaceReconnectedEvent,
   RemoteSessionReconnectedEvent,
   SSHConfigAliasOption,
   TaskNotificationPayload,
@@ -203,6 +204,8 @@ export const PlatformChannels = {
   RemoteSessionClosed: "zxcode:remote-session-closed",
   /** Main → Renderer：Source 自动重连后的 logical session 已换代并完成 port ready */
   RemoteSessionReconnected: "zxcode:remote-session-reconnected",
+  /** Main → Renderer：Bot 已触发远端 workspace 重连成功（fork 手机远控恢复链路） */
+  BotRemoteWorkspaceReconnected: "zxcode:bot-remote-workspace-reconnected",
   /** 检查目录是否已在其他窗口打开，如果是则激活该窗口 */
   ActivateOrSetWorkspace: "zxcode:activate-or-set-workspace",
   /** 建立 SSH 远程连接 */
@@ -221,6 +224,8 @@ export const PlatformChannels = {
   GetWebRemoteControlStatus: "zxcode:get-web-remote-control-status",
   /** Renderer → Main：手机远控配对 auth 状态变化通知，不携带凭据 */
   WebRemoteControlAuthStateChanged: "zxcode:web-remote-control-auth-state-changed",
+  /** Renderer → Main：重置手机远控配对状态（fork 自部署 relay 配对） */
+  ResetWebRemoteControlPairing: "zxcode:reset-web-remote-control-pairing",
   /** Main → Renderer：当前窗口 Web 远程控制状态变化 */
   WebRemoteControlStatusChanged: "zxcode:web-remote-control-status-changed",
   /** 释放当前窗口里的远程 session */
@@ -558,6 +563,12 @@ export const HostMessageTypes = {
   NetworkCapture: "network-capture",
   /** main → host：Main 的实时界面语言变化（Host 用于 ZCode endpoint 的 X-Client-Language） */
   ApplicationLocaleChanged: "application-locale-changed",
+  /** main → host：Bot 远端 workspace 重连结果（fork 手机远控） */
+  BotRemoteWorkspaceReconnectResult: "bot-remote-workspace-reconnect-result",
+  /** main → host：Bot 远端 workspace 连接状态查询结果 */
+  BotRemoteWorkspaceConnectionStatusResult: "bot-remote-workspace-connection-status-result",
+  /** main → host：Bot 远端 workspace runtime RPC 端口 */
+  BotRemoteWorkspaceRuntimePort: "bot-remote-workspace-runtime-port",
 } as const;
 
 /** host process → main process 的反馈消息类型 */
@@ -631,6 +642,12 @@ export const HostResponseTypes = {
   TaskOwnerCommandResult: "task-owner-command-result",
   /** host → main：插件生命周期事件（本地可观测性，不外发） */
   PluginTelemetry: "plugin-telemetry",
+  /** host → main：Bot 请求创建远端 workspace session（fork 手机远控） */
+  BotRemoteWorkspaceReconnectRequest: "bot-remote-workspace-reconnect-request",
+  /** host → main：Bot 查询当前窗口是否已有远端 workspace session */
+  BotRemoteWorkspaceConnectionStatusRequest: "bot-remote-workspace-connection-status-request",
+  /** host → main：Bot 请求远端 workspace runtime RPC 端口 */
+  BotRemoteWorkspaceRuntimePortRequest: "bot-remote-workspace-runtime-port-request",
   /** host → main：Agent 请求向另一个 session 发送消息 */
   SessionMessageSendRequested: "session-message-send-requested",
   /** host → main：声明一个 ZxCode Agent session 当前归属该 host */
@@ -715,6 +732,10 @@ export interface PlatformChannelMap {
     request: RemoteSessionReconnectedEvent;
     response: void;
   };
+  [PlatformChannels.BotRemoteWorkspaceReconnected]: {
+    request: BotRemoteWorkspaceReconnectedEvent;
+    response: void;
+  };
   [PlatformChannels.ActivateOrSetWorkspace]: {
     request: string;
     response: { activated: boolean };
@@ -746,6 +767,10 @@ export interface PlatformChannelMap {
     response: import("./platform.js").BindRemoteWorkspaceSessionContextIpcResult;
   };
   [PlatformChannels.StartWebRemoteControl]: {
+    request: WebRemoteControlContext;
+    response: WebRemoteControlStartOperationResult;
+  };
+  [PlatformChannels.ResetWebRemoteControlPairing]: {
     request: WebRemoteControlContext;
     response: WebRemoteControlStartOperationResult;
   };
