@@ -1300,7 +1300,9 @@ export function useRemoteWorkspaceHistory({
   }, [handleRemoteWorkspaceSessionClosed, platform]);
 
   useEffect(() => {
-    return platform.onBotRemoteWorkspaceReconnected!((event) => {
+    // fork：IPlatformService 把它声明为可选，平台未实现时不能把整个 App 打成错误页
+    // （Web 手机远控页面此前就因缺少该别名而首屏崩溃）。
+    return platform.onBotRemoteWorkspaceReconnected?.((event) => {
       void handleBotRemoteWorkspaceReconnected(event);
     });
   }, [handleBotRemoteWorkspaceReconnected, platform]);

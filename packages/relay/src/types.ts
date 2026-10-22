@@ -1,5 +1,6 @@
 import type { WebSocket as NodeWebSocket } from "ws";
 import type { RelayAttachTarget } from "@zcode/shared/zcode-relay-protocol";
+import type { PendingPipeSide } from "./pipe.js";
 
 export interface RelayHttpServerOptions {
   /** 监听地址；公网部署默认 0.0.0.0。 */
@@ -28,6 +29,8 @@ export interface PendingRemote {
   ws: NodeWebSocket;
   /** 桌面回连超时定时器；配对成功或提前失败时清理。 */
   timeout: ReturnType<typeof setTimeout>;
+  /** 配对前的字节缓存侧：手机先到的握手帧在这里等桌面回连。 */
+  side: PendingPipeSide;
 }
 
 export type RelayEnv = {

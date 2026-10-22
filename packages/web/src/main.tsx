@@ -77,6 +77,7 @@ import { collectWebRemoteControlMobileDeviceInfo } from "./webRemoteControlDevic
 import { createWebRemoteControlVersionGuard } from "./webRemoteControlVersion.js";
 import { showWebRemoteControlVersionNotice } from "./webRemoteControlVersionNotice.js";
 import { resolveWebRemoteControlRoutePath } from "./webRemoteControlRoute.js";
+import { resolveRemoteGrantBootstrap } from "./remoteGrantBootstrap.js";
 import {
   registerWebRemoteControlWorkspaceBridgeServices,
   type WebRemoteControlWorkspaceBridgeServiceRegistration,
@@ -462,6 +463,9 @@ function createWebPlatform(options?: {
     onRemoteConnectionLog: () => () => {},
     onRemoteSessionClosed: () => () => {},
     onRemoteSessionReconnected: () => () => {},
+    // fork：Bot 重连事件别名。UI（useRemoteWorkspaceHistory）按旧名订阅，
+    // Web 端此前未实现该别名，手机远控页面启动即抛 "onBotRemoteWorkspaceReconnected is not a function"。
+    onBotRemoteWorkspaceReconnected: () => () => {},
     // Web 端无多窗口管理
     activateOrSetWorkspace: () => Promise.resolve({ activated: false }),
     // Bugfix: Web 远程控制模式虽然复用了 web UI，但它背后其实挂着 desktop。
@@ -662,7 +666,9 @@ async function resolveWebBootstrap(): Promise<WebBootstrapResult> {
     : `${resolveDefaultWsOrigin()}/ws`;
 
   if (remoteId) {
-    return { wsUrl };
+    // 自部署 relay 手机入口：grant 里带桌面声明的工作区事实，
+    // 没有它 Root 拿不到 workspace tab，手机页会渲染成空壳。
+    return { wsUrl, ...(await resolveRemoteGrantBootstrap(remoteId)) };
   }
 
   try {

@@ -19,7 +19,7 @@ import {
 } from "@zcode/shared/zcode-relay-protocol";
 import { SERVER_REMOTE_PROTOCOL_VERSION, type ServerRemoteInfo } from "@zcode/shared";
 import { createOneTimeTicketStore } from "./grantStore.js";
-import { pipeWebSockets } from "./pipe.js";
+import { connectPipedSides, createPendingPipeSide, type PendingPipeSide } from "./pipe.js";
 import { registerRelayStaticRoute } from "./staticFiles.js";
 import type { PendingRemote, RelayEnv } from "./types.js";
 import type { RelayHttpServer, RelayHttpServerOptions } from "./types.js";
@@ -68,7 +68,7 @@ export async function createRelayHttpServer(
   /** 手机已消费 grant、等待桌面回连的连接（按 attach ticket 索引）。 */
   const pendingRemoteByTicket = new Map<string, PendingRemote>();
   /** 桌面已回连的数据连接；与 pendingRemote 按 ticket 配对。 */
-  const desktopSocketByTicket = new Map<string, NodeWebSocket>();
+  const desktopSocketByTicket = new Map<string, PendingPipeSide>();
 
   const closeRemote = (pending: PendingRemote, reason: string): void => {
     clearTimeout(pending.timeout);
@@ -109,12 +109,13 @@ export async function createRelayHttpServer(
 
   const pairByTicket = (ticket: string): void => {
     const pending = pendingRemoteByTicket.get(ticket);
-    const desktopWs = desktopSocketByTicket.get(ticket);
-    if (!pending || !desktopWs) return;
+    const desktopSide = desktopSocketByTicket.get(ticket);
+    if (!pending || !desktopSide) return;
     pendingRemoteByTicket.delete(ticket);
     desktopSocketByTicket.delete(ticket);
     logger.info(`[relay] piping attach ticket=${ticket.slice(0, 8)}…`);
-    pipeWebSockets(pending.ws, desktopWs);
+    // 先回放配对前缓存的握手字节，再接直连管道。
+    connectPipedSides(pending.side, desktopSide);
   };
 
   app.get("/api/server-info", (context) => {
@@ -133,6 +134,24 @@ export async function createRelayHttpServer(
       },
     };
     return context.json(info);
+  });
+
+  // 手机端 bootstrap：grant 的 payload 就是桌面签发时声明的 attach target，
+  // 手机据此拿到「该显示哪个工作区」，Root 才有 workspace tab 可渲染。
+  // 只读不消费：消费仍只发生在 /ws/remote/:grantId 的 WS 握手上。
+  // 凭据仍是 grant 本身（32 字节随机串），持有者本来就能 attach 到该工作区。
+  app.get("/api/remote/bootstrap/:grantId", (context) => {
+    const grant = grants.peek(context.req.param("grantId"));
+    if (!grant) {
+      return context.json({ error: RELAY_REMOTE_CLOSE_REASONS.invalidGrant }, 404);
+    }
+    const target = grant.payload;
+    return context.json({
+      workspacePath: target.workspacePath,
+      ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
+      workspaceKey: target.workspaceKey,
+      expiresAt: grant.expiresAt,
+    });
   });
 
   app.use("/ws/host-control", async (context, next) => {
@@ -286,10 +305,12 @@ export async function createRelayHttpServer(
       return {
         onOpen(_event, socket) {
           const ws = socket.raw as NodeWebSocket;
-          desktopSocketByTicket.set(ticket, ws);
+          // 桌面可能先于手机配对就发字节（Host 的 ready 帧）：先缓存，配对时回放。
+          const side = createPendingPipeSide(ws);
+          desktopSocketByTicket.set(ticket, side);
           ws.on("close", () => {
             // 配对前断开：让等待中的手机连接立即失败，不等到超时。
-            if (desktopSocketByTicket.get(ticket) === ws) {
+            if (desktopSocketByTicket.get(ticket) === side) {
               desktopSocketByTicket.delete(ticket);
               const pending = pendingRemoteByTicket.get(ticket);
               if (pending) {
@@ -331,7 +352,8 @@ export async function createRelayHttpServer(
           logger.warn("[relay] desktop attach timed out");
           closeRemote(pending, RELAY_REMOTE_CLOSE_REASONS.desktopAttachTimeout);
         }, attachWaitTimeoutMs);
-        pendingRemoteByTicket.set(ticket.id, { ws, timeout });
+        // 手机 WS open 后可能立刻发握手帧，而桌面回连要等一个往返：先缓存，配对时回放。
+        pendingRemoteByTicket.set(ticket.id, { ws, timeout, side: createPendingPipeSide(ws) });
         const delivered = sendControl({
           type: "relay-attach-request",
           ticket: ticket.id,
@@ -373,10 +395,10 @@ export async function createRelayHttpServer(
         pendingRemoteByTicket.delete(ticket);
         closeRemote(pending, RELAY_REMOTE_CLOSE_REASONS.relayShuttingDown);
       }
-      for (const [ticket, ws] of desktopSocketByTicket) {
+      for (const [ticket, side] of desktopSocketByTicket) {
         desktopSocketByTicket.delete(ticket);
         try {
-          ws.close(1001, RELAY_REMOTE_CLOSE_REASONS.relayShuttingDown);
+          side.ws.close(1001, RELAY_REMOTE_CLOSE_REASONS.relayShuttingDown);
         } catch {
           // 忽略。
         }

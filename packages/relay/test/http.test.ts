@@ -108,6 +108,96 @@ describe("relay http server", () => {
     }
   });
 
+  it("手机 bootstrap 端点返回 grant 的工作区事实且不消费 grant", async () => {
+    const relay = await createRelayHttpServer({
+      host: "127.0.0.1",
+      port: 0,
+      logger: silentLogger,
+    });
+    try {
+      const control = await openControl(relay);
+      const grant = await control.requestGrant("req-bootstrap");
+      expect(grant.ok).toBe(true);
+
+      const response = await fetch(
+        `http://127.0.0.1:${relay.port}/api/remote/bootstrap/${grant.grantId}`,
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        workspacePath: TARGET.workspacePath,
+        workspaceKey: TARGET.workspaceKey,
+      });
+
+      // 只读语义：bootstrap 之后 grant 仍可被手机消费接入。
+      const phone = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      await once(phone, "open");
+      const attachRequest = await control.next<RelayAttachRequest>(
+        (m) => (m as { type?: string }).type === "relay-attach-request",
+      );
+      expect(attachRequest.target).toEqual(TARGET);
+      phone.close();
+      control.ws.close();
+    } finally {
+      await relay.close();
+    }
+  });
+
+  it("手机 bootstrap 端点对未知 grant 返回 404", async () => {
+    const relay = await createRelayHttpServer({
+      host: "127.0.0.1",
+      port: 0,
+      logger: silentLogger,
+    });
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${relay.port}/api/remote/bootstrap/not-a-grant`,
+      );
+      expect(response.status).toBe(404);
+    } finally {
+      await relay.close();
+    }
+  });
+
+  it("配对前先到的握手字节不丢失（手机先发与桌面先发都要送达）", async () => {
+    const relay = await createRelayHttpServer({
+      host: "127.0.0.1",
+      port: 0,
+      logger: silentLogger,
+    });
+    try {
+      const control = await openControl(relay);
+      const grant = await control.requestGrant("req-early-bytes");
+      const phone = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      const phoneReceived: Buffer[] = [];
+      phone.on("message", (raw) => phoneReceived.push(raw as Buffer));
+      await once(phone, "open");
+      // 桌面还没回连，手机先把握手帧发出去。
+      phone.send(Buffer.from("early-phone"));
+
+      const attachRequest = await control.next<RelayAttachRequest>(
+        (m) => (m as { type?: string }).type === "relay-attach-request",
+      );
+      const desktop = new WebSocket(
+        `ws://127.0.0.1:${relay.port}/ws/host-attach/${attachRequest.ticket}`,
+      );
+      const desktopReceived: Buffer[] = [];
+      desktop.on("message", (raw) => desktopReceived.push(raw as Buffer));
+      await once(desktop, "open");
+      // 桌面同样先发一帧（Host 的 ready 帧就是这个时序）。
+      desktop.send(Buffer.from("early-desktop"));
+
+      await waitFor(() => desktopReceived.length > 0 && phoneReceived.length > 0);
+      expect(Buffer.concat(desktopReceived).toString()).toContain("early-phone");
+      expect(Buffer.concat(phoneReceived).toString()).toContain("early-desktop");
+
+      phone.close();
+      desktop.close();
+      control.ws.close();
+    } finally {
+      await relay.close();
+    }
+  });
+
   it("完整链路：签发 grant → 手机接入 → 桌面回连 → 字节管道双向透传", async () => {
     const relay = await createRelayHttpServer({
       host: "127.0.0.1",

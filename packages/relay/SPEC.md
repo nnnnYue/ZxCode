@@ -27,6 +27,7 @@
 
 - `GET /*` — 手机静态页面（SPA fallback）
 - `GET /api/server-info` — 兼容手机端 bootstrap（`{serverId, version, authRequired:false, workspaces:[], capabilities}`）
+- `GET /api/remote/bootstrap/:grantId` — 手机端工作区 bootstrap：回 grant payload（桌面签发时声明的 attach target）里的工作区事实 `{workspacePath, workspaceIdentity?, workspaceKey, expiresAt}`；**只读不消费**，grant 的消费仍只发生在 `/ws/remote/:grantId` 握手；未知/过期 grant 返回 404
 - `GET /ws/host-control` — 桌面控制连接；header `Authorization: Bearer <ZXCODE_RELAY_TOKEN>`；消息 = `zcode-relay-protocol` 控制帧
 - `GET /ws/host-attach/:ticket` — 桌面数据回连（ticket 一次性、30s）
 - `GET /ws/remote/:grantId` — 手机接入（grant 一次性、TTL 10min；等桌面回连 15s 超时）
@@ -64,7 +65,8 @@
 
 ```
 手机打开授权 URL
-  → relay 校验 grant（一次性消费）→ 通过控制连接向桌面发 RelayAttachRequest{ticket, target}
+  → 手机 GET /api/remote/bootstrap/<grant>（只读）→ 拿到该显示的工作区事实 → Root 注入 workspace tab
+  → 手机连 /ws/remote/<grant> → relay 校验 grant（一次性消费）→ 通过控制连接向桌面发 RelayAttachRequest{ticket, target}
   → 桌面校验 target（windowId 的当前 workspaceKey 一致 / remoteSessionId 路由存在且 attachable）
   → 桌面回连 /ws/host-attach/<ticket>（30s 内）→ relay 校验 ticket（一次性消费）
   → relay 把两端 ISocket 字节对接；桌面侧同时执行 attach：
@@ -79,7 +81,7 @@
 ## 5. 验收场景
 
 1. **设置驱动启停**：未配置 `mobileRelay.enabled` 时无任何出站连接；开启后建立控制连接并上报 presence；关闭后断开。
-2. **本地工作区授权链路**：生成授权链接 → 第二浏览器窗口打开 → 手机 UI 正常渲染、replayable 快照恢复、busy 输入走 CommandInbox 串行。
+2. **本地工作区授权链路**：生成授权链接 → 第二浏览器窗口打开 → 手机端先经 `/api/remote/bootstrap/<grant>` 拿到工作区事实并注入 workspace tab（否则 Root 无 tab、页面只剩空壳）→ 手机 UI 正常渲染、replayable 快照恢复、busy 输入走 CommandInbox 串行。
 3. **远程工作区授权链路**：SSH/WSL remote workspace 的 grant 打开后手机可附着同一远程会话。
 4. **票据失效**：grant 过期/重放、ticket 重放、desktop 15s 未回连，均拒绝并给手机端明确错误。
 5. **断线恢复**：手机端断网重连走既有 resync；relay 重启后桌面控制连接按指数退避重连。

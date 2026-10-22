@@ -12,8 +12,6 @@ import { resolveRemoteFrontendVersion } from "./vite/remoteFrontendVersion.mjs";
 import {
   resolveBigModelApiOrigin,
   resolveRuntimeZCodeEndpointOrigin,
-  resolveZaiOAuthClientId,
-  resolveZaiOAuthOrigin,
 } from "@zcode/shared/zcodeEndpoint";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -38,11 +36,10 @@ export default defineConfig(({ mode }) => {
     ZCODE_ENV: zcodeEnv,
   };
   const zcodeEndpointOrigin = resolveRuntimeZCodeEndpointOrigin(endpointEnv);
-  const zaiOAuthOrigin = resolveZaiOAuthOrigin(endpointEnv);
   // 远控与桌面/分享页一致，BigModel 授权域名必须跟随产品环境。
   const bigmodelOAuthOrigin = resolveBigModelApiOrigin(endpointEnv);
-  // ZAI OAuth client_id 是公开标识，允许注入浏览器包；secret/token 不得走 VITE_。
-  const zaiOAuthClientId = resolveZaiOAuthClientId(endpointEnv);
+  // fork 已剔除 Z.ai 账号登录域：shared/zcodeEndpoint 不再提供 resolveZaiOAuth*，
+  // 构建配置也不能注入 VITE_ZAI_OAUTH_*（否则 Vite 加载期直接报 UNRESOLVED_IMPORT）。
 
   return {
     plugins: [pdfJsCMapsPlugin(), react(), tailwindcss(), thirdPartyNoticesVitePlugin()],
@@ -103,9 +100,7 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
       // 兼容旧 Web runtime 读取名；新代码统一读 VITE_ZCODE_BASE_URL。
       "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
-      // 明确注入 OAuth 公开配置，避免 Web 端在不同 mode 下隐式依赖源码 fallback。
-      "import.meta.env.VITE_ZAI_OAUTH_CLIENT_ID": JSON.stringify(zaiOAuthClientId),
-      "import.meta.env.VITE_ZAI_OAUTH_ORIGIN": JSON.stringify(zaiOAuthOrigin),
+      // fork 不注入 Z.ai OAuth 公开配置：账号登录域已随 REMOVALS.md 剔除。
       "import.meta.env.VITE_BIGMODEL_OAUTH_ORIGIN": JSON.stringify(bigmodelOAuthOrigin),
     },
     build: {

@@ -3,6 +3,7 @@
 // 从 desktopRelayClient 拆出：控制连接生命周期与 attach 数据面各自独立演进。
 import type { MessagePortMain } from "electron";
 import WebSocket from "ws";
+import { SocketProtocol, VSBuffer, type ISocket } from "@zcode/rpc";
 import type { RelayAttachTarget } from "@zcode/shared";
 import type { RelayWindowWorkspaceSnapshot } from "./desktopRelayClient.js";
 
@@ -122,7 +123,19 @@ export async function performRelayAttach(params: {
   }
 }
 
-/** MessagePort ↔ WS 字节桥：只透传 Uint8Array 载荷；流控 sideband 对象丢弃。 */
+/**
+ * MessagePort ↔ WS 字节桥。
+ *
+ * 两侧协议不同，必须在这里做分帧转换：
+ * - Host 侧走 MessagePortProtocol，ChannelServer 的载荷是**裸字节**（无帧头）；
+ * - 手机侧走 SocketProtocol，帧头是 13 字节（type/id/ack/length）。
+ * 直接把裸载荷丢给手机，手机的 ChunkStream 会一直等满 13 字节头，永远解析不出
+ * Initialize，双方就此僵住：手机页连上却一片空白，RPC 一条都发不出去。
+ * 因此这里用 SocketProtocol 包装 WS：Host 裸载荷 send() 成帧发给手机，
+ * 手机来的帧由 SocketProtocol 拆回裸载荷再 postMessage 给 Host。
+ *
+ * 流控 sideband 对象（MessagePortFlowControl）不属于数据面字节，直接丢弃。
+ */
 function bridgePortToWebSocket(
   port: MessagePortMain,
   ws: WebSocket,
@@ -145,21 +158,59 @@ function bridgePortToWebSocket(
     }
     logger.info(`[mobile-relay] bridge closed workspace=${workspaceKey}`);
   };
+
+  const socket: ISocket = {
+    onData: (listener) => {
+      ws.on("message", (raw) => {
+        const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
+        listener(VSBuffer.wrap(new Uint8Array(buffer)));
+      });
+      return { dispose: () => undefined };
+    },
+    onClose: (listener) => {
+      ws.on("close", () => listener());
+      return { dispose: () => undefined };
+    },
+    onEnd: (listener) => {
+      ws.on("close", () => listener());
+      return { dispose: () => undefined };
+    },
+    write: (buffer) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(buffer.buffer);
+    },
+    end: () => {
+      try {
+        ws.close();
+      } catch {
+        // 忽略。
+      }
+    },
+    drain: () => Promise.resolve(),
+    dispose: () => {
+      try {
+        ws.close();
+      } catch {
+        // 忽略。
+      }
+    },
+  };
+  const protocol = new SocketProtocol(socket);
+
   port.on("message", (event: { data: unknown }) => {
     const data = event.data;
     if (data instanceof Uint8Array) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+      // Host 裸载荷 → SocketProtocol 成帧 → 手机端解析。
+      protocol.send(VSBuffer.wrap(new Uint8Array(data)));
     } else {
       // MessagePortFlowControl 是 renderer/host 间的流控 sideband，不属于数据面字节。
       logger.info("[mobile-relay] dropped non-byte MessagePort sideband payload");
     }
   });
   port.on("close", closeBoth);
-  ws.on("message", (raw) => {
-    const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as ArrayBuffer);
+  // 手机端 SocketProtocol 帧 → 拆出裸载荷 → Host 的 MessagePortProtocol。
+  protocol.onMessage((buffer) => {
     try {
-      // Buffer 是 Uint8Array 子类；MessagePortMain 结构化克隆按二进制透传给 Host 侧协议。
-      port.postMessage(buffer);
+      port.postMessage(buffer.buffer);
     } catch (error) {
       logger.warn("[mobile-relay] postMessage to host port failed:", error);
       closeBoth();

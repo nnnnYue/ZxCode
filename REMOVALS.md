@@ -63,7 +63,7 @@
 - 会话分享 Web 落地：`packages/web-share/`、`packages/share-ui/`、`packages/web/src/share/` 页面与路由、`conversationShareInlineImages`
 - Web 登录页：`packages/web/src/auth/`（WebLoginPage/WebCallbackPage/WebLoggedInWaitingPage、webAuthService、oauthStateCodec）
 - 反馈工单 UI 残件：`packages/ui/src/feedback/` 剩余视图与 `useFeedbackStore` 接线、Windows 标题栏菜单组件（仅剩反馈/更新入口，fork 无消费方）
-- 自动更新残留：`platformUpdate.ts`、`PostUpdateReleaseNotesDialog`、`desktopUpdateMenu`、web `remoteFrontendVersion.mjs`
+- 自动更新残留：`platformUpdate.ts`、`PostUpdateReleaseNotesDialog`、`desktopUpdateMenu`（web `remoteFrontendVersion.mjs` 保留：该文件是 `packages/web/vite.config.ts` 构建期解析 `__ZCODE_VERSION__` 的唯一依赖，删除后 web 构建直接报 `UNRESOLVED_IMPORT`；其中与自动更新无关的版本比较函数仍无消费方）
 - Coding Plan 购买支付：`@stripe/*` 依赖、`CodingPlanBillingDiscount`、share-ui 内嵌购买页
 - 平台端点运行时白名单新增：`packages/shared/test/pluginMarketplaces.test.ts`（插件市场 CDN `cdn-zcode.z.ai` 保留项的来源 fixture）
 
