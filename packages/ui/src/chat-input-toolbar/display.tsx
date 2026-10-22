@@ -7,16 +7,18 @@ import {
   type RefObject,
 } from "react";
 import {
-  TID_CHAT_MODE_SELECT_ITEM,
-  TID_CHAT_MODE_SELECT_TRIGGER,
-  TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM,
-  TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
-  testId,
   type ZCodeApiRetryStatus,
   type ZCodeConfigOption,
   type ZCodeConfigSelectValue,
   type ZCodeProvider,
 } from "@zcode/shared";
+import {
+  TID_CHAT_MODE_SELECT_ITEM,
+  TID_CHAT_MODE_SELECT_TRIGGER,
+  TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM,
+  TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
+  testId,
+} from "@zcode/shared/test-ids";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import {
   Select,
@@ -40,10 +42,7 @@ import {
   ShieldCheckIcon,
   type LucideIcon,
 } from "lucide-react";
-import {
-  ZXCODE_MODE_OPTION_DESCRIPTION_IDS,
-  ZXCODE_MODE_OPTION_LABEL_IDS,
-} from "./display-help.js";
+import { ZCODE_MODE_OPTION_DESCRIPTION_IDS, ZCODE_MODE_OPTION_LABEL_IDS } from "./display-help.js";
 import { RollingToolbarLabel } from "@/chat-input-toolbar/RollingToolbarLabel.js";
 
 export {
@@ -130,7 +129,7 @@ export function ChatApiRetryStatus({
       return null;
     }
 
-    // 当前 ZxCode Agent 只会推送某一刻的 retryDelayMs 快照，不会每秒递减。
+    // 当前 ZCode Agent 只会推送某一刻的 retryDelayMs 快照，不会每秒递减。
     // 继续把这个值渲染成“X 秒后继续”会给用户造成倒计时在卡住的错觉。
     // 这里先收敛成稳定的重试状态文案，只展示第几次重试。
     const formatter = new Intl.NumberFormat(locale);
@@ -185,7 +184,7 @@ export function getModeOptionLabelMessageId(
     return null;
   }
 
-  return ZXCODE_MODE_OPTION_LABEL_IDS[provider]?.[entry.value] ?? null;
+  return ZCODE_MODE_OPTION_LABEL_IDS[provider]?.[entry.value] ?? null;
 }
 
 export function getModeOptionDescriptionMessageId(
@@ -196,7 +195,7 @@ export function getModeOptionDescriptionMessageId(
     return null;
   }
 
-  return ZXCODE_MODE_OPTION_DESCRIPTION_IDS[provider]?.[entry.value] ?? null;
+  return ZCODE_MODE_OPTION_DESCRIPTION_IDS[provider]?.[entry.value] ?? null;
 }
 
 export function getConfigOptionEntryLabel(

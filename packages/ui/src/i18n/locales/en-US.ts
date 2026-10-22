@@ -3989,6 +3989,10 @@ const enUS: Record<string, string> = {
   "chat.statusPanel.runningAgentsValue": "{count} running",
   "chat.statusPanel.runningAgentsValuePlural": "{count} running",
   "chat.statusPanel.runningStop": "Stop",
+  "chat.toolbar.combined.effort": "Effort",
+  "chat.toolbar.combined.models": "Models",
+  "chat.toolbar.combined.provider": "Provider",
+  "chat.toolbar.combined.selectModel": "Select model",
   "chat.toolbar.model.label": "Choose model",
   "chat.toolbar.draftConfigWriteFailed": "Failed to update configuration. Please try again.",
   "chat.toolbar.model.description":
