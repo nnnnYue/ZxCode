@@ -1355,6 +1355,10 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
       ),
     disposeRemoteWorkspaceSessionsForWindow:
       remoteSessionManager.disposeRemoteWorkspaceSessionsForWindow,
+    // Bugfix: fork 恢复 src 时丢失上游（v3.15.1 index.ts 同名调用点）的这条接线，
+    // closed 回调读到的 options.webRemoteControlManager 为 undefined，Windows 上退出/关窗
+    // 必弹主进程 "Cannot read properties of undefined (reading 'disposeWindow')" 报错框。
+    webRemoteControlManager,
     reattachRemoteWorkspaceSessionsForWindow:
       remoteSessionManager.reattachRemoteWorkspaceSessionsForWindow,
     bootstrap: {

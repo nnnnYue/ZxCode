@@ -105,6 +105,11 @@ export function createWindow(options: {
   }
 
   const wcId = win.webContents.id;
+  // Bugfix: fork 合并丢掉了上游的这行声明，closed 回调引用了未声明的 browserWindowId。
+  // Web 远控 manager 各窗口态以 BrowserWindow.id 为键（index.ts onStatusChanged 按
+  // BrowserWindow.fromId(windowId) 回投窗口），而 windowHostProcessMap 以 webContents.id
+  // 为键，两个 id 语义不同，必须各自在窗口创建期缓存，closed 触发时窗口已销毁不可现取。
+  const browserWindowId = win.id;
   // 主窗口注册：资源管理器据此识别应用主窗口 renderer。
   registerMainApplicationWindow(wcId);
   let domReadyGeneration = 0;

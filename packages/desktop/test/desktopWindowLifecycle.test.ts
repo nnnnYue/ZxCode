@@ -346,6 +346,67 @@ describe("desktopWindowLifecycle createWindow", () => {
   // fork 无 awaitFirstHostSpawnDecision（服务端灰度裁决门）依赖：首个 Local Host 的等待语义
   // 由 runtimeProcessEnvPatchPromise（prewarm 门）承担，上面 prewarm 用例已覆盖
   // 「promise resolve 前不 spawn、resolve 后按 patch spawn」的时序，上游裁决门用例不再保留。
+
+  it("窗口 closed 时按 BrowserWindow.id 清理 Web 远控窗口态并回收 Host", () => {
+    // Bugfix 回归：fork 合并丢失 browserWindowId 声明与 webRemoteControlManager 接线后，
+    // closed 回调抛 "Cannot read properties of undefined (reading 'disposeWindow')"，
+    // Windows 退出即弹主进程报错框。closed 触发时窗口已销毁，disposeWindow 必须用
+    // 创建期缓存的 win.id（远控 manager 键），与 host 进程表的 webContents.id 区分。
+    let handleDomReady: (() => void) | undefined;
+    let handleClosed: (() => void) | undefined;
+    const winOn = vi.fn((event: string, listener: () => void) => {
+      if (event === "closed") handleClosed = listener;
+    });
+    const webContents = {
+      id: 47,
+      on: vi.fn((event: string, listener: () => void) => {
+        if (event === "dom-ready") handleDomReady = listener;
+      }),
+    };
+    const win = {
+      id: 12,
+      webContents,
+      on: winOn,
+      isDestroyed: vi.fn(() => false),
+      show: vi.fn(),
+      focus: vi.fn(),
+    };
+    vi.mocked(createBrowserWindow).mockReturnValue(win as never);
+    const child = { pid: 1239 };
+    const windowHostProcessMap = new Map([[47, child as never]]);
+    const disposeWindow = vi.fn(async () => undefined);
+    const disposeHostProcess = vi.fn();
+    const disposeRemoteWorkspaceSessionsForWindow = vi.fn();
+
+    createWindow({
+      iconPath: "/tmp/icon.png",
+      preloadPath: "/tmp/preload.js",
+      logger: { info: vi.fn(), warn: vi.fn() },
+      forceQuitRef: { current: false },
+      windowHostProcessMap,
+      spawnHostProcess: vi.fn(() => child as never),
+      disposeHostProcess,
+      webRemoteControlManager: { disposeWindow },
+      disposeRemoteWorkspaceSessionsForWindow,
+      reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
+      agentSpawnFallbackCwd: "/Users/demo/.zxcode/workspace/default",
+      deviceMid: "device-mid",
+      runtimeProcessEnvFallbackPatch: {},
+    });
+    handleDomReady?.();
+    expect(handleClosed).toBeTypeOf("function");
+
+    handleClosed?.();
+
+    expect(disposeWindow).toHaveBeenCalledWith(12);
+    expect(disposeWindow).not.toHaveBeenCalledWith(47);
+    expect(disposeHostProcess).toHaveBeenCalledWith(child, "local-47:window-closed");
+    expect(windowHostProcessMap.has(47)).toBe(false);
+    expect(disposeRemoteWorkspaceSessionsForWindow).toHaveBeenCalledWith(
+      47,
+      "local-47:window-closed",
+    );
+  });
 });
 
 describe("desktopWindowLifecycle handleDarwinWindowCloseRequest", () => {
