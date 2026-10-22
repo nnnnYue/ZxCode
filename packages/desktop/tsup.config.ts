@@ -247,6 +247,8 @@ export default defineConfig([
     format: "esm",
     platform: "node",
     target: "node22",
+    // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
+    removeNodeProtocol: false,
     // undici 如果被 main ESM bundle 直接内联，运行时会落到它内部的 CommonJS require("assert")，
     // Electron 加载 main 产物时会报 Dynamic require of "assert" is not supported。
     // desktop 保持 undici 为外部依赖，remote 单文件 bundle 再单独内联。
@@ -292,6 +294,8 @@ export default defineConfig([
     format: "cjs",
     platform: "node",
     target: "node22",
+    // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
+    removeNodeProtocol: false,
     external: ["electron"],
     noExternal: ["@zcode/shared"],
     outExtension: () => ({ js: ".cjs" }),
@@ -336,6 +340,8 @@ export default defineConfig([
     format: "esm",
     platform: "node",
     target: "node22",
+    // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
+    removeNodeProtocol: false,
     // host 与 main 共用同一套 services 图，继续内联 undici 会在 Electron ESM runtime 里触发同样的 dynamic require 崩溃。
     // 这里同样保留为外部依赖，避免 desktop 开发态和打包态 host 进程启动失败。
     external: desktopNodeRuntimeExternals,
@@ -365,6 +371,8 @@ export default defineConfig([
     format: "esm",
     platform: "node",
     target: "node22",
+    // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
+    removeNodeProtocol: false,
     // 与 host 同构：常驻 cron scheduler 进程复用 @zcode/services（tasks-index + cron），
     // 同样保留 undici 等为外部依赖，避免 Electron ESM runtime 的 dynamic require 崩溃。
     external: desktopNodeRuntimeExternals,

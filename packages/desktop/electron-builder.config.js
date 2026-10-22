@@ -681,6 +681,20 @@ export default {
         signWindowsBrowserImportHelper(context),
       );
     }
+    if (targetPlatform.os === "darwin") {
+      // 无证书打包跳过 electron-builder 的 mac 签名后，app 包内资源（asar/extraResources）
+      // 相对 Electron 自带的旧签名已失效，spctl 报 "code has no resources but signature
+      // indicates they must be present"；下载带上隔离属性后 Gatekeeper 直接判"已损坏，无法打开"。
+      // 这里对整包 ad-hoc 重签让 bundle 密封与内容自洽；未公证应用的常规提示仍会出现，属预期。
+      // appOutDir 是 dist/<平台> 目录，真正的 .app 名取自 productFilename。
+      const macAppBundlePath = resolve(
+        context.appOutDir,
+        `${context.packager.appInfo.productFilename}.app`,
+      );
+      runTimedSync("afterPack:adhocCodesignMacApp", () =>
+        runCommand("codesign", ["--force", "--deep", "--sign", "-", macAppBundlePath]),
+      );
+    }
   },
   ...(shouldPackageWindowsBrowserImportHelper
     ? {
