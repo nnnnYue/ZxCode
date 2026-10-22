@@ -123,9 +123,11 @@ export interface CreateSourceServerTransportAdapterOptions {
   createBackend?: (target: RemoteTarget) => Promise<IRemoteBackend>;
 }
 
-const SERVER_ROOT_READ_PATH = "~/.zcode/server";
-const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
-const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
+// Bugfix：rebrand 残留，与 sourceServerProbe.ts 同步改为 ~/.zxcode/server
+// （server CLI 的 inferDataBaseDir 只认 .zxcode/server，旧根会触发隔离模式）。
+const SERVER_ROOT_READ_PATH = "~/.zxcode/server";
+const SERVER_ROOT_SHELL = '"$HOME/.zxcode/server"';
+const SERVER_BIN_SHELL = '"$HOME/.zxcode/server/bin/zcode"';
 const STALE_BOOTSTRAP_AGE_MS = 30 * 60 * 1_000;
 const INSTALL_PROGRESS_MESSAGES: Record<SourceServerInstallProgress["phase"], string> = {
   "verify-archive": "Verifying Source Server archive",
@@ -215,7 +217,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     const operationId = `${process.pid}-${Date.now()}`;
     const bootstrapRootShell = `${SERVER_ROOT_SHELL}/.bootstrap-${operationId}`;
     const bootstrapDirShell = `${bootstrapRootShell}/extract`;
-    const remoteArchive = `~/.zcode/server/.bootstrap-${operationId}/zcode-server.tar.gz`;
+    const remoteArchive = `~/.zxcode/server/.bootstrap-${operationId}/zcode-server.tar.gz`;
     const remoteArchiveShell = `${bootstrapRootShell}/zcode-server.tar.gz`;
     const cleanupCommand = `rm -rf ${bootstrapRootShell}`;
     const cleanupStaleBootstrapRootsCommand =

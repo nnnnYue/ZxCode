@@ -44,8 +44,11 @@ async function runDaemonLauncher(
     {
       env: {
         ...process.env,
-        ZCODE_DATA_BASE_DIR: layout.dataBaseDir,
-        ZCODE_SERVER_ROOT: layout.serverRoot,
+        // Bugfix：server 进程读的都是带 X 前缀的 ZXCODE_DATA_BASE_DIR /
+        // ZXCODE_SERVER_ROOT（paths.ts、cli.ts、server-core/core.ts），
+        // 旧名 ZCODE_ 前缀会让 handoff 启动的 daemon 回落 homedir、写错数据根。
+        ZXCODE_DATA_BASE_DIR: layout.dataBaseDir,
+        ZXCODE_SERVER_ROOT: layout.serverRoot,
       },
       stdio: ["ignore", "pipe", "pipe"],
     },

@@ -61,7 +61,9 @@ export async function loadZCodeAgentProfiles(
   )) {
     if (directory === resolve(input.workingDirectory)) continue;
     roots.push({
-      path: join(directory, ".zcode", "agents"),
+      // Bugfix：rebrand 残留——同函数 workingDirectory 侧已是 .zxcode/agents，
+      // additionalDirectories 侧仍写 .zcode 导致额外目录的 agent 定义永远读不到。
+      path: join(directory, ".zxcode", "agents"),
       source: "project",
       namespace: basename(directory),
     });

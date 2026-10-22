@@ -1803,7 +1803,7 @@ describe("ZCode plugins", () => {
   it("persists sensitive plugin options in the selected User or Workspace config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-options-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".zxcode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "secret-plugin");
     const pluginId = "secret-plugin@inline";
@@ -1921,7 +1921,7 @@ describe("ZCode plugins", () => {
   it("writes Workspace enablement without mutating User config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-scope-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".zxcode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -1971,8 +1971,8 @@ describe("ZCode plugins", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-nested-plugin-scope-"));
     const repositoryRoot = join(root, "repository");
     const workspaceRoot = join(repositoryRoot, "packages", "app");
-    const repositoryConfigPath = join(repositoryRoot, ".zcode", "config.json");
-    const workspaceConfigPath = join(workspaceRoot, ".zcode", "config.json");
+    const repositoryConfigPath = join(repositoryRoot, ".zxcode", "config.json");
+    const workspaceConfigPath = join(workspaceRoot, ".zxcode", "config.json");
     const userConfigPath = join(root, "user-config.json");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -2028,7 +2028,7 @@ describe("ZCode plugins", () => {
   it("resets Workspace plugin keys so effective config inherits User", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-reset-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".zxcode", "config.json");
     const pluginId = "workspace-plugin@inline";
     try {
       await writeTestFile(
@@ -2081,7 +2081,7 @@ describe("ZCode plugins", () => {
     const marketplaceRoot = join(root, "user-marketplace");
     const pluginRoot = join(marketplaceRoot, "plugins", "workspace-demo");
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".zxcode", "config.json");
     const marketplaceId = "workspace-market";
     const pluginName = "workspace-demo";
 
@@ -2235,7 +2235,7 @@ describe("ZCode plugins", () => {
     const marketplaceId = "workspace-market";
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".zxcode", "config.json"),
         JSON.stringify({
           plugins: {
             extraKnownMarketplaces: {
@@ -2363,7 +2363,7 @@ describe("ZCode plugins", () => {
     const pluginStorageRoot = join(root, "plugins");
     const originalSource = join(root, "original-marketplace");
     const workspaceSource = join(root, "workspace-marketplace");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".zxcode", "config.json");
     const marketplaceId = "shared-market";
     try {
       await writeTestFile(
@@ -2499,6 +2499,14 @@ describe("ZCode plugins", () => {
   it("matches Workspace config paths case-insensitively on Windows", () => {
     expect(isWorkspacePluginConfigPath("C:\\repo\\.ZCODE\\CONFIG.JSON", "win32")).toBe(true);
     expect(isWorkspacePluginConfigPath("C:\\repo\\zcode.json", "win32")).toBe(false);
+  });
+
+  it("matches both fork .zxcode and legacy .zcode workspace config paths", () => {
+    // fork 写入端是 <workspace>/.zxcode/config.json；旧 .zcode 保留兼容判定。
+    expect(isWorkspacePluginConfigPath("/repo/.zxcode/config.json")).toBe(true);
+    expect(isWorkspacePluginConfigPath("/repo/.zcode/config.json")).toBe(true);
+    expect(isWorkspacePluginConfigPath("/repo/.other/config.json")).toBe(false);
+    expect(isWorkspacePluginConfigPath("C:\\repo\\.ZXCODE\\config.json", "win32")).toBe(true);
   });
 
   // Regression for c0120fa: the app-startup discovery path must default-enable

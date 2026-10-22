@@ -244,8 +244,11 @@ function formatZCodeAgentLogDate(now: Date): string {
 
 function resolveZCodeAgentCurrentLogFilePath(now = new Date()): string {
   const configuredLogDir = process.env.ZCODE_LOG_DIR?.trim();
-  const logDir = configuredLogDir || join(homedir(), ".zcode", "cli", "log");
-  return join(logDir, `zcode-${formatZCodeAgentLogDate(now)}.jsonl`);
+  // Bugfix：rebrand 残留——目录与前缀都写成了上游命名，导致 UI 的"原生会话日志"
+  // 永远 exists:false。fork CLI 实际写 ~/.zxcode/cli/log/zxcode-YYYY-MM-DD.jsonl
+  // （adapters/src/logging/index.ts getDefaultLogDir/getLogFileName）。
+  const logDir = configuredLogDir || join(homedir(), ".zxcode", "cli", "log");
+  return join(logDir, `zxcode-${formatZCodeAgentLogDate(now)}.jsonl`);
 }
 
 export function createZCodeTaskServiceAdapter(

@@ -10,6 +10,7 @@
   1. 上游改动落入 [REMOVALS.md](../REMOVALS.md) 任一类别（账号登录、平台运行时调用、自动更新、遥测上报、指纹上报、相关依赖）→ **keep-ours**，维持剔除状态；上游对已删文件的新增修改用 `git rm` 保持删除。
   2. 品牌与外链（Z 品牌位图、启动/关于页标志、外链指向 `ZXCODE_RELEASES_URL` 等 GitHub Releases）→ **keep-ours**。
   3. 其余改动（workflow、编辑器、协议演进、修复等）→ **取上游版本**，再叠加本地适配；本地适配放在合并 commit 的冲突解决内完成。
+- 路径/产物名/env 名的 rebrand 一致性按 [zxcode-path-consistency.md](./zxcode-path-consistency.md) 裁定：`dist/zxcode.cjs` 产物名、`.zxcode` 数据目录、`ZXCODE_*` 变量名均属品牌项（keep-ours），合并完成后执行该 spec 的 4 项探针检查。
 - CDN 类活请求为**产品保留项**：远程资源 CDN（`cdn-zcode.z.ai`，`packages/desktop/src/main/remoteCdn.ts`）与官方插件市场 CDN 下载（`packages/desktop/resources/official-marketplace/`）保留，不随上游演进剔除；但不得借机新增对 `zcode.z.ai` 平台运行时（登录、用量、分享等 REMOVALS 领域）的调用。
 
 ## 状态所有者与接口

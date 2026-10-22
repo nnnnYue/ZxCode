@@ -17,8 +17,11 @@ import type {
   TransportContext,
 } from "@zcode/server/source-server/transportAdapter.js";
 
-const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
-const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
+// Bugfix：rebrand 残留。远端 server CLI 默认根与 remote 通道均已是 ~/.zxcode/server
+// （zcode-server-cli paths.ts getDefaultServerDataRoot、deployShared.ts REMOTE_BASE）；
+// probe 钉在旧 .zcode/server 会把 server 逼进 dataBaseDir 隔离模式，数据路径全部错位。
+const SERVER_ROOT_SHELL = '"$HOME/.zxcode/server"';
+const SERVER_BIN_SHELL = '"$HOME/.zxcode/server/bin/zcode"';
 const SERVER_CURRENT_SHELL = `${SERVER_ROOT_SHELL}/current.json`;
 const SERVER_STATUS_SHELL = `${SERVER_ROOT_SHELL}/run/status.json`;
 const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__ZCODE_PROBE_";

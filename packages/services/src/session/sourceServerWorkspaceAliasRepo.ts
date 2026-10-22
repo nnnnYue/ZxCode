@@ -297,10 +297,13 @@ export class SourceServerWorkspaceAliasRepo {
 
   public constructor(options: SourceServerWorkspaceAliasRepoOptions = {}) {
     this.taskDbPath = options.taskDbPath ?? getTasksIndexDatabasePath();
+    // Bugfix：rebrand 残留。远端 server 根目录统一 ~/.zxcode/server 后（见
+    // sourceServerProbe/transportAdapter），dataBaseDir 恢复为 $HOME，sessionDb 与
+    // migration-backups 必须落在与 agent CLI 实际位置一致的 ~/.zxcode 树内。
     this.sessionDbPath =
-      options.sessionDbPath ?? join(getDataBaseDir(), ".zcode", "cli", "db", "db.sqlite");
+      options.sessionDbPath ?? join(getDataBaseDir(), ".zxcode", "cli", "db", "db.sqlite");
     this.backupRoot =
-      options.backupRoot ?? join(getDataBaseDir(), ".zcode", "server", "migration-backups");
+      options.backupRoot ?? join(getDataBaseDir(), ".zxcode", "server", "migration-backups");
     this.now = options.now ?? Date.now;
     this.createMigrationId = options.migrationId ?? randomUUID;
     this.afterPhaseCommitted = options.afterPhaseCommitted;

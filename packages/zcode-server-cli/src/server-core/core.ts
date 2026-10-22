@@ -26,11 +26,13 @@ export async function runServerCore(generation: number): Promise<void> {
     if (shutdown) void shutdown("parent-disconnected");
     else parentDisconnected = true;
   });
-  const layout = resolveServerLayout(process.env.ZCODE_SERVER_ROOT?.trim());
+  // Bugfix：cli.ts / updateHandoff.ts 写的都是 ZXCODE_SERVER_ROOT（带 X），
+  // 这里读旧名 ZCODE_ 前缀导致显式传入的 server root 从未生效、静默回落默认布局。
+  const layout = resolveServerLayout(process.env.ZXCODE_SERVER_ROOT?.trim());
   const topicResourcePeers = createTopicResourcePeers();
   const explicitZCodeBuiltinProviderConfigFilePath =
     process.env[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
-  // Built-in Config 物化到所属 Environment 配置根（~/.zcode/v2）而不是 release 自带的 runtime 目录：
+  // Built-in Config 物化到所属 Environment 配置根（~/.zxcode/v2）而不是 release 自带的 runtime 目录：
   // release 目录是不可变的，同一 releaseId 重装时 assertExistingReleaseMatches 会重算整棵树的
   // 内容哈希，多出的物化文件会让校验失败。
   const zcodeBuiltinProviderConfigFilePath = explicitZCodeBuiltinProviderConfigFilePath

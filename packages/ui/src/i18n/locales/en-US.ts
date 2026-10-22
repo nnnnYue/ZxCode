@@ -4758,7 +4758,7 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.nextVersion": "Next version",
   "chat.toolCall.workflow.run.artifacts.open": "Open artifact",
   // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
-  // 落的是宿主 ~/.zcode/tmp 下的副本，不是用户挑的位置。
+  // 落的是宿主 ~/.zxcode/tmp 下的副本，不是用户挑的位置。
   "chat.toolCall.workflow.run.artifacts.reveal": "Reveal in workspace",
   "chat.toolCall.workflow.run.artifacts.copy": "Copy",
   "chat.toolCall.workflow.run.artifacts.copied": "Copied",

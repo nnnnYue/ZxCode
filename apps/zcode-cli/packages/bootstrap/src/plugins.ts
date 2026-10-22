@@ -1343,13 +1343,15 @@ export function isWorkspacePluginConfigPath(
   path: string,
   platform: NodeJS.Platform = process.platform,
 ): boolean {
+  // Bugfix：rebrand 残留。fork 写入端是 <workspace>/.zxcode/config.json（本文件
+  // workspace 配置写入处），判定却只认上游 .zcode——对 fork 自己写的 workspace
+  // config 判 false。双名兼容：旧 .zcode/config.json 仍判定为 workspace 配置。
+  const isWorkspaceConfigDir = (name: string) => name === ".zxcode" || name === ".zcode";
   if (platform === "win32") {
-    return (
-      win32.basename(path).toLowerCase() === "config.json" &&
-      win32.basename(win32.dirname(path)).toLowerCase() === ".zcode"
-    );
+    const dirName = win32.basename(win32.dirname(path)).toLowerCase();
+    return win32.basename(path).toLowerCase() === "config.json" && isWorkspaceConfigDir(dirName);
   }
-  return basename(path) === "config.json" && basename(dirname(path)) === ".zcode";
+  return basename(path) === "config.json" && isWorkspaceConfigDir(basename(dirname(path)));
 }
 
 export function resolveMarketplaceRefreshTargetIds(input: {

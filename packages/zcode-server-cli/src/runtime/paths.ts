@@ -143,7 +143,3 @@ export function assertServerDataRoot(serverRoot: string): string {
   }
   return resolved;
 }
-
-export function serverDataRootFromBase(baseDir: string): string {
-  return join(resolve(baseDir), ".zcode", "server");
-}
