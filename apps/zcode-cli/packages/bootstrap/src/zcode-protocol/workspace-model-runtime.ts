@@ -14,7 +14,6 @@ import {
   type ZCodeProtocolSessionRecord,
 } from "./server-types.js";
 import { runSessionModelConfigMutation } from "../zcode-protocol-v4/model-config-mutation.js";
-import { createProviderRuntimeHeadersPort } from "./provider-runtime-headers.js";
 import { offPeakLifecycleNotificationSchema } from "@zcode/shared";
 import { V4_NOTIFICATIONS } from "@zcode/shared/zcode-protocol-v4";
 
@@ -73,8 +72,14 @@ export async function createWorkspaceZCodeApp(
   workspace: ZCodeWorkspaceRef,
   options: Omit<ZCodeAppOptions, "providerRegistry">,
 ): Promise<ZCodeApp> {
-  const providerRuntimeHeadersPort =
-    options.providerRuntimeHeadersPort ?? createProviderRuntimeHeadersPort(context, workspace);
+  // Bug 根因：provider runtime headers 已随 request-security 域在社区版剔除，
+  // 对应实现是"必抛错 stub"。这里过去无条件构造该 port，于是每一次
+  // createWorkspaceZCodeApp（所有 v4 命令执行路径）都会抛
+  // "provider-runtime-headers: removed in community edition"，
+  // 命令因无 reasonCode 被 v4-gateway 归一成 fault.command.executionFailed
+  // —— 表现为"发送消息失败"。core 侧该 port 本就可选（undefined 分支已实现，
+  // 且派生 child ports 时并不消费它），社区版应当直接不传。
+  const providerRuntimeHeadersPort = options.providerRuntimeHeadersPort;
   return context.deps.createZCodeApp({
     ...options,
     onOffPeakLifecycleEvent: (event) =>
@@ -84,7 +89,9 @@ export async function createWorkspaceZCodeApp(
       }),
     includeVisualize: true,
     platform: context.deps.platform,
-    providerRuntimeHeadersPort: providerRuntimeHeadersPort as never,
+    ...(providerRuntimeHeadersPort === undefined
+      ? {}
+      : { providerRuntimeHeadersPort: providerRuntimeHeadersPort as never }),
     runtimeConfig: {
       ...options.runtimeConfig,
       // createZCodeApp 会把 workingDirectory 规范化为执行 cwd。把协议入口的
