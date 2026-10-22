@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch.js";
 import { toast } from "@/components/ui/toast.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useSettings } from "@/hooks/useSettingService.js";
+import { useGrantCountdown } from "@/hooks/useGrantCountdown.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
 
@@ -25,24 +26,6 @@ interface GrantState {
 }
 
 /** 授权链接剩余有效秒数；过期后引导重新生成。 */
-function useGrantCountdown(expiresAt: number | undefined): number {
-  const [remainingSeconds, setRemainingSeconds] = useState(() =>
-    expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : 0,
-  );
-  useEffect(() => {
-    if (!expiresAt) {
-      setRemainingSeconds(0);
-      return;
-    }
-    const tick = (): void =>
-      setRemainingSeconds(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [expiresAt]);
-  return remainingSeconds;
-}
-
 /**
  * Bugfix: 裸域名（如 relay.example.com）过不了设置校验的 URL 检查，保存会直接弹
  * "保存手机远控设置失败"。保存入口统一补全 https:// 前缀，并回写草稿让用户看到生效地址。

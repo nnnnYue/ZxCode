@@ -1,43 +1,59 @@
 import { describe, expect, it } from "vitest";
-import { getWebRemoteControlTriggerPresentation } from "@/WorkspaceWebRemoteControlTrigger.js";
+import {
+  getMobileRelayTriggerPresentation,
+  shouldShowMobileRelayTrigger,
+} from "@/WorkspaceWebRemoteControlTrigger.js";
 
 const formatMessage = ({ id }: { id: string }) => id;
 
-describe("getWebRemoteControlTriggerPresentation", () => {
-  it("uses success styling and a connected tooltip when a phone is paired", () => {
-    const presentation = getWebRemoteControlTriggerPresentation(
-      { status: "active", mobileConnected: true },
-      formatMessage,
-    );
+const baseStatus = {
+  supported: true,
+  enabled: true,
+  connected: true,
+  serverUrl: "http://127.0.0.1:8787",
+} as const;
+
+describe("getMobileRelayTriggerPresentation", () => {
+  it("uses success styling when the relay control connection is up", () => {
+    const presentation = getMobileRelayTriggerPresentation(baseStatus, formatMessage);
 
     expect(presentation.iconClassName).toContain("text-success");
-    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.connected");
+    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.relayConnected");
   });
 
-  it("uses warning styling while waiting for phone pairing", () => {
-    const presentation = getWebRemoteControlTriggerPresentation(
-      { status: "running", mobileConnected: false },
+  it("uses destructive styling with the relay error while enabled but failed", () => {
+    const presentation = getMobileRelayTriggerPresentation(
+      { ...baseStatus, connected: false, lastError: "relay control connection lost" },
       formatMessage,
     );
-
-    expect(presentation.iconClassName).toContain("text-warning");
-    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.waiting");
-  });
-
-  it("does not show connected while the relay is reconnecting with stale mobile state", () => {
-    const presentation = getWebRemoteControlTriggerPresentation(
-      { status: "starting", mobileConnected: true },
-      formatMessage,
-    );
-
-    expect(presentation.iconClassName).toContain("text-warning");
-    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.starting");
-  });
-
-  it("uses destructive styling for failed remote control sessions", () => {
-    const presentation = getWebRemoteControlTriggerPresentation({ status: "error" }, formatMessage);
 
     expect(presentation.iconClassName).toContain("text-destructive");
-    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.error");
+    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.relayError");
+  });
+
+  it("uses subtle styling while the relay control connection is still connecting", () => {
+    const presentation = getMobileRelayTriggerPresentation(
+      { ...baseStatus, connected: false },
+      formatMessage,
+    );
+
+    expect(presentation.iconClassName).toContain("text-foreground-subtle");
+    expect(presentation.tooltip).toBe("webRemoteControl.triggerStatus.relayConnecting");
+  });
+});
+
+describe("shouldShowMobileRelayTrigger", () => {
+  it("shows the entry once relay is enabled with a configured server url", () => {
+    expect(shouldShowMobileRelayTrigger(baseStatus)).toBe(true);
+    // 控制连接瞬断不隐藏入口：connected 只影响图标颜色，避免入口闪烁消失。
+    expect(shouldShowMobileRelayTrigger({ ...baseStatus, connected: false })).toBe(true);
+  });
+
+  it("hides the entry when relay is unsupported, disabled, or unconfigured", () => {
+    expect(shouldShowMobileRelayTrigger(undefined)).toBe(false);
+    expect(shouldShowMobileRelayTrigger({ ...baseStatus, supported: false })).toBe(false);
+    expect(shouldShowMobileRelayTrigger({ ...baseStatus, enabled: false })).toBe(false);
+    expect(shouldShowMobileRelayTrigger({ ...baseStatus, serverUrl: undefined })).toBe(false);
+    expect(shouldShowMobileRelayTrigger({ ...baseStatus, serverUrl: "  " })).toBe(false);
   });
 });

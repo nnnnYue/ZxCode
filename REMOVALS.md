@@ -79,5 +79,5 @@
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。
 - 桌面端本地仍会生成一个随机 `deviceMid`（存于 `~/.zxcode/v2/telemetry-state.json`），仅用作本地流式连接与手机 Relay 的连接标识，不会发送到智谱或任何遥测服务器。
 - 模型请求仍会按所配提供商的协议要求附带认证与会话标识，具体见 [NOTICE.md](NOTICE.md) 的对外请求说明。
-- v3.15.1 起 `packages/shared/src/zcodeEndpoint.ts` 恢复 `buildZCodeEndpointUrls` 裁剪版（仅 origin/apiBaseUrl/remoteUrl，供 web 远控前端 v3/v4 版本门槛使用）并新增 `resolveWebRemoteControlRelayWsUrl`（默认官方 relay 地址，自部署 relay 经设置覆盖）；上游 webRemoteControl manager 与 fork 自部署 `mobileRelayClient` 并存，互不替代。
+- v3.15.1 起 `packages/shared/src/zcodeEndpoint.ts` 恢复 `buildZCodeEndpointUrls` 裁剪版（仅 origin/apiBaseUrl/remoteUrl，供 web 远控前端 v3/v4 版本门槛使用）并新增 `resolveWebRemoteControlRelayWsUrl`（默认官方 relay 地址，自部署 relay 经设置覆盖）；上游 webRemoteControl manager 与 fork 自部署 `mobileRelayClient` 并存，互不替代。【2026-10-23 修订】左下角「移动端远程控制」入口已收口自部署 relay（removes 规范：不再生成 `zcode.z.ai` 官方二维码/凭据，未配置 relay 时入口隐藏），官方云中继 main 链路的整体删除为第二步专项（见 `specs/mobile-remote-entry-relay-only.md`）。
 - 上游 v3.15.1 的 UI 插件、插件 UI 沙箱（`zcodePluginSandbox` preload 命名空间）、内联 Gen UI、vitest 测试体系为保留能力。
