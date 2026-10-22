@@ -646,7 +646,7 @@ Browser use 虽由 `js` REPL 驱动，但其 capability manifest、模型文档�
 - App/Agent 滚动升级期间，新增的 provider-only browser 字段必须进入 session/send 可降级字段集合。
   兼容解析要接受 `Invalid params` 和附带摘要的 `Invalid params — ...` 两种消息，并只依据结构化
   `unrecognized_keys` issues 决定省略字段重试。desktop 的 `dev:local-cli` 必须在启动前重建 CLI bundle，
-  避免 resolver 优先命中旧 `dist/zcode.cjs`，形成“App 新协议、Agent 旧协议”的假回归。
+  避免 resolver 优先命中旧 `dist/zxcode.cjs`，形成“App 新协议、Agent 旧协议”的假回归。
 - 模型文档、skill 与 `js` tool description 必须使用一致的 browser 选择和恢复顺序：目标 URL 用
   `getForUrl(url)`，无目标才用 `getDefault()`；跨 turn 先复用 browser binding，再按 controlled tabs →
   user tabs → new tab 恢复。一次直接 URL 尝试失败后禁止循环猜 URL、路径或资源 ID，应改用最新 DOM、

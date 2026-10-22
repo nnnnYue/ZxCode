@@ -162,8 +162,14 @@ export const buildCli = async ({
   }),
 } = {}) => {
   const cliVersion = await version;
-  const outfile = resolve(cliDirectory, "dist/zcode.cjs");
+  const outfile = resolve(cliDirectory, "dist/zxcode.cjs");
   const sourcemapFile = `${outfile}.map`;
+  // Bug 根因：上游 sync 曾把产物名改为 dist/zcode.cjs，而 fork 打包暂存链
+  // （stage-agent-bundle / prepare-agent-node-bundle）与运行时入口
+  // （zcode-agent-runtime.ts nodeBundleEntryFile）均认 zxcode.cjs。旧名残留文件
+  // 会让所有 existsSync 守卫放行，把上次改名前构建的旧 agent 静默打进安装包
+  // （实测引发 fault.command.executionFailed 协议错位）。构建前清掉上游命名的陈旧兄弟产物。
+  await rm(resolve(cliDirectory, "dist/zcode.cjs"), { force: true });
 
   await stageBuiltinProviderConfig({
     root: resolve(rootDirectory, "../.."),
@@ -189,7 +195,7 @@ export const buildCli = async ({
     // SEA 资源由 build-sea 的 native asset 收集阶段单独处理。
     external: resolveBuildExternal(),
     format: "cjs",
-    // 桌面 app 集成只内置 zcode.cjs，旧 desktop-agent 构建复用 CLI 调试产物，
+    // 桌面 app 集成只内置 zxcode.cjs，旧 desktop-agent 构建复用 CLI 调试产物，
     // 未压缩且会留下指向未随包复制的 sourcemap。桌面 agent 模式压缩 JS，同时保留
     // 函数/类名，避免依赖 name 的诊断与注册逻辑被 esbuild 标识符压缩影响。
     keepNames: minify,
@@ -202,7 +208,7 @@ export const buildCli = async ({
     platform: "node",
     sourcemap,
     // target 取所有承载运行时里最低的 Node 版本：桌面用 Electron 内置 Node 24，
-    // 远端 SSH 复用已部署的独立 Node v22.16 跑同一份 zcode.cjs。降到 node22 保证这份产物
+    // 远端 SSH 复用已部署的独立 Node v22.16 跑同一份 zxcode.cjs。降到 node22 保证这份产物
     // 在两端都不会用到目标运行时不支持的语法/特性。
     target: "node22",
     alias: resolveBuildAliases({ cliDirectory, rootDirectory }),
@@ -213,7 +219,7 @@ export const buildCli = async ({
   }
 
   await chmod(outfile, executableFileMode);
-  // zcode.cjs 内联了第三方代码；dist 旁的伴随声明供发行 CLI 与统一分发包（build-zcode）复制。
+  // zxcode.cjs 内联了第三方代码；dist 旁的伴随声明供发行 CLI 与统一分发包（build-zcode）复制。
   await stageThirdPartyNotices(resolve(cliDirectory, "dist"), resolve(rootDirectory, "../.."));
 };
 

@@ -115,7 +115,7 @@ pnpm --filter @zcode/cli dev
 
 # Build the CLI and its workspace dependencies
 pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
+node apps/zcode-cli/packages/cli/dist/zxcode.cjs --help
 ```
 
 This entry runs the Agent CLI directly and does not handle the distribution's `--web` switch. Use `pnpm dev:web` for Web development, or the extracted `bin/zcode.mjs` shown below to test the unified command.

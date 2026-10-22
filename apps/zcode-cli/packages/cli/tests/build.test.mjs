@@ -247,7 +247,7 @@ test("CLI bundles session migrations through the shared sqlite subpath", async (
 test("built CLI embeds the compact registry without a runtime Fig dependency", async (t) => {
   let bundle;
   try {
-    bundle = await readFile(new URL("../dist/zcode.cjs", import.meta.url), "utf8");
+    bundle = await readFile(new URL("../dist/zxcode.cjs", import.meta.url), "utf8");
   } catch {
     t.skip("build the CLI before running the bundle content gate");
     return;

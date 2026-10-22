@@ -210,7 +210,7 @@ describe("resolveDefaultZCodeAgentCommand", () => {
       });
       const root = mkdtempSync(join(tmpdir(), "zcode-bytecode-resolver-"));
       createdDirs.push(root);
-      const source = join(root, "apps/zcode-cli/packages/cli/dist/zcode.cjs");
+      const source = join(root, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
       const bytecode = join(dirname(source), "zcode.bytecode.cjs");
       mkdirSync(dirname(source), { recursive: true });
       writeFileSync(source, "");
@@ -236,7 +236,7 @@ describe("resolveDefaultZCodeAgentCommand", () => {
     Object.defineProperty(process.versions, "electron", { configurable: true, value: "41.0.3" });
     const root = mkdtempSync(join(tmpdir(), "zcode-bytecode-missing-"));
     createdDirs.push(root);
-    const source = join(root, "apps/zcode-cli/packages/cli/dist/zcode.cjs");
+    const source = join(root, "apps/zcode-cli/packages/cli/dist/zxcode.cjs");
     mkdirSync(dirname(source), { recursive: true });
     writeFileSync(source, "");
     process.chdir(root);

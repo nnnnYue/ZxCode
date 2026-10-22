@@ -2,7 +2,7 @@
 
 ## 背景
 
-ZCode 的默认发布形态仍然是标准 Node.js CLI 包：`dist/zcode.cjs` 加 `bin.zcode`。SEA 只是可选的单文件分发路径，用于给没有预装 Node.js 的环境提供独立二进制。
+ZCode 的默认发布形态仍然是标准 Node.js CLI 包：`dist/zxcode.cjs` 加 `bin.zcode`。SEA 只是可选的单文件分发路径，用于给没有预装 Node.js 的环境提供独立二进制。
 
 当前 SEA 脚本只复制 `process.execPath`，因此在 macOS arm64 上只能生成 `zcode-darwin-arm64`。这不符合项目面向 Windows、macOS、Linux 的发布目标。
 
@@ -47,7 +47,7 @@ ZCode 的默认发布形态仍然是标准 Node.js CLI 包：`dist/zcode.cjs` �
   binary 的内层 workspace。该流程既避免复用旧 package `dist`，也不把已有 SEA
   产物写入 CLI build cache。
 - 根目录 `pnpm build:sea:all`：安装依赖后转发到同一个 all-target `build:sea` 入口。
-- `pnpm run sea -- <target 参数>`：只封装当前已有的 `dist/zcode.cjs` 和 runtime
+- `pnpm run sea -- <target 参数>`：只封装当前已有的 `dist/zxcode.cjs` 和 runtime
   assets，不负责重新编译 workspace。
 - `node scripts/build-sea.mjs`：构建当前 host target。
 - `node scripts/build-sea.mjs --target linux-x64 --target win-x64`：构建指定 target。
@@ -85,7 +85,7 @@ SEA 构建路径是 `node --experimental-sea-config <config>` 生成 preparation
 
 SEA config 必须显式写入：
 
-- `main`: bundled CLI entry，当前为 `dist/zcode.cjs`，相对 `packages/cli` 执行目录解析。
+- `main`: bundled CLI entry，当前为 `dist/zxcode.cjs`，相对 `packages/cli` 执行目录解析。
 - `output`: preparation blob，当前为 `dist/zcode.sea.blob`。
 - `disableExperimentalSEAWarning`: `true`。
 - `assets`: OpenTUI runtime assets, bundled official plugin assets and the
@@ -162,7 +162,7 @@ Windows 官方 `node.exe` 通常带 Authenticode 签名。脚本构建 Windows t
 
 ## 错误行为
 
-- 未找到 `dist/zcode.cjs`：提示先运行 `pnpm build`。
+- 未找到 `dist/zxcode.cjs`：提示先运行 `pnpm build`。
 - 未找到 `postject`：提示先运行 `pnpm install`。
 - target 不支持：列出支持 target。
 - 缺少 target runtime tool：中止，并提示先由对应平台准备并聚合 runtime assets。

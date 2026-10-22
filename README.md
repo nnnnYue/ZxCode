@@ -119,7 +119,7 @@ pnpm --filter @zcode/cli dev
 
 # 构建 CLI 及其 workspace 依赖
 pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
+node apps/zcode-cli/packages/cli/dist/zxcode.cjs --help
 ```
 
 这个入口直接运行 Agent CLI，不经过发行包的 `--web` 分流。开发 Web 用 `pnpm dev:web`；验证统一的 `zcode` 命令，用下方解压后的 `bin/zcode.mjs`。

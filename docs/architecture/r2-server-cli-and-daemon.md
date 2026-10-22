@@ -305,7 +305,7 @@ fork Core，通过同目录 `zcode.cjs` 委派既有 CLI，因此三个入口必
 staging 由 `packages/zcode-server-cli/src/packaging/stage.ts` 实现，
 `pnpm --filter @zcode/server-cli stage --target <os>-<arch>` 触发，只做本地组装，不上传、不发布：
 
-- 入口 bundle 来自本包 `tsup` 产物；`zcode.cjs` 来自 `apps/zcode-cli/packages/cli/dist/zcode.cjs`
+- 入口 bundle 来自本包 `tsup` 产物；`zcode.cjs` 来自 `apps/zcode-cli/packages/cli/dist/zxcode.cjs`
   （由 `scripts/build-desktop-agent-cli.mjs` 构建，与远端资产链同源）；
 - `runtime/node_modules` 内容以**产物扫描**为事实源：扫描 bundle 顶层裸模块引用，
   与 workspace `node_modules` 求交集后递归收集生产依赖闭包，从 workspace 复制为扁平布局；

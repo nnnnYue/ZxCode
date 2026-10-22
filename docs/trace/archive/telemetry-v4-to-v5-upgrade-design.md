@@ -364,7 +364,7 @@ tool
 2026-07-30：当前实现基线的仓库根产品版本为 `3.6.1`，CLI 构建版本为
 `0.16.1`。`apps/zcode-cli/packages/cli/package.json` 的 `0.1.0` 只是 workspace 子包
 元数据。仓库中存在 `v3.6.2` Tag，但它不是当前分支的版本真相；本机旧
-`dist/zcode.cjs` 和 Desktop staging `bundled-agents/darwin-arm64/glm/zcode.cjs`
+`dist/zxcode.cjs` 和 Desktop staging `bundled-agents/darwin-arm64/glm/zcode.cjs`
 也不能作为版本真相。
 
 旧 dist/staging bundle 不是版本真相。现行 CLI build 从 `apps/zcode-cli/package.json`

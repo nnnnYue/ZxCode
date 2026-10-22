@@ -7,8 +7,8 @@
 ```sh
 pnpm install --frozen-lockfile
 pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs --version
-node apps/zcode-cli/packages/cli/dist/zcode.cjs doctor --json
+node apps/zcode-cli/packages/cli/dist/zxcode.cjs --version
+node apps/zcode-cli/packages/cli/dist/zxcode.cjs doctor --json
 ```
 
 `@zcode/cli...` 包含 CLI 的 workspace 依赖。首次安装会执行仓库的资源准备步骤，需要能访问包和资源下载源。不要把安装脚本被跳过的目录当作完整发行包。

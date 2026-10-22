@@ -330,7 +330,7 @@ retry/file rewind 只 stale`：期望 stale，实际 executionFailed；生产改
 | `a91244048b` pacman 默认压缩          | 已有等价实现：当前 `a19cfe3f63` 已移除显式 compression，测试文件与固定 staging 一致。本批验证后不再重复叠加配置。                                                                                                             |
 | `d9234670a3` 恢复 darwin x64 映射断言 | 当前测试已保留该精确断言，验证通过；不因相邻 Linux 过滤来源尚未实施而删除或重复添加。                                                                                                                                         |
 
-- 交集审查：`dev-desktop-env.mjs` 仍先 pre-dev，再 build-desktop-agent-cli，随后启动 runtime；process manager 优先解析 workspace `dist/zcode.cjs`。因此移除旧 native 下载不会移除 Agent 构建，也不改变远端部署、Provider readiness、账号同步或会话选择。保留 3.12.0，不引入 staging 的版本回退。
+- 交集审查：`dev-desktop-env.mjs` 仍先 pre-dev，再 build-desktop-agent-cli，随后启动 runtime；process manager 优先解析 workspace `dist/zxcode.cjs`。因此移除旧 native 下载不会移除 Agent 构建，也不改变远端部署、Provider readiness、账号同步或会话选择。保留 3.12.0，不引入 staging 的版本回退。
 - 测试先失败于仍有 `label: "glm"`，其余 56 条通过；改动后 runtime assets、Linux packaging、manifest helpers 联合 3 文件 57/57 通过。根 typecheck 通过；根 lint 39 既有 warning、0 error；diff 检查通过。此次未执行可能下载／覆盖本地资产的完整 pre-dev，也不把单测算作各平台安装包实测。
 - 双向复审：两份文档只迁入该来源 runtime 准备段落，保留当前 Provider/Environment 和 shared-host 架构内容；runtime-asset 测试仅调整旧 GLM 断言，未整文件取 staging、丢掉当前 Built-in Config 打包保护。pacman 与平台映射复用当前等价代码。
 - 只结清上述三条来源和仅由这些来源触及的路径。electron-builder、runtime-asset tests、manifest tests 仍含其他 G01 来源，保持 pending 并追加本批片段证据；Windows installer、签名／公证、Linux 更新过滤等继续处理。无关既有问题未扩修。

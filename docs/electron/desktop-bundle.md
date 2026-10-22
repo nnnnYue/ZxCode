@@ -5,7 +5,7 @@
 ## 桌面 stdio Agent 字节码试验
 
 `pnpm dev:desktop:bytecode` 复用普通 Dev 的完整构建，然后用当前安装的 Electron
-Node 模式预编译 `apps/zcode-cli/packages/cli/dist/zcode.cjs`，生成同目录的
+Node 模式预编译 `apps/zcode-cli/packages/cli/dist/zxcode.cjs`，生成同目录的
 `zcode.bytecode.cjs` 加载器、`zcode.bytecode-<sha256>.jsc` 和
 `zcode.bytecode-runtime-<sha256>.cjs`。普通 `pnpm dev:desktop` 继续运行 JS，
 用于同一版本、同一工作负载下的 A/B 比较。仅重新生成字节码可执行

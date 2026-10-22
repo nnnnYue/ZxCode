@@ -12,7 +12,7 @@
 //
 // 远端（SSH/WSL/Docker）没有 Electron，仍走 prepare:remote-assets 的原生二进制，互不影响。
 
-import { cpSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -371,6 +371,7 @@ const isBootstrapWithRemote = process.env.ZXCODE_BOOTSTRAP_WITH_REMOTE === "1";
 function buildCliBundle() {
   console.log("[prepare:agent-bundle] building zcode-cli app-server bundle ...");
   // 复用仓库根脚本（turbo build:desktop-agent --filter=@zcode/cli），命中缓存时几乎瞬时。
+  const buildStartedAtMs = Date.now();
   runCommand(process.execPath, [resolve(repoRoot, "scripts/build-desktop-agent-cli.mjs")], {
     cwd: repoRoot,
     env: pnpmRunEnv,
@@ -378,6 +379,17 @@ function buildCliBundle() {
   if (!existsSync(cliBundlePath)) {
     throw new Error(
       `[prepare:agent-bundle] expected cli bundle missing after build: ${cliBundlePath}`,
+    );
+  }
+  // Bug 根因：上游 sync 把 CLI 产物名改成 dist/zcode.cjs 后，本脚本仍按旧名拷到
+  // dist/zxcode.cjs 的 10-20 遗留文件，existsSync 守卫放行，旧 agent 静默进包并引发
+  // fault.command.executionFailed 协议错位。产物名一致后这里的 mtime 断言兜底：
+  // 打包链必须真实重建 agent bundle（本脚本只会同步跑完构建才走到这里），源文件
+  // 早于本次构建开始即视为暂存了陈旧残留，当场失败而不是把旧包发出去。
+  const bundleMtimeMs = statSync(cliBundlePath).mtimeMs;
+  if (bundleMtimeMs < buildStartedAtMs) {
+    throw new Error(
+      `[prepare:agent-bundle] cli bundle is stale: ${cliBundlePath} mtime ${new Date(bundleMtimeMs).toISOString()} predates this build run (${new Date(buildStartedAtMs).toISOString()}); refusing to stage a stale agent bundle`,
     );
   }
 }

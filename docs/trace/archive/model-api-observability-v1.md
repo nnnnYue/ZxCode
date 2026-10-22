@@ -873,7 +873,7 @@ telemetry_queue_size
 
 Telemetry 未配置时延迟初始化或保持 No-op，不创建 Batch Worker。实现 MR 必须报告：
 
-- `dist/zcode.cjs` minified 大小变化。
+- `dist/zxcode.cjs` minified 大小变化。
 - SEA 二进制大小变化。
 - Standalone `zcode --help` 和首次 Prompt 启动耗时变化。
 - Telemetry disabled/enabled 的 RSS 基线。
@@ -909,7 +909,7 @@ Exporter 禁止无限重试、无限落盘、阻塞进程退出或把异常抛�
 | Standalone device state warm read P50/P95                     |                                     `0.014ms` / `0.017ms` | 历史同步基线；现为异步启动 I/O，不在模型热路径             |
 | 首批 OTel 加载 + 两 Span Export + shutdown                    |                                  `93.0ms`，RSS `+18.0MiB` | 发生在后台 Flush/退出，不进入模型 TTFT                     |
 | 1 Call + 1 Attempt OTLP protobuf                              |                            未压缩 `3,456B`，gzip `1,159B` | 单 Call 批次约 `1.13KiB` 网络载荷                          |
-| `dist/zcode.cjs`                                              |   `19,037,591B -> 20,146,129B`，`+1,108,538B`（`+5.82%`） | 官方最小 OTel SDK 是主要增量                               |
+| `dist/zxcode.cjs`                                              |   `19,037,591B -> 20,146,129B`，`+1,108,538B`（`+5.82%`） | 官方最小 OTel SDK 是主要增量                               |
 | darwin-arm64 SEA                                              | `181,513,504B -> 182,629,792B`，`+1,116,288B`（`+0.62%`） | SEA 总体增幅可控                                           |
 | `--help` 冷启动 P50（30 次）                                  |                            `290.2ms -> 295.0ms`，`+4.8ms` | 调度噪声较大，平均值未退化；继续在 CI 追踪                 |
 

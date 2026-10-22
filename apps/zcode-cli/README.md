@@ -5,7 +5,7 @@ ZCode's Agent CLI provides an interactive terminal and non-interactive task exec
 ```sh
 pnpm install --frozen-lockfile
 pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs doctor --json
+node apps/zcode-cli/packages/cli/dist/zxcode.cjs doctor --json
 ```
 
 The default artifact is a Node.js bundle with adjacent runtime resources. SEA packaging is optional. The Agent CLI differs from the root distribution launcher, which also supports Web startup.
