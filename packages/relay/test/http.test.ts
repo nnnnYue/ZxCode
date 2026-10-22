@@ -128,7 +128,7 @@ describe("relay http server", () => {
         workspaceKey: TARGET.workspaceKey,
       });
 
-      // 只读语义：bootstrap 之后 grant 仍可被手机消费接入。
+      // 只读语义：bootstrap 之后 grant 仍可被手机接入。
       const phone = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
       await once(phone, "open");
       const attachRequest = await control.next<RelayAttachRequest>(
@@ -245,25 +245,34 @@ describe("relay http server", () => {
     }
   });
 
-  it("grant 一次性：手机重放被拒绝", async () => {
+  it("链接即凭证：刷新与多端重复接入同一 grant 均有效", async () => {
     const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
     try {
       const control = await openControl(relay);
       const grant = await control.requestGrant("req-2");
+
+      // 第一端接入后关闭（模拟页面刷新前的连接被断开）。
       const first = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
       await once(first, "open");
-      const attachRequest = await control.next<RelayAttachRequest>(
+      const firstAttach = await control.next<RelayAttachRequest>(
         (m) => (m as { type?: string }).type === "relay-attach-request",
       );
-      const desktop = new WebSocket(
-        `ws://127.0.0.1:${relay.port}/ws/host-attach/${attachRequest.ticket}`,
-      );
-      await once(desktop, "open");
       first.close();
-      desktop.close();
 
-      const response = await fetch(`http://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
-      expect(response.status).toBe(401);
+      // 刷新/第二台浏览器用同一链接再接入：不再消费 grant，拿到新的 attach 调度。
+      const second = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      await once(second, "open");
+      const secondAttach = await control.next<RelayAttachRequest>(
+        (m) => (m as { type?: string }).type === "relay-attach-request",
+      );
+      expect(secondAttach.ticket).not.toBe(firstAttach.ticket);
+      expect(secondAttach.target).toEqual(TARGET);
+
+      // 多端并存：第一端重新连接也仍然有效。
+      const third = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      await once(third, "open");
+      third.close();
+      second.close();
       control.ws.close();
     } finally {
       await relay.close();
@@ -291,16 +300,96 @@ describe("relay http server", () => {
     }
   });
 
-  it("手机接入时桌面离线：grant 已消费仍拒绝连接", async () => {
+  it("手机接入时桌面离线：拒绝连接但 grant 保留，桌面恢复后同一链接可继续接入", async () => {
     const relay = await createRelayHttpServer({ host: "127.0.0.1", port: 0, logger: silentLogger });
     try {
       const control = await openControl(relay);
       const grant = await control.requestGrant("req-4");
       control.ws.close();
-      await control.next(() => false).catch(() => undefined);
-      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      // 等控制连接 close 事件落地（dropControl 同步执行）。
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
       const response = await fetch(`http://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
       expect(response.status).toBe(503);
+
+      // 桌面恢复：grant 未被消费，同一链接重新接入成功。
+      const restored = await openControl(relay);
+      const phone = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      await once(phone, "open");
+      const attachRequest = await restored.next<RelayAttachRequest>(
+        (m) => (m as { type?: string }).type === "relay-attach-request",
+      );
+      expect(attachRequest.target).toEqual(TARGET);
+      phone.close();
+      restored.ws.close();
+    } finally {
+      await relay.close();
+    }
+  });
+
+  it("grant 未使用超时失效：签发后超过 TTL 无接入即拒绝", async () => {
+    let current = Date.now();
+    const relay = await createRelayHttpServer({
+      host: "127.0.0.1",
+      port: 0,
+      now: () => current,
+      logger: silentLogger,
+    });
+    try {
+      const control = await openControl(relay);
+      const grant = await control.requestGrant("req-expire-unused");
+      current += 11 * 60_000;
+      const bootstrap = await fetch(
+        `http://127.0.0.1:${relay.port}/api/remote/bootstrap/${grant.grantId}`,
+      );
+      expect(bootstrap.status).toBe(404);
+      const response = await fetch(`http://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      expect(response.status).toBe(401);
+      control.ws.close();
+    } finally {
+      await relay.close();
+    }
+  });
+
+  it("接入后切换为闲置窗口：超出签发 TTL 仍有效，闲置超过窗口才失效", async () => {
+    let current = Date.now();
+    // 闲置窗口取 15min：足够跨越「签发后 10 分钟未使用」的默认窗口，便于断言切换语义。
+    const idleTtlMs = 15 * 60_000;
+    const relay = await createRelayHttpServer({
+      host: "127.0.0.1",
+      port: 0,
+      grantActiveIdleTtlMs: idleTtlMs,
+      now: () => current,
+      logger: silentLogger,
+    });
+    try {
+      const control = await openControl(relay);
+      const grant = await control.requestGrant("req-expire-idle");
+
+      // 首次接入即 touch（闲置窗口从接入重算），随后断开再 touch（从断开重算）。
+      const phone = new WebSocket(`ws://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      await once(phone, "open");
+      await control.next<RelayAttachRequest>(
+        (m) => (m as { type?: string }).type === "relay-attach-request",
+      );
+      phone.close();
+      await waitFor(() => phone.readyState === WebSocket.CLOSED);
+      current += 11 * 60_000;
+
+      // 已远超「签发后 10 分钟未使用」窗口，但闲置窗口（接入时重算）内 bootstrap 仍可读。
+      const bootstrap = await fetch(
+        `http://127.0.0.1:${relay.port}/api/remote/bootstrap/${grant.grantId}`,
+      );
+      expect(bootstrap.status).toBe(200);
+
+      // 闲置超过窗口：拒绝且不允许复活。
+      current += idleTtlMs + 60_000;
+      const expired = await fetch(
+        `http://127.0.0.1:${relay.port}/api/remote/bootstrap/${grant.grantId}`,
+      );
+      expect(expired.status).toBe(404);
+      const reconnect = await fetch(`http://127.0.0.1:${relay.port}/ws/remote/${grant.grantId}`);
+      expect(reconnect.status).toBe(401);
+      control.ws.close();
     } finally {
       await relay.close();
     }

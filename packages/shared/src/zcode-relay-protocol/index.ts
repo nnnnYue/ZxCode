@@ -2,15 +2,21 @@
  * 自部署手机远控 relay 的控制面协议（desktop main ↔ relay 服务端）。
  *
  * 数据面是纯字节管道：relay 不解析 RPC 帧，手机与桌面各自用 SocketProtocol 端到端通信。
- * 控制面只承载鉴权、心跳、presence、一次性票据的签发与消费调度。
+ * 控制面只承载鉴权、心跳、presence、票据（grant/attach ticket）的签发与调度。
  * 所有 schema 必须 .strict()：控制帧来自网络，未知字段直接拒绝而不是静默吞掉。
  */
 import { z } from "zod";
 
 const nonEmptyStringSchema = z.string().trim().min(1);
 
-/** grant（手机接入票据）默认有效期：一次性消费，10 分钟内打开有效。 */
+/**
+ * grant（手机接入票据）未使用有效期：签发后 10 分钟内没有任何接入即失效。
+ * grant 不再一次性消费（产品决策：链接即凭证，刷新与多端复用同一链接）；
+ * 一旦有过成功接入，有效期切换为 RELAY_GRANT_ACTIVE_IDLE_TTL_MS 的闲置窗口。
+ */
 export const RELAY_GRANT_TTL_MS = 10 * 60_000;
+/** grant 首次接入后的闲置有效期：每次手机 WS 建立/断开都从当前时刻重算；期间持续使用则一直有效。 */
+export const RELAY_GRANT_ACTIVE_IDLE_TTL_MS = 24 * 60 * 60_000;
 /** attach ticket（桌面回连接票）有效期：一次性消费，须在手机接入后 30s 内回连。 */
 export const RELAY_ATTACH_TICKET_TTL_MS = 30_000;
 /** 控制连接心跳间隔；relay 侧按 2 倍间隔收割失联设备。 */
@@ -111,7 +117,7 @@ export const relayIssueGrantResponseSchema = z
     requestId: nonEmptyStringSchema,
     ok: z.boolean(),
     grantId: nonEmptyStringSchema.optional(),
-    /** epoch ms；到期后 grant 一次性失效。 */
+    /** epoch ms；未使用 grant 的失效时间（接入后切换为闲置窗口，见 RELAY_GRANT_ACTIVE_IDLE_TTL_MS）。 */
     expiresAt: z.number().int().nonnegative().optional(),
     error: z.string().optional(),
   })

@@ -50,4 +50,28 @@ describe("one-time ticket store", () => {
     expect(consumed?.payload).toEqual({ id: 2 });
     expect(store.consume(first.id)).toBeTruthy();
   });
+
+  it("touch 续期：未过期票据从当前时刻重算 TTL，过期/未知票据拒绝复活", () => {
+    let current = 10_000;
+    const store = createOneTimeTicketStore<string>({
+      ttlMs: 1_000,
+      now: () => current,
+      createTicket: () => `t-${current++}`,
+    });
+    const ticket = store.issue("grant");
+
+    // 未过期续期：expiresAt = now + 新 TTL，多次续期叠加有效。
+    current += 800;
+    expect(store.touch(ticket.id, 60_000)?.expiresAt).toBe(current + 60_000);
+    current += 59_000;
+    expect(store.peek(ticket.id)).toBeTruthy();
+    expect(store.touch(ticket.id, 60_000)?.expiresAt).toBe(current + 60_000);
+
+    // 过期后 touch 返回 null 且不允许复活 peek。
+    current += 61_000;
+    expect(store.touch(ticket.id, 60_000)).toBeNull();
+    expect(store.peek(ticket.id)).toBeNull();
+    expect(store.touch(undefined, 60_000)).toBeNull();
+    expect(store.touch("no-such-ticket", 60_000)).toBeNull();
+  });
 });

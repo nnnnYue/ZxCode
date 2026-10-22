@@ -6,7 +6,8 @@
  * 其中带工作区事实；手机端据此才知道该渲染哪个工作区（Root 的 initialWorkspaceAbsPath /
  * initialWorkspaceIdentity），否则 Root 没有任何 workspace tab，页面只剩空壳。
  *
- * 端点语义：只读不消费。grant 的消费仍只发生在 `/ws/remote/<grantId>` 的 WS 握手上。
+ * 端点语义：只读不续期。grant 不再被任何端点消费（产品决策「链接即凭证」：
+ * 刷新与多端复用同一链接，仅超时失效），WS 握手同样只做 peek 校验。
  * 凭据是 grant 本身（32 字节随机串），持有者本来就能 attach 到该工作区。
  */
 

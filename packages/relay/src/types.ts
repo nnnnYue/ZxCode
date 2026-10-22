@@ -12,6 +12,8 @@ export interface RelayHttpServerOptions {
   /** 手机静态页面根目录（packages/web 构建产物）；缺省时 GET / 返回引导页。 */
   webRoot?: string;
   grantTtlMs?: number;
+  /** grant 首次接入后的闲置有效期；缺省用 shared 的 RELAY_GRANT_ACTIVE_IDLE_TTL_MS。 */
+  grantActiveIdleTtlMs?: number;
   ticketTtlMs?: number;
   attachWaitDesktopTimeoutMs?: number;
   controlReapAfterMs?: number;
@@ -35,7 +37,7 @@ export interface PendingRemote {
 
 export type RelayEnv = {
   Variables: {
-    /** upgrade middleware 已消费的票据及其 payload（grant=target / ticket=undefined）。 */
-    consumedGrant: RelayAttachTarget;
+    /** upgrade middleware 已校验的票据 payload（grant=target / ticket=undefined）。 */
+    resolvedGrant: RelayAttachTarget;
   };
 };

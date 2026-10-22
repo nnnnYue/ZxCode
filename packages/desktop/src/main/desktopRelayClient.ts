@@ -44,7 +44,7 @@ export interface DesktopRelayClientHandle {
   };
   /** workspace 变化时重推 presence；幂等。 */
   pushPresence(): void;
-  /** 签发一次性手机远控授权链接。 */
+  /** 签发手机远控授权链接（链接即凭证：接入前 10min 未用失效，接入后闲置 24h 失效）。 */
   requestGrant(payload: {
     workspacePath: string;
     workspaceIdentity?: string;

@@ -7,6 +7,7 @@ import {
   RELAY_ATTACH_TICKET_TTL_MS,
   RELAY_ATTACH_WAIT_DESKTOP_TIMEOUT_MS,
   RELAY_CONTROL_HEARTBEAT_REAP_AFTER_MS,
+  RELAY_GRANT_ACTIVE_IDLE_TTL_MS,
   RELAY_GRANT_TTL_MS,
   RELAY_REMOTE_CLOSE_REASONS,
   ZXCODE_RELAY_PROTOCOL_VERSION,
@@ -47,6 +48,7 @@ export async function createRelayHttpServer(
     ttlMs: options.grantTtlMs ?? RELAY_GRANT_TTL_MS,
     now,
   });
+  const grantActiveIdleTtlMs = options.grantActiveIdleTtlMs ?? RELAY_GRANT_ACTIVE_IDLE_TTL_MS;
   const tickets = createOneTimeTicketStore<null>({
     ttlMs: options.ticketTtlMs ?? RELAY_ATTACH_TICKET_TTL_MS,
     now,
@@ -138,7 +140,7 @@ export async function createRelayHttpServer(
 
   // 手机端 bootstrap：grant 的 payload 就是桌面签发时声明的 attach target，
   // 手机据此拿到「该显示哪个工作区」，Root 才有 workspace tab 可渲染。
-  // 只读不消费：消费仍只发生在 /ws/remote/:grantId 的 WS 握手上。
+  // 只读不续期：grant 不再被任何端点消费（链接即凭证），失效只由超时决定。
   // 凭据仍是 grant 本身（32 字节随机串），持有者本来就能 attach 到该工作区。
   app.get("/api/remote/bootstrap/:grantId", (context) => {
     const grant = grants.peek(context.req.param("grantId"));
@@ -153,7 +155,6 @@ export async function createRelayHttpServer(
       expiresAt: grant.expiresAt,
     });
   });
-
   app.use("/ws/host-control", async (context, next) => {
     if (options.token) {
       const header = context.req.header("Authorization") ?? "";
@@ -326,15 +327,17 @@ export async function createRelayHttpServer(
   );
 
   app.use("/ws/remote/:grantId", async (context, next) => {
-    const grant = grants.consume(context.req.param("grantId"));
-    // 消费型校验：两个手机竞抢同一授权链接时只有先到者能建立连接。
+    // 产品决策「链接即凭证」：grant 只校验不消费，同一链接在失效前可被刷新与
+    // 多端复用（多端同时 attach 时输入竞争由桌面 CommandInbox 串行收口）。
+    // 安全代价需明示：授权链接在超时前等同长期凭证，泄露窗口与闲置时长一致。
+    const grant = grants.peek(context.req.param("grantId"));
     if (!grant) {
       return context.json({ error: RELAY_REMOTE_CLOSE_REASONS.invalidGrant }, 401);
     }
     if (!control || control.ws.readyState !== control.ws.OPEN) {
       return context.json({ error: RELAY_REMOTE_CLOSE_REASONS.desktopOffline }, 503);
     }
-    context.set("consumedGrant", grant.payload);
+    context.set("resolvedGrant", grant.payload);
     await next();
   });
 
@@ -343,7 +346,15 @@ export async function createRelayHttpServer(
     upgradeWebSocket((context) => ({
       onOpen(_event, socket) {
         const ws = socket.raw as NodeWebSocket;
-        const target = context.get("consumedGrant");
+        // 与 /ws/host-attach 一致：升级回调里从 URL 恢复 id，不依赖 param 绑定。
+        const grantId = new URL(context.req.url).pathname.split("/").pop() ?? "";
+        const target = context.get("resolvedGrant");
+        // 闲置 TTL 每次接入都从当前时刻重算：首次接入即脱离「签发后 10 分钟未用」窗口。
+        // close 时再续一次，闲置从最后一次断开起算，避免长连接跨过 TTL 后刷新被拒。
+        grants.touch(grantId, grantActiveIdleTtlMs);
+        ws.on("close", () => {
+          grants.touch(grantId, grantActiveIdleTtlMs);
+        });
         const ticket = tickets.issue(null);
         const timeout = setTimeout(() => {
           const pending = pendingRemoteByTicket.get(ticket.id);
