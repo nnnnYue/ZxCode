@@ -937,3 +937,8 @@ exceptions:
       - packages/ui/src/hooks/useMobileRelayStatus.ts
       - packages/ui/src/hooks/useGrantCountdown.ts
     reason: 手机远控入口收口自部署 relay（specs/mobile-remote-entry-relay-only.md）新增的两个展示层 hook：relay 连接状态只读快照与授权链接失效倒计时，均无独立业务状态；ui 模块 managed=false，接管整个 hooks 目录需要独立的模块边界重构，不在本次入口收口范围内。
+  - id: relay-remote-grant-bootstrap
+    rule: unmanaged-new-file
+    paths:
+      - packages/web/src/remoteGrantBootstrap.ts
+    reason: 自部署手机远控 relay 的手机端工作区 bootstrap（只读端点 /api/remote/bootstrap/:grantId 的客户端取工作区事实，修复手机页渲染成空壳）；web 模块 managed=false，接管整个 web 目录需要独立的模块边界重构，不在本次 relay 链路修复范围内。
