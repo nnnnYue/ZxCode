@@ -10,15 +10,16 @@
 
 ## 2. 状态所有者
 
-| 状态                                                                                          | 所有者                                  | 说明                                                                   |
-| --------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
-| deployment token 校验、设备注册表、心跳                                                       | relay `/ws/host-control` 连接           | `ZXCODE_RELAY_TOKEN` + deviceId；心跳超时（60s）收割设备               |
-| 一次性 grant（手机接入票据）                                                                  | relay `grantStore`                      | randomBytes(32)、TTL 10min、一次性消费                                 |
-| 一次性 attach ticket（桌面回连接票）                                                          | relay `grantStore`（独立 TTL 30s 实例） | 桌面回连 `/ws/host-attach/:ticket` 时消费                              |
-| relay 客户端生命周期（启停/重连/心跳）                                                        | desktop main 单例 `desktopRelayClient`  | 由设置 `mobileRelay{enabled,serverUrl}` 驱动；app ready 启动、退出销毁 |
-| 窗口 workspace 映射 `windowId → {workspacePath, workspaceIdentity, workspaceKey}`             | desktop main                            | renderer 经 `SyncWindowWorkspace` IPC 上报；main 不回查 renderer       |
-| attach 执行（local: AttachServicePort replayable / remote: attachRemoteWorkspaceSessionHost） | desktop main `desktopRelayClient`       | 校验 target 与当前映射一致后才执行                                     |
-| 手机端连接                                                                                    | 手机 Web（零改动）                      | `?remote=<grantId>` → `/ws/remote/<grantId>` → 既有 ChannelClient      |
+| 状态                                                                                          | 所有者                                                                     | 说明                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| deployment token 校验、设备注册表、心跳                                                       | relay `/ws/host-control` 连接                                              | `ZXCODE_RELAY_TOKEN` + deviceId；心跳超时（60s）收割设备                                                                                                                  |
+| 一次性 grant（手机接入票据）                                                                  | relay `grantStore`                                                         | randomBytes(32)、TTL 10min、一次性消费                                                                                                                                    |
+| 一次性 attach ticket（桌面回连接票）                                                          | relay `grantStore`（独立 TTL 30s 实例）                                    | 桌面回连 `/ws/host-attach/:ticket` 时消费                                                                                                                                 |
+| relay 客户端生命周期（启停/重连/心跳）                                                        | desktop main 单例 `desktopRelayClient`                                     | 由设置 `mobileRelay{enabled,serverUrl}` 驱动；app ready 启动、退出销毁                                                                                                    |
+| 窗口 workspace 映射 `windowId → {workspacePath, workspaceIdentity, workspaceKey}`             | desktop main                                                               | renderer 经 `SyncWindowWorkspace` IPC 上报；main 不回查 renderer                                                                                                          |
+| attach 执行（local: AttachServicePort replayable / remote: attachRemoteWorkspaceSessionHost） | desktop main `desktopRelayClient`                                          | 校验 target 与当前映射一致后才执行                                                                                                                                        |
+| 远程 session presence 快照                                                                    | desktop main `desktopRemoteSessions` manager `listRemoteWorkspaceSessions` | 从 `routesBySessionId` 现算只读快照（windowId 反查 BrowserWindow），缺 workspace 身份的 route 跳过；presence 与 grant target 校验都消费它，manager 返回对象必须保留该方法 |
+| 手机端连接                                                                                    | 手机 Web（零改动）                                                         | `?remote=<grantId>` → `/ws/remote/<grantId>` → 既有 ChannelClient                                                                                                         |
 
 ## 3. 接口
 

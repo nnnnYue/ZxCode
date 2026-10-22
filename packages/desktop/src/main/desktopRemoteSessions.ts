@@ -952,6 +952,40 @@ export function createRemoteWorkspaceSessionManager(options: {
   return {
     createRemoteWorkspaceSession,
     attachRemoteWorkspaceSessionHost,
+    // 手机远控 relay 的 presence 只读镜像：Main 不新增第二份连接事实，
+    // 每次调用从 routesBySessionId 现算快照（windowId 反查自 BrowserWindow）。
+    // 3.16.2 合并把本方法从返回对象中丢掉而 index.ts:698 仍接线，导致
+    // desktopRelayClient.pushPresence 调到 undefined 每次连接必崩（主进程弹窗、
+    // 心跳定时器建不起来、relay 60s 踢连接死循环）；此处按原实现恢复。
+    listRemoteWorkspaceSessions: (): Array<{
+      windowId: number;
+      remoteSessionId: string;
+      workspacePath: string;
+      workspaceIdentity: string;
+      workspaceKey: string;
+      attachable: boolean;
+    }> =>
+      Array.from(routesBySessionId.entries()).flatMap(([remoteSessionId, route]) => {
+        const win = BrowserWindow.getAllWindows().find(
+          (candidate) => candidate.webContents.id === route.webContentsId,
+        );
+        if (!win) return [];
+        // descriptor 的 workspace 字段是可选的；presence 快照需要非空三元组，
+        // 缺身份的 route 无法被手机 attach，直接跳过而不是编造占位值。
+        const workspacePath = route.descriptor.workspacePath;
+        if (!workspacePath) return [];
+        const identity = route.descriptor.workspaceIdentity ?? workspacePath;
+        return [
+          {
+            windowId: win.id,
+            remoteSessionId,
+            workspacePath,
+            workspaceIdentity: identity,
+            workspaceKey: identity,
+            attachable: route.attachmentState === "attachable",
+          },
+        ];
+      }),
     reconnectBotRemoteWorkspaceSession,
     bindRemoteWorkspaceSessionContext,
     confirmRendererAttachmentReady,

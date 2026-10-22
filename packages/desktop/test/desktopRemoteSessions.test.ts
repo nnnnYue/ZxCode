@@ -819,3 +819,166 @@ describe("desktopRemoteSessions R1 window Host forwarding", () => {
     });
   });
 });
+
+// 回归：3.16.2 合并把 listRemoteWorkspaceSessions 从 manager 返回对象丢掉而
+// index.ts 接线保留，desktopRelayClient.pushPresence 调到 undefined，主进程每次
+// relay 连接建立即崩（弹窗、心跳定时器建不起来、relay 60s 踢连接死循环）。
+describe("desktopRemoteSessions relay presence snapshot", () => {
+  beforeEach(() => {
+    browserWindowMock.windows.length = 0;
+    channels.length = 0;
+    browserWindowMock.fromId.mockClear();
+    browserWindowMock.getAllWindows.mockClear();
+  });
+
+  async function connectRoute(params: {
+    child: MockUtilityProcess;
+    requestId: string;
+    remoteSessionId: string;
+    workspacePath?: string;
+    workspaceIdentity?: string;
+    omitIdentity?: boolean;
+  }) {
+    params.child.emit("message", {
+      type: HostResponseTypes.RemoteWorkspaceConnected,
+      requestId: params.requestId,
+      descriptor: {
+        remoteSessionId: params.remoteSessionId,
+        target: sshTarget,
+        ...(params.workspacePath === undefined ? {} : { workspacePath: params.workspacePath }),
+        ...(params.omitIdentity || params.workspaceIdentity === undefined
+          ? {}
+          : { workspaceIdentity: params.workspaceIdentity }),
+        generation: 1,
+      },
+    });
+    for (let index = 0; index < 6; index += 1) await Promise.resolve();
+  }
+
+  function startConnect(
+    manager: ReturnType<typeof createManager>,
+    win: ReturnType<typeof createWindow>,
+    requestId: string,
+  ): void {
+    void manager.createRemoteWorkspaceSession(win as never, sshTarget, requestId).catch(() => {
+      // 快照用例不关心连接 promise 的最终结算，吞掉迟到 reject 避免 unhandled rejection。
+    });
+  }
+
+  it("连接建立后快照包含 attachable 的远程 session 条目", async () => {
+    const child = new MockUtilityProcess(1001);
+    const win = createWindow(1, 101);
+    const manager = createManager(new Map([[101, child]]));
+    startConnect(manager, win, "connect-1");
+    const identity = buildRemoteWorkspaceIdentity("/home/dev", sshTarget);
+    await connectRoute({
+      child,
+      requestId: "connect-1",
+      remoteSessionId: "remote-1",
+      workspacePath: "/home/dev",
+      workspaceIdentity: identity,
+    });
+
+    expect(manager.listRemoteWorkspaceSessions()).toEqual([
+      {
+        windowId: 1,
+        remoteSessionId: "remote-1",
+        workspacePath: "/home/dev",
+        workspaceIdentity: identity,
+        workspaceKey: identity,
+        attachable: true,
+      },
+    ]);
+  });
+
+  it("descriptor 缺 workspaceIdentity 时回退 workspacePath 作为身份", async () => {
+    const child = new MockUtilityProcess(1001);
+    const win = createWindow(1, 101);
+    const manager = createManager(new Map([[101, child]]));
+    startConnect(manager, win, "connect-1");
+    await connectRoute({
+      child,
+      requestId: "connect-1",
+      remoteSessionId: "remote-1",
+      workspacePath: "/home/dev",
+      omitIdentity: true,
+    });
+
+    expect(manager.listRemoteWorkspaceSessions()).toEqual([
+      {
+        windowId: 1,
+        remoteSessionId: "remote-1",
+        workspacePath: "/home/dev",
+        workspaceIdentity: "/home/dev",
+        workspaceKey: "/home/dev",
+        attachable: true,
+      },
+    ]);
+  });
+
+  it("descriptor 缺 workspacePath 或反查不到窗口的 route 跳过", async () => {
+    const child = new MockUtilityProcess(1001);
+    const winWithNoPath = createWindow(1, 101);
+    const winVanished = createWindow(2, 102);
+    const manager = createManager(
+      new Map([
+        [101, child],
+        [102, child],
+      ]),
+    );
+    startConnect(manager, winWithNoPath, "connect-a");
+    await connectRoute({
+      child,
+      requestId: "connect-a",
+      remoteSessionId: "remote-a",
+      omitIdentity: true,
+    });
+    startConnect(manager, winVanished, "connect-b");
+    await connectRoute({
+      child,
+      requestId: "connect-b",
+      remoteSessionId: "remote-b",
+      workspacePath: "/home/dev",
+      workspaceIdentity: "identity-b",
+    });
+    browserWindowMock.windows.splice(
+      browserWindowMock.windows.findIndex((candidate) => candidate === winVanished),
+      1,
+    );
+
+    expect(manager.listRemoteWorkspaceSessions()).toEqual([]);
+  });
+
+  it("连接异常关闭后条目保留且 attachable 为 false", async () => {
+    const child = new MockUtilityProcess(1001);
+    const win = createWindow(1, 101);
+    const manager = createManager(new Map([[101, child]]));
+    startConnect(manager, win, "connect-1");
+    await connectRoute({
+      child,
+      requestId: "connect-1",
+      remoteSessionId: "remote-1",
+      workspacePath: "/home/dev",
+      workspaceIdentity: "identity-1",
+    });
+
+    child.emit("message", {
+      type: HostResponseTypes.RemoteWorkspaceClosed,
+      remoteSessionId: "remote-1",
+      reason: "connection-closed",
+      exitCode: 255,
+      signal: null,
+    });
+
+    expect(manager.listRemoteWorkspaceSessions()).toEqual([
+      {
+        windowId: 1,
+        remoteSessionId: "remote-1",
+        workspacePath: "/home/dev",
+        workspaceIdentity: "identity-1",
+        workspaceKey: "identity-1",
+        attachable: false,
+      },
+    ]);
+  });
+});
