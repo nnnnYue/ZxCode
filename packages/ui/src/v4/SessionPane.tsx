@@ -403,7 +403,7 @@ export interface SessionPaneProps {
   allowEscapeStopOutsidePane?: boolean;
   /**
    * pane 是否真实可见。分屏的非 focused pane 仍传 true；forceMount 的隐藏侧栏 tab 传 false。
-   * 只影响 foreground UI telemetry，不影响 live subscription 或后台 /event/report。
+   * 只影响前台 UI 的可见性判断，不影响 live subscription 或后台事件链路。
    */
   telemetryVisible?: boolean;
   /** 关闭本窗格（仅非 primary pane 下发；关 pane ≠ 停 session）。 */
