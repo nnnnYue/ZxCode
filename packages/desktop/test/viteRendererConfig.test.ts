@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadConfigFromFile } from "vite";
+import { createServer, loadConfigFromFile } from "vite";
 import { desktopRendererDependencyAliases } from "../vite.config";
 
 describe("desktop renderer Vite dependency aliases", () => {
@@ -33,10 +33,10 @@ describe("desktop renderer Vite dependency aliases", () => {
   const isWindows = process.platform === "win32";
 
   (isWindows ? it.skip : it)(
-    "injects the selected ZCode endpoint env into renderer env",
+    "injects the selected ZCode endpoint origin into renderer env",
     async () => {
-      vi.stubEnv("ZXCODE_ENV", "test");
-      vi.stubEnv("ZXCODE_BASE_URL", "https://renderer-endpoint.example.test");
+      vi.stubEnv("ZCODE_ENV", "test");
+      vi.stubEnv("ZCODE_BASE_URL", "");
       const desktopRoot = resolve(import.meta.dirname, "..");
       const configFile = resolve(desktopRoot, "vite.config.ts");
       const result = await loadConfigFromFile(
@@ -51,19 +51,16 @@ describe("desktop renderer Vite dependency aliases", () => {
         "silent",
       );
 
-      // fork 构建期经 pickProductEndpointEnv 注入 __ZXCODE_ENDPOINT_ENV__；
-      // VITE_ZCODE_BASE_URL/VITE_ZCODE_ENDPOINT_ORIGIN 注入已随去平台化删除。
       expect(result?.config.define).toMatchObject({
-        __ZXCODE_ENDPOINT_ENV__: JSON.stringify({
-          ZXCODE_BASE_URL: "https://renderer-endpoint.example.test",
-        }),
-        __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
+        "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify("https://zcode.z.ai"),
+        "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify("https://zcode.z.ai"),
+        __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
       });
     },
   );
 
   it("marks non-production renderer builds as local development runtime", async () => {
-    vi.stubEnv("ZXCODE_ENV", "production");
+    vi.stubEnv("ZCODE_ENV", "production");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -79,10 +76,10 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZXCODE_ENV__: JSON.stringify("production"),
-      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("production"),
-      __ZXCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(true),
-      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
+      __ZCODE_ENV__: JSON.stringify("production"),
+      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("production"),
+      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(true),
+      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
     });
   });
 
@@ -101,14 +98,14 @@ describe("desktop renderer Vite dependency aliases", () => {
       "silent",
     );
 
-    expect(result?.config.plugins?.some((plugin) => plugin.name === "zxcode:pdfjs-cmaps")).toBe(
+    expect(result?.config.plugins?.some((plugin) => plugin.name === "zcode:pdfjs-cmaps")).toBe(
       true,
     );
   });
 
   it("injects the E2E store bridge only from the runner flag", async () => {
-    vi.stubEnv("ZXCODE_ENV", "test");
-    vi.stubEnv("VITE_ZXCODE_E2E_STORE_BRIDGE", "1");
+    vi.stubEnv("ZCODE_ENV", "test");
+    vi.stubEnv("VITE_ZCODE_E2E_STORE_BRIDGE", "1");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -124,15 +121,15 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZXCODE_ENV__: JSON.stringify("test"),
-      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
-      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
+      __ZCODE_ENV__: JSON.stringify("test"),
+      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
+      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
     });
   });
 
-  it("ZXCODE_PREVIEW_IDENTITY=1 让生产后端的 renderer 编译成 Preview 身份", async () => {
-    vi.stubEnv("ZXCODE_ENV", "production");
-    vi.stubEnv("ZXCODE_PREVIEW_IDENTITY", "1");
+  it("ZCODE_PREVIEW_IDENTITY=1 让生产后端的 renderer 编译成 Preview 身份", async () => {
+    vi.stubEnv("ZCODE_ENV", "production");
+    vi.stubEnv("ZCODE_PREVIEW_IDENTITY", "1");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -148,8 +145,71 @@ describe("desktop renderer Vite dependency aliases", () => {
     );
 
     expect(result?.config.define).toMatchObject({
-      __ZXCODE_ENV__: JSON.stringify("production"),
-      __ZXCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
+      __ZCODE_ENV__: JSON.stringify("production"),
+      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
     });
   });
+});
+
+describe("desktop React Scan development tools", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function loadReactScanPlugin(command: "serve" | "build", mode: string) {
+    const desktopRoot = resolve(import.meta.dirname, "..");
+    const result = await loadConfigFromFile(
+      { command, mode },
+      resolve(desktopRoot, "vite.config.ts"),
+      desktopRoot,
+      "silent",
+    );
+    return result?.config.plugins?.flat().find((plugin) => plugin?.name === "zcode:react-scan");
+  }
+
+  it("serves Scan before React only in the main development entry", async () => {
+    vi.stubEnv("ZCODE_ENV", "production");
+    vi.stubEnv("ZCODE_REACT_SCAN", undefined);
+    const plugin = await loadReactScanPlugin("serve", "development");
+    expect(plugin).toBeDefined();
+    const server = await createServer({
+      configFile: false,
+      plugins: [plugin],
+      server: { middlewareMode: true, watch: null },
+      optimizeDeps: { noDiscovery: true, include: [] },
+    });
+    try {
+      const html =
+        '<html><head></head><body><script type="module">window.app = true</script></body></html>';
+      const transformed = await server.transformIndexHtml("/index.html", html);
+      const scanScript = transformed.match(/<script src="([^"]+react-scan[^"]+)"><\/script>/);
+      expect(scanScript).not.toBeNull();
+      expect(scanScript?.[1]).toMatch(/^\/@fs\//);
+      expect(transformed.indexOf(scanScript![0])).toBeLessThan(
+        transformed.indexOf('type="module"'),
+      );
+      for (const entry of ["resource-manager", "plugin-sandbox", "cua-permission-panel"]) {
+        expect(await server.transformIndexHtml(`/${entry}.html`, html)).not.toContain("react-scan");
+      }
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("allows opting out of development instrumentation", async () => {
+    vi.stubEnv("ZCODE_REACT_SCAN", "0");
+    expect(await loadReactScanPlugin("serve", "development")).toBeUndefined();
+  });
+
+  it.each([
+    ["serve", "production", "1"],
+    ["build", "production", "0"],
+    ["build", "production", "1"],
+    ["build", "development", "0"],
+    ["build", "development", "1"],
+  ] as const)(
+    "excludes Scan from %s in %s mode with ZCODE_REACT_SCAN=%s",
+    async (command, mode, scan) => {
+      vi.stubEnv("ZCODE_REACT_SCAN", scan);
+      expect(await loadReactScanPlugin(command, mode)).toBeUndefined();
+    },
+  );
 });

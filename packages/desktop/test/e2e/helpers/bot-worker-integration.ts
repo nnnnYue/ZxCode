@@ -86,11 +86,11 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
       ),
     }));
     personal.dispose();
-    const builtin = resolve("../../config/provider/zxcode-builtin.json");
-    // fork：NodeProviderRegistryRuntimeOptions 已无 watch 选项（内置目录不再远端刷新）。
+    const builtin = resolve("../../config/provider/zcode-builtin.json");
     const runtime = new NodeProviderRegistryRuntime({
       personalFilePath,
       zcodeBuiltinFilePath: builtin,
+      watch: false,
       personalPollingIntervalMs: false,
     });
     cleanup.push(() => runtime.dispose());
@@ -100,9 +100,7 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
       getView: async (input?: ModelSelectionViewInput) =>
         facade.getView(modelSelection, undefined, input),
     };
-    const selected = await modelSelectionService.getView({
-      selection: modelSelection,
-    });
+    const selected = await modelSelectionService.getView({ selection: modelSelection });
     if (!selected.preferredSelection || !selected.effectiveSelection) {
       throw new Error(
         JSON.stringify({
@@ -116,6 +114,10 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
         }),
       );
     }
+    const repo = new TaskIndexRepo();
+    cleanup.push(() => repo.close());
+    const projects = await repo.getProjectRepository();
+    const project = projects.saveProject({ name: "Bot fixture", roots: [workspacePath] });
     const bot = createBotsServiceHarness({
       config: createFeishuConfig("feishu", "bot-worker"),
       modelSelectionService,
@@ -132,24 +134,37 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
           },
         },
       },
-      lastWorkspaceSession: [{ kind: "local", workspacePath }],
+      projectWorkspaces: [{ kind: "local", workspacePath, projectId: project.id }],
     });
     const reverseReplies: unknown[] = [];
     const reverseResources: unknown[] = [];
     const agent = createZCodeAgentService({
+      // 项目化创建要求先预留 task 归属；旧夹具漏接此 Host 端口，在调用 CLI 前即失败。
+      prepareSessionCreation: async (target) => {
+        const prepared = projects.reserveCreatedTask({
+          task: { ...target, taskId: target.sessionId },
+          projectId: target.projectId,
+          creationCommand: target.creationCommand,
+          additionalDirectories: target.additionalDirectories,
+        });
+        return {
+          sessionId: prepared.taskId,
+          additionalDirectories: prepared.additionalDirectories,
+        };
+      },
       commandResolver: () => ({
         command: process.execPath,
         args: [
-          resolve("../../apps/zcode-cli/packages/cli/dist/zxcode.cjs"),
+          resolve("../../apps/zcode-cli/packages/cli/dist/zcode.cjs"),
           "app-server",
           "--stdio",
         ],
         env: {
           HOME: home,
           USERPROFILE: home,
-          ZXCODE_DATA_BASE_DIR: home,
+          ZCODE_DATA_BASE_DIR: home,
           ZCODE_RUNTIME_ENV: "development",
-          ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
+          ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
           ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalFilePath,
         },
       }),
@@ -183,10 +198,7 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
               if (event.type === "session.event") {
                 if (event.event.type === "permission.requested")
                   permissionRequests.push(event.event.payload);
-                const payload = event.event.payload as {
-                  kind?: string;
-                  delta?: unknown;
-                };
+                const payload = event.event.payload as { kind?: string; delta?: unknown };
                 if (payload.kind === "text_delta" && typeof payload.delta === "string")
                   observedTextEvents.push(payload.delta);
                 if (
@@ -204,12 +216,7 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
             ...rest,
           );
     }
-    const repo = new TaskIndexRepo();
-    cleanup.push(() => repo.close());
-    const syncer = createZCodeTaskIndexSyncer({
-      agentService: agent,
-      taskIndexRepo: repo,
-    });
+    const syncer = createZCodeTaskIndexSyncer({ agentService: agent, taskIndexRepo: repo });
     cleanup.push(() => syncer.disposeAll());
     cleanup.push(() => bot.service.disposeAllAndWait());
     const task = createZCodeTaskServiceAdapter({

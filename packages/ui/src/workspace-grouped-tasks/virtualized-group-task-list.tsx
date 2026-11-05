@@ -1,13 +1,15 @@
+import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
+import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { ZCodeTaskMeta } from "@zcode/shared";
-import { GroupedTaskItem } from "@/workspace-grouped-tasks/task-item.js";
-import { taskKey } from "@/workspace-grouped-tasks/ids.js";
+
+import { GroupedTaskItem } from "@/project-sidebar/grouped/task-item.js";
+import { taskKey } from "@/project-sidebar/grouped/ids.js";
 import {
   isPotentialVerticalScrollContainer,
   scrollGroupedTaskVirtualizerToOffset,
-} from "@/workspace-grouped-tasks/virtualized-scroll.js";
-import type { TaskGroupMenuItem } from "@/workspace-grouped-tasks/types.js";
+} from "@/project-sidebar/grouped/virtualized-scroll.js";
+import type { TaskGroupMenuItem } from "@/project-sidebar/grouped/types.js";
 
 const GROUPED_TASK_ROW_ESTIMATE_PX = 32;
 const GROUPED_TASK_VIRTUALIZATION_THRESHOLD = 80;
@@ -159,10 +161,15 @@ export function VirtualizedGroupedTaskList({
         groups={groups}
         remoteSessionId={getTaskRemoteSessionId(task)}
         workspaceLabel={getTaskWorkspaceLabel(task)}
-        activeWorkspacePath={activeWorkspacePath}
-        activeWorkspaceIdentity={activeWorkspaceIdentity}
-        activeTaskId={activeTaskId}
-        mobileActiveTaskKey={mobileActiveTaskKey}
+        isActive={
+          activeTaskId === task.taskId &&
+          buildTaskWorkspaceKey(activeWorkspacePath, activeWorkspaceIdentity) ===
+            buildTaskWorkspaceKey(task.workspacePath, task.workspaceIdentity)
+        }
+        isMobileActive={
+          mobileActiveTaskKey ===
+          `${buildTaskWorkspaceKey(task.workspacePath, task.workspaceIdentity)}:${task.taskId}`
+        }
         onSelectTask={onSelectTask}
         onCloseTask={onCloseTask}
         onOpenFileTree={onOpenFileTree}

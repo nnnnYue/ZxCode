@@ -24,6 +24,7 @@ import type { ZCodeAppOptions } from "../src/app/types.js";
 import {
   configureZCodePlugin,
   describeZCodePlugin,
+  enrichCachedClaudeMarketplaceIconsForOverview,
   getZCodePluginsOverview,
   installZCodeMarketplacePlugin,
   listZCodePlugins,
@@ -111,6 +112,59 @@ const BUNDLED_ANDROID_PLUGIN_DIST_PATH = fileURLToPath(
 );
 
 describe("ZCode plugins", () => {
+  it("starts cached Claude icon migration without blocking overview callers", async () => {
+    const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-icon-migration-"));
+    const pluginStorageRoot = join(root, "plugins");
+    const marketplaceRoot = join(pluginStorageRoot, "marketplaces", "claude-plugins-official");
+    try {
+      await mkdir(marketplaceRoot, { recursive: true });
+      await writeFile(
+        join(marketplaceRoot, "marketplace.json"),
+        JSON.stringify({
+          name: "claude-plugins-official",
+          plugins: [{ name: "figma", source: "./figma" }],
+        }),
+      );
+      let resolveFetch!: (response: Response) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) => {
+              resolveFetch = resolve;
+            }),
+        ),
+      );
+
+      expect(
+        enrichCachedClaudeMarketplaceIconsForOverview({
+          env: {},
+          pluginStorageRoot,
+          skipUserConfig: true,
+          workingDirectory: root,
+        }),
+      ).toBeUndefined();
+
+      resolveFetch(
+        new Response(
+          JSON.stringify([{ name: "figma", icon: "figma/icon.png", mimeType: "image/png" }]),
+          { status: 200 },
+        ),
+      );
+      await vi.waitFor(async () => {
+        const saved = JSON.parse(
+          await readFile(join(marketplaceRoot, "marketplace.json"), "utf8"),
+        ) as { plugins: Array<{ icon?: string }> };
+        expect(saved.plugins[0]?.icon).toBe(
+          "https://cdn-zcode.z.ai/zcode/official-plugin/assets/figma/icon.png",
+        );
+      });
+    } finally {
+      vi.unstubAllGlobals();
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
   it("keeps every bundled plugin package, manifest, and seed version aligned", async () => {
     const packagesRoot = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -556,18 +610,19 @@ describe("ZCode plugins", () => {
 
       expect(overview.marketplaces).toEqual(
         expect.arrayContaining([
-          // 去平台化：官方目录随包分发，marketplace 摘要不再携带 CDN url source。
           expect.objectContaining({
             id: "zcode-plugins-official",
             isOfficial: true,
             name: "zcode-plugins-official",
-            pluginCount: 14,
+            pluginCount: 15,
             source: {
-              source: "bundled",
+              source: "url",
+              url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
             },
           }),
           expect.objectContaining({
             id: "claude-plugins-official",
+            isOfficial: true,
             name: "claude-plugins-official",
             pluginCount: 0,
             source: {
@@ -580,8 +635,10 @@ describe("ZCode plugins", () => {
       expect(
         JSON.parse(await readFile(join(pluginStorageRoot, "known_marketplaces.json"), "utf8")),
       ).toMatchObject({
-        // 去平台化：官方市场不写入 known_marketplaces，默认清单只落 Claude GitHub 源。
         marketplaces: [
+          expect.objectContaining({
+            id: "zcode-plugins-official",
+          }),
           expect.objectContaining({
             id: "claude-plugins-official",
           }),
@@ -1803,7 +1860,7 @@ describe("ZCode plugins", () => {
   it("persists sensitive plugin options in the selected User or Workspace config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-options-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zxcode", "config.json");
+    const workspaceConfigPath = join(root, ".zcode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "secret-plugin");
     const pluginId = "secret-plugin@inline";
@@ -1921,7 +1978,7 @@ describe("ZCode plugins", () => {
   it("writes Workspace enablement without mutating User config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-scope-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zxcode", "config.json");
+    const workspaceConfigPath = join(root, ".zcode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -1971,8 +2028,8 @@ describe("ZCode plugins", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-nested-plugin-scope-"));
     const repositoryRoot = join(root, "repository");
     const workspaceRoot = join(repositoryRoot, "packages", "app");
-    const repositoryConfigPath = join(repositoryRoot, ".zxcode", "config.json");
-    const workspaceConfigPath = join(workspaceRoot, ".zxcode", "config.json");
+    const repositoryConfigPath = join(repositoryRoot, ".zcode", "config.json");
+    const workspaceConfigPath = join(workspaceRoot, ".zcode", "config.json");
     const userConfigPath = join(root, "user-config.json");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -2028,7 +2085,7 @@ describe("ZCode plugins", () => {
   it("resets Workspace plugin keys so effective config inherits User", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-reset-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zxcode", "config.json");
+    const workspaceConfigPath = join(root, ".zcode", "config.json");
     const pluginId = "workspace-plugin@inline";
     try {
       await writeTestFile(
@@ -2081,7 +2138,7 @@ describe("ZCode plugins", () => {
     const marketplaceRoot = join(root, "user-marketplace");
     const pluginRoot = join(marketplaceRoot, "plugins", "workspace-demo");
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zxcode", "config.json");
+    const workspaceConfigPath = join(root, ".zcode", "config.json");
     const marketplaceId = "workspace-market";
     const pluginName = "workspace-demo";
 
@@ -2235,7 +2292,7 @@ describe("ZCode plugins", () => {
     const marketplaceId = "workspace-market";
     try {
       await writeTestFile(
-        join(root, ".zxcode", "config.json"),
+        join(root, ".zcode", "config.json"),
         JSON.stringify({
           plugins: {
             extraKnownMarketplaces: {
@@ -2338,10 +2395,10 @@ describe("ZCode plugins", () => {
       expect(
         overview.marketplaces.find((marketplace) => marketplace.id === "zcode-plugins-official"),
       ).toMatchObject({
-        pluginCount: 14,
-        // 去平台化：官方目录随包分发，User 声明的保留 id 仍投影本地 bundled 快照。
+        pluginCount: 15,
         source: {
-          source: "bundled",
+          source: "url",
+          url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
         },
       });
       expect(overview.diagnostics).toEqual(
@@ -2363,7 +2420,7 @@ describe("ZCode plugins", () => {
     const pluginStorageRoot = join(root, "plugins");
     const originalSource = join(root, "original-marketplace");
     const workspaceSource = join(root, "workspace-marketplace");
-    const workspaceConfigPath = join(root, ".zxcode", "config.json");
+    const workspaceConfigPath = join(root, ".zcode", "config.json");
     const marketplaceId = "shared-market";
     try {
       await writeTestFile(
@@ -2499,14 +2556,6 @@ describe("ZCode plugins", () => {
   it("matches Workspace config paths case-insensitively on Windows", () => {
     expect(isWorkspacePluginConfigPath("C:\\repo\\.ZCODE\\CONFIG.JSON", "win32")).toBe(true);
     expect(isWorkspacePluginConfigPath("C:\\repo\\zcode.json", "win32")).toBe(false);
-  });
-
-  it("matches both fork .zxcode and legacy .zcode workspace config paths", () => {
-    // fork 写入端是 <workspace>/.zxcode/config.json；旧 .zcode 保留兼容判定。
-    expect(isWorkspacePluginConfigPath("/repo/.zxcode/config.json")).toBe(true);
-    expect(isWorkspacePluginConfigPath("/repo/.zcode/config.json")).toBe(true);
-    expect(isWorkspacePluginConfigPath("/repo/.other/config.json")).toBe(false);
-    expect(isWorkspacePluginConfigPath("C:\\repo\\.ZXCODE\\config.json", "win32")).toBe(true);
   });
 
   // Regression for c0120fa: the app-startup discovery path must default-enable

@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
-import { ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV, type DynamicWorkflowMode } from "@zcode/shared";
+import { ZCODE_DYNAMIC_WORKFLOW_MODE_ENV, type DynamicWorkflowMode } from "@zcode/shared";
 
 /**
  * 动态工作流灰度（docs/dynamic-workflow/launch.md「Gray release: the `dynamicWorkflow` feature key」）
@@ -39,7 +39,16 @@ export function resolveDynamicWorkflowConfigMockScenario(
   specs: readonly string[],
 ): DynamicWorkflowConfigMockScenario | null {
   const disabled = specs.some((spec) => spec.includes(DISABLED_SPEC_FRAGMENT));
-  const alwaysOn = specs.some((spec) => spec.includes(ALWAYS_ON_SPEC_FRAGMENT));
+  // Bug 原因：中枢用例依赖开启状态，未声明配置前置时会命中真实灰度的 disabled。
+  // 与灰度正向用例共用服务端 fixture，不用本地 override 绕过 Host 裁决。
+  const alwaysOn = specs.some(
+    (spec) =>
+      spec.includes(ALWAYS_ON_SPEC_FRAGMENT) ||
+      spec.endsWith("conversation-session-dynamic-workflow-holes.test.ts") ||
+      // PLUS05 明确以 catalog 含 workflow 为前置，不能依赖线上灰度值。
+      spec.endsWith("conversation-session-plus-menu.test.ts") ||
+      spec.replaceAll("\\", "/").split("/").at(-1) === "automations-workflows-hub.test.ts",
+  );
   if (disabled && alwaysOn) {
     // 两个档位靠同一个 endpoint origin 区分，同一个 worker 里无法并存；
     // 与其静默选一个让断言变成假阳性，不如在 beforeSession 就失败。
@@ -56,20 +65,20 @@ export function applyDynamicWorkflowConfigMockEnv(
   environment: Record<string, string | undefined>,
   baseUrl: string,
 ): void {
-  environment.ZXCODE_BASE_URL = baseUrl;
+  environment.ZCODE_BASE_URL = baseUrl;
   environment.ZCODE_TEST_BASE_URL = baseUrl;
-  environment.ZXCODE_ENDPOINT_ORIGIN = baseUrl;
+  environment.ZCODE_ENDPOINT_ORIGIN = baseUrl;
   // 未打包 dev 档位下 Main 会把开发者 shell 里的合法 ZCODE_DYNAMIC_WORKFLOW_MODE 透传给 Host
   // （docs/dynamic-workflow/launch.md「The local override」），那会盖掉本用例的服务端判定。
   // worker 进程一轮只跑一个 spec 文件，这里直接删掉即可，不需要回填。
-  delete environment[ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV];
+  delete environment[ZCODE_DYNAMIC_WORKFLOW_MODE_ENV];
 }
 
 export function clearDynamicWorkflowConfigMockEnv(
   environment: Record<string, string | undefined>,
   baseUrl: string,
 ): void {
-  for (const key of ["ZXCODE_BASE_URL", "ZCODE_TEST_BASE_URL", "ZXCODE_ENDPOINT_ORIGIN"] as const) {
+  for (const key of ["ZCODE_BASE_URL", "ZCODE_TEST_BASE_URL", "ZCODE_ENDPOINT_ORIGIN"] as const) {
     if (environment[key] === baseUrl) {
       delete environment[key];
     }

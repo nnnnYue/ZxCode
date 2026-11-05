@@ -427,5 +427,25 @@
     "package": "khroma@2.1.0",
     "license": "MIT",
     "evidence": "The package does not declare a license field; its license contains the MIT grant and copyright notice."
+  },
+  {
+    "package": "@electron-internal/extract-zip@1.0.5",
+    "repo": "electron/extract-zip",
+    "refs": [
+      "b83e459fd04c53b0a1c8438a6792df8f64be47fc"
+    ],
+    "file": "third-party/upstream/d8a3a14c4ea44385e299f072db9e8a73994e2ff2b344ea5ae5a39c09f11cc984.txt",
+    "sha256": "d8a3a14c4ea44385e299f072db9e8a73994e2ff2b344ea5ae5a39c09f11cc984",
+    "source": "https://registry.npmjs.org/@electron-internal%2fextract-zip/1.0.5",
+    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "license": "BSD-2-Clause",
+    "reviewEvidence": {
+      "checkedOn": "2026-10-20",
+      "result": "The versioned npm archive and exact gitHead source tree contain no standalone LICENSE or copyright notice. The publisher BSD-2-Clause identifier and fixed SPDX standard terms are preserved; upstream authorization/copyright material is still required to close this review.",
+      "npmArchiveSha256": "939b4462974f8fa1b339dd4f420c62787ddf06903cc9c61f1f0661f096f5370b",
+      "sourceRevision": "b83e459fd04c53b0a1c8438a6792df8f64be47fc",
+      "sourceTreeUrl": "https://api.github.com/repos/electron/extract-zip/git/trees/b83e459fd04c53b0a1c8438a6792df8f64be47fc?recursive=1",
+      "upstreamLicenseFiles": []
+    }
   }
 ]

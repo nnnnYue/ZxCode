@@ -52,10 +52,8 @@ function GroupedTaskItemComponent({
   groupId,
   groups,
   remoteSessionId,
-  activeWorkspacePath,
-  activeWorkspaceIdentity,
-  activeTaskId,
-  mobileActiveTaskKey,
+  isActive,
+  isMobileActive,
   workspaceLabel,
   onSelectTask,
   onCloseTask,
@@ -74,10 +72,8 @@ function GroupedTaskItemComponent({
   groupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
-  activeWorkspacePath: string;
-  activeWorkspaceIdentity?: string;
-  activeTaskId: string | null;
-  mobileActiveTaskKey?: string | null;
+  isActive: boolean;
+  isMobileActive: boolean;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
   onCloseTask: (task: ZCodeTaskMeta) => void;
@@ -99,10 +95,8 @@ function GroupedTaskItemComponent({
         currentGroupId={groupId}
         groups={groups}
         remoteSessionId={remoteSessionId}
-        activeWorkspacePath={activeWorkspacePath}
-        activeWorkspaceIdentity={activeWorkspaceIdentity}
-        activeTaskId={activeTaskId}
-        mobileActiveTaskKey={mobileActiveTaskKey}
+        isActive={isActive}
+        isMobileActive={isMobileActive}
         workspaceLabel={workspaceLabel}
         onSelectTask={onSelectTask}
         onCloseTask={onCloseTask}

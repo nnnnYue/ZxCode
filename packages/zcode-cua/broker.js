@@ -2,8 +2,11 @@ import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export const BROKER_SOCKET_ENV = "ZXCODE_CUA_PERMISSION_BROKER_SOCKET";
-export const BROKER_UNAVAILABLE_ENV = "ZXCODE_CUA_PERMISSION_BROKER_UNAVAILABLE";
+// 公共 Host 通过 broker 入口复用参数契约；占位包仍拒绝真实能力调用。
+export { HELPER_GHOST_CURSOR_OVERLAY_ARG } from "./broker-helper-constants.js";
+
+export const BROKER_SOCKET_ENV = "ZCODE_CUA_PERMISSION_BROKER_SOCKET";
+export const BROKER_UNAVAILABLE_ENV = "ZCODE_CUA_PERMISSION_BROKER_UNAVAILABLE";
 
 export class BrokerError extends Error {
   constructor(message, options = {}) {
@@ -46,7 +49,7 @@ export async function probeHelperHealth(_socketPath, _options) {
 
 export function mintBrokerSocketPath(options = {}) {
   const dir = typeof options.dir === "string" ? options.dir : tmpdir();
-  return join(dir, `zxcode-cua-broker-${randomUUID()}.sock`);
+  return join(dir, `zcode-cua-broker-${randomUUID()}.sock`);
 }
 
 export function resolveBrokerSocketPath(options = {}) {

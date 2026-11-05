@@ -23,16 +23,13 @@ import type {
   SkillsCapability,
   RemoteTarget,
 } from "@zcode/shared";
-import { ZXCODE_AGENT_PROVIDER } from "@zcode/shared";
+import type { IServiceAccessor } from "@zcode/services";
+import { ZCODE_AGENT_PROVIDER } from "@zcode/shared";
 import type { CreateTaskRequest } from "@/app-shell/types.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { toast } from "@/components/ui/toast.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
-import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
-import {
-  useBaseWorkspaceServices,
-  useWorkspaceServicesResolution,
-} from "@/hooks/useWorkspaceServices.js";
+import { useConfigWorkspaceServicesResolution as useWorkspaceServicesResolution } from "@/workspace-config-catalog/index.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { buildSkillMentionMarkdown } from "@/mentions/mentionMarkdown.js";
 import { filterSkillsForProvider } from "@/lib/skillSourceFilter.js";
@@ -55,9 +52,13 @@ import {
 } from "@/settings/pluginStoreListing.js";
 import { groupSkillsByPlugin } from "@/settings/pluginManagedResourceGroups.js";
 import { SkillsImportDialog } from "@/settings/ExternalAgentImportDialog.js";
-import { formatRemoteSkillSyncTarget } from "@/settings/RemoteSkillSyncDialog.js";
-import { RemoteSyncDialogs, shouldShowRemoteSyncActions } from "@/settings/RemoteSyncActions.js";
+import {
+  formatRemoteSyncTargetLabel,
+  shouldShowRemoteSyncActions,
+  useSettingsDataSyncEntry,
+} from "@/data-sync/index.js";
 import { refreshSharedSkillStoreForWorkspace } from "@/lib/skillStoreRefresh.js";
+import { buildSourceSettingsProjectionKey } from "@/settings/settingsSourceWorkspace.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 import {
   groupScopedSkillsBySource,
@@ -156,6 +157,10 @@ interface SkillsSectionProps {
   onOpenPluginStore?: () => void;
   showMarketplaceBreadcrumb?: boolean;
   reportDetailBreadcrumb?: boolean;
+  /** Scope 选中在线远端设备的「用户」时为该设备；同步按钮只在此时显示。 */
+  dataSyncSourceServerId?: string | null;
+  unscopedServices?: IServiceAccessor;
+  cacheAuthorityKey?: string;
 }
 
 export function SkillsSection({
@@ -172,10 +177,12 @@ export function SkillsSection({
   onOpenPluginStore,
   showMarketplaceBreadcrumb = false,
   reportDetailBreadcrumb = false,
+  dataSyncSourceServerId,
+  unscopedServices,
+  cacheAuthorityKey,
 }: SkillsSectionProps) {
   const { intl, locale } = useZCodeIntl();
   const platform = usePlatform();
-  const baseServices = useBaseWorkspaceServices();
   const plugins = usePluginManagementStore((state) => state.plugins);
   const installedPlugins = usePluginManagementStore((state) => state.installedPlugins);
   const availablePlugins = usePluginManagementStore((state) => state.availablePlugins);
@@ -197,16 +204,11 @@ export function SkillsSection({
     remoteSessionId,
     activeWorkspaceIdentity,
     remoteTarget,
+    { unscopedServices, forceUnscoped: Boolean(cacheAuthorityKey || unscopedServices) },
   );
   // PluginsSection 已把 Scope target 传入，但 Skills 仍从当前 ServiceProvider
-  // 取服务，导致跨远程 host 误路由。技能读写和远端同步都改用同一 target 解析结果。
-  const { pluginManagementService, skillSyncService, skillsService } =
-    targetServiceResolution.services;
-  const zcodeSessionService = useZCodeSessionService(
-    activeWorkspacePath ?? undefined,
-    undefined,
-    activeWorkspaceIdentity,
-  );
+  // 取服务，导致跨远程 host 误路由。技能读写改用同一 target 解析结果。
+  const { pluginManagementService, skillsService } = targetServiceResolution.services;
   const [skills, setSkills] = useState<SkillSummary[]>([]);
   const [capability, setCapability] = useState<SkillsCapability | null>(null);
   const [loadedSkillTargetKey, setLoadedSkillTargetKey] = useState("");
@@ -220,9 +222,12 @@ export function SkillsSection({
   const [diagnostics, setDiagnostics] = useState<SkillDiagnostic[]>([]);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [remoteSkillSyncOpen, setRemoteSkillSyncOpen] = useState(false);
   const latestRequestIdRef = useRef(0);
-  const activeSkillTargetKey = activeWorkspaceIdentity?.trim() || activeWorkspacePath || "";
+  const activeSkillTargetKey = buildSourceSettingsProjectionKey(
+    activeWorkspacePath,
+    activeWorkspaceIdentity,
+    cacheAuthorityKey,
+  );
   const projectionMatchesTarget =
     !activeWorkspacePath || loadedSkillTargetKey === activeSkillTargetKey;
 
@@ -231,12 +236,14 @@ export function SkillsSection({
     void initializePlugins({
       workspacePath: activeWorkspacePath,
       workspaceIdentity: activeWorkspaceIdentity,
+      authorityKey: cacheAuthorityKey,
       configScope: scopeFilter,
       pluginService: pluginManagementService,
     });
   }, [
     activeWorkspaceIdentity,
     activeWorkspacePath,
+    cacheAuthorityKey,
     initializePlugins,
     pluginManagementService,
     scopeFilter,
@@ -246,18 +253,20 @@ export function SkillsSection({
   const workspaceLabel = getWorkspaceBasename(activeWorkspacePath);
   const connectedRemoteSyncTarget =
     targetServiceResolution.rpcReady &&
-    shouldShowRemoteSyncActions({
-      remoteSessionId,
-      remoteTarget,
-      clientMode: isWebRemoteControl ? "web-remote-replayable" : "desktop-continuous",
-      hasLocalSourceService: Boolean(baseServices.skillSyncService),
-    }) &&
+    shouldShowRemoteSyncActions({ remoteSessionId, remoteTarget, isWebRemoteControl }) &&
     activeWorkspacePath
       ? remoteTarget
       : null;
   const remoteSkillSyncTargetLabel = connectedRemoteSyncTarget
-    ? formatRemoteSkillSyncTarget(connectedRemoteSyncTarget, activeWorkspacePath ?? "")
+    ? formatRemoteSyncTargetLabel(connectedRemoteSyncTarget, activeWorkspacePath ?? "")
     : "";
+  const dataSync = useSettingsDataSyncEntry({
+    category: "skills",
+    sourceServerId: dataSyncSourceServerId,
+    onPushFinished: async () => {
+      await Promise.all([refresh(), refreshSharedSkillStoreForCurrentWorkspace()]);
+    },
+  });
 
   const renderScopeLabel = useCallback(
     (skill: SkillSummary): string => {
@@ -308,7 +317,11 @@ export function SkillsSection({
         setLoadedSkillTargetKey("");
         return;
       }
-      const requestTargetKey = activeWorkspaceIdentity?.trim() || activeWorkspacePath;
+      const requestTargetKey = buildSourceSettingsProjectionKey(
+        activeWorkspacePath,
+        activeWorkspaceIdentity,
+        cacheAuthorityKey,
+      );
       setLoading(showBlockingLoading);
       setError(null);
       const requestId = ++latestRequestIdRef.current;
@@ -316,7 +329,7 @@ export function SkillsSection({
         const result = await skillsService.list({
           workspacePath: activeWorkspacePath,
           workspaceIdentity: activeWorkspaceIdentity,
-          provider: ZXCODE_AGENT_PROVIDER,
+          provider: ZCODE_AGENT_PROVIDER,
         });
         if (requestId !== latestRequestIdRef.current) {
           return;
@@ -335,7 +348,13 @@ export function SkillsSection({
         setError(loadError instanceof Error ? loadError.message : String(loadError));
       }
     },
-    [activeWorkspaceIdentity, activeWorkspacePath, skillsService, targetServiceResolution.rpcReady],
+    [
+      activeWorkspaceIdentity,
+      activeWorkspacePath,
+      cacheAuthorityKey,
+      skillsService,
+      targetServiceResolution.rpcReady,
+    ],
   );
 
   useEffect(() => {
@@ -344,7 +363,6 @@ export function SkillsSection({
       setLoading(false);
       setError(null);
       setImportDialogOpen(false);
-      setRemoteSkillSyncOpen(false);
       return;
     }
     // 首屏或切换 Scope target 时必须显示阻塞 loading；手动刷新仍走后台刷新，
@@ -369,9 +387,9 @@ export function SkillsSection({
       if (!activeWorkspacePath) {
         return;
       }
-      // 移除三方来源后，技能状态统一写入 ZxCode Agent 上下文，避免旧 provider 前缀带来分桶漂移。
+      // 移除三方来源后，技能状态统一写入 ZCode Agent 上下文，避免旧 provider 前缀带来分桶漂移。
       const targetSkill = skills.find((skill) => skill.id === skillId);
-      const effectiveProvider: ZCodeProvider = ZXCODE_AGENT_PROVIDER;
+      const effectiveProvider: ZCodeProvider = ZCODE_AGENT_PROVIDER;
       try {
         await skillsService.setEnabled({
           workspacePath: activeWorkspacePath,
@@ -382,7 +400,6 @@ export function SkillsSection({
           enabled,
         });
         await invalidateDeferredDraftSessionForSkillChange({
-          zcodeSessionService,
           workspacePath: activeWorkspacePath,
           workspaceIdentity: activeWorkspaceIdentity,
           reason: "settings-skill-enabled",
@@ -401,7 +418,6 @@ export function SkillsSection({
       refreshSharedSkillStoreForCurrentWorkspace,
       skills,
       skillsService,
-      zcodeSessionService,
     ],
   );
 
@@ -413,6 +429,7 @@ export function SkillsSection({
         return;
       }
       const confirmed = await confirmDialog({
+        confirmVariant: "destructive",
         title: intl.formatMessage({ id: "settings.skills.delete.title" }),
         description: intl.formatMessage(
           { id: "settings.skills.delete.description" },
@@ -430,7 +447,6 @@ export function SkillsSection({
           skillId: skill.id,
         });
         await invalidateDeferredDraftSessionForSkillChange({
-          zcodeSessionService,
           workspacePath: activeWorkspacePath,
           workspaceIdentity: activeWorkspaceIdentity,
           reason: "settings-skill-delete",
@@ -451,12 +467,11 @@ export function SkillsSection({
       loadSkills,
       selectedSkill,
       skillsService,
-      zcodeSessionService,
     ],
   );
 
   const scopedProviderSkills = useMemo(() => {
-    const allProviderSkills = filterSkillsForProvider(skills, ZXCODE_AGENT_PROVIDER);
+    const allProviderSkills = filterSkillsForProvider(skills, ZCODE_AGENT_PROVIDER);
     const pluginStoreMatchesTarget =
       (pluginWorkspaceIdentity?.trim() || pluginWorkspacePath || "") ===
         (activeWorkspaceIdentity?.trim() || activeWorkspacePath || "") &&
@@ -512,7 +527,7 @@ export function SkillsSection({
     if (!activeWorkspacePath || !onCreateTask) {
       return;
     }
-    const effectiveProvider: ZCodeProvider = ZXCODE_AGENT_PROVIDER;
+    const effectiveProvider: ZCodeProvider = ZCODE_AGENT_PROVIDER;
     const skillCreator = filterSkillsForProvider(skills, effectiveProvider).find(
       (skill) => skill.name === "skill-creator",
     );
@@ -664,16 +679,18 @@ export function SkillsSection({
       newActionId="settings.skills.create.open"
     />
   );
-  const remoteSyncAction = connectedRemoteSyncTarget ? (
+  const remoteSyncAction = dataSync.visible ? (
     <ControlHintTooltip title={intl.formatMessage({ id: "settings.skills.remoteSync.open" })}>
       <Button
         type="button"
         variant="outline"
         size="icon-lg"
+        data-testid="data-sync-entry-skills"
+        disabled={dataSync.disabled}
         aria-label={intl.formatMessage({
           id: "settings.skills.remoteSync.open",
         })}
-        onClick={() => setRemoteSkillSyncOpen(true)}
+        onClick={dataSync.open}
       >
         <UploadCloud className="size-3.5" aria-hidden="true" />
       </Button>
@@ -970,7 +987,6 @@ export function SkillsSection({
         onOpenChange={setImportDialogOpen}
         onImported={async () => {
           await invalidateDeferredDraftSessionForSkillChange({
-            zcodeSessionService,
             workspacePath: activeWorkspacePath,
             workspaceIdentity: activeWorkspaceIdentity,
             reason: "settings-skill-import",
@@ -978,32 +994,7 @@ export function SkillsSection({
           await refresh();
         }}
       />
-      <RemoteSyncDialogs
-        canSyncSkills={Boolean(
-          targetServiceResolution.rpcReady && connectedRemoteSyncTarget && activeWorkspacePath,
-        )}
-        canSyncMcp={false}
-        skillOpen={remoteSkillSyncOpen && targetServiceResolution.rpcReady}
-        mcpOpen={false}
-        onSkillOpenChange={setRemoteSkillSyncOpen}
-        onMcpOpenChange={() => {}}
-        localSkillSyncService={baseServices.skillSyncService}
-        remoteSkillSyncService={skillSyncService}
-        remoteTarget={connectedRemoteSyncTarget}
-        skillWorkspacePath={activeWorkspacePath ?? ""}
-        mcpWorkspacePath=""
-        workspaceIdentity={activeWorkspaceIdentity}
-        onSkillsSynced={async () => {
-          await invalidateDeferredDraftSessionForSkillChange({
-            zcodeSessionService,
-            workspacePath: activeWorkspacePath,
-            workspaceIdentity: activeWorkspaceIdentity,
-            reason: "settings-remote-skill-sync",
-          });
-          await Promise.all([refresh(), refreshSharedSkillStoreForCurrentWorkspace()]);
-        }}
-        onMcpSynced={() => {}}
-      />
+      {dataSync.dialog}
     </div>
   );
 }

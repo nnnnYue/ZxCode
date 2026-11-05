@@ -4,8 +4,8 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
-  ZXCODE_COMMAND_AGENT_SOURCE,
-  ZXCODE_COMMAND_AGENT_SOURCES,
+  ZCODE_COMMAND_AGENT_SOURCE,
+  ZCODE_COMMAND_AGENT_SOURCES,
   type CommandAgentSource,
   type CommandCreateParams,
   type CommandDeleteParams,
@@ -23,7 +23,7 @@ import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "@zcode/shared";
 import type { ICommandsService } from "./commands.js";
 import { CommandFileParser, type CommandFileFormat } from "./commandFileParser.js";
 import { readInstalledPluginRoots } from "#src/plugins/installedPluginRoots.js";
-import { atomicWriteJson } from "#src/fs/atomicFileUtils.js";
+import { updateJsonObjectFile } from "#src/fs/atomicFileUtils.js";
 
 function resolveUserHomeDir() {
   const envHome = process.env.HOME?.trim() || process.env.USERPROFILE?.trim();
@@ -41,20 +41,20 @@ interface CommandAgentSourceDescriptor {
   supportsArgumentHint: boolean;
 }
 
-const DEFAULT_COMMAND_AGENT_SOURCE: CommandAgentSource = ZXCODE_COMMAND_AGENT_SOURCE;
-const COMMAND_AGENT_SOURCE_ORDER: readonly CommandAgentSource[] = ZXCODE_COMMAND_AGENT_SOURCES;
+const DEFAULT_COMMAND_AGENT_SOURCE: CommandAgentSource = ZCODE_COMMAND_AGENT_SOURCE;
+const COMMAND_AGENT_SOURCE_ORDER: readonly CommandAgentSource[] = ZCODE_COMMAND_AGENT_SOURCES;
 const ENABLE_OVERRIDE_KEY = "enable";
 const HOME_PREFIX = "~/";
-const ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE = "zcode-plugins-official";
-const ZXCODE_INLINE_PLUGIN_MARKETPLACE = "inline";
-const ZXCODE_PLUGIN_MANIFEST_PATH = join(".zcode-plugin", "plugin.json");
+const ZCODE_OFFICIAL_PLUGIN_MARKETPLACE = "zcode-plugins-official";
+const ZCODE_INLINE_PLUGIN_MARKETPLACE = "inline";
+const ZCODE_PLUGIN_MANIFEST_PATH = join(".zcode-plugin", "plugin.json");
 const CLAUDE_PLUGIN_MANIFEST_PATH = join(".claude-plugin", "plugin.json");
 const CODEX_PLUGIN_MANIFEST_PATH = join(".codex-plugin", "plugin.json");
-const ZXCODE_COMMAND_DESCRIPTOR: CommandAgentSourceDescriptor = {
+const ZCODE_COMMAND_DESCRIPTOR: CommandAgentSourceDescriptor = {
   agentSource: "zcodeAgent",
-  directorySource: "zxcode",
-  userDirectorySegments: [".zxcode", "commands"],
-  workspaceDirectorySegments: [".zxcode", "commands"],
+  directorySource: "zcode",
+  userDirectorySegments: [".zcode", "commands"],
+  workspaceDirectorySegments: [".zcode", "commands"],
   fileExtension: ".md",
   format: "markdown",
   namespaceSeparator: "/",
@@ -62,13 +62,13 @@ const ZXCODE_COMMAND_DESCRIPTOR: CommandAgentSourceDescriptor = {
 };
 
 const COMMAND_AGENT_SOURCE_DESCRIPTORS: Record<CommandAgentSource, CommandAgentSourceDescriptor> = {
-  zcodeAgent: ZXCODE_COMMAND_DESCRIPTOR,
+  zcodeAgent: ZCODE_COMMAND_DESCRIPTOR,
 };
 
 const COMMAND_DIRECTORY_SOURCE_DESCRIPTORS: readonly CommandAgentSourceDescriptor[] = [
-  ZXCODE_COMMAND_DESCRIPTOR,
+  ZCODE_COMMAND_DESCRIPTOR,
   {
-    ...ZXCODE_COMMAND_DESCRIPTOR,
+    ...ZCODE_COMMAND_DESCRIPTOR,
     directorySource: "agents",
     userDirectorySegments: [".agents", "commands"],
     workspaceDirectorySegments: [".agents", "commands"],
@@ -87,13 +87,14 @@ function getUserCommandsRoot(agentSource?: CommandAgentSource): string {
 }
 
 function getUserCliConfigPath(): string {
-  return join(resolveUserHomeDir(), ".zxcode", "cli", "config.json");
+  return join(resolveUserHomeDir(), ".zcode", "cli", "config.json");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// 只用于列表展示：config.json 损坏时按空配置展示命令，不影响浏览。写入一律走 updateUserCliConfig。
 async function readUserCliConfig(): Promise<Record<string, unknown>> {
   try {
     const content = await readFile(getUserCliConfigPath(), "utf-8");
@@ -105,31 +106,14 @@ async function readUserCliConfig(): Promise<Record<string, unknown>> {
 }
 
 /**
- * 写回 `~/.zxcode/cli/config.json` 前的严格读取：仅允许「文件不存在」按空对象处理。
- * JSON 损坏时若当作空对象继续写，会静默清空 config.json 里 command 之外的
- * MCP、plugin、provider 等全部顶层配置（与 mcpSyncService 的导入门槛一致）。
+ * 根因：旧实现写入前用 readUserCliConfig 读取，读失败或 JSON 损坏时返回空对象，再用 writeFile
+ * 整文件写回，config.json 里的 MCP、插件等其他配置会被冲掉；writeFile 也不是原子写。
+ * 修法：写入路径改用 updateJsonObjectFile——文件损坏时报错不写，写前重读，只改 command 字段，原子替换。
  */
-async function readUserCliConfigForWrite(): Promise<Record<string, unknown>> {
-  let content: string;
-  try {
-    content = await readFile(getUserCliConfigPath(), "utf-8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {};
-    }
-    throw error;
-  }
-  const parsed = JSON.parse(content) as unknown;
-  if (!isRecord(parsed)) {
-    throw new Error(`无法解析用户配置文件（非 JSON 对象）: ${getUserCliConfigPath()}`);
-  }
-  return parsed;
-}
-
-async function writeUserCliConfig(config: Record<string, unknown>): Promise<void> {
-  // config.json 承载 MCP/plugin 等关键配置，非原子写入在崩溃中途会留下截断文件，
-  // 下次读取被当作空对象后触发整份覆盖。统一走临时文件 + rename 的原子写。
-  await atomicWriteJson(getUserCliConfigPath(), config);
+async function updateUserCliConfig(
+  update: (config: Record<string, unknown>) => Record<string, unknown>,
+): Promise<void> {
+  await updateJsonObjectFile(getUserCliConfigPath(), update);
 }
 
 function readCommandEnabledOverrides(config: Record<string, unknown>): Map<string, boolean> {
@@ -147,7 +131,8 @@ function readCommandEnabledOverrides(config: Record<string, unknown>): Map<strin
   return overrides;
 }
 
-async function readCommandEnabledOverridesFromUserConfig(): Promise<Map<string, boolean>> {
+/** 键为命令文件的绝对路径；数据同步列表也复用这份读取（只读展示，config.json 损坏时视为全部启用）。 */
+export async function readCommandEnabledOverridesFromUserConfig(): Promise<Map<string, boolean>> {
   return readCommandEnabledOverrides(await readUserCliConfig());
 }
 
@@ -175,6 +160,18 @@ function setCommandEnabledOverride(
     delete nextConfig.command;
   }
   return nextConfig;
+}
+
+/** 一次写入多条启用覆盖（数据同步新建命令时使用），写入路径与 setCommandEnabled 相同。 */
+export async function setUserCommandEnabledOverrides(
+  entries: ReadonlyArray<{ filePath: string; enabled: boolean }>,
+): Promise<void> {
+  await updateUserCliConfig((config) =>
+    entries.reduce(
+      (next, entry) => setCommandEnabledOverride(next, entry.filePath, entry.enabled),
+      config,
+    ),
+  );
 }
 
 interface PluginConfigSummary {
@@ -226,7 +223,7 @@ function readStorageDirFromConfig(config: Record<string, unknown>): string {
   const storage = isRecord(config.storage) ? config.storage : {};
   return typeof storage.dir === "string" && storage.dir.trim().length > 0
     ? storage.dir
-    : "~/.zxcode";
+    : "~/.zcode";
 }
 
 function readPluginConfigFromConfig(config: Record<string, unknown>): PluginConfigSummary {
@@ -279,7 +276,7 @@ function resolveInside(rootPath: string, rawPath: string): string | null {
 }
 
 async function scanOfficialPluginCacheRoots(pluginStorageRoot: string): Promise<string[]> {
-  const cacheRoot = join(pluginStorageRoot, "cache", ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE);
+  const cacheRoot = join(pluginStorageRoot, "cache", ZCODE_OFFICIAL_PLUGIN_MARKETPLACE);
   let pluginEntries: string[] = [];
   try {
     pluginEntries = await readdir(cacheRoot);
@@ -339,7 +336,7 @@ async function readPluginManifest(rootPath: string): Promise<PluginManifestSumma
 
 async function findPluginManifestPath(rootPath: string): Promise<string | null> {
   for (const manifestPath of [
-    join(rootPath, ZXCODE_PLUGIN_MANIFEST_PATH),
+    join(rootPath, ZCODE_PLUGIN_MANIFEST_PATH),
     join(rootPath, CLAUDE_PLUGIN_MANIFEST_PATH),
     join(rootPath, CODEX_PLUGIN_MANIFEST_PATH),
   ]) {
@@ -382,12 +379,12 @@ async function resolvePluginCommandRootDescriptors(): Promise<PluginCommandRootD
   const candidates: PluginRootCandidate[] = [
     ...config.dirs.map((dir) => ({
       defaultEnabled: true,
-      marketplace: ZXCODE_INLINE_PLUGIN_MARKETPLACE,
+      marketplace: ZCODE_INLINE_PLUGIN_MARKETPLACE,
       rootPath: resolveConfigPath(dir),
     })),
     ...officialCacheRoots.map((rootPath) => ({
       defaultEnabled: false,
-      marketplace: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+      marketplace: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
       rootPath,
     })),
     ...installedRoots,
@@ -405,7 +402,7 @@ async function resolvePluginCommandRootDescriptors(): Promise<PluginCommandRootD
     // 官方 cache 时不经过 CLI resolve 的过滤，需要在这里同样跳过，否则被卸载的内置插件
     // 仍会从 cache 贡献命令。
     if (
-      candidate.marketplace === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
+      candidate.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE &&
       config.suppressedBuiltins.includes(pluginId)
     ) {
       continue;
@@ -546,11 +543,11 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
     const agentSources = getCommandAgentSources(params.agentSource);
     const enabledOverrides = await readCommandEnabledOverridesFromUserConfig();
 
-    // ZxCode Agent 需要先合并所有 workspace 目录，再合并所有 user 目录；
-    // 按每个目录交错读取 project/user 会让 user .zxcode 抢在 workspace .agents 前面。
+    // ZCode Agent 需要先合并所有 workspace 目录，再合并所有 user 目录；
+    // 按每个目录交错读取 project/user 会让 user .zcode 抢在 workspace .agents 前面。
     for (const agentSource of agentSources) {
       const descriptors =
-        agentSource === ZXCODE_COMMAND_AGENT_SOURCE
+        agentSource === ZCODE_COMMAND_AGENT_SOURCE
           ? COMMAND_DIRECTORY_SOURCE_DESCRIPTORS
           : [getCommandSourceDescriptor(agentSource)];
 
@@ -578,7 +575,7 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
 
     const dedupedUserCommands = dedupeCommandsByName(userCommands);
     const pluginCommands =
-      !params.agentSource || params.agentSource === ZXCODE_COMMAND_AGENT_SOURCE
+      !params.agentSource || params.agentSource === ZCODE_COMMAND_AGENT_SOURCE
         ? await discoverPluginCommands(enabledOverrides)
         : [];
 
@@ -620,9 +617,7 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
       descriptor.format,
     );
     await writeFile(filePath, content, "utf-8");
-    await writeUserCliConfig(
-      setCommandEnabledOverride(await readUserCliConfigForWrite(), filePath, true),
-    );
+    await updateUserCliConfig((config) => setCommandEnabledOverride(config, filePath, true));
 
     const parsed = CommandFileParser.parseCommandFile(content, filePath, descriptor.format);
     if (!parsed) {
@@ -704,12 +699,14 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
     ) {
       // 禁用状态按命令文件路径存放；编辑命令改名会换文件路径，必须迁移 override，
       // 否则用户刚禁用的命令会因为改名重新启用。
-      const migratedConfig = setCommandEnabledOverride(
-        setCommandEnabledOverride(await readUserCliConfigForWrite(), params.oldFilePath, true),
-        newFilePath,
-        enabledOverrides.get(params.oldFilePath) ?? true,
+      const oldFilePath = params.oldFilePath;
+      await updateUserCliConfig((config) =>
+        setCommandEnabledOverride(
+          setCommandEnabledOverride(config, oldFilePath, true),
+          newFilePath,
+          enabledOverrides.get(oldFilePath) ?? true,
+        ),
       );
-      await writeUserCliConfig(migratedConfig);
     }
 
     const parsed = CommandFileParser.parseCommandFile(content, newFilePath, descriptor.format);
@@ -750,18 +747,13 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
         throw error;
       }
     }
-    await writeUserCliConfig(
-      setCommandEnabledOverride(await readUserCliConfigForWrite(), params.filePath, true),
-    );
+    await updateUserCliConfig((config) => setCommandEnabledOverride(config, params.filePath, true));
   }
 
   async function setCommandEnabled(params: CommandSetEnabledParams): Promise<void> {
-    const nextConfig = setCommandEnabledOverride(
-      await readUserCliConfigForWrite(),
-      params.filePath,
-      params.enabled,
+    await updateUserCliConfig((config) =>
+      setCommandEnabledOverride(config, params.filePath, params.enabled),
     );
-    await writeUserCliConfig(nextConfig);
   }
 
   async function getPrimaryUserCommandsDirectory(params?: {
@@ -859,7 +851,7 @@ async function discoverPluginCommandsRecursive(
       continue;
     }
 
-    if (!entry.toLowerCase().endsWith(ZXCODE_COMMAND_DESCRIPTOR.fileExtension)) {
+    if (!entry.toLowerCase().endsWith(ZCODE_COMMAND_DESCRIPTOR.fileExtension)) {
       continue;
     }
 
@@ -868,12 +860,12 @@ async function discoverPluginCommandsRecursive(
       const parsed = CommandFileParser.parseCommandFile(
         content,
         fullPath,
-        ZXCODE_COMMAND_DESCRIPTOR.format,
+        ZCODE_COMMAND_DESCRIPTOR.format,
       );
       if (!parsed) {
         continue;
       }
-      const name = getCommandName(rootDir, fullPath, ZXCODE_COMMAND_DESCRIPTOR);
+      const name = getCommandName(rootDir, fullPath, ZCODE_COMMAND_DESCRIPTOR);
       const commandKey = fullPath.replaceAll("\\", "/").toLowerCase();
       if (options.seenFilePaths.has(commandKey)) {
         continue;
@@ -1021,8 +1013,8 @@ async function discoverCommandsFromDirectorySources(params: {
       scope: params.scope,
       ...(params.projectPath ? { projectPath: params.projectPath } : {}),
     });
-    // `.zxcode` 是强优先级来源；只要读到有效命令，同 scope 的 `.agents` 就不再参与。
-    if (descriptor.directorySource === "zxcode" && discoveredCount > 0) {
+    // `.zcode` 是强优先级来源；只要读到有效命令，同 scope 的 `.agents` 就不再参与。
+    if (descriptor.directorySource === "zcode" && discoveredCount > 0) {
       break;
     }
   }

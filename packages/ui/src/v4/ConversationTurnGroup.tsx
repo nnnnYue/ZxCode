@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { BotTopicPreparation } from "@/v4/BotTopicPreparation.js";
 import { useBotTopicInterruption } from "@/v4/botGroupDeliveryContext.js";
 import { ConnectedBotGroupDeliveryAction } from "@/v4/BotGroupDeliveryAction.js";
@@ -12,7 +13,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, EyeIcon } from "lucide-react";
+import {
+  zcodeProviderRuntimeHeadersErrorCode,
+  type HighspeedMessageMeta,
+  type ZCodeApiRetryStatus,
+} from "@zcode/shared";
 import {
   TID_CHAT_ASSISTANT_HISTORY_CONTENT,
   TID_CHAT_ASSISTANT_HISTORY_TRIGGER,
@@ -20,19 +26,17 @@ import {
   TID_CHAT_LOADING,
   TID_V4_ROW,
   testId,
-  type HighspeedMessageMeta,
-  type ZCodeApiRetryStatus,
-} from "@zcode/shared";
+} from "@zcode/shared/test-ids";
 import type {
   ApiRetryState,
   AttachmentRef,
   CommandAck,
   ConversationRowTarget,
-  WorkflowNotificationMeta,
 } from "@zcode/shared/zcode-protocol-v4";
 import { ChatLoading } from "@/components/ai-elements/chat-loading.js";
 import { ChatApiRetryStatus } from "@/chat-input-toolbar/display.js";
 import { cn } from "@/components/lib/utils.js";
+import { Button } from "@/components/ui/button.js";
 import { MessageActions } from "@/components/ai-elements/message.js";
 import {
   Collapsible,
@@ -46,11 +50,21 @@ import {
   readCronCreateAutomationSummary,
   type CronCreateAutomationSummary,
 } from "@/ToolCallBlocks/renderers/cron-create.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
+  isOffPeakCreateToolCall,
+  OffPeakCreateTaskCard,
+  readOffPeakCreateTaskSummary,
+  type OffPeakCreateTaskSummary,
+} from "@/ToolCallBlocks/renderers/offpeak-create.js";
+import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { HighspeedShareDialog } from "@/highspeed/HighspeedShareNoticeCard.js";
+import { isHighspeedShareEligible } from "@/highspeed/highspeedShare.js";
+import {
+  aggregateHighspeedCardMetrics,
   getHighspeedTurnByCommandId,
-  getHighspeedTurnVersion,
+  getHighspeedTurnDependencies,
   subscribeHighspeedTurns,
+  type HighspeedShareMetrics,
 } from "@/highspeed/highspeedTurnStore.js";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
 import { useAssistantCodeCommentFeatureEnabled } from "@/AssistantCodeCommentFeatureProvider.js";
@@ -72,7 +86,11 @@ import {
 import type { ConversationCuaGroupEvent } from "@/v4/conversationCuaGroups.js";
 import { ConversationAgentToolCallRow } from "@/v4/ConversationAgentToolCallRow.js";
 import { ConversationFileSummaryPanel } from "@/v4/ConversationFileSummaryPanel.js";
-import { WorkflowNotificationToolRow } from "@/v4/WorkflowNotificationToolRow.js";
+import {
+  WorkflowNotificationToolRow,
+  workflowRowNotification,
+  type WorkflowRowNotification,
+} from "@/v4/WorkflowNotificationToolRow.js";
 import { ConversationWorkflowDigests } from "@/v4/ConversationWorkflowDigests.js";
 import { ConversationWorkflowCompletion } from "@/v4/ConversationWorkflowCompletion.js";
 import { resolveWorkflowTurnDigests } from "@/v4/workflowTurnDigests.js";
@@ -114,6 +132,8 @@ interface ConversationTurnGroupProps {
     attachments?: readonly AttachmentRef[],
     workspaceMode?: "preserve" | "rewind",
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */
+  topClearedByTimeline?: boolean;
 }
 
 interface CronAutomationTurnCard {
@@ -122,13 +142,31 @@ interface CronAutomationTurnCard {
   automation: CronCreateAutomationSummary;
 }
 
+interface OffPeakTurnCard {
+  rowId: number;
+  toolCallId: string;
+  task: OffPeakCreateTaskSummary;
+}
+
 const MIN_VISIBLE_API_RETRY_ATTEMPT = 3;
 
 interface HighspeedOutputFooterProps {
   generatedLabel: string;
+  shareLabel: string;
+  shareAriaLabel: string;
+  shareEnabled: boolean;
+  sharePending: boolean;
+  onShare: () => void;
 }
 
-function HighspeedOutputFooter({ generatedLabel }: HighspeedOutputFooterProps) {
+function HighspeedOutputFooter({
+  generatedLabel,
+  shareLabel,
+  shareAriaLabel,
+  shareEnabled,
+  sharePending,
+  onShare,
+}: HighspeedOutputFooterProps) {
   return (
     <div
       data-highspeed-output-footer="true"
@@ -137,6 +175,26 @@ function HighspeedOutputFooter({ generatedLabel }: HighspeedOutputFooterProps) {
       <div aria-hidden="true" className="absolute inset-x-0 top-1/2 border-t border-border" />
       <div className="relative flex items-center gap-2 bg-background px-3">
         <span className="text-ui-base text-foreground-subtle">{generatedLabel}</span>
+        {shareEnabled ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="default"
+            className="h-7 gap-1 rounded-[8px] bg-black/5 px-2 py-1 text-ui-base font-medium leading-5 text-foreground hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+            data-highspeed-output-share="true"
+            disabled={sharePending}
+            aria-label={shareAriaLabel}
+            onClick={onShare}
+          >
+            <EyeIcon
+              className="size-4 text-foreground/85"
+              strokeWidth={4 / 3}
+              aria-hidden="true"
+              data-highspeed-output-share-icon="true"
+            />
+            {shareLabel}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -160,17 +218,24 @@ function toRetryStatus(apiRetry: ApiRetryState): ZCodeApiRetryStatus {
 function TurnChatLoadingSlot({
   apiRetry,
   eligible,
+  initialElapsedMs,
 }: {
   apiRetry: ApiRetryState | null;
   eligible: boolean;
+  initialElapsedMs: number;
 }) {
   const { intl, locale } = useZCodeIntl();
   const retryStatus = useMemo(() => (apiRetry ? toRetryStatus(apiRetry) : null), [apiRetry]);
-  // 前两次短暂恢复对用户等价于普通加载；保留 apiRetry 运行态，但只在
+  // 配置读取尚未发出模型请求，首次恢复就显示进度，避免用户误以为消息已发送。
+  // 其余前两次短暂恢复对用户等价于普通加载；保留 apiRetry 运行态，但只在
   // 第三次重试开始后显示计数。必须在 retry/loading 分支前收敛，否则会留下空 slot，
   // 而不是回退到 ChatLoading。
   const visibleRetryStatus =
-    retryStatus && retryStatus.attempt >= MIN_VISIBLE_API_RETRY_ATTEMPT ? retryStatus : null;
+    retryStatus &&
+    (apiRetry?.reasonCode === zcodeProviderRuntimeHeadersErrorCode.configNetwork ||
+      retryStatus.attempt >= MIN_VISIBLE_API_RETRY_ATTEMPT)
+      ? retryStatus
+      : null;
   if (!visibleRetryStatus && !eligible) return null;
   return (
     <div data-zcode-chat-loading-slot="true" className="min-h-5">
@@ -179,7 +244,7 @@ function TurnChatLoadingSlot({
       ) : (
         // running 是 ChatLoading 的权威事实；额外静默计时会让 projection
         // 更新反复重启可见性，并使 UI 晚于真实状态。
-        <ChatLoading loading data-testid={TID_CHAT_LOADING} size="sm" />
+        <ChatLoading loading data-testid={TID_CHAT_LOADING} initialElapsedMs={initialElapsedMs} />
       )}
     </div>
   );
@@ -475,6 +540,36 @@ function resolveCronAutomationTurnCards(
   return cards;
 }
 
+// 只收本轮 status==="success" 的 OffPeakCreate；同 id 重复输出保留最新一次。
+// 刻意不复用 resolveCronAutomationTurnCards——那套带 CronDelete 撤销过滤语义，闲时无对应工具。
+function resolveOffPeakTurnCards(rows: readonly AssistantWorkRow[]): OffPeakTurnCard[] {
+  let cards: OffPeakTurnCard[] = [];
+
+  for (const row of rows) {
+    if (row.kind !== "toolCall" || row.status !== "success") {
+      continue;
+    }
+    const node = toolCallRowToLegacyNode(row);
+    if (!isOffPeakCreateToolCall(node.toolCall)) {
+      continue;
+    }
+    const task = readOffPeakCreateTaskSummary(node.toolCall);
+    if (!task) {
+      continue;
+    }
+    if (task.offPeakTaskId) {
+      cards = cards.filter((card) => card.task.offPeakTaskId !== task.offPeakTaskId);
+    }
+    cards.push({
+      rowId: row.rowId,
+      toolCallId: row.toolCallId,
+      task,
+    });
+  }
+
+  return cards;
+}
+
 function parseJsonRecord(value: unknown): Record<string, unknown> | null {
   let candidate = value;
   if (typeof candidate === "string") {
@@ -519,6 +614,30 @@ function CronAutomationTurnCards({
         <CronCreateAutomationCard
           key={`${card.rowId}:${card.toolCallId}`}
           automation={card.automation}
+          onOpenAutomationsMain={context.onOpenAutomationsMain}
+        />
+      ))}
+    </div>
+  );
+}
+
+function OffPeakTurnCards({
+  cards,
+  context,
+}: {
+  cards: readonly OffPeakTurnCard[];
+  context: ConversationRowRenderContext;
+}) {
+  if (cards.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {cards.map((card) => (
+        <OffPeakCreateTaskCard
+          key={`${card.rowId}:${card.toolCallId}`}
+          task={card.task}
           onOpenAutomationsMain={context.onOpenAutomationsMain}
         />
       ))}
@@ -618,6 +737,7 @@ function AssistantHistoryStatus({
 
 function ConversationWorkSegmentFlow({
   segment,
+  turnRunning,
   sourceCommandIds,
   context,
   onFork,
@@ -635,6 +755,7 @@ function ConversationWorkSegmentFlow({
   highspeedMeta,
 }: {
   segment: ConversationTurnWorkSegment;
+  turnRunning: boolean;
   sourceCommandIds: readonly string[];
   context: ConversationRowRenderContext;
   onFork?: (target: ConversationRowTarget) => void;
@@ -656,17 +777,18 @@ function ConversationWorkSegmentFlow({
     setHistoryOpen(segment.assistantHistoryDefaultOpen);
   }, [segment.assistantHistoryDefaultOpen, segment.key]);
 
-  const shouldShowHistoryStatus = segment.workStatus !== undefined;
+  const shouldShowHistoryStatus =
+    !turnRunning && segment.workStatus !== undefined && segment.workStatus.state !== "running";
   const firstAssistantFlowItemIndex = segment.flowItems.findIndex(
     (item) => item.kind !== "userInput",
   );
   let historyChunkIndex = 0;
-  const open = segment.assistantHistoryDefaultOpen ? true : historyOpen;
+  const open = turnRunning || segment.assistantHistoryDefaultOpen || historyOpen;
 
   return (
     <Collapsible
       open={open}
-      onOpenChange={segment.assistantHistoryDefaultOpen ? undefined : setHistoryOpen}
+      onOpenChange={turnRunning || segment.assistantHistoryDefaultOpen ? undefined : setHistoryOpen}
       // 外层 flex gap 不属于 Radix 测量的 content 高度，收起到 0 后会在
       // display:none 的最后一帧再少 20px。普通兄弟用外边距保持原盒模型，history
       // 的间距则放进动画层。
@@ -685,7 +807,7 @@ function ConversationWorkSegmentFlow({
         let content: React.ReactNode;
 
         if (item.kind === "userInput") {
-          content = (
+          const userRow = (
             <ConversationTurnRow
               row={item.row}
               context={context}
@@ -693,6 +815,7 @@ function ConversationWorkSegmentFlow({
               editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
             />
           );
+          content = userRow;
         } else if (item.kind === "cuaGroup") {
           const group = <ConversationCuaGroupRow item={item} context={context} />;
           if (item.flowKind === "assistantHistory") {
@@ -841,7 +964,11 @@ function ConversationTurnFlow({
           stageTailIsRunning={unit.isRunning}
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
-        <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+        <TurnChatLoadingSlot
+          apiRetry={apiRetry}
+          eligible={showLoading}
+          initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+        />
       </div>
     );
   }
@@ -885,11 +1012,12 @@ function ConversationTurnFlow({
   // 即使恢复了 guide 的 row 全序，也不能让所有 history chunk 共享同一个
   // Collapsible。accepted guide 现在由 CLI workSegments 定界，每段组件自行维护折叠状态。
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 [&>[data-zcode-chat-loading-slot]:not(:first-child)]:-mt-2">
       {workSegments.map((segment) => (
         <ConversationWorkSegmentFlow
           key={segment.key}
           segment={segment}
+          turnRunning={unit.isRunning}
           sourceCommandIds={[
             ...segment.flowItems.flatMap((item) =>
               item.kind === "userInput" && item.row.sourceCommandId
@@ -916,7 +1044,11 @@ function ConversationTurnFlow({
           highspeedMeta={highspeedMeta}
         />
       ))}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+      />
     </div>
   );
 }
@@ -959,10 +1091,9 @@ function resolveBackgroundResultTitle(unit: ConversationTurnRenderUnit): string 
  */
 function resolveWorkflowNotification(
   unit: ConversationTurnRenderUnit,
-): WorkflowNotificationMeta | undefined {
+): WorkflowRowNotification | undefined {
   if (unit.header?.origin !== "backgroundResult") return undefined;
-  const originMeta = unit.header.originMeta;
-  return originMeta?.backgroundSource === "workflow" ? originMeta.workflowNotification : undefined;
+  return workflowRowNotification(unit.header.originMeta);
 }
 
 function ConversationBackgroundResultWork({
@@ -988,6 +1119,21 @@ function ConversationBackgroundResultWork({
   assistantCodeCommentProjectionEnabled: boolean;
   assistantPreviewCardsAutoOpenKey?: string;
 }) {
+  const [historyOpen, setHistoryOpen] = useState(unit.assistantHistoryDefaultOpen);
+  useEffect(() => {
+    setHistoryOpen(unit.assistantHistoryDefaultOpen);
+  }, [unit.assistantHistoryDefaultOpen, unit.key]);
+  const open =
+    !unit.workStatus || unit.isRunning || unit.assistantHistoryDefaultOpen || historyOpen;
+  const historySegment: ConversationTurnWorkSegment = {
+    key: unit.key,
+    flowItems: unit.flowItems,
+    assistantWorkRows: unit.assistantWorkRows,
+    assistantHistoryRows: unit.assistantHistoryRows,
+    assistantFollowingRows: unit.assistantFollowingRows,
+    assistantHistoryDefaultOpen: unit.assistantHistoryDefaultOpen,
+    ...(unit.workStatus ? { workStatus: unit.workStatus } : {}),
+  };
   const hasHistory = unit.assistantHistoryRows.length > 0;
   const hasFollowing = unit.assistantFollowingRows.length > 0;
   const showLoading = shouldShowTurnChatLoading({
@@ -1012,8 +1158,7 @@ function ConversationBackgroundResultWork({
     fetchFileChanges: context.fetchFileChanges,
   });
 
-  // 后台结果已经由独立唤醒轮总结过；复用普通 assistant 的工时折叠
-  // 会显示不准确的分段耗时，并让一段短总结产生没有意义的收起状态。
+  // 后台唤醒轮与普通回复使用相同的完成态折叠；耗时只统计本次唤醒轮。
   //
   // workflow run 的 workflow 通知带结构化载荷时改渲染既有工具卡语法的通知行（替换裸标题行）；
   // 载荷缺席（批量轮、旧 transcript、bash/subagent）→ 原样退回标题行。
@@ -1067,7 +1212,19 @@ function ConversationBackgroundResultWork({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-5">
+    <Collapsible
+      open={open}
+      onOpenChange={setHistoryOpen}
+      className="flex flex-col gap-5 [&>[data-zcode-chat-loading-slot]:not(:first-child)]:-mt-2"
+    >
+      {!unit.isRunning && unit.workStatus ? (
+        <AssistantHistoryStatus
+          segment={historySegment}
+          open={open}
+          highspeed={false}
+          sourceCommandIds={unit.header?.sourceCommandId ? [unit.header.sourceCommandId] : []}
+        />
+      ) : null}
       {workflowNotification ? (
         <WorkflowNotificationToolRow
           notification={workflowNotification}
@@ -1084,7 +1241,7 @@ function ConversationBackgroundResultWork({
           }
         />
       ) : (
-        <div className="flex w-full border-b border-[var(--color-border)]/50 pb-2">
+        <div className="flex w-full">
           <div
             data-testid={testId(TID_CHAT_BACKGROUND_RESULT_TITLE, unit.key)}
             className="min-w-0 whitespace-pre-wrap break-words text-left text-ui-base text-[var(--color-foreground-subtle)]"
@@ -1093,15 +1250,19 @@ function ConversationBackgroundResultWork({
           </div>
         </div>
       )}
-      {hasHistory ? (
-        <div className="flex flex-col gap-2">
-          <ConversationAssistantWorkItems
-            rows={unit.assistantHistoryRows}
-            context={context}
-            assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
-          />
+      <CollapsibleContent data-testid={testId(TID_CHAT_ASSISTANT_HISTORY_CONTENT, unit.key)}>
+        <div className="flex flex-col gap-5">
+          {hasHistory ? (
+            <div className="flex flex-col gap-2">
+              <ConversationAssistantWorkItems
+                rows={unit.assistantHistoryRows}
+                context={context}
+                assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
+              />
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </CollapsibleContent>
       {latestAssistantTextRow ? (
         <ConversationTurnRow
           key={`${latestAssistantTextRow.rowId}:${latestAssistantTextRow.entityId ?? ""}`}
@@ -1124,8 +1285,12 @@ function ConversationBackgroundResultWork({
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
       ) : null}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
-    </div>
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+      />
+    </Collapsible>
   );
 }
 
@@ -1138,12 +1303,18 @@ function ConversationTurnGroupImpl({
   onRetry,
   onFeedbackChange,
   onEdit,
+  topClearedByTimeline = false,
 }: ConversationTurnGroupProps) {
-  const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
+  const { intl } = useZCodeIntl();
   const visibleUserRows = useMemo(() => unit.visibleUserInputs, [unit.visibleUserInputs]);
-  useSyncExternalStore(subscribeHighspeedTurns, getHighspeedTurnVersion, getHighspeedTurnVersion);
   const sourceCommandId = unit.header?.sourceCommandId ?? visibleUserRows[0]?.sourceCommandId;
+  const selectHighspeed = useShallow(getHighspeedTurnDependencies);
+  const highspeedState = useSyncExternalStore(
+    subscribeHighspeedTurns,
+    () => selectHighspeed(sourceCommandId),
+    () => selectHighspeed(sourceCommandId),
+  );
   const highspeedTurn = getHighspeedTurnByCommandId(sourceCommandId);
   // Bug 根因：历史标识过去只依赖 Renderer 内存；卡过期或冷恢复后记录不可用，
   // 即使 transcript 已持久化 highspeed metadata，也会把 accelerated output 渲染成普通工时。
@@ -1159,6 +1330,49 @@ function ConversationTurnGroupImpl({
   const highspeedMeta = unit.isRunning
     ? undefined
     : visibleUserRows.find((row) => row.highspeed)?.highspeed;
+  const highspeedShareTarget = useMemo(() => {
+    let target: { cardId: string; metrics: HighspeedShareMetrics } | null = null;
+    if (
+      highspeedTurn?.metrics &&
+      highspeedTurn.metricsPersistedAt !== undefined &&
+      highspeedTurn.metrics.regularTps > 0 &&
+      highspeedTurn.metrics.highspeedTps !== undefined &&
+      highspeedTurn.metrics.highspeedTps > 0
+    ) {
+      target = {
+        cardId: highspeedTurn.card.cardId,
+        metrics: aggregateHighspeedCardMetrics(highspeedTurn.card.cardId),
+      };
+    } else if (unit.highspeedOutputFooterTarget) {
+      target = unit.highspeedOutputFooterTarget;
+    } else if (
+      highspeedMeta?.outputTokens !== undefined &&
+      highspeedMeta.outputTokens > 0 &&
+      highspeedMeta.highspeedTps !== undefined &&
+      highspeedMeta.highspeedTps > 0 &&
+      highspeedMeta.regularTps !== undefined &&
+      highspeedMeta.regularTps > 0
+    ) {
+      // Bug 原因：冷恢复后 Renderer 内存记录为空，但 transcript 已持久化完整分享统计；
+      // 只依赖 highspeedTurn 会让可见的历史分享按钮永久 disabled。
+      target = {
+        cardId: highspeedMeta.cardId,
+        metrics: {
+          outputTokens: highspeedMeta.outputTokens,
+          // 分享接口不要求 durationMs；缺失时仅让本地耗时降级为 0，不阻塞分享。
+          durationMs: highspeedMeta.durationMs ?? 0,
+          regularTps: highspeedMeta.regularTps,
+          highspeedTps: highspeedMeta.highspeedTps,
+          ...(highspeedMeta.savedDurationMs !== undefined
+            ? { savedDurationMs: highspeedMeta.savedDurationMs }
+            : {}),
+        },
+      };
+    }
+    // 卡片和历史标识继续保留，但不超过 1.2x 或缺少完整耗时数据时不提供分享入口。
+    return target && isHighspeedShareEligible(target.metrics) ? target : null;
+  }, [highspeedMeta, highspeedTurn, highspeedState, unit.highspeedOutputFooterTarget]);
+  const [highspeedShareDialogOpen, setHighspeedShareDialogOpen] = useState(false);
   const firstReasoningRowId = useMemo(
     () => unit.assistantWorkRows.find((row) => row.kind === "reasoning")?.rowId,
     [unit.assistantWorkRows],
@@ -1201,7 +1415,7 @@ function ConversationTurnGroupImpl({
     () =>
       codeCommentCardsEnabled &&
       assistantRawCopyText !== undefined &&
-      // 卡片与 zxcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
+      // 卡片与 zcode-file-citation 的预览卡片保持一致：流式期间只投影正文，
       // 只有终态 row 才生成卡片，避免运行中卡片先出现又因模型续写而回滚。
       (latestAssistantTextRow?.state === "complete" ||
         latestAssistantTextRow?.state === "interrupted")
@@ -1252,6 +1466,10 @@ function ConversationTurnGroupImpl({
         ? undefined
         : resolveWorkflowTurnCompletion(unit.header, { byRunId: workflowRunByRunId }),
     [unit.header, unit.isRunning, workflowRunByRunId],
+  );
+  const offPeakTurnCards = useMemo(
+    () => (unit.isRunning ? [] : resolveOffPeakTurnCards(unit.assistantWorkRows)),
+    [unit.assistantWorkRows, unit.isRunning],
   );
   const canRenderAssistantActions =
     !unit.timelineOnly &&
@@ -1317,7 +1535,7 @@ function ConversationTurnGroupImpl({
       data-highspeed-gradient={showHighspeedAnimatedGradient ? "true" : undefined}
       className={cn(
         "relative mx-auto flex w-full flex-col gap-5 px-4 @md/conversation:px-6 pb-5",
-        startsWithoutUserBubble ? "pt-0" : "pt-14",
+        startsWithoutUserBubble || topClearedByTimeline ? "pt-0" : "pt-14",
         showHighspeedAnimatedGradient && "highspeed-animated-gradient-text",
       )}
     >
@@ -1399,6 +1617,7 @@ function ConversationTurnGroupImpl({
           {/* 修复原因：CronCreate/CronUpdate 工具本身仍按普通工具行展示；成功卡片属于整轮
               完成后的结果摘要，必须等回复结束再跟随最终 assistant 正文收尾。 */}
           <CronAutomationTurnCards cards={cronAutomationTurnCards} context={context} />
+          <OffPeakTurnCards cards={offPeakTurnCards} context={context} />
           {!isOfficeMode && unit.header?.fileChanges ? (
             <ConversationFileSummaryPanel
               header={unit.header}
@@ -1425,6 +1644,7 @@ function ConversationTurnGroupImpl({
               createdAt={latestAssistantTextRow.createdAt}
               compactForRemoteControl={context.compactForRemoteControl}
               feedback={readAssistantFeedback(latestAssistantTextRow)}
+              sessionId={context.sessionId}
               onFork={canForkLatestAssistant ? onFork : undefined}
               onRetry={canRetryLatestAssistant ? onRetry : undefined}
               onFeedbackChange={onFeedbackChange}
@@ -1460,6 +1680,18 @@ function ConversationTurnGroupImpl({
           {showHighspeedOutputFooter ? (
             <HighspeedOutputFooter
               generatedLabel={intl.formatMessage({ id: "chat.highspeed.generatedBy" })}
+              shareLabel={intl.formatMessage({ id: "chat.highspeed.viewAction" })}
+              shareAriaLabel={intl.formatMessage({ id: "chat.highspeed.share" })}
+              shareEnabled={highspeedShareTarget !== null}
+              sharePending={false}
+              onShare={() => setHighspeedShareDialogOpen(true)}
+            />
+          ) : null}
+          {highspeedShareTarget ? (
+            <HighspeedShareDialog
+              metrics={highspeedShareTarget.metrics}
+              open={highspeedShareDialogOpen}
+              onOpenChange={setHighspeedShareDialogOpen}
             />
           ) : null}
           {unit.assistantTailRows.length > 0 ? (

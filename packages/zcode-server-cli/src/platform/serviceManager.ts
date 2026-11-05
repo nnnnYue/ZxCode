@@ -1,21 +1,8 @@
-import { access, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { access } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { stablePathId, type ServerLayout } from "../runtime/paths.js";
 
 export type ServicePlatform = "darwin" | "linux" | "win32";
-
-/**
- * 去平台化改名前的退役服务名（默认名 + 按 server-root 的 per-root 名）。
- * 升级注册与卸载时都必须按这两个旧名做一次 OS 级清理：
- * 旧 plist/unit/task 可能在改名后仍被 launchd/systemd/schtasks 持有，
- * 不清理会出现新旧双注册、两个服务抢同一 server-root 锁。
- * Windows 的 schtasks 删除按任务名寻址，因此 legacy 固定文件名路径也引用本常量。
- */
-export const RETIRED_SERVICE_NAME = "com.zhipu.zxcode.server";
-
-function retiredServiceNames(layout: ServerLayout): string[] {
-  return [RETIRED_SERVICE_NAME, `${RETIRED_SERVICE_NAME}.${stablePathId(layout.serverRoot)}`];
-}
 
 export interface ServiceDescriptor {
   kind: "launchd" | "systemd" | "task-scheduler";
@@ -46,10 +33,10 @@ export function createDaemonServiceDescriptor(options: {
     platform: options.platform,
     command: join(
       options.layout.stableBinDir,
-      options.platform === "win32" ? "zcode.cmd" : "zxcode",
+      options.platform === "win32" ? "zcode.cmd" : "zcode",
     ),
     args: ["serve", "--supervisor", "--service-entry", "--server-root", options.layout.serverRoot],
-    name: `com.zxcode.server.${stablePathId(options.layout.serverRoot)}`,
+    name: `com.zhipu.zcode.server.${stablePathId(options.layout.serverRoot)}`,
   });
 }
 
@@ -65,7 +52,7 @@ export function createServiceDescriptor(options: {
   args?: string[];
   name?: string;
 }): ServiceDescriptor {
-  const name = options.name ?? "com.zxcode.server";
+  const name = options.name ?? "com.zhipu.zcode.server";
   const args = options.args ?? ["serve", "--daemon"];
   if (options.platform === "darwin") {
     return {
@@ -80,7 +67,7 @@ export function createServiceDescriptor(options: {
     return {
       kind: "systemd",
       name,
-      content: `[Unit]\nDescription=ZxCode Server\n[Service]\nExecStart=${shellQuote(options.command)} ${args.map(shellQuote).join(" ")}\nRestart=on-failure\n[Install]\nWantedBy=default.target\n`,
+      content: `[Unit]\nDescription=ZCode Server\n[Service]\nExecStart=${shellQuote(options.command)} ${args.map(shellQuote).join(" ")}\nRestart=on-failure\n[Install]\nWantedBy=default.target\n`,
     };
   }
   return {
@@ -207,11 +194,22 @@ export async function isServiceManagerAvailable(
   }
 }
 
+/**
+ * systemd 注册失败的阶段：load 为 daemon-reload / enable，本次没有启动任何 unit；
+ * start 为 unit 已启用后的 start。launchd 与 Task Scheduler 的注册错误不带阶段。
+ */
+type ServiceRegistrationStage = "load" | "start";
+
+export function isServiceLoadFailure(error: unknown): boolean {
+  return error instanceof Error && (error as { stage?: unknown }).stage === "load";
+}
+
 export async function registerService(
   descriptor: ServiceDescriptor,
   descriptorPath: string,
   executor: ServiceCommandExecutor = defaultServiceCommandExecutor,
 ): Promise<void> {
+  let stage: ServiceRegistrationStage | undefined;
   try {
     if (descriptor.kind === "launchd") {
       // Label 稳定但 plist 内容可能变化；先卸载旧 job，避免 load 失败后 start 唤醒旧参数。
@@ -223,8 +221,14 @@ export async function registerService(
       await executor.run("launchctl", ["load", "-w", descriptorPath]);
       await executor.run("launchctl", ["start", descriptor.name]);
     } else if (descriptor.kind === "systemd") {
+      // Bug 原因：`enable --now` 把装载和启动合成一次调用，失败时无法知道 unit 是否已启动，
+      // 调用方只能一律报错。拆开后按失败阶段决定：装载失败时没有启动任何 unit，可以安全回退。
+      stage = "load";
       await executor.run("systemctl", ["--user", "daemon-reload"]);
-      await executor.run("systemctl", ["--user", "enable", "--now", descriptorPath]);
+      await executor.run("systemctl", ["--user", "enable", descriptorPath]);
+      stage = "start";
+      // enable 按文件名创建 unit；用完整文件名 start，不依赖 systemd 补全后缀。
+      await executor.run("systemctl", ["--user", "start", basename(descriptorPath)]);
     } else {
       const parsed = JSON.parse(descriptor.content) as {
         taskName: string;
@@ -247,9 +251,11 @@ export async function registerService(
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Failed to register service ${descriptor.name} (${descriptorPath}): ${message}`,
-      { cause: error },
+    throw Object.assign(
+      new Error(`Failed to register service ${descriptor.name} (${descriptorPath}): ${message}`, {
+        cause: error,
+      }),
+      stage ? { stage } : {},
     );
   }
 }
@@ -316,44 +322,6 @@ async function isMissingWindowsTask(
   ) as Error & { exitCode?: number };
   error.exitCode = result.exitCode;
   throw error;
-}
-
-/**
- * 按名清理去平台化改名前的退役服务注册。
- * 旧 descriptor 文件可能已被手动删除，但 OS 侧注册（launchd job / systemd unit /
- * 计划任务）仍按名持有，因此除按文件卸载外还按名再清一次。
- * 一切失败都吞掉：旧注册不存在是常态，且旧名清理绝不能阻断新名注册或卸载主流程。
- */
-export async function unregisterRetiredServices(
-  layout: ServerLayout,
-  executor: ServiceCommandExecutor = defaultServiceCommandExecutor,
-): Promise<void> {
-  const platform: ServicePlatform =
-    process.platform === "darwin" || process.platform === "linux" ? process.platform : "win32";
-  const kind: ServiceDescriptor["kind"] =
-    platform === "darwin" ? "launchd" : platform === "linux" ? "systemd" : "task-scheduler";
-  const extension = kind === "launchd" ? "plist" : kind === "systemd" ? "service" : "json";
-  for (const name of retiredServiceNames(layout)) {
-    const descriptorPath = join(layout.serviceDir, `${name}.${extension}`);
-    try {
-      await unregisterService({ kind, name, content: "" }, descriptorPath, executor);
-    } catch {
-      // 退役服务不存在是常态；按文件卸载失败继续走按名兜底。
-    }
-    await rm(descriptorPath, { force: true }).catch(() => undefined);
-    try {
-      if (kind === "launchd") {
-        // plist 可能已被删除但 job 仍 loaded：launchctl remove 只认 label，不认文件。
-        await executor.run("launchctl", ["remove", name]);
-      } else if (kind === "systemd") {
-        // unit 文件可能已被删除但仍 enable：按 unit 名再 disable 一次。
-        await executor.run("systemctl", ["--user", "disable", "--now", `${name}.service`]);
-      }
-      // Windows：unregisterService 内部已按任务名 Query/Delete，文件缺失不影响。
-    } catch {
-      // 按名移除只覆盖“文件不在但注册仍在”的孤儿场景，失败忽略。
-    }
-  }
 }
 
 function shellQuote(value: string): string {
