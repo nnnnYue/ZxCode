@@ -64,3 +64,65 @@ export interface PluginSyncMarketplaceMirrorInspection {
   /** 不能镜像的插件 name → 原因；只列出能确定不能镜像的插件。 */
   blocked: Record<string, "cross-marketplace-dependency">;
 }
+
+// —— 以下为 fork 基线（3.16.2）user-plugin/skill 同步域类型：
+// v3.17.2 合并时该域服务与 UI 按 fork 基线为准恢复，类型层在此并集保留（上游 DataSync 域类型见上方）。
+export type PluginSyncImportStatus = "synced" | "skipped" | "failed";
+
+export type PluginSyncComponentType = "skills" | "commands" | "hooks" | "mcp";
+
+export interface PluginSyncCandidate {
+  id: string;
+  name: string;
+  pluginId: string;
+  directoryName: string;
+  description?: string;
+  version?: string;
+  path: string;
+  sizeBytes: number;
+  enabled: boolean;
+  enabledOverride?: boolean;
+  componentTypes: PluginSyncComponentType[];
+}
+
+export interface PluginSyncCandidateListResult {
+  candidates: PluginSyncCandidate[];
+  maxArchiveBytes: number;
+}
+
+export interface PluginSyncRemoteStatus {
+  pluginId: string;
+  directoryName: string;
+  exists: boolean;
+  path?: string;
+  reason?: "samePluginId" | "targetExists";
+}
+
+export interface PluginSyncRemoteStatusResult {
+  statuses: PluginSyncRemoteStatus[];
+}
+
+export interface PluginSyncArchiveExportResult {
+  archive: Uint8Array;
+  archiveBytes: number;
+  plugins: Array<{
+    id: string;
+    name: string;
+    pluginId: string;
+    directoryName: string;
+    enabled?: boolean;
+  }>;
+}
+
+export interface PluginSyncImportResultItem {
+  name: string;
+  pluginId: string;
+  directoryName: string;
+  status: PluginSyncImportStatus;
+  path?: string;
+  error?: string;
+}
+
+export interface PluginSyncImportResult {
+  results: PluginSyncImportResultItem[];
+}

@@ -23,3 +23,53 @@ export interface SkillDataSyncPayload {
     enabled: boolean;
   }>;
 }
+
+// —— 以下为 fork 基线（3.16.2）user-plugin/skill 同步域类型：
+// v3.17.2 合并时该域服务与 UI 按 fork 基线为准恢复，类型层在此并集保留（上游 DataSync 域类型见上方）。
+export type SkillSyncImportStatus = "synced" | "skipped" | "failed";
+
+export interface SkillSyncCandidate {
+  id: string;
+  name: string;
+  directoryName: string;
+  description: string;
+  path: string;
+  sizeBytes: number;
+}
+
+export interface SkillSyncCandidateListResult {
+  candidates: SkillSyncCandidate[];
+  maxArchiveBytes: number;
+}
+
+export interface SkillSyncRemoteStatus {
+  directoryName: string;
+  exists: boolean;
+  path?: string;
+}
+
+export interface SkillSyncRemoteStatusResult {
+  statuses: SkillSyncRemoteStatus[];
+}
+
+export interface SkillSyncArchiveExportResult {
+  archive: Uint8Array;
+  archiveBytes: number;
+  skills: Array<{
+    id: string;
+    name: string;
+    directoryName: string;
+  }>;
+}
+
+export interface SkillSyncImportResultItem {
+  name: string;
+  directoryName: string;
+  status: SkillSyncImportStatus;
+  path?: string;
+  error?: string;
+}
+
+export interface SkillSyncImportResult {
+  results: SkillSyncImportResultItem[];
+}
