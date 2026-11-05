@@ -28,15 +28,12 @@ export interface PromptTrajectoryFixture {
     supportsAudio: boolean;
     supportsPdf: boolean;
   }>;
-  /** 覆盖录制用 Registry 模型的能力声明，例如打开 supportsNativeWebSearch 以暴露 WebSearch。 */
-  modelProperties?: Partial<{
-    supportsMidConversationSystem: boolean;
-    supportsNativeWebSearch: boolean;
-  }>;
   model?: {
     apiKey?: string;
     apiKeyEnv?: string;
     apiKeyRequired?: boolean;
+    connectionBaseURL?: string;
+    connectionProviderKind?: string;
     headers?: Record<string, string>;
     id?: string;
     kind?: string;
@@ -108,13 +105,9 @@ export function createRuntimeModelConfig(input: {
   };
 }
 
-// 运行时配置只接受结构化的 Model Selection；「provider/model」字符串解析已从 contracts 移除。
-export function resolveModelSelection(fixture: PromptTrajectoryFixture): {
-  modelId: string;
-  providerId: string;
-} {
+export function resolveModelSelection(fixture: PromptTrajectoryFixture): string {
   const target = resolveModelTarget(fixture);
-  return { modelId: target.model, providerId: target.provider };
+  return `${target.provider}/${target.model}`;
 }
 
 export function resolveUpstreamBaseURL(input: { fixture: PromptTrajectoryFixture }): string {

@@ -21,7 +21,7 @@ import {
 import { formatAnchor } from "#office/domain/anchor.ts";
 import { truncateBytes } from "#office/domain/model.ts";
 import { wellFormed, wellFormedDeep } from "#office/domain/text.ts";
-import type { DocumentOwner, ViewerSession } from "#office/app/documents.ts";
+import type { DocumentOwner } from "#office/app/documents.ts";
 import { isAssetName } from "#office/adapters/assets.ts";
 import {
   EXAMPLE_ANCHORS,
@@ -31,7 +31,6 @@ import {
   FILES_NOUN,
   QUOTE_BEST_FOR,
   READ_FORMS,
-  SKILL_NAMES,
   TARGET_NOUNS,
   TITLE,
 } from "#office/wording.ts";
@@ -92,18 +91,6 @@ function describeSnapshot(snapshot: ViewerSnapshot, verb: string): string {
   return parts.join("\n");
 }
 
-/**
- * The session a call belongs to: the host names it in `_meta.session_id` for agent and panel
- * calls alike, and adds `_meta.root_session_id` for a subagent's calls so that they share the
- * viewer state of the session that spawned them. It only partitions viewer state; the host is
- * the server's only caller.
- */
-export function sessionOf(meta: Record<string, unknown> | undefined): string | undefined {
-  for (const id of [meta?.root_session_id, meta?.session_id])
-    if (typeof id === "string" && id) return id;
-  return undefined;
-}
-
 /** Tool results leave the server well formed even if a document's own text is broken. */
 const textResult = (text: string, structuredContent?: Record<string, unknown>) => ({
   content: [{ type: "text" as const, text: wellFormed(text) }],
@@ -134,7 +121,6 @@ export function createOfficeServer({
     },
     execute: (
       input: z.infer<z.ZodObject<Shape>>,
-      session: ViewerSession,
     ) => Promise<{ text: string; structured?: Record<string, unknown> }>,
   ) => {
     server.registerTool(
@@ -150,9 +136,9 @@ export function createOfficeServer({
           ...(config.openPanel ? { "openai/ui": { preferredModelDisplayMode: "fullscreen" } } : {}),
         },
       },
-      (async (input: z.infer<z.ZodObject<Shape>>, extra: { _meta?: Record<string, unknown> }) => {
+      (async (input: z.infer<z.ZodObject<Shape>>) => {
         try {
-          const { text, structured } = await execute(input, owner.session(sessionOf(extra._meta)));
+          const { text, structured } = await execute(input);
           return textResult(text, structured);
         } catch (error) {
           const code = error instanceof OfficeError ? error.code : "corrupt_file";
@@ -194,8 +180,8 @@ export function createOfficeServer({
       panel: true,
       openPanel: true,
     },
-    async ({ path, at }, session) => {
-      const snapshot = await session.open(path, at);
+    async ({ path, at }) => {
+      const snapshot = await owner.open(path, at);
       return { text: describeSnapshot(snapshot, "Opened"), structured: { ...snapshot } };
     },
   );
@@ -203,7 +189,7 @@ export function createOfficeServer({
   register(
     "read_document",
     {
-      description: `Read a document you are discussing with the user in the ${TITLE} panel, or one location in it, as text: ${READ_FORMS}. Use it to answer about the open document or anchors the user referenced. Open the document with open_document first. Each block is prefixed with its location, an anchor the panel understands: cite it or pass it to show_in_viewer, with an exact \`quote\` copied from the text to highlight a phrase. Long results are paged: call again with the returned cursor. To extract or process ${FILES_NOUN} outside the panel, use the ${SKILL_NAMES} skill instead.`,
+      description: `Read the content of a document or of one location in it as text: ${READ_FORMS}. Each block is prefixed with its location so you can cite or show it. Long results are paged: call again with the returned cursor.`,
       input: {
         anchor,
         cursor: z
@@ -215,8 +201,8 @@ export function createOfficeServer({
       },
       visibility: ["model"],
     },
-    async ({ anchor: target, cursor }, session) => {
-      const { info, at, page } = await session.read(target, cursor ?? 0);
+    async ({ anchor: target, cursor }) => {
+      const { info, at, page } = await owner.read(target, cursor ?? 0);
       const head = `${formatAnchor(info.path, at)} (${KIND_NAMES[info.kind]}, revision ${info.revision})`;
       const tail =
         page.next === null
@@ -232,7 +218,8 @@ export function createOfficeServer({
   register(
     "search_document",
     {
-      description: `Find text (case-insensitive) in a document you are discussing with the user in the ${TITLE} panel. Open the document with open_document first. Returns matching locations as anchors with a snippet each; pass them to read_document or show_in_viewer. To search or extract ${FILES_NOUN} outside the panel, use the ${SKILL_NAMES} skill instead.`,
+      description:
+        "Find text in a document (case-insensitive). Returns matching locations as anchors with a snippet each; pass them to read_document or show_in_viewer.",
       input: {
         path: z.string().min(1).max(1000).describe("Workspace-relative path of the file."),
         query: z.string().min(1).max(200),
@@ -240,8 +227,8 @@ export function createOfficeServer({
       },
       visibility: ["model"],
     },
-    async ({ path, query, limit }, session) => {
-      const { info, hits } = await session.search(path, query, limit ?? 20);
+    async ({ path, query, limit }) => {
+      const { info, hits } = await owner.search(path, query, limit ?? 20);
       const text = hits.length
         ? [
             `${hits.length} match${hits.length === 1 ? "" : "es"} for "${query}" in ${info.path}:`,
@@ -279,8 +266,8 @@ export function createOfficeServer({
       panel: true,
       openPanel: true,
     },
-    async ({ targets, note }, session) => {
-      const snapshot = await session.show(targets, note);
+    async ({ targets, note }) => {
+      const snapshot = await owner.show(targets, note);
       return { text: describeSnapshot(snapshot, "Showing"), structured: { ...snapshot } };
     },
   );
@@ -298,8 +285,8 @@ export function createOfficeServer({
       },
       visibility: ["model"],
     },
-    async ({ viewId }, session) => {
-      const views = session.views();
+    async ({ viewId }) => {
+      const views = owner.views();
       if (!viewId && views.length > 1)
         return {
           text:
@@ -312,8 +299,8 @@ export function createOfficeServer({
           "invalid_token",
           "Unknown viewer. Call get_view without viewId to list viewers.",
         );
-      const view = session.view(viewId);
-      const current = view.path ? await session.info(view.path) : session.current();
+      const view = owner.view(viewId);
+      const current = view.path ? await owner.info(view.path) : owner.current();
       if (!current && !view.path)
         return {
           text: `The ${TITLE} viewer has no document open. Use open_document to open one.`,
@@ -327,9 +314,7 @@ export function createOfficeServer({
         if (view.selection.text) lines.push(`Selected text: """${view.selection.text}"""`);
         if (view.kind === "xlsx") {
           // The panel shows computed values; add what the file stores (values and formulas).
-          const stored = await session
-            .read(formatAnchor(path, view.selection.at))
-            .catch(() => null);
+          const stored = await owner.read(formatAnchor(path, view.selection.at)).catch(() => null);
           if (stored)
             lines.push(
               "Selected cells as stored in the file:",
@@ -359,9 +344,9 @@ export function createOfficeServer({
         visibility: ["app"],
         readOnly: false,
       },
-      async ({ name, size }, session) => ({
+      async ({ name, size }) => ({
         text: "Import started",
-        structured: { id: await importer.begin(name, size, session.id) },
+        structured: { id: await importer.begin(name, size) },
       }),
     );
     register(
@@ -420,8 +405,8 @@ export function createOfficeServer({
       input: { limit: z.number().int().min(1).max(1000).optional() },
       visibility: ["app"],
     },
-    async ({ limit }, session) => {
-      const documents = await session.list(limit ?? 500);
+    async ({ limit }) => {
+      const documents = await owner.list(limit ?? 500);
       return { text: `${documents.length} documents`, structured: { documents } };
     },
   );
@@ -434,8 +419,8 @@ export function createOfficeServer({
       input: { path: z.string().min(1).max(1000) },
       visibility: ["app"],
     },
-    async ({ path }, session) => {
-      const loaded = await session.load(path);
+    async ({ path }) => {
+      const loaded = await owner.load(path);
       return { text: describeDocument(loaded.info, 10), structured: { ...loaded } };
     },
   );
@@ -448,8 +433,8 @@ export function createOfficeServer({
       input: { path: z.string().min(1).max(1000) },
       visibility: ["app"],
     },
-    async ({ path }, session) => {
-      const info = await session.info(path);
+    async ({ path }) => {
+      const info = await owner.info(path);
       return { text: info.revision, structured: { path: info.path, revision: info.revision } };
     },
   );
@@ -461,8 +446,8 @@ export function createOfficeServer({
       input: {},
       visibility: ["app"],
     },
-    async (_input, session) => {
-      const snapshot = session.snapshot();
+    async () => {
+      const snapshot = owner.snapshot();
       return { text: describeSnapshot(snapshot, "Viewer has"), structured: { ...snapshot } };
     },
   );
@@ -483,8 +468,8 @@ export function createOfficeServer({
       visibility: ["app"],
       readOnly: false,
     },
-    async (input, session) => {
-      const view = await session.report(input);
+    async (input) => {
+      const view = await owner.report(input);
       return { text: "ok", structured: { view } };
     },
   );
@@ -497,8 +482,8 @@ export function createOfficeServer({
       visibility: ["app"],
       readOnly: false,
     },
-    async ({ viewId }, session) => {
-      session.releaseView(viewId);
+    async ({ viewId }) => {
+      owner.releaseView(viewId);
       return { text: "ok" };
     },
   );

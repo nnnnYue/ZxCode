@@ -66,7 +66,6 @@ function stubRuntime() {
       return () => sinks.delete(sink);
     },
     getModelRef: () => MODEL,
-    close: async () => {},
     closeBrowserSession: async () => {},
     signal: (): AbortSignal | undefined => abortSignal,
     toolStarted: (toolCallId: string) => emit(SessionEventType.ToolCallStarted, toolCallId),

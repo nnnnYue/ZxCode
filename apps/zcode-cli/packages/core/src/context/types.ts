@@ -32,8 +32,7 @@ export type ContextSource =
   | "cli_prefix" // CLI / 产品身份前缀
   | "identity" // Agent 基础描述
   | "env_info" // 环境信息 (cwd, platform, git repo boolean)
-  | "session_context" // git snapshot context
-  | "model" // 当前执行模型身份
+  | "system_context" // git snapshot context
   | "skills" // 可用 skills
   | "tools" // 工具定义
   | "request_user_context" // request-level user context provider-visible 组合块
@@ -43,8 +42,10 @@ export type ContextSource =
   | "workflow_actor_identity" // 动态工作流子代理身份：契约 + persona 叠加
   | "subagent_agent_prompt" // 子 agent 专属身份/任务 prompt
   | "subagent_notes" // 子 agent 通用操作提醒
+  | "subagent_environment" // 子 agent 环境和模型上下文
   | "dynamic_behavior" // 动态行为边界
   | "session_guidance" // 当前可用内置能力指导
+  | "output_style" // 输出风格
   | "context_management" // 长上下文管理提示
   | "desktop_context"; // ZxCode Desktop 渲染与交互协议
 
@@ -69,10 +70,7 @@ export interface ContextSection {
   preview: string; // 前 100 字符预览
 }
 
-export type ContextMetaUserAttachmentSource =
-  | "skills_listing"
-  | "context_prefix"
-  | "session_context";
+export type ContextMetaUserAttachmentSource = "skills_listing" | "context_prefix";
 
 export interface ContextMetaUserAttachment {
   source: ContextMetaUserAttachmentSource;
@@ -107,8 +105,6 @@ export interface ContextBuilderConfig {
   envInfo: EnvInfo;
   /** 当前步骤的执行对象，不进入 Context Source 或持久化环境快照。 */
   model?: Model;
-  /** 执行模型是否走 MCS；false 时 Harness 改述 `<system-reminder>` 通道。缺省按 MCS。 */
-  midConversationSystem?: boolean;
   presentationSurface?: PresentationSurface;
   genUiOutputDirectory?: string;
   currentDate?: string;

@@ -121,8 +121,6 @@ export type BrowserCommandMethod =
   | "markDeliverable"
   | "markHandoff"
   | "nameSession"
-  | "openScope"
-  | "releaseScope"
   | "turnEnded"
   | "closeSession"
   | "cancelRequest"
@@ -370,8 +368,6 @@ export type BrowserCommand =
   | { method: "markHandoff"; tabId: string }
   | { method: "nameSession"; name: string }
   | { method: "finalize"; tabId?: string; deliverable?: boolean }
-  | { method: "openScope" }
-  | { method: "releaseScope"; closeTabs?: boolean }
   | { method: "turnEnded"; turnId?: string }
   // closeTabs：连 tab 一起关（含已释放回该 session 的）。只给永不回来认领的 session（dwf 子代理）。
   | { method: "closeSession"; closeTabs?: boolean }
@@ -501,7 +497,6 @@ export interface BrowserRecordingJob {
 }
 
 export interface BrowserCommandResult {
-  scope?: { id: string; state: "open" | "released" | "absent" | "rejected" };
   ok: boolean;
   state?: BrowserPageState;
   snapshot?: BrowserSnapshot;

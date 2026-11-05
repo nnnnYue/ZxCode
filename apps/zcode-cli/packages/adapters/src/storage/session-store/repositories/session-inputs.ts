@@ -31,7 +31,7 @@ interface SessionInputRow {
   time_updated: number;
 }
 
-export function saveSessionInput(
+export async function saveSessionInput(
   db: DatabaseSync,
   input: {
     id: string;
@@ -40,7 +40,7 @@ export function saveSessionInput(
     delivery: SessionInputDelivery;
     payload: { text: string; [key: string]: unknown };
   },
-): void {
+): Promise<void> {
   const now = Date.now();
   // admitted_sequence 按 session 内账本单调分配；同 id 重入会用 runtime 的实际
   // kind/delivery/payload 修正执行前预 admission，同时保留原序与状态（幂等）。
@@ -188,7 +188,7 @@ export async function updateSessionInputs(
   }
 }
 
-export function promoteSessionInput(
+export async function promoteSessionInput(
   db: DatabaseSync,
   input: {
     id: string;
@@ -196,14 +196,13 @@ export function promoteSessionInput(
     message: MessageInfo;
     parts: MessagePart[];
   },
-): void {
+): Promise<void> {
   const now = Date.now();
-  // 事务属于共享连接，必须同步完成；中途 await 会把其他会话已成功的写入一起回滚。
   db.exec("begin immediate");
   try {
-    saveMessage(db, input.message);
+    await saveMessage(db, input.message);
     for (const part of input.parts) {
-      savePart(db, part);
+      await savePart(db, part);
     }
     const refs =
       input.message.metadata && typeof input.message.metadata === "object"
@@ -248,9 +247,11 @@ export function promoteSessionInput(
           time: { ...entry.time, updated: now },
           data: { ...data, status: "attached", attachedMessageId: String(input.message.id) },
         });
-        const contextMessage = readMessages(db, {
-          sessionID: input.sessionID,
-        }).find((candidate) => {
+        const contextMessage = (
+          await readMessages(db, {
+            sessionID: input.sessionID,
+          })
+        ).find((candidate) => {
           const metadata = candidate.info.metadata;
           return Boolean(
             metadata &&
@@ -259,7 +260,7 @@ export function promoteSessionInput(
           );
         });
         if (contextMessage) {
-          saveMessage(db, {
+          await saveMessage(db, {
             ...contextMessage.info,
             metadata: {
               ...(contextMessage.info.metadata ?? {}),

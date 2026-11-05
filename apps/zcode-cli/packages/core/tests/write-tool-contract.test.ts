@@ -24,7 +24,7 @@ import {
 import { PermissionService, defaultPermissionConfig } from "../src/permission/service.js";
 import { createToolExecutor } from "../src/tool/executor.js";
 import { writeHandler, writeToolEntry } from "../src/tool/handlers/write.js";
-import { createReadFileStatePathKey } from "../src/tool/read-file-state.js";
+import { createReadFileStateKey } from "../src/tool/read-file-state.js";
 import { createToolRegistry } from "../src/tool/registry.js";
 import type { ReadFileStateMap, ToolExecutionContext } from "../src/tool/types.js";
 
@@ -153,7 +153,7 @@ describe("Write model-result harness", () => {
     const revision = revisionFor(file, "old line\n");
     const readFileState: ReadFileStateMap = new Map([
       [
-        createReadFileStatePathKey(file),
+        createReadFileStateKey(file, 1, undefined),
         {
           path: `${tmpDir}/nested/../existing-normalized-key.txt`,
           content: "old line\n",
@@ -653,7 +653,11 @@ function createReadFileState(
   const revision = revisionFor(filePath, revisionContent, options.mtimeMs ?? 1);
   return new Map([
     [
-      createReadFileStatePathKey(filePath),
+      [
+        filePath,
+        String(options.offset ?? 1),
+        options.limit === undefined ? "" : String(options.limit),
+      ].join("\0"),
       {
         path: filePath,
         content: normalizeLineEndings(content),

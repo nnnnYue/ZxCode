@@ -2,17 +2,16 @@ import {
   CoreErrorType,
   SEND_MESSAGE_TOOL_NAME,
   SendMessageInputJsonSchema,
+  SendMessageInputSchema,
   SendMessageOutputSchema,
-  SendMessageRuntimeInputSchema,
   createCoreError,
   type SendMessageInput,
   type SendMessageOutput,
   type TraceContext,
 } from "@zcode/contracts";
-import type { ToolEntry, ToolHandler, ToolInputValidationResult } from "../types.js";
+import type { ToolEntry, ToolHandler } from "../types.js";
 
 const MAX_SEND_MESSAGE_MODEL_BYTES = 4096;
-const SEND_MESSAGE_INVALID_INPUT_ERROR_CODE = 9;
 
 const SEND_MESSAGE_PROVIDER_DESCRIPTION = [
   "# SendMessage",
@@ -38,7 +37,7 @@ const SEND_MESSAGE_TOOL_OUTPUT_SCHEMA = {
 };
 
 const sendMessageHandler: ToolHandler = async (input, context) => {
-  const parsed = SendMessageRuntimeInputSchema.parse(input) as SendMessageInput;
+  const parsed = SendMessageInputSchema.parse(input) as SendMessageInput;
 
   if (!context.subagentPort?.sendMessage) {
     throw createCoreError(
@@ -91,11 +90,10 @@ export const sendMessageToolEntry: ToolEntry = {
     needsApproval: false,
   },
   handler: sendMessageHandler,
-  validateInput: validateSendMessageInput,
   formatModelContent: formatSendMessageModelContent,
   inputSchema: SendMessageInputJsonSchema,
   outputSchema: SEND_MESSAGE_TOOL_OUTPUT_SCHEMA,
-  runtimeInputSchema: SendMessageRuntimeInputSchema,
+  runtimeInputSchema: SendMessageInputSchema,
   runtimeOutputSchema: SendMessageOutputSchema,
   permission: {
     permission: "agent.message.send",
@@ -133,21 +131,6 @@ export const sendMessageToolEntry: ToolEntry = {
     recordOutput: "summary",
   },
 };
-
-/**
- * 修复原因：只有空白的 message 能通过 provider JSON Schema（minLength 1），runtime schema 的拒绝
- * 要到 handler 才生效——Hook、权限都已跑过，模型收到的是原始 ZodError JSON。这里在 Hook 之前
- * 用同一份 runtime schema 判定，按工具输入错误返回。
- */
-function validateSendMessageInput(input: unknown): ToolInputValidationResult {
-  const parsed = SendMessageRuntimeInputSchema.safeParse(input);
-  if (parsed.success) return { result: true };
-  return {
-    result: false,
-    errorCode: SEND_MESSAGE_INVALID_INPUT_ERROR_CODE,
-    message: parsed.error.issues.map((issue) => issue.message).join("; "),
-  };
-}
 
 function formatSendMessageModelContent(output: unknown): string {
   const result = SendMessageOutputSchema.parse(output);

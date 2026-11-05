@@ -154,15 +154,14 @@ describe("message history metadata", () => {
     });
   });
 
-  it("counts only system messages and legacy unmarked reminders as request prefix", () => {
+  it("counts metadata-marked request prefix before falling back to legacy text detection", () => {
     const history = new MessageHistoryImpl();
     history.init([
       { role: "system", content: "system prompt" },
-      // 指令文件是持久化公告；带来源标记的条目属于会话历史。
       {
-        message: { role: "user", content: "context prefix" },
+        message: { role: "user", content: "skill listing" },
         metadata: {
-          source: "context_prefix",
+          source: "skills_listing",
         },
       },
       {
@@ -176,8 +175,8 @@ describe("message history metadata", () => {
       },
     ]);
 
-    expect(countContextPrefixMessages(history.toRuntimeEntries())).toBe(1);
-    expect(history.getCacheStats().cachedMessages).toBe(1);
+    expect(countContextPrefixMessages(history.toRuntimeEntries())).toBe(2);
+    expect(history.getCacheStats().cachedMessages).toBe(2);
 
     expect(
       countContextPrefixMessages([
@@ -188,7 +187,7 @@ describe("message history metadata", () => {
     ).toBe(2);
   });
 
-  it("keeps skills and instruction attachments out of context prefix entries", () => {
+  it("builds skills listing context as a structured attachment entry", () => {
     const skillsSection = contextSection({
       name: "Available Skills",
       source: "skills",
@@ -203,7 +202,7 @@ describe("message history metadata", () => {
       sections: [skillsSection, dateSection],
       totalChars: skillsSection.chars + dateSection.chars,
       totalTokens: skillsSection.tokens + dateSection.tokens,
-      systemMessages: [{ role: "system", content: "system prompt" }],
+      systemMessages: [],
       metaUserAttachments: [
         {
           source: "skills_listing",
@@ -217,9 +216,18 @@ describe("message history metadata", () => {
       ],
     };
 
-    // Skill 列表与指令文件由请求前的动态公告宣告，prefix 只含 system 消息。
     expect(buildContextHistoryEntries(contextResult)).toEqual([
-      { message: { role: "system", content: "system prompt" } },
+      {
+        kind: "attachment",
+        content: "# Skills\n- review: Inspect code",
+        metadata: { source: "skills_listing" },
+      },
+      {
+        kind: "attachment",
+        content:
+          "As you answer the user's questions, you can use the following context:\n# currentDate\nToday's date is 2026-06-17.\n\n      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.",
+        metadata: { source: "context_prefix" },
+      },
     ]);
   });
 });

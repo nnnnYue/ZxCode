@@ -28,7 +28,9 @@ function resolveZCodeCuaBrokerSocket(): string | undefined {
 }
 
 function resolveZCodeCuaBrokerToken(): string | undefined {
-  return undefined;
+  return (
+    undefined
+  );
 }
 
 const NODE_REPL_SERVER_NAME = "node_repl";
@@ -76,6 +78,8 @@ export async function listMcpServerStatuses(
       transport: config.type,
       toolCount: 0,
       updatedAt,
+      error: getConfiguredServerError(name, config, untrustedServerNames),
+      ...(configuredStatus === "untrusted" ? { failureKind: "status_unavailable" as const } : {}),
     };
   }
 
@@ -93,7 +97,9 @@ export function omitMcpServers(
 ): Record<string, McpServerConfig> {
   const kept = Object.fromEntries(
     Object.entries(servers).filter(
-      ([name, config]) => !omittedNames.has(name) && !isRetiredCuaMcpServer(name, config),
+      ([name, config]) =>
+        !omittedNames.has(name) &&
+        !isRetiredCuaMcpServer(name, config),
     ),
   );
 
@@ -188,9 +194,7 @@ function isZCodeCuaStdioServer(
 function isRetiredCuaMcpServer(name: string, config: McpServerConfig | undefined): boolean {
   // node_repl is the single supported CUA host and may share the CUA plugin's
   // authority marker; all other CUA-shaped MCP entries are retired.
-  return (
-    name !== NODE_REPL_SERVER_NAME && config !== undefined && isZCodeCuaStdioServer(name, config)
-  );
+  return name !== NODE_REPL_SERVER_NAME && config !== undefined && isZCodeCuaStdioServer(name, config);
 }
 
 function getConfiguredServerStatus(
@@ -200,4 +204,13 @@ function getConfiguredServerStatus(
 ): McpServerStatus["status"] {
   if (config.enabled === false) return "disabled";
   return untrustedServerNames.has(name) ? "untrusted" : "disconnected";
+}
+
+function getConfiguredServerError(
+  name: string,
+  config: McpServerConfig,
+  untrustedServerNames: ReadonlySet<string>,
+): string | undefined {
+  if (config.enabled === false || !untrustedServerNames.has(name)) return undefined;
+  return "Project MCP server requires explicit connection before use.";
 }

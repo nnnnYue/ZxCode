@@ -9,10 +9,9 @@ import { runMemoryAgentLoop } from "../../memory/memory-agent-loop.js";
 import { scanMemoryManifest } from "../../memory/recall/index.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import {
+  prepareProjectMemoryAgentRequest,
   captureProjectMemoryAgentContext,
-  createProjectMemoryAgentToolRunner,
-  projectMemoryAgentEntries,
-  renderProjectMemoryAgentRequest,
+  createProjectMemoryAgentToolExecutor,
   type ProjectMemoryAgentContext,
 } from "./project-memory-agent.js";
 import { resolveEnabledProjectMemoryRoot } from "./project-memory.js";
@@ -87,7 +86,7 @@ export async function drainMemoryExtractions(
 ): Promise<void> {
   const scheduler = this.memoryExtractionScheduler;
   if (!scheduler) return;
-  // Runtime 关闭与 benchmark 等待真实收尾；对外关闭期限由 App 管理，不在这里提前放行。
+  // benchmark 显式等待自然结束；普通 session close 仍保留原有有界取消清理。
   if (timeoutMs === null) {
     await scheduler.drain();
     return;
@@ -97,12 +96,8 @@ export async function drainMemoryExtractions(
   try {
     await Promise.race([
       scheduler.drain(),
-      new Promise<void>((_resolve, reject) => {
-        // 到期只是停止等待；不能向 session 生命周期谎报资源已经释放。
-        timeout = setTimeout(
-          () => reject(new Error("Memory extraction drain timed out")),
-          timeoutMs,
-        );
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, timeoutMs);
         timeout.unref?.();
       }),
     ]);
@@ -143,13 +138,18 @@ async function executeProjectMemoryExtraction(
         manifest,
         messageCount: input.messageCount,
       });
+      const request = prepareProjectMemoryAgentRequest(input.snapshot, prompt);
+      const executor = createProjectMemoryAgentToolExecutor(runtime, input.snapshot);
+
       await runMemoryAgentLoop({
         abortSignal: input.abortSignal,
-        entries: projectMemoryAgentEntries(input.snapshot, prompt),
-        executeToolCalls: createProjectMemoryAgentToolRunner(runtime, input.snapshot),
+        executeTool: (toolCall, options) =>
+          executor.execute(toolCall, {
+            signal: options.abortSignal,
+            traceContext: input.snapshot.traceContext,
+          }),
         maxTurns: EXTRACTION_MAX_TURNS,
-        registry: runtime.registry,
-        renderRequest: (entries) => renderProjectMemoryAgentRequest(input.snapshot, entries),
+        request,
         model: input.snapshot.model,
         rootDir: input.snapshot.memoryRoot,
         workingDirectory: input.snapshot.workingDirectory,

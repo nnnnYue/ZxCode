@@ -82,7 +82,6 @@ export function buildCompactSummaryRequestMessages(
   compactPrompt: string,
   options: {
     useMidConversationSystem?: boolean;
-    foldRemindersIntoToolResults?: boolean;
     loadedToolCallIds?: ReadonlySet<string>;
   } = {},
 ): RunModelTextRequestOptions["messages"] {
@@ -94,7 +93,6 @@ export function buildCompactSummaryRequestMessages(
     applyCacheControl: true,
     skipCacheWrite: true,
     useMidConversationSystem: options.useMidConversationSystem,
-    foldRemindersIntoToolResults: options.foldRemindersIntoToolResults,
     loadedToolCallIds: options.loadedToolCallIds,
   }).messages;
 }

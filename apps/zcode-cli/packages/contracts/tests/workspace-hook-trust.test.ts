@@ -52,8 +52,7 @@ describe("workspace hook trust contracts", () => {
         "PostToolUseFailure",
         "Stop",
       ],
-      // onError 进声明摘要（shared/workspace-hook-digest.ts），改了要重新信任。
-      process: ["type", "command", "enabled", "args", "timeoutMs", "statusMessage", "onError"],
+      process: ["type", "command", "enabled", "args", "timeoutMs", "statusMessage"],
       command: [
         "type",
         "command",
@@ -63,7 +62,6 @@ describe("workspace hook trust contracts", () => {
         "timeout",
         "timeoutMs",
         "statusMessage",
-        "onError",
       ],
     });
   });

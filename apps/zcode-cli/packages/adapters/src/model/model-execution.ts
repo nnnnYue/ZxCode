@@ -1,4 +1,3 @@
-import { withoutRequestVerificationHeaders } from "@zcode/shared";
 /* eslint-disable max-lines -- AI SDK 模型执行装配集中维护 provider factory、鉴权和网络错误适配，拆分会让状态同步更脆弱。 */
 // ============================================================
 // Vercel AI SDK model execution
@@ -23,17 +22,15 @@ import {
 import type { RegistryProviderConfig } from "@zcode/provider";
 import { withOpenRouterAttributionHeaders } from "@zcode/shared";
 import { createAnthropicCompatFetch } from "./anthropic-stream-compat.js";
-import { createModelRequestSecurityState } from "./request-security-edition/index.js";
-import type { ModelRequestSecurityState, ModelRequestSecurityPort } from "./request-security.js";
+import { createProviderEndpointRoutingFetch } from "./provider-endpoint-routing-fetch.js";
 import { createOpenAIResponsesJsonCompatFetch } from "./openai-responses-json-compat.js";
 import { createModelOptionMapFetch, type RawRequestBodyCapture } from "./model-option-map-fetch.js";
 import { createNetworkProxyFetch } from "../network/proxy-fetch.js";
-import { createProviderEndpointRoutingFetch } from "./provider-endpoint-routing-fetch.js";
 import { normalizeModelTlsFailure } from "./failure-tls.js";
 import {
   mergeModelRequestHeaders,
   withoutModelAuthHeaders,
-  withoutContextOwnedModelHeaders,
+  withoutModelQuerySourceHeader,
 } from "./model-request-headers.js";
 
 export type AiSdkProviderKind = "openai" | "anthropic" | "openai-compatible";
@@ -59,11 +56,8 @@ export interface AiSdkModelExecutionConfig {
 }
 
 export interface AiSdkModelExecutionOptions {
-  requestSecurityState?: ModelRequestSecurityState;
   logger?: Logger;
   transport?: ProviderFetch;
-  /** 在代理和 CA 解析之后旁路观测，不替换产品网络策略。 */
-  observeTransport?: (transport: ProviderFetch) => ProviderFetch;
 }
 
 export interface AiSdkNetworkConfig {
@@ -81,9 +75,6 @@ export interface AiSdkResolvedModel {
   providerKind: AiSdkProviderKind;
   providerOptions?: Record<string, unknown>;
   rawRequestBodyCapture?: RawRequestBodyCapture;
-  requestObservations?: ModelRequestSecurityPort;
-  /** 每次 resolveRequest 独立持有，不能跨并发请求或重试共享。 */
-  streamTiming?: { firstContentAt?: number };
 }
 
 export interface AiSdkBoundModelResolution {
@@ -104,7 +95,6 @@ export interface ProviderBusinessErrorFetchOptions {
   env?: EnvRecord;
   providerId: string;
   providerKind: AiSdkProviderKind;
-  streamTiming?: { firstContentAt?: number };
   fetch?: ProviderFetch;
   httpProxy?: string;
   noProxy?: string;
@@ -175,9 +165,7 @@ export class AiSdkModelExecution {
   private readonly endpointRoutingPort?: ProviderEndpointRoutingPort;
   private readonly logger?: Logger;
   private readonly baseTransport?: ProviderFetch;
-  private readonly observeTransport?: AiSdkModelExecutionOptions["observeTransport"];
   private readonly providerTransports = new Map<string, ProviderFetch>();
-  private readonly requestSecurity: ModelRequestSecurityPort;
 
   constructor(config: AiSdkModelExecutionConfig = {}, options: AiSdkModelExecutionOptions = {}) {
     this.env = config.env ?? process.env;
@@ -186,10 +174,6 @@ export class AiSdkModelExecution {
     this.endpointRoutingPort = config.endpointRoutingPort;
     this.logger = options.logger;
     this.baseTransport = options.transport;
-    this.observeTransport = options.observeTransport;
-    this.requestSecurity = (
-      options.requestSecurityState ?? createModelRequestSecurityState()
-    ).createExecution({ logger: options.logger });
   }
 
   /**
@@ -257,16 +241,14 @@ export class AiSdkModelExecution {
     // Model 创建时的 Provider 事实必须被冻结在当前 binding 中。若按 providerId 缓存
     // factory，配置更新后创建的新 Model 会错误复用旧 Endpoint / Header / API Key。
     const rawRequestBodyCapture: RawRequestBodyCapture = {};
-    const streamTiming: NonNullable<AiSdkResolvedModel["streamTiming"]> = {};
     const factory = this.createFactory(
       snapshot.providerId,
       providerConfig,
       optionMaps,
       optionValues,
       rawRequestBodyCapture,
-      streamTiming,
       snapshot.supportsJsonSchemaOutput,
-      snapshot.providerConfig.access?.type === "zhipu-account" ? requestAuth?.apiKeyId : undefined,
+      requestAuth?.apiKeyId,
     );
     return {
       baseURL: providerConfig.baseURL,
@@ -277,8 +259,6 @@ export class AiSdkModelExecution {
       providerKind: providerConfig.kind,
       providerOptions: providerConfig.providerOptions,
       rawRequestBodyCapture,
-      requestObservations: this.requestSecurity,
-      streamTiming,
     };
   }
 
@@ -288,18 +268,13 @@ export class AiSdkModelExecution {
     optionMaps: CompiledModelOptionMaps | undefined,
     optionValues: ModelOptionValues | undefined,
     rawRequestBodyCapture: RawRequestBodyCapture,
-    streamTiming: NonNullable<AiSdkResolvedModel["streamTiming"]>,
     supportsJsonSchemaOutput: boolean,
     apiKeyId?: string,
   ): LanguageModelFactory {
     const apiKey = this.resolveApiKey(providerConfig);
     // SDK 会合并 factory 默认 header；必须在这里去掉静态来源，才能保证缺失时真正省略。
-    const headers = withoutContextOwnedModelHeaders(providerConfig.headers);
-    const networkTransport = observeProviderFetch(
-      this.resolveProviderTransport(providerId),
-      this.logger,
-      providerId,
-    );
+    const headers = withoutModelQuerySourceHeader(providerConfig.headers);
+    const networkTransport = this.resolveProviderTransport(providerId);
     // ID 属于当前 attempt，不能放入按 Provider 缓存的 transport，避免切换账号后串用。
     const providerTransport = this.endpointRoutingPort
       ? createProviderEndpointRoutingFetch({
@@ -308,16 +283,11 @@ export class AiSdkModelExecution {
           apiKeyId,
         })
       : networkTransport;
-    const requestTransport = this.requestSecurity.protectTransport({
-      providerId,
-      providerConfig,
-      transport: providerTransport,
-    });
+    const requestTransport = providerTransport;
     const fetch = createProviderBusinessErrorFetch({
       fetch: requestTransport,
       providerId,
       providerKind: providerConfig.kind,
-      streamTiming,
     });
     const optionFetch =
       optionMaps && optionValues
@@ -384,10 +354,8 @@ export class AiSdkModelExecution {
       httpProxy: this.network.httpProxy,
       noProxy: this.network.noProxy,
     });
-    // 观测若放在底层 fetch 注入点，配置代理或 CA 时会被网络适配器绕过。
-    const observedTransport = this.observeTransport?.(networkTransport) ?? networkTransport;
-    this.providerTransports.set(providerId, observedTransport);
-    return observedTransport;
+    this.providerTransports.set(providerId, networkTransport);
+    return networkTransport;
   }
 }
 
@@ -403,9 +371,7 @@ function toAiSdkProviderConfig(
   config: RegistryProviderConfig,
 ): AiSdkProviderConfig {
   const common = {
-    ...(config.access.type !== "zhipu-account" && config.access.apiKey
-      ? { apiKey: config.access.apiKey }
-      : {}),
+    ...(config.access.apiKey ? { apiKey: config.access.apiKey } : {}),
     baseURL: config.api.baseUrl,
     ...(config.api.headers ? { headers: { ...config.api.headers } } : {}),
     providerOptions: { apiFormat: config.api.type },
@@ -427,16 +393,12 @@ function applyModelRequestAuth(
   requestAuth: ModelRequestAuth | undefined,
 ): AiSdkProviderConfig {
   if (!requestAuth) return providerConfig;
-  const staticHeaders = withoutRequestVerificationHeaders(providerConfig.headers);
-  // 账号动态身份头必须先清理静态认证头，避免 SDK 优先使用旧凭据。
-  const headers =
-    providerConfig.access.type === "zhipu-account"
-      ? withoutModelAuthHeaders(staticHeaders)
-      : staticHeaders;
   return {
     ...providerConfig,
     ...(requestAuth.apiKey ? { apiKey: requestAuth.apiKey } : {}),
-    headers: mergeModelRequestHeaders(headers, requestAuth.headers),
+    ...(requestAuth.headers
+      ? { headers: mergeModelRequestHeaders(providerConfig.headers, requestAuth.headers) }
+      : {}),
   };
 }
 
@@ -529,55 +491,6 @@ export function createProviderBusinessErrorFetch(
       throw businessError;
     }
     return response;
-  };
-}
-
-/** 位于请求安全处理以内的网络边界；只读关联头，不记录 URL 或消费响应 body。 */
-export function observeProviderFetch(
-  fetch: ProviderFetch,
-  logger: Logger | undefined,
-  providerId: string,
-): ProviderFetch {
-  if (!logger) return fetch;
-  return async (input, init) => {
-    const headers = new Headers(
-      init?.headers ?? (input instanceof Request ? input.headers : undefined),
-    );
-    const requestId = headers.get("x-request-id");
-    const querySource = headers.get("x-zcode-query-source");
-    if (!requestId || (querySource !== "main_turn" && querySource !== "compact"))
-      return fetch(input, init);
-    const start = performance.timeOrigin + performance.now();
-    const log = (name: string, statusCode?: number) => {
-      const at = performance.timeOrigin + performance.now();
-      try {
-        logger.info("Model transport diagnostic", {
-          event: `ttft.model.${name}`,
-          requestId,
-          querySource,
-          providerId,
-          queryId: headers.get("x-query-id") ?? undefined,
-          sessionId: headers.get("x-session-id") ?? undefined,
-          traceId: (headers.get("x-zcode-trace-id") ?? undefined) as
-            | import("@zcode/contracts").TraceId
-            | undefined,
-          at,
-          durationMs: at - start,
-          statusCode,
-        });
-      } catch {
-        /* 日志异常不能改变网络返回值。 */
-      }
-    };
-    log("fetch_started");
-    try {
-      const response = await fetch(input, init);
-      log("response_headers", response.status);
-      return response;
-    } catch (error) {
-      log("fetch_failed");
-      throw error;
-    }
   };
 }
 
@@ -678,7 +591,7 @@ export function readProviderBusinessFailureFromBody(body: unknown):
     toProviderCode(errorRecord?.providerCode) ??
     toProviderCode(record.error_code) ??
     toProviderCode(errorRecord?.error_code) ??
-    // 二次包装后的外层 code 是 ZCode 自己的 PROVIDER_BUSINESS_ERROR，
+    // 二次包装后的外层 code 是 ZxCode 自己的 PROVIDER_BUSINESS_ERROR，
     // 真实上游码在 providerCode；只有没有 providerCode 时才退回读取 code。
     toProviderCode(record.code) ??
     toProviderCode(errorRecord?.code);
@@ -931,73 +844,8 @@ function emitProviderBusinessSseFrame(
     return false;
   }
 
-  // 工具参数和部分文本会在后续兼容层/重试层暂存；释放时再计时会把接收耗时压成几毫秒。
-  // 复用接口层已有分帧，在任何内容缓冲前记录首个有效输出，不改变重试提交边界。
-  if (
-    options.streamTiming &&
-    options.streamTiming.firstContentAt === undefined &&
-    providerSseFrameHasContent(frame, options.providerKind)
-  ) {
-    options.streamTiming.firstContentAt = Date.now();
-  }
   controller.enqueue(encoder.encode(`${frame}${separator}`));
   return true;
-}
-
-function providerSseFrameHasContent(frame: string, kind: AiSdkProviderKind): boolean {
-  const data = readSseFrame(frame).data;
-  const body = data ? safeParseRecord(data) : undefined;
-  if (!body) return false;
-  const nonEmpty = (value: unknown): boolean => typeof value === "string" && value.length > 0;
-  if (kind === "anthropic") {
-    if (body.type === "content_block_delta") {
-      const delta = asRecord(body.delta);
-      switch (delta?.type) {
-        case "text_delta":
-          return nonEmpty(delta.text);
-        case "thinking_delta":
-          return nonEmpty(delta.thinking);
-        case "input_json_delta":
-          return nonEmpty(delta.partial_json);
-        default:
-          return false;
-      }
-    }
-    if (body.type === "content_block_start") {
-      const block = asRecord(body.content_block);
-      if (block?.type === "text") return nonEmpty(block.text);
-      if (block?.type === "thinking") return nonEmpty(block.thinking);
-      if (block?.type === "tool_use" || block?.type === "server_tool_use") {
-        const input = asRecord(block.input);
-        return input !== undefined && Object.keys(input).length > 0;
-      }
-    }
-    return false;
-  }
-  if (kind === "openai") {
-    return (
-      (body.type === "response.output_text.delta" ||
-        body.type === "response.reasoning_text.delta" ||
-        body.type === "response.reasoning_summary_text.delta" ||
-        body.type === "response.function_call_arguments.delta") &&
-      nonEmpty(body.delta)
-    );
-  }
-  return (
-    Array.isArray(body.choices) &&
-    body.choices.some((choice) => {
-      const delta = asRecord(asRecord(choice)?.delta);
-      if (!delta) return false;
-      return (
-        nonEmpty(delta.content) ||
-        nonEmpty(delta.reasoning_content) ||
-        nonEmpty(delta.reasoning) ||
-        nonEmpty(asRecord(delta.function_call)?.arguments) ||
-        (Array.isArray(delta.tool_calls) &&
-          delta.tool_calls.some((call) => nonEmpty(asRecord(asRecord(call)?.function)?.arguments)))
-      );
-    })
-  );
 }
 
 function detectProviderBusinessSseFrameFailure(frame: string):

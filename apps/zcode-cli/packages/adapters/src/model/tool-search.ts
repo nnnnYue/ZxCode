@@ -1,12 +1,10 @@
-import { TOOL_SEARCH_BETA, type Model, type ToolSearchCapability } from "@zcode/contracts";
-
-const ANTHROPIC_MESSAGES_API_TYPE = "anthropic-messages";
+import { TOOL_SEARCH_BETA, type ToolSearchCapability } from "@zcode/contracts";
 
 export function resolveToolSearchCapability(
   apiType: string,
   access: { type: string; mode?: string },
 ): ToolSearchCapability {
-  const protocolSupported = apiType === ANTHROPIC_MESSAGES_API_TYPE;
+  const protocolSupported = apiType === "anthropic-messages";
   const codingPlan =
     access.type === "zhipu-coding-plan-api-key" ||
     (access.type === "zhipu-account" &&
@@ -29,16 +27,4 @@ export function toolSearchHeaders(headers: Record<string, string> | undefined, e
     ]),
   ].join(",");
   return result;
-}
-
-/** 模型请求能力只由协议与接入方式决定；core 投影据此选择请求形态。 */
-export function resolveModelRequestCapabilities(
-  apiType: string,
-  access: { type: string; mode?: string },
-): NonNullable<Model["requestCapabilities"]> {
-  return {
-    toolSearch: resolveToolSearchCapability(apiType, access),
-    // 只在 Anthropic Messages 协议把提醒并入 tool result；OpenAI 兼容协议保持独立的 user 消息。
-    foldRemindersIntoToolResults: apiType === ANTHROPIC_MESSAGES_API_TYPE,
-  };
 }

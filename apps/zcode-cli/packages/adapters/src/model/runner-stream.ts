@@ -21,7 +21,6 @@ import {
   getResponseHeaders,
   unwrapRetryError,
 } from "./failure-inspection.js";
-import { offPeakTicketExpiredMessage, resolveOffPeakFailureDecision } from "./offpeak-retry.js";
 import { isRetrySafePreludeStreamEvent } from "./stream-retry-boundary.js";
 import {
   createLinkedAbortController,
@@ -57,7 +56,6 @@ import {
 import { toModelStreamEvent } from "./runner-normalization.js";
 import type { EnvRecord } from "./model-execution.js";
 import { detectProviderBusinessFinishError } from "./provider-finish-business-error.js";
-import { createRequestVerificationEmptyStreamError } from "./request-security-edition/recovery.js";
 import {
   calculateRetryDelay,
   logRetryDelayDecision,
@@ -71,7 +69,6 @@ import {
   createStatusContext,
   publishModelStatus,
   publishModelTelemetryMilestone,
-  logLocalModelMilestone,
 } from "./runner-status.js";
 import { StreamingToolCallAssembler } from "./streaming-tool-call-assembler.js";
 import type { ResolvedAiSdkModelRetryOptions } from "./retry-policy.js";
@@ -81,13 +78,8 @@ import type {
   AiSdkModelTextRequest,
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { isRequestVerificationRejection } from "./request-security-edition/recovery.js";
-import { AccountRequestRetry } from "./account-request-retry.js";
-import { resolveModelForAttempt, RuntimeHeadersRefreshError } from "./runner-runtime-headers.js";
-import {
-  nextUnrecognizedCodeStreak,
-  retryAllowedByFailurePolicy,
-} from "./workflow-model-failure-policy.js";
+import { resolveModelForAttempt } from "./runner-runtime-headers.js";
+import { retryAllowedByFailurePolicy } from "./workflow-model-failure-policy.js";
 import {
   modelFailureStatusFields,
   providerRequestIdFromHeaders,
@@ -127,30 +119,19 @@ export async function* runStreamText(input: {
   const isDev = isDevelopmentModelIOEnv(input.env);
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
-  const authRetry = new AccountRequestRetry(input.request, input.resolved, input.logger);
   let emptyCompletionRetryCount = 0;
-  // 不认识的业务码在本次请求里连续出现的次数：workflow 策略表据此停下，见 workflow-model-failure-policy.ts。
-  // 每次失败（外层 catch 与流内错误块两条路径）都经它更新一次。
-  let unrecognizedCodeStreak = 0;
-  const countUnrecognizedCode = (failure: ClassifiedModelFailure, error: unknown): number =>
-    (unrecognizedCodeStreak = nextUnrecognizedCodeStreak(
-      unrecognizedCodeStreak,
-      failure,
-      inspectProviderFailure(error).providerErrorCode,
-    ));
 
   for (
     let attempt = 1;
     retryAttemptLoopContinues(
       retryBudget,
       attempt,
-      input.retry.maxAttempts + Number(signatureRepairAttempted) + authRetry.extraAttempts,
+      input.retry.maxAttempts + Number(signatureRepairAttempted),
     );
     attempt += 1
   ) {
-    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted) - authRetry.extraAttempts;
+    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted);
     const startedAt = Date.now();
-    const localAttemptStartedAt = performance.now();
     // SSE idle timeout 后的重试如果仍固定首请求窗口，容易被同一段 provider 静默窗口反复打断；
     // core recovery 和 adapter 内部 retry 都统一按重试次数每次增加 30s。
     const streamIdleTimeoutMs = resolveModelStreamIdleTimeoutMs({
@@ -161,7 +142,6 @@ export async function* runStreamText(input: {
     let emittedRetryBoundaryEvent = false;
     let emittedError = false;
     let retryScheduledFromStreamChunk = false;
-    let offPeakQueueHoldFromStreamChunk = false;
     const pendingRetrySafeEvents: ModelStreamEvent[] = [];
     const diagnostics = createStreamDiagnostics();
     const attemptAbortController = createLinkedAbortController(input.request.abortSignal);
@@ -173,7 +153,7 @@ export async function* runStreamText(input: {
     let statusContext = createAttemptStatusContext(
       {
         ...baseStatusContext,
-        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted) + authRetry.extraAttempts),
+        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted)),
       },
       attempt,
     );
@@ -192,8 +172,6 @@ export async function* runStreamText(input: {
     let timeToFirstProviderEventMs: number | undefined;
     let timeToFirstContentMs: number | undefined;
     let timeToFirstTextMs: number | undefined;
-    let localFirstContent = false;
-    let localFirstText = false;
     let streamMaxIdleMs = 0;
     let streamStallCount = 0;
     let streamOutputCommitted = false;
@@ -215,7 +193,7 @@ export async function* runStreamText(input: {
       input.logger?.warn("Retrying model stream after thinking signature rejection", {
         attempt,
         event: "model.reasoning_signature_repair.retry",
-        maxAttempts: input.retry.maxAttempts + 1 + authRetry.extraAttempts,
+        maxAttempts: input.retry.maxAttempts + 1,
         nextAttempt: attempt + 1,
         requestId: statusContext.requestId,
         status: "waiting",
@@ -223,39 +201,17 @@ export async function* runStreamText(input: {
       return true;
     };
     const publishVisibleMilestones = async (observation: {
+      contentMs?: number;
       textMs?: number;
-      outputKind?: "text" | "reasoning" | "tool";
     }): Promise<void> => {
-      if (
-        observation.outputKind &&
-        (statusContext.querySource === "main_turn" || statusContext.querySource === "compact")
-      ) {
-        if (!localFirstContent) {
-          localFirstContent = true;
-          logLocalModelMilestone(input.logger, statusContext, "first_content", {
-            attempt,
-            outputKind: observation.outputKind,
-            durationMs: performance.now() - localAttemptStartedAt,
-          });
-        }
-        if (observation.outputKind === "text" && !localFirstText) {
-          localFirstText = true;
-          logLocalModelMilestone(input.logger, statusContext, "first_text", {
-            attempt,
-            durationMs: performance.now() - localAttemptStartedAt,
-          });
-        }
-      }
-      // 接口接收时间独立于业务事件释放；缺少线协议观测时不能回退到缓冲后的时间。
-      const firstContentAt = resolved.streamTiming?.firstContentAt;
-      if (timeToFirstContentMs === undefined && firstContentAt !== undefined) {
-        timeToFirstContentMs = firstContentAt - startedAt;
+      if (timeToFirstContentMs === undefined && observation.contentMs !== undefined) {
+        timeToFirstContentMs = observation.contentMs;
         await publishModelTelemetryMilestone(
           {
             ...statusContext,
             attempt,
-            elapsedMs: timeToFirstContentMs,
-            timestamp: new Date(firstContentAt).toISOString(),
+            elapsedMs: observation.contentMs,
+            timestamp: new Date(startedAt + observation.contentMs).toISOString(),
             type: "model_first_content",
           },
           { logger: input.logger, statusSink: input.statusSink },
@@ -319,8 +275,7 @@ export async function* runStreamText(input: {
     try {
       resolved = await resolveModelForAttempt({
         attempt,
-        reason: authRetry.takeReason(),
-        request: authRetry.prepareRequest(attemptRequest),
+        request: attemptRequest,
         resolveModel: input.resolveModel,
       });
       const anthropicMetadataUserId = await resolveAnthropicRequestMetadataUserId({
@@ -407,8 +362,6 @@ export async function* runStreamText(input: {
             requestHeaderCount,
             requestHeaders,
             repairThinkingSignatureRejection,
-            canRecoverProjectToken: (error) => authRetry.canRecoverProjectToken(error),
-            countUnrecognizedCode,
             retryBudgetAttempt,
             startedAt,
             statusContext,
@@ -476,7 +429,6 @@ export async function* runStreamText(input: {
           attemptFailed = true;
           awaitIteratorClose = true;
           retryScheduledFromStreamChunk = true;
-          offPeakQueueHoldFromStreamChunk = event.offPeakQueueHold;
           break;
         }
         if (event.terminalError) {
@@ -493,10 +445,6 @@ export async function* runStreamText(input: {
       }
 
       if (retryScheduledFromStreamChunk) {
-        if (offPeakQueueHoldFromStreamChunk) {
-          // 排队等待不消耗重试预算：回退计数让 for 自增后原地重试。
-          attempt -= 1;
-        }
         continue;
       }
 
@@ -543,8 +491,6 @@ export async function* runStreamText(input: {
             } satisfies Record<string, unknown>),
         });
         if (hiddenProviderBusinessError) {
-          if (isRequestVerificationRejection(hiddenProviderBusinessError))
-            throw hiddenProviderBusinessError;
           const failure = classifyModelFailure(
             hiddenProviderBusinessError,
             input.request.abortSignal,
@@ -556,7 +502,6 @@ export async function* runStreamText(input: {
                 "response_body",
               ),
               errorPhase: "stream",
-              unrecognizedCodeStreak: countUnrecognizedCode(failure, hiddenProviderBusinessError),
             }),
           );
         }
@@ -564,21 +509,12 @@ export async function* runStreamText(input: {
         if (isSuspiciousStreamDiagnostics(diagnostics)) {
           // 403 JSON 等业务错误有时不会让 AI SDK 抛出 error chunk，流会以空 completion 结束；
           // 若不在 adapter 层终止，core 会误报 “Model returned no text...”。
-          const streamEndedWithoutOutputError =
-            detectProviderBusinessFinishError({
-              providerId: String(statusContext.providerId),
-              providerKind: statusContext.providerKind,
-              source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
-            }) ??
-            createRequestVerificationEmptyStreamError({
-              accountMode: resolved.accountAccess?.mode,
-              headers: resolved.headers,
-              providerId: String(statusContext.providerId),
-              providerKind: resolved.providerKind,
-            });
+          const streamEndedWithoutOutputError = detectProviderBusinessFinishError({
+            providerId: String(statusContext.providerId),
+            providerKind: statusContext.providerKind,
+            source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
+          });
           if (streamEndedWithoutOutputError) {
-            if (isRequestVerificationRejection(streamEndedWithoutOutputError))
-              throw streamEndedWithoutOutputError;
             const failure = classifyModelFailure(
               streamEndedWithoutOutputError,
               input.request.abortSignal,
@@ -590,10 +526,6 @@ export async function* runStreamText(input: {
                   "response_body",
                 ),
                 errorPhase: "stream",
-                unrecognizedCodeStreak: countUnrecognizedCode(
-                  failure,
-                  streamEndedWithoutOutputError,
-                ),
               }),
             );
           }
@@ -663,7 +595,6 @@ export async function* runStreamText(input: {
       });
       if (!emittedError) {
         const completedAt = Date.now();
-        await publishVisibleMilestones({});
         const responseHeaders = await resolveStreamResponseHeaders(streamResult);
         await publishModelStatus(
           {
@@ -745,35 +676,11 @@ export async function* runStreamText(input: {
       if (retryWithRepairedHistory) {
         statusContext = {
           ...statusContext,
-          maxAttempts: statusMaxAttempts(1 + authRetry.extraAttempts),
+          maxAttempts: statusMaxAttempts(1),
         };
       }
       const classified = classifyModelFailure(error, input.request.abortSignal);
-      if (error instanceof RuntimeHeadersRefreshError) {
-        classified.message = error.message;
-        classified.retryable = error.retryable;
-      }
-      // off-peak 特判（仅 idle plan provider）：排队 429 豁免预算无限探测；3102 标记落败触发续跑。
-      const offPeak = resolveOffPeakFailureDecision({
-        offPeak: resolved.accountAccess?.mode === "off-peak",
-        failure: classified,
-        error: unwrapRetryError(error),
-      });
-      const failure: ClassifiedModelFailure =
-        offPeak?.kind === "ticketExpired"
-          ? {
-              ...classified,
-              retryable: false,
-              message: offPeakTicketExpiredMessage(classified.message),
-            }
-          : offPeak?.kind === "queued"
-            ? {
-                ...classified,
-                retryable: true,
-                retryReason: ModelRetryReason.OffpeakQueued,
-              }
-            : classified;
-      countUnrecognizedCode(failure, error);
+      const failure: ClassifiedModelFailure = classified;
       const errorPhase =
         readModelFailureErrorPhase(error) ?? (streamIterator === undefined ? "prepare" : "stream");
       awaitIteratorClose = failure.reason !== ModelFailureReasonValue.Cancelled;
@@ -793,29 +700,7 @@ export async function* runStreamText(input: {
         streamErrorChunkObserved: Boolean(
           diagnostics.lastErrorChunk || diagnostics.lastFinishChunk,
         ),
-        unrecognizedCodeStreak,
       });
-      const retryWithAuth = authRetry.claim(
-        error,
-        options === undefined ||
-          emittedRetryBoundaryEvent ||
-          streamOutputCommitted ||
-          (input.request.preserveProviderStreamBoundaries === true &&
-            failureDecision.context?.streamFailurePhase === "response_body"),
-      );
-      if (retryWithAuth) {
-        failureDecision.canRetry = true;
-        statusContext = {
-          ...statusContext,
-          maxAttempts: statusMaxAttempts(
-            Number(signatureRepairAttempted) + authRetry.extraAttempts,
-          ),
-        };
-      }
-      // off-peak 排队 429 豁免预算：不消耗 maxAttempts，SSE 可见输出边界仍适用。
-      if (offPeak?.kind === "queued" && !emittedRetryBoundaryEvent) {
-        failureDecision.canRetry = true;
-      }
       if (retryWithRepairedHistory) {
         failureDecision.canRetry = true;
       }
@@ -859,18 +744,6 @@ export async function* runStreamText(input: {
       );
       terminalStatusPublished = true;
 
-      if (retryWithAuth) {
-        await publishRetryScheduledStatus(
-          input,
-          statusContext,
-          attempt,
-          0,
-          { ...failure, retryReason: ModelRetryReason.AuthRefresh },
-          requestHeaders,
-          responseHeaders,
-        );
-        continue;
-      }
       if (retryWithRepairedHistory) {
         await publishRetryScheduledStatus(
           input,
@@ -900,14 +773,10 @@ export async function* runStreamText(input: {
         throw toAdapterError(error, failure, statusContext, attempt, {
           ...failureDecision.context,
           errorPhase,
-          unrecognizedCodeStreak,
         });
       }
 
-      const delayMs =
-        offPeak?.kind === "queued"
-          ? offPeak.delayMs
-          : calculateRetryDelay(input.retry, retryBudgetAttempt, failure.retryAfterMs);
+      const delayMs = calculateRetryDelay(input.retry, retryBudgetAttempt, failure.retryAfterMs);
       logRetryDelayDecision({
         attempt,
         canRetry: failureDecision.canRetry,
@@ -960,10 +829,6 @@ export async function* runStreamText(input: {
         throw toAdapterError(sleepError, sleepFailure, statusContext, attempt, {
           errorPhase: "connect",
         });
-      }
-      if (offPeak?.kind === "queued") {
-        // 排队等待不消耗重试预算：回退计数让 for 自增后原地重试，无限探测。
-        attempt -= 1;
       }
     } finally {
       if (
@@ -1110,9 +975,6 @@ async function handleStreamChunk(input: {
   };
   pendingRetrySafeEvents: ModelStreamEvent[];
   repairThinkingSignatureRejection: (error: unknown) => boolean;
-  canRecoverProjectToken: (error: unknown) => boolean;
-  /** 记一次失败，返回不认识的业务码连续出现的次数（含这一次）。 */
-  countUnrecognizedCode: (failure: ClassifiedModelFailure, error: unknown) => number;
   retryBudgetAttempt: number;
   requestHeaderCount: number;
   requestHeaders: Record<string, string>;
@@ -1124,8 +986,6 @@ async function handleStreamChunk(input: {
   emittedEvent: boolean;
   emittedRetryBoundaryEvent: boolean;
   retryScheduled: boolean;
-  /** off-peak 排队重试：外层 for 冻结 attempt 预算。 */
-  offPeakQueueHold: boolean;
   terminalError?: TerminalStreamChunkError;
   visibleEvents: ModelStreamEvent[];
 }> {
@@ -1306,7 +1166,6 @@ async function handleStreamErrorEvent(
   input: Parameters<typeof handleStreamChunk>[0],
   error: unknown,
 ): Promise<Awaited<ReturnType<typeof handleStreamChunk>>> {
-  if (isRequestVerificationRejection(error) || input.canRecoverProjectToken(error)) throw error;
   const retryWithRepairedHistory =
     !input.emittedRetryBoundaryEvent && input.repairThinkingSignatureRejection(error);
   const statusContext = retryWithRepairedHistory
@@ -1319,27 +1178,7 @@ async function handleStreamErrorEvent(
       }
     : input.statusContext;
   const classified = classifyModelFailure(error, input.input.request.abortSignal);
-  // off-peak 特判：SSE 首块即错（尚无可见输出）时的排队 429 同样豁免预算重试。
-  const offPeak = resolveOffPeakFailureDecision({
-    offPeak: input.input.resolved.accountAccess?.mode === "off-peak",
-    failure: classified,
-    error: unwrapRetryError(error),
-  });
-  const failure: ClassifiedModelFailure =
-    offPeak?.kind === "ticketExpired"
-      ? {
-          ...classified,
-          retryable: false,
-          message: offPeakTicketExpiredMessage(classified.message),
-        }
-      : offPeak?.kind === "queued"
-        ? {
-            ...classified,
-            retryable: true,
-            retryReason: ModelRetryReason.OffpeakQueued,
-          }
-        : classified;
-  const unrecognizedCodeStreak = input.countUnrecognizedCode(failure, error);
+  const failure: ClassifiedModelFailure = classified;
   const responseHeaders = sanitizeModelNetworkHeaders(getResponseHeaders(unwrapRetryError(error)));
   const failureDecision = resolveStreamFailureDecision({
     attempt: input.retryBudgetAttempt,
@@ -1351,12 +1190,7 @@ async function handleStreamErrorEvent(
     responseHeaders,
     retryBudget: input.input.request.modelRetryBudget,
     streamErrorChunkObserved: true,
-    unrecognizedCodeStreak,
   });
-  // off-peak 排队 429 豁免预算：不消耗 maxAttempts，SSE 可见输出边界仍适用。
-  if (offPeak?.kind === "queued" && !input.emittedRetryBoundaryEvent) {
-    failureDecision.canRetry = true;
-  }
   if (retryWithRepairedHistory) {
     failureDecision.canRetry = true;
   }
@@ -1419,16 +1253,16 @@ async function handleStreamErrorEvent(
         toAdapterError(error, failure, statusContext, input.attempt, {
           ...failureDecision.context,
           errorPhase: "stream",
-          unrecognizedCodeStreak,
         }),
       ),
     });
   }
 
-  const delayMs =
-    offPeak?.kind === "queued"
-      ? offPeak.delayMs
-      : calculateRetryDelay(input.input.retry, input.retryBudgetAttempt, failure.retryAfterMs);
+  const delayMs = calculateRetryDelay(
+    input.input.retry,
+    input.retryBudgetAttempt,
+    failure.retryAfterMs,
+  );
   logRetryDelayDecision({
     attempt: input.attempt,
     canRetry: failureDecision.canRetry,
@@ -1466,7 +1300,6 @@ async function handleStreamErrorEvent(
   return streamChunkResult({
     emittedError: true,
     retryScheduled: true,
-    offPeakQueueHold: offPeak?.kind === "queued",
   });
 }
 
@@ -1532,7 +1365,6 @@ function resolveStreamFailureDecision(input: {
   retryBudget?: ModelRetryBudget;
   streamErrorChunkObserved?: boolean;
   streamIteratorCreated?: boolean;
-  unrecognizedCodeStreak: number;
 }): { canRetry: boolean; context?: Record<string, unknown> } {
   const httpResponseStatus = input.preserveProviderStreamBoundaries
     ? resolveCompactHttpResponseStatus(input.error)
@@ -1558,7 +1390,6 @@ function resolveStreamFailureDecision(input: {
       preserveProviderStreamBoundaries: input.preserveProviderStreamBoundaries,
       retryBudget: input.retryBudget,
       streamFailurePhase,
-      unrecognizedCodeStreak: input.unrecognizedCodeStreak,
     }),
     context: compactStreamFailureContext(
       input.preserveProviderStreamBoundaries,
@@ -1578,7 +1409,6 @@ function canRetryStreamFailure(input: {
   preserveProviderStreamBoundaries?: boolean;
   retryBudget?: ModelRetryBudget;
   streamFailurePhase?: StreamFailurePhase;
-  unrecognizedCodeStreak: number;
 }): boolean {
   // workflow 流量（无上限预算）不读分类器的 retryable，读策略表：只有确定性的模型侧错误
   // 才不重试；3008/3009/3010 这类并发上限在这里是 retry。
@@ -1604,14 +1434,7 @@ function canRetryStreamFailure(input: {
     return true;
   }
 
-  if (
-    !retryAllowedByFailurePolicy(
-      input.failure,
-      input.retryBudget,
-      providerCode,
-      input.unrecognizedCodeStreak,
-    )
-  ) {
+  if (!retryAllowedByFailurePolicy(input.failure, input.retryBudget, providerCode)) {
     return false;
   }
 
@@ -1665,8 +1488,6 @@ function streamChunkResult(
     emittedEvent: boolean;
     emittedRetryBoundaryEvent: boolean;
     retryScheduled: boolean;
-    /** off-peak 排队重试：外层 for 冻结 attempt 预算。 */
-    offPeakQueueHold: boolean;
     terminalError?: TerminalStreamChunkError;
     visibleEvents: ModelStreamEvent[];
   }> = {},
@@ -1676,7 +1497,6 @@ function streamChunkResult(
     emittedEvent: false,
     emittedRetryBoundaryEvent: false,
     retryScheduled: false,
-    offPeakQueueHold: false,
     visibleEvents: [],
     ...overrides,
   };
@@ -1686,13 +1506,11 @@ function statusPublishOptions(
   input: {
     logger?: Logger;
     request: AiSdkModelTextRequest;
-    resolved?: Pick<ResolvedAiSdkModel, "requestObservations">;
     statusSink?: ModelStatusSink;
   },
   admission?: AttemptAdmission,
 ) {
   return {
-    requestObservations: input.resolved?.requestObservations,
     logger: input.logger,
     requestStatusSink: input.request.statusSink,
     statusSink: input.statusSink,
@@ -1741,41 +1559,25 @@ async function publishRetryScheduledStatus(
 function observeVisibleStreamEvent(
   event: ModelStreamEvent,
   elapsed: number,
-): {
-  textMs?: number;
-  outputCommitted: boolean;
-  outputKind?: "text" | "reasoning" | "tool";
-} {
+): { contentMs?: number; textMs?: number; outputCommitted: boolean } {
   switch (event.type) {
     case "text_delta":
       return {
+        contentMs: elapsed,
         textMs: event.text ? elapsed : undefined,
-        outputKind: event.text.trim() ? "text" : undefined,
         outputCommitted: true,
       };
     case "reasoning_delta":
-      return {
-        outputCommitted: true,
-        outputKind: event.text.trim() ? "reasoning" : undefined,
-      };
     case "tool_input_delta":
-      return {
-        outputCommitted: true,
-        outputKind: event.delta.trim() ? "tool" : undefined,
-      };
     case "tool_call":
-      return {
-        outputCommitted: true,
-        outputKind: event.toolCall.name.trim() ? "tool" : undefined,
-      };
-    case "provider_tool_result":
-      return { outputCommitted: true, outputKind: "tool" };
+      return { contentMs: elapsed, outputCommitted: true };
     case "text_start":
     case "reasoning_start":
     case "tool_input_start":
-      return { outputCommitted: false };
+      return { contentMs: elapsed, outputCommitted: false };
     case "compact_stream_boundary":
       return {
+        contentMs: event.boundary === "provider_content_block_start" ? elapsed : undefined,
         outputCommitted:
           event.boundary === "provider_content_block_stop" ||
           event.boundary === "inferred_content_block_stop",

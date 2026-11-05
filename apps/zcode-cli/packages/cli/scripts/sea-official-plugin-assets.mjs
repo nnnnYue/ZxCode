@@ -53,7 +53,7 @@ export const officialSeaPlugins = [
       "skills/visualize/assets/standalone-shell.js",
     ],
     rootPath: join("packages", "visualize-plugin"),
-    version: "0.1.1",
+    version: "0.1.0",
   },
   {
     // node_repl 宿主：Browser Use 与 Computer Use 共用的运行时产物，自己不是面向用户的插件
@@ -64,7 +64,7 @@ export const officialSeaPlugins = [
     requiresRuntime: true,
     requiredRuntimePaths: ["dist/mcp/server.js"],
     rootPath: join("packages", "node-repl-host"),
-    version: "0.7.0",
+    version: "0.6.1",
   },
   {
     marketplace: "zcode-plugins-official",
@@ -89,7 +89,7 @@ export const officialSeaPlugins = [
     ],
     rootPath: join("packages", "documents-plugin"),
     // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
-    version: "0.2.1",
+    version: "0.2.0",
   },
   {
     marketplace: "zcode-plugins-official",
@@ -115,7 +115,7 @@ export const officialSeaPlugins = [
     ],
     rootPath: join("packages", "pdf-plugin"),
     // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
-    version: "0.2.2",
+    version: "0.2.1",
   },
   {
     marketplace: "zcode-plugins-official",
@@ -131,7 +131,7 @@ export const officialSeaPlugins = [
     ],
     rootPath: join("packages", "presentations-plugin"),
     // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
-    version: "0.2.1",
+    version: "0.2.0",
   },
   {
     marketplace: "zcode-plugins-official",
@@ -147,7 +147,7 @@ export const officialSeaPlugins = [
     ],
     rootPath: join("packages", "spreadsheets-plugin"),
     // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
-    version: "0.2.1",
+    version: "0.2.0",
   },
   {
     // browser-use 使用真实 node_repl MCP runtime，SEA 必须校验并嵌入 server.js。
@@ -201,30 +201,33 @@ export const officialSeaPlugins = [
     // 版本必须与 package.json / plugin.json / official-plugin-definitions.ts 同步 bump——
     // runtime 按 (name, version) 精确匹配 SEA 资产，这里落后会让整个插件在 SEA 下不 seed
     // （browser-use 0.3.1 的既有教训，build-sea.test.mjs:564 钉住四处对齐）。
-    // 0.3.0：`/workflow` 与 dynamic-workflows 技能移出本插件（见 sea-bundled-skill-assets.mjs）。
+    // fork 保留 /workflow 与 dynamic-workflows 技能随本插件发布，seed 钉住这些文件。
     marketplace: "zcode-plugins-official",
     name: "zcode-guide",
     packageName: "@zcode/zcode-guide-plugin",
     requiresRuntime: false,
-    requiredSeedPaths: ["skills/zcode-configuration-guide/SKILL.md"],
+    requiredSeedPaths: [
+      "skills/zcode-configuration-guide/SKILL.md",
+      "commands/workflow.md",
+      "skills/dynamic-workflows/SKILL.md",
+      "skills/dynamic-workflows/examples.md",
+      "skills/dynamic-workflows/patterns.md",
+    ],
     rootPath: join("packages", "zcode-guide-plugin"),
     version: "0.3.0",
   },
   {
-    // skill + start.sh 模板 + 零依赖的 zcode-site CLI，加上 Sites 面板（dist/ 下的 MCP server 与页面，
-    // 由插件自己的 build 脚本构建）。版本与 package.json / plugin.json / official-plugin-definitions.ts 同步 bump。
     marketplace: "zcode-plugins-official",
-    name: "zcode-site",
-    packageName: "@zcode/zcode-site-plugin",
-    requiresRuntime: true,
-    requiredRuntimePaths: ["dist/server.mjs", "dist/ui/panel.html"],
+    name: "computer-use",
+    packageName: "@zcode/zcode-cua-plugin",
+    requiresRuntime: false,
     requiredSeedPaths: [
-      "scripts/zcode-site.mjs",
-      "scripts/stage.mjs",
-      "skills/site-deploy/SKILL.md",
+      "docs/computer-use.md",
+      "scripts/computer-use-client.mjs",
+      "skills/computer-use/SKILL.md",
     ],
-    rootPath: join("packages", "zcode-site-plugin"),
-    version: "0.4.2",
+    rootPath: join("packages", "zcode-cua-plugin"),
+    version: "0.6.4",
   },
   // superpowers 已从内置插件下线，改走 UI 推荐区按需安装；这里不再打入 SEA 资源清单。
 ];

@@ -1,11 +1,4 @@
-import type {
-  ExecutableToolCall,
-  Model,
-  ModelToolContract,
-  ToolCall,
-  ToolExecutionResult,
-  TraceContext,
-} from "../deps.js";
+import type { Model, ModelToolContract, TraceContext } from "../deps.js";
 import type { AgentTelemetryCausation, ModelApiOperation } from "@zcode/contracts";
 import {
   PermissionService,
@@ -18,7 +11,6 @@ import type { RuntimeMessageEntry } from "../../agent/message-history.js";
 import type { ReadFileStateMap } from "../../tool/types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { getSessionShellSelectionFromConfig } from "../methods/session-shell-environment.js";
-import { scheduleTools } from "../methods/tools.js";
 import { prepareRuntimeProviderRequest } from "./runtime-provider-request-messages.js";
 import { createRefreshRuntimeHeadersBeforeModelAttempt } from "../methods/model-runtime-headers.js";
 import { createRuntimeModel, withModelInvocationContext } from "../methods/runtime-model.js";
@@ -90,19 +82,9 @@ export function captureProjectMemoryAgentContext(
   };
 }
 
-/** Memory Agent 的初始 entries：Main 的 provider entries 加 prompt。 */
-export function projectMemoryAgentEntries(
+export function prepareProjectMemoryAgentRequest(
   context: ProjectMemoryAgentContext,
   prompt: string,
-): RuntimeMessageEntry[] {
-  // 与 prepareRuntimeProviderRequest 追加 prompt 的形态相同，第一轮请求逐字节不变。
-  return [...context.providerEntries, { message: { role: "user", content: prompt } }];
-}
-
-/** 用 Main 的渲染器从 entries 生成 Memory 请求（MCS、并入 tool_result、ToolSearch 暴露、cache control）。 */
-export function renderProjectMemoryAgentRequest(
-  context: ProjectMemoryAgentContext,
-  entries: readonly RuntimeMessageEntry[],
 ) {
   return prepareRuntimeProviderRequest(
     {
@@ -110,36 +92,15 @@ export function renderProjectMemoryAgentRequest(
     },
     {
       applyCacheControl: true,
-      entries,
+      entries: context.providerEntries,
       model: context.model,
+      prompt,
       tools: context.tools,
     },
   ).request;
 }
 
-/** Memory Agent 的工具按 Main 的调度执行：concurrentSafe 的并行，其余按顺序。 */
-export function createProjectMemoryAgentToolRunner(
-  runtime: AgentRuntimeInternal,
-  context: ProjectMemoryAgentContext,
-) {
-  const executor = createProjectMemoryAgentToolExecutor(runtime, context);
-  return async (
-    toolCalls: ExecutableToolCall[],
-    options: { abortSignal?: AbortSignal },
-  ): Promise<ToolExecutionResult[]> => {
-    const schedule = await scheduleTools.call(runtime, toolCalls as ToolCall[]);
-    const run = executor.executeSchedule(toolCalls, schedule, {
-      signal: options.abortSignal,
-      traceContext: context.traceContext,
-    });
-    for (;;) {
-      const next = await run.next();
-      if (next.done) return next.value;
-    }
-  };
-}
-
-function createProjectMemoryAgentToolExecutor(
+export function createProjectMemoryAgentToolExecutor(
   runtime: AgentRuntimeInternal,
   context: ProjectMemoryAgentContext,
 ) {

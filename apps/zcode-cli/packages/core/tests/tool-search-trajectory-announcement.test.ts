@@ -18,7 +18,6 @@ it.each(["native", "local"] as const)(
     for (const name of names) {
       registry.register({
         ...toolSearchToolEntry,
-        aliases: undefined,
         metadata: { ...toolSearchToolEntry.metadata, name, shouldDefer: true },
       });
     }

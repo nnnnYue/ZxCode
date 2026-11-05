@@ -23,14 +23,11 @@ export interface BashCwdPolicyDecision {
   stderrSuffix?: string;
 }
 
-interface CwdBoundaryPair {
-  resolvedCwd: string;
-  workspaceRoot: string;
-}
-
 interface NormalizedCwdBoundary {
   pathApi: ToolPathApi;
-  equivalentPairs: CwdBoundaryPair[];
+  resolvedCwd: string;
+  workspaceRoot: string;
+  equivalentPairs: Array<{ resolvedCwd: string; workspaceRoot: string }>;
 }
 
 export function decideBashCwdPolicy(input: BashCwdPolicyInput): BashCwdPolicyDecision {
@@ -40,26 +37,14 @@ export function decideBashCwdPolicy(input: BashCwdPolicyInput): BashCwdPolicyDec
   if ((input.runtimeScope ?? "main") !== "main") return {};
 
   const boundary = normalizeCwdBoundaryInput(input);
-  // 修复原因：写回规范化后的物理路径时，symlink root、/private 别名或盘符大小写让同一目录
-  // 换了写法，环境公告按字符串比较，报出假的目录变化并多跑一次仓库检查。
-  // 规范化只用于判断边界；写回一律用 workspace root 的写法（加相对路径）。
-  const containing = findContainingPair(boundary);
-  if (containing) {
-    const relativePath = boundary.pathApi.relative(
-      containing.workspaceRoot,
-      containing.resolvedCwd,
-    );
-    return {
-      nextWorkingDirectory:
-        relativePath === ""
-          ? input.workspaceRoot
-          : boundary.pathApi.join(input.workspaceRoot, relativePath),
-    };
+
+  if (isResolvedCwdInsideWorkspace(boundary)) {
+    return { nextWorkingDirectory: boundary.resolvedCwd };
   }
 
   return {
-    nextWorkingDirectory: input.workspaceRoot,
-    stderrSuffix: `Shell cwd was reset to ${input.workspaceRoot}`,
+    nextWorkingDirectory: boundary.workspaceRoot,
+    stderrSuffix: `Shell cwd was reset to ${boundary.workspaceRoot}`,
   };
 }
 
@@ -89,11 +74,16 @@ function normalizeCwdBoundaryInput(input: BashCwdPolicyInput): NormalizedCwdBoun
     });
   }
 
-  return { pathApi, equivalentPairs };
+  return {
+    pathApi,
+    resolvedCwd,
+    workspaceRoot,
+    equivalentPairs,
+  };
 }
 
-function findContainingPair(boundary: NormalizedCwdBoundary): CwdBoundaryPair | undefined {
-  return boundary.equivalentPairs.find(({ resolvedCwd, workspaceRoot }) =>
+function isResolvedCwdInsideWorkspace(boundary: NormalizedCwdBoundary): boolean {
+  return boundary.equivalentPairs.some(({ resolvedCwd, workspaceRoot }) =>
     isInsideOrSamePath(resolvedCwd, workspaceRoot, boundary.pathApi),
   );
 }

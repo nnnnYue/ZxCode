@@ -12,12 +12,9 @@ export function trackResidencyBlockingWork<T>(
   this: AgentRuntimeInternal,
   work: Promise<T>,
 ): Promise<T> {
-  this.residencyBlockingWork.add(work);
-  this.residencyBlockingWorkCount = this.residencyBlockingWork.size;
+  this.residencyBlockingWorkCount += 1;
   return work.finally(() => {
-    this.residencyBlockingWork.delete(work);
-    this.residencyBlockingWorkCount = this.residencyBlockingWork.size;
-    for (const notify of this.workChanged) notify();
+    this.residencyBlockingWorkCount = Math.max(0, this.residencyBlockingWorkCount - 1);
   });
 }
 

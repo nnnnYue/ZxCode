@@ -7,7 +7,6 @@ import {
   currentFrame,
   isVisiblySettled,
   joinStrands,
-  strandSummary,
   type AwaitedOperand,
 } from "./causality-order-strands.js";
 
@@ -175,7 +174,9 @@ export function barrier(
   const { events, issued } = state;
   const joins = joinStrands(state, certain, maybe, awaited);
   const summaryOf = (regions: readonly string[]): string[] =>
-    regions.flatMap((region) => [...strandSummary(state, region)]);
+    regions.flatMap((region) => [
+      ...(state.strands.find((record) => record.region === region)?.summary ?? []),
+    ]);
   // A joined strand contributes what IT awaited: syntactically joined certainly, lifted
   // with the certainty of the claim that lifted it.
   const allCertain = [...certain, ...summaryOf(joins.certain)];
@@ -196,10 +197,7 @@ export function barrier(
 
   // `joins` rides the FIRST event this barrier emits: it is a property of the barrier, not
   // of either certainty side, and the control-flow projection reads it as one set.
-  const withJoins =
-    joined.length === 0
-      ? {}
-      : { joins: joined, ...(joins.maybe.length === 0 ? {} : { maybeJoins: joins.maybe }) };
+  const withJoins = joined.length === 0 ? {} : { joins: joined };
   if (freshCertain.length > 0) {
     events.push({ at: "settle", maybe: false, regions: chain, steps: freshCertain, ...withJoins });
   }
@@ -217,7 +215,7 @@ export function barrier(
   // strand's parked exits reconnect, so it is recorded even with no steps to its name.
   const joinOnly = (): void => {
     if (joined.length === 0) return;
-    events.push({ at: "settle", maybe: false, regions: chain, steps: [], ...withJoins });
+    events.push({ at: "settle", joins: joined, maybe: false, regions: chain, steps: [] });
   };
   if (allCertain.length > 0 || allMaybe.length > 0) {
     joinOnly(); // already settled: adds no step

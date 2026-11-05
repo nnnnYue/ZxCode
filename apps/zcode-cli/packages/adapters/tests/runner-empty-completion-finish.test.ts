@@ -23,7 +23,6 @@ const EXCLUDED_FINISHES = [
   { finishReason: "content-filter", rawFinishReason: undefined },
   { finishReason: "other", rawFinishReason: "content_filter" },
   { finishReason: "other", rawFinishReason: "refusal" },
-  { finishReason: "other", rawFinishReason: "sensitive" },
 ] as const;
 
 function harness(
@@ -221,7 +220,7 @@ describe.each(["stream", "generate"] as const)("%s empty completion finish seman
     )("does not retry excluded finish $finishReason / $rawFinishReason", async (entry) => {
       const { rawFinishReason } = entry;
       const run = harness(entry.finishReason, rawFinishReason, rawSource);
-      const contextLimit = !["content-filter", "content_filter", "refusal", "sensitive"].includes(
+      const contextLimit = !["content-filter", "content_filter", "refusal"].includes(
         rawFinishReason ?? entry.finishReason,
       );
       if (contextLimit) {

@@ -6,9 +6,5 @@ export const cliSessionExecutionModule = {
   id: "cli-session-execution",
   requires: ["shared", "zcode-cli"],
   provides: ["cli-session-execution"],
-  publicEntrypoints: [
-    "index.ts",
-    "contract.ts",
-    "../../../core/src/runtime/permission-full-access.ts",
-  ],
+  publicEntrypoints: ["index.ts", "contract.ts"],
 } as const;

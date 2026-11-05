@@ -1,4 +1,4 @@
-// import { replyToChannelToolEntry } from "./reply-to-channel.js";
+import { replyToChannelToolEntry } from "./reply-to-channel.js";
 // ============================================================
 // Built-in Tool Handlers
 // ============================================================
@@ -44,10 +44,8 @@ import {
   cronCreateToolEntry,
   cronDeleteToolEntry,
   cronListToolEntry,
-  cronPauseSelfToolEntry,
   cronUpdateToolEntry,
 } from "./cron.js";
-import { offPeakCreateToolEntry, offPeakListToolEntry } from "./off-peak.js";
 import {
   createEnterPlanModeToolEntry,
   enterPlanModeToolEntry,
@@ -96,9 +94,6 @@ export const builtInTools: ToolEntry[] = [
   cronListToolEntry,
   cronUpdateToolEntry,
   cronDeleteToolEntry,
-  cronPauseSelfToolEntry,
-  offPeakCreateToolEntry,
-  offPeakListToolEntry,
   enterPlanModeToolEntry,
   exitPlanModeToolEntry,
   askUserQuestionToolEntry,
@@ -113,8 +108,7 @@ export const builtInTools: ToolEntry[] = [
   taskOutputToolEntry,
   taskStopToolEntry,
   readSessionContextToolEntry,
-  // 渠道回复等待插件入口接入；仅注释默认注册，保留完整实现。
-  // replyToChannelToolEntry,
+  replyToChannelToolEntry,
   agentToolEntry,
   taskToolEntry,
   skillToolEntry,
@@ -125,10 +119,8 @@ export const builtInTools: ToolEntry[] = [
   saveWorkflowToolEntry,
   // workflow 创作的实验通道：同步、只读（v1）、完全瞬态。
   evalWorkflowSnippetToolEntry,
-  // run 内省的两个只读工具：主会话 always-on、无 gate。它们不进 WORKFLOW_CHILD_DISALLOWED_TOOLS——
-  // 那条禁令的理由是 CreateWorkflow 的 alwaysAsk 在子 runtime 里无窗可弹，只读查询不适用；但子
-  // runtime 不持有 run 端口，它们在那里必然失败，所以按另一条规则从子 runtime 移除
-  // （runtime/helpers/tool-allowlist.ts 的 RUN_INTROSPECTION_TOOLS）。
+  // run 内省的两个只读工具：always-on、无 gate。它们不进 WORKFLOW_CHILD_DISALLOWED_TOOLS——
+  // 那条禁令的理由是 CreateWorkflow 的 alwaysAsk 在子 runtime 里无窗可弹，只读查询不适用。
   listWorkflowRunsToolEntry,
   getWorkflowRunToolEntry,
   // run 的恢复入口：与上面两个只读内省工具同族（run_id 键、端口探测失败同款），但它是
@@ -195,8 +187,6 @@ interface RegisterBuiltInToolsOptions {
   includeEscalate?: boolean;
   includeWorkflow?: boolean;
   includeAutomation?: boolean;
-  /** Off-Peak 会话内创建工具面；由 host 的 offPeakToolEnabled flag（灰度/远程门）驱动。 */
-  includeOffPeak?: boolean;
   /**
    * 动态工作流灰度门。**只有显式 false
    * 才下架** DYNAMIC_WORKFLOW_TOOL_NAMES：缺席代表调用方不参与灰度（TUI、headless、
@@ -264,15 +254,8 @@ export function registerBuiltInTools(
       (entry.metadata.name === "CronCreate" ||
         entry.metadata.name === "CronList" ||
         entry.metadata.name === "CronUpdate" ||
-        entry.metadata.name === "CronDelete" ||
-        entry.metadata.name === "CronPauseSelf") &&
+        entry.metadata.name === "CronDelete") &&
       options.includeAutomation !== true
-    ) {
-      continue;
-    }
-    if (
-      (entry.metadata.name === "OffPeakCreate" || entry.metadata.name === "OffPeakList") &&
-      options.includeOffPeak !== true
     ) {
       continue;
     }

@@ -15,7 +15,10 @@ import type {
   RuntimeBackgroundStopTarget,
   TypedRuntimeBackgroundStopTarget,
 } from "./background-stop-types.js";
-import type { RuntimeTaskSnapshot, RuntimeTaskType } from "../../runtime-task/registry.js";
+import type {
+  RuntimeTaskSnapshot,
+  RuntimeTaskType,
+} from "../../runtime-task/registry.js";
 import {
   hasRunningBackgroundRuntimeTask,
   isTerminalRuntimeTask,
@@ -107,7 +110,7 @@ export async function stopBackgroundTask(
   }
 
   if (target.taskType === "local_agent") {
-    return stopLocalAgentBackgroundTask.call(this, target, options.initiator);
+    return stopLocalAgentBackgroundTask.call(this, target);
   }
 
   if (target.taskType === "local_bash") {
@@ -177,13 +180,11 @@ function unsupportedBackgroundStopResult(
 async function stopLocalAgentBackgroundTask(
   this: AgentRuntimeInternal,
   target: TypedRuntimeBackgroundStopTarget,
-  initiator: RuntimeBackgroundStopOptions["initiator"],
 ): Promise<RuntimeBackgroundStopResult> {
   if (!this.subagentPort?.stopTask) {
     return unsupportedBackgroundStopResult(target);
   }
-  // 停止者随停止请求传给 subagent：killed 通知据此写 "by ZCode" / "by user" / 不写。
-  const snapshot = await this.subagentPort.stopTask(target.taskId, { initiator });
+  const snapshot = await this.subagentPort.stopTask(target.taskId);
   if (!snapshot) {
     return {
       ok: false,
@@ -292,32 +293,29 @@ async function stopLocalBashBackgroundTask(
 
 export async function cancelRunningRuntimeBackgroundTasks(
   this: AgentRuntimeInternal,
-  input: { reason: "subagent_cancelled" | "session_closed"; traceContext?: TraceContext },
+  input: { reason: "subagent_cancelled"; traceContext?: TraceContext },
 ): Promise<void> {
-  if (input.reason !== "session_closed" && this.config.taskType !== "subagent_child") return;
+  if (this.config.taskType !== "subagent_child") return;
   const traceContext = input.traceContext ?? this.rootTraceContext;
   const tasks = Object.values(this.runtimeTaskRegistry.all()).filter(
     (task) =>
-      task.type === "local_bash" && task.isBackgrounded === true && task.status === "running",
+      task.type === "local_bash" &&
+      task.isBackgrounded === true &&
+      task.status === "running",
   );
 
-  const results = await Promise.allSettled(
-    tasks.map(async (task) => {
-      this.logger?.info?.("Cancelling background task during runtime cleanup", {
-        ...traceContextToLogContext(traceContext),
-        event: "runtime.background_task.cleanup_cancel",
-        module: "core.runtime",
-        reason: input.reason,
-        taskId: task.taskId,
-      });
-      await this.stopBackgroundTask(task.taskId, {
-        traceContext,
-      });
-    }),
-  );
-  // 某个取消失败也要等其他任务完成收尾，否则上层会提前关闭共享存储和执行器。
-  const errors = results.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
-  if (errors.length) throw new AggregateError(errors, "Background tasks cleanup failed");
+  for (const task of tasks) {
+    this.logger?.info?.("Cancelling subagent background task during runtime cleanup", {
+      ...traceContextToLogContext(traceContext),
+      event: "runtime.background_task.cleanup_cancel",
+      module: "core.runtime",
+      reason: input.reason,
+      taskId: task.taskId,
+    });
+    await this.stopBackgroundTask(task.taskId, {
+      traceContext,
+    });
+  }
 }
 
 export function buildBackgroundTaskPayload(
@@ -398,7 +396,8 @@ export function buildBackgroundTaskPayload(
 function backgroundInfoFromRuntimeTask(task: RuntimeTaskSnapshot): BackgroundTaskInfo {
   return {
     taskId: task.taskId,
-    toolCallId: typeof task.parentToolCallId === "string" ? task.parentToolCallId : undefined,
+    toolCallId:
+      typeof task.parentToolCallId === "string" ? task.parentToolCallId : undefined,
     toolName: toolNameFromRuntimeTaskType(task.type),
     cancellable: task.status === "running",
     command: commandFromRuntimeTask(task, undefined),
@@ -458,7 +457,9 @@ function toolNameFromRuntimeTaskType(type: RuntimeTaskType): string {
   }
 }
 
-function isTerminalBackgroundTaskInfoStatus(status: BackgroundTaskInfoStatus | undefined): boolean {
+function isTerminalBackgroundTaskInfoStatus(
+  status: BackgroundTaskInfoStatus | undefined,
+): boolean {
   return Boolean(status && status !== "running");
 }
 

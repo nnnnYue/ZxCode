@@ -264,14 +264,25 @@ export const GREP_SAFE_FLAGS = {
 } as const satisfies Readonly<Record<string, SafeFlagValue>>;
 
 export const SED_SAFE_FLAGS = {
-  "-n": "none",
-  "--quiet": "none",
-  "--silent": "none",
   "-E": "none",
+  "-e": "string",
+  "-l": "number",
+  "-n": "none",
   "-r": "none",
-  "--regexp-extended": "none",
-  "--posix": "none",
+  "-s": "none",
+  "-u": "none",
   "-z": "none",
+  "--debug": "none",
+  "--expression": "string",
+  "--help": "none",
+  "--line-length": "number",
+  "--posix": "none",
+  "--quiet": "none",
+  "--regexp-extended": "none",
+  "--separate": "none",
+  "--silent": "none",
+  "--unbuffered": "none",
+  "--version": "none",
   "--zero-terminated": "none",
 } as const satisfies Readonly<Record<string, SafeFlagValue>>;
 

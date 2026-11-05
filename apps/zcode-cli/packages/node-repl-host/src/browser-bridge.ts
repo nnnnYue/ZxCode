@@ -4,7 +4,11 @@ import type { BrowserClientTransport } from "@zcode/core/browser-client";
 import type { NodeReplRequestMeta, NodeReplSession } from "@zcode/core/repl";
 import type { BrowserCommand, BrowserCommandResult } from "@zcode/shared";
 // 只加载 broker 协议；shared 总入口会在每个 Worker 中初始化无关领域的 schema。
-import { nodeReplBrowserBrokerResponseSchema } from "@zcode/shared/node-repl-browser-broker";
+import {
+  NODE_REPL_BROWSER_BROKER_SOCKET_ENV,
+  NODE_REPL_BROWSER_BROKER_TOKEN_ENV,
+  nodeReplBrowserBrokerResponseSchema,
+} from "@zcode/shared/node-repl-browser-broker";
 import { NODE_REPL_BROWSER_BRIDGE_SYMBOL } from "./runtime-bridge.js";
 
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024;
@@ -17,17 +21,14 @@ export interface ActiveNodeReplCall {
   signal: AbortSignal;
 }
 
-/** Worker 连主线程浏览器代理 broker 用的地址和本次调用的 token（由主线程账本签发）。 */
-export interface NodeReplBrowserBrokerConnection {
-  socketPath: string;
-  token: string;
+interface BrokerContext {
+  runtimeScope: "main" | "subagent";
+  sessionId: string;
+  turnId?: string;
+  trace?: { traceId: string; spanId?: string; parentSpanId?: string };
 }
 
-// 修复原因（MR !3207 评审 CR-01）：bridge 原来直接连 ZCode 主进程的浏览器 broker，并在 Worker 里
-// 填写会话信息、记录截图；cell 能冒充 Worker 的结果消息，也能自报别的会话。现在只连主线程的代理，
-// 会话信息由代理按账本条目填写，截图由代理记进账本（20-node-repl-call-ledger.md「浏览器代理 broker」）。
 export function createBrowserBridgeGlobals(input: {
-  broker?: NodeReplBrowserBrokerConnection;
   documentationRoot: string;
   generation: number;
   getActiveCall: () => ActiveNodeReplCall | undefined;
@@ -43,15 +44,23 @@ export function createBrowserBridgeGlobals(input: {
   const transport: BrowserClientTransport = {
     list: async () => {
       const active = assertActive();
-      const response = await sendBrokerRequest(input.broker, { op: "list" }, active.signal);
+      const response = await sendBrokerRequest(
+        { op: "list", ...requestContext(active.requestMeta) },
+        active.signal,
+      );
       assertActive();
       return response.browsers ?? [];
     },
     execute: async (browserId, browserGeneration, command) => {
       const active = assertActive();
       const response = await sendBrokerRequest(
-        input.broker,
-        { op: "execute", browserId, browserGeneration, command },
+        {
+          op: "execute",
+          browserId,
+          browserGeneration,
+          command,
+          ...requestContext(active.requestMeta),
+        },
         active.signal,
       );
       assertActive();
@@ -69,24 +78,51 @@ export function createBrowserBridgeGlobals(input: {
   };
 }
 
+function requestContext(meta: NodeReplRequestMeta): BrokerContext {
+  const sessionId = stringMeta(meta, "session_id");
+  if (!sessionId) throw new Error("node_repl browser request is missing session_id metadata");
+  const traceId = stringMeta(meta, "trace_id");
+  return {
+    runtimeScope: meta.runtime_scope === "subagent" ? "subagent" : "main",
+    sessionId,
+    ...(stringMeta(meta, "turn_id") ? { turnId: stringMeta(meta, "turn_id") } : {}),
+    ...(traceId
+      ? {
+          trace: {
+            traceId,
+            ...(stringMeta(meta, "span_id") ? { spanId: stringMeta(meta, "span_id") } : {}),
+            ...(stringMeta(meta, "parent_span_id")
+              ? { parentSpanId: stringMeta(meta, "parent_span_id") }
+              : {}),
+          },
+        }
+      : {}),
+  };
+}
 
+function stringMeta(meta: NodeReplRequestMeta, key: string): string | undefined {
+  const value = meta[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
 
 async function sendBrokerRequest(
-  broker: NodeReplBrowserBrokerConnection | undefined,
-  request:
-    | { op: "list" }
-    | {
-        op: "execute";
-        browserId: string;
-        browserGeneration: number;
-        command: BrowserCommand;
-      },
+  request: BrokerContext &
+    (
+      | { op: "list" }
+      | {
+          op: "execute";
+          browserId: string;
+          browserGeneration: number;
+          command: BrowserCommand;
+        }
+    ),
   signal: AbortSignal,
 ): Promise<SuccessfulBrokerResponse> {
-  if (!broker) {
+  const socketPath = process.env[NODE_REPL_BROWSER_BROKER_SOCKET_ENV]?.trim();
+  const token = process.env[NODE_REPL_BROWSER_BROKER_TOKEN_ENV]?.trim();
+  if (!socketPath || !token) {
     throw new Error("Browser control is unavailable for this node_repl session");
   }
-  const { socketPath, token } = broker;
   const id = randomUUID();
   return await new Promise<SuccessfulBrokerResponse>((resolve, reject) => {
     let buffer = "";
@@ -137,6 +173,9 @@ function mergeBrowserResponseMeta(
   command: BrowserCommand,
   result: BrowserCommandResult,
 ): void {
+  if (result.ok && command.method === "screenshot" && result.image) {
+    session.recordBrowserScreenshot(result.image);
+  }
   const meta = result.meta;
   if (!meta) return;
   const finalized = result.ok && command.method === "finalizeTabs";

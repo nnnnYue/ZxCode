@@ -36,14 +36,10 @@ interface ScriptWorkflowToolPortDeps {
   workingDirectory: string;
 }
 
-export function createScriptWorkflowToolPort(
-  deps: ScriptWorkflowToolPortDeps,
-): WorkflowPort & { close(): Promise<void> } {
+export function createScriptWorkflowToolPort(deps: ScriptWorkflowToolPortDeps): WorkflowPort {
   const completionSnapshots = new Map<string, Promise<WorkflowTaskSnapshot | undefined>>();
   const launchSnapshots = new Map<string, WorkflowTaskSnapshot>();
-  const shutdown = new AbortController();
-  const launches = new Set<Promise<unknown>>();
-  const port: WorkflowPort = {
+  return {
     async getTask(taskId): Promise<WorkflowTaskSnapshot | undefined> {
       return (await getWorkflowTaskSnapshot(deps, taskId)) ?? launchSnapshots.get(taskId);
     },
@@ -58,12 +54,7 @@ export function createScriptWorkflowToolPort(
       if (options?.signal?.aborted) {
         throw createCoreError(CoreErrorType.ToolCancelled, "Workflow launch cancelled");
       }
-      const signal = options?.signal
-        ? AbortSignal.any([options.signal, shutdown.signal])
-        : shutdown.signal;
-      signal.throwIfAborted();
-      const source = await resolveWorkflowToolSource(deps, request, signal);
-      signal.throwIfAborted();
+      const source = await resolveWorkflowToolSource(deps, request, options?.signal);
       if (options?.signal?.aborted) {
         throw createCoreError(CoreErrorType.ToolCancelled, "Workflow launch cancelled");
       }
@@ -83,7 +74,7 @@ export function createScriptWorkflowToolPort(
 
       const runtime = deps.getRuntime();
       // 后台 workflow 已脱离当前 tool call；父 turn 取消不应中止已返回 runId 的任务。
-      const runAbortController = shutdown;
+      const runAbortController = new AbortController();
       const runPromise = source.scriptPath
         ? runtime.run(
             {
@@ -123,16 +114,12 @@ export function createScriptWorkflowToolPort(
             taskId: runId,
           };
           launchSnapshots.set(runId, snapshot);
-          deps.logger?.error(
-            "Background workflow failed before status was persisted",
-            toError(error),
-            {
-              event: "workflow.tool.background_failed",
-              module: "bootstrap.workflow",
-              runId,
-              status: "failed",
-            },
-          );
+          deps.logger?.error("Background workflow failed before status was persisted", toError(error), {
+            event: "workflow.tool.background_failed",
+            module: "bootstrap.workflow",
+            runId,
+            status: "failed",
+          });
           return snapshot;
         },
       );
@@ -153,28 +140,6 @@ export function createScriptWorkflowToolPort(
         status: "backgrounded",
         traceId: request.trace.traceId,
       };
-    },
-  };
-  let closePromise: Promise<void> | undefined;
-  return {
-    ...port,
-    start(request, options) {
-      if (shutdown.signal.aborted) return Promise.reject(new Error("Workflow tool owner closed"));
-      const launch = port.start(request, options);
-      launches.add(launch);
-      void launch.then(
-        () => launches.delete(launch),
-        () => launches.delete(launch),
-      );
-      return launch;
-    },
-    close() {
-      shutdown.abort(new Error("Workflow tool owner closed"));
-      closePromise ??= (async () => {
-        while (launches.size) await Promise.allSettled(launches);
-        await Promise.allSettled(completionSnapshots.values());
-      })();
-      return closePromise;
     },
   };
 }

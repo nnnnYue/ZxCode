@@ -2,12 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import {
-  BashOutputSchema,
-  CoreErrorType,
-  SessionEventType,
-  createImageProcessorError,
-} from "@zcode/contracts";
+import { CoreErrorType, SessionEventType, createImageProcessorError } from "@zcode/contracts";
 import { isErrorForToolResult } from "../src/runtime/helpers/tool-result.js";
 import { decideBashCwdPolicy } from "../src/tool/handlers/bash-cwd-policy.js";
 import { bashHandler, bashToolEntry, createBashToolEntry } from "../src/tool/handlers/bash.js";
@@ -28,7 +23,7 @@ import type {
   SessionEvent,
   ToolExecutionSpanWriter,
 } from "@zcode/contracts";
-import { createReadFileStatePathKey } from "../src/tool/read-file-state.js";
+import { createReadFileStateKey } from "../src/tool/read-file-state.js";
 import type { ReadFileStateMap, ToolExecutionContext } from "../src/tool/types.js";
 
 const workspaceRoot = resolve("/work");
@@ -100,6 +95,11 @@ describe("Bash cwd policy", () => {
 
       try {
         const physicalChild = await realpath(realChild);
+        // 测试基建修复：Turbo 的严格环境可能让 tmpdir() 回落到 /tmp，而 macOS realpath
+        // 会返回 /private/tmp；断言必须与生产 cwd policy 使用同一组系统路径别名。
+        const normalizedPhysicalChild = physicalChild
+          .replace(/^\/private\/var\//, "/var/")
+          .replace(/^\/private\/tmp(\/|$)/, "/tmp$1");
         expect(
           decideBashCwdPolicy({
             status: "completed",
@@ -108,17 +108,7 @@ describe("Bash cwd policy", () => {
             workspaceRoot: linkRoot,
             runtimeScope: "main",
           }),
-        ).toEqual({ nextWorkingDirectory: join(linkRoot, "child") });
-        // 不 cd 的命令捕获到 root 的物理路径：写回 root 原样，环境公告不会报目录变化。
-        expect(
-          decideBashCwdPolicy({
-            status: "completed",
-            exitCode: 0,
-            resolvedCwd: await realpath(realRoot),
-            workspaceRoot: linkRoot,
-            runtimeScope: "main",
-          }),
-        ).toEqual({ nextWorkingDirectory: linkRoot });
+        ).toEqual({ nextWorkingDirectory: normalizedPhysicalChild });
       } finally {
         await rm(root, { recursive: true, force: true });
       }
@@ -135,42 +125,7 @@ describe("Bash cwd policy", () => {
         platform: "win32",
         runtimeScope: "main",
       }),
-    ).toEqual({ nextWorkingDirectory: "c:\\repo\\Subdir" });
-  });
-
-  it("writes cwd back in the workspace root spelling", () => {
-    // 同一目录换了写法（盘符大小写、/private 别名）时写回 root 原样。
-    expect(
-      decideBashCwdPolicy({
-        status: "completed",
-        exitCode: 0,
-        resolvedCwd: "C:\\Repo",
-        workspaceRoot: "c:\\Repo",
-        platform: "win32",
-        runtimeScope: "main",
-      }),
-    ).toEqual({ nextWorkingDirectory: "c:\\Repo" });
-    expect(
-      decideBashCwdPolicy({
-        status: "completed",
-        exitCode: 0,
-        resolvedCwd: "/tmp/repo",
-        workspaceRoot: "/private/tmp/repo",
-        runtimeScope: "main",
-      }),
-    ).toEqual({ nextWorkingDirectory: "/private/tmp/repo" });
-    expect(
-      decideBashCwdPolicy({
-        status: "completed",
-        exitCode: 0,
-        resolvedCwd: "/outside",
-        workspaceRoot: "/private/tmp/repo",
-        runtimeScope: "main",
-      }),
-    ).toEqual({
-      nextWorkingDirectory: "/private/tmp/repo",
-      stderrSuffix: "Shell cwd was reset to /private/tmp/repo",
-    });
+    ).toEqual({ nextWorkingDirectory: "C:\\Repo\\Subdir" });
   });
 
   it("reuses shared Windows tool path normalization for Git Bash cwd aliases", () => {
@@ -254,7 +209,7 @@ describe("Bash cwd policy", () => {
         platform: "win32",
         runtimeScope: "main",
       }),
-    ).toEqual({ nextWorkingDirectory: "c:\\repo\\..cache" });
+    ).toEqual({ nextWorkingDirectory: "C:\\Repo\\..cache" });
   });
 });
 
@@ -364,16 +319,7 @@ describe("bashHandler", () => {
       shellProfile: "posix-bash",
     });
     expect(capturedRequest?.cwd).toBe(projectRoot);
-    // 模型输入不带 env；handler 只设置会话上下文变量。
-    expect(capturedRequest?.env).toEqual({
-      set: {
-        CLAUDE_CODE_SESSION_ID: "sess_test",
-        CLAUDE_PROJECT_DIR: projectRoot,
-        CLAUDE_SESSION_ID: "sess_test",
-        ZCODE_PROJECT_DIR: projectRoot,
-        ZCODE_SESSION_ID: "sess_test",
-      },
-    });
+    expect(capturedRequest?.env).toBeUndefined();
     expect(capturedRequest?.timeoutMs).toBe(123);
     expect(capturedRequest?.outputLimit).toEqual({
       maxInlineBytes: 30_000,
@@ -511,33 +457,6 @@ describe("bashHandler", () => {
       enabled: false,
       dangerouslyDisableSandbox: true,
     });
-  });
-
-  it("keeps the workspace root in session context variables after cd, for background calls too", async () => {
-    const requests: ExecutionRequest[] = [];
-    const executionPort: BashBackgroundLifecycleExecutionPort = {
-      async run(request) {
-        requests.push(request);
-        return executionResult({ status: "completed", exitCode: 0, stdout: "ok\n" });
-      },
-      async runBashWithBackgroundLifecycle(request) {
-        requests.push(request);
-        return { kind: "completed", result: executionResult({ status: "completed", exitCode: 0 }) };
-      },
-    };
-    const context = contextWith(executionPort, {
-      workingDirectory: resolve(projectRoot, "nested"),
-      workspaceRoot: projectRoot,
-    });
-
-    await bashHandler({ command: "echo ok" } satisfies BashInput, context);
-    await bashHandler({ command: "echo ok", run_in_background: true } satisfies BashInput, context);
-
-    expect(requests).toHaveLength(2);
-    for (const request of requests) {
-      expect(request.env?.set?.CLAUDE_PROJECT_DIR).toBe(projectRoot);
-      expect(request.env?.set?.ZCODE_SESSION_ID).toBe("sess_test");
-    }
   });
 
   it("updates session cwd from successful foreground Bash execution", async () => {
@@ -1367,64 +1286,6 @@ describe("bashHandler", () => {
     expect(output.stdoutPersistedOutputPath).toBe("/tmp/exec_bg-stdout.log");
     expect(output.stderrPersistedOutputPath).toBe("/tmp/exec_bg-stderr.log");
     expect(output.interrupted).toBe(false);
-    // 显式后台不是超时触发的，不记录超时。
-    expect(output.timedOutAfterMs).toBeUndefined();
-  });
-
-  it("records the timeout when a foreground command is moved to the background", async () => {
-    const executionPort: BashBackgroundLifecycleExecutionPort = {
-      async run() {
-        throw new Error("run should not be called");
-      },
-      runBashWithBackgroundLifecycle: vi.fn(
-        async (_request: ExecutionRequest, lifecycle: { mode: string }) => {
-          expect(lifecycle.mode).toBe("auto_on_timeout");
-          return {
-            kind: "backgrounded" as const,
-            task: {
-              taskId: "exec_bg",
-              status: "running" as const,
-              startedAt: new Date(),
-              outputPath: "/tmp/exec_bg.output",
-            },
-          };
-        },
-      ),
-    };
-
-    const output = (await bashHandler(
-      { command: "long-running command" } satisfies BashInput,
-      contextWith(executionPort),
-    )) as BashOutput;
-
-    expect(output.status).toBe("backgrounded");
-    expect(output.timedOutAfterMs).toBe(120_000);
-  });
-
-  it("keeps a decimal timeout valid in the auto-background output", async () => {
-    const executionPort: BashBackgroundLifecycleExecutionPort = {
-      async run() {
-        throw new Error("run should not be called");
-      },
-      runBashWithBackgroundLifecycle: vi.fn(async () => ({
-        kind: "backgrounded" as const,
-        task: {
-          taskId: "exec_bg_decimal",
-          status: "running" as const,
-          startedAt: new Date(),
-          outputPath: "/tmp/exec_bg_decimal.output",
-        },
-      })),
-    };
-
-    const output = (await bashHandler(
-      { command: "long-running command", timeout: 1500.5 } satisfies BashInput,
-      contextWith(executionPort),
-    )) as BashOutput;
-
-    // 模型可以传小数 timeout，超时转后台的输出原样记录它；输出校验不能因此判工具失败。
-    expect(output.timedOutAfterMs).toBe(1500.5);
-    expect(BashOutputSchema.safeParse(output).success).toBe(true);
   });
 
   it.each([
@@ -1468,7 +1329,7 @@ describe("bashHandler", () => {
             unknown
           >
         ).description,
-      ).toBe("Optional timeout in milliseconds (max 900 for a foreground command)");
+      ).toBe("Optional timeout in milliseconds (max 900)");
       expect(entry.metadata.description).toContain("default 250");
       expect(entry.metadata.description).toContain("max 900");
     },
@@ -2025,7 +1886,7 @@ describe("bashHandler", () => {
       contextWith(executionPort, { fileSystemPort, readFileState }),
     );
 
-    const entry = readFileState.get(createReadFileStatePathKey(filePath));
+    const entry = readFileState.get(createReadFileStateKey(filePath, 1, undefined));
     expect(entry).toMatchObject({
       path: filePath,
       content: "FOO=bar\n",
@@ -2083,7 +1944,9 @@ describe("bashHandler", () => {
         contextWith(executionPort, { fileSystemPort, readFileState }),
       );
 
-      const entry = readFileState.get(createReadFileStatePathKey(filePath));
+      const entry = readFileState.get(
+        createReadFileStateKey(filePath, testCase.expectedOffset, testCase.expectedLimit),
+      );
       expect(entry).toMatchObject({
         path: filePath,
         content: testCase.expectedContent,
@@ -2118,7 +1981,7 @@ describe("bashHandler", () => {
       contextWith(successPort, { fileSystemPort, readFileState: successState }),
     );
 
-    expect(successState.get(createReadFileStatePathKey(filePath))).toMatchObject({
+    expect(successState.get(createReadFileStateKey(filePath, 1, undefined))).toMatchObject({
       path: filePath,
       content: "needle\nhaystack\n",
       offset: undefined,
@@ -2169,7 +2032,7 @@ describe("bashHandler", () => {
       contextWith(executionPort, { fileSystemPort, readFileState }),
     );
 
-    expect(readFileState.get(createReadFileStatePathKey(filePath))).toBeUndefined();
+    expect(readFileState.get(createReadFileStateKey(filePath, 1, undefined))).toBeUndefined();
   });
 
   it("does not backfill readFileState for complex or unsafe Bash read commands", async () => {
@@ -2214,7 +2077,7 @@ describe("bashHandler", () => {
   it("emits stale read hint when a write-like Bash command modifies a previously read file", async () => {
     const filePath = resolve(defaultCommandRoot, "fixture.ts");
     const readFileState: ReadFileStateMap = new Map();
-    readFileState.set(createReadFileStatePathKey(filePath), {
+    readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
       path: filePath,
       content: "old\n",
       isPartialView: false,
@@ -2253,7 +2116,7 @@ describe("bashHandler", () => {
   it("does not emit stale hint when write-like Bash exits with provider error", async () => {
     const filePath = resolve(defaultCommandRoot, "fixture.ts");
     const readFileState: ReadFileStateMap = new Map();
-    readFileState.set(createReadFileStatePathKey(filePath), {
+    readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
       path: filePath,
       content: "old\n",
       isPartialView: false,
@@ -2294,7 +2157,7 @@ describe("bashHandler", () => {
     );
     const readFileState: ReadFileStateMap = new Map();
     for (const filePath of changedFilePaths) {
-      readFileState.set(createReadFileStatePathKey(filePath), {
+      readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
         path: filePath,
         content: "old\n",
         isPartialView: false,
@@ -2343,7 +2206,7 @@ describe("bashHandler", () => {
     );
     const readFileState: ReadFileStateMap = new Map();
     for (const filePath of changedFilePaths) {
-      readFileState.set(createReadFileStatePathKey(filePath), {
+      readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
         path: filePath,
         content: "old\n",
         isPartialView: false,
@@ -2409,42 +2272,56 @@ describe("bashHandler", () => {
     const cases = [
       {
         command: "cat -n fixture.txt",
+        keyOffset: 1,
+        keyLimit: undefined,
         expectedContent: "a\nb\nc\nd\ne\n",
         expectedOffset: undefined,
         expectedLimit: undefined,
       },
       {
         command: "cat --number fixture.txt",
+        keyOffset: 1,
+        keyLimit: undefined,
         expectedContent: "a\nb\nc\nd\ne\n",
         expectedOffset: undefined,
         expectedLimit: undefined,
       },
       {
         command: "head --lines=2 fixture.txt",
+        keyOffset: 1,
+        keyLimit: 2,
         expectedContent: "a\nb",
         expectedOffset: 1,
         expectedLimit: 2,
       },
       {
         command: "head -2 fixture.txt",
+        keyOffset: 1,
+        keyLimit: 2,
         expectedContent: "a\nb",
         expectedOffset: 1,
         expectedLimit: 2,
       },
       {
         command: "tail --lines 2 fixture.txt",
+        keyOffset: 4,
+        keyLimit: 2,
         expectedContent: "d\ne",
         expectedOffset: 4,
         expectedLimit: 2,
       },
       {
         command: "sed --quiet '3p' fixture.txt",
+        keyOffset: 3,
+        keyLimit: 1,
         expectedContent: "c",
         expectedOffset: 3,
         expectedLimit: 1,
       },
       {
         command: "grep -n --color=never c fixture.txt",
+        keyOffset: 1,
+        keyLimit: undefined,
         expectedContent: "a\nb\nc\nd\ne\n",
         expectedOffset: undefined,
         expectedLimit: undefined,
@@ -2468,7 +2345,9 @@ describe("bashHandler", () => {
         contextWith(executionPort, { fileSystemPort, readFileState }),
       );
 
-      expect(readFileState.get(createReadFileStatePathKey(filePath))).toMatchObject({
+      expect(
+        readFileState.get(createReadFileStateKey(filePath, testCase.keyOffset, testCase.keyLimit)),
+      ).toMatchObject({
         content: testCase.expectedContent,
         offset: testCase.expectedOffset,
         limit: testCase.expectedLimit,
@@ -2507,7 +2386,7 @@ describe("bashHandler", () => {
   it("does not backfill readFileState for files over 10MB or existing read state paths", async () => {
     const largePath = resolve(defaultCommandRoot, "large.txt");
     const existingPath = resolve(defaultCommandRoot, "existing.txt");
-    const existingKey = createReadFileStatePathKey(existingPath);
+    const existingKey = createReadFileStateKey(existingPath, 1, undefined);
     const readFileState: ReadFileStateMap = new Map([
       [
         existingKey,
@@ -2551,7 +2430,7 @@ describe("bashHandler", () => {
       contextWith(executionPort, { fileSystemPort, readFileState }),
     );
 
-    expect(readFileState.get(createReadFileStatePathKey(largePath))).toBeUndefined();
+    expect(readFileState.get(createReadFileStateKey(largePath, 1, undefined))).toBeUndefined();
     expect(readFileState.get(existingKey)?.content).toBe("old\n");
   });
 
@@ -2580,7 +2459,7 @@ describe("bashHandler", () => {
       contextWith(executionPort, { fileSystemPort, readFileState }),
     );
 
-    expect(readFileState.get(createReadFileStatePathKey(filePath))).toBeUndefined();
+    expect(readFileState.get(createReadFileStateKey(filePath, 1, undefined))).toBeUndefined();
   });
 
   it("does not backfill readFileState when Bash stdout is truncated", async () => {
@@ -2608,7 +2487,7 @@ describe("bashHandler", () => {
       contextWith(executionPort, { fileSystemPort, readFileState }),
     );
 
-    expect(readFileState.get(createReadFileStatePathKey(filePath))).toBeUndefined();
+    expect(readFileState.get(createReadFileStateKey(filePath, 1, undefined))).toBeUndefined();
   });
 
   it("does not reject completed Bash output when read-state parsing sees an empty path", async () => {
@@ -2638,7 +2517,7 @@ describe("bashHandler", () => {
   it("ignores stale hint candidates unless mtime is newer than both Bash start and read state", async () => {
     const filePath = resolve(defaultCommandRoot, "fixture.ts");
     const readFileState: ReadFileStateMap = new Map();
-    readFileState.set(createReadFileStatePathKey(filePath), {
+    readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
       path: filePath,
       content: "old\n",
       isPartialView: false,
@@ -2675,7 +2554,7 @@ describe("bashHandler", () => {
   it("ignores stale hint candidates that cannot be stat'ed", async () => {
     const filePath = resolve(defaultCommandRoot, "missing.ts");
     const readFileState: ReadFileStateMap = new Map();
-    readFileState.set(createReadFileStatePathKey(filePath), {
+    readFileState.set(createReadFileStateKey(filePath, 1, undefined), {
       path: filePath,
       content: "old\n",
       isPartialView: false,

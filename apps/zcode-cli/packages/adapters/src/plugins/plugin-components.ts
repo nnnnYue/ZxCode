@@ -83,16 +83,11 @@ function collectMarkdownComponents(
     }
     for (const fileName of entries) {
       const baseName = fileName.slice(0, -".md".length);
-      const path = join(dir, fileName);
-      const fm = readMarkdownFrontmatter(path);
+      const fm = readMarkdownFrontmatter(join(dir, fileName));
       const name = fm.name ?? baseName;
       if (seen.has(name)) continue;
       seen.add(name);
-      items.push({
-        name,
-        ...(fm.description ? { description: fm.description } : {}),
-        ...(defaultDir === "agents" ? { path } : {}),
-      });
+      items.push(fm.description ? { name, description: fm.description } : { name });
     }
   }
   return items;
@@ -185,11 +180,7 @@ function collectInlineHookEvents(value: unknown): string[] {
 }
 
 /** 默认目录约定 + manifest 字符串/数组路径声明，合并成去重的待扫描目录列表。 */
-function collectComponentDirs(
-  rootPath: string,
-  manifestField: unknown,
-  defaultDir: string,
-): string[] {
+function collectComponentDirs(rootPath: string, manifestField: unknown, defaultDir: string): string[] {
   const dirs: string[] = [];
   const seen = new Set<string>();
   const add = (raw: string): void => {

@@ -20,7 +20,6 @@ export function createChildTraceContext(
   options: {
     queryId?: ContractQueryId;
     sessionId?: ContractSessionId;
-    rootSessionId?: ContractSessionId;
     turnId?: ContractTurnId;
     attributes?: Record<string, string | number | boolean>;
   } = {},

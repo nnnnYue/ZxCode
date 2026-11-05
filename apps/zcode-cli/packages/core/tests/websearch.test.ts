@@ -93,7 +93,7 @@ describe("provider-visible WebSearch wrapper", () => {
     expect(prompt).toContain("US-only");
   });
 
-  it("keeps the WebSearch description stable across months", async () => {
+  it("generates the public WebSearch current month from the current clock", async () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date(2027, 1, 15, 12, 0, 0));
@@ -108,15 +108,17 @@ describe("provider-visible WebSearch wrapper", () => {
       const getProviderDescription = () =>
         timedRegistry.toContracts().find((tool) => tool.name === "WebSearch")?.description ?? "";
 
-      // 月份由会话里的当前日期提供；描述里写月份会让 tools 缓存每月失效一次。
-      const february = getProviderDescription();
-      expect(february).toContain(
-        "- The current month is (provided in the conversation below) — use this when searching for recent information.",
+      expect(timedWebSearchToolEntry.metadata.description).toContain(
+        "The current month is February 2027",
       );
-      expect(february).not.toContain("2027");
+      expect(timedWebSearchToolEntry.metadata.description).not.toContain("June 2026");
+      expect(getProviderDescription()).toContain("The current month is February 2027");
 
       vi.setSystemTime(new Date(2027, 2, 15, 12, 0, 0));
-      expect(getProviderDescription()).toBe(february);
+      expect(timedWebSearchToolEntry.metadata.description).toContain(
+        "The current month is March 2027",
+      );
+      expect(getProviderDescription()).toContain("The current month is March 2027");
     } finally {
       vi.useRealTimers();
       vi.resetModules();

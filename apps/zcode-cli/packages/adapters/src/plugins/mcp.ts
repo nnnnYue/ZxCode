@@ -9,8 +9,8 @@ import type {
   PluginManifest,
   PluginOptionValues,
 } from "@zcode/contracts";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
-import { ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
+import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { ZXCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
 import type { LoadedPlugin } from "./types.js";
 import { isNotFoundError, isPluginOptionValue, isRecord, resolveInside } from "./helpers.js";
 import { buildOfficialProvenance, parseZCodeOfficialAuth } from "./mcp-official-auth.js";
@@ -183,18 +183,13 @@ function resolveMcpServerConfig(
   if (!SUPPORTED_MCP_TYPES.has(type)) throw new Error(`Unsupported MCP transport: ${type}`);
   // 修复原因：各 transport 分别重建配置曾漏传 alwaysLoad，导致插件常驻工具被延迟。
   // 通用字段只在此解析；source 按 marketplace 归类，兼容 source 为 cache 的官方 CDN 插件。
-  const official = context.loaded.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE;
   const baseConfig: McpServerConfigBase = {
     alwaysLoad: typeof server.alwaysLoad === "boolean" ? server.alwaysLoad : undefined,
     enabled: typeof server.enabled === "boolean" ? server.enabled : undefined,
-    // 工作区共享的 server 要自己按 _meta.session_id 划分状态，只信任官方插件这样做
-    // （文档插件查看面板 spec §8）；其他插件的声明忽略，保持 session isolation。
-    isolation:
-      official && (server.isolation === "workspace" || server.isolation === "session")
-        ? server.isolation
-        : undefined,
     timeoutMs: typeof server.timeoutMs === "number" ? server.timeoutMs : undefined,
-    source: { kind: official ? "builtin" : "plugin" },
+    source: {
+      kind: context.loaded.marketplace === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE ? "builtin" : "plugin",
+    },
   };
 
   // zcode_official 允许 http 与 stdio，sse 出现即禁用该 MCP，不静默忽略——静默会让配置作者以为鉴权已生效。
@@ -232,7 +227,7 @@ function resolveMcpServerConfig(
     // 插件 manifest 可自定义 env，但插件身份必须由 resolver 权威写入（loaded.id 来自本地 plugin
     // registry，不是可序列化配置），不能让第三方伪造 official zcode-cua 身份后获得只应定向注入给
     // 内置插件的 broker 凭据。manifest env spread 之后覆写，确保 user/manifest 无法覆盖。
-    env[ZCODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
+    env[ZXCODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
     return {
       ...baseConfig,
       type: "stdio",
@@ -437,6 +432,7 @@ function resolveTemplate(
       return envValue;
     }
     if (options.allowSensitive && ENVIRONMENT_VARIABLE_NAME_PATTERN.test(name)) {
+
       // token。只在敏感 sink 解析，避免 secret 被展开到 args、URL 或其它可见字段。
       const envValue = context.env[name];
       if (envValue === undefined)

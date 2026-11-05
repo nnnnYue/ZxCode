@@ -109,7 +109,6 @@ function workspaceEntryToHookConfig(
     command: entry.command,
     source: { kind: "project" as const, ...(sourcePath ? { path: sourcePath } : {}) },
     ...(entry.statusMessage ? { statusMessage: entry.statusMessage } : {}),
-    ...(entry.onError ? { onError: entry.onError } : {}),
     timeoutMs: entry.resolvedTimeoutMs,
   };
   return entry.type === "command"
@@ -166,7 +165,6 @@ function createHookRegistration(input: {
       }),
     event: input.event,
     matcher: input.matcher,
-    ...(input.hook.onError === undefined ? {} : { onError: input.hook.onError }),
     source: input.source,
     sourceKind: input.sourceKind,
     timeoutMs: input.timeoutMs,

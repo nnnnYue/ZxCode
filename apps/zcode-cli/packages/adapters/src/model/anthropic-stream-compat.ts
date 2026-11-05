@@ -1,9 +1,3 @@
-import {
-  ProviderBuiltinToolStreamRewriter,
-  rewriteProviderBuiltinToolContent,
-  type SseFrame,
-} from "./provider-builtin-tool-compat/contract.js";
-
 type ProviderFetch = typeof globalThis.fetch;
 
 const SSE_FRAME_SEPARATOR_PATTERN = /\r\n\r\n|\n\n|\r\r/;
@@ -174,9 +168,8 @@ function sanitizeJsonThinkingBlocks(value: Record<string, unknown>): {
     return { changed: false, value };
   }
 
-  const providerTools = rewriteProviderBuiltinToolContent(value.content);
-  const content = providerTools.content.filter((block) => !isUnsignedThinkingBlock(block));
-  if (!providerTools.changed && content.length === value.content.length) {
+  const content = value.content.filter((block) => !isUnsignedThinkingBlock(block));
+  if (content.length === value.content.length) {
     return { changed: false, value };
   }
 
@@ -204,7 +197,6 @@ function isUnsignedThinkingBlock(value: unknown): boolean {
 interface AnthropicStreamCompatState {
   pendingThinkingSignatures: Map<number, string>;
   suppressedIndexes: Set<number>;
-  providerTools: ProviderBuiltinToolStreamRewriter;
 }
 
 function createAnthropicStreamCompatTransform(): TransformStream<Uint8Array, Uint8Array> {
@@ -213,7 +205,6 @@ function createAnthropicStreamCompatTransform(): TransformStream<Uint8Array, Uin
   const state: AnthropicStreamCompatState = {
     pendingThinkingSignatures: new Map(),
     suppressedIndexes: new Set(),
-    providerTools: new ProviderBuiltinToolStreamRewriter(),
   };
   let pending = "";
 
@@ -226,10 +217,7 @@ function createAnthropicStreamCompatTransform(): TransformStream<Uint8Array, Uin
       pending += decoder.decode();
       pending = emitCompleteFrames(pending, controller, encoder, state);
       if (pending.length > 0) {
-        rewriteAndEmitFrame({ frame: pending, separator: "" }, controller, encoder, state);
-      }
-      for (const held of state.providerTools.finish()) {
-        emitFrame(held.frame, held.separator, controller, encoder, state);
+        emitFrame(pending, "", controller, encoder, state);
       }
     },
   });
@@ -251,20 +239,7 @@ function emitCompleteFrames(
     const separator = match[0] ?? "";
     const frame = pending.slice(0, match.index);
     pending = pending.slice(match.index + separator.length);
-    rewriteAndEmitFrame({ frame, separator }, controller, encoder, state);
-  }
-}
-
-function rewriteAndEmitFrame(
-  input: SseFrame,
-  controller: TransformStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  state: AnthropicStreamCompatState,
-): void {
-  const data = readSseData(input.frame);
-  const parsed = data === undefined || data === "[DONE]" ? undefined : safeParseRecord(data);
-  for (const output of state.providerTools.push(input, parsed)) {
-    emitFrame(output.frame, output.separator, controller, encoder, state);
+    emitFrame(frame, separator, controller, encoder, state);
   }
 }
 

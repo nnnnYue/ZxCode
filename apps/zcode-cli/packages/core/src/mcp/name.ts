@@ -1,18 +1,11 @@
 import type { McpToolDescriptor } from "@zcode/contracts";
 
-export const MCP_TOOL_NAME_PREFIX = "mcp__";
-
-/** 模型可见的 MCP 工具名都以 `mcp__` 开头。 */
-export function isMcpToolName(name: string): boolean {
-  return name.startsWith(MCP_TOOL_NAME_PREFIX);
-}
-
 export function toMcpToolName(
   descriptor: Pick<McpToolDescriptor, "name" | "serverName" | "toolName">,
 ): string {
   return (
     descriptor.name ??
-    `${MCP_TOOL_NAME_PREFIX}${toModelVisibleMcpNamePart(descriptor.serverName)}__${toModelVisibleMcpNamePart(
+    `mcp__${toModelVisibleMcpNamePart(descriptor.serverName)}__${toModelVisibleMcpNamePart(
       descriptor.toolName,
     )}`
   );

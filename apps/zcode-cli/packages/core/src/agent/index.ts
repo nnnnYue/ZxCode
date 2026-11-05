@@ -4,11 +4,7 @@
 
 export * from "./turn-state.js";
 export * from "./turn-machine.js";
-export {
-  INTERRUPT_MARKER_SOURCE,
-  MessageHistoryImpl,
-  createMessageHistory,
-} from "./message-history.js";
+export { MessageHistoryImpl, createMessageHistory } from "./message-history.js";
 export {
   activeSessionMessages,
   hydrateMessageHistoryFromSession,

@@ -16,7 +16,6 @@ import {
   cronCreateToolEntry,
   cronListToolEntry,
   cronDeleteToolEntry,
-  cronPauseSelfToolEntry,
 } from "../src/tool/handlers/cron.js";
 import { createTestRuntimeModel } from "./test-runtime-model.js";
 
@@ -44,7 +43,6 @@ describe("ToolSearch semantics", () => {
       cronCreateToolEntry,
       cronListToolEntry,
       cronDeleteToolEntry,
-      cronPauseSelfToolEntry,
     ].forEach((entry) => registry.register(entry));
     const tools = registry.toContracts();
     const exposed = buildToolExposure({
@@ -64,7 +62,6 @@ describe("ToolSearch semantics", () => {
       ["checklist", "TodoWrite"],
       ["cancel", "CronDelete"],
       ["active", "CronList"],
-      ["pause", "CronPauseSelf"],
     ]) {
       expect(searchTools(query!, exposed.context.catalog)).toContain(name);
       expect(searchTools(`+${query}`, exposed.context.catalog)).toContain(name);

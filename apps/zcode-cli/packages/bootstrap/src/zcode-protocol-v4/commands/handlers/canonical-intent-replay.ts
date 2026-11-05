@@ -50,7 +50,6 @@ function buildCanonicalIntent(
             editTarget.intent.conversationQuotes)
           : editTarget.intent.conversationQuotes,
       text: editTarget.intent.text,
-      genUiContext: editTarget.intent.genUiContext,
       sourceCommandId: editTarget.intent.sourceCommandId,
       clientId: editTarget.intent.clientId,
       queueItemId: editTarget.intent.queueItemId,

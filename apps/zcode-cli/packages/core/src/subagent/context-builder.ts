@@ -1,6 +1,8 @@
 import type { Model, ModelInputMessage } from "@zcode/contracts";
-import { ContextBuilder, buildMetaUserAttachments } from "../context/builder.js";
+import { ContextBuilder } from "../context/builder.js";
 import {
+  buildContextMetaUserBody,
+  buildSkillsMetaUserBody,
   type ContextBuilderConfig,
   type ContextBuildResult,
   type ContextSection,
@@ -8,11 +10,10 @@ import {
 } from "../context/index.js";
 import { buildCliPrefixSection } from "../context/sections/cli-prefix.js";
 import { buildCurrentDateSection } from "../context/sections/current-date.js";
-import { buildEnvironmentSections } from "../context/sections/env-info.js";
 import { buildRequestUserContextSection } from "../context/sections/request-user-context.js";
 import { buildSkillsSection } from "../context/sections/skills.js";
 import { estimateTokens } from "../context/utils.js";
-import { SUBAGENT_LAUNCHER_MESSAGES_NOTE, buildSubagentCommonNotes } from "./system-prompt.js";
+import { buildSubagentCommonNotes, buildSubagentEnvironmentContext } from "./system-prompt.js";
 
 export interface SubagentContextBuilderConfig {
   agentPrompt: string;
@@ -63,13 +64,40 @@ export class SubagentContextBuilder extends ContextBuilder {
           cacheControl: EPHEMERAL_CACHE_CONTROL,
         }),
       );
+    const skillsContent = buildSkillsMetaUserBody(
+      orderedSections.filter(
+        (section) => section.injectionTarget === "meta_user" && section.source === "skills",
+      ),
+    );
+    const contextContent = buildContextMetaUserBody(
+      orderedSections.filter(
+        (section) => section.injectionTarget === "meta_user" && section.source !== "skills",
+      ),
+    );
 
     return {
       sections: orderedSections,
       totalChars,
       totalTokens,
       systemMessages,
-      metaUserAttachments: buildMetaUserAttachments(orderedSections),
+      metaUserAttachments: [
+        ...(skillsContent
+          ? [
+              {
+                source: "skills_listing" as const,
+                content: skillsContent,
+              },
+            ]
+          : []),
+        ...(contextContent
+          ? [
+              {
+                source: "context_prefix" as const,
+                content: contextContent,
+              },
+            ]
+          : []),
+      ],
     };
   }
 }
@@ -82,8 +110,7 @@ export function createSubagentContextBuilder(
 
 function buildSubagentContextSections(config: SubagentContextBuilderConfig): ContextSection[] {
   const sections: ContextSection[] = [buildCliPrefixSection()];
-  // agent 正文首尾都 trim；左边界换行仍由下方按 ZCode 设计补上。
-  const agentPrompt = config.agentPrompt.trim();
+  const agentPrompt = config.agentPrompt.trimEnd();
   if (agentPrompt) {
     sections.push(
       createSubagentSection({
@@ -102,11 +129,19 @@ function buildSubagentContextSections(config: SubagentContextBuilderConfig): Con
       name: "Subagent Notes",
       source: "subagent_notes",
       cacheHint: "stable",
-      // ZCode by design：后续 Subagent system block 统一自带双换行左边界。
-      // 启动方消息段排在 Notes 之前。
-      content: `\n\n${SUBAGENT_LAUNCHER_MESSAGES_NOTE}\n\n${buildSubagentCommonNotes()}`,
+      // ZxCode by design：后续 Subagent system block 统一自带双换行左边界。
+      content: `\n\n${buildSubagentCommonNotes()}`,
     }),
-    ...buildEnvironmentSections(config.envInfo, config.model),
+    createSubagentSection({
+      name: "Subagent Environment",
+      source: "subagent_environment",
+      cacheHint: "dynamic",
+      content: `\n\n${buildSubagentEnvironmentContext({
+        agentPrompt: config.agentPrompt,
+        envInfo: config.envInfo,
+        model: config.model,
+      })}`,
+    }),
   );
 
   const requestUserContextSection = buildRequestUserContextSection({
