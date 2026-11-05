@@ -6221,6 +6221,7 @@ const enUS: Record<string, string> = {
   "planTool.panel.syncing": "Syncing plan…",
   "planTool.guidance.enterMode": "Entered plan mode",
   "chat.permission.switchMode.placeholder": "Implementation plan",
+  "zcode.error.modelSuspiciousEmpty": "The model returned no content.",
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
