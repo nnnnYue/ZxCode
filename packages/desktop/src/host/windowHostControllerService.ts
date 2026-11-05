@@ -565,7 +565,9 @@ export function createWindowHostControllerRuntime(options: {
               };
           return (
             selectedSources.has(sourceKey(scope)) &&
-            matchesTaskListMembershipKind(row.membership, query.kind)
+            // 修复原因：上游 v3.17.2 的 query.kind 增加 "all"（任意 membership 均命中），
+            // matchesTaskListMembershipKind 只接受四种窄 kind；"all" 直接判命中。
+            (query.kind === "all" || matchesTaskListMembershipKind(row.membership, query.kind))
           );
         })
         .map((row) => ({

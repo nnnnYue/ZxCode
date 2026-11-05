@@ -47,6 +47,10 @@ function queryContainsWorkspace(
   query: ZCodeTaskListQuery,
   address: WindowHostControllerTaskRow["address"],
 ): boolean {
+  // 修复原因：上游 v3.17.2 把 workspaceScopes 放宽为 `数组 | "host"`（host 表示存储 owner
+  // 全部范围，不接受 UI 已打开工作区作为历史目录）。"host" 覆盖所有工作区，任何 workspace
+  // 的 delta 都可能命中该 query，保守返回 true 触发失效。
+  if (query.workspaceScopes === "host") return true;
   const workspaceKey = address.workspaceIdentity?.trim() || address.workspacePath;
   return query.workspaceScopes.some(
     (scope) => (scope.workspaceIdentity?.trim() || scope.workspacePath) === workspaceKey,
@@ -173,6 +177,9 @@ export function getWindowControllerTaskListRegistry(
             // 因此对当前 workspace 保守失效，避免 timeline/active 留下陈旧项。
             if (
               !previous ||
+              // 修复原因：上游 v3.17.2 的 query.kind 增加 "all"（任意 membership 均命中），
+              // matchesTaskListMembershipKind 只接受四种窄 kind，"all" 查询在此直接判命中失效。
+              cached.query.kind === "all" ||
               matchesTaskListMembershipKind(previous.membership, cached.query.kind) ||
               (next && matchesTaskListMembershipKind(next.membership, cached.query.kind))
             ) {

@@ -1,38 +1,229 @@
-import type {
-  WebRemoteControlTerminalTransportState,
-  WebRemoteControlTerminalTransportDiagnostic,
-  WebRemoteControlTerminalTransportDiagnosticInput,
-  WebRemoteControlTerminalTransportOptions,
-} from "#src/web-remote-control/contracts/transport.js";
-import {
-  webSocketDataByteLength,
-  parseRelayMessage,
-  createFailure,
-  isRawTransportCandidate,
-  summarizeRelayMessageForTrace,
-} from "#src/web-remote-control/adapters/relayMessage.js";
+/* eslint-disable max-lines -- 外部 relay terminal transport 需要集中维护握手、配对、请求等待和重连状态机。 */
 import {
   WebRemoteControlRelayPayloadSerializer,
   type WebRemoteControlPayloadSendResult,
 } from "@zcode/client";
 import {
+  WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS,
+  WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS,
+  WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS,
+  getWebRemoteControlHeartbeatDelayMs,
+  getWebRemoteControlHeartbeatJitterMs,
+  getWebRemoteControlReconnectJitterMs,
   WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS,
   parseWebRemoteControlAppPayload,
   type WebRemoteControlAppPayload,
   type WebRemoteControlFailure,
+  type WebRemoteControlRelayIncomingMessage,
+  type WebRemoteControlRelayOutgoingMessage,
 } from "@zcode/shared";
-import {
-  WEB_REMOTE_CONTROL_V2_HEARTBEAT_ACK_TIMEOUT_MS,
-  WEB_REMOTE_CONTROL_V2_HEARTBEAT_INTERVAL_MS,
-  WebRemoteControlV2ConnectionError,
-  WebRemoteControlV2Heartbeat,
-  WebRemoteControlV2RetryPolicy,
-  webRemoteControlV2PairState,
-  WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS,
-  getWebRemoteControlHeartbeatJitterMs,
-  getWebRemoteControlReconnectJitterMs,
-  type WebRemoteControlRelayV2OutgoingMessage,
-} from "@zcode/shared/web-remote-relay";
+
+export type WebRemoteControlTerminalTransportState =
+  | "idle"
+  | "connecting"
+  | "authenticating"
+  | "waiting"
+  | "paired"
+  | "reconnecting"
+  | "suspended"
+  | "kicked"
+  | "error";
+
+export type WebRemoteControlTerminalTransportDiagnostic =
+  | {
+      type: "state-transition";
+      previousState: WebRemoteControlTerminalTransportState;
+      state: WebRemoteControlTerminalTransportState;
+      timestamp: number;
+      visibilityState: string;
+      online: boolean;
+      hiddenDurationMs?: number;
+    }
+  | {
+      type: "socket-close";
+      code: number;
+      reason: string;
+      wasClean: boolean;
+      wasPaired: boolean;
+      state: WebRemoteControlTerminalTransportState;
+      timestamp: number;
+      visibilityState: string;
+      online: boolean;
+      hiddenDurationMs?: number;
+    }
+  | {
+      type: "socket-error" | "recover-start" | "recover-scheduled";
+      state: WebRemoteControlTerminalTransportState;
+      timestamp: number;
+      visibilityState: string;
+      online: boolean;
+      hiddenDurationMs?: number;
+    }
+  | {
+      type: "pair-status";
+      pairStatus: "waiting" | "matched";
+      state: WebRemoteControlTerminalTransportState;
+      timestamp: number;
+      visibilityState: string;
+      online: boolean;
+      hiddenDurationMs?: number;
+    }
+  | {
+      type: "socket-extensions";
+      state: WebRemoteControlTerminalTransportState;
+      perMessageDeflate: boolean;
+      extensions?: string;
+      timestamp: number;
+      visibilityState: string;
+      online: boolean;
+      hiddenDurationMs?: number;
+    };
+
+type WebRemoteControlTerminalTransportDiagnosticInput = {
+  type: WebRemoteControlTerminalTransportDiagnostic["type"];
+  previousState?: WebRemoteControlTerminalTransportState;
+  state: WebRemoteControlTerminalTransportState;
+  code?: number;
+  reason?: string;
+  wasClean?: boolean;
+  wasPaired?: boolean;
+  pairStatus?: "waiting" | "matched";
+  perMessageDeflate?: boolean;
+  extensions?: string;
+};
+
+interface WebRemoteControlTerminalTransportOptions {
+  relayWsUrl: string;
+  deviceSid: string;
+  passHash: string;
+  deviceMid?: string;
+  appVersion?: string;
+  WebSocketCtor?: typeof globalThis.WebSocket;
+  heartbeatIntervalMs?: number;
+  heartbeatJitterMs?: number;
+  heartbeatAckTimeoutMs?: number;
+  reconnectJitterMs?: number;
+  healthCheckTimeoutMs?: number;
+  desktopOfflineGraceMs?: number;
+  staleWaitingRecoveryMs?: number;
+  waitingTimeoutMs?: number;
+  authProvider: {
+    calculateProof(
+      passHash: string,
+      nonce: string,
+      role: "terminal",
+      deviceSid: string,
+    ): Promise<string>;
+  };
+  onPayload(payload: WebRemoteControlAppPayload): void;
+  onRawTransportPayload?(payload: unknown): boolean;
+  onRawTransportFault?(reasonCode: string): void;
+  onStateChange(state: WebRemoteControlTerminalTransportState): void;
+  onFailure(failure: WebRemoteControlFailure): void;
+  onError(error: Error): void;
+  onDiagnostic?(diagnostic: WebRemoteControlTerminalTransportDiagnostic): void;
+  onSendReady?(event: { kind: "same-socket" | "reconnected-socket" }): void;
+  reloadPage(): void;
+}
+
+async function readWebSocketData(data: unknown): Promise<string | null> {
+  if (typeof data === "string") {
+    return new TextEncoder().encode(data).byteLength <=
+      WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes
+      ? data
+      : null;
+  }
+  if (data instanceof ArrayBuffer) {
+    if (data.byteLength > WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes) {
+      return null;
+    }
+    return new TextDecoder().decode(data);
+  }
+  if (ArrayBuffer.isView(data)) {
+    if (data.byteLength > WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes) {
+      return null;
+    }
+    return new TextDecoder().decode(data as Uint8Array);
+  }
+  if (typeof Blob !== "undefined" && data instanceof Blob) {
+    if (data.size > WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes) {
+      return null;
+    }
+    return data.text();
+  }
+  const text = String(data);
+  return new TextEncoder().encode(text).byteLength <=
+    WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes
+    ? text
+    : null;
+}
+
+function webSocketDataByteLength(data: unknown): number {
+  if (typeof data === "string") return new TextEncoder().encode(data).byteLength;
+  if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) return data.byteLength;
+  if (typeof Blob !== "undefined" && data instanceof Blob) return data.size;
+  return new TextEncoder().encode(String(data)).byteLength;
+}
+
+async function parseRelayMessage(
+  data: unknown,
+): Promise<WebRemoteControlRelayIncomingMessage | null> {
+  try {
+    const text = await readWebSocketData(data);
+    if (text === null) return null;
+    const parsed = JSON.parse(text) as WebRemoteControlRelayIncomingMessage;
+    return parsed && typeof parsed === "object" && "type" in parsed ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function createFailure(
+  reason: WebRemoteControlFailure["reason"],
+  message?: string,
+): WebRemoteControlFailure {
+  return { reason, message };
+}
+
+function safePayloadMetadata(payload: unknown): Record<string, string | undefined> {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return {};
+  }
+  const record = payload as Record<string, unknown>;
+  return {
+    zcode_type: typeof record.zcode_type === "string" ? record.zcode_type : undefined,
+    requestId: typeof record.requestId === "string" ? record.requestId : undefined,
+    bridgeSessionId:
+      typeof record.bridgeSessionId === "string" ? record.bridgeSessionId : undefined,
+  };
+}
+
+function isRawTransportCandidate(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
+  const type = (payload as { zcode_type?: unknown }).zcode_type;
+  return type === "rpc-frame" || type === "rpc-frame-ack";
+}
+
+function summarizeRelayMessageForTrace(
+  message: WebRemoteControlRelayIncomingMessage | WebRemoteControlRelayOutgoingMessage,
+): Record<string, unknown> {
+  if (message.type === "pair_status_ack") {
+    return { type: message.type, pair_status: message.pair_status };
+  }
+  if (message.type === "auth_init") {
+    return { type: message.type, role: message.role };
+  }
+  if (message.type === "data") {
+    return {
+      type: message.type,
+      payload: safePayloadMetadata(message.payload),
+    };
+  }
+  if (message.type === "error") {
+    return { type: message.type, code: message.code };
+  }
+  return { type: message.type };
+}
 
 export class WebRemoteControlTerminalTransport {
   private readonly WebSocketCtor: typeof globalThis.WebSocket;
@@ -42,17 +233,7 @@ export class WebRemoteControlTerminalTransport {
   private wasPaired = false;
   private hadPairedSession = false;
   private staleWaitingCount = 0;
-  private readonly retry = new WebRemoteControlV2RetryPolicy(Math.random, {
-    initialMs: 500,
-    maxMs: 10_000,
-    jitter: 0,
-  });
-  private tokenController?: AbortController;
-  private handshakeTimer?: ReturnType<typeof setTimeout>;
-  private authenticated = false;
-  // 最近一次 matched 所在且尚未被 waiting/INTERNAL/关闭撤销的 socket；挂起不撤销这项连接事实。
-  private pairedSocket?: WebSocket;
-  private readonly heartbeat: WebRemoteControlV2Heartbeat;
+  private reconnectAttempt = 0;
   private socketGeneration = 0;
   private lastPairedSocketGeneration = 0;
   private lastPairStatusAckAt = 0;
@@ -63,6 +244,8 @@ export class WebRemoteControlTerminalTransport {
     reject: (error: Error) => void;
     timer: ReturnType<typeof setTimeout>;
   }>();
+  private heartbeatTimer?: ReturnType<typeof setTimeout>;
+  private heartbeatAckWatchdogTimer?: ReturnType<typeof setTimeout>;
   private waitingTimer?: ReturnType<typeof setTimeout>;
   private staleWaitingRecoveryTimer?: ReturnType<typeof setTimeout>;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
@@ -72,15 +255,6 @@ export class WebRemoteControlTerminalTransport {
 
   constructor(private readonly options: WebRemoteControlTerminalTransportOptions) {
     this.WebSocketCtor = options.WebSocketCtor ?? globalThis.WebSocket;
-    this.heartbeat = new WebRemoteControlV2Heartbeat(
-      () => this.sendPairStatusQuery(),
-      () => this.reconnectAfterStaleWaiting(this.getReconnectJitterMs()),
-      {
-        intervalMs: options.heartbeatIntervalMs,
-        jitterMs: options.heartbeatJitterMs,
-        ackTimeoutMs: options.heartbeatAckTimeoutMs,
-      },
-    );
   }
 
   start(): void {
@@ -88,114 +262,98 @@ export class WebRemoteControlTerminalTransport {
     this.wasPaired = false;
     this.hadPairedSession = false;
     this.staleWaitingCount = 0;
-    this.retry.acknowledged();
+    this.reconnectAttempt = 0;
     this.lastPairedSocketGeneration = 0;
     this.lastPairStatusAckAt = Date.now();
     this.setState("connecting");
     this.connect();
   }
 
-  private async connect(): Promise<void> {
-    if (this.intentionallyClosed || this.state === "suspended") return;
-    const generation = ++this.socketGeneration;
-    this.tokenController?.abort();
-    const controller = new AbortController();
-    this.tokenController = controller;
-    this.authenticated = false;
-    try {
-      const token = await this.options.getToken(controller.signal);
-      if (controller.signal.aborted || generation !== this.socketGeneration) return;
-      const url = new URL(this.options.relayWsUrl);
-      url.searchParams.set("token", token);
-      if (this.options.deviceMid?.trim()) {
-        url.searchParams.set("mid", this.options.deviceMid);
-      }
-      const socket = new this.WebSocketCtor(url.toString());
-      this.socket = socket;
-      clearTimeout(this.handshakeTimer);
-      this.handshakeTimer = setTimeout(
-        () => this.scheduleReconnect(),
-        WEB_REMOTE_CONTROL_V2_HEARTBEAT_ACK_TIMEOUT_MS,
-      );
-
-      socket.addEventListener("open", () => {
-        if (socket !== this.socket) {
-          return;
-        }
-        const negotiatedExtensions = typeof socket.extensions === "string" ? socket.extensions : "";
-        // Bugfix: 手机端运行在浏览器 WebSocket API 下，无法主动传 perMessageDeflate 配置。
-        // 只能通过标准 extensions 字段确认 relay 是否真的完成压缩协商，避免误以为业务代码可强制开启。
-        this.emitDiagnostic({
-          type: "socket-extensions",
-          state: this.state,
-          perMessageDeflate: negotiatedExtensions.includes("permessage-deflate"),
-          ...(negotiatedExtensions ? { extensions: negotiatedExtensions } : {}),
-        });
-        this.setState("authenticating");
-        this.send({
-          type: "auth_init",
-          device_sid: this.options.deviceSid,
-          meta: {
-            platform: "web",
-            version: this.options.appVersion ?? "web",
-            name: "mobile-browser",
-          },
-          client_ts: Math.floor(Date.now() / 1000),
-        });
-      });
-
-      socket.addEventListener("message", (event) => {
-        if (socket !== this.socket) {
-          return;
-        }
-        void this.handleMessage(event.data, socket);
-      });
-
-      socket.addEventListener("error", () => {
-        if (socket !== this.socket) {
-          return;
-        }
-        const error = new Error("External relay terminal socket error");
-        this.emitDiagnostic({ type: "socket-error", state: this.state });
-        this.options.onError(error);
-      });
-
-      socket.addEventListener("close", (event) => {
-        if (socket !== this.socket) {
-          return;
-        }
-        this.emitDiagnostic({
-          type: "socket-close",
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean,
-          wasPaired: this.wasPaired,
-          state: this.state,
-        });
-        this.stopHeartbeat();
-        this.clearWaitingTimer();
-        this.clearStaleWaitingRecoveryTimer();
-        if (this.intentionallyClosed) {
-          return;
-        }
-        if (this.state === "suspended") {
-          return;
-        }
-        if (this.hadPairedSession) {
-          // Bugfix: 手机浏览器后台恢复、网络切换或 relay 短抖会关闭已配对 socket。
-          // 旧逻辑直接刷新整页，导致用户丢失当前 workspace/task 视图；这里改为原地重连，
-          // 让上层在重新 paired 后按 mobile view state 恢复。
-          this.scheduleReconnect();
-          return;
-        }
-        this.scheduleReconnect();
-      });
-    } catch (error) {
-      if (controller.signal.aborted || generation !== this.socketGeneration) return;
-      if (error instanceof WebRemoteControlV2ConnectionError && !error.retryable) {
-        this.enterTerminalFailure(createFailure(error.reason));
-      } else this.scheduleReconnect();
+  private connect(): void {
+    this.socketGeneration += 1;
+    const url = new URL(this.options.relayWsUrl);
+    if (this.options.deviceMid?.trim()) {
+      url.searchParams.set("mid", this.options.deviceMid);
     }
+    const socket = new this.WebSocketCtor(url.toString());
+    this.socket = socket;
+
+    socket.addEventListener("open", () => {
+      if (socket !== this.socket) {
+        return;
+      }
+      const negotiatedExtensions = typeof socket.extensions === "string" ? socket.extensions : "";
+      // Bugfix: 手机端运行在浏览器 WebSocket API 下，无法主动传 perMessageDeflate 配置。
+      // 只能通过标准 extensions 字段确认 relay 是否真的完成压缩协商，避免误以为业务代码可强制开启。
+      this.emitDiagnostic({
+        type: "socket-extensions",
+        state: this.state,
+        perMessageDeflate: negotiatedExtensions.includes("permessage-deflate"),
+        ...(negotiatedExtensions ? { extensions: negotiatedExtensions } : {}),
+      });
+      this.setState("authenticating");
+      this.send({
+        type: "auth_init",
+        role: "terminal",
+        device_sid: this.options.deviceSid,
+        meta: {
+          platform: "web",
+          version: this.options.appVersion ?? "web",
+          name: "mobile-browser",
+        },
+        client_ts: Date.now(),
+      });
+    });
+
+    socket.addEventListener("message", (event) => {
+      if (socket !== this.socket) {
+        return;
+      }
+      void this.handleMessage(event.data);
+    });
+
+    socket.addEventListener("error", () => {
+      if (socket !== this.socket) {
+        return;
+      }
+      const error = new Error("External relay terminal socket error");
+      this.emitDiagnostic({ type: "socket-error", state: this.state });
+      this.options.onError(error);
+    });
+
+    socket.addEventListener("close", (event) => {
+      if (socket !== this.socket) {
+        return;
+      }
+      this.emitDiagnostic({
+        type: "socket-close",
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+        wasPaired: this.wasPaired,
+        state: this.state,
+      });
+      this.stopHeartbeat();
+      this.clearWaitingTimer();
+      this.clearStaleWaitingRecoveryTimer();
+      if (this.intentionallyClosed) {
+        return;
+      }
+      if (this.state === "suspended") {
+        return;
+      }
+      if (this.hadPairedSession) {
+        // Bugfix: 手机浏览器后台恢复、网络切换或 relay 短抖会关闭已配对 socket。
+        // 旧逻辑直接刷新整页，导致用户丢失当前 workspace/task 视图；这里改为原地重连，
+        // 让上层在重新 paired 后按 mobile view state 恢复。
+        this.scheduleReconnect();
+        return;
+      }
+      this.setState("error");
+      this.options.onFailure(
+        createFailure("relay-unavailable", "Web remote control relay connection closed."),
+      );
+    });
   }
 
   sendPayload(payload: WebRemoteControlAppPayload): boolean {
@@ -203,11 +361,11 @@ export class WebRemoteControlTerminalTransport {
   }
 
   measurePayloadBytes(payload: WebRemoteControlAppPayload): number {
-    return this.payloadSerializer.prepare(payload, Math.floor(Date.now() / 1000)).bytes;
+    return this.payloadSerializer.prepare(payload).bytes;
   }
 
   sendPayloadResult(payload: WebRemoteControlAppPayload): WebRemoteControlPayloadSendResult {
-    const prepared = this.payloadSerializer.prepare(payload, Math.floor(Date.now() / 1000));
+    const prepared = this.payloadSerializer.prepare(payload);
     if (this.payloadSerializer.isOversize(prepared)) {
       return {
         kind: "oversize",
@@ -215,9 +373,7 @@ export class WebRemoteControlTerminalTransport {
         maxBytes: WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes,
       };
     }
-    // 挂起期间只确认已收到的可靠帧，避免对端 45 秒期限误判；新的业务发送仍等 paired。
-    const retainedAck = payload.zcode_type === "rpc-frame-ack" && this.canContinueRetainedRpc();
-    if ((this.state !== "paired" && !retainedAck) || this.staleWaitingCount > 0) {
+    if (this.state !== "paired" || this.staleWaitingCount > 0) {
       return { kind: "unavailable" };
     }
     return this.sendSerialized(prepared.message, prepared.json)
@@ -226,20 +382,10 @@ export class WebRemoteControlTerminalTransport {
   }
 
   suspend(): void {
-    if (
-      this.state !== "paired" &&
-      this.state !== "connecting" &&
-      this.state !== "reconnecting" &&
-      this.state !== "authenticating" &&
-      this.state !== "waiting"
-    ) {
+    if (this.state !== "paired" && this.state !== "connecting" && this.state !== "reconnecting") {
       return;
     }
-    // 未认证连接没有可复用的会话，挂起时撤销它；迟到 open/ACK 不能在后台启动 bootstrap。
-    if (!this.authenticated) this.closeSocket();
     this.hiddenStartedAt = Date.now();
-    this.tokenController?.abort();
-    clearTimeout(this.handshakeTimer);
     this.clearReconnectTimer();
     this.stopHeartbeat();
     this.clearWaitingTimer();
@@ -248,7 +394,6 @@ export class WebRemoteControlTerminalTransport {
   }
 
   async recoverConnection(timeoutMs = 15_000): Promise<void> {
-    if (this.intentionallyClosed) throw new Error("Web remote control transport stopped.");
     this.emitDiagnostic({ type: "recover-start", state: this.state });
     this.clearReconnectTimer();
     this.clearStaleWaitingRecoveryTimer();
@@ -272,7 +417,7 @@ export class WebRemoteControlTerminalTransport {
         }
       }
     }
-    this.retry.acknowledged();
+    this.reconnectAttempt = 0;
     this.reconnectNow();
     await this.waitForPaired(timeoutMs);
   }
@@ -300,11 +445,12 @@ export class WebRemoteControlTerminalTransport {
     this.clearDesktopOfflineFailureTimer();
     this.clearReconnectTimer();
     this.rejectPairedWaiters(new Error("Web remote control transport disposed."));
-    this.closeSocket();
+    this.socket?.close();
+    this.socket = undefined;
     this.setState("idle");
   }
 
-  private async handleMessage(data: unknown, socket: WebSocket): Promise<void> {
+  private async handleMessage(data: unknown): Promise<void> {
     if (
       webSocketDataByteLength(data) > WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS.maxPhysicalFrameBytes
     ) {
@@ -312,38 +458,31 @@ export class WebRemoteControlTerminalTransport {
       return;
     }
     const message = await parseRelayMessage(data);
-    if (!message || socket !== this.socket || this.intentionallyClosed) {
+    if (!message) {
       return;
     }
     this.logRelayTrace("recv", summarizeRelayMessageForTrace(message));
 
     switch (message.type) {
-      case "auth_ack":
-        if (this.state !== "authenticating" || message.device_sid !== this.options.deviceSid)
-          return;
-        this.authenticated = true;
-        clearTimeout(this.handshakeTimer);
-        this.retry.acknowledged();
-        this.applyPairStatus(message.pair_status);
+      case "auth_challenge":
+        this.send({
+          type: "auth_response",
+          device_sid: this.options.deviceSid,
+          proof: await this.options.authProvider.calculateProof(
+            this.options.passHash,
+            message.nonce,
+            "terminal",
+            this.options.deviceSid,
+          ),
+          client_ts: Date.now(),
+        });
         break;
+      case "auth_ack":
       case "pair_status_ack":
-        if (!this.authenticated) return;
-        if (this.state === "suspended") {
-          // 后台 waiting 只撤销 raw 帧许可；迟到 matched 不复活页面或心跳，回前台由探测重新确认。
-          if (message.pair_status === "waiting") this.pairedSocket = undefined;
-          return;
-        }
         this.applyPairStatus(message.pair_status);
         break;
       case "data":
-        if (!this.authenticated) return;
-        if (this.state === "paired") {
-          this.handleDataPayload(message.payload);
-        } else if (this.canContinueRetainedRpc() && isRawTransportCandidate(message.payload)) {
-          // Bugfix: 3.16 在挂起/原 socket 探测期间丢弃同一有效 socket 的 rpc-frame，回前台下一帧序号断档，
-          // 触发 physicalGap 和 bridge 重建。raw 帧交现有 adapter 校验身份与顺序，未接纳的不回落 app payload。
-          this.options.onRawTransportPayload?.(message.payload);
-        }
+        this.handleDataPayload(message.payload);
         break;
       case "error":
         this.handleRelayError(message.code, message.message);
@@ -351,21 +490,11 @@ export class WebRemoteControlTerminalTransport {
     }
   }
 
-  /** 挂起或原 socket 探测期间，当前 socket 是否仍是已认证、打开的同一连接；默认还要求 raw 帧许可未撤销。 */
-  private canContinueRetainedRpc(requirePermit = true): boolean {
-    return (
-      (this.state === "suspended" || this.state === "reconnecting") &&
-      this.authenticated &&
-      (!requirePermit || this.socket === this.pairedSocket) &&
-      this.socket?.readyState === this.WebSocketCtor.OPEN
-    );
-  }
-
   private applyPairStatus(status: "waiting" | "matched"): void {
-    this.pairedSocket = status === "matched" ? this.socket : undefined;
     this.lastPairStatusAckAt = Date.now();
+    this.armHeartbeatAckWatchdog();
     this.emitDiagnostic({ type: "pair-status", pairStatus: status, state: this.state });
-    if (webRemoteControlV2PairState(status) === "waiting_terminal") {
+    if (status === "waiting") {
       if (this.wasPaired) {
         // Bugfix: zcode-remote-hub 的 waiting 是合法配对状态，表示当前 device 不在 hub 里，
         // 不是 terminal WS 损坏信号。已配对后降级为 waiting 时保持同一条手机端 WS，
@@ -379,8 +508,8 @@ export class WebRemoteControlTerminalTransport {
         this.startHeartbeat();
         return;
       }
+      this.stopHeartbeat();
       this.setState("waiting");
-      this.startHeartbeat();
       this.startWaitingTimer();
       return;
     }
@@ -393,7 +522,7 @@ export class WebRemoteControlTerminalTransport {
             ? "same-socket"
             : "reconnected-socket";
       this.staleWaitingCount = 0;
-      this.retry.acknowledged();
+      this.reconnectAttempt = 0;
       this.clearStaleWaitingRecoveryTimer();
       this.clearDesktopOfflineFailureTimer();
       this.clearReconnectTimer();
@@ -410,12 +539,11 @@ export class WebRemoteControlTerminalTransport {
 
   private handleRelayError(
     code: "AUTH_FAILED" | "DEVICE_OFFLINE" | "KICKED" | "WRONG_PARAM" | "INTERNAL",
-    message?: string,
+    message: string,
   ): void {
     if (code === "KICKED") {
-      const delay = this.retry.kickedDelay();
-      if (delay === null) this.enterTerminalFailure(createFailure("session-conflict"));
-      else this.scheduleReconnect({ delayMs: delay });
+      this.setState("kicked");
+      this.enterTerminalFailure(createFailure("session-conflict", message || code));
       return;
     }
     if (code === "DEVICE_OFFLINE") {
@@ -426,20 +554,10 @@ export class WebRemoteControlTerminalTransport {
       return;
     }
     if (code === "AUTH_FAILED" || code === "WRONG_PARAM") {
-      this.enterTerminalFailure(
-        createFailure(code === "AUTH_FAILED" ? "device-not-owned" : "invalid-mobile-connection"),
-      );
+      this.enterTerminalFailure(createFailure("invalid-mobile-connection", message || code));
       return;
     }
     if (code === "INTERNAL") {
-      if (this.wasPaired && this.canContinueRetainedRpc(false)) {
-        // Bugfix: 挂起期间回 ACK 时 hub 找不到桌面只回 INTERNAL。若按未配对重连处理，会关闭 socket
-        // 并清掉 wasPaired，回前台跳过原 socket 探测，桌面未回来时 30 秒进入失败页。这里只撤销许可。
-        // 多个 ACK 在途时会连收 INTERNAL，首个已撤销许可，所以这里不要求许可，否则后续落回未配对分支。
-        this.pairedSocket = undefined;
-        this.options.onError(new Error(message || code));
-        return;
-      }
       if (this.state === "paired" || (this.hadPairedSession && this.state === "waiting")) {
         this.enterWaitingForDeviceAfterRelayError(message || code);
         return;
@@ -464,12 +582,53 @@ export class WebRemoteControlTerminalTransport {
   }
 
   private startHeartbeat(): void {
-    this.heartbeat.acknowledged();
+    if (this.heartbeatTimer) {
+      return;
+    }
+    this.armHeartbeatAckWatchdog();
+    this.scheduleHeartbeat();
+  }
+
+  private scheduleHeartbeat(): void {
+    this.heartbeatTimer = setTimeout(
+      () => {
+        this.heartbeatTimer = undefined;
+        if (this.state !== "paired" && this.state !== "waiting") {
+          return;
+        }
+        this.sendPairStatusQuery();
+        // Bugfix: 固定 setInterval 会让同一批同时配对的设备长期同相发送心跳；
+        // 每次发送后重新抽样有界 jitter，只打散调度相位，不改变平均 10 秒周期。
+        this.scheduleHeartbeat();
+      },
+      getWebRemoteControlHeartbeatDelayMs(
+        this.options.heartbeatIntervalMs ?? WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS,
+        this.options.heartbeatJitterMs,
+      ),
+    );
+  }
+
+  private armHeartbeatAckWatchdog(): void {
+    if (this.state !== "paired" && this.state !== "waiting") {
+      return;
+    }
+    if (this.heartbeatAckWatchdogTimer) {
+      clearTimeout(this.heartbeatAckWatchdogTimer);
+    }
+    this.heartbeatAckWatchdogTimer = setTimeout(() => {
+      this.heartbeatAckWatchdogTimer = undefined;
+      if (this.state !== "paired" && this.state !== "waiting") {
+        return;
+      }
+      // Bugfix: ACK deadline 必须独立于下一次 jittered heartbeat；否则随机间隔会把
+      // 原本 30 秒的失联判定漂移到 32~36 秒，并在半开 WebSocket 上继续黑洞发送。
+      this.reconnectAfterStaleWaiting(this.getReconnectJitterMs());
+    }, this.options.heartbeatAckTimeoutMs ?? WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS);
   }
 
   private getReconnectJitterMs(): number {
     const baseIntervalMs =
-      this.options.heartbeatIntervalMs ?? WEB_REMOTE_CONTROL_V2_HEARTBEAT_INTERVAL_MS;
+      this.options.heartbeatIntervalMs ?? WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS;
     const heartbeatJitterMs = getWebRemoteControlHeartbeatJitterMs(
       baseIntervalMs,
       this.options.heartbeatJitterMs,
@@ -483,23 +642,31 @@ export class WebRemoteControlTerminalTransport {
   private sendPairStatusQuery(): boolean {
     return this.send({
       type: "pair_status_query",
-      client_ts: Math.floor(Date.now() / 1000),
+      device_sid: this.options.deviceSid,
+      client_ts: Date.now(),
     });
   }
 
   private stopHeartbeat(): void {
-    this.heartbeat.stop();
+    if (this.heartbeatTimer) {
+      clearTimeout(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
+    }
+    if (this.heartbeatAckWatchdogTimer) {
+      clearTimeout(this.heartbeatAckWatchdogTimer);
+      this.heartbeatAckWatchdogTimer = undefined;
+    }
   }
 
   private startWaitingTimer(): void {
-    if (this.waitingTimer) return;
+    this.clearWaitingTimer();
     this.waitingTimer = setTimeout(() => {
       if (this.state !== "waiting") {
         return;
       }
       this.enterTerminalFailure(
         createFailure(
-          "desktop-disconnected",
+          "invalid-mobile-connection",
           "Desktop did not match this mobile connection before the waiting timeout.",
         ),
       );
@@ -550,7 +717,9 @@ export class WebRemoteControlTerminalTransport {
     // 这里不能清掉 wasPaired，否则下一跳 waiting 会被当成首次未匹配并进入失败页；
     // 保留已配对语义，让状态机继续按可恢复短断连重试到 matched。
     if (reconnectDelayMs > 0) {
-      this.closeSocket();
+      const staleSocket = this.socket;
+      this.socket = undefined;
+      staleSocket?.close();
       this.setState("reconnecting");
       this.lastPairStatusAckAt = Date.now();
       this.reconnectTimer = setTimeout(() => {
@@ -566,19 +735,20 @@ export class WebRemoteControlTerminalTransport {
   }
 
   private reconnectNow(): void {
-    this.closeSocket();
+    const staleSocket = this.socket;
+    this.socket = undefined;
+    staleSocket?.close();
     this.setState("reconnecting");
     this.lastPairStatusAckAt = Date.now();
     this.connect();
   }
 
-  private scheduleReconnect(options?: { immediate?: boolean; delayMs?: number }): void {
-    if (this.intentionallyClosed || this.state === "suspended") return;
+  private scheduleReconnect(options?: { immediate?: boolean }): void {
     if (this.reconnectTimer) {
       return;
     }
-    const delayMs = options?.delayMs ?? (options?.immediate ? 0 : this.retry.nextDelay());
-    this.closeSocket();
+    const delayMs = options?.immediate ? 0 : Math.min(10_000, 500 * 2 ** this.reconnectAttempt);
+    this.reconnectAttempt += 1;
     this.setState("reconnecting");
     this.emitDiagnostic({ type: "recover-scheduled", state: this.state });
     this.reconnectTimer = setTimeout(() => {
@@ -588,7 +758,9 @@ export class WebRemoteControlTerminalTransport {
       }
       this.staleWaitingCount = 0;
       this.wasPaired = false;
-      this.closeSocket();
+      const staleSocket = this.socket;
+      this.socket = undefined;
+      staleSocket?.close();
       this.connect();
     }, delayMs);
   }
@@ -600,7 +772,9 @@ export class WebRemoteControlTerminalTransport {
     this.clearStaleWaitingRecoveryTimer();
     this.staleWaitingCount = 0;
     this.wasPaired = false;
-    this.closeSocket();
+    const staleSocket = this.socket;
+    this.socket = undefined;
+    staleSocket?.close();
     this.scheduleReconnect({ immediate: true });
   }
 
@@ -617,12 +791,13 @@ export class WebRemoteControlTerminalTransport {
         this.enterTerminalFailure(createFailure("desktop-disconnected", message));
       }, this.options.desktopOfflineGraceMs ?? 15_000);
     }
-    this.closeSocket();
+    const staleSocket = this.socket;
+    this.socket = undefined;
+    staleSocket?.close();
     this.scheduleReconnect({ immediate: true });
   }
 
   private enterWaitingForDeviceAfterRelayError(message: string): void {
-    this.pairedSocket = undefined;
     // Bugfix: zcode-remote-hub 在已认证连接上转发 data 找不到 device 时只返回 INTERNAL，
     // 不会关闭当前 terminal WS。这里保持手机端 WS，降级为 waiting 并继续查询配对状态，
     // 避免把“桌面端暂时不在”放大成手机端反复重连。
@@ -696,22 +871,7 @@ export class WebRemoteControlTerminalTransport {
     this.setState(failure.reason === "session-conflict" ? "kicked" : "error");
     this.rejectPairedWaiters(new Error(failure.message ?? failure.reason));
     this.options.onFailure(failure);
-    this.closeSocket();
-  }
-
-  private closeSocket(): void {
-    this.pairedSocket = undefined;
-    // 等待超时属于旧 socket；KICKED 的退避不能让其残留引用阻止新一代重新计时。
-    this.clearWaitingTimer();
-    ++this.socketGeneration;
-    this.tokenController?.abort();
-    this.tokenController = undefined;
-    this.authenticated = false;
-    clearTimeout(this.handshakeTimer);
-    this.stopHeartbeat();
-    const socket = this.socket;
-    this.socket = undefined;
-    socket?.close();
+    this.socket?.close();
   }
 
   private setState(state: WebRemoteControlTerminalTransportState): void {
@@ -734,7 +894,7 @@ export class WebRemoteControlTerminalTransport {
     }
   }
 
-  private send(message: WebRemoteControlRelayV2OutgoingMessage): boolean {
+  private send(message: WebRemoteControlRelayOutgoingMessage): boolean {
     if (this.socket?.readyState !== this.WebSocketCtor.OPEN) {
       return false;
     }
@@ -749,7 +909,7 @@ export class WebRemoteControlTerminalTransport {
   }
 
   private sendSerialized(
-    message: WebRemoteControlRelayV2OutgoingMessage | { type: "data"; payload: unknown },
+    message: WebRemoteControlRelayOutgoingMessage,
     serialized: string,
   ): boolean {
     if (this.socket?.readyState !== this.WebSocketCtor.OPEN) {
@@ -796,4 +956,152 @@ export class WebRemoteControlTerminalTransport {
       ...(hiddenDurationMs !== undefined ? { hiddenDurationMs } : {}),
     } as WebRemoteControlTerminalTransportDiagnostic);
   }
+}
+
+interface WebRemoteControlAppPayloadRequesterOptions {
+  sendPayload(payload: WebRemoteControlAppPayload): boolean;
+  timeoutMs?: number;
+}
+
+interface WebRemoteControlAppPayloadRequestOptions {
+  timeoutMs?: number;
+}
+
+interface PendingAppPayloadRequest<TResponse extends WebRemoteControlAppPayload> {
+  isMatch(payload: WebRemoteControlAppPayload): payload is TResponse;
+  resolve(payload: TResponse): void;
+  reject(error: WebRemoteControlFailure): void;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+interface WebRemoteControlRelayRequestRecoveryOptions {
+  recoverTimeout?: boolean;
+}
+
+function isRecoverableRelayRequestFailure(
+  error: unknown,
+  options?: WebRemoteControlRelayRequestRecoveryOptions,
+): boolean {
+  const failure = error as Partial<WebRemoteControlFailure> | undefined;
+  return (
+    failure?.reason === "relay-unavailable" ||
+    (options?.recoverTimeout === true && failure?.reason === "desktop-bootstrap-timeout")
+  );
+}
+
+export function createWebRemoteControlRelayRequestRecovery(recoverConnection: () => Promise<void>) {
+  let recoveryPromise: Promise<void> | undefined;
+
+  async function recoverRelayRequestPath(): Promise<void> {
+    if (!recoveryPromise) {
+      // Bugfix: 多个请求同时撞上 relay suspect 窗口时必须共用一次恢复。
+      // 否则每个请求都会触发 recoverConnection，容易把短暂抖动放大成连续重连。
+      recoveryPromise = recoverConnection().finally(() => {
+        recoveryPromise = undefined;
+      });
+    }
+    await recoveryPromise;
+  }
+
+  return async function requestWithRelayRecovery<T>(
+    request: () => Promise<T>,
+    options?: WebRemoteControlRelayRequestRecoveryOptions,
+  ): Promise<T> {
+    try {
+      return await request();
+    } catch (error) {
+      if (!isRecoverableRelayRequestFailure(error, options)) {
+        throw error;
+      }
+      await recoverRelayRequestPath();
+      return request();
+    }
+  };
+}
+
+export function createWebRemoteControlAppPayloadRequester({
+  sendPayload,
+  timeoutMs: defaultTimeoutMs = 10_000,
+}: WebRemoteControlAppPayloadRequesterOptions) {
+  const pending = new Map<string, PendingAppPayloadRequest<WebRemoteControlAppPayload>>();
+
+  function rejectRequest(requestId: string, failure: WebRemoteControlFailure): boolean {
+    const request = pending.get(requestId);
+    if (!request) {
+      return false;
+    }
+    clearTimeout(request.timer);
+    pending.delete(requestId);
+    request.reject(failure);
+    return true;
+  }
+
+  return {
+    requestAppPayload<TResponse extends WebRemoteControlAppPayload>(
+      payload: WebRemoteControlAppPayload & { requestId: string },
+      isMatch: (payload: WebRemoteControlAppPayload) => payload is TResponse,
+      options?: WebRemoteControlAppPayloadRequestOptions,
+    ): Promise<TResponse> {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pending.delete(payload.requestId);
+          reject(createFailure("desktop-bootstrap-timeout", "Desktop did not respond in time."));
+        }, options?.timeoutMs ?? defaultTimeoutMs);
+        pending.set(payload.requestId, {
+          isMatch,
+          resolve: resolve as (payload: WebRemoteControlAppPayload) => void,
+          reject,
+          timer,
+        });
+        if (!sendPayload(payload)) {
+          // Bugfix: 之前非 paired / suspect 状态下 sendPayload 会静默丢弃，
+          // requester 仍等到超时并误报“桌面未响应”。这里立即按链路不可发送失败，
+          // 让上层可以选择等待重连或重放幂等请求。
+          clearTimeout(timer);
+          pending.delete(payload.requestId);
+          reject(
+            createFailure(
+              "relay-unavailable",
+              "Web remote control transport is not ready to send payload.",
+            ),
+          );
+        }
+      });
+    },
+
+    acceptPayload(payload: WebRemoteControlAppPayload): boolean {
+      if (
+        (payload.zcode_type === "app-error" || payload.zcode_type === "workspace-bridge-error") &&
+        payload.requestId
+      ) {
+        // Bugfix: remote session 关闭这类异步 bridge error 会带合成 requestId，
+        // 但它不是某个 pending request 的响应。只有真正命中 pending 时才消费，
+        // 否则交给上层按 bridge 失效事件触发重连/降级 UI。
+        return rejectRequest(payload.requestId, createFailure(payload.reason, payload.error));
+      }
+
+      for (const [requestId, request] of pending) {
+        if (!request.isMatch(payload)) {
+          continue;
+        }
+        clearTimeout(request.timer);
+        pending.delete(requestId);
+        request.resolve(payload);
+        return true;
+      }
+      return false;
+    },
+
+    rejectAll(failure: WebRemoteControlFailure): void {
+      for (const [requestId, request] of pending) {
+        clearTimeout(request.timer);
+        pending.delete(requestId);
+        request.reject(failure);
+      }
+    },
+
+    dispose(): void {
+      this.rejectAll(createFailure("desktop-disconnected", "Web remote control transport closed."));
+    },
+  };
 }

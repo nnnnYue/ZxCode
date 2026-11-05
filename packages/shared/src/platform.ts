@@ -690,6 +690,8 @@ export const DesktopCommandIds = {
   ZoomOut: "zoomOut",
   ShowAbout: "showAbout",
   OpenChangelog: "openChangelog",
+  // 修复原因：v3.17.2 合并缝合时误随剔除域一起删除；web 平台实现与 Desktop 平台仍在消费。
+  OpenFeedback: "openFeedback",
   RelaunchApp: "relaunchApp",
   ExportLogs: "exportLogs",
   PullMobileLogs: "pullMobileLogs",
@@ -924,6 +926,9 @@ export interface IPlatformService {
   getApplicationIcon?(
     request: string | ApplicationIconRequest,
   ): Promise<ApplicationIconInfo | null>;
+
+  /** 打开反馈入口，由平台自行解析最终地址（v3.17.2 合并缝合时误删后补回） */
+  openFeedback(): Promise<void>;
 
   /** 在系统文件管理器中打开指定路径 */
   openInFileManager(path: string): Promise<{ success: boolean; error?: string }>;
