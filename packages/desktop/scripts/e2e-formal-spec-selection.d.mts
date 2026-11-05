@@ -8,5 +8,3 @@ export function resolveEnvironmentGatedFormalSpecExcludes(options: {
   env: Record<string, string | undefined>;
   targeted: boolean;
 }): string[];
-
-export function isExplicitE2ESpecSelection(specs: readonly string[]): boolean;

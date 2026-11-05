@@ -107,19 +107,9 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
           {
             uri: params.uri,
             mimeType: "text/html;profile=mcp-app",
-            text: (await readFile(htmlPath, "utf8")).replace(
-              "<head>",
-              `<head>${
-                params.uri.startsWith("ui://fixture/modes/")
-                  ? `<script>window.fixtureDisplayModes=${JSON.stringify(params.uri.slice("ui://fixture/modes/".length).split(",").filter(Boolean))}</script>`
-                  : ""
-              }`,
-            ),
+            text: await readFile(htmlPath, "utf8"),
             _meta: {
-              ui: {
-                ...(source !== "non-retained" ? { backgroundRetention: true } : {}),
-                ...(source === "managed-permissions" ? { permissions: { geolocation: {} } } : {}),
-              },
+              ui: source === "managed-permissions" ? { permissions: { geolocation: {} } } : {},
             },
           },
         ],

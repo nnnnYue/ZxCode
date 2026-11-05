@@ -110,7 +110,6 @@ interface GuestDownloadItem {
 }
 
 export interface BrowserGuestExecutionContext {
-  controlScopeId?: string;
   requestId: string;
   browserId: string;
   browserGeneration: number;
@@ -168,6 +167,10 @@ interface ManagedTab {
   active: boolean;
   /** Agent/UI 设置的单 tab CSS viewport；undefined 表示跟随宿主自然尺寸。 */
   viewportOverride?: BrowserViewportSize;
+  /** Desktop page zoom 放大时专用于校正 guest native raster；不改变 CSS viewport。 */
+  desktopZoomFactor?: number;
+  /** 已成功下发给 Chromium 的倍率；输入不得使用尚在 viewport 队列中的目标倍率。 */
+  appliedViewportScale?: number;
   /** pane 隐藏为 0×0 时仅供后台执行使用；重新前台可见后必须清除。 */
   backgroundViewportFallback?: BrowserViewportSize;
   /** 串行化 transient clear 与显式 set/reset，保证最后一次用户/Agent 设置胜出。 */
@@ -227,7 +230,6 @@ interface BrowserRecordingEntry {
   artifact?: BrowserRecordingJob["artifact"];
   error?: string;
   cleanupTimer?: ReturnType<typeof setTimeout>;
-  completion?: Promise<void>;
 }
 
 interface DownloadRecord {
@@ -285,9 +287,17 @@ export interface BrowserGuestManagerResidencyOptions {
     now?: () => number;
   };
 }
-// Desktop zoom 的布局补偿只在 renderer 完成；metrics 是 per-session 状态，命令空闲 detach
-// 后会被清掉，若在这里带 scale，空闲时页面会退回另一套布局，操作期间变大、空闲变回。
-function buildViewportMetricsOverride(viewport: BrowserViewportSize): Record<string, unknown> {
+function normalizeDesktopZoomMetricsScale(desktopZoomFactor: number | undefined): number {
+  return Number.isFinite(desktopZoomFactor) && (desktopZoomFactor ?? 1) > 1
+    ? (desktopZoomFactor ?? 1)
+    : 1;
+}
+
+function buildViewportMetricsOverride(
+  viewport: BrowserViewportSize,
+  desktopZoomFactor?: number,
+): Record<string, unknown> {
+  const metricsScale = normalizeDesktopZoomMetricsScale(desktopZoomFactor);
   return {
     width: viewport.width,
     height: viewport.height,
@@ -297,10 +307,14 @@ function buildViewportMetricsOverride(viewport: BrowserViewportSize): Record<str
     deviceScaleFactor: 1,
     mobile: false,
     dontSetVisibleSize: true,
+    // Desktop page zoom > 1 时，Electron 的 guest target 截图本身已只有
+    // frame 的 1 / zoom 内容，外层 CSS transform 无法补齐 native raster。CDP scale
+    // 只在放大档位校正可见面；缩小保持默认 1，避免再次缩小内容。
+    ...(metricsScale > 1 ? { scale: metricsScale } : {}),
   };
 }
 
-function sessionScopeKey(context: InternalExecutionContext): string {
+function scopeKey(context: InternalExecutionContext): string {
   if (context.legacy) return "legacy";
   return [
     context.browserId,
@@ -311,13 +325,6 @@ function sessionScopeKey(context: InternalExecutionContext): string {
     context.sessionId,
     context.clientMode,
   ].join("\u0000");
-}
-
-// 会话只读视图与实例控制权是两个边界；不能放宽 sameScope 来让 Host 读取 ambient。
-function scopeKey(context: InternalExecutionContext): string {
-  return context.legacy
-    ? "legacy"
-    : `${sessionScopeKey(context)}\u0000${context.controlScopeId ?? ""}`;
 }
 
 /** tab 归属的 session 身份：不含 browserId / generation，释放回 user-tab 集合的 tab 仍然匹配。 */
@@ -435,87 +442,6 @@ function safeNumber(read: () => number | undefined): number | undefined {
 }
 
 export class BrowserGuestManager {
-  // 资源身份属于窗口内的 Main owner，不能随 Host 的转发桥重建。
-  private readonly backendIdentities = new Map<number, { id: string; generation: number }>();
-  private readonly controlScopes = new Map<
-    string,
-    {
-      context: InternalExecutionContext;
-      closed: boolean;
-      released: boolean;
-      pending: Set<Promise<void>>;
-      closing?: Promise<BrowserCommandResult>;
-    }
-  >();
-
-  getBackendIdentity(windowId: number): { id: string; generation: number } {
-    let identity = this.backendIdentities.get(windowId);
-    if (!identity) {
-      identity = { id: `iab:${randomUUID()}`, generation: 1 };
-      this.backendIdentities.set(windowId, identity);
-    }
-    return { ...identity };
-  }
-
-  private async releaseControlScope(
-    context: InternalExecutionContext,
-    closeTabs: boolean,
-  ): Promise<BrowserCommandResult> {
-    const id = context.controlScopeId!;
-    let scope = this.controlScopes.get(id);
-    const result = (state: "released" | "absent"): BrowserCommandResult => ({
-      ok: true,
-      elapsedMs: 0,
-      scope: { id, state },
-    });
-    if (!scope) {
-      // 即使 open 的请求还在路上，也先留下关闭屏障，禁止迟到 open 复活资源。
-      this.controlScopes.set(id, { context, closed: true, released: true, pending: new Set() });
-      return result("absent");
-    }
-    if (!sameScope(scope.context, context))
-      return {
-        ok: false,
-        elapsedMs: 0,
-        error: {
-          code: "execution_error",
-          message: "Browser scope identity mismatch",
-          sideEffect: "none",
-        },
-      };
-    if (scope.released) return result("released");
-    scope.closed = true;
-    const current = scope;
-    current.closing ??= (async () => {
-      this.abortRecordings((entry) => sameScope(entry.context, context), "scope released");
-      for (const request of this.runningRequests.values()) {
-        if (sameScope(request.context, context))
-          request.controller.abort(new DOMException("scope released", "AbortError"));
-      }
-      await Promise.all(current.pending);
-      // recordingStart 返回的是后台 job；命令完成不能代表录制 surface 已释放。
-      await Promise.all(
-        [...this.recordings.values()]
-          .filter((entry) => sameScope(entry.context, context))
-          .map((entry) => entry.completion),
-      );
-      // 等已准入命令真正落地后再释放 tab，避免它们在关闭后创建或重新绑定资源。
-      await Promise.all(
-        [...this.tabs.values()]
-          .filter((tab) => tab.owner.controlScopeId === id && ownedBySession(tab.owner, context))
-          .map((tab) => this.releaseGuestCdpAfterIdle(tab, "scope released", true)),
-      );
-      this.closeSession(context);
-      if (closeTabs) await this.closeSessionTabs(context);
-      current.released = true;
-      return result("released");
-    })().catch((error) => {
-      current.closing = undefined;
-      throw error;
-    });
-    return current.closing;
-  }
-
   private readonly tabs = new Map<string, ManagedTab>();
 
   /** 资源管理器：当前仍活着的浏览器 guest webContents id，用于把其 renderer 归到内置插件 browser-use */
@@ -636,7 +562,7 @@ export class BrowserGuestManager {
     }
     if (guest.getType() !== "webview") {
       // fromId 接受进程内任意 WebContents id；若 renderer 误传主窗口 id，后续
-      // CDP/Runtime 输入会直接操作 ZCode composer。IAB 只允许真实 <webview> guest fail closed。
+      // CDP/Runtime 输入会直接操作 ZxCode composer。IAB 只允许真实 <webview> guest fail closed。
       this.log?.(
         `[browser-use] attachGuest rejected tabId=${tabId} id=${webContentsId} reason=not-webview type=${guest.getType()}`,
       );
@@ -870,6 +796,7 @@ export class BrowserGuestManager {
     tabId: string,
     viewport: BrowserViewportSize | null,
     windowId: number,
+    desktopZoomFactor = 1,
   ): Promise<void> {
     const tab = this.tabs.get(tabId);
     if (!tab || tab.lifecycle === "closed" || tab.owner.windowId !== windowId) {
@@ -877,6 +804,7 @@ export class BrowserGuestManager {
     }
     if (viewport) {
       assertViewportOverride(viewport);
+      tab.desktopZoomFactor = normalizeDesktopZoomMetricsScale(desktopZoomFactor);
       await this.setTabViewport(tab, viewport);
       return;
     }
@@ -1048,59 +976,11 @@ export class BrowserGuestManager {
     command: BrowserCommand,
     signal?: AbortSignal,
   ): Promise<BrowserCommandResult> {
-    const context: InternalExecutionContext =
+    const context =
       typeof contextOrKey === "string" ? normalizeLegacyContext(contextOrKey) : contextOrKey;
     this.log?.(
       `[browser-use] execute requestId=${context.requestId} browserId=${context.browserId} generation=${context.browserGeneration} windowId=${context.windowId} sessionId=${context.sessionId} method=${command.method}`,
     );
-
-    if (
-      command.method === "openScope" ||
-      command.method === "releaseScope" ||
-      context.controlScopeId
-    ) {
-      const id = context.controlScopeId;
-      const reject = (message: string): BrowserCommandResult => ({
-        ok: false,
-        elapsedMs: 0,
-        ...(command.method === "openScope" && id
-          ? { scope: { id, state: "rejected" as const } }
-          : {}),
-        error: { code: "backend_unavailable", message, sideEffect: "none" },
-      });
-      if (!id) return reject("Browser control scope is required");
-      if (command.method === "releaseScope")
-        return this.releaseControlScope(context, command.closeTabs === true);
-      const scope = this.controlScopes.get(id);
-      if (scope && (!sameScope(scope.context, context) || scope.closed))
-        return reject("Browser control scope is closed or belongs to another owner");
-      if (command.method === "openScope") {
-        const owner = this.getBackendIdentity(context.windowId);
-        if (context.browserId !== owner.id || context.browserGeneration !== owner.generation)
-          return reject("Browser resource owner is no longer available");
-        this.controlScopes.set(
-          id,
-          scope ?? { context, closed: false, released: false, pending: new Set() },
-        );
-        return { ok: true, elapsedMs: 0, scope: { id, state: "open" } };
-      }
-      if (!scope) return reject("Browser control scope was not opened");
-    }
-
-    if (!context.controlScopeId && !context.legacy && context.browserId !== "legacy-iab") {
-      // 身份校验从 Host 移到资源 owner，兼容请求也不能因桥重连而绕过代次校验。
-      const owner = this.getBackendIdentity(context.windowId);
-      if (context.browserId !== owner.id || context.browserGeneration !== owner.generation)
-        return {
-          ok: false,
-          elapsedMs: 0,
-          error: {
-            code: "backend_unavailable",
-            message: "Browser resource owner is no longer available",
-            sideEffect: "none",
-          },
-        };
-    }
 
     if (this.runningRequests.has(context.requestId)) {
       // requestId 是取消与 lifecycle cleanup 的 correlation key。同 key 覆盖会让
@@ -1137,17 +1017,10 @@ export class BrowserGuestManager {
     const unlink = linkAbortSignal(signal, controller);
     const running: RunningRequest = { context, controller, dispatched: false };
     this.runningRequests.set(context.requestId, running);
-    const scope = context.controlScopeId
-      ? this.controlScopes.get(context.controlScopeId)
-      : undefined;
-    const settled = Promise.withResolvers<void>();
-    scope?.pending.add(settled.promise);
     try {
       return await this.executeInScope(context, command, running);
     } finally {
       unlink();
-      scope?.pending.delete(settled.promise);
-      settled.resolve();
       // 清理必须绑定 entry identity；即使未来其它入口误写同 key，旧请求也不能删除新状态。
       if (this.runningRequests.get(context.requestId) === running) {
         this.runningRequests.delete(context.requestId);
@@ -1167,10 +1040,7 @@ export class BrowserGuestManager {
     }
 
     if (command.method === "list") {
-      // Host 的 ambient 查询没有实例 ID，只读汇总同一会话路由；业务操作仍使用严格实例匹配。
-      const tabs = await Promise.all(
-        this.ownedTabs(context, !context.controlScopeId).map((tab) => this.summary(tab)),
-      );
+      const tabs = await Promise.all(this.ownedTabs(context).map((tab) => this.summary(tab)));
       return this.withMeta({ ok: true, tabs, elapsedMs: Date.now() - startedAt }, context);
     }
 
@@ -1428,7 +1298,7 @@ export class BrowserGuestManager {
       const entry = this.createRecordingEntry(context, tab);
       this.recordings.set(entry.id, entry);
       this.refreshRuntimeProtection(tab.tabId);
-      entry.completion = this.runRecording(entry, tab, command.options).catch((error: unknown) => {
+      void this.runRecording(entry, tab, command.options).catch((error: unknown) => {
         if (entry.status !== "running") return;
         if (
           entry.controller.signal.aborted &&
@@ -1856,27 +1726,33 @@ export class BrowserGuestManager {
         }
         const invalidationError = readScreenshotSurfaceInvalidation(lease.invalidated);
         if (invalidationError) throw invalidationError;
-        // 普通 fallback 也使用临时 responsive surface；idle detach 后先在同一 mutation 内重装 metrics。
-        if (
-          tab.backgroundViewportFallback &&
-          (!guest.debugger.isAttached() || tab.guestCdpRestoreFlight)
-        ) {
-          await this.sendGuestCdpCommand(
-            tab,
-            guest,
-            "Emulation.setDeviceMetricsOverride",
-            buildViewportMetricsOverride(tab.backgroundViewportFallback),
-          );
+        // 普通 fallback 也使用临时 responsive surface，必须补偿宿主放大后的 native raster。
+        // 普通模式不会回写 viewport；热态 zoom 改变时在同一 mutation 内同步，不能只等 idle 重连。
+        if (tab.backgroundViewportFallback) {
+          const desktopZoom = guest.hostWebContents?.getZoomFactor();
+          if (
+            !guest.debugger.isAttached() ||
+            tab.guestCdpRestoreFlight ||
+            (tab.appliedViewportScale ?? 1) !== normalizeDesktopZoomMetricsScale(desktopZoom)
+          ) {
+            await this.sendGuestCdpCommand(
+              tab,
+              guest,
+              "Emulation.setDeviceMetricsOverride",
+              buildViewportMetricsOverride(tab.backgroundViewportFallback, desktopZoom),
+            );
+          }
         }
         const normalizedScreenshot = Boolean(
           tab.viewportOverride || tab.backgroundViewportFallback,
         );
         // Windows 125% 显示缩放 + Desktop 110% 时，renderer 即使上报
         // surfaceScale=1，CDP 仍会把较小的 native raster 周期平铺成目标尺寸。
-        // Desktop 放大时的 viewport 截图也读取实际 surface，再统一归一为 CSS px。
+        // 放大补偿后的 viewport 截图也必须读取实际 surface，再统一归一为 CSS px。
         const captureViewportScreenshot =
           normalizedScreenshot &&
-          (lease.surfaceScale < 0.999 || (guest.hostWebContents?.getZoomFactor() ?? 1) > 1)
+          (lease.surfaceScale < 0.999 ||
+            (tab.appliedViewportScale ?? tab.desktopZoomFactor ?? 1) > 1)
             ? async (): Promise<string | undefined> => {
                 if (!this.resizeScreenshotToCssPixels) {
                   throw new Error("browser screenshot CSS pixel normalizer is unavailable");
@@ -2088,7 +1964,7 @@ export class BrowserGuestManager {
    */
   private isInFlightScreenshotAlive(tracked: InFlightScreenshot): boolean {
     const running = this.runningRequests.get(tracked.requestId);
-    return running !== undefined && !running.controller.signal.aborted;
+    return Boolean(running) && !running.controller.signal.aborted;
   }
 
   private createRecordingEntry(
@@ -2356,9 +2232,6 @@ export class BrowserGuestManager {
         if (result.kind === "timeout")
           throw new Error(`recording action timed out: ${result.reason}`);
         return;
-      }
-      if (action.type !== "click") {
-        throw new Error(`recording ${action.type} requires a selector`);
       }
       if (typeof action.x !== "number" || typeof action.y !== "number") {
         throw new Error("recording click requires selector or (x,y)");
@@ -2766,12 +2639,7 @@ export class BrowserGuestManager {
       // 如果 destroyed/mismatch 已经发起过重绑，沿用该请求，避免同一 tab 重复创建 webview。
       if (!tab.rebindRequested) this.onOpenTabRequested?.(tab.tabId, tab.owner);
       // 某些测试/旧 renderer 会在 Ready 回调内同步 attach；不能在 attach 已成功后再注册 waiter。
-      // Bug 原因：guest 是可变字段，进入回调后 TypeScript 会撤销属性收窄；固定本轮引用，
-      // 同时保证销毁检查与返回的是同一个 guest。
-      const attachedGuest = tab.guest;
-      if (attachedGuest && !safeBool(() => attachedGuest.isDestroyed(), true)) {
-        return attachedGuest;
-      }
+      if (tab.guest && !safeBool(() => tab.guest.isDestroyed(), true)) return tab.guest;
       const guest = await this.waitForGuest(tab.tabId);
       if (guest && !safeBool(() => guest.isDestroyed(), true)) return guest;
       if (attempt === 0 && !tab.hasAttachedGuest && !tab.attachFailure) return null;
@@ -2781,13 +2649,9 @@ export class BrowserGuestManager {
     return null;
   }
 
-  private ownedTabs(context: InternalExecutionContext, sessionView = false): ManagedTab[] {
+  private ownedTabs(context: InternalExecutionContext): ManagedTab[] {
     return [...this.tabs.values()].filter(
-      (tab) =>
-        tab.lifecycle !== "closed" &&
-        (sessionView
-          ? sessionScopeKey(tab.owner) === sessionScopeKey(context)
-          : sameScope(tab.owner, context)),
+      (tab) => tab.lifecycle !== "closed" && sameScope(tab.owner, context),
     );
   }
 
@@ -2870,8 +2734,7 @@ export class BrowserGuestManager {
     if (this.defaultTabByScope.get(claimedScope) === tab.tabId) {
       this.defaultTabByScope.delete(claimedScope);
     }
-    // 同一用户 tab 可被后续 runtime 再认领；释放归属必须跟随当前使用者，不能回到首次 claim 的 scope。
-    tab.owner = { ...tab.userOwner, controlScopeId: tab.owner.controlScopeId };
+    tab.owner = { ...tab.userOwner };
     tab.origin = "user";
     tab.claimable = true;
     tab.lifecycle = "active";
@@ -2881,7 +2744,7 @@ export class BrowserGuestManager {
     context: InternalExecutionContext,
     keep: Map<string, "handoff" | "deliverable">,
   ): void {
-    // 产品语义：IAB tab 在当前 ZCode 进程内默认持久。keep 是状态标记集合，不是清理白名单；
+    // 产品语义：IAB tab 在当前 ZxCode 进程内默认持久。keep 是状态标记集合，不是清理白名单；
     // 遗漏的 tab 不能当成临时页关闭：模型未显式 close 时用户页面会在 turn end 消失。
     for (const tab of this.tabs.values()) {
       if (!sameScope(tab.owner, context)) continue;
@@ -2930,9 +2793,7 @@ export class BrowserGuestManager {
       title: tab.cachedTitle,
       viewport: await this.readTabViewport(tab),
       ...(this.effectiveActiveTabId(tab.owner) === tab.tabId ? { active: true } : {}),
-      ...(tab.lifecycle === "deliverable" || tab.lifecycle === "handoff"
-        ? { lifecycle: tab.lifecycle }
-        : {}),
+      ...(tab.lifecycle !== "active" ? { lifecycle: tab.lifecycle } : {}),
     };
   }
 
@@ -2990,8 +2851,7 @@ export class BrowserGuestManager {
     tab?: ManagedTab,
     lifecycleOverride?: BrowserResponseMeta["lifecycle"],
   ): BrowserCommandResult {
-    // list 的只读视图可能跨实例，meta 必须描述实际返回列表，不能再次按控制作用域缩小。
-    const openTabs = result.tabs ?? this.ownedTabs(context);
+    const openTabs = this.ownedTabs(context);
     const currentUrl = tab
       ? sanitizeBrowserMetaUrl(
           tab.guest ? safeStr(() => tab.guest!.getURL(), tab.cachedUrl) : tab.cachedUrl,
@@ -3120,14 +2980,10 @@ export class BrowserGuestManager {
     }
   }
 
-  private async releaseGuestCdpAfterIdle(
-    tab: ManagedTab,
-    reason: string,
-    requireReleased = false,
-  ): Promise<void> {
+  private releaseGuestCdpAfterIdle(tab: ManagedTab, reason: string): void {
     const guest = tab.guest;
     if (!guest || tab.guestLifecycle !== "attached") return;
-    await (async () => {
+    void (async () => {
       // 在途 CDP 命令（playwright cdp.send / viewport override / dialog 处理）结束后再断开，
       // 避免中途拆掉正在使用的管线；超时兜底与 runGuestTeardown 共用同一预算。
       const settled = await this.waitForGuestCdpIdle(tab, DEFAULT_GUEST_CDP_TEARDOWN_TIMEOUT_MS);
@@ -3140,10 +2996,7 @@ export class BrowserGuestManager {
       // 等待期间 tab 可能已换代/关闭/再次进入命令期，此时放弃本轮释放。
       if (this.tabs.get(tab.tabId) !== tab || tab.guest !== guest) return;
       if (tab.guestLifecycle !== "attached") return;
-      if (tab.pendingCdpCommands > 0) {
-        if (requireReleased) throw new Error("Browser CDP commands are still running");
-        return;
-      }
+      if (tab.pendingCdpCommands > 0) return;
       if (safeBool(() => guest.isDestroyed(), true)) return;
       try {
         if (!guest.debugger.isAttached()) {
@@ -3151,13 +3004,10 @@ export class BrowserGuestManager {
           return;
         }
         guest.debugger.detach();
-        if (requireReleased && guest.debugger.isAttached())
-          throw new Error("Browser CDP is still attached");
         tab.cdpAttached = false;
         this.log?.(`[browser-use] cdp released after ${reason} tabId=${tab.tabId}`);
       } catch (error) {
         this.warn(`browser guest cdp release failed tabId=${tab.tabId} reason=${reason}`, error);
-        if (requireReleased) throw error;
       }
     })();
   }
@@ -3213,22 +3063,12 @@ export class BrowserGuestManager {
    */
   private async closeSessionTabs(context: InternalExecutionContext): Promise<void> {
     const owned = [...this.tabs.values()].filter(
-      (tab) =>
-        tab.lifecycle !== "closed" &&
-        ownedBySession(tab.owner, context) &&
-        (!context.controlScopeId || tab.owner.controlScopeId === context.controlScopeId),
+      (tab) => tab.lifecycle !== "closed" && ownedBySession(tab.owner, context),
     );
     for (const tab of owned) await this.closeTabDurably(tab);
   }
 
   closeWindow(windowId: number): void {
-    this.backendIdentities.delete(windowId);
-    for (const [id, scope] of this.controlScopes) {
-      if (scope.context.windowId === windowId) {
-        scope.closed = true;
-        this.controlScopes.delete(id);
-      }
-    }
     this.abortRecordings((entry) => entry.context.windowId === windowId, "window closed");
     for (const request of this.runningRequests.values()) {
       if (request.context.windowId === windowId) {
@@ -3403,7 +3243,7 @@ export class BrowserGuestManager {
         tab,
         guest,
         "Emulation.setDeviceMetricsOverride",
-        buildViewportMetricsOverride(viewport),
+        buildViewportMetricsOverride(viewport, tab.desktopZoomFactor),
       );
     });
   }
@@ -3411,6 +3251,7 @@ export class BrowserGuestManager {
   private async resetTabViewport(tab: ManagedTab): Promise<void> {
     if (tab.lifecycle === "closed") return;
     tab.viewportOverride = undefined;
+    tab.desktopZoomFactor = undefined;
     tab.backgroundViewportFallback = undefined;
     if (!tab.guest) return;
     const guest = tab.guest;
@@ -3444,7 +3285,7 @@ export class BrowserGuestManager {
           tab,
           guest,
           "Emulation.setDeviceMetricsOverride",
-          buildViewportMetricsOverride(fallback),
+          buildViewportMetricsOverride(fallback, guest.hostWebContents?.getZoomFactor()),
         );
       });
     } catch (error) {
@@ -3497,7 +3338,7 @@ export class BrowserGuestManager {
         tab,
         guest,
         "Emulation.setDeviceMetricsOverride",
-        buildViewportMetricsOverride(fallback),
+        buildViewportMetricsOverride(fallback, guest.hostWebContents?.getZoomFactor()),
       );
     }).catch((error: unknown) => {
       this.log?.(
@@ -3653,7 +3494,10 @@ export class BrowserGuestManager {
             tab,
             guest,
             "Emulation.setDeviceMetricsOverride",
-            buildViewportMetricsOverride(viewport),
+            buildViewportMetricsOverride(
+              viewport,
+              tab.viewportOverride ? tab.desktopZoomFactor : guest.hostWebContents?.getZoomFactor(),
+            ),
           );
         };
         // 截图也占用 viewport 队列，但并不重设 metrics。若把队列内 re-attach
@@ -3692,10 +3536,15 @@ export class BrowserGuestManager {
     try {
       const result = await guest.debugger.sendCommand(method, params, sessionId);
       if (!sessionId && tab.guest === guest) {
-        // renderer 的归一化回调可能被 Electron 后续 page zoom 传播覆盖。
-        // 固定 viewport 的设置和 CDP 重连都必须在同一执行边界恢复 guest zoom。
-        if (method === "Emulation.setDeviceMetricsOverride" && guest.getZoomFactor() !== 1) {
-          guest.setZoomFactor(1);
+        if (method === "Emulation.setDeviceMetricsOverride") {
+          tab.appliedViewportScale = normalizeDesktopZoomMetricsScale(
+            (params as { scale?: number }).scale,
+          );
+          // renderer 的归一化回调可能被 Electron 后续 page zoom 传播覆盖。
+          // 固定 viewport 的设置和 CDP 重连都必须在同一执行边界恢复 guest zoom。
+          if (guest.getZoomFactor() !== 1) guest.setZoomFactor(1);
+        } else if (method === "Emulation.clearDeviceMetricsOverride") {
+          tab.appliedViewportScale = undefined;
         }
       }
       return result;
@@ -3722,6 +3571,16 @@ export class BrowserGuestManager {
     // 串行屏障：Page.enable / viewport override 先于本命令被 Chromium 处理）。
     if (!safeBool(() => guest.debugger.isAttached(), false) || tab.guestCdpRestoreFlight) {
       await this.ensureGuestCdpAttached(tab, guest);
+    }
+    // native raster 的 metrics scale 同时影响 CDP 鼠标输入。工具、locator
+    // 和截图仍以 CSS px 表达，在唯一 guest 发送边界补偿位置和滚轮距离，避免各 API 重复换算。
+    const scale = tab.appliedViewportScale ?? 1;
+    if (!sessionId && method === "Input.dispatchMouseEvent" && scale !== 1 && params) {
+      const event = { ...(params as Record<string, unknown>) };
+      for (const key of ["x", "y", "deltaX", "deltaY"]) {
+        if (typeof event[key] === "number") event[key] *= scale;
+      }
+      params = event;
     }
     return this.sendGuestCdpCommandRaw(tab, guest, method, params, sessionId);
   }
@@ -4018,16 +3877,8 @@ export class BrowserGuestManager {
   ): Promise<GuestWebContents | null> {
     if (tab.lifecycle === "closed" || tab.guest !== guest) return null;
     const restored = await this.restoreGuestState(tab, guest);
-    if (tab.guest === guest) {
-      // 附件 URL 会开始下载但不提交页面（ERR_ABORTED/ERR_FAILED，或 loadURL 直接 resolve）。
-      // cachedUrl 曾保留这个未提交的 URL，每次 rebind 都再下载一次；这里回落为已提交 URL。
-      const committedUrl = safeStr(() => guest.getURL(), tab.cachedUrl).trim();
-      tab.cachedUrl = committedUrl === "about:blank" ? "" : committedUrl;
-    }
-    // await 期间 tab 可能被关闭；lifecycle 是可变字段，重新读取以撤销上面的收窄。
-    const lifecycleAfterRestore = tab.lifecycle as TabLifecycle;
-    if (!restored || lifecycleAfterRestore === "closed" || tab.guest !== guest) {
-      if (lifecycleAfterRestore !== "closed" && tab.guest === guest) {
+    if (!restored || tab.lifecycle === "closed" || tab.guest !== guest) {
+      if (tab.lifecycle !== "closed" && tab.guest === guest) {
         this.warn(`browser tab guest rebind restore failed tabId=${tab.tabId}`);
       }
       return null;
@@ -4218,19 +4069,11 @@ export class BrowserGuestManager {
 
   private requestGuestRebind(tab: ManagedTab, reason: GuestRecoveryReason): boolean {
     tab.attachFailure = reason;
-    // human tab 的 guest 只能由所属 workspace 里已有的 Browser shell 创建。Ready 是 Browser Use
-    // 事件，renderer 会在当前 workspace 为同一 tabId 新建隐藏的 browser-use shell 并恢复页面，
-    // 曾导致切走 workspace 后在后台反复请求附件 URL。shell 重新挂载 attach 时由 attachFailure 恢复。
-    if (this.isUserOwnedTab(tab)) return false;
     if (tab.lifecycle === "closed" || tab.rebindRequested || !this.onOpenTabRequested) return false;
     tab.rebindRequested = true;
     this.log?.(`[browser-use] request guest rebind tabId=${tab.tabId} reason=${reason}`);
     this.onOpenTabRequested?.(tab.tabId, tab.owner);
     return true;
-  }
-
-  private isUserOwnedTab(tab: ManagedTab): boolean {
-    return tab.userOwner !== undefined && tab.owner.requestId === tab.userOwner.requestId;
   }
 
   private closeGuestWebContents(tab: ManagedTab, guest = tab.guest): void {
@@ -4495,6 +4338,8 @@ export class BrowserGuestManager {
     tab.cdpAttached = false;
     tab.guestLifecycle = guestDestroyed ? "destroyed" : "detached";
     tab.backgroundViewportFallback = undefined;
+    // 倍率属于旧 guest 的 CDP session，换代后的自然 viewport 不会重放 metrics。
+    tab.appliedViewportScale = undefined;
     tab.viewportMutation = undefined;
     this.residencyCoordinator.markDetached(tab.tabId);
     this.refreshRuntimeProtection(tab.tabId);
@@ -4506,9 +4351,6 @@ export class BrowserGuestManager {
   }
 
   disposeAll(): void {
-    for (const scope of this.controlScopes.values()) scope.closed = true;
-    this.controlScopes.clear();
-    this.backendIdentities.clear();
     for (const request of this.runningRequests.values()) {
       request.controller.abort(new DOMException("browser manager disposed", "AbortError"));
     }

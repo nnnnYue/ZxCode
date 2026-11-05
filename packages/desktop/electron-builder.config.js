@@ -16,7 +16,6 @@ import {
   restoreTargetNodePtyPrebuild,
 } from "./scripts/node-pty-package-assets.mjs";
 import { cleanupPackagedSourcemaps } from "./scripts/packaged-sourcemap-cleanup.mjs";
-import { pruneIncompatiblePlatformPackages } from "./scripts/packaged-platform-dependency-prune.mjs";
 import { getTargetPlatform } from "./scripts/target-platform.mjs";
 import {
   resolveDesktopArtifactSuffix,
@@ -45,6 +44,8 @@ import {
 } from "./scripts/patch-nsis-install-section.mjs";
 
 const buildMetadata = getBuildMetadata();
+// fork：显式写死桌面端 Electron 版本（上游变量形态在 fork 打包链未定义，见 electronVersion 注释）。
+const desktopElectronVersion = "41.0.3";
 const targetPlatform = getTargetPlatform();
 // 修复原因：Windows Chrome 导入入口已暂时隐藏，默认安装包不应继续携带、签名或校验原生 helper。
 // 代码和完整供应链保留在显式 opt-in 后，便于未来恢复而不影响当前发布流程。
@@ -444,11 +445,6 @@ async function stripPackagedSourcemapReferences(context) {
         targetPlatformKey: targetPlatform.key,
         runAsarCommand,
       }),
-    pruneStagingDirectory:
-      targetPlatform.key === "win32-x64" &&
-      process.env.ZCODE_PRUNE_PACKAGED_PLATFORM_DEPENDENCIES === "1"
-        ? (stagingDir) => pruneIncompatiblePlatformPackages(stagingDir, targetPlatform)
-        : null,
   });
 }
 

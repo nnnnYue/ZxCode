@@ -159,11 +159,8 @@ export function createLegacySingleRootProjectService(
     },
     saveProject: readOnly,
     deleteProject: readOnly,
-    restoreProject: readOnly,
     moveTask: readOnly,
     reorderProjects: readOnly,
-    measureProjectData: readOnly,
-    deleteProjectData: readOnly,
   };
   return service;
 }

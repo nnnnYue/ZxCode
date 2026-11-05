@@ -1,17 +1,8 @@
-import { BrowserWindow, clipboard, nativeImage, type WebContents } from "electron";
+import { BrowserWindow, clipboard, type WebContents } from "electron";
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
 import type { PluginSandboxHandle } from "@zcode/shared/mcp-apps";
-
-async function readClipboardImage() {
-  // Electron 44 移除了 readImage；夹具读取真实 PNG，保留非空与裁剪尺寸断言。
-  const items = await clipboard.read();
-  const image = items.find((item) => item.types.includes("image/png"));
-  assert.ok(image, "Clipboard does not contain a PNG image");
-  const png = await image.getType("image/png");
-  return nativeImage.createFromBuffer(Buffer.from(await png.arrayBuffer()));
-}
 
 export async function checkCopyButton(win: BrowserWindow, preview = false) {
   const selector = `${preview ? '[role="dialog"] ' : ""}[data-testid="gen-ui-actions"] button`;
@@ -36,7 +27,7 @@ export async function checkCopyButton(win: BrowserWindow, preview = false) {
       };
       requestAnimationFrame(tick);
     })`);
-    assert.equal((await readClipboardImage()).isEmpty(), false);
+    assert.equal(clipboard.readImage().isEmpty(), false);
     assert.deepEqual(await buttonState(), initial);
   }
 }
@@ -48,13 +39,12 @@ export async function checkCapture(
   root: string,
 ) {
   await win.webContents.executeJavaScript("window.copy()");
-  const copied = await readClipboardImage();
-  assert.equal(copied.isEmpty(), false);
+  assert.equal(clipboard.readImage().isEmpty(), false);
   const fullImage = await guest.capturePage();
   const viewport = await win.webContents.executeJavaScript(
     "document.querySelector('webview').getBoundingClientRect().toJSON()",
   );
-  const copiedSize = copied.getSize();
+  const copiedSize = clipboard.readImage().getSize();
   assert.equal(
     copiedSize.width,
     Math.floor(((viewport.width - 5) * fullImage.getSize().width) / viewport.width) -
@@ -100,8 +90,7 @@ export async function checkStaleCapture(win: BrowserWindow, guest: WebContents) 
     await captureGate.promise;
     return image;
   };
-  // Electron 44 的文本读写也改为异步；先完成哨兵写入，才能证明旧捕获没有覆盖它。
-  await clipboard.writeText("capture-stale-sentinel");
+  clipboard.writeText("capture-stale-sentinel");
   await win.webContents.executeJavaScript(
     "window.copyResult=window.copy().then(()=>'',error=>String(error)); 'pending'",
   );
@@ -109,7 +98,7 @@ export async function checkStaleCapture(win: BrowserWindow, guest: WebContents) 
   await win.webContents.executeJavaScript("window.stop()");
   captureGate.resolve();
   assert.match(await win.webContents.executeJavaScript("window.copyResult"), /no longer available/);
-  assert.equal(await clipboard.readText(), "capture-stale-sentinel");
+  assert.equal(clipboard.readText(), "capture-stale-sentinel");
 }
 
 export async function checkInlineLayout(

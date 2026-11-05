@@ -101,12 +101,7 @@ export function createPluginSandboxRegistry(
   const resourceMetaOf = (
     input: Pick<
       PluginSandboxRegisterInput,
-      | "prefersBorder"
-      | "heightHint"
-      | "minFrameHeight"
-      | "showInline"
-      | "permissions"
-      | "backgroundRetention"
+      "prefersBorder" | "heightHint" | "minFrameHeight" | "showInline" | "permissions"
     >,
   ): PluginSandboxHandle["resourceMeta"] => {
     const meta = {
@@ -115,9 +110,6 @@ export function createPluginSandboxRegistry(
       ...(input.heightHint !== undefined ? { heightHint: input.heightHint } : {}),
       ...(input.minFrameHeight !== undefined ? { minFrameHeight: input.minFrameHeight } : {}),
       ...(input.showInline !== undefined ? { showInline: input.showInline } : {}),
-      ...(input.backgroundRetention !== undefined
-        ? { backgroundRetention: input.backgroundRetention }
-        : {}),
     };
     return Object.keys(meta).length > 0 ? meta : undefined;
   };

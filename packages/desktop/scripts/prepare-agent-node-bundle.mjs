@@ -23,7 +23,6 @@ import {
   stageSharpIntoBundledAgents,
 } from "./sharp-package-assets.mjs";
 import { stageKoffiIntoBundledAgents } from "./koffi-package-assets.mjs";
-import { BUNDLED_NPM_VERSION, stageBundledNpm } from "./bundled-npm-assets.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(scriptDir, "..");
@@ -221,16 +220,6 @@ const officialPluginPackages = [
     relativePath: "apps/zcode-cli/packages/zcode-guide-plugin",
     requiresRuntime: false,
     stagedPath: "packages/zcode-guide-plugin",
-  },
-  {
-    // ZCode Sites（默认开启）。漏 stage 会让生产桌面包里找不到它；Sites 面板的 MCP server 与页面由插件自己的
-    // build 脚本构建进 dist/。
-    packageName: "@zcode/zcode-site-plugin",
-    relativePath: "apps/zcode-cli/packages/zcode-site-plugin",
-    requiresRuntime: true,
-    requiredRuntimePaths: ["dist/server.mjs", "dist/ui/panel.html"],
-    runtimeBuildScript: "scripts/build.mjs",
-    stagedPath: "packages/zcode-site-plugin",
   },
   {
     // node_repl 宿主：Browser Use 与 Computer Use 共用的 MCP runtime，本轮抽成独立包。
@@ -556,16 +545,6 @@ function stageBundledSkillPack() {
   console.log(`[prepare:agent-bundle] staged bundled skill pack ${bundledSkillPack.stagedPath}`);
 }
 
-// stdio MCP 的 npm/npx 回退（用户没装 Node 时由 Electron Node 运行随包 npm）。
-// tarball 按 sha512 缓存在 node_modules/.cache，重复打包不再下载。
-async function stageBundledNpmRuntime() {
-  const stagedRoot = await stageBundledNpm({
-    cacheDir: resolve(repoRoot, "node_modules", ".cache", "zcode-bundled-npm"),
-    glmDir,
-  });
-  console.log(`[prepare:agent-bundle] staged npm@${BUNDLED_NPM_VERSION} into ${stagedRoot}`);
-}
-
 function stageSharpForNodeReplPlugin() {
   if (!isSharpRequiredByComputerUse({ desktopPackageRoot: desktopRoot })) {
     console.log(
@@ -628,6 +607,5 @@ stageBundle();
 stageOfficialPlugins();
 validateOfflineMarketplaceStaging();
 stageBundledSkillPack();
-await stageBundledNpmRuntime();
 stageKoffiForCuaPlugin();
 stageSharpForNodeReplPlugin();
