@@ -1,6 +1,5 @@
 /* oxlint-disable eslint(max-lines) -- 附件采集、分 scope 上传调度和生命周期必须在同一 hook 中原子收口。 */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { registerImageComposerTarget } from "@/image-preview-editor/index.js";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast.js";
 import { nanoid } from "nanoid";
 import type { AttachmentRef } from "@zcode/shared/zcode-protocol-v4";
@@ -702,14 +701,6 @@ export function useComposerAttachments(
     },
     [addPreparedAttachments, platform],
   );
-
-  useLayoutEffect(() => {
-    if (!listenAddToChatEvents || disabled) return;
-    // 导出 PNG 是异步的；在 commit 阶段释放旧接收方，避免 passive effect 前的回调写入旧草稿。
-    return registerImageComposerTarget({
-      append: (file) => addAttachmentFiles([file]).length === 1,
-    });
-  }, [listenAddToChatEvents, disabled, addAttachmentFiles, scopeKey]);
 
   const addAttachmentLocalPaths = useCallback(
     (selectedPaths: string[]) => {

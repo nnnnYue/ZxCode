@@ -1,6 +1,4 @@
 import {
-  Archive,
-  Folders,
   Monitor,
   Moon,
   Settings,
@@ -8,8 +6,8 @@ import {
   Package,
   Bot,
   Palette,
+  SlidersHorizontal,
   Sun,
-  BarChart3,
   Terminal,
   AlarmClock,
   Anchor,
@@ -18,11 +16,10 @@ import {
   Globe2,
   Cable,
   WandSparkles,
-  HardDrive,
   Keyboard,
   FileSearch,
-  RefreshCw,
-  User,
+  Smartphone,
+  BarChart3,
 } from "lucide-react";
 import { isSettingsSectionEnabled, type SettingsSectionId } from "@/lib/settingsNavigation.js";
 import type { Theme } from "@/useTheme.js";
@@ -77,14 +74,6 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     icon: Package,
     titleId: "settings.modelProviderTitle",
     groupId: "basics",
-  },
-  // 个性化（用户自定义指令）是 Agent 能力组的第一项：编辑 ~/.zcode/AGENTS.md，
-  // 对所有会话生效（spec：docs/ui/settings-personalization.md）。
-  {
-    id: "personalization",
-    icon: User,
-    titleId: "settings.personalization.title",
-    groupId: "agentCapabilities",
   },
   {
     id: "memory",
@@ -141,12 +130,11 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.browser.title",
     groupId: "basics",
   },
-  // 原型导航顺序：浏览器之后才是远程设备；电脑控制继续紧随其后并受灰度门禁。
+  // 手机远控紧跟「浏览器」：同属远程操控入口，自部署 relay 的连接与授权都收在这里。
   {
-    id: "remoteDevices",
-    icon: HardDrive,
-    titleId: "settings.remoteDevicesTitle",
-    contentTitleId: "settings.remoteDevicesTitle",
+    id: "mobileRelay",
+    icon: Smartphone,
+    titleId: "settings.mobileRelay.title",
     groupId: "basics",
   },
   // 电脑控制紧跟「浏览器」：两者都是给 Agent 用的本机操控入口，
@@ -164,46 +152,27 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.shortcuts.title",
     groupId: "basics",
   },
-  // 工作区搜索范围（.zcodeignore）：面向所有用户的基础工作区行为配置，收在基础设置末尾。
+  // 工作区搜索范围（.zxcodeignore）：面向所有用户的基础工作区行为配置，收在基础设置末尾。
   {
     id: "workspaceFileSearch",
     icon: FileSearch,
     titleId: "settings.workspaceFileSearch.title",
     groupId: "basics",
   },
-  // 数据同步是「数据与统计」的第一项（docs/remote/data-sync.md），仅桌面端显示。
+  // 自定义请求头等用户级自定义项：与网络配置同属高级基础配置，收在基础设置最尾部。
   {
-    id: "dataSync",
-    icon: RefreshCw,
-    titleId: "remoteSync.title",
-    contentTitleId: "remoteSync.title",
-    groupId: "dataAndStats",
+    id: "custom",
+    icon: SlidersHorizontal,
+    titleId: "settings.custom.title",
+    groupId: "basics",
   },
+  // 使用统计（App Usage）：只读本地 agent 数据库，无网络链路，独立成组。
   {
     id: "usage",
     icon: BarChart3,
     titleId: "settings.usageTitle",
     groupId: "dataAndStats",
   },
-  // 项目管理排在归档管理之前（docs/superpowers/specs/2026-10-24-project-management.md）。
-  {
-    id: "projects",
-    icon: Folders,
-    titleId: "projectManagement.nav",
-    groupId: "dataAndStats",
-  },
-  {
-    id: "archives",
-    icon: Archive,
-    titleId: "archives.nav",
-    groupId: "dataAndStats",
-  },
-  // 暂时隐藏设置页里的 Migration 入口，只保留页面实现，后续可以直接恢复这一项。
-  // {
-  //   id: "migration",
-  //   icon: ArrowLeftRight,
-  //   titleId: "settings.migration.title",
-  // },
 ];
 
 // 兼容既有只读消费者：默认配置代表不带桌面平台能力的 Web 视图；
@@ -248,19 +217,4 @@ export function resolveSettingsSectionForPlatform(
   return visibleSections[0]?.id ?? "general";
 }
 
-export const SETTINGS_SECTION_GROUPS = BASE_SETTINGS_SECTION_GROUPS.map((group) => ({
-  ...group,
-  sections: SETTINGS_SECTIONS.filter((section) => section.groupId === group.id),
-})).filter((group) => group.sections.length > 0);
-
 export type { SettingsSectionId };
-
-/** 依赖本机 Source Server 管理与设备连接的设置页，Web 与手机远控不显示。 */
-const DESKTOP_ONLY_SETTINGS_SECTIONS = new Set<SettingsSectionId>(["remoteDevices", "dataSync"]);
-
-export function isSettingsSectionAvailable(
-  section: SettingsSectionId,
-  isDesktop: boolean,
-): boolean {
-  return isDesktop || !DESKTOP_ONLY_SETTINGS_SECTIONS.has(section);
-}

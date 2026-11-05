@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type RefObject,
   type ReactNode,
 } from "react";
 import type {
@@ -72,6 +73,7 @@ export function ProviderCardHeader({
   logo,
   editingName,
   nameValue,
+  nameInputRef,
   nameEditable = true,
   onNameChange,
   onNameBlur,
@@ -87,6 +89,7 @@ export function ProviderCardHeader({
   logo?: ProviderConfigObject["logo"];
   editingName: boolean;
   nameValue: string;
+  nameInputRef: RefObject<HTMLInputElement | null>;
   nameEditable?: boolean;
   onNameChange: (value: string) => void;
   onNameBlur: () => void;
@@ -109,7 +112,7 @@ export function ProviderCardHeader({
         {editingName ? (
           <Input
             {...TECHNICAL_INPUT_ATTRIBUTES}
-            autoFocus
+            ref={nameInputRef}
             data-testid={TID_MODEL_PROVIDER_NAME_INPUT}
             type="text"
             size="lg"
@@ -147,11 +150,10 @@ export function ProviderCardHeader({
             <DropdownMenuContent
               align="end"
               onCloseAutoFocus={(event) => {
-                // 退场动画中的菜单仍会因鼠标移动抢焦点，必须关闭后再挂载并聚焦输入框。
+                // 重命名后的焦点交给输入框，不能被菜单关闭时重新抢回触发按钮。
                 if (renameRequestedRef.current) {
                   event.preventDefault();
                   renameRequestedRef.current = false;
-                  onStartEditName();
                 }
               }}
             >
@@ -160,6 +162,7 @@ export function ProviderCardHeader({
                   data-testid={TID_MODEL_PROVIDER_NAME_EDIT_BUTTON}
                   onSelect={() => {
                     renameRequestedRef.current = true;
+                    onStartEditName();
                   }}
                 >
                   <Pencil className="size-3.5" />

@@ -40,7 +40,6 @@ export interface WorkspaceFileTreeContextMenuLabels {
 }
 
 export interface WorkspaceFileTreeEditorState {
-  workspaceRemoteSessionId?: string;
   canOpenLocalFileManager: boolean;
   installedEditors: EditorInfo[];
   isRemoteWorkspaceFileTree: boolean;

@@ -36,8 +36,7 @@ export interface AppSlashCommand {
   /** 额外搜索关键词；应同时包含中英文别名，保证两种输入习惯都能搜到。 */
   keywords?: readonly string[];
   /** 选中命令后立即执行的 UI 行为。 */
-  recovery?: boolean;
-  run: () => void | Promise<boolean>;
+  run: () => void;
 }
 
 const APP_SLASH_SUGGESTION_ID_PREFIX = "app-slash:";

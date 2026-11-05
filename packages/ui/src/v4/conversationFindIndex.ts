@@ -34,18 +34,7 @@ interface ConversationFindTarget {
   rowId: number;
   rowKind: ConversationFindRowKind;
   text: string;
-  normalizedText: string;
 }
-
-type FindOptions = { projectAssistantCodeComments?: boolean };
-type FindTextCache = WeakMap<
-  UserInputRow | AssistantTextRow,
-  {
-    projected: boolean;
-    text: string;
-    normalizedText: string;
-  }
->;
 
 export function normalizeConversationFindQuery(query: string): string {
   return query.trim().toLocaleLowerCase();
@@ -56,7 +45,6 @@ function addTargetsForUnit(
   unit: ConversationTurnRenderUnit,
   unitIndex: number,
   projectCodeComments: boolean,
-  cache?: FindTextCache,
 ) {
   const latestAssistantState = unit.latestAssistantTextRow?.state;
   const projectUnitCodeComments =
@@ -65,85 +53,55 @@ function addTargetsForUnit(
       latestAssistantState === "complete" ||
       latestAssistantState === "interrupted");
   for (const row of unit.visibleUserInputs) {
-    targets.push(createTarget(unitIndex, row, false, cache));
+    targets.push(createTarget(unitIndex, row));
   }
   for (const row of unit.assistantTextRows) {
-    targets.push(createTarget(unitIndex, row, projectUnitCodeComments, cache));
+    targets.push({
+      ...createTarget(unitIndex, row),
+      text: projectUnitCodeComments
+        ? projectAssistantCodeComments(row.text, {
+            streaming: row.state === "streaming",
+          }).visibleText
+        : row.text,
+    });
   }
 }
 
 function createTarget(
   unitIndex: number,
   row: UserInputRow | AssistantTextRow,
-  projected: boolean,
-  cache?: FindTextCache,
 ): ConversationFindTarget {
-  let prepared = cache?.get(row);
-  if (!prepared || prepared.projected !== projected) {
-    const text =
-      projected && row.kind === "assistantText"
-        ? projectAssistantCodeComments(row.text, { streaming: row.state === "streaming" })
-            .visibleText
-        : row.text;
-    prepared = { projected, text, normalizedText: text.toLocaleLowerCase() };
-    cache?.set(row, prepared);
-  }
   return {
     unitIndex,
     rowId: row.rowId,
     rowKind: row.kind,
-    text: prepared.text,
-    normalizedText: prepared.normalizedText,
+    text: row.text,
   };
 }
 
 export function buildConversationFindIndex(
   units: readonly ConversationTurnRenderUnit[],
   query: string,
-  options: FindOptions = {},
-): ConversationFindIndex {
-  return buildFindIndex(units, query, options);
-}
-
-/** query 逐字变化时不能反复投影和转小写全部历史；弱引用跟随不可变 row 的生命期。 */
-export function createConversationFindIndexBuilder() {
-  const cache: FindTextCache = new WeakMap();
-  return (units: readonly ConversationTurnRenderUnit[], query: string, options: FindOptions = {}) =>
-    buildFindIndex(units, query, options, cache);
-}
-
-function buildFindIndex(
-  units: readonly ConversationTurnRenderUnit[],
-  query: string,
-  options: FindOptions,
-  cache?: FindTextCache,
+  options: { projectAssistantCodeComments?: boolean } = {},
 ): ConversationFindIndex {
   const normalizedQuery = normalizeConversationFindQuery(query);
+  const targets: ConversationFindTarget[] = [];
+  units.forEach((unit, unitIndex) =>
+    addTargetsForUnit(targets, unit, unitIndex, options.projectAssistantCodeComments === true),
+  );
+
   if (!normalizedQuery) {
     return {
       query: normalizedQuery,
       matches: [],
       matchCount: 0,
-      loadedRowCount: units.reduce(
-        (count, unit) => count + unit.visibleUserInputs.length + unit.assistantTextRows.length,
-        0,
-      ),
+      loadedRowCount: targets.length,
     };
   }
-  const targets: ConversationFindTarget[] = [];
-  units.forEach((unit, unitIndex) =>
-    addTargetsForUnit(
-      targets,
-      unit,
-      unitIndex,
-      options.projectAssistantCodeComments === true,
-      cache,
-    ),
-  );
 
   const matches: ConversationFindMatch[] = [];
   for (const target of targets) {
-    const normalizedText = target.normalizedText;
+    const normalizedText = target.text.toLocaleLowerCase();
     let searchStart = 0;
     let rowMatchIndex = 0;
     while (searchStart < normalizedText.length) {

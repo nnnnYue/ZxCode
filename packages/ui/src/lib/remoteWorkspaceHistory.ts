@@ -387,7 +387,6 @@ export function buildRemoteWorkspaceSessionMutation(params: {
   target: RemoteTarget;
   lastConnectionStatus: RemoteWorkspaceSessionEntry["lastConnectionStatus"];
   lastConnectionError?: string;
-  lastConnectionErrorCode?: string;
   touchOpenedAt: boolean;
 }): RemoteWorkspaceSessionMutation {
   const currentEntry =
@@ -408,13 +407,6 @@ export function buildRemoteWorkspaceSessionMutation(params: {
   const localWorkspacePath = normalizeOptionalPath(
     params.localWorkspacePath ?? currentEntry?.localWorkspacePath,
   );
-  // 错误码与文案同写同清：新失败只用自己的码（可以没有），只更新状态时沿用原记录。
-  const lastConnectionErrorCode =
-    params.lastConnectionStatus !== "failed"
-      ? undefined
-      : params.lastConnectionError !== undefined
-        ? params.lastConnectionErrorCode
-        : currentEntry?.lastConnectionErrorCode;
   const nextEntry: RemoteWorkspaceSessionEntry = {
     kind: "remote",
     workspacePath: params.workspacePath,
@@ -429,7 +421,6 @@ export function buildRemoteWorkspaceSessionMutation(params: {
       params.lastConnectionStatus === "failed"
         ? (params.lastConnectionError ?? currentEntry?.lastConnectionError)
         : undefined,
-    ...(lastConnectionErrorCode ? { lastConnectionErrorCode } : {}),
   };
   const nextRemoteSessions = upsertRemoteWorkspaceSessionEntries(params.remoteSessions, nextEntry);
   const nextRemoteWorkspaceKeys = new Set(

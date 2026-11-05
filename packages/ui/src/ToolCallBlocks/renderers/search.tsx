@@ -88,51 +88,9 @@ export function getSearchPrimaryText(intl: IntlLike, input: unknown): string {
 
 export function SearchToolCallBlock(context: ToolCallBlockRenderContext) {
   const { intl } = useZCodeIntl();
-  return (
-    <SearchToolCallLayout
-      {...context}
-      searchPrimaryText={getSearchPrimaryText(intl, context.toolCallNode.toolCall.input)}
-    />
-  );
-}
-
-export function ToolSearchToolCallBlock(context: ToolCallBlockRenderContext) {
-  const { intl } = useZCodeIntl();
-  const { input } = context.toolCallNode.toolCall;
-  const query = isPlainRecord(input) && typeof input.query === "string" ? input.query.trim() : "";
-  const selection = /^select:(.+)$/i.exec(query);
-  const label = selection
-    ? selection[1]!
-        .split(",")
-        .map((name) => name.trim())
-        .filter(Boolean)
-        .join(", ")
-    : query;
-  const searchPrimaryText = label
-    ? intl.formatMessage({ id: "chat.toolCall.search.toolsWithQuery" }, { query: label })
-    : intl.formatMessage({ id: "chat.toolCall.search.tools" });
-  return (
-    <SearchToolCallLayout
-      {...context}
-      searchPrimaryText={searchPrimaryText}
-      kindLabelOverride=""
-      titleOverride="ToolSearch"
-      hideSnapshotNotice
-    />
-  );
-}
-
-function SearchToolCallLayout(
-  context: ToolCallBlockRenderContext & {
-    searchPrimaryText: string;
-    titleOverride?: string;
-    hideSnapshotNotice?: boolean;
-  },
-) {
-  const { intl } = useZCodeIntl();
   const { toolCallNode, isRunning, statusLabel, errorText } = context;
   const { toolCall } = toolCallNode;
-  const { searchPrimaryText } = context;
+  const searchPrimaryText = getSearchPrimaryText(intl, toolCall.input);
   const primaryText = useMemo(
     () => <span className="truncate">{searchPrimaryText}</span>,
     [searchPrimaryText],
@@ -159,19 +117,18 @@ function SearchToolCallLayout(
         statusTooltip={toolCall.status === "failed" ? errorText : undefined}
         showFailureStatus={toolCall.status === "failed"}
         isRunning={isRunning}
-        title={context.titleOverride ?? toolCall.title}
+        title={toolCall.title}
         content={null}
       />
-      {!context.hideSnapshotNotice && (
-        <ToolSnapshotFieldNotice
-          refs={toolCall.snapshotRefs ?? []}
-          onLoadFullToolCallFields={
-            context.onLoadFullToolCallFields
-              ? () => context.onLoadFullToolCallFields?.(toolCall.toolId)
-              : undefined
-          }
-        />
-      )}
+      <ToolSnapshotFieldNotice
+        refs={toolCall.snapshotRefs ?? []}
+        onLoadFullToolCallFields={
+          context.onLoadFullToolCallFields
+            ? () => context.onLoadFullToolCallFields?.(toolCall.toolId)
+            : undefined
+        }
+      />
+      {/* <pre>{JSON.stringify(toolCall, null, 2)}</pre> */}
     </>
   );
 }
