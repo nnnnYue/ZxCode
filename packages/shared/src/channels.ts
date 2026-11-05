@@ -266,6 +266,8 @@ export const PlatformChannels = {
   SyncWebRemoteControlTasks: "zxcode:sync-web-remote-control-tasks",
   /** Main → Renderer：手机端请求重连当前窗口里的远程 workspace */
   WebRemoteControlReconnectWorkspace: "zxcode:web-remote-control-reconnect-workspace",
+  /** Main → Renderer：手机请求置顶/归档任务或新建本地项目，Renderer 按侧栏同一路径执行 */
+  WebRemoteControlRendererAction: "zxcode:web-remote-control-renderer-action",
   /** Renderer → Main：同步当前窗口的未读 task 数 */
   SyncWindowUnreadCount: "zxcode:sync-window-unread-count",
   /** Renderer → Main：当前窗口 active task，只更新 Main 的临时焦点映射。 */

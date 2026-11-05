@@ -4,11 +4,11 @@ import {
   disposeServiceResourcesAndWait,
   materializeZCodeBuiltinProviderConfig,
   getAppConfigDir,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
   createTopicResourcePeers,
 } from "@zcode/services/node";
 import { IZCodeAgentService } from "@zcode/services";
-import { ZCODE_APP_VERSION_ENV, ZCODE_VERSION } from "@zcode/shared";
+import { ZXCODE_APP_VERSION_ENV, ZXCODE_VERSION } from "@zcode/shared";
 import { createCoreHttpServer } from "./http.js";
 import { createIngressToken } from "./ingressToken.js";
 import { installParentDisconnectHandler } from "./parentDisconnect.js";
@@ -24,7 +24,7 @@ export async function runServerCore(generation: number): Promise<void> {
   // （0.17.0）。本地由 Desktop main 注入；远端 Core 由 SSH/WSL/Docker exec → Supervisor fork 拉起，
   // 整条链都没有这个 env，远端请求于是报 0.17.0（按客户端版本拦截的网关会拒绝）。升级时旧 Supervisor
   // 会拉起新 release 的 Core，所以只能由 Core 用自身编译期版本写入，Agent spawn 时继承。
-  process.env[ZCODE_APP_VERSION_ENV] = ZCODE_VERSION;
+  process.env[ZXCODE_APP_VERSION_ENV] = ZXCODE_VERSION;
   let shutdown: ((reason: string) => Promise<void>) | undefined;
   let parentDisconnected = false;
   let disposeParentDisconnectHandler = (): void => undefined;
@@ -35,7 +35,7 @@ export async function runServerCore(generation: number): Promise<void> {
   const layout = resolveServerLayout(process.env.ZCODE_SERVER_ROOT?.trim());
   const topicResourcePeers = createTopicResourcePeers();
   const explicitZCodeBuiltinProviderConfigFilePath =
-    process.env[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
+    process.env[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
   // Built-in Config 物化到所属 Environment 配置根（~/.zcode/v2）而不是 release 自带的 runtime 目录：
   // release 目录是不可变的，同一 releaseId 重装时 assertExistingReleaseMatches 会重算整棵树的
   // 内容哈希，多出的物化文件会让校验失败。
@@ -49,7 +49,7 @@ export async function runServerCore(generation: number): Promise<void> {
       : undefined;
   if (!zcodeBuiltinProviderConfigFilePath) {
     throw new Error(
-      `当前构建未嵌入 ZCode Built-in Provider Config，且未设置 ${ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV}`,
+      `当前构建未嵌入 ZCode Built-in Provider Config，且未设置 ${ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV}`,
     );
   }
   const sourceServerId = (await resolveCoreServerId()) ?? hostname() ?? "zcode-server";
@@ -86,7 +86,7 @@ export async function runServerCore(generation: number): Promise<void> {
     type: "ready",
     host: http.host,
     port: http.port,
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     ...(process.env.ZCODE_SERVER_RELEASE_ID?.trim()
       ? { releaseId: process.env.ZCODE_SERVER_RELEASE_ID.trim() }
       : {}),

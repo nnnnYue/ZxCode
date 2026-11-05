@@ -3,7 +3,7 @@ export { AppErrorBoundary, ScopedErrorBoundary } from "./ErrorBoundary.js";
 export type { ScopedErrorBoundaryVariant } from "./ErrorBoundary.js";
 export { Button, buttonVariants } from "./components/ui/button.js";
 export { DesktopWindowFrame } from "./DesktopWindowFrame.js";
-export { WebRemoteControlDialog } from "@/web-remote-control/index.js";
+export { WebRemoteControlDialog } from "./WebRemoteControlDialog.js";
 export {
   WebRemoteControlFeatureProvider,
   useWebRemoteControlFeatureEnabled,
@@ -13,7 +13,6 @@ export {
   useAssistantCodeCommentFeatureEnabled,
 } from "./AssistantCodeCommentFeatureProvider.js";
 export { Root } from "./Root.js";
-export { UpdateStatusWindowRoot } from "./UpdateStatusWindowRoot.js";
 export type { WebRemoteControlTerminalTransportState } from "./root/types.js";
 export { setWebRemoteControlTerminalTransportState } from "./webRemoteControlTerminalTransportState.js";
 export { ConfirmDialogHost } from "./ConfirmDialog.js";
@@ -49,11 +48,6 @@ export {
   REMOTE_WORKSPACE_DISCONNECTED_ERROR_CODE,
   createRemoteWorkspaceDisconnectedError,
 } from "./lib/remoteWorkspaceServiceError.js";
-export {
-  getSourceSettingsServices,
-  registerSourceSettingsServices,
-  useSourceSettingsServices,
-} from "./store/sourceSettingsServiceStore.js";
 
 // Hooks —— 统一的服务和平台操作访问层
 export {
@@ -72,7 +66,6 @@ export {
   useRecentProjects,
   useConfirmDialog,
   useCredentials,
-  useAuthToken,
   useGitRepository,
   useGitActions,
 } from "./hooks/index.js";
@@ -99,23 +92,13 @@ export {
   loadUiFontSizePx,
   subscribeToUiFontSizeStorageChanges,
 } from "./lib/uiFontSize.js";
-export { reportUiLaunchToInput } from "./lib/uiPerfArmsTelemetry.js";
-export {
-  RendererUserActionTelemetry,
-  runUserAction,
-  runUserActionAsync,
-  setUserActionTelemetry,
-  startUserAction,
-} from "./lib/userActionTelemetry.js";
+export { runUserAction, runUserActionAsync, startUserAction } from "./lib/userActionTelemetry.js";
 export {
   CORE_USER_ACTION_FEATURES,
   SETTINGS_USER_ACTION_FEATURES,
   USER_ACTION_CATALOG,
 } from "./lib/userActionTraceCatalog.js";
-export { setReactErrorArmsReporter } from "./lib/reactErrorArmsTelemetry.js";
-export { recordArmsCustomEventForE2E } from "./lib/armsCustomEventObservability.js";
 export { generateMobileDeviceFingerprint, setStreamClientId } from "./lib/streamClientId.js";
 export { GlobalDatabaseStartupLoading } from "./root/GlobalDatabaseStartupLoading.js";
 
-export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/local-ttft/contract.js";
-export { ensurePendingTaskDraft } from "@/v4/composer/composerDraftStore.js";
+export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";

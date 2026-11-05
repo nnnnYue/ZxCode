@@ -38,10 +38,10 @@ export interface UserMcpRecord {
 }
 
 const ZCODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
-  source: "zcode",
-  directorySource: "zcode",
-  userConfigDirSegments: [".zcode", "cli"],
-  workspaceConfigDirSegments: [".zcode"],
+  source: "zxcode",
+  directorySource: "zxcode",
+  userConfigDirSegments: [".zxcode", "cli"],
+  workspaceConfigDirSegments: [".zxcode"],
   fileName: "config.json",
   configKeyName: "mcp.servers",
 };
@@ -250,7 +250,7 @@ async function readDirectoryServersFromFile(
   );
   const location = buildDirectoryMcpLocation(descriptor, scope, workspacePath);
   return Object.entries(serverMap).map(([name, config]) => ({
-    source: "zcodeagentmcp",
+    source: "zxcodeagentmcp",
     scope,
     name,
     config: config as McpServerConfig,

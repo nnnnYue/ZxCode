@@ -645,7 +645,6 @@ export const taskNotificationPayloadSchema = z.object({
 });
 
 export const telemetryRendererContextSchema = z.object({
-  uiMode: telemetryUiModeSchema.optional(),
   clientTimezone: nonEmptyStringSchema,
   clientLanguage: nonEmptyStringSchema,
   screenResolution: nonEmptyStringSchema,
@@ -1463,16 +1462,6 @@ export const hostPluginTelemetryResponseSchema = z
   .strict();
 export type HostPluginTelemetryResponse = z.infer<typeof hostPluginTelemetryResponseSchema>;
 
-export const hostRemoteConversationTelemetryResponseSchema = z
-  .object({
-    type: z.literal("remote-conversation-telemetry"),
-    event: remoteConversationTelemetryEventSchema,
-  })
-  .strict();
-export type HostRemoteConversationTelemetryResponse = z.infer<
-  typeof hostRemoteConversationTelemetryResponseSchema
->;
-
 export const hostSessionCreateTelemetryResponseSchema = z
   .object({
     type: z.literal("session-create-telemetry"),
@@ -1823,7 +1812,6 @@ export const hostResponseMessageSchema = z.discriminatedUnion("type", [
   hostMcpResourceSamplesResponseSchema,
   hostToolExecResourceResponseSchema,
   hostSessionCreateTelemetryResponseSchema,
-  hostRemoteConversationTelemetryResponseSchema,
   hostPluginTelemetryResponseSchema,
   hostAgentRunningTaskCountChangedResponseSchema,
   hostWorkspaceRunningTaskCountChangedResponseSchema,

@@ -4,8 +4,8 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
-  ZCODE_COMMAND_AGENT_SOURCE,
-  ZCODE_COMMAND_AGENT_SOURCES,
+  ZXCODE_COMMAND_AGENT_SOURCE,
+  ZXCODE_COMMAND_AGENT_SOURCES,
   type CommandAgentSource,
   type CommandCreateParams,
   type CommandDeleteParams,
@@ -41,8 +41,8 @@ interface CommandAgentSourceDescriptor {
   supportsArgumentHint: boolean;
 }
 
-const DEFAULT_COMMAND_AGENT_SOURCE: CommandAgentSource = ZCODE_COMMAND_AGENT_SOURCE;
-const COMMAND_AGENT_SOURCE_ORDER: readonly CommandAgentSource[] = ZCODE_COMMAND_AGENT_SOURCES;
+const DEFAULT_COMMAND_AGENT_SOURCE: CommandAgentSource = ZXCODE_COMMAND_AGENT_SOURCE;
+const COMMAND_AGENT_SOURCE_ORDER: readonly CommandAgentSource[] = ZXCODE_COMMAND_AGENT_SOURCES;
 const ENABLE_OVERRIDE_KEY = "enable";
 const HOME_PREFIX = "~/";
 const ZCODE_OFFICIAL_PLUGIN_MARKETPLACE = "zcode-plugins-official";
@@ -52,9 +52,9 @@ const CLAUDE_PLUGIN_MANIFEST_PATH = join(".claude-plugin", "plugin.json");
 const CODEX_PLUGIN_MANIFEST_PATH = join(".codex-plugin", "plugin.json");
 const ZCODE_COMMAND_DESCRIPTOR: CommandAgentSourceDescriptor = {
   agentSource: "zcodeAgent",
-  directorySource: "zcode",
-  userDirectorySegments: [".zcode", "commands"],
-  workspaceDirectorySegments: [".zcode", "commands"],
+  directorySource: "zxcode",
+  userDirectorySegments: [".zxcode", "commands"],
+  workspaceDirectorySegments: [".zxcode", "commands"],
   fileExtension: ".md",
   format: "markdown",
   namespaceSeparator: "/",
@@ -547,7 +547,7 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
     // 按每个目录交错读取 project/user 会让 user .zcode 抢在 workspace .agents 前面。
     for (const agentSource of agentSources) {
       const descriptors =
-        agentSource === ZCODE_COMMAND_AGENT_SOURCE
+        agentSource === ZXCODE_COMMAND_AGENT_SOURCE
           ? COMMAND_DIRECTORY_SOURCE_DESCRIPTORS
           : [getCommandSourceDescriptor(agentSource)];
 
@@ -575,7 +575,7 @@ export function createCommandsService(_options?: CommandsServiceOptions): IComma
 
     const dedupedUserCommands = dedupeCommandsByName(userCommands);
     const pluginCommands =
-      !params.agentSource || params.agentSource === ZCODE_COMMAND_AGENT_SOURCE
+      !params.agentSource || params.agentSource === ZXCODE_COMMAND_AGENT_SOURCE
         ? await discoverPluginCommands(enabledOverrides)
         : [];
 
@@ -1014,7 +1014,7 @@ async function discoverCommandsFromDirectorySources(params: {
       ...(params.projectPath ? { projectPath: params.projectPath } : {}),
     });
     // `.zcode` 是强优先级来源；只要读到有效命令，同 scope 的 `.agents` 就不再参与。
-    if (descriptor.directorySource === "zcode" && discoveredCount > 0) {
+    if (descriptor.directorySource === "zxcode" && discoveredCount > 0) {
       break;
     }
   }

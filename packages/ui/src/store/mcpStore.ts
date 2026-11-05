@@ -44,9 +44,14 @@ import { isRemoteWorkspaceDisconnectedError } from "@/lib/remoteWorkspaceService
 import { mergeMcpServerStatusSnapshots } from "@/store/mcpStoreStatusList.js";
 
 let mcpPlatformService: McpPlatformService | null = null;
+let mcpDirectoryService: McpDirectoryService | null = null;
 
 export function setMcpStorePlatform(platform: McpPlatformService | null): void {
   mcpPlatformService = platform;
+}
+
+export function setMcpStoreDirectoryService(service: McpDirectoryService | null): void {
+  mcpDirectoryService = service;
 }
 
 interface UpdateServerStatusOptions {
@@ -60,24 +65,19 @@ interface McpStoreState {
   statusSnapshots: Record<string, ZCodeMcpServerStatusSnapshot>;
   currentProjectPath: string;
   currentWorkspaceIdentity?: string;
-  currentAuthorityKey?: string;
-  /**
-   * 当前目标的目录服务，与 currentProjectPath / currentWorkspaceIdentity / currentAuthorityKey
-   * 是同一组绑定，只由 setCurrentProjectPath / ensureLoadedForWorkspace 一起写入。
-   */
-  currentDirectoryService: McpDirectoryService | null;
   enabledStates: Record<string, boolean>;
   deletedPreloadMcpServers: Set<string>;
   isConfigLoaded: boolean;
   currentSessionId: string | null;
   loadConfig: () => void;
-  /** 重新读取当前绑定目标的 MCP 配置；要换目标请用 ensureLoadedForWorkspace。 */
-  loadMcpFromUserDirectory: () => Promise<boolean>;
+  loadMcpFromUserDirectory: (
+    directoryService?: McpDirectoryService | null,
+    workspaceIdentity?: string,
+  ) => Promise<boolean>;
   ensureLoadedForWorkspace: (
     workspacePath?: string,
     directoryService?: McpDirectoryService | null,
     workspaceIdentity?: string,
-    authorityKey?: string,
   ) => Promise<boolean>;
   saveConfig: () => void;
   addMcpServer: (name: string, config: McpServerConfig) => void;
@@ -134,7 +134,6 @@ interface McpStoreState {
     path: string,
     workspaceIdentity?: string,
     directoryService?: McpDirectoryService | null,
-    authorityKey?: string,
   ) => void;
   getEnabledMcpServersForZCode: (provider: string) => ZCodeAgentMcpServer[];
   checkAllServerStatus: (
@@ -159,30 +158,17 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     statusListEpochs.status += 1;
   }
 
-  function currentTargetKey(): string {
-    const { currentAuthorityKey, currentWorkspaceIdentity, currentProjectPath } = get();
-    return `${currentAuthorityKey?.trim() || "workspace"}\0${currentWorkspaceIdentity?.trim() || currentProjectPath}`;
-  }
-
-  /**
-   * 读写通道只看当前绑定的目标。
-   *
-   * Bug 原因：远端「用户」目标只有 home 路径与 authority、没有 workspace identity。旧逻辑无 identity
-   * 就丢弃传入的服务走本机 platform；写入又用当前 tab 设置的全局目录服务。结果是在本机 tab 选
-   * 「B · 用户」读写本机，在远端 A tab 选「B · 用户」读 B 写 A、选「本机 · 用户」写 A。
-   * 修法：服务与路径 / identity / authority 作为一组绑定，读写都只用这一组。本机目标（无 identity、
-   * 无 authority：本机项目、本机「用户」）走 desktop platform，保留旧 common MCP 迁移；
-   * 远端目标没有绑定服务时 fail-closed，不回退本机。
-   */
-  function resolveTargetDirectoryService(): McpDirectoryService | null {
-    const { currentAuthorityKey, currentDirectoryService, currentWorkspaceIdentity } = get();
-    if (!currentWorkspaceIdentity && !currentAuthorityKey) {
+  function resolveMcpDirectoryService(
+    directoryService?: McpDirectoryService | null,
+    workspaceIdentity?: string | null,
+  ): McpDirectoryService | null {
+    const effectiveWorkspaceIdentity = workspaceIdentity ?? get().currentWorkspaceIdentity;
+    if (!effectiveWorkspaceIdentity?.trim()) {
+      // 本地 workspace 仍要走 desktop platform 路径，才能执行旧 common MCP
+      // 到用户级 ZxCode Agent MCP 的迁移；目录服务只用于远端 workspace 覆盖路由。
       return null;
     }
-    if (!currentDirectoryService) {
-      throw new Error("MCP directory service is not bound to the remote target");
-    }
-    return currentDirectoryService;
+    return directoryService ?? mcpDirectoryService;
   }
 
   function commitState(partial: {
@@ -254,15 +240,13 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       return;
     }
 
-    try {
-      await persistCliMcpToUserDirectory(
-        mcpPlatformService,
-        payload,
-        resolveTargetDirectoryService(),
-      );
-    } catch (error) {
+    await persistCliMcpToUserDirectory(
+      mcpPlatformService,
+      payload,
+      resolveMcpDirectoryService(),
+    ).catch((error) => {
       logger.warn(`[mcpStore] persist ${source} MCP failed`, String(error));
-    }
+    });
   }
 
   return {
@@ -272,8 +256,6 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     statusSnapshots: {},
     currentProjectPath: "",
     currentWorkspaceIdentity: undefined,
-    currentAuthorityKey: undefined,
-    currentDirectoryService: null,
     enabledStates: {},
     deletedPreloadMcpServers: new Set(),
     isConfigLoaded: false,
@@ -281,8 +263,8 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
     loadConfig: () => {
       const config = loadPersistedConfig();
-      // MCP 启停状态已经迁移到 ~/.zcode/cli/config.json，不能再读取旧 localStorage，
-      // 否则旧的本地开关会覆盖新的 ZCode Agent 配置来源。
+      // MCP 启停状态已经迁移到 ~/.zxcode/cli/config.json，不能再读取旧 localStorage，
+      // 否则旧的本地开关会覆盖新的 ZxCode Agent 配置来源。
       const enabledStates: Record<string, boolean> = {};
       const deletedPreload = new Set<string>(safeReadJson<string[]>(MCP_DELETED_PRELOAD_KEY, []));
       const servers = buildServerList(config, [], enabledStates, deletedPreload, []);
@@ -297,12 +279,14 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       });
     },
 
-    loadMcpFromUserDirectory: async () => {
+    loadMcpFromUserDirectory: async (directoryService, workspaceIdentity) => {
       if (typeof window === "undefined") {
         return false;
       }
 
-      const requestWorkspaceKey = currentTargetKey();
+      const requestWorkspacePath = get().currentProjectPath || undefined;
+      const requestWorkspaceIdentity = workspaceIdentity ?? get().currentWorkspaceIdentity;
+      const requestWorkspaceKey = requestWorkspaceIdentity?.trim() || requestWorkspacePath || "";
       if (loadMcpPromise && loadMcpWorkspaceKey === requestWorkspaceKey) {
         return await loadMcpPromise;
       }
@@ -310,24 +294,29 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
         await loadMcpPromise;
       }
 
-      if (currentTargetKey() !== requestWorkspaceKey) {
-        // 该调用等待上一轮 load 时已从 B 切到 C；交给 C 自己发起的 ensure/load 调用处理。
+      const latestWorkspacePath = get().currentProjectPath || undefined;
+      const latestWorkspaceIdentity = get().currentWorkspaceIdentity;
+      const latestWorkspaceKey = latestWorkspaceIdentity?.trim() || latestWorkspacePath || "";
+      if (latestWorkspaceKey !== requestWorkspaceKey) {
+        // 该调用等待上一轮 load 时已从 B 切到 C；B 调用持有的 remote
+        // directoryService 不得继续读取 C，交给 C 自己发起的 ensure/load 调用处理。
         return false;
       }
-      if (loadMcpPromise && loadMcpWorkspaceKey === requestWorkspaceKey) {
+      // 等待上一 workspace load 期间可能再次切换；目录服务必须按等待后的
+      // 最新 identity 重新选择，不能拿 B 的 remote service 去读取 C 的路径。
+      const activeDirectoryService = resolveMcpDirectoryService(
+        directoryService,
+        latestWorkspaceIdentity,
+      );
+      if (loadMcpPromise && loadMcpWorkspaceKey === latestWorkspaceKey) {
         return await loadMcpPromise;
       }
 
-      const { currentProjectPath, currentWorkspaceIdentity } = get();
-      const latestWorkspacePath = currentProjectPath || undefined;
-      loadMcpWorkspaceKey = requestWorkspaceKey;
+      loadMcpWorkspaceKey = latestWorkspaceKey;
       loadMcpPromise = (async () => {
         try {
-          // 等待上一目标 load 期间可能再次切换；目录服务取等待后的最新绑定，
-          // 与 requestWorkspaceKey 属于同一组目标，不能拿 B 的服务读取 C 的路径。
-          const activeDirectoryService = resolveTargetDirectoryService();
           logger.info(
-            `[mcpStore] loadMcpFromUserDirectory workspace=${latestWorkspacePath ?? "<none>"} identity=${currentWorkspaceIdentity ?? "<none>"}`,
+            `[mcpStore] loadMcpFromUserDirectory workspace=${latestWorkspacePath ?? "<none>"} identity=${latestWorkspaceIdentity ?? "<none>"}`,
           );
           let servers = await fetchNativeMcpServers(
             mcpPlatformService,
@@ -341,7 +330,10 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
               latestWorkspacePath,
             );
           }
-          if (currentTargetKey() !== requestWorkspaceKey) {
+          const currentState = get();
+          const currentWorkspaceKey =
+            currentState.currentWorkspaceIdentity?.trim() || currentState.currentProjectPath;
+          if (currentWorkspaceKey !== latestWorkspaceKey) {
             // workspace A 的异步目录读取可能晚于切换到 B 才返回；
             // 旧结果包含 env/header/OAuth secret，不能写回共享 store 后被 B 的 Agent 消费。
             return false;
@@ -366,36 +358,25 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       return await loadMcpPromise;
     },
 
-    ensureLoadedForWorkspace: async (
-      workspacePath,
-      directoryService,
-      workspaceIdentity,
-      authorityKey,
-    ) => {
+    ensureLoadedForWorkspace: async (workspacePath, directoryService, workspaceIdentity) => {
       if (!get().isConfigLoaded) {
         get().loadConfig();
       }
 
       const normalizedWorkspacePath = workspacePath ?? "";
       const normalizedWorkspaceIdentity = workspaceIdentity?.trim() || undefined;
-      const normalizedAuthorityKey = authorityKey?.trim() || undefined;
       if (
         normalizedWorkspacePath !== get().currentProjectPath ||
-        normalizedWorkspaceIdentity !== get().currentWorkspaceIdentity ||
-        normalizedAuthorityKey !== get().currentAuthorityKey
+        normalizedWorkspaceIdentity !== get().currentWorkspaceIdentity
       ) {
         get().setCurrentProjectPath(
           normalizedWorkspacePath,
           normalizedWorkspaceIdentity,
           directoryService,
-          normalizedAuthorityKey,
         );
-      } else if ((directoryService ?? null) !== get().currentDirectoryService) {
-        // 同一目标换了服务对象（例如 attachment 换代）：只换绑服务，不清空列表。
-        set({ currentDirectoryService: directoryService ?? null });
       }
 
-      return await get().loadMcpFromUserDirectory();
+      return await get().loadMcpFromUserDirectory(directoryService, normalizedWorkspaceIdentity);
     },
 
     saveConfig: () => {
@@ -408,7 +389,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     deleteMcpServer: (name) => get().deleteZCodeAgentMcpServer(name),
     addScopedMcpServer: async (source, name, config, projectPath) => {
       invalidateStatusListRequests();
-      const targetSource: CliMcpSource = source === "mcp" ? "zcodeagentmcp" : source;
+      const targetSource: CliMcpSource = source === "mcp" ? "zxcodeagentmcp" : source;
       // 设置页保存后会马上触发 agent 侧 mcp/list 重连。
       // 先等配置落盘，再更新本地 store，避免 agent 读到旧 timeoutMs 后展示旧健康状态。
       await persistScopedChange(targetSource, {
@@ -422,7 +403,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     },
     updateScopedMcpServer: async (source, name, config, projectPath) => {
       invalidateStatusListRequests();
-      const targetSource: CliMcpSource = source === "mcp" ? "zcodeagentmcp" : source;
+      const targetSource: CliMcpSource = source === "mcp" ? "zxcodeagentmcp" : source;
       // 修复原因同新增：本地状态变化会驱动健康状态刷新，必须在磁盘配置更新后发生。
       await persistScopedChange(targetSource, {
         action: "upsert",
@@ -435,7 +416,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     },
     deleteScopedMcpServer: (source, name, projectPath) => {
       invalidateStatusListRequests();
-      const targetSource: CliMcpSource = source === "mcp" ? "zcodeagentmcp" : source;
+      const targetSource: CliMcpSource = source === "mcp" ? "zxcodeagentmcp" : source;
       persistScopedChange(targetSource, {
         action: "delete",
         source: targetSource,
@@ -480,11 +461,11 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     deleteOpenCodeMcpServer: (name, projectPath) =>
       get().deleteScopedMcpServer("opencodemcp", name, projectPath),
     addZCodeAgentMcpServer: (name, config, projectPath) =>
-      get().addScopedMcpServer("zcodeagentmcp", name, config, projectPath),
+      get().addScopedMcpServer("zxcodeagentmcp", name, config, projectPath),
     updateZCodeAgentMcpServer: (name, config, projectPath) =>
-      get().updateScopedMcpServer("zcodeagentmcp", name, config, projectPath),
+      get().updateScopedMcpServer("zxcodeagentmcp", name, config, projectPath),
     deleteZCodeAgentMcpServer: (name, projectPath) =>
-      get().deleteScopedMcpServer("zcodeagentmcp", name, projectPath),
+      get().deleteScopedMcpServer("zxcodeagentmcp", name, projectPath),
 
     toggleServer: async (id, enabled) => {
       invalidateStatusListRequests();
@@ -492,22 +473,20 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       if (targetServer && targetServer.source !== "mcp") {
         // 开关变化会触发 agent 侧 mcp/list 读取磁盘配置做真实连接。
         // 必须先等 enable 状态落盘，再更新本地列表驱动刷新，否则 agent 会读到旧开关。
-        try {
-          await persistCliMcpToUserDirectory(
-            mcpPlatformService,
-            {
-              action: "set-enabled",
-              source: targetServer.source,
-              name: targetServer.name,
-              enabled,
-              projectPath: targetServer.projectPath,
-              location: targetServer.location,
-            },
-            resolveTargetDirectoryService(),
-          );
-        } catch (error) {
+        await persistCliMcpToUserDirectory(
+          mcpPlatformService,
+          {
+            action: "set-enabled",
+            source: targetServer.source,
+            name: targetServer.name,
+            enabled,
+            projectPath: targetServer.projectPath,
+            location: targetServer.location,
+          },
+          resolveMcpDirectoryService(),
+        ).catch((error) => {
           logger.warn("[mcpStore] persist MCP enabled override failed", String(error));
-        }
+        });
       }
 
       set((state) => {
@@ -556,7 +535,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
         servers: state.servers.map((server) => {
           const enabled = state.enabledStates[server.id] ?? server.enabled;
           if (
-            server.source !== "zcodeagentmcp" ||
+            server.source !== "zxcodeagentmcp" ||
             !enabled ||
             (!server.changed && server.status !== "unknown")
           ) {
@@ -586,7 +565,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
         statusSnapshots: {},
         servers: state.servers.map((server) => {
           const enabled = state.enabledStates[server.id] ?? server.enabled;
-          if (server.source !== "zcodeagentmcp" || !enabled || server.status !== "connecting") {
+          if (server.source !== "zxcodeagentmcp" || !enabled || server.status !== "connecting") {
             return server;
           }
           return {
@@ -622,13 +601,12 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
     getServer: (id) => get().servers.find((s) => s.id === id),
 
-    setCurrentProjectPath: (path, workspaceIdentity, directoryService, authorityKey) => {
+    setCurrentProjectPath: (path, workspaceIdentity, directoryService) => {
       invalidateStatusListRequests();
       const {
         config,
         currentProjectPath,
         currentWorkspaceIdentity,
-        currentAuthorityKey,
         deletedPreloadMcpServers,
         enabledStates,
         isConfigLoaded,
@@ -636,17 +614,12 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
         servers,
       } = get();
       const normalizedWorkspaceIdentity = workspaceIdentity?.trim() || undefined;
-      const normalizedAuthorityKey = authorityKey?.trim() || undefined;
       const workspaceChanged =
-        path !== currentProjectPath ||
-        normalizedWorkspaceIdentity !== currentWorkspaceIdentity ||
-        normalizedAuthorityKey !== currentAuthorityKey;
+        path !== currentProjectPath || normalizedWorkspaceIdentity !== currentWorkspaceIdentity;
       const nextNativeServers = workspaceChanged ? [] : nativeServers;
       set({
         currentProjectPath: path,
         currentWorkspaceIdentity: normalizedWorkspaceIdentity,
-        currentAuthorityKey: normalizedAuthorityKey,
-        currentDirectoryService: directoryService ?? null,
         nativeServers: nextNativeServers,
         statusSnapshots: {},
         servers: buildServerList(
@@ -660,7 +633,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       if (isConfigLoaded && workspaceChanged) {
         // 切换到远程 workspace 后配置加载是异步的；等待期间必须先清空 A 的
         // user-level MCP，不能把其 env/header/OAuth clientSecret 暂存为 B 的可发送配置。
-        void get().loadMcpFromUserDirectory();
+        void get().loadMcpFromUserDirectory(directoryService, normalizedWorkspaceIdentity);
       }
     },
 
@@ -671,7 +644,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
       for (const server of servers) {
         const isEnabled = enabledStates[server.id] ?? server.enabled;
         if (!isEnabled) continue;
-        if (server.source !== "zcodeagentmcp") continue;
+        if (server.source !== "zxcodeagentmcp") continue;
         if (server.scope === "workspace" && server.projectPath !== currentProjectPath) continue;
 
         const existing = candidates.get(server.name);
@@ -682,11 +655,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
       const result: ZCodeAgentMcpServer[] = [];
       for (const server of candidates.values()) {
-        const zcodeAgentServer = convertToZCodeAgentMcpServer(
-          server.name,
-          server.config,
-          server.scope === "workspace" ? "workspace" : "user",
-        );
+        const zcodeAgentServer = convertToZCodeAgentMcpServer(server.name, server.config);
         if (zcodeAgentServer) result.push(zcodeAgentServer);
       }
       return result;
@@ -713,7 +682,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
     mergePreloadedMcpServers: (preloaded) => {
       const { deletedPreloadMcpServers, nativeServers } = get();
-      const targetSource: CliMcpSource = "zcodeagentmcp";
+      const targetSource: CliMcpSource = "zxcodeagentmcp";
       const nextNativeServers = nativeServers.slice();
       let changed = false;
 
@@ -744,7 +713,7 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
     },
 
     deletePreloadedMcpServer: (source, name) => {
-      const targetSource: CliMcpSource = source === "mcp" ? "zcodeagentmcp" : source;
+      const targetSource: CliMcpSource = source === "mcp" ? "zxcodeagentmcp" : source;
       const key = makeServerId(targetSource, name);
       persistScopedChange(targetSource, { action: "delete", source: targetSource, name });
       set((state) => {

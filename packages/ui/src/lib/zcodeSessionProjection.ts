@@ -1,4 +1,4 @@
-/* oxlint-disable eslint(max-lines) -- ZCode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
+/* oxlint-disable eslint(max-lines) -- ZxCode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
 import {
   getZCodeAgentAvailableModes as getSharedAgentAvailableModes,
   normalizeAvailableZCodeMode,
@@ -19,13 +19,12 @@ import {
   collectZCodeBackgroundTaskNotificationsByToolUseId,
   mergeZCodeBackgroundTaskControlItems,
   parseZCodeBackgroundTaskControlItems,
-  parseZCodeBackgroundTaskNotifications,
+  parseZCodeBackgroundTaskNotificationText,
   parseModelPickerValue as parseSharedModelSelection,
   formatModelPickerValue as formatSharedModelSelection,
   resolveZCodeVisibleSessionTitle,
+  ZXCODE_AGENT_PROVIDER,
   textFromZCodeMessageParts,
-  ZCODE_AGENT_PROVIDER,
-  zcodeBackgroundTaskNotificationFailureText,
   zcodeBackgroundTaskNotificationToolUpdateStatus,
   appendZCodeStreamingToolInputDelta,
   buildZCodeStreamingToolInputPreview,
@@ -150,7 +149,7 @@ export function parseModelPickerValue(value: string): ModelSelection {
   const customModel = decodeCustomModelValue(value);
   if (customModel?.providerId && customModel.modelName) {
     // UI 自定义模型值是展示态 custom:provider:model，
-    // ZCode Protocol 必须收到严格的 providerId/modelId 结构。
+    // ZxCode Protocol 必须收到严格的 providerId/modelId 结构。
     return {
       providerId: customModel.providerId,
       modelId: customModel.modelName,
@@ -265,7 +264,7 @@ function resolveSettingsThoughtLevelCurrentValue(
     thoughtLevel.defaultLevel && thoughtLevelValues.has(thoughtLevel.defaultLevel)
       ? thoughtLevel.defaultLevel
       : undefined;
-  // ZCode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
+  // ZxCode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
   // 实时模型状态事件也要投影默认值，否则工具栏会拿到空 currentValue，出现没有档位被选中的 UI。
   return currentThoughtLevel ?? defaultThoughtLevel ?? thoughtLevel.available[0]?.value;
 }
@@ -797,7 +796,7 @@ export function zcodeSessionSnapshotToTaskMeta(snapshot: ZCodeSessionStateSnapsh
     mode: fromZCodeMode(snapshot.session.mode),
     model: formatModelPickerValue(resolveTaskMetaModelSelectionFromSnapshot(snapshot)),
     thoughtLevel: snapshot.settings.thoughtLevel.current,
-    provider: ZCODE_AGENT_PROVIDER,
+    provider: ZXCODE_AGENT_PROVIDER,
     status: deriveZCodeTaskStatusFromSessionSnapshot(snapshot),
     lastError: snapshot.projection.lastError
       ? {
@@ -851,15 +850,14 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
       ...(event.turnId ? { turnId: event.turnId } : {}),
       startedAt: event.timestamp,
     };
-    const taskNotificationToolUpdates = backgroundTaskNotificationToolUpdatesFromInput({
+    const taskNotificationToolUpdate = backgroundTaskNotificationToolUpdateFromInput({
       input: stringValue(payload.input),
-      originMeta: payload.originMeta,
       taskId,
       traceId,
       inputId: eventInputId,
     });
-    if (taskNotificationToolUpdates.length > 0) {
-      return [runStartedEvent, ...taskNotificationToolUpdates];
+    if (taskNotificationToolUpdate) {
+      return [runStartedEvent, taskNotificationToolUpdate];
     }
     if (
       stringValue(payload.inputSource) === "goal-continuation" &&
@@ -1285,37 +1283,35 @@ export function zcodeUserInputResponseToZCodeStreamEvent(
   };
 }
 
-function backgroundTaskNotificationToolUpdatesFromInput(params: {
+function backgroundTaskNotificationToolUpdateFromInput(params: {
   input: string | undefined;
   inputId: InputId | undefined;
-  originMeta: unknown;
   taskId: string;
   traceId: TraceId;
-}): Extract<ZCodeStreamEvent, { type: "tool_call_update" }>[] {
-  // 终态与失败原文优先取本轮 originMeta 的结构化结果，不解析 summary 文本。
-  // 合并轮的每条通知各自更新自己的工具。
-  return parseZCodeBackgroundTaskNotifications(params.input, params.originMeta).map((parsed) => {
-    const status = zcodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
-    return {
-      type: "tool_call_update",
-      taskId: params.taskId,
-      traceId: params.traceId,
-      ...(params.inputId ? { inputId: params.inputId } : {}),
-      toolId: parsed.toolUseId,
-      status,
-      content: parsed.notification.result ?? parsed.notification.summary,
-      // 修复原因：ToolLayout 的既有失败 hover 只读取 toolCall.error；notification
-      // 原先只更新 status/raw，导致“执行失败”没有可展示的详情。
-      // 修复原因：合并轮没有结构化结果，通知里也没有 <error>，失败详情原来是空的。
-      ...(status === "failed"
-        ? { error: zcodeBackgroundTaskNotificationFailureText(parsed.notification) }
-        : {}),
-      raw: attachZCodeBackgroundTaskNotificationToRaw(
-        { toolCallId: parsed.toolUseId },
-        parsed.notification,
-      ),
-    };
-  });
+}): Extract<ZCodeStreamEvent, { type: "tool_call_update" }> | null {
+  const parsed = parseZCodeBackgroundTaskNotificationText(params.input);
+  if (!parsed) {
+    return null;
+  }
+  const status = zcodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
+  return {
+    type: "tool_call_update",
+    taskId: params.taskId,
+    traceId: params.traceId,
+    ...(params.inputId ? { inputId: params.inputId } : {}),
+    toolId: parsed.toolUseId,
+    status,
+    content: parsed.notification.result ?? parsed.notification.summary,
+    // 修复原因：ToolLayout 的既有失败 hover 只读取 toolCall.error；notification
+    // 原先只更新 status/raw，导致“执行失败”没有可展示的详情。
+    ...(status === "failed" && parsed.notification.error
+      ? { error: parsed.notification.error }
+      : {}),
+    raw: attachZCodeBackgroundTaskNotificationToRaw(
+      { toolCallId: parsed.toolUseId },
+      parsed.notification,
+    ),
+  };
 }
 
 function zcodeMessageToZCodePersistedMessage(
@@ -1794,9 +1790,7 @@ function mapToolPart(
       status: notificationFailed ? "failed" : "completed",
       input: state.input,
       output: state.output,
-      ...(notificationFailed && taskNotification
-        ? { error: zcodeBackgroundTaskNotificationFailureText(taskNotification) }
-        : {}),
+      ...(notificationFailed && taskNotification?.error ? { error: taskNotification.error } : {}),
       raw,
     };
   }

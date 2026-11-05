@@ -1,16 +1,19 @@
-import { TID_TASK_ITEM, testId } from "@zcode/shared/test-ids";
-import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
+/* eslint-disable max-lines -- grouped row 同时承载 drag overlay 与常规交互，状态徽标需共用同一渲染语义。 */
 import { memo, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import { isCronTask, isOffPeakTask } from "@zcode/shared";
-import { ArrowUpToLine, Clock, Cloud, Folder, ListTree, LoaderIcon, Moon, X } from "lucide-react";
+import { isCronTask, type ZCodeTaskMeta } from "@zcode/shared";
+import { ArrowUpToLine, Clock, Cloud, Folder, ListTree, LoaderIcon, X } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import { Badge } from "@/components/ui/badge.js";
-import { toast } from "@/components/ui/toast.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.js";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   deriveTaskLeadingIndicator,
@@ -18,19 +21,17 @@ import {
 } from "@/lib/taskListItemPresentation.js";
 import { getTaskChangeSummary } from "@/lib/taskChangeSummary.js";
 import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
-import { buildTaskFeedbackDescription } from "@/lib/taskFeedbackDraft.js";
 import { useTaskListItemContextActions } from "@/useTaskListItemContextActions.js";
-import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import { getTaskListAttention, getTaskListRowActivity } from "@/v4/taskListRowActivity.js";
-import { GroupedTaskContextMenuContent } from "@/project-sidebar/grouped/task-context-menu-content.js";
+import { GroupedTaskContextMenuContent } from "@/workspace-grouped-tasks/task-context-menu-content.js";
 import { TaskRowActionButton } from "@/workspace-grouped-tasks/task-row-action-button.js";
 import { TaskInteractionBadge } from "@/TaskInteractionBadge.js";
-import { formatGroupedTaskHoverChangeParts } from "@/project-sidebar/grouped/task-row-tooltip.js";
+import { formatGroupedTaskHoverChangeParts } from "@/workspace-grouped-tasks/task-row-tooltip.js";
 import {
   TASK_GROUP_ROW_CLASS,
   TASK_GROUP_ROW_LINE_CLASS,
   type TaskGroupMenuItem,
-} from "@/project-sidebar/grouped/types.js";
+} from "@/workspace-grouped-tasks/types.js";
 import { TaskWorkflowRunLines } from "@/components/workflow-run-line/TaskWorkflowRunLines.js";
 import { useTaskInteractionAutoResolutionSnooze } from "@/hooks/useTaskInteractionAutoResolutionSnooze.js";
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
@@ -42,8 +43,10 @@ function GroupedTaskRowComponent({
   currentGroupId,
   groups,
   remoteSessionId,
-  isActive,
-  isMobileActive,
+  activeWorkspacePath,
+  activeWorkspaceIdentity,
+  activeTaskId,
+  mobileActiveTaskKey,
   workspaceLabel,
   onSelectTask,
   onCloseTask,
@@ -62,8 +65,10 @@ function GroupedTaskRowComponent({
   currentGroupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
-  isActive: boolean;
-  isMobileActive: boolean;
+  activeWorkspacePath: string;
+  activeWorkspaceIdentity?: string;
+  activeTaskId: string | null;
+  mobileActiveTaskKey?: string | null;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
   onCloseTask: (task: ZCodeTaskMeta) => void;
@@ -122,9 +127,10 @@ function GroupedTaskRowComponent({
   const taskChangeParts = formatGroupedTaskHoverChangeParts(getTaskChangeSummary(task));
   const taskTimeLabel = formatTaskRelativeTime(task.updatedAt, intl);
   const isTaskCron = isCronTask(task);
-  // 月亮身份改为持久 meta 标记判断；off-peak store 反查在任务被删除后会丢失
-  // 会话溯源，且让每一行多背一个全局 store 订阅。
-  const isTaskOffPeak = isOffPeakTask(task);
+  const isActive =
+    buildTaskWorkspaceKey(activeWorkspacePath, activeWorkspaceIdentity) === workspaceKey &&
+    activeTaskId === task.taskId;
+  const isMobileActive = mobileActiveTaskKey === `${workspaceKey}:${task.taskId}`;
   const statusDotClassName =
     leadingIndicator === "error"
       ? "bg-destructive"
@@ -210,12 +216,6 @@ function GroupedTaskRowComponent({
                 aria-label={intl.formatMessage({ id: "taskList.cronTaskLabel" })}
                 className="size-3.5 shrink-0"
               />
-            ) : !hasPendingInteraction && isTaskOffPeak ? (
-              <Moon
-                data-off-peak-task-icon="true"
-                aria-label={intl.formatMessage({ id: "taskList.offPeakTaskLabel" })}
-                className="size-3.5 shrink-0"
-              />
             ) : null}
             {!hasPendingInteraction ? <span className="mr-1">{taskTimeLabel}</span> : null}
           </span>
@@ -236,7 +236,6 @@ function GroupedTaskRowComponent({
       typeof window.matchMedia === "function" &&
       window.matchMedia("(hover: none)").matches,
   );
-  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
   const {
     taskSessionFile,
     taskNativeSessionLogFile,
@@ -281,31 +280,6 @@ function GroupedTaskRowComponent({
       return;
     }
     onMoveTaskToTop(task);
-  };
-  const handleOpenTaskFeedback = async () => {
-    openFeedbackSubmit({
-      title: intl
-        .formatMessage(
-          { id: "feedback.submit.template.section.taskFeedbackTitle" },
-          { title: taskTitle },
-        )
-        .slice(0, 80),
-      type: "bug",
-      module: "Agent任务执行失败",
-      severity: "P2-中",
-      includeLogs: true,
-      description: buildTaskFeedbackDescription({
-        taskTitle,
-        taskId: task.taskId,
-        workspacePath: task.workspacePath,
-        taskSessionPath: taskSessionFile.path,
-        taskLogPath: taskNativeSessionLogFile.path,
-        formatMessage: (id: string, values?: Record<string, string>) =>
-          intl.formatMessage({ id }, values),
-      }),
-      screenshots: [],
-    });
-    toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) {
@@ -362,8 +336,6 @@ function GroupedTaskRowComponent({
         }
       }}
       data-grouped-task-key={groupedTaskDomKey}
-      data-testid={testId(TID_TASK_ITEM, task.taskId)}
-      data-task-item-key={groupedTaskDomKey}
       data-mobile-active-task={isMobileActive ? "true" : undefined}
       className={cn(
         "group/task-row",
@@ -408,12 +380,6 @@ function GroupedTaskRowComponent({
                 <Clock
                   data-cron-task-icon="true"
                   aria-label={intl.formatMessage({ id: "taskList.cronTaskLabel" })}
-                  className="size-3.5 shrink-0"
-                />
-              ) : !hasPendingInteraction && isTaskOffPeak ? (
-                <Moon
-                  data-off-peak-task-icon="true"
-                  aria-label={intl.formatMessage({ id: "taskList.offPeakTaskLabel" })}
                   className="size-3.5 shrink-0"
                 />
               ) : null}
@@ -463,34 +429,36 @@ function GroupedTaskRowComponent({
         // overlay 拖拽时指针下方的真实 row 仍可能被 Radix 识别为 hover，跳过 TooltipTrigger 避免底层 row 或 action 弹出悬浮提示。
         <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
       ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="center" sideOffset={6}>
-            {remoteSessionId ? (
-              <Cloud aria-hidden="true" className="size-3.5 shrink-0" />
-            ) : (
-              <Folder aria-hidden="true" className="size-3.5 shrink-0" />
-            )}
-            <span className="min-w-0 max-w-48 truncate">{workspaceLabel}</span>
-            {taskChangeParts.length > 0 ? (
-              <>
-                <span className="text-tooltip-foreground/60">·</span>
-                <span className="inline-flex shrink-0 items-center gap-1">
-                  {taskChangeParts.map((part) => (
-                    <span
-                      key={part}
-                      className={part.startsWith("+") ? "text-diff-added" : "text-diff-removed"}
-                    >
-                      {part}
-                    </span>
-                  ))}
-                </span>
-              </>
-            ) : null}
-          </TooltipContent>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center" sideOffset={6}>
+              {remoteSessionId ? (
+                <Cloud aria-hidden="true" className="size-3.5 shrink-0" />
+              ) : (
+                <Folder aria-hidden="true" className="size-3.5 shrink-0" />
+              )}
+              <span className="min-w-0 max-w-48 truncate">{workspaceLabel}</span>
+              {taskChangeParts.length > 0 ? (
+                <>
+                  <span className="text-tooltip-foreground/60">·</span>
+                  <span className="inline-flex shrink-0 items-center gap-1">
+                    {taskChangeParts.map((part) => (
+                      <span
+                        key={part}
+                        className={part.startsWith("+") ? "text-diff-added" : "text-diff-removed"}
+                      >
+                        {part}
+                      </span>
+                    ))}
+                  </span>
+                </>
+              ) : null}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
       {contextMenuOpen ? (
         // 右键菜单内容带 Radix Presence/Portal，拖拽重排时常驻挂载会触发嵌套更新循环；仅在菜单打开时挂载内容，配合路径懒加载避免拖拽过程刷 task path RPC。
@@ -511,7 +479,6 @@ function GroupedTaskRowComponent({
           onOpenTaskPathInFileManager={() => void handleOpenTaskPathInFileManager()}
           onCopyText={(label, text) => void handleCopyText(label, text)}
           onOpenProviderConfig={() => void handleOpenProviderConfig()}
-          onOpenTaskFeedback={() => void handleOpenTaskFeedback()}
           disabledReason={workspaceActionsDisabledReason}
         />
       ) : null}

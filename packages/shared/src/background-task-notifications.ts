@@ -131,6 +131,32 @@ export function attachZCodeBackgroundTaskNotificationToRaw(
   };
 }
 
+
+// fork 保留入口：单条 <task-notification> 文本的轻量解析（zcodeTaskServiceAdapter 依赖）。
+export function parseZCodeBackgroundTaskNotificationText(
+  text: string | undefined,
+): { notification: ZCodeBackgroundTaskNotificationInfo; toolUseId: string } | null {
+  const trimmed = text?.trim();
+  if (!trimmed?.startsWith(TASK_NOTIFICATION_OPEN)) {
+    return null;
+  }
+  const toolUseId = readTaskNotificationTag(trimmed, "tool-use-id");
+  if (!toolUseId) {
+    return null;
+  }
+  return {
+    toolUseId,
+    notification: {
+      error: readTaskNotificationTag(trimmed, "error"),
+      outputFile: readTaskNotificationTag(trimmed, "output-file"),
+      result: readTaskNotificationTag(trimmed, "result"),
+      status: readTaskNotificationTag(trimmed, "status"),
+      summary: readTaskNotificationTag(trimmed, "summary"),
+      taskId: readTaskNotificationTag(trimmed, "task-id"),
+    },
+  };
+}
+
 function readTaskNotificationTag(text: string, tag: string): string | undefined {
   const match = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "u"));
   const value = match?.[1]?.trim();

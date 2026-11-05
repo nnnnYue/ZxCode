@@ -4,7 +4,7 @@ import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
-import { isPublicZCodeErrorCode, ZCODE_VERSION } from "@zcode/shared";
+import { isPublicZCodeErrorCode, ZXCODE_VERSION } from "@zcode/shared";
 import { SourceServerWorkspaceAliasRepo } from "@zcode/services/node";
 import {
   CORE_KILL_TIMEOUT_MS,
@@ -122,7 +122,7 @@ export async function runServerCli(
     if (command === "version" || command === "--version") {
       // Bug 原因：Server --version 过去落入 legacy delegate，实际输出取决于旁边的 Agent
       // zcode.cjs，Desktop probe 无法稳定判断 Server compatibility。
-      stdout(io, json ? { product: "zcode-server", version: ZCODE_VERSION } : ZCODE_VERSION);
+      stdout(io, json ? { product: "zcode-server", version: ZXCODE_VERSION } : ZXCODE_VERSION);
       return 0;
     }
     const proxyStdioRequested =
@@ -468,7 +468,7 @@ async function runServe(
         });
       },
     },
-    version: ZCODE_VERSION,
+    version: ZXCODE_VERSION,
     ...(supervisorReleaseId ? { supervisorReleaseId } : {}),
     serviceRegistered,
     onStopped: () => {
@@ -545,12 +545,12 @@ async function runControl(
   } catch (error: unknown) {
     if (command === "status") {
       const persisted = await readPersistedStatusDetailed(layout);
-      result = persisted.status ?? createStoppedServerStatus(ZCODE_VERSION);
+      result = persisted.status ?? createStoppedServerStatus(ZXCODE_VERSION);
     } else if (command === "stop") {
       // 快照缺失表示 daemon 从未写出过状态，按已停止输出。
       result =
         (await readStatusForStopWithoutControl(layout, error)) ??
-        createStoppedServerStatus(ZCODE_VERSION);
+        createStoppedServerStatus(ZXCODE_VERSION);
     } else {
       throw error;
     }
@@ -576,7 +576,7 @@ async function runStopAndWait(
     io,
     isStoppedServerStatus(status)
       ? status
-      : createStoppedServerStatus(ZCODE_VERSION, {
+      : createStoppedServerStatus(ZXCODE_VERSION, {
           serviceRegistered: status?.serviceRegistered ?? false,
         }),
   );
@@ -688,7 +688,7 @@ async function finishUninstall(
     // 让并发 Supervisor 在删除 run 目录的最后窗口也会 fail-closed。
     await writeFile(
       layout.uninstalledFile,
-      `${JSON.stringify({ uninstalled: true, uninstalledAt: Date.now(), version: ZCODE_VERSION, preservedPaths }, null, 2)}\n`,
+      `${JSON.stringify({ uninstalled: true, uninstalledAt: Date.now(), version: ZXCODE_VERSION, preservedPaths }, null, 2)}\n`,
       { encoding: "utf8", mode: 0o600 },
     );
     await uninstallLock.release();

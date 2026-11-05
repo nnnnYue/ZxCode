@@ -23,10 +23,16 @@ import {
 } from "@zcode/shared";
 import type { ISettingService, WorkspaceSettingsProjection } from "./setting.js";
 import { normalizeSettingsPatch } from "#src/setting/normalizeSettingsPatch.js";
-import { copyDataDirectory, getDataBaseDir, validateDataBaseDirTarget } from "../paths.js";
+import {
+  copyDataDirectory,
+  getAgentUserInstructionsFilePath,
+  getDataBaseDir,
+  validateDataBaseDirTarget,
+} from "../paths.js";
 import { isEffectiveDevelopmentNodeEnv } from "../runtime-tools/nodeEnv.js";
 import { maybeThrowInjectedFsFault } from "../fs/fsFaultInjection.js";
 import { atomicWriteText, withAtomicFileLock } from "../fs/atomicFileUtils.js";
+import { atomicWritePrivateTextFile } from "@zcode/shared/node";
 import { withSettingsWriteQueueTimeout } from "./settingsWriteQueue.js";
 import {
   migrateLegacyAccountConnectionSettings,

@@ -13,13 +13,9 @@ import {
   Terminal,
   TriangleAlert,
   WandSparkles,
-  Maximize2,
-  RotateCcw,
 } from "lucide-react";
 import type { ZCodePluginComponentKind, ZCodePluginsDescribeResult } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog.js";
-import { resolvePluginUiSurfaceTitle } from "@/plugin-ui/index.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { PluginStoreAvatar } from "@/settings/PluginStoreAvatar.js";
@@ -31,14 +27,10 @@ import {
   PluginStoreInstallButton,
   PluginStoreItemMenu,
   PluginStorePaidPlanBadge,
-  PluginStoreOpenUiButton,
-  PluginStoreUpdateButton,
   type PluginStoreActions,
 } from "@/settings/PluginStoreCard.js";
 import {
-  isItemBusy,
   isTrustedImageUrl,
-  isUiPluginItem,
   KNOWN_CATEGORY_LABEL_IDS,
   resolveItemDescription,
   resolveStoreCategory,
@@ -46,6 +38,7 @@ import {
   resolveLocalizedList,
   type StorePluginItem,
 } from "@/settings/pluginStoreListing.js";
+import { resolvePluginHeroSource } from "@/lib/pluginIconSource.js";
 import {
   buildInstalledPluginDisplayGroups,
   describeResultToDisplayGroups,
@@ -111,7 +104,8 @@ export function PluginStoreDetailView({
   const { intl, locale } = useZCodeIntl();
   const displayName = resolveItemDisplayName(item, locale);
   const description = resolveItemDescription(item, locale);
-  const heroImage = item.listing?.heroImage;
+  // hero 与图标同一机制：先查随包快照映射，再放行受信远端 URL（离线目录数据不含平台资源地址）。
+  const heroImage = resolvePluginHeroSource(item.id, item.listing?.heroImage);
   const examplePrompts =
     resolveLocalizedList(locale, item.listing?.examplePrompts, item.listing?.examplePromptsI18n) ??
     [];
@@ -135,17 +129,16 @@ export function PluginStoreDetailView({
       <div className="space-y-3">
         <PluginStoreAvatar item={item} className="size-16 rounded-2xl" iconClassName="size-6" />
         <div
-          className="flex min-w-0 flex-wrap items-center justify-between gap-3"
+          className="flex min-w-0 items-center justify-between gap-3"
           data-testid="plugin-store-title-actions"
         >
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="min-w-0 break-words text-ui-xl font-medium text-foreground">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-foreground">
               {displayName}
             </h1>
             <PluginStorePaidPlanBadge item={item} />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <PluginStoreUpdateButton item={item} actions={actions} size="lg" />
+          <div className="flex shrink-0 items-center gap-1.5">
             {item.installed ? (
               <>
                 <PluginStoreItemMenu
@@ -155,25 +148,28 @@ export function PluginStoreDetailView({
                   triggerSize="icon-lg"
                 />
                 {/* 顶部试用与示例提示词共用同一 canonical 构造；空 prompt 表示只预填 Plugin mention。 */}
-                {/* 只有会话右侧市场提供 onOpenUi；主导航详情保留普通插件的「立即试用」。 */}
-                {isUiPluginItem(item) && actions.onOpenUi ? (
-                  <PluginStoreOpenUiButton item={item} actions={actions} size="lg" />
-                ) : (
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="lg"
-                    data-testid="plugin-store-try-now"
-                    data-plugin-id={item.id}
-                    onClick={() => onUsePrompt(item, "")}
-                  >
-                    <MessagesSquare className="size-3.5" aria-hidden="true" />
-                    {intl.formatMessage({ id: "settings.plugins.store.tryNow" })}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="default"
+                  size="lg"
+                  data-testid="plugin-store-try-now"
+                  data-plugin-id={item.id}
+                  onClick={() => onUsePrompt(item, "")}
+                >
+                  <MessagesSquare className="size-3.5" aria-hidden="true" />
+                  {intl.formatMessage({ id: "settings.plugins.store.tryNow" })}
+                </Button>
               </>
             ) : (
               <>
+                {actions.onResetConfig ? (
+                  <PluginStoreItemMenu
+                    item={item}
+                    actions={actions}
+                    triggerVariant="outline"
+                    triggerSize="icon-lg"
+                  />
+                ) : null}
                 <PluginStoreInstallButton item={item} actions={actions} size="lg" />
               </>
             )}
@@ -242,30 +238,6 @@ export function PluginStoreDetailView({
       {/* 信息区：listing 优先，manifest（运行时/describe）回退；无值整行省略（ADR-0001）。 */}
       <InfoSection item={item} describeMetadata={describeMetadata} />
 
-      {isUiPluginItem(item) ? (
-        <section data-testid="plugin-store-ui-capability" className="space-y-2">
-          <h2 className="text-ui-lg font-semibold">
-            {intl.formatMessage({ id: "settings.plugins.store.ui.capability" })}
-          </h2>
-          {item.info?.uiSurfaces?.map((surface) => (
-            <p key={surface.id} className="text-ui-base text-foreground-subtle">
-              {resolvePluginUiSurfaceTitle(surface.title, locale)}
-            </p>
-          ))}
-        </section>
-      ) : null}
-      {actions.onResetConfig ? (
-        <Button
-          variant="outline"
-          data-testid="plugin-store-reset-config"
-          disabled={isItemBusy(item, actions)}
-          onClick={() => actions.onResetConfig?.(item.id)}
-        >
-          <RotateCcw className="size-3.5" aria-hidden="true" />
-          {intl.formatMessage({ id: "settings.plugins.scope.restoreUserDefault" })}
-        </Button>
-      ) : null}
-
       {advanced}
     </div>
   );
@@ -284,9 +256,7 @@ function HeroSection({
   heroImage: string | undefined;
   onUsePrompt: (item: StorePluginItem, prompt: string) => void;
 }) {
-  const { intl } = useZCodeIntl();
   const [heroFailed, setHeroFailed] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const showHeroImage = isTrustedImageUrl(heroImage) && !heroFailed;
   const prompts = examplePrompts.map((prompt) => {
     const documentIcon = resolveExamplePromptDocumentIcon(prompt);
@@ -321,51 +291,32 @@ function HeroSection({
   if (!showHeroImage && prompts.length === 0) return null;
 
   return (
-    <Dialog open={previewOpen && showHeroImage} onOpenChange={setPreviewOpen}>
-      <div
-        className="relative min-h-72 overflow-hidden rounded-xl sm:aspect-[3/1] sm:min-h-0"
-        data-testid="plugin-store-hero"
-      >
-        <ThemeHeroVisual className="pointer-events-none absolute inset-0" />
-        {showHeroImage ? (
-          <img
-            src={heroImage}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="absolute inset-0 size-full select-none object-cover opacity-80"
-            onError={() => setHeroFailed(true)}
-          />
-        ) : null}
-        <div
-          className="absolute inset-0 bg-black/15"
-          data-testid="plugin-store-hero-overlay"
+    <div
+      className="relative min-h-72 overflow-hidden rounded-3xl sm:aspect-[3/1] sm:min-h-0"
+      data-testid="plugin-store-hero"
+    >
+      <ThemeHeroVisual className="pointer-events-none absolute inset-0" />
+      {showHeroImage ? (
+        <img
+          src={heroImage}
+          alt=""
           aria-hidden="true"
+          draggable={false}
+          className="absolute inset-0 size-full select-none object-cover opacity-80"
+          onError={() => setHeroFailed(true)}
         />
-        {prompts.length > 0 ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-5 sm:p-8">
-            {prompts}
-          </div>
-        ) : null}
-        {showHeroImage ? (
-          <DialogTrigger asChild>
-            <Button
-              variant="secondary"
-              className="absolute right-3 top-3"
-              size="icon-md"
-              data-testid="plugin-store-preview-open"
-              aria-label={intl.formatMessage({ id: "settings.plugins.store.ui.preview" })}
-            >
-              <Maximize2 className="size-4" aria-hidden="true" />
-            </Button>
-          </DialogTrigger>
-        ) : null}
-      </div>
-      <DialogContent className="max-w-5xl" aria-describedby={undefined}>
-        <DialogTitle>{displayName}</DialogTitle>
-        <img src={heroImage} alt={displayName} className="max-h-[80vh] w-full object-contain" />
-      </DialogContent>
-    </Dialog>
+      ) : null}
+      <div
+        className="absolute inset-0 bg-black/15"
+        data-testid="plugin-store-hero-overlay"
+        aria-hidden="true"
+      />
+      {prompts.length > 0 ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-5 sm:p-8">
+          {prompts}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

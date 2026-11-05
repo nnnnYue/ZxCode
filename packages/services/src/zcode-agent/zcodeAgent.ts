@@ -5,9 +5,9 @@ import type {
   ZCodeSessionContentProfile,
 } from "@zcode/shared";
 /* eslint-disable max-lines -- ZCode agent service 接口集中声明 protocol/session/workspace 方法，拆分会增加 service descriptor 迁移成本。 */
-import type { RemoteConversationTelemetryEvent } from "@zcode/shared/conversation-telemetry";
 import type { Event, IDisposable } from "@zcode/rpc";
 import { ServiceChannels } from "@zcode/shared";
+import type { DynamicWorkflowClientConfig } from "@zcode/shared";
 import type { AppUsageRange, AppUsageSnapshot, ZCodeTaskTokenUsageResult } from "@zcode/shared";
 import type { DynamicWorkflowMode } from "@zcode/shared";
 import type { ZCodeAutomation, ZCodeAutomationRun } from "@zcode/shared";
@@ -30,8 +30,6 @@ import type {
   ZCodeToolExecResource,
   ZCodeProcessChildProcess,
   ZCodeMcpListResult,
-  WorkspaceMcpTrustDecision,
-  ZCodeWorkspaceMcpTrustResult,
   ZCodePluginsListResult,
   ZCodePluginsOverviewResult,
   ZCodePluginsMarketplaceMutationResult,
@@ -64,9 +62,6 @@ import type {
   ZCodePluginsSetEnabledResult,
   ZCodePluginsCancelOperationResult,
   ZCodePluginOperationProgressNotification,
-  ZCodeProviderRuntimeHeadersRequestParams,
-  RequestVerificationConfig,
-  ZCodeProviderRuntimeHeadersCancelled,
   ZCodeProviderTestModelConnectivityParams,
   ZCodeProviderTestModelConnectivityResult,
   ZCodeUserInputRequestParams,
@@ -112,7 +107,6 @@ import type {
   V4ConnectionFlowState,
   V4ConversationFileChangesResult,
   V4ConversationFileRewindPreviewResult,
-  V4ConversationInputPredictionResult,
   V4ConversationPlansResult,
   V4ConversationWorkflowRunEventsResult,
   V4ConversationWorkflowRunArtifactDataResult,
@@ -127,11 +121,6 @@ import type {
   V4SessionsIndexSubscribeResult,
   V4WorkspaceConfigSubscribeResult,
   WorkspaceConfigTopicWireCandidate,
-} from "@zcode/shared/zcode-protocol-v4";
-import type {
-  V4SessionDataMeasureResult,
-  V4SessionDataParams,
-  V4SessionDataPurgeResult,
 } from "@zcode/shared/zcode-protocol-v4";
 import { createServiceDescriptor } from "../descriptors.js";
 
@@ -220,7 +209,7 @@ export interface ZCodeAgentWorkspaceRuntimeIdentity {
   workspaceKey: string;
 }
 
-export const ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE = "ZCODE_AGENT_RUNTIME_UNAVAILABLE";
+export const ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE = "ZXCODE_AGENT_RUNTIME_UNAVAILABLE";
 
 export type ZCodeAgentRuntimePolicy = "start-if-needed" | "existing-only";
 
@@ -372,16 +361,6 @@ export interface ZCodeAgentTestModelConnectivityParams extends ZCodeAgentWorkspa
   signal?: AbortSignal;
 }
 
-// 合并时曾混用 Agent 完整鉴权响应；UI 只能回传请求校验，账号鉴权必须由 Host 合成。
-export type ProviderRuntimeHeadersUiResponse =
-  | { headersApplied: true; runtimeProviderHeaders: Record<string, string>; errorMessage?: string }
-  | { headersApplied: false; errorMessage?: string };
-
-export interface ZCodeAgentRespondProviderRuntimeHeadersParams extends ZCodeAgentSessionTarget {
-  requestId: string;
-  response: ProviderRuntimeHeadersUiResponse;
-}
-
 export interface ZCodeAgentSessionRuntimePreferencesRequest extends ZCodeSessionRequestRuntimePreferencesParams {
   requestId: string;
 }
@@ -432,25 +411,10 @@ export interface ZCodeAgentConversationRowsRangeParams extends ZCodeAgentSession
   beforeRowId?: number;
   /** 1..rowsRangeMaxLimit（200）。 */
   limit: number;
-  /**
-   * 手机预加载：只读热会话。工作区 CLI 未运行、执行端不支持、会话不在内存都报
-   * proto.sessionNotResident，不拉起进程、不冷恢复。
-   */
-  residency?: "resident-only";
 }
 
 /** 当前有效分支里的终态 ExitPlanMode 目录。 */
 export type ZCodeAgentConversationPlansParams = ZCodeAgentSessionTarget;
-
-/** 手机远控输入预测（ghost hint）；线格式见 docs/web-remote-control/mobile-input-prediction.md。 */
-export interface ZCodeAgentConversationInputPredictionParams extends ZCodeAgentSessionTarget {
-  /** 手机当前看到的会话 revision；参与 CLI 侧缓存键，回包据此丢弃过期结果。 */
-  revision: number;
-  /** 当前草稿；缺省/空 = 预测下一条输入，非空 = 续写草稿。 */
-  draft?: string;
-  /** 手机侧请求 id，原样回声，用于丢弃过期回包。 */
-  requestId?: string;
-}
 
 /** workflow run 的事件日志分页（详情页审计面）；cursor = journal sequence。 */
 export interface ZCodeAgentConversationWorkflowRunEventsParams extends ZCodeAgentSessionTarget {
@@ -611,11 +575,6 @@ export interface ZCodeAgentWorkspaceConfigSubscribeParams extends ZCodeAgentWork
   runtimePolicy?: ZCodeAgentRuntimePolicy;
 }
 
-/** Host 为 App 应答方绑定的本次配置；不扩展 Agent wire 协议。 */
-export type ZCodeAgentProviderRuntimeHeadersRequest = ZCodeProviderRuntimeHeadersRequestParams & {
-  requestVerificationConfig?: RequestVerificationConfig;
-};
-
 export type ZCodeAgentServiceEvent =
   | { type: "session.event"; event: ZCodeSessionEvent }
   | { type: "state.updated"; notification: ZCodeStateUpdatedNotification }
@@ -626,7 +585,6 @@ export type ZCodeAgentServiceEvent =
       requestId: string;
       response: ZCodeUserInputResponse;
     }
-  | { type: "providerRuntimeHeaders.request"; request: ZCodeAgentProviderRuntimeHeadersRequest }
   | { type: "snapshot"; snapshot: ZCodeSessionStateSnapshot };
 
 export interface ZCodeAgentAppRuntimePreferences {
@@ -662,6 +620,14 @@ export interface IZCodeAgentService {
    */
   syncAppRuntimePreferences(preferences: ZCodeAgentAppRuntimePreferences): Promise<void>;
   /**
+   * 动态工作流灰度快照（Host 唯一裁决的只读投影），与会话 gate 同源；renderer
+   * 自动化页 / run 面板入口据此渲染。进程内闩住：forceRefresh 形参仅为兼容
+   * UI store 取数契约保留，同进程内恒等值。见 specs/dynamic-workflow-setting-toggle.md。
+   */
+  getDynamicWorkflowClientConfig(options?: {
+    forceRefresh?: boolean;
+  }): Promise<DynamicWorkflowClientConfig>;
+  /**
    * 动态工作流用户选择变化的信号（docs/dynamic-workflow/launch.md「The user's choice」）：Host 重新计算
    * 生效模式并串行重发 workspace/updateDynamicWorkflowPolicy。有本机设置权威的 Host 以设置文件为准；
    * desktop-attached remote Host 以传入值为准（缺席 = 跟随服务端）。不得为此启动空闲 Agent。
@@ -677,15 +643,6 @@ export interface IZCodeAgentService {
     params: ZCodeAgentListSessionSubagentsParams,
   ): Promise<ZCodeSessionSubagentsResult>;
   getAppUsageStats(params: ZCodeAgentAppUsageParams): Promise<AppUsageSnapshot>;
-  /** 项目数据删除前的测量：只读，用本机已有 runtime 或管理面进程，不为某个项目拉起 Agent。 */
-  measureSessionData?(params: V4SessionDataParams): Promise<V4SessionDataMeasureResult>;
-  /**
-   * 彻底删除会话与目录记忆。workspace 已有 Agent 进程时交给它（它持有会话运行态，能判断运行中
-   * 并释放已加载会话）；否则交给管理面进程。只用于本机。
-   */
-  purgeSessionData?(
-    params: V4SessionDataParams & { workspace: ZCodeAgentWorkspaceTarget },
-  ): Promise<V4SessionDataPurgeResult>;
   getTaskTokenUsage(params: ZCodeAgentTaskTokenUsageParams): Promise<ZCodeTaskTokenUsageResult>;
   readSession(params: ZCodeAgentReadSessionParams): Promise<ZCodeSessionStateSnapshot>;
   readSessionMessages(
@@ -700,7 +657,6 @@ export interface IZCodeAgentService {
   grantWorkspaceHookTrust(
     params: ZCodeAgentGrantWorkspaceHookTrustParams,
   ): Promise<ZCodeWorkspaceHookTrustGrantResult>;
-  setWorkspaceMcpTrust(params: WorkspaceMcpTrustDecision): Promise<ZCodeWorkspaceMcpTrustResult>;
   listMcpServerStatuses(params: ZCodeAgentListMcpServerStatusesParams): Promise<ZCodeMcpListResult>;
   listPlugins(params: ZCodeAgentPluginViewParams): Promise<ZCodePluginsListResult>;
   /**
@@ -772,7 +728,7 @@ export interface IZCodeAgentService {
   listPluginUiSurfaces(
     params: ZCodeAgentWorkspaceTarget,
   ): Promise<ZCodePluginsListUiSurfacesResult>;
-  // 已保存工作流的 GUI 中枢：workspace 级、无会话，每次调用现扫 `<cwd>/.zcode/workflows/`。
+  // 已保存工作流的 GUI 中枢：workspace 级、无会话，每次调用现扫 `<cwd>/.zxcode/workflows/`。
   // 全局档传 `scope: "global"`：带 workspace 就用它当载体，不带则由 services 层自选本机载体运行时。
   listSavedWorkflows(params: ZCodeAgentListSavedWorkflowsParams): Promise<ZCodeWorkflowsListResult>;
   getSavedWorkflow(params: ZCodeAgentGetSavedWorkflowParams): Promise<ZCodeWorkflowsGetResult>;
@@ -868,34 +824,9 @@ export interface IZCodeAgentService {
   setModel(params: ZCodeAgentSetModelParams): Promise<ZCodeSessionStateSnapshot>;
   setThoughtLevel(params: ZCodeAgentSetThoughtLevelParams): Promise<ZCodeSessionStateSnapshot>;
   setMode(params: ZCodeAgentSetModeParams): Promise<ZCodeSessionStateSnapshot>;
-  respondProviderRuntimeHeaders(
-    params: ZCodeAgentRespondProviderRuntimeHeadersParams,
-  ): Promise<void>;
   respondSessionRuntimePreferences(
     params: ZCodeAgentRespondSessionRuntimePreferencesParams,
   ): Promise<void>;
-  /**
-   * v4 UI 的 Start Plan runtime-auth bridge 只需要本地 pending request 事件，
-   * 不能为此额外打开旧 `session/subscribe`，否则会把旧 replay/continuous 读路径
-   * 重新带回 v4 pane。
-   */
-  onDynamicProviderRuntimeHeadersRequest(
-    params: ZCodeAgentSessionTarget,
-  ): Event<ZCodeAgentProviderRuntimeHeadersRequest>;
-  /**
-   * Start Plan runtime headers 的 workspace 级订阅入口（生产应答方使用）。
-   * Bug 原因（2026-08-16 web 远控卡死）：session 级入口只随桌面 pane 挂载订阅，
-   * web 远控新建会话在桌面没有 pane、web 端无应答方，请求校验请求滞留 pending，
-   * 任务永久「工作中」。桌面窗口用本入口为每个打开的 workspace tab 维持常驻应答方；
-   * 订阅时先注册 live listener 再按 workspaceKey 前缀补投 pending，与 session 级同语义。
-   */
-  onDynamicWorkspaceProviderRuntimeHeadersRequest(
-    params: ZCodeAgentWorkspaceTarget,
-  ): Event<ZCodeAgentProviderRuntimeHeadersRequest>;
-  /** 只投递本 workspace 的校验取消，不属于 conversation stream。 */
-  onDynamicWorkspaceProviderRuntimeHeadersCancelled(
-    params: ZCodeAgentWorkspaceTarget,
-  ): Event<ZCodeProviderRuntimeHeadersCancelled>;
   onDynamicSessionRuntimePreferencesRequest(): Event<ZCodeAgentSessionRuntimePreferencesRequest>;
   /**
    * CLI 进程级资源样本，带 services 打的 lane 标签（CLI 自己不知道 lane）。
@@ -904,9 +835,6 @@ export interface IZCodeAgentService {
    */
   onDynamicProcessResourceSample(): Event<AgentLaneResourceSample>;
   /** MCP 进程生命周期与低频内存事件，仅供可信 Host relay 上报 ARMS。 */
-  /** 仅 trusted Host relay 订阅；手机统计不依赖 renderer 生命周期。 */
-  onDynamicRemoteConversationTelemetry(): Event<RemoteConversationTelemetryEvent>;
-
   onDynamicMcpTelemetry(): Event<ZCodeMcpTelemetryEvent>;
   /** MCP 进程树资源事实，只供可信 Host 汇总上报。 */
   onDynamicMcpResourceSamples(): Event<ZCodeMcpResourceSample[]>;
@@ -940,10 +868,6 @@ export interface IZCodeAgentService {
   conversationPlansV4(
     params: ZCodeAgentConversationPlansParams,
   ): Promise<V4ConversationPlansResult>;
-  /** 输入预测：只读、无状态；Host 开关关闭 / 无运行时 / 失败一律回空结果，不抛错。 */
-  conversationInputPredictionV4(
-    params: ZCodeAgentConversationInputPredictionParams,
-  ): Promise<V4ConversationInputPredictionResult>;
   /** workflow run 事件日志分页；与 plans 同族（只读、无状态、超时重发安全）。 */
   conversationWorkflowRunEventsV4(
     params: ZCodeAgentConversationWorkflowRunEventsParams,
@@ -1001,16 +925,6 @@ export interface IZCodeAgentService {
   conversationAttachmentStatV4(
     params: ZCodeAgentConversationAttachmentStatParams,
   ): Promise<V4ConversationAttachmentStatResult>;
-  getSessionLifecycle(
-    params: ZCodeAgentSessionTarget,
-  ): Promise<import("@zcode/shared").SessionLifecycleSnapshot | null>;
-  ensureSessionReady(params: ZCodeAgentSessionTarget): Promise<void>;
-  stopSessionRuntime(params: ZCodeAgentSessionTarget): Promise<void>;
-  restartSessionRuntime(params: ZCodeAgentSessionTarget): Promise<void>;
-  /** 独立于可被释放的 conversation publisher 的生命周期事实。 */
-  onDynamicSessionLifecycle(
-    params: ZCodeAgentWorkspaceTarget,
-  ): Event<import("@zcode/shared").SessionLifecycleSnapshot>;
   /** workspace 级下行帧流（v4/conversation/frame），renderer 侧按 topic 自行路由。 */
   onDynamicConversationFrame(
     params: ZCodeAgentWorkspaceTarget,
@@ -1022,19 +936,13 @@ export interface IZCodeAgentService {
   onDynamicConversationTelemetryFact(
     params: ZCodeAgentWorkspaceTarget,
   ): Event<ConversationTelemetryFact>;
-  /** Host 消费驻留 CLI 的闲时生命周期；不参与聊天快照恢复。 */
-  onDynamicOffPeakLifecycle(
-    params: ZCodeAgentWorkspaceTarget,
-  ): Event<import("@zcode/shared").OffPeakLifecycleNotification>;
-  controlOffPeakExecutionV4(
-    params: ZCodeAgentWorkspaceTarget & { control: import("@zcode/shared").OffPeakControlParams },
-  ): Promise<import("@zcode/shared").OffPeakControlResult>;
   /** 当前窗口全部本地 live task 的 CUA 权限观察；历史、远程与 replayable 不在此事件面。 */
   onDynamicCuaPermissionObservation(): Event<ZCodeAgentCuaPermissionObservation>;
   /** 本地桌面窗口创建插件页面，不依赖 conversation 订阅。 */
   onDynamicPluginUiToolResult(): Event<
     PluginUiToolResultNotification & { workspacePath: string; workspaceIdentity?: string }
   >;
+
   /** 只读 CLI 持久事实；不恢复会话运行实例。旧远端可以不提供此能力。 */
   reconcileSessionsIndexV4?(
     params: ZCodeAgentWorkspaceTarget & { sessionIds: string[] },
@@ -1078,9 +986,7 @@ export interface IZCodeAgentService {
   ) => IDisposable;
   /** 当前 desktop-local CUA turn 是否仍在执行，用于 Helper recovery 避免中途回收 Agent。 */
   hasActiveCuaOperationTurn(): boolean;
-  disposeWorkspace(
-    params: ZCodeAgentWorkspaceTarget & { releasePreparation?: boolean },
-  ): Promise<void>;
+  disposeWorkspace(params: ZCodeAgentWorkspaceTarget): Promise<void>;
   disposeAll(): void;
 }
 

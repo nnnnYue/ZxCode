@@ -34,13 +34,12 @@ import {
   collectZCodeBackgroundTaskNotificationsByToolUseId,
   mergeZCodeBackgroundTaskControlItems,
   parseZCodeBackgroundTaskControlItems,
-  parseZCodeBackgroundTaskNotifications,
+  parseZCodeBackgroundTaskNotificationText,
   parseModelPickerValue as parseSharedModelSelection,
   resolveWorkspaceKey,
   resolveZCodeVisibleSessionTitle,
   textFromZCodeMessageParts,
-  ZCODE_AGENT_PROVIDER,
-  zcodeBackgroundTaskNotificationFailureText,
+  ZXCODE_AGENT_PROVIDER,
   zcodeBackgroundTaskNotificationToolUpdateStatus,
   appendZCodeStreamingToolInputDelta,
   buildZCodeStreamingToolInputPreview,
@@ -132,10 +131,7 @@ import type {
   ZCodeTaskTerminalOutcome,
 } from "../session/zcodeTaskService.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import {
-  AUTOMATION_MUTATION_TOOL_NAMES,
-  OFF_PEAK_MUTATION_TOOL_NAMES,
-} from "#src/zcode-agent/automationToolPolicy.js";
+import { AUTOMATION_MUTATION_TOOL_NAMES } from "#src/zcode-agent/automationToolPolicy.js";
 import type { ISettingService } from "#src/setting/setting.js";
 import type {
   SessionMessageDeliveryResult,
@@ -178,6 +174,14 @@ import {
   settingsToConfigOptions,
 } from "./zcodeConfigOptions.js";
 import type { CuaProductMcpServerResolver } from "#src/cua-permission-broker/index.js";
+import type {
+  ZCodeTaskGroup,
+  ZCodeTaskGroupColor,
+  ZCodeGroupedTaskView,
+  ZCodeGroupedTaskViewStructure,
+  ZCodeGroupedTaskViewOrderInput,
+  ZCodeTaskListWorkspaceScope,
+} from "#src/session/zcodeTaskListTypes.js";
 import { registerMemoryDiagnosticsProvider } from "#src/memoryDiagnostics.js";
 
 interface CreateZCodeTaskServiceAdapterOptions {
@@ -212,7 +216,7 @@ type ZCodeTerminalStreamEvent =
   | Extract<ZCodeStreamEvent, { type: "task_complete" }>
   | Extract<ZCodeStreamEvent, { type: "task_error" }>;
 
-const GLM_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
+const GLM_PROVIDER: ZCodeProvider = ZXCODE_AGENT_PROVIDER;
 const EMPTY_SLASH_COMMANDS: ZCodeSlashCommand[] = [];
 const logger = createServiceLogger("zcode-task-service");
 const ASK_USER_QUESTION_TOOL_NAME = "AskUserQuestion";
@@ -240,8 +244,11 @@ function formatZCodeAgentLogDate(now: Date): string {
 
 function resolveZCodeAgentCurrentLogFilePath(now = new Date()): string {
   const configuredLogDir = process.env.ZCODE_LOG_DIR?.trim();
-  const logDir = configuredLogDir || join(homedir(), ".zcode", "cli", "log");
-  return join(logDir, `zcode-${formatZCodeAgentLogDate(now)}.jsonl`);
+  // Bugfix：rebrand 残留——目录与前缀都写成了上游命名，导致 UI 的"原生会话日志"
+  // 永远 exists:false。fork CLI 实际写 ~/.zxcode/cli/log/zxcode-YYYY-MM-DD.jsonl
+  // （adapters/src/logging/index.ts getDefaultLogDir/getLogFileName）。
+  const logDir = configuredLogDir || join(homedir(), ".zxcode", "cli", "log");
+  return join(logDir, `zxcode-${formatZCodeAgentLogDate(now)}.jsonl`);
 }
 
 export function createZCodeTaskServiceAdapter(
@@ -321,12 +328,7 @@ export function createZCodeTaskServiceAdapter(
         toolDenylist.add(toolName);
       }
     }
-    // 闲时派发轮纵深隐藏 OffPeakCreate；不与 automation 分支合并（cron 轮放行）。
-    if (params.offPeakTaskId) {
-      for (const toolName of OFF_PEAK_MUTATION_TOOL_NAMES) {
-        toolDenylist.add(toolName);
-      }
-    }
+    // fork：闲时任务域已剔除，无 OffPeakCreate 需要纵深隐藏。
     return toolDenylist.size > 0 ? [...toolDenylist] : undefined;
   }
 
@@ -1603,10 +1605,6 @@ export function createZCodeTaskServiceAdapter(
       return;
     }
 
-    if (event.type === "providerRuntimeHeaders.request") {
-      return;
-    }
-
     if (event.type === "session.event") {
       recordAgentModelNetworkTelemetry(event.event);
       if (event.event.type === "turn.started") {
@@ -1738,10 +1736,9 @@ export function createZCodeTaskServiceAdapter(
     },
 
     async releaseWorkspacePreparation(params): Promise<void> {
-      await options.zcodeAgentService.disposeWorkspace({
-        ...normalizeWorkspaceParams(params),
-        releasePreparation: true,
-      });
+      // 关闭 workspace UI 只会释放 RPC 使用方，不会自动终止已预热的 Agent。
+      // WSL Host 共享后 Host 会继续存活，因此必须按 workspaceKey 显式回收对应 runtime。
+      await options.zcodeAgentService.disposeWorkspace(normalizeWorkspaceParams(params));
     },
 
     async checkCodexConnectivity(): Promise<ZCodeCodexConnectivityCheckResult> {
@@ -2551,6 +2548,35 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
+    // fork：grouped-task 方法 stub（域功能在 fork UI 暂不暴露，仅满足接口合同）
+    async createTaskGroup(params?: {
+      title?: string;
+      color?: ZCodeTaskGroupColor;
+    }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available in community edition");
+    },
+    async renameTaskGroup(_params: { groupId: string; title: string }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available");
+    },
+    async updateTaskGroupColor(_params: {
+      groupId: string;
+      color: ZCodeTaskGroupColor;
+    }): Promise<ZCodeTaskGroup> {
+      throw new Error("grouped-task: not available");
+    },
+    async deleteTaskGroup(_params: { groupId: string }): Promise<void> {
+      throw new Error("grouped-task: not available");
+    },
+    async listGroupedTaskViewStructure(_params: {
+      workspaceScopes: ZCodeTaskListWorkspaceScope[];
+    }): Promise<ZCodeGroupedTaskViewStructure> {
+      return { groups: [], members: [], topLevelOrders: [] };
+    },
+    async applyGroupedTaskViewOrder(
+      _params: ZCodeGroupedTaskViewOrderInput,
+    ): Promise<ZCodeGroupedTaskView> {
+      return { nodes: [] };
+    },
     async listArchivedTasks(params): Promise<ZCodeTaskMeta[]> {
       const tasks = await taskIndexRepo.listTaskMetas({
         workspacePath: params.workspacePath,
@@ -3506,37 +3532,35 @@ function toZCodeDeliveryKind(
   return deliveryKind === "replayable" ? "web-remote-replayable" : "desktop-continuous";
 }
 
-function backgroundTaskNotificationToolUpdatesFromInput(params: {
+function backgroundTaskNotificationToolUpdateFromInput(params: {
   input: string | undefined;
   inputId: InputId | undefined;
-  originMeta: unknown;
   taskId: string;
   traceId: TraceId;
-}): Extract<ZCodeStreamEvent, { type: "tool_call_update" }>[] {
-  // 终态与失败原文优先取本轮 originMeta 的结构化结果，不解析 summary 文本。
-  // 合并轮的每条通知各自更新自己的工具。
-  return parseZCodeBackgroundTaskNotifications(params.input, params.originMeta).map((parsed) => {
-    const status = zcodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
-    return {
-      type: "tool_call_update",
-      taskId: params.taskId,
-      traceId: params.traceId,
-      ...(params.inputId ? { inputId: params.inputId } : {}),
-      toolId: parsed.toolUseId,
-      status,
-      content: parsed.notification.result ?? parsed.notification.summary,
-      // replayable 动态事件也必须把 notification error 放到标准 tool error，
-      // 否则手机远控与桌面 continuous 的失败详情会产生分叉。
-      // 修复原因：合并轮没有结构化结果，通知里也没有 <error>，失败详情原来是空的。
-      ...(status === "failed"
-        ? { error: zcodeBackgroundTaskNotificationFailureText(parsed.notification) }
-        : {}),
-      raw: attachZCodeBackgroundTaskNotificationToRaw(
-        { toolCallId: parsed.toolUseId },
-        parsed.notification,
-      ),
-    };
-  });
+}): Extract<ZCodeStreamEvent, { type: "tool_call_update" }> | null {
+  const parsed = parseZCodeBackgroundTaskNotificationText(params.input);
+  if (!parsed) {
+    return null;
+  }
+  const status = zcodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
+  return {
+    type: "tool_call_update",
+    taskId: params.taskId,
+    traceId: params.traceId,
+    ...(params.inputId ? { inputId: params.inputId } : {}),
+    toolId: parsed.toolUseId,
+    status,
+    content: parsed.notification.result ?? parsed.notification.summary,
+    // replayable 动态事件也必须把 notification error 放到标准 tool error，
+    // 否则手机远控与桌面 continuous 的失败详情会产生分叉。
+    ...(status === "failed" && parsed.notification.error
+      ? { error: parsed.notification.error }
+      : {}),
+    raw: attachZCodeBackgroundTaskNotificationToRaw(
+      { toolCallId: parsed.toolUseId },
+      parsed.notification,
+    ),
+  };
 }
 
 function mapMessage(
@@ -3795,9 +3819,7 @@ function mapToolPart(
       status: notificationFailed ? "failed" : "completed",
       input: state.input,
       output: state.output,
-      ...(notificationFailed && taskNotification
-        ? { error: zcodeBackgroundTaskNotificationFailureText(taskNotification) }
-        : {}),
+      ...(notificationFailed && taskNotification?.error ? { error: taskNotification.error } : {}),
       raw,
     };
   }
@@ -4006,15 +4028,14 @@ function mapSessionEvent(
       ...(event.turnId ? { turnId: event.turnId } : {}),
       startedAt: event.timestamp,
     };
-    const taskNotificationToolUpdates = backgroundTaskNotificationToolUpdatesFromInput({
+    const taskNotificationToolUpdate = backgroundTaskNotificationToolUpdateFromInput({
       input: stringValue(payload.input),
-      originMeta: payload.originMeta,
       taskId: params.taskId,
       traceId,
       inputId: eventInputId,
     });
-    if (taskNotificationToolUpdates.length > 0) {
-      return [runStartedEvent, ...taskNotificationToolUpdates];
+    if (taskNotificationToolUpdate) {
+      return [runStartedEvent, taskNotificationToolUpdate];
     }
     if (
       stringValue(payload.inputSource) === "goal-continuation" &&
