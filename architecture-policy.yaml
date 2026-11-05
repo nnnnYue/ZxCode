@@ -81,7 +81,7 @@ modules:
       - packages/shared/src/conversation-telemetry/messageTelemetry.ts
       - packages/shared/src/conversation-telemetry/providerTelemetryIdentity.ts
       - packages/shared/src/conversation-telemetry/remoteTelemetryEvent.ts
-    layers: {app: "."}
+    layers: { app: "." }
     owner: conversation
   - id: conversation-telemetry-service
     roots: [packages/services/src/conversation-telemetry]
@@ -90,7 +90,7 @@ modules:
     publicEntrypoints:
       - packages/services/src/conversation-telemetry/remoteConversationTelemetry.ts
       - packages/services/src/conversation-telemetry/contract.ts
-    layers: {app: "."}
+    layers: { app: "." }
     owner: conversation
   - id: sqlite-migrations
     roots:
@@ -650,7 +650,7 @@ modules:
       - packages/services/src/zcode-agent/inputPredictionSwitch.ts
       - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/input-prediction-handler.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/input-prediction-sidecar.ts
-    layers: {app: .}
+    layers: { app: . }
     owner: remote
   # remote-resident-rows-range：rowsRange 只读热会话（residency="resident-only"）的 Host 侧执行端能力确认，
   # 供手机任务列表预加载；旧 CLI 不认识该参数时 Host 直接拒绝，不触发冷恢复。
@@ -661,7 +661,7 @@ modules:
     requires: [shared, services]
     publicEntrypoints:
       - packages/services/src/zcode-agent/resident-rows-range/contract.ts
-    layers: {app: .}
+    layers: { app: . }
     owner: remote
   - id: tool-discovery
     roots:
@@ -682,7 +682,7 @@ modules:
       - apps/zcode-cli/packages/core/src/tool/handlers/tool-search.ts
       - apps/zcode-cli/packages/core/src/tool/handlers/deferred-tool-call.ts
       - apps/zcode-cli/packages/contracts/src/tools/tool-search.ts
-    layers: {app: .}
+    layers: { app: . }
     owner: agent
   # node-repl-call-ledger：node_repl 结果里可信事实的唯一来源（apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md）
   - id: node-repl-call-ledger
@@ -693,7 +693,7 @@ modules:
     requires: [zcode-cli]
     publicEntrypoints:
       - apps/zcode-cli/packages/node-repl-host/src/call-ledger/contract.ts
-    layers: {adapters: .}
+    layers: { adapters: . }
     owner: agent
   - id: session-features
     roots:
@@ -703,7 +703,7 @@ modules:
     requires: [zcode-cli]
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/runtime/session-features/contract.ts
-    layers: {app: .}
+    layers: { app: . }
     owner: agent
   - id: provider-tool-rounds
     roots:
@@ -713,7 +713,7 @@ modules:
     requires: [zcode-cli]
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/runtime/provider-tool-rounds/contract.ts
-    layers: {app: .}
+    layers: { app: . }
     owner: agent
   - id: provider-builtin-tool-compat
     roots:
@@ -723,7 +723,7 @@ modules:
     requires: []
     publicEntrypoints:
       - apps/zcode-cli/packages/adapters/src/model/provider-builtin-tool-compat/contract.ts
-    layers: {adapters: .}
+    layers: { adapters: . }
     owner: agent
   - id: conversation-quote-context
     roots:
@@ -735,7 +735,7 @@ modules:
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/runtime/conversation-quote-context/contract.ts
       - apps/zcode-cli/packages/core/src/runtime/helpers/conversation-quotes.ts
-    layers: {domain: .}
+    layers: { domain: . }
     owner: agent
   - id: tool-search-comparison
     roots:
@@ -747,7 +747,7 @@ modules:
     publicEntrypoints:
       - apps/zcode-cli/tools/prompt-trajectory/src/tool-search-comparison-contract/contract.ts
       - apps/zcode-cli/tools/prompt-trajectory/src/tool-search-comparison.ts
-    layers: {domain: .}
+    layers: { domain: . }
     owner: agent
   - id: window-topic-resource-relay
     roots:
@@ -759,7 +759,7 @@ modules:
     publicEntrypoints:
       - packages/desktop/src/host/topic-resource-relay/contract.ts
       - packages/desktop/src/host/windowTopicResourceRelay.ts
-    layers: {adapters: .}
+    layers: { adapters: . }
     owner: desktop
   - id: channel-reply-tool
     roots:
@@ -999,7 +999,7 @@ modules:
       - packages/shared/src/request-security-edition/policy.ts
       - packages/shared/src/request-security-edition/verification-policy.ts
       - packages/shared/src/request-security-edition/contract.ts
-    layers: {adapters: .}
+    layers: { adapters: . }
     owner: request-security
 
   # local-ttft-contract：由 architecture:adopt 登记
@@ -1175,7 +1175,7 @@ modules:
     publicEntrypoints:
       - apps/zcode-cli/tools/provider-regression/index.ts
       - apps/zcode-cli/tools/provider-regression/contract.ts
-    layers: {adapters: .}
+    layers: { adapters: . }
     owner: agent
   # session-lifecycle：由 architecture:adopt 登记
   - id: session-lifecycle
@@ -1265,7 +1265,8 @@ exceptions:
     reason: 已准入的快捷键命令表只追加一条 toggleSidePaneFullView 命令（Side Pane 完整视图，docs/ui/side-pane-full-view.md）；命令表仍是唯一数据源，签名与模块边界不变，接管整个 shared 包不在本次范围内。
   - id: zcode-site-deploy-runtime-template
     rule: unmanaged-new-file
-    paths: [apps/zcode-cli/packages/zcode-site-plugin/skills/site-deploy/templates/static-server.mjs]
+    paths:
+      [apps/zcode-cli/packages/zcode-site-plugin/skills/site-deploy/templates/static-server.mjs]
     reason: site-deploy 技能复制进用户部署包的静态站服务器模板，只在 Sites runner 的容器里由 start.sh 执行；仓库代码不 import 它，也不属于任何运行时模块。同目录的 start.sh 模板是 shell，不受本规则约束。
   - id: opensource-cua-test-project-config
     rule: unmanaged-new-file

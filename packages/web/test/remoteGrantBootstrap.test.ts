@@ -7,23 +7,24 @@ import { resolveRemoteGrantBootstrap } from "../src/remoteGrantBootstrap.js";
  */
 describe("resolveRemoteGrantBootstrap", () => {
   it("返回 grant 声明的工作区路径与身份", async () => {
-    const fetchImpl = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          workspacePath: "/Users/dev/project",
-          workspaceIdentity: "remote:ssh:host:/Users/dev/project",
-          workspaceKey: "remote:ssh:host:/Users/dev/project",
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            workspacePath: "/Users/dev/project",
+            workspaceIdentity: "remote:ssh:host:/Users/dev/project",
+            workspaceKey: "remote:ssh:host:/Users/dev/project",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
 
-    await expect(resolveRemoteGrantBootstrap("grant-1", { fetchImpl: fetchImpl as never })).resolves.toEqual(
-      {
-        initialWorkspaceAbsPath: "/Users/dev/project",
-        initialWorkspaceIdentity: "remote:ssh:host:/Users/dev/project",
-      },
-    );
+    await expect(
+      resolveRemoteGrantBootstrap("grant-1", { fetchImpl: fetchImpl as never }),
+    ).resolves.toEqual({
+      initialWorkspaceAbsPath: "/Users/dev/project",
+      initialWorkspaceIdentity: "remote:ssh:host:/Users/dev/project",
+    });
     expect(fetchImpl).toHaveBeenCalledWith(
       "/api/remote/bootstrap/grant-1",
       expect.objectContaining({ cache: "no-store" }),

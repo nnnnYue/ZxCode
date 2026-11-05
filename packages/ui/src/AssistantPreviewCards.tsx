@@ -346,8 +346,7 @@ function AssistantPreviewCardRow({
               workspacePath,
               localPath: card.url.startsWith("file:") ? card.filePath : undefined,
               // 远程工作区的 filePath 是远端路径，不能交给本机文件管理器定位。
-              sourcePath:
-                workspaceIdentity || workspaceRemoteSessionId ? undefined : card.filePath,
+              sourcePath: workspaceIdentity || workspaceRemoteSessionId ? undefined : card.filePath,
             }
           : {
               type: "file",

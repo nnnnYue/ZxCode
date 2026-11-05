@@ -199,7 +199,6 @@ Workflow 通知格式转换移到既有 workflow-artifact 模块，tracker 保�
 初次 HF02 因过时 hook 重跑断言失败，运行日志证明实例 ready 后只有投影读取失败；已按现有契约修正测试。
 单 session 不再因六秒等待预算永久 faulted，但资源自身 RPC 失败仍保留隔离与显式进程恢复出口。
 
-
 ## 启动入口 review 修复（2026-11-02，完成）
 
 - 先补 CLI 回归，再登记 create/fork/V4 workspace；create 与 restore 的持久存在性规则明确分开。

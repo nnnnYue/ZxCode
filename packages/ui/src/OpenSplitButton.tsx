@@ -124,9 +124,7 @@ export function OpenSplitButton({
   // 只有落在本机（或 WSL）的文件产物能定位到所在目录：文件卡用自身路径，file:// HTML 用 localPath，
   // localhost 预览只有映射到本轮写出的本机 HTML 时才带 sourcePath；纯网址没有文件可找。
   const revealPath = target.type === "file" ? target.path : (target.localPath ?? target.sourcePath);
-  const canReveal = Boolean(
-    revealPath && fileActions.canRevealInFileManager({ path: revealPath }),
-  );
+  const canReveal = Boolean(revealPath && fileActions.canRevealInFileManager({ path: revealPath }));
   const fileManagerLabel = getFileManagerLabel(intl);
   const handleReveal = () => {
     // macOS / Windows 定位并选中文件；无系统定位能力时 hook 内部回退为打开所在目录。
