@@ -5836,6 +5836,9 @@ const zhCN: Record<string, string> = {
   "zcode.error.providerBusiness.3106": "已超过单次最长运行时间，请创建新的闲时任务继续。",
   "zcode.error.offPeakTicketExpired": "此闲时任务已无法继续，请创建新的闲时任务。",
   "zcode.error.modelSuspiciousEmpty": "模型未返回任何内容。",
+  // 修复原因：request-security-edition 域剔除后其 messages 并入行成未定义引用（首屏 ReferenceError），
+  // 3007 仍被 providerBusinessError 映射表消费，改为普通 key 行（文案取上游 v3.17.2 messages.ts）。
+  "zcode.error.providerBusiness.3007": "请求被网关安全校验拒绝，请稍后重试或联系支持。",
   "zcode.error.providerBusiness.2007": "上游服务暂时不可用，请稍后重试。",
   "zcode.error.providerBusiness.429": "请求过于频繁，请稍后重试。",
   "debugInfo.taskId": "Task ID",
@@ -6387,7 +6390,6 @@ const zhCN: Record<string, string> = {
   "remoteSync.providers.error.sessionUnavailable": "远端连接已失效",
   "remoteSync.providers.error.hostExecutionFailed": "本机执行同步失败",
   "remoteSync.providers.error.unknown": "未知错误",
-  ...requestSecurityMessagesZhCN,
 };
 
 export default zhCN;

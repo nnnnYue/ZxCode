@@ -6191,6 +6191,11 @@ const enUS: Record<string, string> = {
   "planTool.guidance.enterMode": "Entered plan mode",
   "chat.permission.switchMode.placeholder": "Implementation plan",
   "zcode.error.modelSuspiciousEmpty": "The model returned no content.",
+  // 修复原因：request-security-edition removal left the spread of requestSecurityMessagesEnUS
+  // as an undefined reference (startup ReferenceError); 3007 is still consumed by the
+  // providerBusinessError mapping, so keep it as a plain key (wording from upstream v3.17.2).
+  "zcode.error.providerBusiness.3007":
+    "The request was rejected by the gateway security check. Please try again later or contact support.",
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
@@ -6825,7 +6830,6 @@ const enUS: Record<string, string> = {
   "remoteSync.providers.error.sessionUnavailable": "The remote connection is no longer available",
   "remoteSync.providers.error.hostExecutionFailed": "The sync could not run on this device",
   "remoteSync.providers.error.unknown": "Unknown error",
-  ...requestSecurityMessagesEnUS,
 };
 
 export default enUS;
