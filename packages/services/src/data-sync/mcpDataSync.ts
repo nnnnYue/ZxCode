@@ -126,10 +126,10 @@ export function createMcpDataSyncMethods(): IDataSyncCategoryService<McpDataSync
         // 来源端：先把配置改写成目标端路径再计算，filesystem 类 MCP 不会因 home 不同被判为不一致。
         const config: McpServerConfig = params.targetHomeDir
           ? rewriteFilesystemMcpConfig(record.name, cloneMcpConfig(record.config), {
-              sourceHomeDir,
-              targetHomeDir: params.targetHomeDir,
-              sourceWorkspacePath: params.workspace?.sourceWorkspacePath,
-              targetWorkspacePath: params.workspace?.targetWorkspacePath,
+              localHomeDir: sourceHomeDir,
+              remoteHomeDir: params.targetHomeDir,
+              localWorkspacePath: params.workspace?.sourceWorkspacePath,
+              remoteWorkspacePath: params.workspace?.targetWorkspacePath,
             })
           : record.config;
         hashes[key] = hashMcpConfig(config);
@@ -174,10 +174,10 @@ export function createMcpDataSyncMethods(): IDataSyncCategoryService<McpDataSync
         if ((await resolveUserMcp()).usesCompatConfig) return failAll(COMPAT_CONFIG_ERROR);
         const payloadByKey = new Map(params.payload.items.map((item) => [item.key, item]));
         const paths: McpPathRewrite = {
-          sourceHomeDir: params.payload.sourceHomeDir,
-          sourceWorkspacePath: params.payload.sourceWorkspacePath,
-          targetHomeDir: resolveUserHomeDir(),
-          targetWorkspacePath: params.payload.targetWorkspacePath,
+          localHomeDir: params.payload.sourceHomeDir,
+          localWorkspacePath: params.payload.sourceWorkspacePath,
+          remoteHomeDir: resolveUserHomeDir(),
+          remoteWorkspacePath: params.payload.targetWorkspacePath,
         };
         let results: DataSyncImportResultItem[] = [];
         // 写前重读 → 只改选中的 server → 原子替换（0600）；文件损坏时抛错，不写入。
