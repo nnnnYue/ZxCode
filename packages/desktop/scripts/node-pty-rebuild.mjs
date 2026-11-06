@@ -4,6 +4,7 @@ import { dirname, normalize, posix as posixPath, sep } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { ensureElectronRuntime } from "./ensure-electron-runtime.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -98,6 +99,9 @@ function runElectronRebuild() {
 }
 
 export async function main() {
+  // Electron 42+ 的 postinstall 不再下载二进制，electron-rebuild 需要真实 dist；
+  // 先等待运行时就绪再决定是否 rebuild，失败直接终止（上游同源语义）。
+  await ensureElectronRuntime();
   const decision = await resolveNodePtyRebuildDecision();
 
   if (!decision.shouldRebuild) {

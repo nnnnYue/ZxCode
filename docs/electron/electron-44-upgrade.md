@@ -1,5 +1,29 @@
 # Electron 44 升级规格
 
+## fork 转正记录（2026-11-07，sync/upstream-v3.17.2 @ 670a50ab）
+
+上游 44 升级在 fork 曾被 `packages/desktop/electron-builder.config.js` 中的
+`desktopElectronVersion = "41.0.3"` 打包锁定挡住（dev 跑 44.7.0、安装包打 41.0.3）。
+本批按上游 a9fe401e 完成转正：
+
+- `desktopElectronVersion` 改回上游同源形态 `requireFromConfig("./package.json").devDependencies.electron`，
+  版本唯一来源回到 `packages/desktop/package.json`；`requireFromConfig` 定义随之上移到首次使用前。
+- 删除 afterSign 中 `writeWindowsUpdatePublisher` 死引用块（fork 自动更新域已剔除，无 import、
+  无脚本实现，win32 签名打包必 ReferenceError）；afterSign 保留 Windows 浏览器导入 helper 的
+  显式 opt-in 校验分支。
+- 落地上游 `scripts/ensure-electron-runtime.mjs`（Electron 42+ 无 postinstall 下载，检查
+  `path.txt`/dist，缺失时经 npmmirror 运行官方 install.js），并按上游接入 `scripts/dev.mjs`
+  （替换 resolveLocalElectronBinary + spawn("electron") 兜底，失败直接终止）与
+  `scripts/node-pty-rebuild.mjs`（main 首行等待运行时就绪）。
+- 落地上游 `scripts/chromedriver-preflight.mjs`（44.7.0 → Chromium 152.0.7977.130 驱动匹配），
+  HEAD 已有的 `test/chromedriverPreflight.test.ts`（unit project，9 例）恢复可跑并通过。
+- 不取上游 `sign-windows-hook.d.cts`（fork cjs 已含等价逻辑、无 TS 消费方）与
+  `windows-update-publisher.mjs`（自动更新剔除域）。
+
+转正验证：config `electronVersion`、`packages/desktop/package.json` devDependencies、
+`node_modules/electron`（package.json 与 dist/version）三端均为 44.7.0；Windows CUA Helper
+manifest 源（`prepare-windows-cua-helper.mjs`）与 afterPack 校验值随解锁自动对齐 44.7.0。
+
 ## 目标与边界
 
 将桌面 Electron 从 41.0.3 升级到精确版本 44.7.0。版本唯一来源为

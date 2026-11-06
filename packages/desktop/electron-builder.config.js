@@ -43,9 +43,15 @@ import {
   restoreNsisInstallSectionFileSync,
 } from "./scripts/patch-nsis-install-section.mjs";
 
+// `pnpm exec asar` 依赖 `.bin/asar`，但 @electron/asar 仅是 electron-builder 传递依赖时，
+// Linux CI（pnpm hoisted）往往解析不到该二进制，`asar list` 未运行即 exit 1。
+// 显式依赖 @electron/asar 并用 Node 直接执行 CLI，避免跨平台找不齐 shim。
+const requireFromConfig = createRequire(import.meta.url);
 const buildMetadata = getBuildMetadata();
-// fork：显式写死桌面端 Electron 版本（上游变量形态在 fork 打包链未定义，见 electronVersion 注释）。
-const desktopElectronVersion = "41.0.3";
+// fork：Electron 44 转正后与上游同源，版本唯一来源是 packages/desktop/package.json 的
+// devDependencies.electron，开发运行时（node_modules/electron）、安装包 electronVersion 与
+// Windows CUA Helper manifest 都跟随该值，避免双份版本来源分叉。
+const desktopElectronVersion = requireFromConfig("./package.json").devDependencies.electron;
 const targetPlatform = getTargetPlatform();
 // 修复原因：Windows Chrome 导入入口已暂时隐藏，默认安装包不应继续携带、签名或校验原生 helper。
 // 代码和完整供应链保留在显式 opt-in 后，便于未来恢复而不影响当前发布流程。
@@ -84,10 +90,6 @@ const bundledCuaHelperSource = resolve(
   HELPER_APP_NAME,
 );
 const DEFAULT_ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/";
-// `pnpm exec asar` 依赖 `.bin/asar`，但 @electron/asar 仅是 electron-builder 传递依赖时，
-// Linux CI（pnpm hoisted）往往解析不到该二进制，`asar list` 未运行即 exit 1。
-// 显式依赖 @electron/asar 并用 Node 直接执行 CLI，避免跨平台找不齐 shim。
-const requireFromConfig = createRequire(import.meta.url);
 let nsisInstallSectionPatched = false;
 let nsisInstallSectionOriginalSource = null;
 let nsisInstallSectionPath = null;
@@ -727,14 +729,9 @@ export default {
         assertSignedWindowsBrowserImportHelper(context),
       );
     }
-    if (context.electronPlatformName === "win32" && shouldEnableWindowsVsign) {
-      await runTimedAsync("afterSign:writeWindowsUpdatePublisher", () =>
-        writeWindowsUpdatePublisher({
-          appOutDir: context.appOutDir,
-          executableName: context.packager.appInfo.productFilename,
-        }),
-      );
-    }
+    // 修复：fork 自动更新域已剔除，上游在 win32 签名后调用的 writeWindowsUpdatePublisher
+    // 在本仓库既无 import 也无脚本实现，任何 win32 签名打包走到这里都会 ReferenceError。
+    // 该调用随 44 转正一并删除，不再保留死引用。
   },
   extraResources: [
     { from: resolve(workspaceRoot, noticesFileName), to: noticesFileName },
