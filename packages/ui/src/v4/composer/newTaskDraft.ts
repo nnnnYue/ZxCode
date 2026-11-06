@@ -4,6 +4,7 @@ import {
   persistV4ComposerDraft,
   readV4ComposerDraft,
   V4_DRAFT_SCOPE_ROOT,
+  type ComposerScope,
   type V4ComposerDraft,
 } from "@/v4/composer/composerDraftStore.js";
 
@@ -13,8 +14,11 @@ export function initializeNewTaskDraft(
   workspacePath: string,
   workspaceIdentity: string | undefined,
   view: ModelSelectionView,
+  scope?: ComposerScope,
 ): V4ComposerDraft {
-  const recent = readComposerRecent(workspacePath, workspaceIdentity);
+  // scope 与 pendingCommandRegistry 的回执写入键（composerScopeKey）一致，
+  // 首发接纳的配置回执才能成为下一次新任务草稿的种子。
+  const recent = readComposerRecent(workspacePath, workspaceIdentity, undefined, scope);
   return {
     ...draft,
     initializeFromNewTask: undefined,

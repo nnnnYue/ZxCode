@@ -440,6 +440,8 @@ const zhCN: Record<string, string> = {
   "occupationOnboarding.officeMode": "办公模式",
   "occupationOnboarding.officeModeDescription":
     "我更关注任务进度和结果，不需要查看代码、命令行等技术细节。",
+  "chat.initialization.failed": "初始化失败，暂时无法发送",
+  "chat.initialization.retry": "重试",
   "chat.officeSuggestions.setting": "主动任务推荐",
   "chat.officeSuggestions.settingDescription": "仅在办公模式下支持。",
   "chat.plugins.browseMarketplace": "浏览插件市场",
@@ -1796,6 +1798,9 @@ const zhCN: Record<string, string> = {
   "workspace.wslUncPrompt.continuePath": "继续按路径打开",
   "taskList.codexConnectivityUnavailable":
     "预热检测到当前网络无法访问 {host}，后续对话可能无法正常开始",
+  "workspaceSidebar.projectPath": "目录",
+  "workspaceSidebar.projectDevice": "设备",
+  "workspaceSidebar.projectLine": "连接",
   "workspaceSidebar.workspaces": "任务",
   "workspaceSidebar.archivedTasks": "归档任务",
   "workspaceSidebar.taskViewOptions": "筛选和排序",

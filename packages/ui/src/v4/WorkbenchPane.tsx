@@ -41,6 +41,11 @@ import { SessionPane } from "@/v4/SessionPane.js";
 import type { PaneWorkspaceBadge } from "@/v4/ConversationHeader.js";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import { V4PaneConversationProvider } from "@/v4/V4ConversationContext.js";
+// fork 适配：上游组件在 project-sidebar（Phase 3 骨架）；fork 在 v4 本地实现等价 fallback。
+import {
+  RemoteConversationBanner,
+  RemoteConversationDisconnected,
+} from "@/v4/RemoteConversationDisconnected.js";
 import {
   paneWorkspaceKey,
   V4_PRIMARY_PANE_ID,
@@ -538,7 +543,12 @@ export function WorkbenchLeafPane({
       onDrop={handleDrop}
       restoredUnvalidated={Boolean((isPrimary ? primaryBinding : binding)?.restoredUnvalidated)}
     >
-      <V4PaneConversationProvider scope={scope}>
+      <V4PaneConversationProvider
+        scope={scope}
+        sessionId={sessionId}
+        unavailableFallback={<RemoteConversationDisconnected {...scope} sessionId={sessionId} />}
+        disconnectedBanner={<RemoteConversationBanner {...scope} sessionId={sessionId} />}
+      >
         {(isPrimary ? primaryBinding : binding)?.restoredUnvalidated && sessionId ? (
           <PaneRestoredGuard
             paneId={paneId}

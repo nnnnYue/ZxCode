@@ -484,6 +484,8 @@ const enUS: Record<string, string> = {
   "occupationOnboarding.officeMode": "Office mode",
   "occupationOnboarding.officeModeDescription":
     "I focus on task progress and results, without needing code, command output, or other technical details.",
+  "chat.initialization.failed": "Initialization failed. Sending is unavailable.",
+  "chat.initialization.retry": "Retry",
   "chat.officeSuggestions.setting": "Proactive task suggestions",
   "chat.officeSuggestions.settingDescription": "Available only in Office mode.",
   "chat.plugins.browseMarketplace": "Browse plugin marketplace",
@@ -1931,6 +1933,9 @@ const enUS: Record<string, string> = {
   "workspace.wslUncPrompt.continuePath": "Continue with path",
   "taskList.codexConnectivityUnavailable":
     "Warmup could not reach {host}. Starting a conversation may fail until the network is available.",
+  "workspaceSidebar.projectPath": "Directory",
+  "workspaceSidebar.projectDevice": "Device",
+  "workspaceSidebar.projectLine": "Connection",
   "workspaceSidebar.workspaces": "Tasks",
   "workspaceSidebar.archivedTasks": "Archived",
   "workspaceSidebar.taskViewOptions": "Filter and sort",

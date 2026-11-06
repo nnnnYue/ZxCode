@@ -35,8 +35,10 @@ export interface AppSlashCommand {
   description: string;
   /** 额外搜索关键词；应同时包含中英文别名，保证两种输入习惯都能搜到。 */
   keywords?: readonly string[];
-  /** 选中命令后立即执行的 UI 行为。 */
-  run: () => void;
+  /** 选中命令后立即执行的 UI 行为；恢复命令可返回 false 表示执行失败（composer 不清空输入）。 */
+  run: () => void | boolean | Promise<boolean | void>;
+  /** 会话恢复命令（如 /reload）：composer 本地截获执行，发送门禁按独立规则放行。 */
+  recovery?: boolean;
 }
 
 const APP_SLASH_SUGGESTION_ID_PREFIX = "app-slash:";

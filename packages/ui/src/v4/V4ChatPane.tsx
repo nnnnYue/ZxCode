@@ -22,6 +22,12 @@ import type {
   SyncSubagentSessionTabsRequest,
 } from "@/lib/workspaceSidePane.js";
 import { V4ConversationProvider } from "@/v4/V4ConversationContext.js";
+// fork 适配：上游组件在 project-sidebar（Phase 3 骨架，依赖其连接展示域）；
+// fork 按 fork 类型在 v4 本地实现等价 fallback，域合入后再回切上游文件。
+import {
+  RemoteConversationBanner,
+  RemoteConversationDisconnected,
+} from "@/v4/RemoteConversationDisconnected.js";
 import { SessionPane } from "@/v4/SessionPane.js";
 import type {
   ChatSearchResultHighlightRequest,
@@ -122,7 +128,25 @@ export function V4ChatPane({
   onSearchResultHighlightDone,
 }: V4ChatPaneProps) {
   return (
-    <V4ConversationProvider workspacePath={workspacePath} workspaceIdentity={workspaceIdentity}>
+    <V4ConversationProvider
+      sessionId={sessionId ?? null}
+      workspacePath={workspacePath}
+      workspaceIdentity={workspaceIdentity}
+      unavailableFallback={
+        <RemoteConversationDisconnected
+          workspacePath={workspacePath}
+          workspaceIdentity={workspaceIdentity}
+          sessionId={sessionId}
+        />
+      }
+      disconnectedBanner={
+        <RemoteConversationBanner
+          workspacePath={workspacePath}
+          workspaceIdentity={workspaceIdentity}
+          sessionId={sessionId}
+        />
+      }
+    >
       <SessionPane
         paneId="workspace-main"
         readOnly={readOnly}

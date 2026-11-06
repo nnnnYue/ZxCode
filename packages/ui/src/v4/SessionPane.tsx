@@ -93,12 +93,17 @@ import { useWorkspaceHomePath } from "@/hooks/useWorkspaceHomePath.js";
 import { prepareWorkspaceWithZCodeSessionService } from "@/hooks/useWorkspacePrepare.js";
 import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
-import { captureComposerRecentSubmission } from "@/lib/composerRecent.js";
+import { prepareComposerRecentReceipt } from "@/lib/composerRecent.js";
 import { resolveProviderLabel } from "@/lib/registryProviderView.js";
 import {
   buildDraftCreateConfigPayload,
   useDraftConfigControl,
 } from "@/v4/composer/useDraftConfigControl.js";
+import {
+  composerScopeKey,
+  readPendingTaskDraft,
+  resolveComposerScope,
+} from "@/v4/composer/composerDraftStore.js";
 import type { ModelSelectionSource } from "@/v4/composer/V4ComposerToolbar.js";
 import { formatModelChangeLabel } from "@/v4/composer/modelTriggerDisplay.js";
 import { resolveAppFollowupMode } from "@/v4/composer/followupModeSettings.js";
@@ -129,7 +134,6 @@ import { ConversationQueuePanel } from "@/v4/ConversationQueuePanel.js";
 import { projectPendingGuideQueue } from "@/v4/pendingGuideProjection.js";
 import { ConversationQuotaBanner } from "@/v4/ConversationQuotaBanner.js";
 import { PendingCommandRecoveryBanner } from "@/v4/PendingCommandRecoveryBanner.js";
-import { WorkspaceHookPendingBanner } from "@/v4/WorkspaceHookPendingBanner.js";
 import { ConversationStatusPanel } from "@/v4/ConversationStatusPanel.js";
 import { SessionSubscriptionErrorPanel } from "@/v4/SessionSubscriptionErrorPanel.js";
 import { ConversationTimeline } from "@/v4/ConversationTimeline.js";
@@ -1093,6 +1097,12 @@ export function SessionPane({
     modelSelectionService,
   });
 
+  // fork 现状：项目草稿归属（draftProjectId）随虚拟项目域未合入，scope 恒为 null 项目；
+  // ComposerScope 管道保留，Phase 3 远程项目合入后在此接入 draftProjectId。
+  const newTaskComposerScope = useMemo(
+    () => resolveComposerScope(null, workspaceIdentity),
+    [workspaceIdentity],
+  );
   // Composer 保存下一次 Submission 的 renderer intent；prewarm session 仅承载草稿预热。
   const {
     composerDraft,
@@ -1107,6 +1117,11 @@ export function SessionPane({
     captureAcceptedModelSelection,
     replaceComposerDraft,
     updateComposerContent,
+    composerDraftScopeToken,
+    stageComposerContent,
+    captureComposerContentLifecycleCommit,
+    captureComposerSubmissionDraftTransaction,
+    persistComposerContent,
   } = useDraftConfigControl({
     workspacePath,
     workspaceIdentity,
@@ -1182,7 +1197,9 @@ export function SessionPane({
   const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
   const handleDraftSessionCreated = useCallback(
     (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
-      promoteComposerDraft(createdSessionId);
+      // 2g 草稿事务：Root→session 是同一 pane 的地址迁移；写入失败时不得切换，
+      // 否则正文会留在 __draft__ 被下一次新建任务恢复成重复输入。
+      if (!promoteComposerDraft(createdSessionId)) return;
       // 只有 draft create/promote 的 accepted 边界能继承 grouped placement。
       // fork 和普通任务导航仍复用 onSessionCreated，但不会污染已有 task 的分组排序。
       if (groupedDraftTask) {
@@ -1249,14 +1266,28 @@ export function SessionPane({
       onEnvelopeCreated?: (envelope: CommandEnvelope) => void,
       sessionCreateSource?: SessionCreateSource,
       recentSubmissionOverride?: ComposerSubmissionConfig | null,
+      submittedDraftText?: string,
     ): Promise<CommandAck> => {
       const submission = submissionConfigFromCommand(type, payload);
       // 加速轮 payload 的 modelSelection 会被执行材料覆盖为隐藏加速 Provider；Recent 记录的是
       // 用户在 Composer 的原始选择（新任务草稿的模型种子），加速轮必须由调用方传入发送前
-      // 冻结的 submission（spec §5.1）。captureComposerRecentSubmission 另有加速身份兜底拦截。
+      // 冻结的 submission（spec §5.1）。配置交接改为回执账本：接纳由 pendingCommandRegistry
+      // 在权威 accepted 时执行（acceptComposerRecentReceipt），刷新后迟到的回执也不再回滚默认配置。
       const recentSubmission = recentSubmissionOverride ?? submission;
-      const acceptRecent = recentSubmission
-        ? captureComposerRecentSubmission(workspacePath, recentSubmission, workspaceIdentity)
+      const recentReceipt = recentSubmission
+        ? prepareComposerRecentReceipt(newTaskComposerScope, recentSubmission)
+        : undefined;
+      const pendingDraft = sessionId === null ? readPendingTaskDraft(newTaskComposerScope) : null;
+      const composerClientContext = recentReceipt
+        ? {
+            composer: {
+              ...recentReceipt,
+              submittedText: submittedDraftText,
+              ...(pendingDraft?.workspacePath === workspacePath
+                ? { draftId: pendingDraft.draftId }
+                : {}),
+            },
+          }
         : undefined;
       const acceptSelection =
         submission && (sessionId === null || targetSessionId === sessionId)
@@ -1285,12 +1316,21 @@ export function SessionPane({
                 ...(workspaceIdentity ? { workspaceIdentity } : {}),
               },
               ...(groupedDraftTask ? { groupedDraftTask } : {}),
+              ...composerClientContext,
               sessionCreateSource:
                 sessionCreateSource ??
                 useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
                   .draftCreateSource,
             }
-          : undefined,
+          : composerClientContext
+            ? {
+                workspace: {
+                  workspacePath,
+                  ...(workspaceIdentity ? { workspaceIdentity } : {}),
+                },
+                ...composerClientContext,
+              }
+            : undefined,
       );
       if (lease?.store && type !== "createSession") {
         lease.store.markCommandPending({
@@ -1335,7 +1375,6 @@ export function SessionPane({
       pendingCommandRegistry.applyAck(envelope, ack);
       if (ack.status === "accepted") {
         acceptSelection?.();
-        acceptRecent?.();
       }
       if (
         lease?.store &&
@@ -1890,6 +1929,19 @@ export function SessionPane({
     [cliSlashCommandNames],
   );
 
+  // /reload 的本地恢复动作：重连当前会话订阅；初始化失败时 store.retry 自带 attemptId。
+  const runSessionReload = useCallback((): boolean | Promise<boolean> => {
+    const store = lease?.store;
+    if (!store) return false;
+    return store.retry().then(
+      () => true,
+      (error: unknown) => {
+        logger.warn("[v4-pane] /reload 会话恢复失败", error);
+        return false;
+      },
+    );
+  }, [lease]);
+
   // `/side` App 层斜杠命令。命令目录仍以 CLI catalog 为权威，这里只在渲染层
   // 按门禁注入"选中即打开辅助对话"的本地命令；草稿态（无父 session 可挂 child）、
   // 辅助对话自身、只读与手机 viewport 均不提供。
@@ -1916,6 +1968,21 @@ export function SessionPane({
       id: "chat.slash.app.side.description",
     });
     return [
+      // /reload 是会话恢复命令：composer 本地截获执行 run()，成功后清空输入。
+      // 仅已有 session 提供；CLI 若注册同名命令则让位（与 /side 同一口径）。
+      // fork 偏差：services 层 restartSessionRuntime 未合入（Phase 3 远程项目域），
+      // 恢复动作落到 renderer 可达的 store.retry()：重连订阅并在初始化失败时携带 attemptId。
+      ...(sessionId
+        ? [
+            {
+              value: "reload",
+              recovery: true,
+              description: intl.formatMessage({ id: "chat.slash.app.reload.description" }),
+              keywords: ["reload", "restart", "重启"],
+              run: runSessionReload,
+            },
+          ]
+        : []),
       {
         value: "side",
         description,
@@ -1936,7 +2003,9 @@ export function SessionPane({
     isMobileTextInputViewport,
     onOpenSelectionSideChat,
     readOnly,
+    runSessionReload,
     selectionSideChat,
+    sessionId,
     sessionId,
   ]);
 
@@ -2517,6 +2586,19 @@ export function SessionPane({
     ) => {
       const prepareHighspeedTurn = prepareHighspeedTurnFrom(highspeedOriginAtSend);
       const dispatchSubmissionCommand = async (...args: Parameters<typeof dispatchCommand>) => {
+        // 2g 草稿事务：把提交命令的创建通知回传 composer（subscribeToCommandResolution），
+        // ACK 丢失后由模块级结算账本在权威 projection 到达时收口，防止正文二次归属。
+        const onCommandCreated = options?.onCommandCreated;
+        if (onCommandCreated) {
+          const previous = args[7];
+          args[7] =
+            typeof previous === "function"
+              ? (envelope: CommandEnvelope) => {
+                  previous(envelope);
+                  onCommandCreated(envelope.commandId);
+                }
+              : (envelope: CommandEnvelope) => onCommandCreated(envelope.commandId);
+        }
         if (
           args[0] === "sendText" &&
           args[2] &&
@@ -2843,6 +2925,8 @@ export function SessionPane({
           undefined,
           // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
           submission,
+          // 首发接纳恢复按原始正文对账；协议正文可能已附加 gen-ui 上下文。
+          options?.submittedDraftText,
         );
         if (sendAck.status !== "accepted") {
           throw new Error(sendAck.reasonCode ?? "sendText 被拒绝");
@@ -2879,6 +2963,8 @@ export function SessionPane({
         undefined,
         // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
         submission,
+        // 首发接纳恢复按原始正文对账；协议正文可能已附加 gen-ui 上下文。
+        options?.submittedDraftText,
       );
       if (ack.reasonCode === "guard.heldQueueConfirmationStale") {
         return "confirmationRequired" as const;
@@ -3993,6 +4079,20 @@ export function SessionPane({
       draftMode={isDraft}
       draftConfig={draftConfig}
       composerDraft={composerDraft}
+      rootDraftScopeKey={composerScopeKey(newTaskComposerScope)}
+      composerDraftScopeToken={composerDraftScopeToken}
+      stageComposerContent={stageComposerContent}
+      captureComposerContentLifecycleCommit={captureComposerContentLifecycleCommit}
+      captureComposerSubmissionDraftTransaction={captureComposerSubmissionDraftTransaction}
+      persistComposerContent={persistComposerContent}
+      // ≠ready 的 runtime 生命周期（starting/stopping/faulted）参与发送门禁；
+      // 初始化失败条的重试走 store.retry（携带 attemptId）。
+      lifecycle={state.lifecycle}
+      onRetryInitialization={
+        lease?.store && snapshot?.runtimeInitialization?.status === "failed"
+          ? () => void lease.store.retry()
+          : undefined
+      }
       replaceComposerDraft={replaceComposerDraft}
       submissionReady={composerSubmissionReady}
       updateComposerContent={updateComposerContent}
@@ -4078,14 +4178,6 @@ export function SessionPane({
             recoverableCommand.replay.kind === "input" ? handleResendPendingCommand : undefined
           }
           onDismiss={handleDismissPendingRecovery}
-        />
-      ) : null}
-      {sessionId && snapshot?.workspaceHookAdmission ? (
-        <WorkspaceHookPendingBanner
-          sessionId={sessionId}
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          admission={snapshot.workspaceHookAdmission}
         />
       ) : null}
       {sessionId && snapshot ? (

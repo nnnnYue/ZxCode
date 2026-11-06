@@ -548,12 +548,21 @@ export const TID_V4_TIMELINE = "v4-timeline";
 export const TID_V4_TIMELINE_EMPTY = "v4-timeline-empty";
 /** v4 投影行（动态后缀为 rowId） */
 export const TID_V4_ROW = "v4-row";
-/** v4 工作区 Hook 待审核提示条容器 */
-export const TID_V4_WORKSPACE_HOOK_PENDING_BANNER = "v4-workspace-hook-pending-banner";
-/** v4 工作区 Hook 待审核提示条「去审核」按钮 */
+/** v4 composer 工作区 Hook 待审核入口与未读点 */
+export const TID_V4_WORKSPACE_HOOK_PENDING_TRIGGER = "v4-workspace-hook-pending-trigger";
+export const TID_V4_WORKSPACE_HOOK_PENDING_UNREAD = "v4-workspace-hook-pending-unread";
+/** v4 工作区 Hook 待审核点击浮层 */
+export const TID_V4_WORKSPACE_HOOK_PENDING_POPOVER = "v4-workspace-hook-pending-popover";
+/** v4 工作区 Hook 待审核浮层「去审核」按钮 */
 export const TID_V4_WORKSPACE_HOOK_PENDING_REVIEW = "v4-workspace-hook-pending-review";
-/** v4 工作区 Hook 待审核提示条「忽略」按钮 */
+/** v4 工作区 Hook 待审核浮层「忽略」按钮 */
 export const TID_V4_WORKSPACE_HOOK_PENDING_DISMISS = "v4-workspace-hook-pending-dismiss";
+/** v4 composer 工作区 MCP 待审核入口、未读点与点击浮层 */
+export const TID_V4_WORKSPACE_MCP_PENDING_TRIGGER = "v4-workspace-mcp-pending-trigger";
+export const TID_V4_WORKSPACE_MCP_PENDING_UNREAD = "v4-workspace-mcp-pending-unread";
+export const TID_V4_WORKSPACE_MCP_PENDING_POPOVER = "v4-workspace-mcp-pending-popover";
+export const TID_V4_WORKSPACE_MCP_PENDING_REVIEW = "v4-workspace-mcp-pending-review";
+export const TID_V4_WORKSPACE_MCP_PENDING_DISMISS = "v4-workspace-mcp-pending-dismiss";
 /** v4 composer 容器 */
 export const TID_V4_COMPOSER = "v4-composer";
 /** v4 composer 文本输入 */

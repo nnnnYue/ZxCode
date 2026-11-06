@@ -5,6 +5,7 @@
 //   2. delta 帧仅在区间衔接（frame.fromSeq === snapshot.seq）时 apply，断档不猜、不缓存补偿；
 //   3. base 与状态同生共死——断档时状态未被污染，携当前水位重订阅，由服务端裁决 resume/snapshot。
 // 除 optimistic overlay（pending 命令展示）外，本 store 不产生任何 conversation 事实。
+import type { SessionLifecycleSnapshot } from "@zcode/shared";
 import {
   applyConversationDeltas,
   isDeterministicContentFault,
@@ -108,6 +109,10 @@ export interface OptimisticCommand {
 
 export interface ConversationStoreState {
   status: ConversationStoreStatus;
+  /** 独立于订阅通道的 session 生命周期事实；stopping/faulted 时由本 store 主动重订。 */
+  lifecycle?: SessionLifecycleSnapshot;
+  /** 首份与当前水位一致的全量 projection 已到达；starting/ready 阶段的空快照不算 ready。 */
+  projectionReady?: boolean;
   snapshot: ConversationSnapshot | null;
   subscriptionId: string | null;
   lastError: string | null;
@@ -313,6 +318,7 @@ export class ConversationProjectionStore {
     /** 本次 flight 是为内容确定性失败发起的：终态用 contentRejected，不混进瞬态统计。 */
     contentFault: boolean;
   } | null = null;
+  private readonly offSessionLifecycle: (() => void) | undefined;
   private readonly offAssemblyFault: () => void;
   private readonly offRuntimeRestart: (() => void) | null = null;
   private readonly offRuntimeLifecycle: (() => void) | null = null;
@@ -343,6 +349,9 @@ export class ConversationProjectionStore {
     private readonly rowPool: ConversationRowPool = new ConversationRowPool(),
   ) {
     liveProjectionStores.add(this);
+    this.offSessionLifecycle = transport.onSessionLifecycle?.((snapshot) =>
+      this.handleSessionLifecycle(snapshot),
+    );
     this.offAssemblyFault = transport.onAssemblyFault((fault) => {
       if (fault.topic === this.topic) {
         this.handleAssemblyFault(fault.subscriptionId, fault.deliveryKind, fault.reasonCode);
@@ -406,12 +415,51 @@ export class ConversationProjectionStore {
   }
 
   /**
+   * 独立于订阅通道的 session 生命周期（Host 声明的 starting/ready/stopping/faulted）。
+   * stopping/faulted 使在途订阅整体作废（generation + 1），由后续 starting/ready 重订；
+   * 它不是 UI 状态机，只是把权威结论提前送到投影层，避免半开通道等到超时才发现。
+   */
+  private handleSessionLifecycle(snapshot: SessionLifecycleSnapshot, queried = false): void {
+    if (this.closed || snapshot.sessionId !== parseConversationTopic(this.topic)) return;
+    const previous = this.state.lifecycle;
+    if (previous && snapshot.revision <= previous.revision) return;
+    this.setState({ lifecycle: snapshot });
+    if (snapshot.state === "stopping" || snapshot.state === "faulted") {
+      this.generation += 1;
+      this.clearRuntimeRecycleRetry();
+      this.discardRecovery();
+      this.awaitingInitial = null;
+      this.subscriptionHasAppliedBase = false;
+      this.setState({
+        subscriptionId: null,
+        projectionReady: false,
+        status: snapshot.state === "faulted" ? "error" : "connecting",
+        lastError: snapshot.lastError?.message ?? null,
+      });
+      return;
+    }
+    if (snapshot.state === "unloaded" && snapshot.lastError) {
+      this.setState({ status: "error", lastError: snapshot.lastError.message });
+      return;
+    }
+    if (
+      !queried &&
+      (snapshot.state === "starting" || snapshot.state === "ready") &&
+      !this.state.subscriptionId &&
+      this.connectInFlight === 0
+    ) {
+      void this.connect({ forceSnapshot: true });
+    }
+  }
+
+  /**
    * 发起/重发订阅。base 取自当前 snapshot 水位（水位不变量：仅当真持有该时刻
    * 一致状态才携带）；forceSnapshot 用于 resume 续传帧仍断档的兜底，丢 base 要全量。
    */
   async connect(
     options: {
       forceSnapshot?: boolean;
+      retryInitialization?: string;
       initialOverflowRetry?: boolean;
       rendererPrepareStartedAt?: number;
     } = {},
@@ -435,11 +483,26 @@ export class ConversationProjectionStore {
     };
     this.initialSubscribeAckAt = null;
     this.connectInFlight += 1;
-    this.setState({ status: "connecting", rendererTiming: this.sessionOpenRendererTiming });
+    this.setState({
+      status: "connecting",
+      projectionReady: false,
+      rendererTiming: this.sessionOpenRendererTiming,
+    });
     try {
+      const sessionId = parseConversationTopic(this.topic);
+      if (sessionId && this.transport.getSessionLifecycle) {
+        const lifecycle = await this.transport.getSessionLifecycle(sessionId);
+        if (generation !== this.generation || this.closed) return;
+        if (lifecycle) this.handleSessionLifecycle(lifecycle, true);
+        if (this.state.lifecycle?.state === "stopping" || this.state.lifecycle?.state === "faulted")
+          return;
+      }
       const result = await this.transport.subscribe({
         topic: this.topic,
         base: snapshot ? { logEpoch: snapshot.logEpoch, seq: snapshot.seq } : undefined,
+        ...(options.retryInitialization
+          ? { retryInitialization: options.retryInitialization }
+          : {}),
       });
       if (generation !== this.generation || this.closed) {
         // 过期代际：这份订阅已无人消费，立即退订。
@@ -472,6 +535,7 @@ export class ConversationProjectionStore {
       this.subscriptionHasAppliedBase = Boolean(
         snapshot && result.ack.mode === "resume" && result.ack.logEpoch === snapshot.logEpoch,
       );
+      if (this.subscriptionHasAppliedBase) this.setState({ projectionReady: true });
       // 公共 result 已是 ACK-only；initial 与 online 统一走 notification。
       // subscriptionId 必须先入 store，activate 才能同步释放同一 read 中暂存的 own initial。
       this.awaitingInitial = {
@@ -530,6 +594,16 @@ export class ConversationProjectionStore {
       this.setState({ status: "error", lastError: message });
     } finally {
       this.connectInFlight -= 1;
+      // 旧 subscribe 可能在 stopping 后迟到；starting/ready 已到达时接续一次新订阅。
+      if (
+        generation !== this.generation &&
+        !this.closed &&
+        this.connectInFlight === 0 &&
+        !this.state.subscriptionId &&
+        (this.state.lifecycle?.state === "starting" || this.state.lifecycle?.state === "ready")
+      ) {
+        void this.connect({ forceSnapshot: true });
+      }
     }
   }
 
@@ -578,7 +652,12 @@ export class ConversationProjectionStore {
     this.subscriptionHasAppliedBase = false;
     this.generation += 1;
     // 旧 subscriptionId 属于已死 runtime，不得再 unsubscribe（host 侧 owner 已失效）。
-    this.setState({ status: "connecting", subscriptionId: null });
+    this.setState({
+      status: "connecting",
+      subscriptionId: null,
+      lifecycle: undefined,
+      projectionReady: false,
+    });
     // 不能只 dormant 等 available：agent 懒启动，dispose 后无人拉起时该信号永不到达，
     // 面板会永久转圈。退避重连自身会拉起 runtime；available 先到则复位计数并即时重连。
     if (this.scheduleRuntimeRecycleReconnect(this.generation)) return;
@@ -606,7 +685,10 @@ export class ConversationProjectionStore {
   retry(): Promise<void> {
     this.clearRuntimeRecycleRetry();
     this.runtimeRecycleRetryAttempt = 0;
-    return this.connect();
+    const initialization = this.state.snapshot?.runtimeInitialization;
+    return this.connect(
+      initialization?.status === "failed" ? { retryInitialization: initialization.attemptId } : {},
+    );
   }
 
   /** row command/query 的 epoch/entity authority 失效，复用 same-sub recovery 收敛。 */
@@ -677,6 +759,7 @@ export class ConversationProjectionStore {
       // 规则 1：整体替换，扔掉手里的一切换新的（行对象按值复用旧引用，语义仍是整体替换）。
       this.setState({
         snapshot,
+        projectionReady: true,
         planDirectoryRevision: this.state.planDirectoryRevision + 1,
         // snapshot 整体替换后 real-user query 集合可能已变，终态缓存必须失效。
         turnNavigatorDirectoryRevision: this.state.turnNavigatorDirectoryRevision + 1,
@@ -1403,6 +1486,7 @@ export class ConversationProjectionStore {
       topic: this.topic,
     });
     this.closed = true;
+    this.offSessionLifecycle?.();
     this.offAssemblyFault();
     this.offRuntimeRestart?.();
     this.offRuntimeLifecycle?.();

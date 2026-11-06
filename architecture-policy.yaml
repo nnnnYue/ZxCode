@@ -1574,3 +1574,10 @@ exceptions:
     paths:
       - packages/desktop/src/host/botGroupTaskScope.ts
     reason: 上游 v3.17.2 准入的 bot 分组 scope 文件经缝合适配（ad49abe4：对上游新增 source-settings 变体不注入远程三元组，保持 fork 手机远控语义）；host 目录仍属未受管 desktop 模块，接管需独立模块边界重构，不在本次同步范围内。
+  - id: v3172-backfill-v4-unmanaged-new-files
+    rule: unmanaged-new-file
+    paths:
+      - packages/ui/src/v4/RemoteConversationAvailability.tsx
+      - packages/ui/src/v4/RemoteConversationDisconnected.tsx
+      - packages/ui/src/v4/composer/composerSubmissionSettlement.ts
+    reason: v3.17.2 可视功能补齐（Phase 2f+2g）按上游原样落盘的三个 v4 域单文件——远程断连门禁容器、断连 fallback（fork 类型适配版）与 composer 发送结算账本；ui 既有 v4/ 根目录本就是未受管 legacy 根，单文件迁入新 managed 模块会切断与同目录既有组件的演进同步，跟随该目录既有形态。
