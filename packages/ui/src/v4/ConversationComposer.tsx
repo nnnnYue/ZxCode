@@ -91,6 +91,7 @@ import {
   WorkspaceHookPendingIndicator,
   WorkspaceMcpPendingIndicator,
 } from "@/v4/WorkspaceHookPendingBanner.js";
+import { ComposerSubmissionPendingContext } from "@/project-sidebar/index.js";
 import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -605,6 +606,13 @@ function ConversationComposerImpl({
   onDropTargetControllerChange,
 }: ConversationComposerProps) {
   const remoteAvailable = useRemoteConversationAvailable();
+  // 侧栏换骨架：项目菜单远端目录选择往返期间锁提交（ComposerSubmissionPendingContext）。
+  const [targetSelectionPending, setTargetSelectionPending] = useState(false);
+  const targetSelectionPendingRef = useRef(false);
+  const updateTargetSelectionPending = useCallback((pending: boolean) => {
+    targetSelectionPendingRef.current = pending;
+    setTargetSelectionPending(pending);
+  }, []);
   const { intl, locale } = useZCodeIntl();
   const services = useOptionalServices();
   const draftScopeId =
@@ -746,7 +754,7 @@ function ConversationComposerImpl({
     attachmentPut,
     onRuntimeRestart,
     onRuntimeLifecycle,
-    disabled: disabled || runtimeBlocked,
+    disabled: disabled || runtimeBlocked || targetSelectionPending,
     listenAddToChatEvents: listenAddToChatEvents && !disabled && !runtimeBlocked,
   });
   // 对齐旧版 useChatComposer：窗口级 dragover 会在指针进入 ChatView 前预先点亮
@@ -2605,8 +2613,11 @@ function ConversationComposerImpl({
         ) : null}
         {contextHeader ? (
           // 旧 ChatViewComposer contextHeaderContent 同款包装（workspace 菜单 + Git 分支）。
+          // 菜单内远端目录选择往返期间发布 pending，锁住输入区提交。
           <div className="relative z-10 p-1.5 flex min-w-0 flex-wrap items-center gap-0">
-            {contextHeader}
+            <ComposerSubmissionPendingContext.Provider value={updateTargetSelectionPending}>
+              {contextHeader}
+            </ComposerSubmissionPendingContext.Provider>
           </div>
         ) : null}
         {conversationSelectionLimitReason ? (

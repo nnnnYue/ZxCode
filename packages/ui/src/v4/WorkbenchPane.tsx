@@ -45,7 +45,7 @@ import { V4PaneConversationProvider } from "@/v4/V4ConversationContext.js";
 import {
   RemoteConversationBanner,
   RemoteConversationDisconnected,
-} from "@/v4/RemoteConversationDisconnected.js";
+} from "@/project-sidebar/RemoteConversationDisconnected.js";
 import {
   paneWorkspaceKey,
   V4_PRIMARY_PANE_ID,

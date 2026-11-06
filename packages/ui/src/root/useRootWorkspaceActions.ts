@@ -1,8 +1,8 @@
 /* eslint-disable max-lines -- Root workspace action hook 集中编排项目、远程和 conversation 入口；合并期保持动作边界完整，后续按领域拆分。 */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type IPlatformService, type RemoteTarget, type ZCodeTaskClientMode } from "@zcode/shared";
 import type { IServiceAccessor } from "@zcode/services";
-import type { CreateTaskRequest } from "@/app-shell/types.js";
+import type { CreateTaskOptions, CreateTaskRequest } from "@/app-shell/types.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { parseWslUncWorkspacePath } from "@/lib/wslUncWorkspace.js";
@@ -20,7 +20,16 @@ import {
 import { resolveWorkbenchNewTaskTarget } from "@/v4/workbenchNewTaskTarget.js";
 import type { WorkbenchNewTaskTarget } from "@/v4/workbenchNewTaskTarget.js";
 import { useWorkbenchGroupStore } from "@/v4/workbenchGroupStore.js";
-import { persistV4ComposerDraft, V4_DRAFT_SCOPE_ROOT } from "@/v4/composer/composerDraftStore.js";
+import {
+  ensurePendingTaskDraft,
+  persistV4ComposerDraft,
+  resolveComposerScope,
+  V4_DRAFT_SCOPE_ROOT,
+} from "@/v4/composer/composerDraftStore.js";
+import { readProjectSidebarView } from "@/project-sidebar/index.js";
+import { remoteHostIdFromWorkspaceIdentity } from "@/project-sidebar/contract.js";
+import { useComposerClientNamespace } from "@/hooks/useServices.js";
+import { toast } from "@/components/ui/toast.js";
 
 export interface OpenRemoteConnectionPreference {
   preferredKind?: RemoteTarget["kind"];
@@ -72,6 +81,8 @@ export function useRootWorkspaceActions({
   preferDirectoryBrowser,
   openDirectoryBrowser,
   onOpenRemoteConnection,
+  openRemoteProjectWorkspace,
+  openMobileProjectDraft,
   workbenchGroupClientMode = "desktop-continuous",
 }: {
   intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["intl"];
@@ -86,10 +97,29 @@ export function useRootWorkspaceActions({
   preferDirectoryBrowser: boolean;
   openDirectoryBrowser?: () => void;
   onOpenRemoteConnection?: (preference?: OpenRemoteConnectionPreference) => void;
+  /** 远端项目的显式打开入口（Root 的 attachRemoteProjectWorkspace 通道）。 */
+  openRemoteProjectWorkspace?: (target: {
+    hostId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    expectedMembershipId?: string;
+    projectId: string | null;
+    isCurrent?: () => boolean;
+  }) => Promise<void>;
+  /** 手机目录 admission 完成后，在 prewarm 前接收项目和输入草稿。 */
+  openMobileProjectDraft?: (request: CreateTaskOptions) => Promise<void>;
   workbenchGroupClientMode?: ZCodeTaskClientMode;
 }) {
   const [workspaceActionError, setWorkspaceActionError] = useState<string | null>(null);
   const requestConfirmation = useConfirmDialog();
+  // Root 的远端装配依赖本 hook 返回的动作，函数引用每轮都会变化；它只用于点击执行，
+  // 不应使整个新建入口失稳。与任务导航一致，读取最近已提交实现，并冻结本次操作的实现。
+  const remoteProjectOpener = useRef(openRemoteProjectWorkspace);
+  useLayoutEffect(() => {
+    remoteProjectOpener.current = openRemoteProjectWorkspace;
+  });
+  const composerClientNamespace = useComposerClientNamespace();
+  const navigationSequence = useRef(0);
   const {
     handleSelectConversationWorkspace,
     handleResolveConversationWorkspace,
@@ -138,7 +168,7 @@ export function useRootWorkspaceActions({
   );
 
   const startNewTaskFromActiveWorkspace = useCallback(
-    (source: string, request?: CreateTaskRequest) => {
+    async (source: string, request?: CreateTaskRequest) => {
       const state = tabStoreApi.getState();
       const {
         activeWorkspacePath: currentActiveWorkspacePath,
@@ -193,72 +223,241 @@ export function useRootWorkspaceActions({
         return;
       }
 
-      if (
-        !focusWorkspace(
-          newTaskTarget.workspacePath,
-          newTaskTarget.workspaceIdentity
-            ? { workspaceIdentity: newTaskTarget.workspaceIdentity }
-            : undefined,
-        )
-      ) {
-        addTab(
-          newTaskTarget.workspacePath,
-          newTaskTarget.workspaceIdentity
-            ? { workspaceIdentity: newTaskTarget.workspaceIdentity }
-            : undefined,
-        );
-      }
+      // ---- 侧栏换骨架 Phase 3c：项目归属解析 + 目录准备（上游 v3.17.2 同名动作）----
+      // 项目树是唯一组织视图：新任务先解析项目归属（显式 projectId / 活动任务继承 /
+      // 草稿 draftProjectId），projectService.prepareSession 准备执行目录后再提交导航。
+      const sequence = ++navigationSequence.current;
+      const originTab = tabStoreApi.getState().activeTabId;
+      const originWorkspace = activeWorkspacePath
+        ? useZCodeSessionStore
+            .getState()
+            .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined)
+        : null;
+      const isCurrent = () =>
+        (typeof request !== "object" || request.isCurrent?.() !== false) &&
+        sequence === navigationSequence.current &&
+        tabStoreApi.getState().activeTabId === originTab &&
+        (!activeWorkspacePath ||
+          (() => {
+            const ws = useZCodeSessionStore
+              .getState()
+              .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined);
+            return (
+              ws.activeTaskId === originWorkspace?.activeTaskId &&
+              ws.draftFocusVersion === originWorkspace?.draftFocusVersion
+            );
+          })());
+      try {
+        const requestOptions = typeof request === "string" ? { provider: request } : { ...request };
+        if (
+          requestOptions.taskGroupId === undefined &&
+          requestOptions.projectId === undefined &&
+          readProjectSidebarView() === "grouped" &&
+          activeWorkspacePath
+        ) {
+          // grouped 视图的新建继承组织意图：活动任务取其分组，草稿取草稿分组；未归类为 null。
+          const taskId = originWorkspace?.activeTaskId;
+          const draftGroupId = originWorkspace?.draftTaskGroupId;
+          const structure = taskId ? await services.taskGroupService?.read() : undefined;
+          if (!isCurrent()) return;
+          requestOptions.taskGroupId = taskId
+            ? (structure?.members.find(
+                (member) =>
+                  member.taskId === taskId &&
+                  member.workspaceKey === (activeWorkspaceIdentity?.trim() || activeWorkspacePath),
+              )?.groupId ?? null)
+            : (draftGroupId ?? null);
+        }
+        request = requestOptions;
+        let projectId =
+          typeof request === "string"
+            ? undefined
+            : (request?.projectId ?? request?.targetWorkspace?.projectId);
+        let hostId =
+          typeof request === "string"
+            ? undefined
+            : (request?.hostId ?? request?.targetWorkspace?.hostId);
+        const hasExplicitProject =
+          typeof request === "object" &&
+          request !== null &&
+          ("projectId" in request || Boolean(request.targetWorkspace?.projectId));
+        if (!hasExplicitProject && newTaskTarget) {
+          // 原因：仅远程继承项目会让本地快捷键落入未归类。按任务完整身份读取归属，不能由 cwd 猜项目。
+          if (newTaskTarget.workspaceIdentity) {
+            hostId =
+              remoteHostIdFromWorkspaceIdentity(newTaskTarget.workspaceIdentity) ?? undefined;
+            if (!hostId) throw new Error("project.host-identity-required");
+          }
+          const workspace = useZCodeSessionStore
+            .getState()
+            .getWorkspaceState(
+              newTaskTarget.workspacePath,
+              newTaskTarget.workspaceIdentity ?? undefined,
+            );
+          const tree = workspace.activeTaskId
+            ? await services.projectService?.readTree(hostId ? { hostId } : undefined)
+            : undefined;
+          if (workspace.activeTaskId && !tree) throw new Error("project.service-unavailable");
+          projectId = workspace.activeTaskId
+            ? (tree?.tasks.find(
+                (task) =>
+                  task.taskId === workspace.activeTaskId &&
+                  (task.workspaceIdentity?.trim() || task.workspacePath) ===
+                    (newTaskTarget.workspaceIdentity?.trim() || newTaskTarget.workspacePath),
+              )?.projectId ?? undefined)
+            : (workspace.draftProjectId ?? undefined);
+          if (projectId && (!hostId || hostId === "local")) {
+            // 软删除保留历史 project_id；把它直接继承给新任务会报 not-found 并停在旧页。
+            // 只继承同 Host 的有效项目，草稿也复验；读取失败仍报错，不冒充项目已删除。
+            const projects = tree?.projects ?? (await services.projectService?.readProjects());
+            if (!projects) throw new Error("project.service-unavailable");
+            if (
+              !projects.some(
+                (project) =>
+                  project.id === projectId && project.hostId === "local" && !project.deleted,
+              )
+            ) {
+              logger.debug("[Root] 新任务不继承已删除的本地项目", { projectId });
+              projectId = undefined;
+            }
+          }
+          if (hostId && hostId !== "local" && !projectId)
+            throw new Error("project.remote-project-required");
+        }
+        if (!isCurrent()) return;
+        if (workbenchGroupClientMode === "web-remote-replayable") {
+          if (!openMobileProjectDraft) throw new Error("project.remote-navigation-unavailable");
+          // 归属先在共享入口解析，目录仍只由 bridge owner 准备；旧 Root 不写交接后的草稿。
+          await openMobileProjectDraft({
+            ...requestOptions,
+            ...(projectId ? { projectId } : {}),
+            ...(hostId ? { hostId } : {}),
+          });
+          return;
+        }
+        if (!services.projectService) throw new Error("project.service-unavailable");
+        const pendingDraft =
+          !projectId && (!hostId || hostId === "local")
+            ? ensurePendingTaskDraft(resolveComposerScope(null, undefined, composerClientNamespace))
+            : null;
+        const target = await services.projectService.prepareSession({
+          ...(projectId ? { projectId } : {}),
+          ...(hostId ? { hostId } : {}),
+          // 显式 local 与省略 Host 是同一入口，不能漏掉待发送身份而另建目录。
+          ...(pendingDraft
+            ? { draftId: pendingDraft.draftId, reuseDraft: Boolean(pendingDraft.workspacePath) }
+            : {}),
+        });
+        if (!isCurrent()) return;
+        if (hostId && hostId !== "local") {
+          if (!target.workspaceIdentity || !remoteProjectOpener.current)
+            throw new Error("project.remote-navigation-unavailable");
+          await remoteProjectOpener.current({
+            ...target,
+            hostId,
+            isCurrent,
+            ...(typeof request === "object" && request.remoteProjectMembershipId
+              ? { expectedMembershipId: request.remoteProjectMembershipId }
+              : {}),
+          });
+          if (typeof request === "object") request.onComplete?.();
+          return;
+        }
+        // 目录准备成功才提交导航；失败保留当前会话和分屏。
+        const provider = typeof request === "string" ? request : request?.provider;
+        const groupedDraftPlacement =
+          typeof request === "string" ? undefined : request?.groupedDraftPlacement;
+        if (
+          !focusWorkspace(
+            target.workspacePath,
+            target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : undefined,
+          )
+        ) {
+          addTab(target.workspacePath, {
+            workspacePurpose: target.projectId ? "project" : "conversation",
+            ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
+          });
+        }
 
-      setWorkspaceActionError(null);
-      const provider = typeof request === "string" ? request : request?.provider;
-      const groupedDraftPlacement =
-        typeof request === "string" ? undefined : request?.groupedDraftPlacement;
-      const rawInitialPrompt = typeof request === "string" ? undefined : request?.initialPrompt;
-      // Skill mention 后的尾空格决定光标落在 chip 之后；直接 trim 后再保存
-      // 会把结构化 mention 的可编辑间隔吞掉。这里只用 trim 判空，非空草稿保留调用方原文。
-      const initialPrompt = rawInitialPrompt?.trim() ? rawInitialPrompt : undefined;
-      const initialPromptMention =
-        typeof request === "string" ? undefined : request?.initialPromptMention;
-      logger.info(`[Root] ${source}:`, newTaskTarget.workspacePath, provider ?? "default-provider");
-      // Cmd/Ctrl+N 是创建新的单 panel 草稿，不是在当前 workbench
-      // group / paneLayout 中继续拆一个 draft；目标 workspace 取 focused pane。
-      useWorkbenchGroupStore.getState().deactivateActiveGroup();
-      usePaneLayoutStore.getState().resetToPrimaryPane();
-      useZCodeSessionStore
-        .getState()
-        .startDraft(
-          newTaskTarget.workspacePath,
-          provider,
-          newTaskTarget.workspaceIdentity ?? undefined,
-          {
-            groupedDraftPlacement,
-            createSource: typeof request === "string" ? undefined : request?.createSource,
-          },
-        );
-      if (initialPrompt) {
-        // insert request 被首个 composer 消费后会清空；如果随后因 pane/config
-        // 切换 remount，新 composer 会从空的 __draft__ 恢复并覆盖预填。先写草稿事实源，
-        // 再发即时插入请求：当前 composer 立即可见，后续 remount 也恢复同一文本。
-        persistV4ComposerDraft(
-          newTaskTarget.workspacePath,
-          newTaskTarget.workspaceIdentity ?? undefined,
-          V4_DRAFT_SCOPE_ROOT,
-          {
-            text: initialPrompt,
-            ...(initialPromptMention ? { mention: initialPromptMention } : {}),
-          },
-        );
+        setWorkspaceActionError(null);
+        const rawInitialPrompt = typeof request === "string" ? undefined : request?.initialPrompt;
+        // Skill mention 后的尾空格决定光标落在 chip 之后；直接 trim 后再保存
+        // 会把结构化 mention 的可编辑间隔吞掉。这里只用 trim 判空，非空草稿保留调用方原文。
+        const initialPrompt = rawInitialPrompt?.trim() ? rawInitialPrompt : undefined;
+        const initialPromptMention =
+          typeof request === "string" ? undefined : request?.initialPromptMention;
+        logger.info(`[Root] ${source}:`, target.workspacePath, provider ?? "default-provider");
+        // Cmd/Ctrl+N 是创建新的单 panel 草稿，不是在当前 workbench
+        // group / paneLayout 中继续拆一个 draft；目标 workspace 取 focused pane。
+        useWorkbenchGroupStore.getState().deactivateActiveGroup();
+        usePaneLayoutStore.getState().resetToPrimaryPane();
         useZCodeSessionStore
           .getState()
-          .requestComposerTextInsert(
-            newTaskTarget.workspacePath,
-            initialPrompt,
-            newTaskTarget.workspaceIdentity ?? undefined,
-            initialPromptMention,
+          .startDraft(target.workspacePath, provider, target.workspaceIdentity ?? undefined, {
+            groupedDraftPlacement,
+            createSource: typeof request === "string" ? undefined : request?.createSource,
+            projectId: target.projectId,
+            ...(typeof request === "object" && request.taskGroupId !== undefined
+              ? { taskGroupId: request.taskGroupId }
+              : {}),
+            ...(pendingDraft ? { draftId: pendingDraft.draftId } : {}),
+          });
+        if (initialPrompt) {
+          // insert request 被首个 composer 消费后会清空；如果随后因 pane/config
+          // 切换 remount，新 composer 会从空的 __draft__ 恢复并覆盖预填。先写草稿事实源，
+          // 再发即时插入请求：当前 composer 立即可见，后续 remount 也恢复同一文本。
+          persistV4ComposerDraft(
+            target.workspacePath,
+            target.workspaceIdentity ?? undefined,
+            V4_DRAFT_SCOPE_ROOT,
+            {
+              text: initialPrompt,
+              ...(initialPromptMention ? { mention: initialPromptMention } : {}),
+            },
           );
+          useZCodeSessionStore
+            .getState()
+            .requestComposerTextInsert(
+              target.workspacePath,
+              initialPrompt,
+              target.workspaceIdentity ?? undefined,
+              initialPromptMention,
+            );
+        }
+      } catch (error) {
+        if (!isCurrent()) return;
+        logger.error("[Root] 准备新任务失败", error);
+        if (typeof request === "object" && request.onError) request.onError(error);
+        else {
+          // 原因：原错误状态无人展示，目录移走后顶部新建和快捷键只会静默失败。
+          // 在仍有效的动作出口反馈；有 onError 的调用方继续负责展示，避免重复提示。
+          const message =
+            error &&
+            typeof error === "object" &&
+            "message" in error &&
+            typeof error.message === "string"
+              ? error.message
+              : String(error);
+          toast(
+            message === "project.primaryRootMissing" || message === "project.primaryRootUnavailable"
+              ? intl.formatMessage({ id: message })
+              : message,
+          );
+        }
       }
     },
-    [addTab, intl, tabStoreApi, workbenchGroupClientMode],
+    [
+      services.projectService,
+      services.taskGroupService,
+      intl,
+      composerClientNamespace,
+      activeWorkspacePath,
+      activeWorkspaceIdentity,
+      tabStoreApi,
+      addTab,
+      openMobileProjectDraft,
+      workbenchGroupClientMode,
+    ],
   );
 
   const handleSelectProject = useCallback(

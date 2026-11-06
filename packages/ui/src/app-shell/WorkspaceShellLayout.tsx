@@ -13,6 +13,7 @@ import { TID_APP_HEADER } from "@zcode/shared";
 import { sidePaneTerminalSessionRegistry } from "@/terminal/sidePaneTerminalSessionRegistry.js";
 import { V4ChatPane } from "@/v4/V4ChatPane.js";
 import { V4WorkspaceChatArea } from "@/v4/V4WorkspaceChatArea.js";
+import { ProjectComposerMenu, ProjectDirectoryProvider } from "@/project-sidebar/index.js";
 import {
   V4SplitPaneEntryProvider,
   type V4SplitPaneSessionTarget,
@@ -264,7 +265,19 @@ function markWebRemoteControlCollapseIntent() {
   }
 }
 
-export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent({
+// 侧栏换骨架 Phase 3c：ProjectDirectoryProvider 挂 Shell 顶层（Root 之下的常驻 owner），
+// 未读角标/托盘 syncWindowUnreadCount 不随侧栏卸载停更（spec 不变量）。
+export const WorkspaceShellLayout = memo(function WorkspaceShellLayout(
+  props: WorkspaceShellLayoutProps,
+) {
+  return (
+    <ProjectDirectoryProvider isDesktop={props.isDesktop}>
+      <WorkspaceShellLayoutContent {...props} />
+    </ProjectDirectoryProvider>
+  );
+});
+
+const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent({
   services,
   workspaceReadOnlyReason,
   workspaceMainView,
@@ -1530,51 +1543,45 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
   const draftComposerHeader = useMemo(
     () => (
       <>
-        <ChatEmptyWorkspacePreviewMenu
+        {/* 侧栏换骨架 Phase 3c：草稿头项目菜单切到新骨架 ProjectComposerMenu，
+            与侧栏共享 ProjectDirectoryProvider 的目录读取（旧 ChatEmptyWorkspacePreviewMenu
+            属旧骨架，Phase 3d 随退役清理）。 */}
+        <ProjectComposerMenu
+          showEditProject
           workspacePath={workspaceAbsPath}
           workspaceIdentity={workspaceIdentity}
-          isWindowsDesktop={isWindowsDesktop}
           compactForRemoteControl={isWebRemoteControlShell}
-          workspaceTabs={workspaceTabs}
-          onSelectWorkspace={(workspaceTab) =>
-            handleStartDraftInWorkspaceInChat(
-              workspaceTab.workspacePath,
-              workspaceTab.workspaceIdentity,
-              workspaceTab.workspacePurpose,
-            )
-          }
+          onCreateTask={handleCreateTaskInChat}
           onSelectConversationWorkspace={handleSelectConversationWorkspace}
-          onOpenFolder={onOpenFolderFromWorkspaceMenu}
-          allowOpenWorkspace={allowOpenWorkspace}
           allowRemoteWorkspace={allowRemoteWorkspace}
-          remoteWorkspaceSessions={remoteWorkspaceSessions}
+          onOpenRemoteWorkspace={onOpenRemoteWorkspace}
           onConnectRemote={onConnectRemote}
-          onSelectRemoteProject={onSelectRemoteProject}
-          onCancelRemoteProject={onCancelRemoteProject}
-        />
-        {isOfficeMode && !isWebRemoteControlShell ? (
-          <WorkspacePluginPreview
-            onOpen={handleOpenPluginStore}
-            onSelectPlugin={handleSelectComposerPlugin}
-            workspacePath={workspaceAbsPath}
-            workspaceIdentity={workspaceIdentity}
-            remoteSessionId={workspaceRemoteSessionId ?? undefined}
-          />
-        ) : !isOfficeMode && activeWorkspacePurpose === "project" ? (
-          <GitBranchSwitcher
-            workspacePath={workspaceAbsPath}
-            gitSummary={gitState.summary}
-            dirtyFileCount={gitDirtyFileCount}
-            onRefreshGit={handleRefreshGit}
-            compactForRemoteControl={isWebRemoteControlShell}
-            className="px-0 pt-0"
-            popoverClassName="w-72"
-            branchListClassName="max-h-48"
-            // Bugfix（旧注释保真）：输入框区域在底部，Radix 碰撞避让会把分支菜单翻到下方。
-            // 这里锁定上方弹出，避免菜单遮挡输入区并保持操作方向稳定。
-            avoidPopoverCollisions={false}
-          />
-        ) : null}
+          onCancelRemote={onCancelRemoteProject}
+        >
+          {isOfficeMode && !isWebRemoteControlShell ? (
+            <WorkspacePluginPreview
+              onOpen={handleOpenPluginStore}
+              onSelectPlugin={handleSelectComposerPlugin}
+              workspacePath={workspaceAbsPath}
+              workspaceIdentity={workspaceIdentity}
+              remoteSessionId={workspaceRemoteSessionId ?? undefined}
+            />
+          ) : !isOfficeMode && activeWorkspacePurpose === "project" ? (
+            <GitBranchSwitcher
+              workspacePath={workspaceAbsPath}
+              gitSummary={gitState.summary}
+              dirtyFileCount={gitDirtyFileCount}
+              onRefreshGit={handleRefreshGit}
+              compactForRemoteControl={isWebRemoteControlShell}
+              className="px-0 pt-0"
+              popoverClassName="w-72"
+              branchListClassName="max-h-48"
+              // Bugfix（旧注释保真）：输入框区域在底部，Radix 碰撞避让会把分支菜单翻到下方。
+              // 这里锁定上方弹出，避免菜单遮挡输入区并保持操作方向稳定。
+              avoidPopoverCollisions={false}
+            />
+          ) : null}
+        </ProjectComposerMenu>
       </>
     ),
     [
@@ -1582,24 +1589,19 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
       workspaceRemoteSessionId,
       handleOpenPluginStore,
       handleSelectComposerPlugin,
-      allowOpenWorkspace,
       allowRemoteWorkspace,
       activeWorkspacePurpose,
       gitDirtyFileCount,
       gitState.summary,
       handleRefreshGit,
       handleSelectConversationWorkspace,
-      handleStartDraftInWorkspaceInChat,
+      handleCreateTaskInChat,
       isWebRemoteControlShell,
-      isWindowsDesktop,
       onCancelRemoteProject,
       onConnectRemote,
-      onOpenFolderFromWorkspaceMenu,
-      onSelectRemoteProject,
-      remoteWorkspaceSessions,
+      onOpenRemoteWorkspace,
       workspaceAbsPath,
       workspaceIdentity,
-      workspaceTabs,
     ],
   );
   const handleV4SessionDeleted = useCallback(() => {
@@ -2210,6 +2212,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                   <WorkflowRunOpenProvider onOpenRun={handleOpenSidebarWorkflowRun}>
                     <WorkspaceSidebar
                       workspacePath={workspaceAbsPath}
+                      workspaceIdentity={workspaceIdentity}
                       workspaceRemoteSessionId={workspaceRemoteSessionId}
                       activePreviewPath={activePreviewPath}
                       onSelectTask={handleSelectTaskInChat}
@@ -2229,9 +2232,6 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                       onReconnectRemoteWorkspace={onReconnectRemoteWorkspace}
                       reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
                       remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
-                      reconnectingRemoteWorkspaceLogsByWorkspaceKey={
-                        reconnectingRemoteWorkspaceLogsByWorkspaceKey
-                      }
                       isDesktop={isDesktop}
                       isWebRemoteControl={isWebRemoteControlShell}
                       isMacDesktop={isMacDesktop}

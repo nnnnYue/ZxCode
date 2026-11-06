@@ -6,6 +6,12 @@ import { createRemoteWorkspaceDisconnectedError } from "@/lib/remoteWorkspaceSer
 
 export interface RemoteWorkspaceSession {
   sessionId: string;
+  sourceServerId?: string;
+  workspacePath?: string;
+  workspaceIdentity?: string;
+  workspacePurpose?: import("@zcode/shared").WorkspacePurpose;
+  /** Desktop bind 返回的旧 route tab rekey 提示；不参与 remote session 路由。 */
+  previousWorkspaceIdentity?: string;
   target?: RemoteTarget;
   services: IServiceAccessor;
   dispose?: (reason?: Error) => void;

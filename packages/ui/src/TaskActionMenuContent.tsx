@@ -15,6 +15,7 @@ interface TaskActionMenuSeparatorProps {
 export function TaskActionMenuContent({
   intl,
   isPinned,
+  isArchived = false,
   fileManagerLabel,
   taskSessionFile,
   activeSessionId,
@@ -31,6 +32,8 @@ export function TaskActionMenuContent({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onRestartTask,
+  restartPending = false,
   onOpenInSplitPane,
   openInSplitPaneDisabled = false,
   onOpenTaskPathInFileManager,
@@ -45,6 +48,7 @@ export function TaskActionMenuContent({
     formatMessage: (desc: { id: string }, values?: Record<string, string>) => string;
   };
   isPinned: boolean;
+  isArchived?: boolean;
   fileManagerLabel: string;
   taskSessionFile: { loading: boolean; path: string | null; exists: boolean };
   activeSessionId?: string | null;
@@ -65,6 +69,8 @@ export function TaskActionMenuContent({
   onStartRenameTask: () => void;
   onArchiveTask: () => void;
   onMarkTaskAsUnread: () => void;
+  onRestartTask?: () => void;
+  restartPending?: boolean;
   /** 「在分屏打开」（仅桌面 shell 传入；手机远控不显示该入口）。 */
   onOpenInSplitPane?: () => void;
   /** 当前 session 或 pane 数达上限且目标无已有归属时禁用（保留布局与层级）。 */
@@ -112,7 +118,7 @@ export function TaskActionMenuContent({
           }
         }}
       >
-        {intl.formatMessage({ id: "taskList.archive" })}
+        {intl.formatMessage({ id: isArchived ? "taskList.unarchive" : "taskList.archive" })}
       </Item>
       <Item
         disabled={taskTargetActionsDisabled}
@@ -125,6 +131,15 @@ export function TaskActionMenuContent({
       >
         {intl.formatMessage({ id: "taskList.markAsUnread" })}
       </Item>
+      {onRestartTask ? (
+        <Item
+          data-testid="task-restart"
+          disabled={taskTargetActionsDisabled || restartPending}
+          onSelect={onRestartTask}
+        >
+          {intl.formatMessage({ id: restartPending ? "taskList.restarting" : "taskList.restart" })}
+        </Item>
+      ) : null}
       {onOpenInSplitPane ? (
         <Item
           data-testid={TID_V4_TASK_OPEN_IN_SPLIT}

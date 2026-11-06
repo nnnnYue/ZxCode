@@ -39,6 +39,9 @@ import {
   resolveSettingsSection,
   writeLastSettingsSectionPreference,
 } from "@/lib/settingsNavigation.js";
+// 侧栏换骨架 Phase 3c：设置页新增「项目管理 / 已删除项目」分区（spec 验收 3）。
+import { ArchiveManagement, ProjectManagement } from "@/project-sidebar/index.js";
+import { TaskAutoArchiveSettings } from "@/settingsPageHelpers.js";
 import { ModelProviderSection } from "@/settings/ModelProviderSection.js";
 import { SubagentsSection } from "@/settings/SubagentsSection.js";
 import { AutomationsSection } from "@/settings/AutomationsSection.js";
@@ -1414,6 +1417,20 @@ export function SettingsPage({
                             {/* 自定义请求头属于本机全局设置；激活远端 workspace 时也读本地 Host。 */}
                             <CustomSection />
                           </ServiceProvider>
+                        ) : activeSection === "projects" ? (
+                          <ProjectManagement />
+                        ) : activeSection === "archives" ? (
+                          <div className="min-w-0 space-y-6">
+                            <TaskAutoArchiveSettings
+                              taskAutoArchiveEnabled={taskAutoArchiveEnabled}
+                              taskAutoArchiveOlderThanDays={taskAutoArchiveOlderThanDays}
+                              onTaskAutoArchiveEnabledChange={handleTaskAutoArchiveEnabledChange}
+                              onTaskAutoArchiveOlderThanDaysChange={
+                                handleTaskAutoArchiveOlderThanDaysChange
+                              }
+                            />
+                            <ArchiveManagement />
+                          </div>
                         ) : activeSection === "usage" ? (
                           <ServiceProvider services={localHostServices}>
                             {/* App Usage 统计的是本机 agent 全局库；激活远端 workspace 时也读本地 Host。 */}

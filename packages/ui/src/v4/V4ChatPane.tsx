@@ -27,7 +27,7 @@ import { V4ConversationProvider } from "@/v4/V4ConversationContext.js";
 import {
   RemoteConversationBanner,
   RemoteConversationDisconnected,
-} from "@/v4/RemoteConversationDisconnected.js";
+} from "@/project-sidebar/RemoteConversationDisconnected.js";
 import { SessionPane } from "@/v4/SessionPane.js";
 import type {
   ChatSearchResultHighlightRequest,

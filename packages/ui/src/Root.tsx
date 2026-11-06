@@ -49,6 +49,14 @@ import { useBotBroadcastEffects } from "@/root/useBotBroadcastEffects.js";
 import { registerBaseWorkspaceServices } from "@/store/remoteWorkspaceSessionStore.js";
 import type { RootProps } from "@/root/types.js";
 import { DiffsWorkerPoolProvider } from "@/root/DiffsWorkerPoolProvider.js";
+// 侧栏换骨架 Phase 3c：目录 owner、远端项目重连事实与手机渲染端动作通道。
+import {
+  ProjectDirectoryProvider,
+  useWebRemoteControlRendererActions,
+} from "@/project-sidebar/index.js";
+import { RemoteProjectPresentationProvider } from "@/hooks/RemoteProjectPresentationContext.js";
+import { RemoteConnectionProgressProvider } from "@/remote-connection-flow/ui/RemoteConnectionProgress.js";
+import type { RemoteConnectionOpenPreference } from "@/app-shell/types.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import {
   buildWebRemoteControlTaskRuntimeByWorkspaceKey,
@@ -80,11 +88,6 @@ import { CLOSE_ACTIVE_CONTEXT_REQUEST_EVENT } from "@/lib/closeActiveContext.js"
 import { AssistantCodeCommentFeatureProvider } from "@/AssistantCodeCommentFeatureProvider.js";
 
 const DEFAULT_LUCIDE_STROKE_WIDTH = 1.5;
-interface RemoteConnectionOpenPreference {
-  preferredKind?: RemoteTarget["kind"];
-  preferredWslDistro?: string;
-}
-
 function WebRemoteControlTaskSync({
   syncWebRemoteControlTasks,
   workspaceTabs,
@@ -212,15 +215,21 @@ export function Root(props: RootProps) {
           <PlatformProvider platform={props.platform}>
             <StoreProvider broadcastService={props.services.broadcastService}>
               <TabStoreProvider>
-                <DiffsWorkerPoolProvider>
-                  <WebRemoteControlFeatureProvider enabled={props.webRemoteControlFeatureEnabled}>
-                    <AssistantCodeCommentFeatureProvider
-                      enabled={props.assistantCodeCommentCardsEnabled}
-                    >
-                      <RootInner {...props} />
-                    </AssistantCodeCommentFeatureProvider>
-                  </WebRemoteControlFeatureProvider>
-                </DiffsWorkerPoolProvider>
+                {/* 常驻目录 owner：未读角标/托盘 syncWindowUnreadCount 不随侧栏卸载停更（spec 不变量）。 */}
+                <ProjectDirectoryProvider isDesktop={props.isDesktop}>
+                  <DiffsWorkerPoolProvider>
+                    <WebRemoteControlFeatureProvider enabled={props.webRemoteControlFeatureEnabled}>
+                      <AssistantCodeCommentFeatureProvider
+                        enabled={props.assistantCodeCommentCardsEnabled}
+                      >
+                        {/* 连接进度摘要的唯一发布/订阅通道；fork 由 Root 既有连接流程后续接入 publish。 */}
+                        <RemoteConnectionProgressProvider>
+                          <RootInner {...props} />
+                        </RemoteConnectionProgressProvider>
+                      </AssistantCodeCommentFeatureProvider>
+                    </WebRemoteControlFeatureProvider>
+                  </DiffsWorkerPoolProvider>
+                </ProjectDirectoryProvider>
               </TabStoreProvider>
             </StoreProvider>
           </PlatformProvider>
@@ -610,6 +619,8 @@ function RootInner({
       }
     });
   }, [handleReconnectRemoteWorkspace, platform]);
+  // 手机远控渲染端动作通道（新建本地项目/关闭任务等 bridge 请求 → renderer 执行）。
+  useWebRemoteControlRendererActions(platform);
 
   useEffect(() => {
     // Bugfix: fileDisplay 默认不传 basePath 时需要落到“当前激活 workspace”。
@@ -904,79 +915,95 @@ function RootInner({
       {webRemoteControlTaskSyncNode}
       {remoteConnectionDialog}
       {directoryBrowserDialog}
-      <OccupationOnboarding
-        showWindowControls={Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop))}
-        showChildrenWhileLoading={!workspaceShellPath && isSettingsTabActive}
-        isMacDesktop={isMacDesktop}
-        isWindowsDesktop={isWindowsDesktop}
+      {/* 侧栏换骨架：向 project-sidebar 投影 Root 现有恢复 owner 的事实（重连中/错误/重连入口）。
+          只读投影，不接管恢复时序；fork 无 remote/remoteWorkspaceController，重连走既有链路。 */}
+      <RemoteProjectPresentationProvider
+        reconnectingKeys={reconnectingRemoteWorkspaceKeys}
+        errors={remoteWorkspaceErrorByWorkspaceKey}
+        recovery={EMPTY_REMOTE_WORKSPACE_RECOVERY}
+        onReconnect={handleReconnectRemoteWorkspace}
       >
-        {/* 新引导属于应用级偏好；无项目时也要挂载，才能响应设置页的手动打开请求。 */}
-        {!workspaceShellPath ? (
-          isSettingsTabActive ? (
-            <ScopedErrorBoundary
-              scope="settings-page"
-              resetKeys={["settings-root"]}
-              variant="panel"
-              className="h-full"
-            >
-              <SettingsPage {...settingsLayerProps} />
-            </ScopedErrorBoundary>
-          ) : null
-        ) : (
-          <RootWorkspaceContent
-            workspaceScopedServices={workspaceScopedServices}
-            workspaceShellPath={workspaceShellPath}
-            workspaceIdentity={workspaceShellIdentity}
-            workspaceRemoteSessionId={workspaceShellRemoteSessionId}
-            activeWorkspacePath={activeWorkspacePath}
-            isSettingsTabActive={isSettingsTabActive}
-            handleConnectRemote={handleConnectRemote}
-            handleSelectRemoteProject={handleSelectRemoteProject}
-            handleCancelRemoteProject={handleCancelRemoteProject}
-            handleReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
-            handleCreateTask={handleCreateTask}
-            handleCreateConversationTask={handleCreateConversationTask}
-            handleResolveConversationWorkspace={handleResolveConversationWorkspace}
-            handleOpenWorkspace={handleOpenWorkspace}
-            handleOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
-            handleOpenRemoteWorkspace={
-              allowRemoteWorkspace ? handleOpenRemoteConnection : undefined
-            }
-            remoteConnectionInProgress={remoteConnectionInProgress}
-            remoteWorkspaceSessions={remoteWorkspaceSessions}
-            allowRemoteWorkspace={allowRemoteWorkspace}
-            handleBackFromSettings={handleBackFromSettings}
-            reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
-            remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
-            reconnectingRemoteWorkspaceLogsByWorkspaceKey={
-              reconnectingRemoteWorkspaceLogsByWorkspaceKey
-            }
-            remoteConnectionLogs={remoteConnectionLogs}
-            allowOpenWorkspace={allowOpenWorkspace}
-            webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
-            initialWebRemoteControlMobileNavigationIntent={
-              initialWebRemoteControlMobileNavigationIntent
-            }
-            initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
-            webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
-            isDesktop={isDesktop}
-            isMacDesktop={isMacDesktop}
-            isWindowsDesktop={isWindowsDesktop}
-            supportsEmbeddedBrowser={supportsEmbeddedBrowser}
-          />
-        )}
-        <ScopedErrorBoundary
-          scope="onboarding-dialog"
-          resetKeys={[workspaceShellIdentity?.trim() || workspaceShellPath]}
-          variant="silent"
+        <OccupationOnboarding
+          showWindowControls={Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop))}
+          showChildrenWhileLoading={!workspaceShellPath && isSettingsTabActive}
+          isMacDesktop={isMacDesktop}
+          isWindowsDesktop={isWindowsDesktop}
         >
-          <OnboardingDialog
-            workspacePath={workspaceShellPath || undefined}
-            workspaceIdentity={workspaceShellIdentity}
-            isDesktop={isDesktop}
-          />
-        </ScopedErrorBoundary>
-      </OccupationOnboarding>
+          {/* 新引导属于应用级偏好；无项目时也要挂载，才能响应设置页的手动打开请求。 */}
+          {!workspaceShellPath ? (
+            isSettingsTabActive ? (
+              <ScopedErrorBoundary
+                scope="settings-page"
+                resetKeys={["settings-root"]}
+                variant="panel"
+                className="h-full"
+              >
+                <SettingsPage {...settingsLayerProps} />
+              </ScopedErrorBoundary>
+            ) : null
+          ) : (
+            <RootWorkspaceContent
+              workspaceScopedServices={workspaceScopedServices}
+              workspaceShellPath={workspaceShellPath}
+              workspaceIdentity={workspaceShellIdentity}
+              workspaceRemoteSessionId={workspaceShellRemoteSessionId}
+              activeWorkspacePath={activeWorkspacePath}
+              isSettingsTabActive={isSettingsTabActive}
+              handleConnectRemote={handleConnectRemote}
+              handleSelectRemoteProject={handleSelectRemoteProject}
+              handleCancelRemoteProject={handleCancelRemoteProject}
+              handleReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
+              handleCreateTask={handleCreateTask}
+              handleCreateConversationTask={handleCreateConversationTask}
+              handleResolveConversationWorkspace={handleResolveConversationWorkspace}
+              handleOpenWorkspace={handleOpenWorkspace}
+              handleOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
+              handleOpenRemoteWorkspace={
+                allowRemoteWorkspace ? handleOpenRemoteConnection : undefined
+              }
+              remoteConnectionInProgress={remoteConnectionInProgress}
+              remoteWorkspaceSessions={remoteWorkspaceSessions}
+              allowRemoteWorkspace={allowRemoteWorkspace}
+              handleBackFromSettings={handleBackFromSettings}
+              reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
+              remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
+              reconnectingRemoteWorkspaceLogsByWorkspaceKey={
+                reconnectingRemoteWorkspaceLogsByWorkspaceKey
+              }
+              remoteConnectionLogs={remoteConnectionLogs}
+              allowOpenWorkspace={allowOpenWorkspace}
+              webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
+              initialWebRemoteControlMobileNavigationIntent={
+                initialWebRemoteControlMobileNavigationIntent
+              }
+              initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
+              webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
+              isDesktop={isDesktop}
+              isMacDesktop={isMacDesktop}
+              isWindowsDesktop={isWindowsDesktop}
+              supportsEmbeddedBrowser={supportsEmbeddedBrowser}
+            />
+          )}
+          <ScopedErrorBoundary
+            scope="onboarding-dialog"
+            resetKeys={[workspaceShellIdentity?.trim() || workspaceShellPath]}
+            variant="silent"
+          >
+            <OnboardingDialog
+              workspacePath={workspaceShellPath || undefined}
+              workspaceIdentity={workspaceShellIdentity}
+              isDesktop={isDesktop}
+            />
+          </ScopedErrorBoundary>
+        </OccupationOnboarding>
+      </RemoteProjectPresentationProvider>
     </RootShell>
   );
 }
+
+// fork：桌面自动恢复状态由 useRemoteWorkspaceHistory 内部管理，未按 workspaceKey 暴露
+// recovery 表；投影恒为空表，侧栏恢复徽标退化为不显示（不影响重连入口）。
+const EMPTY_REMOTE_WORKSPACE_RECOVERY: Record<
+  string,
+  import("@/app-shell/types.js").RemoteWorkspaceRecoveryStatus
+> = {};

@@ -1,4 +1,5 @@
 import { memo, useEffect } from "react";
+import { ProjectDirectoryProvider } from "@/project-sidebar/index.js";
 import { App } from "@/App.js";
 import { ScopedErrorBoundary } from "@/ErrorBoundary.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
@@ -93,8 +94,10 @@ export function RootWorkspaceContent({
     });
   }, [isSettingsTabActive, workspaceShellPath]);
 
+  // 侧栏换骨架：每个 workspace 壳层一个目录 owner（Root 顶层的 ProjectDirectoryProvider
+  // 由窗口级 RootWorkspaceContent 承担；侧栏/设置页/composer 共享同一份目录事实）。
   return (
-    <>
+    <ProjectDirectoryProvider isDesktop={isDesktop}>
       <div
         className={isSettingsTabActive ? "h-full opacity-0 pointer-events-none" : "h-full"}
         aria-hidden={isSettingsTabActive}
@@ -188,6 +191,6 @@ export function RootWorkspaceContent({
           />
         </ScopedErrorBoundary>
       ) : null}
-    </>
+    </ProjectDirectoryProvider>
   );
 }

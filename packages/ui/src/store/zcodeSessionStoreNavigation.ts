@@ -14,6 +14,8 @@ import {
   type AutomationsNavigationTab,
   type WorkspaceNavEntry,
 } from "@/lib/taskNavigationHistory.js";
+import { Emitter } from "@zcode/rpc";
+import type { TaskNavEntry } from "@/lib/taskNavigationHistory.js";
 import type { ZCodeSessionStoreState } from "./zcodeSessionStoreTypes.js";
 
 type SetFn = (
@@ -87,4 +89,11 @@ export function createNavigationSlice(set: SetFn, get: GetFn) {
       }));
     },
   };
+}
+
+// 查看事实只由完整导航提交发布；tab 激活与历史游标移动都可能暴露缓存任务，不能代替提交。
+const taskNavigationCommitted = new Emitter<TaskNavEntry>();
+export const onTaskNavigationCommitted = taskNavigationCommitted.event;
+export function notifyTaskNavigationCommitted(target: Omit<TaskNavEntry, "kind">): void {
+  taskNavigationCommitted.fire({ kind: "task", ...target });
 }

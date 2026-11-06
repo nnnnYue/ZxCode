@@ -14,6 +14,11 @@ import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
+// 侧栏换骨架：Header 设备名与侧栏共享同一目录 owner（Host target 回退），
+// 不再各自从 tab/路径反推设备身份。
+import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
+import { remoteHostIdFromWorkspaceIdentity } from "@/project-sidebar/contract.js";
+import { formatRemoteDeviceName } from "@/lib/remoteConnectionPresentation.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useTaskListItemContextActions } from "@/useTaskListItemContextActions.js";
@@ -183,9 +188,16 @@ export function WorkspaceHeaderTitleSection({
     provider: menuTaskProvider,
     intl,
   });
-  const remoteWorkspaceHostLabel = remoteTarget
-    ? formatRemoteWorkspaceHeaderHostLabel(remoteTarget)
-    : null;
+  // 远控没有 Source 管理服务（fork 剔除域），设备名回退窗口目录里的 Host target；
+  // 精确 Host 身份避免同路径串设备。
+  const projectDirectory = useOptionalProjectDirectory();
+  const headerHostId = remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "");
+  const directoryTarget = projectDirectory?.directory.hosts.find(
+    (host) => host.id === headerHostId,
+  )?.target;
+  const remoteWorkspaceHostLabel =
+    formatRemoteDeviceName(remoteTarget ?? directoryTarget ?? undefined, undefined) ??
+    (remoteTarget ? formatRemoteWorkspaceHeaderHostLabel(remoteTarget) : null);
   const workspaceDisplayLabel = formatRemoteWorkspaceDisplayLabel(projectName, remoteTarget);
   const showRemoteWorkspaceHostLabel = Boolean(
     remoteWorkspaceHostLabel && workspaceDisplayLabel === projectName,

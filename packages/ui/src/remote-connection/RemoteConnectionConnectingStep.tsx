@@ -140,3 +140,103 @@ export function RemoteConnectionConnectingStep({
     </div>
   );
 }
+
+// ---- 侧栏换骨架 Phase 3c：阶段解析与进度投影（上游 v3.17.2 同名文件摘取）----
+// 上游把整块连接步骤 UI 重写为 Source 管理域视图（RemotePasswordInput/操作日志 UI，
+// fork 剔除域）不整体引入；这里只摘纯函数部分，供 remote-connection-flow 进度投影
+// 与 project-sidebar 复用。原始 phase 归并规则保持上游单点维护。
+
+/** 连接向导与侧栏详情共用的用户阶段；原始 phase 的归并规则只在这里维护一份。 */
+const REMOTE_CONNECTION_PHASES = [
+  ["channel", "remote.phase.channel"],
+  ["identify", "remote.phase.identify"],
+  ["deploy", "remote.phase.deploy"],
+  ["handshake", "remote.phase.handshake"],
+  // 修复原因（R8）：带项目目录的连接在握手后还要让远端读取并登记该目录。这一步过去被算进
+  // “启动并检查兼容性”，远端读目录卡住时用户看到的是兼容性检查一直转圈。设备级连接没有这一步。
+  ["workspace", "remote.phase.workspace"],
+] as const;
+
+function remoteConnectionPhases(includeWorkspace: boolean) {
+  return includeWorkspace
+    ? REMOTE_CONNECTION_PHASES
+    : REMOTE_CONNECTION_PHASES.filter(([key]) => key !== "workspace");
+}
+
+export type RemoteConnectionPhaseStatus = "pending" | "active" | "complete" | "failed";
+
+function normalizeRemoteConnectionPhase(rawPhase: string): string | null {
+  if (rawPhase === "probe") return "channel";
+  if (rawPhase === "directory-record") return "identify";
+  if (rawPhase === "publish-online") return "handshake";
+  if (rawPhase === "daemon" || rawPhase === "protocol-handshake" || rawPhase === "restart")
+    return "handshake";
+  if (
+    rawPhase === "download" ||
+    rawPhase === "preflight" ||
+    rawPhase === "upload" ||
+    rawPhase === "extract" ||
+    rawPhase === "verify-archive" ||
+    rawPhase === "verify" ||
+    rawPhase === "install"
+  ) {
+    return "deploy";
+  }
+  if (rawPhase === "channel") return "channel";
+  return REMOTE_CONNECTION_PHASES.some(([key]) => key === rawPhase) ? rawPhase : null;
+}
+
+export function resolveRemoteConnectionPhases(
+  logs: ReadonlyArray<Pick<RemoteConnectionLogEntry, "message" | "level">>,
+  options: { connectionReady?: boolean; includeWorkspace?: boolean } = {},
+) {
+  const includeWorkspace = options.includeWorkspace === true;
+  const phaseList = remoteConnectionPhases(includeWorkspace);
+  let activeIndex = -1;
+  let failedIndex = -1;
+  for (const log of logs) {
+    const match = /^\[source-server:([^\]]+)\]/u.exec(log.message);
+    if (!match) continue;
+    const normalized = normalizeRemoteConnectionPhase(match[1]!);
+    // 设备级连接（目录为 /）也会读取目录，但不显示“打开项目目录”；它的结果归到最后一步。
+    const phaseIndex = phaseList.findIndex(
+      ([key]) =>
+        key === (normalized === "workspace" && !includeWorkspace ? "handshake" : normalized),
+    );
+    if (phaseIndex < 0) continue;
+    activeIndex = Math.max(activeIndex, phaseIndex);
+    if (log.level === "error") failedIndex = phaseIndex;
+  }
+  // 修复原因：成功连接后 publish-online 不是 Renderer 日志流的可靠终结事件，
+  // 仅按日志推断会出现顶部已连接但阶段轨永久停在握手中的状态。连接 session ready
+  // 是同一条连接流程的权威终态；没有错误阶段时用它完成最终阶段，不改变连接中的日志进度。
+  // 带项目目录时，Source 上线（publish-online）之后还有“打开项目目录”，只有窗口连接 ready 才算完成。
+  const connectionReady =
+    (options.connectionReady === true ||
+      (!includeWorkspace &&
+        logs.some((log) => log.message.startsWith("[source-server:publish-online]")))) &&
+    failedIndex < 0;
+  return phaseList.map(([key, titleId], index) => ({
+    key,
+    titleId,
+    status: (failedIndex === index
+      ? "failed"
+      : connectionReady
+        ? "complete"
+        : index < activeIndex
+          ? "complete"
+          : index === activeIndex
+            ? "active"
+            : "pending") as RemoteConnectionPhaseStatus,
+  }));
+}
+
+export interface RemoteOperationProgress {
+  index: number;
+  total: number;
+  titleId: string;
+  /** 仅最新一条是上传/下载进度时存在，0-100 整数。 */
+  percent?: number;
+  /** 本次操作首条日志时间；Host 每次新操作都会替换旧日志。 */
+  startedAt?: number;
+}

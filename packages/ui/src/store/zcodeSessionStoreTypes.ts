@@ -218,6 +218,10 @@ export interface WorkspaceZCodeUIState {
   taskListCache: ZCodeTaskMeta[] | null;
   /** 新建草稿时递增，驱动输入框在切到草稿态后主动聚焦 */
   draftFocusVersion: number;
+  /** 未提交草稿的项目选择；已提交归属只在 Host。 */
+  draftProjectId?: string | null;
+  /** 未提交任务的分组意图；无文字时仅保留在当前 Renderer 内存。 */
+  draftTaskGroupId?: string | null;
 }
 
 export interface ZCodeSessionStoreState {
@@ -232,6 +236,7 @@ export interface ZCodeSessionStoreState {
     draft: GroupedDraftTaskState,
     workspaceIdentity?: string,
   ) => void;
+  clearDraftTaskGroup: (workspacePath: string, workspaceIdentity?: string) => void;
   clearPromotedGroupedDraftTask: (
     workspacePath: string,
     taskId: string,
@@ -276,6 +281,8 @@ export interface ZCodeSessionStoreState {
     provider?: ZCodeProvider,
     workspaceIdentity?: string,
     options?: {
+      projectId?: string | null;
+      taskGroupId?: string | null;
       groupedDraftPlacement?: GroupedDraftTaskPlacement;
       createSource?: SessionCreateSource;
     },

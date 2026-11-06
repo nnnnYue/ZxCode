@@ -1,5 +1,11 @@
 /** English translations */
 const enUS: Record<string, string> = {
+  "chat.empty.newRemoteConnection": "New remote connection…",
+  "chat.remoteFolder.confirm": "Select folder",
+  "chat.remoteFolder.restored": "Returned to {device} · {project}",
+  "chat.remoteFolder.unresolved":
+    "This folder has no selected project. Choose another folder or cancel.",
+  "offPeak.sidebar.groupTitle": "Idle-time tasks",
   "preview.image.copy": "Copy image",
   "preview.image.actions": "Image actions",
   "preview.image.added": "Added to chat",
@@ -631,6 +637,9 @@ const enUS: Record<string, string> = {
     "The selected connection is unavailable. Please choose another connection.",
   "settings.modelProvider.navigationUnavailable":
     "The requested provider is unavailable. Please choose another provider.",
+  "webRemoteControl.homeOnlyWorkspaces": "Workspaces",
+  "webRemoteControl.switchDevice": "Switch device",
+  "webRemoteControl.unnamedDevice": "Unnamed device",
   "workspace.context.lastActivity": "Last active {time}",
   "bots.privateDelivery.retry": "Resend reply",
   "bots.privateDelivery.retryHint":
@@ -1944,9 +1953,13 @@ const enUS: Record<string, string> = {
   "workspace.wslUncPrompt.continuePath": "Continue with path",
   "taskList.codexConnectivityUnavailable":
     "Warmup could not reach {host}. Starting a conversation may fail until the network is available.",
+  "workspaceSidebar.manageDevice": "Manage in settings",
+  "workspaceSidebar.newRemoteConnection": "New remote connection…",
+  "workspaceSidebar.openRemoteProject": "Open remote project",
   "workspaceSidebar.projectPath": "Directory",
   "workspaceSidebar.projectDevice": "Device",
   "workspaceSidebar.projectLine": "Connection",
+  "workspaceSidebar.remoteProject": "Remote project",
   "workspaceSidebar.workspaces": "Tasks",
   "workspaceSidebar.archivedTasks": "Archived",
   "workspaceSidebar.taskViewOptions": "Filter and sort",

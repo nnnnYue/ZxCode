@@ -215,6 +215,7 @@ import {
 import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
 import { isProviderNotReadyError } from "@/lib/chatPrepareError.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
+import { useOptionalProjectDirectoryActions } from "@/project-sidebar/index.js";
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
 import { useIsMobileTextInputViewport } from "@/lib/mobileTextInput.js";
 import type {
@@ -1243,6 +1244,10 @@ export function SessionPane({
   );
   const openSettingsTab = useOptionalTabStore((state) => state.openSettingsTab);
   const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
+  // 侧栏换骨架：目录 owner 的动作通道；新任务归属提交（commitCreatedTask+taskGroupService
+  // admit 的完整上游链路属 Phase 3d 分组数据面切换），本批先接分组结构刷新。
+  const projectDirectory = useOptionalProjectDirectoryActions();
+  const refreshTaskGroups = projectDirectory?.refreshTaskGroups;
   const handleDraftSessionCreated = useCallback(
     (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
       // 2g 草稿事务：Root→session 是同一 pane 的地址迁移；写入失败时不得切换，
@@ -1261,6 +1266,8 @@ export function SessionPane({
           createdSessionId,
           draftId: groupedDraftTask.draftId,
         });
+        // 分组结构是独立投影（ITaskGroupService）；新骨架分组视图重读，不改变已提交的排序时间。
+        void refreshTaskGroups?.();
       }
       onSessionCreated?.(createdSessionId);
     },
@@ -1268,6 +1275,7 @@ export function SessionPane({
       onSessionCreated,
       promoteComposerDraft,
       promoteGroupedDraftTask,
+      refreshTaskGroups,
       workspaceIdentity,
       workspacePath,
     ],

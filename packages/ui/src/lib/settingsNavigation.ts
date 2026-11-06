@@ -22,7 +22,9 @@ export type SettingsSectionId =
   | "automations"
   | "mobileRelay"
   | "shortcuts"
-  | "usage";
+  | "usage"
+  | "projects"
+  | "archives";
 
 export type SettingsPluginTabTarget = "plugins" | "mcps" | "skills" | "commands";
 export type SettingsPluginNavigationOrigin = "plugin-store";

@@ -37,6 +37,7 @@ export type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 export { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 
 const CODE_PREVIEW_SETTINGS_KEY = "zcode-code-preview-settings";
+const HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY = "zcode-hide-project-device-names";
 const PERFORMANCE_MODE_STORAGE_KEY = "zcode-performance-mode";
 
 function loadCodePreviewSettings(): CodePreviewSettings {
@@ -93,6 +94,10 @@ export interface ZCodeState {
   performanceMode: boolean;
   setPerformanceMode: (enabled: boolean) => void;
 
+  /** 仅桌面项目行消费；设备身份和其他入口的显示不受影响。 */
+  hideProjectDeviceNames: boolean;
+  setHideProjectDeviceNames: (hidden: boolean) => void;
+
   /** 是否启用任务通知（桌面通知；提示音由子开关控制） */
   notificationEnabled: boolean;
   setNotificationEnabled: (enabled: boolean) => void;
@@ -113,9 +118,20 @@ export interface ZCodeState {
 // 需要广播的字段 —— 只有这些字段的变更会发送给其他窗口
 // ============================================================================
 
-const BROADCAST_FIELDS = new Set(["theme", "locale", "uiFontSizePx", "interfaceMode"]);
+const BROADCAST_FIELDS = new Set([
+  "theme",
+  "locale",
+  "uiFontSizePx",
+  "interfaceMode",
+  "hideProjectDeviceNames",
+]);
 
-type BroadcastField = "theme" | "locale" | "uiFontSizePx" | "interfaceMode";
+type BroadcastField =
+  | "theme"
+  | "locale"
+  | "uiFontSizePx"
+  | "interfaceMode"
+  | "hideProjectDeviceNames";
 
 /** 广播频道名前缀 */
 const STATE_CHANNEL_PREFIX = "state:";
@@ -190,6 +206,12 @@ export function createZCodeStore(broadcastService: IBroadcastService) {
     },
 
     performanceMode: loadPerformanceMode(),
+
+    hideProjectDeviceNames: readSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY) === "true",
+    setHideProjectDeviceNames: (hidden) => {
+      writeSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY, String(hidden));
+      set({ hideProjectDeviceNames: hidden });
+    },
     setPerformanceMode: (enabled: boolean) => {
       writeSafeLocalStorage(PERFORMANCE_MODE_STORAGE_KEY, enabled ? "true" : "false");
       set({ performanceMode: enabled });
@@ -291,6 +313,8 @@ export function createZCodeStore(broadcastService: IBroadcastService) {
         state.setInterfaceMode(normalizeInterfaceMode(msg.payload));
       } else if (field === "uiFontSizePx" && typeof msg.payload === "number") {
         state.setUiFontSizePx(msg.payload);
+      } else if (field === "hideProjectDeviceNames" && typeof msg.payload === "boolean") {
+        state.setHideProjectDeviceNames(msg.payload);
       }
     } finally {
       applyingBroadcast = false;

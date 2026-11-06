@@ -7,6 +7,17 @@ export interface ConfirmDialogRequest {
   description?: string;
   /** 特定业务弹框的稳定视觉规范；默认确认框不受影响。 */
   presentation?: "automation-confirmation" | "yolo-confirmation";
+  /** 已由调用方脱敏的只读代码，与说明分区展示。 */
+  codeBlock?: { code: string; language: string };
+  /**
+   * 说明可能很长（如停止远端服务前的运行中任务清单）：说明区限高滚动、长路径换行，标题与按钮保持可见。
+   * 只对默认确认框生效，未声明的调用方不受影响。
+   */
+  scrollableDescription?: boolean;
+  /** E2E/可访问性使用的稳定业务语义，不依赖本地化标题文本。 */
+  intent?: string;
+  /** 需要用户显式确认的告知弹窗：隐藏取消，并忽略遮罩/Escape 关闭。 */
+  requiredAcknowledgement?: boolean;
   confirmLabel?: string;
   cancelLabel?: string;
   /** 三选弹框的第三按钮（如“直接离开”）；提供才渲染，点击结算为 "discard"。 */

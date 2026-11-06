@@ -358,6 +358,21 @@ export function createWorkspaceSlice(set: SetFn) {
       );
     },
 
+    clearDraftTaskGroup: (workspacePath: string, workspaceIdentity?: string) => {
+      // 关闭分组行只撤销组织意图；调用 startDraft 会重置预热、配置和焦点。
+      set((state) =>
+        updateWorkspaceState(
+          state,
+          workspacePath,
+          (current) =>
+            current.draftTaskGroupId === undefined
+              ? current
+              : { ...current, draftTaskGroupId: undefined },
+          workspaceIdentity,
+        ),
+      );
+    },
+
     clearPromotedGroupedDraftTask: (
       workspacePath: string,
       taskId: string,
@@ -552,6 +567,8 @@ export function createWorkspaceSlice(set: SetFn) {
       provider?: ZCodeProvider,
       workspaceIdentity?: string,
       options?: {
+        projectId?: string | null;
+        taskGroupId?: string | null;
         groupedDraftPlacement?: GroupedDraftTaskPlacement;
         createSource?: SessionCreateSource;
       },
@@ -635,6 +652,13 @@ export function createWorkspaceSlice(set: SetFn) {
               activeTaskId: null,
               // 同项目重入不会递增失效版本；新打开请求由调用方在进入草稿之后投递。
               pluginUiOpenRequest: null,
+              // 侧栏换骨架 Phase 3c：未提交草稿的项目/分组意图只存 Renderer 内存，已提交归属只在 Host。
+              draftProjectId: options?.projectId,
+              draftTaskGroupId: options?.taskGroupId,
+              // 同 cwd 可属于多个项目；换项目不能复用前一个项目的预热 runtime 目录范围。
+              draftRuntimeInvalidationVersion:
+                current.draftRuntimeInvalidationVersion +
+                Number(current.draftProjectId !== options?.projectId),
               groupedDraftTask: nextGroupedDraftTask,
               draftCreateSource:
                 options?.createSource ?? (options?.groupedDraftPlacement ? "group" : "session"),

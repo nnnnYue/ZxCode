@@ -546,6 +546,8 @@ export function WorkspacePinnedTasksSection({
                 return null;
               }
               const handlers = getPinnedTaskItemHandlers(itemKey);
+              // 侧栏换骨架：TaskListItem.onOpenFileTree 已改为列表级无参回调（文件树目标
+              // 由挂载方解析）；旧骨架的按任务闭包在渲染处补捕获。3d 退役本文件。
               return (
                 <MemoTaskItem
                   key={itemKey}
@@ -572,7 +574,7 @@ export function WorkspacePinnedTasksSection({
                   onArchiveTask={handlers.onArchiveTask}
                   onMarkTaskAsUnread={handlers.onMarkTaskAsUnread}
                   onOpenTaskContextMenu={handlers.onOpenTaskContextMenu}
-                  onOpenFileTree={onOpenFileTree ? handlers.onOpenFileTree : undefined}
+                  onOpenFileTree={onOpenFileTree ? () => handlers.onOpenFileTree(item) : undefined}
                   intl={intl}
                 />
               );

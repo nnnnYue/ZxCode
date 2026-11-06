@@ -7,7 +7,7 @@ import type {
 } from "@zcode/shared";
 import type { IServiceAccessor } from "@zcode/services";
 import type { ReactNode } from "react";
-import type { CreateTaskRequest } from "@/app-shell/types.js";
+import type { CreateTaskOptions, CreateTaskRequest } from "@/app-shell/types.js";
 
 export type WebRemoteControlTerminalTransportState =
   | "idle"
@@ -21,7 +21,15 @@ export type WebRemoteControlTerminalTransportState =
   | "error";
 
 export interface WebRemoteControlWorkspaceSwitcherApi {
+  /** 账号级设备导航由 Web 入口注入，不通过 workspace bridge/RPC 访问。 */
+  deviceNavigation?: {
+    deviceName?: string;
+    /** 目标电脑平台（darwin / win32 / linux），来自本机记住的设备记录，只用于展示图标。 */
+    devicePlatform?: string;
+    chooseOtherDevice(): void;
+  };
   listWorkspaces(): Promise<WebRemoteControlWorkspaceListResult>;
+  openProjectDraft?(request: CreateTaskOptions): Promise<void>;
   onWorkspaceListUpdated?(
     listener: (result: WebRemoteControlWorkspaceListResult) => void,
   ): () => void;
@@ -29,9 +37,13 @@ export interface WebRemoteControlWorkspaceSwitcherApi {
     workspaceKey: string,
     options?: WebRemoteControlWorkspaceSwitchOptions,
   ): Promise<void>;
-  /** 手机任务首页确认用户查看了当前 bridge 内的未读 task；桌面任务选择链路不使用。 */
+  /** 手机端项目侧栏确认用户查看了当前 bridge 内的未读 task；桌面任务选择链路不使用。 */
   markTaskRead?(task: WebRemoteControlTaskTarget): Promise<void>;
   updateMobileViewState?(workspaceKey: string, taskId?: string): Promise<void>;
+  /** 只上报前台实际显示的任务；连接代际与 bridge 校验由 Web/Main 负责。 */
+  updateMobileTaskView?(
+    view: import("@zcode/shared").WebRemoteControlMobileTaskView | null,
+  ): Promise<void>;
   reconnectWorkspace?(workspaceKey: string): Promise<void>;
   startDraft?(
     workspaceKey: string,

@@ -7,6 +7,8 @@ import {
   Bot,
   Palette,
   SlidersHorizontal,
+  Folders,
+  Archive,
   Sun,
   Terminal,
   AlarmClock,
@@ -180,6 +182,19 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     id: "usage",
     icon: BarChart3,
     titleId: "settings.usageTitle",
+    groupId: "dataAndStats",
+  },
+  // 侧栏换骨架 Phase 3c：项目管理排在归档管理之前（spec 验收 3；上游同序）。
+  {
+    id: "projects",
+    icon: Folders,
+    titleId: "projectManagement.nav",
+    groupId: "dataAndStats",
+  },
+  {
+    id: "archives",
+    icon: Archive,
+    titleId: "archives.nav",
     groupId: "dataAndStats",
   },
 ];

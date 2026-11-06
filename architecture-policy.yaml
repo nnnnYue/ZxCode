@@ -1581,3 +1581,15 @@ exceptions:
       - packages/ui/src/v4/RemoteConversationDisconnected.tsx
       - packages/ui/src/v4/composer/composerSubmissionSettlement.ts
     reason: v3.17.2 可视功能补齐（Phase 2f+2g）按上游原样落盘的三个 v4 域单文件——远程断连门禁容器、断连 fallback（fork 类型适配版）与 composer 发送结算账本；ui 既有 v4/ 根目录本就是未受管 legacy 根，单文件迁入新 managed 模块会切断与同目录既有组件的演进同步，跟随该目录既有形态。
+  - id: project-sidebar-swap-scattered-unmanaged-files
+    rule: unmanaged-new-file
+    paths:
+      - packages/ui/src/hooks/RemoteProjectPresentationContext.tsx
+      - packages/ui/src/lib/remoteConnectionPresentationTypes.ts
+      - packages/ui/src/lib/taskSourceAttribution.ts
+      - packages/ui/src/remote-connection/RemoteConnectionStateIcon.tsx
+      - packages/ui/src/remote-connection/RemoteConnectionTags.tsx
+      - packages/ui/src/remote-connection/RemoteLinkRail.tsx
+      - packages/ui/src/remote-connection/RemoteTaskDeviceLabel.tsx
+      - packages/ui/src/WorkspaceSidebar/RemoteProjectConnectionDetails.tsx
+    reason: 侧栏换骨架（Phase 3c）为满足上游 project-sidebar 依赖面落盘的散文件——远程连接投影 Context、presentation 类型、任务来源归因、连接状态图标/徽标/链接轨/设备标签与连接详情；均位于 ui 既有 legacy 根目录且与目录内 fork 存量文件同构演进，单文件迁入新 managed 模块会切断同目录演进同步。

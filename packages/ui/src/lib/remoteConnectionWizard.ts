@@ -1,4 +1,9 @@
-import type { RemoteAssetInstallMode, RemoteTarget } from "@zcode/shared";
+import type {
+  ConnectionProfile,
+  RemoteAssetInstallMode,
+  RemoteTarget,
+  SourceServerManagementSnapshot,
+} from "@zcode/shared";
 import { isValidWslUser, normalizeRemoteResourcePackageSelection } from "@zcode/shared";
 import type { SSHAuthMethod } from "@/hooks/useRemoteConnectionForm.js";
 import type { RemoteWizardStep } from "@/RemoteConnectionWizardChrome.js";
@@ -7,7 +12,7 @@ type WizardIntlLike = {
   formatMessage: (descriptor: { id: string }, values?: Record<string, string>) => string;
 };
 
-interface RemoteConnectionFormSnapshot {
+export interface RemoteConnectionFormSnapshot {
   kind: RemoteTarget["kind"];
   host: string;
   port: string;
@@ -191,4 +196,49 @@ export function withDefaultRemoteResourcePackages(target: RemoteTarget): RemoteT
       selectedPackageIds: normalizeRemoteResourcePackageSelection(),
     },
   };
+}
+
+/** Profile 落地为非 server 连接目标；凭据不入 target，连接时由凭据层补充。 */
+export function buildRemoteTargetFromProfile(
+  profile: ConnectionProfile,
+): Exclude<RemoteTarget, { kind: "server" }> {
+  switch (profile.target.kind) {
+    case "ssh":
+      return {
+        kind: "ssh",
+        host: profile.target.host,
+        ...(profile.target.port ? { port: profile.target.port } : {}),
+        username: profile.target.username,
+        ...(profile.target.sshConfigAlias ? { sshConfigAlias: profile.target.sshConfigAlias } : {}),
+        ...(profile.target.privateKeyPath ? { privateKeyPath: profile.target.privateKeyPath } : {}),
+        ...(profile.target.assetInstallMode
+          ? { assetInstallMode: profile.target.assetInstallMode }
+          : {}),
+      };
+    case "wsl":
+      return {
+        kind: "wsl",
+        ...(profile.target.distro ? { distro: profile.target.distro } : {}),
+        ...(profile.target.user ? { user: profile.target.user } : {}),
+      };
+    case "docker":
+      return { kind: "docker", container: profile.target.container };
+  }
+}
+
+/** 设备聚合与请求线路同源：优先设备声明的 preferredProfileId，否则取首个未退役 Profile。 */
+export function findPreferredSourceConnectionProfile(
+  snapshot: Pick<SourceServerManagementSnapshot, "servers" | "profiles">,
+  sourceServerId: string,
+): ConnectionProfile | undefined {
+  const server = snapshot.servers.find((candidate) => candidate.sourceServerId === sourceServerId);
+  if (!server) return undefined;
+
+  const activeProfiles = snapshot.profiles.filter(
+    (profile) => profile.sourceServerId === sourceServerId && profile.lifecycleState !== "retired",
+  );
+  return (
+    activeProfiles.find((profile) => profile.profileId === server.preferredProfileId) ??
+    activeProfiles[0]
+  );
 }

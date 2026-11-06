@@ -901,3 +901,75 @@ export function GeneralSectionHeader({ localePreference }: { localePreference: L
     </div>
   );
 }
+
+// 侧栏换骨架 Phase 3c：从 GeneralSectionContent 内联块抽出的独立分区组件（上游同款），
+// 「已删除项目」分区与其共用同一组偏好状态。
+export function TaskAutoArchiveSettings({
+  taskAutoArchiveEnabled,
+  taskAutoArchiveOlderThanDays,
+  onTaskAutoArchiveEnabledChange,
+  onTaskAutoArchiveOlderThanDaysChange,
+}: {
+  taskAutoArchiveEnabled: boolean;
+  taskAutoArchiveOlderThanDays: number;
+  onTaskAutoArchiveEnabledChange: (enabled: boolean) => Promise<void>;
+  onTaskAutoArchiveOlderThanDaysChange: (days: number) => Promise<void>;
+}) {
+  const { intl } = useZCodeIntl();
+  return (
+    <SettingsGroupCard>
+      <SettingsRow
+        controlLayout="wide"
+        label={intl.formatMessage({ id: "settings.taskAutoArchive" })}
+        description={intl.formatMessage({
+          id: "settings.taskAutoArchiveDescription",
+        })}
+        control={
+          <Switch
+            data-testid="archive-auto-archive-switch"
+            aria-label={intl.formatMessage({ id: "settings.taskAutoArchive" })}
+            checked={taskAutoArchiveEnabled}
+            onCheckedChange={(checked) => {
+              void onTaskAutoArchiveEnabledChange(checked);
+            }}
+          />
+        }
+      />
+      <SettingsRow
+        controlLayout="wide"
+        label={intl.formatMessage({ id: "settings.taskAutoArchiveDays" })}
+        description={intl.formatMessage({
+          id: "settings.taskAutoArchiveDaysDescription",
+        })}
+        control={
+          <Select
+            value={String(taskAutoArchiveOlderThanDays)}
+            onValueChange={(value) => {
+              void onTaskAutoArchiveOlderThanDaysChange(Number(value));
+            }}
+          >
+            <SelectTrigger
+              data-testid="archive-auto-archive-days"
+              aria-label={intl.formatMessage({ id: "settings.taskAutoArchiveDays" })}
+              size="lg"
+              className="w-full min-w-0 justify-between"
+            >
+              <span className="min-w-0 truncate">
+                {intl.formatMessage({
+                  id: `settings.taskAutoArchiveDays.option.${taskAutoArchiveOlderThanDays}`,
+                })}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {[3, 7, 14, 30].map((days) => (
+                <SelectItem key={days} value={String(days)}>
+                  {intl.formatMessage({ id: `settings.taskAutoArchiveDays.option.${days}` })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
+    </SettingsGroupCard>
+  );
+}

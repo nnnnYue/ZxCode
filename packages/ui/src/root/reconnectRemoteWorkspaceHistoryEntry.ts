@@ -70,6 +70,9 @@ export interface SshReconnectCredentials {
 }
 
 export interface ReconnectRemoteWorkspaceOptions {
+  /** 用户原地重连先检查已有凭据，缺失交接向导；自动恢复保留 Host admission。 */
+  requireStoredCredentials?: boolean;
+
   activateWorkspaceAfterReconnect?: boolean;
   showErrorToast?: boolean;
   requestId?: string;

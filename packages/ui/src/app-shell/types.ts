@@ -58,20 +58,99 @@ export interface WorkspaceShellZCodeState {
 }
 
 export interface CreateTaskOptions {
+  /** Renderer 发起方租约；异步准备期间取消或换草稿后不得导航。 */
+  isCurrent?: () => boolean;
+  remoteProjectMembershipId?: string;
+  /** 只在目标准备和新草稿导航完成后通知发起界面；不自动发送。 */
+  onComplete?: () => void;
+  onError?: (error: unknown) => void;
   /** 异步预填只能提交到解析 Skill 时的同一新任务目标。 */
   expectedWorkspaceKey?: string;
   provider?: ZCodeProvider;
+  projectId?: string | null;
+  /** 未归类任务目录准备的幂等身份，不作为 session 身份。 */
+  draftId?: string;
+  /** 仅分组组织意图，不决定执行项目或 cwd。 */
+  taskGroupId?: string | null;
+  hostId?: string;
   groupedDraftPlacement?: GroupedDraftTaskPlacement;
   createSource?: SessionCreateSource;
   /** 新草稿输入框预填文本；只写草稿，不自动发送。 */
   initialPrompt?: string;
+  /** 创建项目后的当前草稿交接，仅在 renderer 内存中传递。 */
+  initialComposerDraft?: import("@/v4/composer/composerDraftWorkspaceTransfer.js").ComposerDraftHandoff;
   /** 与 initialPrompt canonical 前缀对应的结构化 mention；仅用于编辑器展示。 */
   initialPromptMention?: ComposerMentionPrefill;
   /** 新任务落在哪个 workspace；缺省取活动 workspace。 */
-  targetWorkspace?: { workspacePath: string; workspaceIdentity?: string };
+  targetWorkspace?: {
+    projectId?: string | null;
+    hostId?: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+  };
 }
 
 export type CreateTaskRequest = ZCodeProvider | CreateTaskOptions;
+
+// 侧栏换骨架 Phase 3c：对齐上游 v3.17.2 的远程连接意图/恢复状态类型面
+// （project-sidebar 合同与 Root 接缝依赖；DeviceAdditionReturnTarget 是 renderer
+// 内存里的原 owner 引用，不序列化草稿或凭据）。
+export interface RemoteWorkspaceRecoveryStatus {
+  mode: "automatic" | "manual";
+  attempt?: number;
+  limit?: number;
+}
+
+/** 仅用于 Renderer 连接反馈，不传入 Host 的恢复/遥测协议。 */
+export interface RemoteConnectionFeedbackOptions {
+  announceReusedConnection?: boolean;
+}
+
+export type DeviceAdditionResult =
+  | { kind: "connected"; sourceServerId: string | undefined }
+  | { kind: "cancelled"; background?: boolean };
+
+/** 仅当前 renderer 内存中的原 owner 引用；不序列化草稿或凭据。 */
+export interface DeviceAdditionReturnTarget {
+  /**
+   * 已有设备连接留在原项目页；只有新增设备往返设置。
+   * fork：data-sync 分支为剔除域保留枚举占位，不产生消费方。
+   */
+  kind: "connect-device" | "add-device" | "data-sync";
+  isCurrent(): boolean;
+  /** 只投递连接层可见性；原 owner 决定自己的提交门禁。 */
+  onVisibilityChange?(visible: boolean): void;
+  /** 返回导航前由原 owner 校验异步成员资格；Root 随后重验原意图。 */
+  canFinish?(result: DeviceAdditionResult): Promise<boolean>;
+  finish(result: DeviceAdditionResult): void | Promise<void>;
+}
+
+export interface RemoteConnectionOpenPreference {
+  returnTarget?: DeviceAdditionReturnTarget;
+  /** 完成意图由发起入口确定；凭据、安装和重试不得替换它。 */
+  completion?: "device-management";
+  /** 原地重连交接的失败/等待事实；打开时只展示，不自动重发。 */
+  initialFailure?: {
+    code?: string;
+    message: string;
+    logs?: RemoteConnectionLogEntry[];
+    profileId?: string;
+    /** 交接前固定的非敏感失败身份，不从最新 Profile 重建。 */
+    failedTarget?: import("@zcode/shared").SourceServerUpdateTarget;
+    resolvedWslTarget?: Required<Extract<RemoteTarget, { kind: "wsl" }>>;
+  };
+  /** 已有项目的连接意图；安装、升级和凭据交互结束后仍打开该目录。 */
+  preferredDirectoryPath?: string;
+  preferredWorkspaceTabId?: string;
+  /** 未加载 tab 的已保存项目；完成后恢复该入口，不进入新建项目选择。 */
+  preferredProjectEntryId?: string;
+  preferredTarget?: RemoteTarget;
+  preferredKind?: RemoteTarget["kind"];
+  preferredWslDistro?: string;
+  preferredSourceServerId?: string;
+  /** 用户从设备/连接记录点击“连接”时精确选择的 Profile；弹窗消费后直达第 4 步。 */
+  preferredProfileId?: string;
+}
 
 export interface AppProps {
   services: IServiceAccessor;
@@ -84,6 +163,7 @@ export interface AppProps {
   onCancelRemoteProject: (sessionId: string) => Promise<void>;
   onReconnectRemoteWorkspace: (workspaceKey: string) => Promise<void>;
   reconnectingRemoteWorkspaceKeys: string[];
+  remoteWorkspaceRecoveryByWorkspaceKey?: Record<string, RemoteWorkspaceRecoveryStatus>;
   remoteWorkspaceErrorByWorkspaceKey: Record<string, string>;
   reconnectingRemoteWorkspaceLogsByWorkspaceKey?: Record<string, RemoteConnectionLogEntry[]>;
   remoteConnectionLogs?: RemoteConnectionLogEntry[];
@@ -92,7 +172,7 @@ export interface AppProps {
   onResolveConversationWorkspace?: () => Promise<string>;
   onOpenWorkspace: () => void;
   onOpenFolderFromWorkspaceMenu: () => void;
-  onOpenRemoteWorkspace?: () => void;
+  onOpenRemoteWorkspace?: (preference?: RemoteConnectionOpenPreference) => void | boolean;
   remoteConnectionInProgress?: boolean;
   onReturnToWorkspace?: () => void;
   allowOpenWorkspace?: boolean;

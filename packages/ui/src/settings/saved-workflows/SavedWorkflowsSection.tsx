@@ -16,10 +16,8 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { useDynamicWorkflowAvailability } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
-import {
-  buildAutomationWorkspaceOptions,
-  type AutomationWorkspaceOption,
-} from "@/settings/automationWorkspaceOptions.js";
+import { type AutomationWorkspaceOption } from "@/settings/automationWorkspaceOptions.js";
+import { useSavedWorkflowProjectOptions } from "@/project-sidebar/useSavedWorkflowProjectOptions.js";
 import { AutomationRefreshIcon } from "@/settings/AutomationDesignPrimitives.js";
 import { SETTINGS_FRAME_CONTENT_CLASSNAME } from "@/settings/SettingsPageParts.js";
 import { buildSavedWorkflowCreatePrompt } from "@/settings/saved-workflows/savedWorkflowLaunchPrompt.js";
@@ -81,7 +79,7 @@ function resolveOptionKey(option: AutomationWorkspaceOption): string {
 
 /**
  * 已保存工作流中枢：顶部固定「全局」组，
- * 其下按已打开项目分组。页只持有刷新计数器、每组的加载态、详情态；「项目」= `buildAutomationWorkspaceOptions`。
+ * 其下按已打开项目分组。页只持有刷新计数器、每组的加载态、详情态；「项目」= `useSavedWorkflowProjectOptions`（ProjectDirectoryProvider）。
  */
 export function SavedWorkflowsSection({
   header,
@@ -95,7 +93,6 @@ export function SavedWorkflowsSection({
   onOpenWorkflowConsumed,
 }: SavedWorkflowsSectionProps) {
   const { intl, locale } = useZCodeIntl();
-  const tabs = useTabStore((store) => store.tabs);
   const openSettingsTab = useTabStore((store) => store.openSettingsTab);
   // launch.md「The hub page」「The user's choice」：标题行的「工作流设置」直达设置 › 常规的模式行，
   // 旁边写当前生效模式。中枢只在生效模式不是关闭时出现，所以这里不处理关闭态。
@@ -109,7 +106,9 @@ export function SavedWorkflowsSection({
     setPendingSettingsSectionIntent("general");
     openSettingsTab();
   }, [openSettingsTab]);
-  const projects = useMemo(() => buildAutomationWorkspaceOptions(tabs), [tabs]);
+  // 侧栏换骨架：工作流运行/移动落点改为项目目录（ProjectDirectoryProvider），
+  // 与新骨架项目树同源；不再从已打开 tab 反推。
+  const projects = useSavedWorkflowProjectOptions();
   // 全局组的运行 / 移动落点只能是本机项目：过滤掉远程 workspace。
   const localProjects = useMemo(
     () => projects.filter((project) => !project.remoteSessionId),
