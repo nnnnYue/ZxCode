@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectRepositoryContract, VirtualProject } from "#src/project-storage/contract.js";
-import type { IProjectService } from "#src/project/contract.js";
+import type { IProjectService, ProjectDataDeleteResult } from "#src/project/contract.js";
 import { createProjectService, bindRemoteProjectIdentities } from "#src/project/index.js";
 
 it("projects live primary directory status without changing roots, and rejects stale create requests", async () => {
@@ -201,8 +201,11 @@ it("routes every foreign project operation to its existing owner and never falls
     readTree: vi.fn(async () => ({ projects: [], tasks: [] })),
     saveProject: vi.fn(async () => ({ id: "remote-p" }) as VirtualProject),
     deleteProject: vi.fn(async () => {}),
+    restoreProject: vi.fn(async () => ({ id: "remote-p" }) as VirtualProject),
     moveTask: vi.fn(async () => {}),
     reorderProjects: vi.fn(async () => {}),
+    measureProjectData: vi.fn(async () => ({ projects: [] })),
+    deleteProjectData: vi.fn(async () => ({}) as ProjectDataDeleteResult),
     prepareSession: vi.fn(async () => ({
       projectId: "remote-p",
       workspacePath: "/remote",
@@ -231,13 +234,22 @@ it("routes every foreign project operation to its existing owner and never falls
     addMissingRoot: true,
   });
   await service.reorderProjects(["remote-p"], "source");
+  await service.restoreProject("remote-p", "source");
   expect(await service.prepareSession({ hostId: "source", projectId: "remote-p" })).toMatchObject({
     workspacePath: "/remote",
   });
   await service.resolveSessionDirectories({ workspacePath: "/remote", taskId: "s" }, "source");
-  for (const method of Object.values(remote)) expect(method).toHaveBeenCalledTimes(1);
-  expect(repository).not.toHaveBeenCalled();
   await expect(service.readTree({ hostId: "offline" })).rejects.toThrow("project.host-offline");
+  expect(repository).not.toHaveBeenCalled();
+  // 数据命令本机限定不路由：远端 hostId 直接拒绝，remote 桩与本地仓库全程零触碰。
+  const localOnlyCommands = ["measureProjectData", "deleteProjectData"];
+  for (const [name, method] of Object.entries(remote))
+    if (!localOnlyCommands.includes(name)) expect(method).toHaveBeenCalledTimes(1);
+  for (const run of [
+    () => service.measureProjectData(["remote-p"], "source"),
+    () => service.deleteProjectData("remote-p", "source"),
+  ])
+    await expect(run()).rejects.toThrow("project.data-local-only");
   expect(repository).not.toHaveBeenCalled();
 });
 
