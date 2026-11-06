@@ -46,6 +46,7 @@ import { PluginsSection } from "@/settings/PluginsSection.js";
 import { HooksSection } from "@/settings/HooksSection.js";
 import { WorkspaceFileSearchSection } from "@/settings/WorkspaceFileSearchSection.js";
 import { MemorySettingsSection } from "@/settings/MemorySettingsSection.js";
+import { PersonalizationSection } from "@/settings/PersonalizationSection.js";
 import { CustomSection } from "@/settings/CustomSection.js";
 import { AppUsagePanel } from "@/settings/usage-stats/AppUsagePanel.js";
 import { BrowserSettingsSection } from "@/settings/BrowserSettingsSection.js";
@@ -1418,6 +1419,15 @@ export function SettingsPage({
                             {/* App Usage 统计的是本机 agent 全局库；激活远端 workspace 时也读本地 Host。 */}
                             <AppUsagePanel />
                           </ServiceProvider>
+                        ) : activeSection === "personalization" ? (
+                          // 个性化指令编辑的是本机 ~/.zxcode/AGENTS.md（Agent 实际读取的文件）。
+                          // 仅桌面本地入口可编辑：手机远控的 base services 可能归属远程
+                          // Source（remoteWorkspaceServiceCollection 注册的是远端 settingService），
+                          // 编辑会写错机器；Web 端只显示本地桌面端指引。
+                          <PersonalizationSection
+                            settingService={localHostServices.settingService}
+                            isDesktop={Boolean(isDesktop)}
+                          />
                         ) : activeSection === "memory" ? (
                           <ServiceProvider services={localHostServices}>
                             {/* Memory catalog 始终使用本地 Host，避免远程 workspace 误读本机数据。 */}

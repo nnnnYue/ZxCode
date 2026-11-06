@@ -350,6 +350,14 @@ export const TID_SETTINGS_DATA_BASE_DIR_BROWSE = "settings-data-base-dir-browse"
 export const TID_SETTINGS_DATA_BASE_DIR_SAVE = "settings-data-base-dir-save";
 /** 常规设置中的数据存储路径复制/待重启/失败状态 */
 export const TID_SETTINGS_DATA_BASE_DIR_STATUS = "settings-data-base-dir-status";
+/** 个性化（用户自定义指令）编辑器 */
+export const TID_SETTINGS_PERSONALIZATION_EDITOR = "settings-personalization-editor";
+/** 个性化保存按钮 */
+export const TID_SETTINGS_PERSONALIZATION_SAVE = "settings-personalization-save";
+/** 个性化取消按钮 */
+export const TID_SETTINGS_PERSONALIZATION_CANCEL = "settings-personalization-cancel";
+/** 个性化内容超限提示 */
+export const TID_SETTINGS_PERSONALIZATION_SIZE_HINT = "settings-personalization-size-hint";
 /** 资源管理器顶部 tab（suffix=cpu|memory|storage） */
 export const TID_RESOURCE_MANAGER_TAB = "resource-manager-tab";
 /** 资源管理器「存储」tab：分区容器 */
