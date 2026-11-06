@@ -16,6 +16,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu.js";
 import {
+  attachTerminalMobileInput,
   createPendingTerminalInputFallback,
   consumeTerminalInputFallbackHandledData,
   createTerminalInputFallbackKeydownCandidate,
@@ -32,6 +33,7 @@ import { getHttpLinksForTerminalBufferLine } from "@/terminal/terminalLinks.js";
 import { mergeTerminalTheme } from "@/terminal/terminalTheme.js";
 import {
   sidePaneTerminalSessionRegistry,
+  createSidePaneTerminalConnection,
   type SidePaneTerminalSessionEntry,
 } from "@/terminal/sidePaneTerminalSessionRegistry.js";
 
@@ -336,10 +338,22 @@ export function TerminalSession({
     // 原路径（下侧 terminal，不传 persistentKey）字节级不变。
     if (persistentKey) {
       terminalProfileThemeRef.current = undefined;
-      const existingEntry = sidePaneTerminalSessionRegistry.get(persistentKey);
+      const existingEntry = sidePaneTerminalSessionRegistry.get(persistentKey, {
+        workspaceKey: workspaceKey ?? cwd ?? "",
+      });
+      // 同 persistentKey 不代表同一 workspace；不能把旧 PTY id 交给其他 workspace。
+      if (!existingEntry && sidePaneTerminalSessionRegistry.has(persistentKey)) {
+        terminalIdRef.current = undefined;
+        logger.warn("[Terminal] persistent session scope mismatch", {
+          persistentKey,
+          workspaceKey,
+        });
+        return;
+      }
 
       // --- 复用快路径：切回 workspace / 重挂，entry 已在 registry ---
       if (existingEntry) {
+        existingEntry.connection?.rebind(services.terminalService);
         termRef.current = existingEntry.term;
         fitAddonRef.current = existingEntry.fitAddon;
         terminalIdRef.current = existingEntry.terminalId || undefined;
@@ -414,6 +428,8 @@ export function TerminalSession({
       term.loadAddon(fitAddon);
       term.loadAddon(new ClipboardAddon());
       term.open(hostEl);
+      const mobileInput = attachTerminalMobileInput(term, isWindowsDesktop);
+      registryDisposers.push(mobileInput);
 
       let initialTerminalSize: TerminalSize | null = null;
       if (isVisibleRef.current && hostEl.clientWidth > 0 && hostEl.clientHeight > 0) {
@@ -437,6 +453,7 @@ export function TerminalSession({
 
       // 组件局部：customKeyEventHandler（依赖组件 inputFallback ref）
       term.attachCustomKeyEventHandler((e) => {
+        if (!mobileInput.handleKeyEvent(e)) return false;
         if (e.type !== "keydown") return true;
         inputFallbackKeydownCandidateRef.current =
           e.metaKey || e.ctrlKey || e.altKey
@@ -531,9 +548,9 @@ export function TerminalSession({
             logger.warn("[Terminal] persistent dispose disposer failed:", error);
           }
         }
-        if (entry.terminalId) {
-          void services.terminalService.dispose({ id: entry.terminalId });
-        }
+        void entry.connection?.dispose().catch((error) => {
+          logger.warn("[Terminal] persistent PTY dispose failed:", error);
+        });
         try {
           term.dispose();
         } catch (error) {
@@ -583,15 +600,14 @@ export function TerminalSession({
             requestFocus();
           }
 
-          // data 订阅 → term.write（进 registry，detached 时仍累积 scrollback）
-          registryDisposers.push(
-            services.terminalService.onDynamicData(id)((data) => {
+          // bridge 换代只更新条目的服务绑定；xterm 输入监听与 PTY 保持常驻。
+          entry.connection = createSidePaneTerminalConnection({
+            id,
+            service: services.terminalService,
+            onData: (data) => {
               term.write(normalizePowerShellReadlineRedraw(data, shell));
-            }),
-          );
-          // exit 订阅（进 registry，与原路径对称：有 onExit 则回调，否则写退出提示）
-          registryDisposers.push(
-            services.terminalService.onDynamicExit(id)((exitCode) => {
+            },
+            onExit: (exitCode) => {
               const exitHandler = exitHandlerRef.current;
               logger.info("[Terminal] persistent session exited", {
                 autoClose: Boolean(exitHandler),
@@ -605,8 +621,8 @@ export function TerminalSession({
               }
               // side pane Terminal 不传 onExit，保留退出提示。
               term.write(`\r\n${exitedMessageRef.current}\r\n`);
-            }),
-          );
+            },
+          });
 
           // onData（进 registry，随 term 常驻）：
           // 不能放 localDisposers：cleanup(detach) 时会被取消，而复用路径不重绑，
@@ -641,7 +657,7 @@ export function TerminalSession({
                 inputFallbackKeydownCandidateRef.current = null;
               }
               markTerminalInputFallbackHandled(pendingInputFallbacksRef.current, data);
-              void services.terminalService.write({ id, data });
+              void entry.connection?.write(data);
             }),
           );
 
@@ -682,7 +698,7 @@ export function TerminalSession({
                     terminalId: id,
                     terminalTabId: sessionId,
                   });
-                  void services.terminalService.write({ id, data: insertedText });
+                  void entry.connection?.write(insertedText);
                 }
                 if (fallbackAction.shouldClearTextarea) {
                   textarea.value = "";
@@ -781,6 +797,7 @@ export function TerminalSession({
     // 接入 ClipboardAddon 以支持 OSC 52，并让 xterm 的 copy 事件把选区写入系统剪贴板。
     term.loadAddon(new ClipboardAddon());
     term.open(el);
+    const mobileInput = attachTerminalMobileInput(term, isWindowsDesktop);
     let initialTerminalSize: TerminalSize | null = null;
     if (isVisibleRef.current && el.clientWidth > 0 && el.clientHeight > 0) {
       try {
@@ -808,6 +825,7 @@ export function TerminalSession({
     // - Ctrl+C 在 Win/Linux 默认会被当作 SIGINT 传给 PTY，必须在有选区时改走复制；
     // - Ctrl+V 不拦截会被当作 `^V` 字符输入。
     term.attachCustomKeyEventHandler((e) => {
+      if (!mobileInput.handleKeyEvent(e)) return false;
       if (e.type !== "keydown") return true;
       inputFallbackKeydownCandidateRef.current =
         e.metaKey || e.ctrlKey || e.altKey
@@ -853,7 +871,7 @@ export function TerminalSession({
       attributeFilter: ["class"],
     });
 
-    const disposables: IDisposable[] = [];
+    const disposables: IDisposable[] = [mobileInput];
     const { terminalService } = services;
     disposables.push(
       // 交互说明：plain URL 不属于 React DOM，必须通过 xterm link provider 从 buffer
@@ -1082,6 +1100,7 @@ export function TerminalSession({
     services,
     sessionId,
     persistentKey,
+    workspaceKey,
   ]);
 
   const handleCopy = () => {

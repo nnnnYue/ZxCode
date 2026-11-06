@@ -15,7 +15,55 @@
 
 import type { FitAddon } from "@xterm/addon-fit";
 import type { ITheme, Terminal as XTerm } from "@xterm/xterm";
+import type { ITerminalService } from "@zcode/services";
+import type { IDisposable } from "@zcode/rpc";
 import { uiMemoryDiagnosticsRegistry } from "@/lib/memoryDiagnostics.js";
+
+/** 同一 PTY 的连接绑定随保活条目常驻，代理换代不重新创建终端。 */
+export function createSidePaneTerminalConnection(options: {
+  id: string;
+  service: ITerminalService;
+  onData: (data: string) => void;
+  onExit: (exitCode: number) => void;
+}) {
+  let binding: { service: ITerminalService } | undefined;
+  let subscriptions: IDisposable[] = [];
+  let disposed = false;
+  const clearSubscriptions = () => {
+    for (const subscription of subscriptions.splice(0)) subscription.dispose();
+  };
+  const rebind = (service: ITerminalService) => {
+    if (disposed || binding?.service === service) return;
+    // RPC 代理换代（如远程 workspace 连接重建）会释放旧实例。先撤销旧回调的代际身份，再解绑，防止迟到输出串入。
+    binding = undefined;
+    clearSubscriptions();
+    const current = { service };
+    binding = current;
+    subscriptions = [
+      service.onDynamicData(options.id)((data) => {
+        if (binding === current) options.onData(data);
+      }),
+      service.onDynamicExit(options.id)((exitCode) => {
+        if (binding === current) options.onExit(exitCode);
+      }),
+    ];
+  };
+  rebind(options.service);
+  return {
+    rebind,
+    write(data: string): Promise<void> {
+      return binding?.service.write({ id: options.id, data }) ?? Promise.resolve();
+    },
+    dispose(): Promise<void> {
+      if (disposed) return Promise.resolve();
+      disposed = true;
+      const current = binding;
+      binding = undefined;
+      clearSubscriptions();
+      return current?.service.dispose({ id: options.id }) ?? Promise.resolve();
+    },
+  };
+}
 
 /**
  * 一个 side pane terminal 会话的常驻资源。
@@ -32,6 +80,8 @@ export interface SidePaneTerminalSessionEntry {
   term: XTerm;
   fitAddon: FitAddon;
   terminalId: string;
+  /** PTY 创建完成后持有当前连接；输入、订阅和关闭不捕获旧 React effect 的服务代理。 */
+  connection?: ReturnType<typeof createSidePaneTerminalConnection>;
   cwd: string;
   /**
    * 该 terminal 所属的 workspaceKey（= workspaceIdentity?.trim() || workspacePath）。
@@ -92,16 +142,21 @@ function releaseEntry(key: string): void {
 /**
  * side pane terminal session 模块级单例。
  *
- * 不直接 new XTerm / 调 terminalService——资源创建由 TerminalSession 的 persistentKey 路径完成，
- * 再 register 进来。registry 只负责「存取 + DOM 移动 + 回收」，保持与服务层解耦。
+ * xterm 与 PTY 由 TerminalSession 创建并登记；条目持有注入的连接绑定。
+ * registry 负责存取、DOM 移动和回收，不创建平台服务或选择 workspace 的执行目标。
  */
 export const sidePaneTerminalSessionRegistry = {
   has(key: string): boolean {
     return sessions.has(key);
   },
 
-  get(key: string): SidePaneTerminalSessionEntry | undefined {
-    return sessions.get(key);
+  get(key: string, scope?: { workspaceKey: string }): SidePaneTerminalSessionEntry | undefined {
+    const entry = sessions.get(key);
+    // fork：上游按 clientNamespace+workspaceKey 双重校验；fork 已剔除手机多设备域，仅按 workspaceKey 校验复用范围。
+    if (scope && entry?.workspaceKey !== scope.workspaceKey) {
+      return undefined;
+    }
+    return entry;
   },
 
   /** TerminalSession persistentKey 路径首次创建资源后，把 entry 存入 registry 常驻。 */

@@ -1,7 +1,21 @@
 import type { IPlatformService } from "@zcode/shared";
 
+// fork：desktop renderer 未引入 window.zxcode 全局声明（TS2339 记账），新增桥接按
+// desktopPlatform.ts 的显式断言模式收口，不扩大存量错误面。
+const preloadBrowserBridge = (
+  window as Window & {
+    zxcode?: {
+      onBrowserViewDownloadStarted?: (
+        handler: (payload: { webContentsId: number; urls: string[] }) => void,
+      ) => () => void;
+      browserViewLoadUrl?: (payload: { webContentsId: number; url: string }) => Promise<void>;
+    };
+  }
+).zxcode;
+
 type DesktopBrowserPlatformBridge = Pick<
   IPlatformService,
+  | "onBrowserViewDownloadStarted"
   | "onBrowserViewReady"
   | "onBrowserViewOperation"
   | "onBrowserViewViewportChanged"
@@ -9,6 +23,7 @@ type DesktopBrowserPlatformBridge = Pick<
   | "onBrowserViewCloseTab"
   | "onBrowserViewSuspend"
   | "onBrowserViewRestore"
+  | "browserViewLoadUrl"
   | "browserViewAttachGuest"
   | "browserViewDetachGuest"
   | "browserViewCloseTab"
@@ -33,6 +48,8 @@ export const desktopBrowserPlatformBridge = {
     Promise.resolve({ success: false, error: "not_supported" }),
   // 条件定义而非兜底返回失败：UI 靠方法是否存在做能力检测，旧 preload 下必须保持 undefined
   printPageToPdf: window.zxcode.printPageToPdf ? () => window.zxcode.printPageToPdf!() : undefined,
+  onBrowserViewDownloadStarted: (handler) =>
+    preloadBrowserBridge?.onBrowserViewDownloadStarted?.(handler) ?? (() => {}),
   onBrowserViewReady: (handler) => window.zxcode.onBrowserViewReady?.(handler) ?? (() => {}),
   onBrowserViewOperation: (handler) =>
     window.zxcode.onBrowserViewOperation?.(handler) ?? (() => {}),
@@ -43,6 +60,7 @@ export const desktopBrowserPlatformBridge = {
   onBrowserViewCloseTab: (handler) => window.zxcode.onBrowserViewCloseTab?.(handler) ?? (() => {}),
   onBrowserViewSuspend: (handler) => window.zxcode.onBrowserViewSuspend?.(handler) ?? (() => {}),
   onBrowserViewRestore: (handler) => window.zxcode.onBrowserViewRestore?.(handler) ?? (() => {}),
+  browserViewLoadUrl: (payload) => preloadBrowserBridge!.browserViewLoadUrl!(payload),
   browserViewAttachGuest: (payload) =>
     window.zxcode.browserViewAttachGuest?.(payload) ??
     Promise.resolve({ ok: false, reason: "not-found", recoveryRequested: false }),

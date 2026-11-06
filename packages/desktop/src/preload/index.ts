@@ -413,6 +413,15 @@ contextBridge.exposeInMainWorld("zxcode", {
     request: EmbeddedBrowserSitePermissionResetRequest,
   ): Promise<EmbeddedBrowserSitePermissionsSnapshot> =>
     ipcRenderer.invoke(PlatformChannels.ResetEmbeddedBrowserSitePermission, request),
+  /** 下载响应会让 loadURL 以 ERR_FAILED 拒绝；把真实下载事件转给 renderer 区分网络失败。 */
+  onBrowserViewDownloadStarted: (
+    callback: (payload: { webContentsId: number; urls: string[] }) => void,
+  ): (() => void) => {
+    const handler = (_event: unknown, payload: { webContentsId: number; urls: string[] }) =>
+      callback(payload);
+    ipcRenderer.on(PlatformChannels.BrowserViewDownloadStarted, handler);
+    return () => ipcRenderer.removeListener(PlatformChannels.BrowserViewDownloadStarted, handler);
+  },
   /** 注册 agent 首次 browser 命令建好受控 view 的回调（自动开 browser-use tab），返回 disposer */
   onBrowserViewReady: (
     callback: (payload: {
@@ -653,6 +662,8 @@ contextBridge.exposeInMainWorld("zxcode", {
   /** 截取当前窗口，用于错误反馈携带现场画面 */
   captureWindowScreenshot: () => ipcRenderer.invoke(PlatformChannels.CaptureWindowScreenshot),
   // CDP-on-guest pivot：`<webview>` guest dom-ready 后上报 webContentsId 给 main attach。
+  browserViewLoadUrl: (payload: { webContentsId: number; url: string }): Promise<void> =>
+    ipcRenderer.invoke(PlatformChannels.BrowserViewLoadUrl, payload),
   browserViewAttachGuest: (payload: {
     key: string;
     webContentsId: number;

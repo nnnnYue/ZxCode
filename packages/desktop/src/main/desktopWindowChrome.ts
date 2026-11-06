@@ -3,6 +3,7 @@ import { app, BrowserWindow, Menu, nativeImage, nativeTheme, screen, shell } fro
 import { join } from "node:path";
 import type {
   ContextMenuParams,
+  DownloadItem,
   Input,
   MenuItemConstructorOptions,
   WebContents,
@@ -253,6 +254,19 @@ function attachEmbeddedBrowserWindowOpenHandler(options: {
     | undefined;
   logger: { warn: (...args: unknown[]) => void };
 }) {
+  // 下载响应会让 loadURL 以 ERR_FAILED 拒绝；用真实下载事件区分网络失败。
+  const downloadSession = options.guestWebContents.session;
+  const onDownload = (_event: unknown, item: DownloadItem, contents: WebContents) => {
+    if (contents !== options.guestWebContents || options.hostWebContents.isDestroyed()) return;
+    options.hostWebContents.send(PlatformChannels.BrowserViewDownloadStarted, {
+      webContentsId: contents.id,
+      urls: item.getURLChain(),
+    });
+  };
+  downloadSession.on("will-download", onDownload);
+  options.guestWebContents.once("destroyed", () => {
+    downloadSession.removeListener("will-download", onDownload);
+  });
   let externalBrowserModifierActive = false;
 
   options.guestWebContents.on("before-input-event", (_event, input) => {
