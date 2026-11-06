@@ -24,7 +24,6 @@ import {
   WEB_REMOTE_CONTROL_WORKSPACE_RECONNECT_TIMEOUT_MS,
   resolveWebRemoteControlRelayWsUrl,
 } from "@zcode/shared";
-import { resolveWebCommunityUrl } from "./communityUrl.js";
 import type {
   IPlatformService,
   WebRemoteControlBootstrapErrorResponse,
@@ -573,7 +572,9 @@ function createWebPlatform(options?: {
     openExternal: (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    // fork：openFeedback/openCommunity 已从平台合同剔除。
+    // fork：openCommunity 已从平台合同剔除；openFeedback 随 v3.17.2 缝合补回为
+    // 必选方法（ad49abe4），web 无反馈域实现为 no-op，避免渲染层死按钮。
+    openFeedback: () => Promise.resolve(),
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),

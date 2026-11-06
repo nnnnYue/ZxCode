@@ -1,18 +1,19 @@
 import {
-  mobilePluginDiscoveryTelemetrySchema,
-  sessionCreateTelemetrySchema,
   type IPlatformService,
   type RemoteTarget,
   type WebRemoteControlStatus,
 } from "@zcode/shared";
+import localDefaultAppConfig from "../../../../config/default.json" with { type: "json" };
 import { playTaskNotificationSound } from "@zcode/ui";
-import { resolveWebCommunityUrl, resolveWebHelpConfig } from "#src/communityUrl.js";
 import type { WebRemoteControlPlatformProxy } from "#src/platform/contract.js";
 import { saveBrowserFile } from "#src/platform/saveBrowserFile.js";
 export type { WebRemoteControlPlatformProxy } from "#src/platform/contract.js";
 
+// 帮助入口（反馈）配置：去平台化后只读仓库内置 config/default.json，
+// 无任何启动期远端请求（社区链接已随剔除域移除，仅保留反馈地址解析）。
 async function resolveFeedbackUrl(): Promise<string | undefined> {
-  return (await resolveWebHelpConfig()).feedback_url;
+  const feedbackUrl = localDefaultAppConfig.feedback_url;
+  return typeof feedbackUrl === "string" && feedbackUrl.trim() !== "" ? feedbackUrl : undefined;
 }
 
 export function createWebPlatform(options?: {
@@ -70,6 +71,8 @@ export function createWebPlatform(options?: {
     // Web 端不作为 Web 远程控制的发起端，保留空实现以兼容统一接口。
     startWebRemoteControl: () =>
       Promise.reject(new Error("Web remote control can only be started from desktop")),
+    refreshWebRemoteControlPairing: () =>
+      Promise.reject(new Error("Web remote control pairing can only be refreshed from desktop")),
     stopWebRemoteControl: () => Promise.resolve(),
     getWebRemoteControlStatus: () =>
       Promise.resolve<WebRemoteControlStatus>({
@@ -120,34 +123,10 @@ export function createWebPlatform(options?: {
       }
       window.open(feedbackUrl, "_blank", "noopener,noreferrer");
     },
-    openCommunity: async () => {
-      const locale = document.documentElement.lang === "en-US" ? "en-US" : "zh-CN";
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      if (!communityUrl) {
-        return;
-      }
-      window.open(communityUrl, "_blank", "noopener,noreferrer");
-    },
-    canOpenCommunity: async (locale) => {
-      const communityUrl = await resolveWebCommunityUrl(locale);
-      return typeof communityUrl === "string" && communityUrl.length > 0;
-    },
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    registerOAuthState: (_payload) => {},
-    onOAuthCallback: () => () => {},
-    onPaymentCallback: () => () => {},
-    onShareImport: () => () => {},
     notifyRendererReady: () => {},
-    reportTelemetryEvent: async (event) => {
-      // 手机只开放 session_create 和插件发现事件；管理结果仍由 Desktop Host 唯一上报。
-      const parsed = sessionCreateTelemetrySchema
-        .or(mobilePluginDiscoveryTelemetrySchema)
-        .safeParse(event);
-      if (parsed.success) platformProxy?.reportTelemetryEvent?.(parsed.data);
-    },
-    reportArmsCustomEvent: () => Promise.resolve(),
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
         return;
@@ -199,22 +178,11 @@ export function createWebPlatform(options?: {
       }),
     clearEmbeddedBrowserData: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
-    // IPlatformService 新增更新提示能力后，Web fallback 没有同步补齐空实现，
-    // 根级 typecheck 会直接失败，连与桌面端无关的改动都没法完成校验。
-    // Web 端当前没有桌面更新器，先显式 no-op，保持接口完整且不改变现有行为。
-    onUpdateReady: () => () => {},
-    onUpdateCheckResult: () => () => {},
-    onUpdateStateChanged: () => () => {},
-    getUpdateState: () => Promise.resolve({ kind: "idle", enabled: true }),
-    downloadUpdate: () => Promise.resolve(),
-    cancelUpdateDownload: () => Promise.resolve(),
+    // 自动更新域（REMOVALS）：整组方法不在 IPlatformService 内，fork 无更新器，
+    // 全部为剔除域残留死条目，随 web 域类型收口移除。
     getDesktopSessionActivity: () => Promise.resolve({ runningAgentSessionCount: 0 }),
     getDesktopZoomLevel: () => Promise.resolve({ zoomLevel: 0 }),
     onDesktopZoomLevelChanged: () => () => {},
-    onPostUpdateReleaseNotes: () => () => {},
-    acknowledgePostUpdateReleaseNotes: () => Promise.resolve(),
-    skipUpdateVersion: () => Promise.resolve(),
-    quitAndInstallUpdate: () => Promise.resolve(),
     getInstalledEditors: () => Promise.resolve([]),
     getFileApplications: () => Promise.resolve([]),
     openFileWithApplication: () => Promise.resolve({ success: false, error: "not_supported" }),

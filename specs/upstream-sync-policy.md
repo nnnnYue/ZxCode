@@ -32,3 +32,7 @@
 1. 执行一次上游合并后：REMOVALS.md 六大类领域无代码回归（门禁脚本通过；grep 无登录/遥测/自动更新符号复活）。
 2. 上游与本地同时修改任一品牌保护文件时，合并结果保留本地版本，无需人工干预。
 3. 合并后锁文件由 `pnpm install` 重新生成，本地新增依赖（如 CodeMirror）与上游新增依赖同时可用，typecheck 通过。
+
+## 补齐批次（2026-11-07，v3.17.2）
+
+合并域级回退导致的可视缺口按五阶段补齐工程回收（`4aa059db`…`11c5556f`，基线上游快照 `a9fe401e`）：Phase 1 纯 UI 低风险批、Phase 2 九个中等专项（2a–2i）、Phase 3 侧栏整体换 project-sidebar 骨架（`specs/sidebar-project-skeleton-swap.md`）、Phase 4 Electron 44 转正、Phase 5 定案落档（REMOVALS.md 第十节）。方法论沉淀：上游 hunk 逐段摘取适配 fork 基线（禁整文件替换）、分包 tsc 删 tsbuildinfo 后跑（根级 OOM 已知）、desktop tsc 以错误文件集合零新增为门禁、每批独立 commit 过 architecture:check --changed。后续同步遇到同类缺口按此法逐批补齐，剔除域判定以 REMOVALS.md 第十节定案为准。

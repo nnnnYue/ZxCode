@@ -74,6 +74,28 @@
 - 协议域残留：runtime headers 请求参数 schema（账号请求安全域）已随 `7b02617d` 剔除，对应的 4+1 个悬挂测试用例移除
 - off-peak 休眠层遗留：上游协议整体合入带回 off-peak 休眠面（shared 协议 schema、共享迁移创建的 `off_peak_tasks` 表与 `tasks.off_peak_task_id` 列、`packages/services/src/session/offPeakResidentExecutions.ts` 等）。fork 无激活路径（桌面 Host 不下发 `offPeakToolEnabled`，工具簇不注册，UI 设置面不存在）；DB 层彻底剔除涉及共享迁移改造与基线 SQL 再生，需独立专项处理，`check-sqlite-schema.ts` 已排除未合入的 `OffPeakTaskRepo`
 
+## 十、v3.17.2 同步剔除与补齐定案（2026-11-07，五阶段补齐工程后最终定案）
+
+v3.17.2 合并（`11e88869`）沿用「协议/服务引擎层采纳、desktop main / ui / cli 整域保 fork 基线」策略，随后五阶段补齐工程（Phase 1–5，`4aa059db`…`11c5556f`）把非剔除域可视功能合并进 fork。本节为最终定案，全部不再跟进：
+
+### 持续剔除域（上游新增部分一并拒入）
+
+- 会话分享 UI 全套（ConversationShare* 7 组件 + conversationShare* 9 helper + popover 模块）、Coding Plan/Start Plan 配额桶横幅与提醒 store、余额/用量面板、模型菜单套餐徽标、OffPeak 新任务入口与回合卡、Client Scenes 服务端推荐、会话遥测域（v4/telemetry ARMS 面）、自动更新新脚本（windows-update-publisher、macos-update-manifest 等）、highspeed 查看/分享按钮、营销/推荐 hooks（上游数据源 `clientConfigService.uiPluginRecommendations`，fork 无 clientConfig 域）
+- Sites「部署」侧栏入口：依赖整个 `zcode-site-plugin` CLI 域（42 文件）与 ZCode Sites 云服务，连带上游 plugin-ui 的 Sites 接线 hunk 一并拒入
+- 数据同步设置面 + 远程设备管理（source-server 域 19 文件与 2371 行连接向导编排）：`remoteProjectService` 为本地持久化实现（readDirectory 读组织库，空库返回空目录），远程项目 UI 路径按 stub 降级；fork 保留旧版 Remote\*SyncDialog 与自建 relay 承担远程故事
+- CLI session-data 执行面（`bootstrap/src/zcode-protocol/session-data/` + `adapters/src/storage/session-data-files/`）：项目管理页「同时删除 ZxCode 数据」的 measure/purge 在 Host→CLI 请求处失败并按 failed 计数优雅降级，项目删除本体不受影响
+- 上游 openFeedback 反馈入口按钮：fork 反馈工单域已删、desktop 实现为 no-op，不打死按钮
+- `sidebar-activity/SidebarBottomActivity`：纯营销 banner + highspeed 分享卡仲裁（23 行），不落盘
+
+### 拍板放弃（fork 主动决策，非遗漏）
+
+- workspace tab 展开视图：项目树是唯一组织视图（`specs/sidebar-project-skeleton-swap.md`）。`SortableWorkspaceSidebar`/`WorkspaceSidebarItem`/`useWorkspaceTaskLists` 双数据源、`WebRemoteControlTaskIndex` 旧形态、`DeleteAllArchivedTasksButton` 等旧骨架 43 文件退役；已知代价：手机宽屏远控且无 bridge 附着时的任务索引视图消失（窄屏首页与附着后项目树不受影响）
+- 打开方式采用「增强共存」而非替换：上游系统应用查询（file-open-apps）与 fork 自选应用列表同一菜单合并（系统应用默认置顶 → custom: → 静态编辑器），见 `specs/file-open-apps-enhancement.md`
+
+### 补齐后的休眠面（协议/接线在、运行时多数场景不触发）
+
+- workflow blocked 通知行、MCP 工作区信任 agent 边界（trust 落库在 CLI 剔除域，UI→host→services 三层已通）、初始化失败条与 /reload（CLI 不发射 lifecycle）、远程断连横幅（桌面远程项目未合并）、项目草稿归属管道（虚拟项目域未合入）
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。

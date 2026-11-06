@@ -20,7 +20,7 @@ fork 桌面侧栏是 v3.15 时代旧骨架（`SortableWorkspaceSidebar` + 1928 �
 
 ## 状态所有者与不变量（session-management 红线，全程遵守）
 
-- **单一写者**：CLI 写 db.sqlite（软删/标题/时间镜像）；Host tasks-index 写组织态（project_id/pinned/archived/unread_at+CAS/sort_order/projects/roots/hosts）。侧栏任何组件不得 `Date.now()` 写 cli_* 镜像列、不得从 snapshot 推导行存在。
+- **单一写者**：CLI 写 db.sqlite（软删/标题/时间镜像）；Host tasks-index 写组织态（`project_id`/pinned/archived/`unread_at`+CAS/`sort_order`/projects/roots/hosts）。侧栏任何组件不得 `Date.now()` 写 `cli_*` 镜像列、不得从 snapshot 推导行存在。
 - **I5 行集合**：由 app 库（tasks-index）决定；sessions-index 只补实时字段（phase/lastActivityAt）。上游 `applyProjectTaskActivities` 即此模式，不得反转。
 - **I6 排序**：pin/archive/rename/未读不改排序时间；排序时间只取 CLI 创建/活动镜像。fork optimistic overlay 模式保留「不改时间」约束。
 - **I7 未读 CAS**：只有 Host 显式 unreadSignal 才制造未读（`useProjectUnreadSignals` expectedUnreadAt/marker）；fork `taskStatusUnreadSync` 的前台补记+防闪烁语义并入新链路时不回退 CAS——手机已读不得被桌面覆盖。
