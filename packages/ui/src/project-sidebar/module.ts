@@ -11,9 +11,8 @@ export const projectSidebarModule = {
     "conversation-workspace-target",
     "web-remote-control-ui",
     "remote-connection-flow",
-    // fork 剔除域：policy 登记保留 data-sync 引用（Phase 3a adopt 时的上游对齐面）；
-    // 代码已不再 import data-sync，策略行的清理随 Phase 3d 退役一起处理。
-    "data-sync",
+    // fork 剔除域遗留的 data-sync 行已随侧栏换骨架 Phase 3d 退役清理：
+    // 代码从未经它建立依赖，policy 与本清单同步删除（策略修正，非豁免）。
   ],
   provides: ["project-sidebar"],
   publicEntrypoints: [

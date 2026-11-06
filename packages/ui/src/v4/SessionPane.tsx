@@ -17,6 +17,7 @@ import {
 import { Hand } from "lucide-react";
 import {
   buildCustomSupplierKey,
+  remoteHostIdFromWorkspaceIdentity,
   TID_CHAT_EMPTY,
   TID_V4_SESSION_PANE,
   testId,
@@ -118,7 +119,6 @@ import { useDraftModelReadinessGate } from "@/v4/composer/useDraftModelReadiness
 import { useSettings } from "@/hooks/useSettingService.js";
 import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import type { GroupedDraftTaskState } from "@/store/zcodeSessionStoreTypes.js";
 import {
   ConversationComposer,
   type ComposerRestoreRequest,
@@ -1243,39 +1243,77 @@ export function SessionPane({
     [draftConfig, modelSelectionView],
   );
   const openSettingsTab = useOptionalTabStore((state) => state.openSettingsTab);
-  const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
-  // 侧栏换骨架：目录 owner 的动作通道；新任务归属提交（commitCreatedTask+taskGroupService
-  // admit 的完整上游链路属 Phase 3d 分组数据面切换），本批先接分组结构刷新。
+  // 侧栏换骨架 Phase 3d 分组数据面并轨：新任务归属提交走上游完整链路
+  // （commitCreatedTask 真实行确认 + taskGroupService.admit），fork draft 流保留。
   const projectDirectory = useOptionalProjectDirectoryActions();
   const refreshTaskGroups = projectDirectory?.refreshTaskGroups;
+  const commitCreatedTask = projectDirectory?.commitCreatedTask;
   const handleDraftSessionCreated = useCallback(
-    (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
-      // 2g 草稿事务：Root→session 是同一 pane 的地址迁移；写入失败时不得切换，
-      // 否则正文会留在 __draft__ 被下一次新建任务恢复成重复输入。
-      if (!promoteComposerDraft(createdSessionId)) return;
-      // 只有 draft create/promote 的 accepted 边界能继承 grouped placement。
-      // fork 和普通任务导航仍复用 onSessionCreated，但不会污染已有 task 的分组排序。
-      if (groupedDraftTask) {
-        promoteGroupedDraftTask(
-          workspacePath,
-          createdSessionId,
-          groupedDraftTask,
-          workspaceIdentity,
+    async (createdSessionId: string, taskGroupId?: string | null) => {
+      const commit = () => {
+        // 2g 草稿事务：Root→session 是同一 pane 的地址迁移；写入失败时不得切换，
+        // 否则正文会留在 __draft__ 被下一次新建任务恢复成重复输入。
+        if (!promoteComposerDraft(createdSessionId)) return;
+        onSessionCreated?.(createdSessionId);
+      };
+      const organize =
+        taskGroupId !== undefined
+          ? async () => {
+              const task = {
+                taskId: createdSessionId,
+                workspacePath,
+                ...(workspaceIdentity ? { workspaceIdentity } : {}),
+                hostId: remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "") ?? "local",
+              };
+              const attempt = async () => {
+                try {
+                  if (!baseWorkspaceServices.taskGroupService)
+                    throw new Error("task-group.service-unavailable");
+                  await baseWorkspaceServices.taskGroupService.admit({
+                    tasks: [task],
+                    placement: {
+                      task,
+                      groupId: taskGroupId,
+                      creationId: createdSessionId,
+                    },
+                  });
+                  // 分组结构是独立投影（ITaskGroupService）；重读迟滞不能延长已接受首发。
+                  void refreshTaskGroups?.();
+                } catch (cause) {
+                  // 会话已创建；组织失败不能向发送层抛错，否则会诱导用户再发一次。
+                  // 重试闭包只持有这次创建的地址和 placement，绝不调用 createSession。
+                  logger.error("[task-groups] 新任务归属提交失败", cause);
+                  toast(intl.formatMessage({ id: "taskGroup.failed" }), {
+                    durationMs: 0,
+                    actionLabel: intl.formatMessage({ id: "taskGroup.retryPlacement" }),
+                    onAction: () => void attempt(),
+                    dedupeKey: `task-group:${createdSessionId}`,
+                  });
+                }
+              };
+              await attempt();
+            }
+          : undefined;
+      if (commitCreatedTask) {
+        // 真实行到达才提交导航/草稿交接（I5：行集合由 app 库决定），组织写入独立提交。
+        await commitCreatedTask(
+          { taskId: createdSessionId, workspacePath, workspaceIdentity },
+          commit,
+          undefined,
+          organize,
         );
-        logger.debug("[v4-pane] grouped draft 已显式提升", {
-          createdSessionId,
-          draftId: groupedDraftTask.draftId,
-        });
-        // 分组结构是独立投影（ITaskGroupService）；新骨架分组视图重读，不改变已提交的排序时间。
-        void refreshTaskGroups?.();
+      } else {
+        void organize?.();
+        commit();
       }
-      onSessionCreated?.(createdSessionId);
     },
     [
+      commitCreatedTask,
+      baseWorkspaceServices.taskGroupService,
+      refreshTaskGroups,
+      intl,
       onSessionCreated,
       promoteComposerDraft,
-      promoteGroupedDraftTask,
-      refreshTaskGroups,
       workspaceIdentity,
       workspacePath,
     ],
@@ -1358,11 +1396,13 @@ export function SessionPane({
       });
       onEnvelopeCreated?.(envelope);
       // 必须早于第一次上行：transport error/renderer refresh 后仍有可查询线索。
-      const groupedDraftTask =
+      // 分组意图改由 clientContext.taskGroupId 携带（ITaskGroupService 并轨），
+      // createSession 恢复重放据此重新组织归属。
+      const taskGroupId =
         type === "createSession"
           ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-              .groupedDraftTask
-          : null;
+              .draftTaskGroupId
+          : undefined;
       pendingCommandRegistry.record(
         envelope,
         type === "createSession"
@@ -1371,7 +1411,7 @@ export function SessionPane({
                 workspacePath,
                 ...(workspaceIdentity ? { workspaceIdentity } : {}),
               },
-              ...(groupedDraftTask ? { groupedDraftTask } : {}),
+              taskGroupId,
               ...composerClientContext,
               sessionCreateSource:
                 sessionCreateSource ??
@@ -2509,8 +2549,10 @@ export function SessionPane({
 
   const readGroupedDraftId = useCallback(
     () =>
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-        .groupedDraftTask?.draftId ?? null,
+      String(
+        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+          .draftFocusVersion,
+      ),
     [workspacePath, workspaceIdentity],
   );
   /**
@@ -2715,11 +2757,13 @@ export function SessionPane({
       }
       // create/send ACK 期间用户可能切换任务或创建另一份 draft。
       // placement 必须绑定发送开始时的稳定 identity，不能在完成回调里读取当前 workspace 草稿。
-      const groupedDraftTaskAtSend =
+      // create/send ACK 期间用户可能切换任务或创建另一份 draft。
+      // 分组意图必须绑定发送开始时的稳定 identity，不能在完成回调里读取当前 workspace 草稿。
+      const taskGroupIdAtSend =
         sessionId === null
           ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-              .groupedDraftTask
-          : null;
+              .draftTaskGroupId
+          : undefined;
       const selectionSideSlashCommand =
         sessionId && (appSlashCommands?.length ?? 0) > 0
           ? parseSelectionSideSlashCommand(text, readyAttachments, {
@@ -2821,7 +2865,9 @@ export function SessionPane({
             if (consumed === "confirmationRequired") return consumed;
             if (consumed) {
               prewarm.promote();
-              handleDraftSessionCreated(prewarm.sessionId, groupedDraftTaskAtSend);
+              void handleDraftSessionCreated(prewarm.sessionId, taskGroupIdAtSend).catch(
+                (error: unknown) => logger.warn("[v4-pane] 首发提升等待失败", error),
+              );
               return;
             }
           } catch (error) {
@@ -2854,7 +2900,9 @@ export function SessionPane({
           throw new Error("createSession 缺少 sessionId");
         }
         const newSessionId = createResult.sessionId;
-        handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
+        void handleDraftSessionCreated(newSessionId, taskGroupIdAtSend).catch((error: unknown) =>
+          logger.warn("[v4-pane] 首发提升等待失败", error),
+        );
         await dispatchSlashCommand(
           draftSlashCommand,
           newSessionId,
@@ -2903,7 +2951,9 @@ export function SessionPane({
             );
             if (ack.status === "accepted") {
               prewarm.promote();
-              handleDraftSessionCreated(prewarm.sessionId, groupedDraftTaskAtSend);
+              void handleDraftSessionCreated(prewarm.sessionId, taskGroupIdAtSend).catch(
+                (error: unknown) => logger.warn("[v4-pane] 首发提升等待失败", error),
+              );
               return;
             }
             // failed ACK 也可能发生在 runtime 已启动、但 TurnStarted projection commit
@@ -2987,7 +3037,9 @@ export function SessionPane({
         if (sendAck.status !== "accepted") {
           throw new Error(sendAck.reasonCode ?? "sendText 被拒绝");
         }
-        handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
+        void handleDraftSessionCreated(newSessionId, taskGroupIdAtSend).catch((error: unknown) =>
+          logger.warn("[v4-pane] 首发提升等待失败", error),
+        );
         return;
       }
       // 附件 ref 已在 composer 预传状态机中收口。
@@ -4112,7 +4164,10 @@ export function SessionPane({
             });
             return;
           }
-          handleDraftSessionCreated(ack.result.sessionId, replay.clientContext?.groupedDraftTask);
+          void handleDraftSessionCreated(
+            ack.result.sessionId,
+            replay.clientContext?.taskGroupId,
+          ).catch((error: unknown) => logger.warn("[v4-pane] 重放提升等待失败", error));
         }
       })
       .catch((error) => {

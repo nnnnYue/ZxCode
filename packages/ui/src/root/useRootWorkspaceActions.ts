@@ -365,8 +365,6 @@ export function useRootWorkspaceActions({
         }
         // 目录准备成功才提交导航；失败保留当前会话和分屏。
         const provider = typeof request === "string" ? request : request?.provider;
-        const groupedDraftPlacement =
-          typeof request === "string" ? undefined : request?.groupedDraftPlacement;
         if (
           !focusWorkspace(
             target.workspacePath,
@@ -394,7 +392,6 @@ export function useRootWorkspaceActions({
         useZCodeSessionStore
           .getState()
           .startDraft(target.workspacePath, provider, target.workspaceIdentity ?? undefined, {
-            groupedDraftPlacement,
             createSource: typeof request === "string" ? undefined : request?.createSource,
             projectId: target.projectId,
             ...(typeof request === "object" && request.taskGroupId !== undefined

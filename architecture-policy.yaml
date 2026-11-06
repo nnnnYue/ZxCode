@@ -158,7 +158,6 @@ modules:
       - conversation-workspace-target
       - web-remote-control-ui
       - remote-connection-flow
-      - data-sync
     publicEntrypoints:
       - packages/ui/src/project-sidebar/index.tsx
       - packages/ui/src/project-sidebar/contract.ts

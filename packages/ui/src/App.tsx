@@ -704,11 +704,6 @@ export function App({
         targetWorkspaceIdentity: resolvedTargetWorkspaceIdentity,
         workspaces: store.workspaces,
       });
-      const currentWorkspaceState = store.getWorkspaceState(workspaceAbsPath, workspaceIdentity);
-      const groupedDraftPlacement =
-        currentWorkspaceState.activeTaskId === null
-          ? currentWorkspaceState.groupedDraftTask?.placement
-          : undefined;
 
       // 空态里的 workspace 选择器要表达"在这个项目里开始工作"，
       // 目标 workspace 如果已经记住了自己的 Agent，切过去后应当继续沿用那份选择；
@@ -750,20 +745,10 @@ export function App({
         targetWorkspacePath,
         targetSelectedProvider,
         resolvedTargetWorkspaceIdentity,
-        {
-          groupedDraftPlacement,
-          createSource: createSource ?? (groupedDraftPlacement ? "group" : "project"),
-        },
+        // 侧栏换骨架 Phase 3d：grouped 草稿锚点模型退役，未提交分组意图由
+        // draftTaskGroupId 承载（Host ITaskGroupService 并轨），切换入口不再跨桶迁移。
+        { createSource: createSource ?? "project" },
       );
-      if (
-        groupedDraftPlacement &&
-        (workspaceIdentity?.trim() || workspaceAbsPath) !==
-          (resolvedTargetWorkspaceIdentity?.trim() || targetWorkspacePath)
-      ) {
-        // grouped 左侧 New task 行表示用户选择的创建位置，切 workspace 只是修改草稿目标。
-        // 迁移到目标 workspace 后清理来源桶，避免切回旧 workspace 时出现两个临时 New task 行。
-        store.clearGroupedDraftTask(workspaceAbsPath, workspaceIdentity);
-      }
     },
     [
       activateTabByPath,
