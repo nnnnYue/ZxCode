@@ -44,6 +44,9 @@ import {
   IZCodeTaskService,
   IZCodeSessionService,
   ICuaPipSessionService,
+  IProjectService,
+  IRemoteProjectService,
+  ITaskGroupService,
   createZCodeAgentConnectionScope,
   type ZCodeAgentV4ClientMode,
   collectServiceMemoryDiagnostics,
@@ -1724,6 +1727,21 @@ function exposeServicesOnMessagePort(
   const overrides = new Map<string, unknown>([
     [IWindowControllerService.channelName, controllerAttachment],
   ]);
+  // 手机可从任意远端 workspace 重建 Root；侧栏组织服务（project/taskGroups/remoteProjects）
+  // 仍归控制端 Host，不能随当前执行 attachment 换库。remote attachment 的服务集合
+  // （remoteConnectionServiceCollection）不含这三个 channel，不加 overrides 时手机侧栏
+  // projectService RPC 会因 channel 未注册而失败（对齐上游 v3.17.2 同名 hunk；
+  // 上游的 webRemoteProjectTreeActivity.readTree 待处理叠加依赖 fork Controller 尚未提供的
+  // readTaskRows/subscribeTaskRows，此处不引入，待处理交互叠加休眠）。
+  if (
+    clientMode === "web-remote-replayable" &&
+    attachmentScope.kind === "remote" &&
+    activeServices
+  ) {
+    overrides.set(IProjectService.channelName, activeServices.get(IProjectService));
+    overrides.set(IRemoteProjectService.channelName, activeServices.get(IRemoteProjectService));
+    services.register(ITaskGroupService, activeServices.get(ITaskGroupService));
+  }
   // 远端媒体必须按 attachment 的 clientMode 选择数据面：桌面使用 Host loopback Range，手机保持 inline。
   const remoteMediaPreviewProxy =
     attachmentScope.kind === "remote" && clientMode === "desktop-continuous"
