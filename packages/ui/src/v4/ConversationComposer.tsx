@@ -1609,13 +1609,18 @@ function ConversationComposerImpl({
 
   // 动态 placeholder（旧 chatViewPlaceholder 语义）：无历史 → newTask；
   // 有历史空闲 → followUpAsk；有历史处理中 → followUpQueue。
-  const placeholder = intl.formatMessage({
-    id: resolveChatPlaceholderKey({
-      hasHistoryMessages: (snapshot?.rows.totalCount ?? 0) > 0,
-      isTaskProcessing: canStop,
-      compactNewTask: compactMobilePlaceholder,
-    }),
-  });
+  // 切回已有会话时 lease 先切换、快照后到；未知历史不能当作新草稿，
+  // 否则运行中的输入框会闪出新任务提示。只等待当前快照，不复用上一会话状态。
+  const placeholder =
+    sessionId !== null && snapshot === null
+      ? ""
+      : intl.formatMessage({
+          id: resolveChatPlaceholderKey({
+            hasHistoryMessages: (snapshot?.rows.totalCount ?? 0) > 0,
+            isTaskProcessing: pending || canStop,
+            compactNewTask: compactMobilePlaceholder,
+          }),
+        });
   const sendTooltipTitle = intl.formatMessage({
     id: mode === "enqueue" ? "chat.queue.enqueue" : "chat.send",
   });
@@ -2086,6 +2091,7 @@ function ConversationComposerImpl({
               size="icon-md"
               onClick={handleStopClick}
               data-testid={TID_V4_STOP}
+              className="rounded-full"
               aria-label={stopTooltipTitle}
             >
               <SquareIcon className="size-4 fill-current" />
@@ -2106,7 +2112,7 @@ function ConversationComposerImpl({
               onClick={handleSendButtonClick}
               data-testid={TID_V4_COMPOSER_SEND}
               aria-label={resolvedSendTooltipTitle}
-              className="cursor-pointer gap-1 rounded-lg bg-brand text-ui-base text-foreground-inverse hover:bg-brand/80"
+              className="cursor-pointer gap-1 rounded-full bg-brand text-ui-base text-foreground-inverse hover:bg-brand/80"
             >
               {pending ? <Spinner className="size-4" /> : <ArrowUpIcon className="size-4" />}
               <span className="sr-only">{resolvedSendTooltipTitle}</span>

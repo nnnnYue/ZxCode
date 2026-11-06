@@ -257,6 +257,8 @@ export interface SessionPaneProps {
   rootSessionId?: string;
   /** subagent 右侧详情等观察视图：不显示 composer/input，也不发送行内编辑类命令。 */
   readOnly?: boolean;
+  /** 工作区只读原因；普通 subagent 观察视图不传，避免误报目录失效。 */
+  readOnlyReason?: string;
   /** 观察视图的显式例外：允许文件摘要恢复 workspace，但不开放会话编辑能力。 */
   allowWorkspaceFileRewind?: boolean;
   /** 框选副屏：保留普通 composer/tools，但隐藏并禁止 edit/retry/fork/goal。 */
@@ -465,6 +467,7 @@ export function SessionPane({
   sessionId,
   rootSessionId,
   readOnly = false,
+  readOnlyReason,
   allowWorkspaceFileRewind = false,
   selectionSideChat = false,
   activeSelectionSideChatSessionId = null,
@@ -4050,7 +4053,18 @@ export function SessionPane({
     />
   );
   const pendingGuideProjection = snapshot ? projectPendingGuideQueue(snapshot.queue) : null;
-  const conversationBottomDockContent = readOnly ? null : (
+  // 目录失效仍禁止输入；将宿主已有原因放回原输入区，不在 pane 内探测或恢复目录。
+  const conversationBottomDockContent = readOnly ? (
+    readOnlyReason ? (
+      <div
+        role="status"
+        data-testid="v4-workspace-readonly-notice"
+        className="w-full min-w-0 break-words rounded-xl border border-border bg-surface px-4 py-3 text-ui-base text-foreground-subtle"
+      >
+        {readOnlyReason}
+      </div>
+    ) : null
+  ) : (
     <>
       {quotaBanner.state.visible &&
       !quotaBanner.dismissed &&

@@ -51,6 +51,7 @@ import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.j
 import { splitConversationTimelineLiveTail } from "@/v4/conversationTimelineLiveTail.js";
 import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
 import {
+  CONVERSATION_STATUS_PANEL_TOP_CLEARANCE_CLASS_NAME,
   getConversationContentWidthClassName,
   getConversationStatusPanelOffsetClassName,
 } from "@/v4/conversationLayout.js";
@@ -430,6 +431,11 @@ function ConversationTimelineImpl({
   const turnNavigatorQueryRowIdsRef = useRef(turnNavigatorQueryRowIds);
   turnNavigatorQueryRowIdsRef.current = turnNavigatorQueryRowIds;
   const centeredEmptyLayout = centerEmptyStateWithDock && renderUnits.length === 0;
+  // 会话首轮在窗口里、上方也没有更早历史可加载时，它就是对话最顶部的内容，由它的虚拟项承接
+  // 状态胶囊 inset。inset 挂在虚拟项上而不是列表上：测高、跳到首轮、前插历史的锚点都把它算进去。
+  // 只认「会话首轮」而不是「窗口首项」：前插更早历史时旧首项若丢掉 inset，阅读位置会跳 56px。
+  // （fork 无 headerSlot 分享导入块，上游该条件项在这里恒为真，省略。）
+  const sessionStartAtTop = !canLoadOlder && totalCount <= rows.length;
   const responsiveCenteredEmptyLayout = centeredEmptyLayout && !compactEmptyStateWithDock;
   // 高频值经 ref 供稳定回调读取（不进依赖数组）。
   const rowsRef = useRef(rows);
@@ -1853,6 +1859,7 @@ function ConversationTimelineImpl({
                 {virtualRows.map((virtualRow) => {
                   const unit = virtualizedUnits[virtualRow.index];
                   if (!unit) return null;
+                  const clearsStatusPanel = sessionStartAtTop && virtualRow.index === 0;
                   return (
                     <div
                       key={`${virtualRow.key}:${rowContext.logEpoch ?? ""}`}
@@ -1862,7 +1869,10 @@ function ConversationTimelineImpl({
                       data-turn-id={unit.turnId}
                       // virtual history 的子项通过 absolute 定位，父级 padding 不会缩小
                       // 它们的 containing block；正文响应式内边距必须落在 turn wrapper 自身。
-                      className="absolute left-0 top-0 w-full"
+                      className={cn(
+                        "absolute left-0 top-0 w-full",
+                        clearsStatusPanel && CONVERSATION_STATUS_PANEL_TOP_CLEARANCE_CLASS_NAME,
+                      )}
                       style={{ transform: `translateY(${virtualRow.start}px)` }}
                     >
                       <ConversationTurnGroup
@@ -1874,6 +1884,7 @@ function ConversationTimelineImpl({
                         onRetry={onRetry}
                         onFeedbackChange={onFeedbackChange}
                         onEdit={onEdit}
+                        topClearedByTimeline={clearsStatusPanel}
                       />
                     </div>
                   );
@@ -1893,6 +1904,9 @@ function ConversationTimelineImpl({
                     "relative mx-auto w-full shrink-0 transition-[width,max-width,transform] duration-150 ease-out @min-[1280px]/conversation:transition-[transform]",
                     contentWidthClassName,
                     summaryPanelInlineOffsetClassName,
+                    sessionStartAtTop &&
+                      liveUnitIndex === 0 &&
+                      CONVERSATION_STATUS_PANEL_TOP_CLEARANCE_CLASS_NAME,
                   )}
                 >
                   <ConversationTurnGroup
@@ -1904,6 +1918,7 @@ function ConversationTimelineImpl({
                     onRetry={onRetry}
                     onFeedbackChange={onFeedbackChange}
                     onEdit={onEdit}
+                    topClearedByTimeline={sessionStartAtTop && liveUnitIndex === 0}
                   />
                 </div>
               ) : null}

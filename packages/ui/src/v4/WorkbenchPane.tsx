@@ -258,6 +258,7 @@ export interface WorkbenchShellBinding {
   /** Prompt 模板埋点当前仅覆盖 Desktop。 */
   isDesktop?: boolean;
   readOnly?: boolean;
+  readOnlyReason?: string;
   compactForRemoteControl?: boolean;
   sessionId: string | null;
   /** Shell 当前真正激活的 task；split pane 接管 active task 时不等于 primary sessionId。 */
@@ -550,6 +551,7 @@ export function WorkbenchLeafPane({
         <SessionPane
           paneId={paneId}
           readOnly={readOnly}
+          readOnlyReason={isShellWorkspace ? shell.readOnlyReason : undefined}
           sessionId={sessionId}
           activeSelectionSideChatSessionId={resolvePaneActiveSelectionSideChatSessionId(
             sessionId,

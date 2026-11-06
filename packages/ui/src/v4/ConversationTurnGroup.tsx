@@ -114,6 +114,8 @@ interface ConversationTurnGroupProps {
     attachments?: readonly AttachmentRef[],
     workspaceMode?: "preserve" | "rewind",
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */
+  topClearedByTimeline?: boolean;
 }
 
 interface CronAutomationTurnCard {
@@ -160,9 +162,11 @@ function toRetryStatus(apiRetry: ApiRetryState): ZCodeApiRetryStatus {
 function TurnChatLoadingSlot({
   apiRetry,
   eligible,
+  initialElapsedMs,
 }: {
   apiRetry: ApiRetryState | null;
   eligible: boolean;
+  initialElapsedMs: number;
 }) {
   const { intl, locale } = useZCodeIntl();
   const retryStatus = useMemo(() => (apiRetry ? toRetryStatus(apiRetry) : null), [apiRetry]);
@@ -179,7 +183,7 @@ function TurnChatLoadingSlot({
       ) : (
         // running 是 ChatLoading 的权威事实；额外静默计时会让 projection
         // 更新反复重启可见性，并使 UI 晚于真实状态。
-        <ChatLoading loading data-testid={TID_CHAT_LOADING} size="sm" />
+        <ChatLoading loading data-testid={TID_CHAT_LOADING} initialElapsedMs={initialElapsedMs} />
       )}
     </div>
   );
@@ -841,7 +845,11 @@ function ConversationTurnFlow({
           stageTailIsRunning={unit.isRunning}
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
-        <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+        <TurnChatLoadingSlot
+          apiRetry={apiRetry}
+          eligible={showLoading}
+          initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+        />
       </div>
     );
   }
@@ -885,7 +893,7 @@ function ConversationTurnFlow({
   // 即使恢复了 guide 的 row 全序，也不能让所有 history chunk 共享同一个
   // Collapsible。accepted guide 现在由 CLI workSegments 定界，每段组件自行维护折叠状态。
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 [&>[data-zcode-chat-loading-slot]:not(:first-child)]:-mt-2">
       {workSegments.map((segment) => (
         <ConversationWorkSegmentFlow
           key={segment.key}
@@ -916,7 +924,11 @@ function ConversationTurnFlow({
           highspeedMeta={highspeedMeta}
         />
       ))}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+      />
     </div>
   );
 }
@@ -1067,7 +1079,7 @@ function ConversationBackgroundResultWork({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 [&>[data-zcode-chat-loading-slot]:not(:first-child)]:-mt-2">
       {workflowNotification ? (
         <WorkflowNotificationToolRow
           notification={workflowNotification}
@@ -1124,7 +1136,11 @@ function ConversationBackgroundResultWork({
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
       ) : null}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        initialElapsedMs={unit.workStatus?.durationMs ?? 0}
+      />
     </div>
   );
 }
@@ -1138,6 +1154,7 @@ function ConversationTurnGroupImpl({
   onRetry,
   onFeedbackChange,
   onEdit,
+  topClearedByTimeline = false,
 }: ConversationTurnGroupProps) {
   const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
@@ -1317,7 +1334,7 @@ function ConversationTurnGroupImpl({
       data-highspeed-gradient={showHighspeedAnimatedGradient ? "true" : undefined}
       className={cn(
         "relative mx-auto flex w-full flex-col gap-5 px-4 @md/conversation:px-6 pb-5",
-        startsWithoutUserBubble ? "pt-0" : "pt-14",
+        startsWithoutUserBubble || topClearedByTimeline ? "pt-0" : "pt-14",
         showHighspeedAnimatedGradient && "highspeed-animated-gradient-text",
       )}
     >

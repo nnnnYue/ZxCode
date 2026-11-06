@@ -378,7 +378,7 @@ export function ChatPromptEditor({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-input-border bg-input p-3 transition-colors hover:border-input-border-hover focus-within:!border-input-border-focused focus-within:bg-input-focused",
+          "relative flex flex-col gap-3 overflow-hidden rounded-2xl border-[0.5px] border-input-border bg-input p-3 shadow-(--shadow-composer-soft) transition-colors hover:border-input-border-hover focus-within:!border-input-border-focused focus-within:bg-input-focused",
           (isWorkspaceFileDropActive || isExternalFileDropActive) &&
             "border-brand bg-input-focused ring-1 ring-brand/30",
           shellClassName,
@@ -456,7 +456,7 @@ export function ChatPromptEditor({
                   disabled={submitDisabled}
                   data-testid={submitTestId ?? TID_CHAT_SEND_BUTTON}
                   aria-label={submitLabel}
-                  className="gap-1 rounded-lg bg-brand text-ui-base text-foreground-inverse hover:bg-brand/80"
+                  className="gap-1 rounded-full bg-brand text-ui-base text-foreground-inverse hover:bg-brand/80"
                 >
                   {submitting ? <Spinner className="size-4" /> : <ArrowUpIcon className="size-4" />}
                   <span className="sr-only">{submitLabel}</span>

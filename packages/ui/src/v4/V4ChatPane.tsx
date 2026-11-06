@@ -33,6 +33,7 @@ export interface V4ChatPaneProps {
   workspacePath: string;
   workspaceIdentity?: string;
   readOnly?: boolean;
+  readOnlyReason?: string;
   compactForRemoteControl?: boolean;
   /** CLI session id；null = draft 首发。 */
   sessionId: string | null;
@@ -82,6 +83,7 @@ export function V4ChatPane({
   workspacePath,
   workspaceIdentity,
   readOnly = false,
+  readOnlyReason,
   compactForRemoteControl = false,
   sessionId,
   provider,
@@ -124,6 +126,7 @@ export function V4ChatPane({
       <SessionPane
         paneId="workspace-main"
         readOnly={readOnly}
+        readOnlyReason={readOnlyReason}
         sessionId={sessionId}
         workspacePath={workspacePath}
         workspaceIdentity={workspaceIdentity}

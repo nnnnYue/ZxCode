@@ -2008,6 +2008,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                       显示按钮却无法打开抽屉；两端必须复用同一个 renderer Side Pane 入口。 */}
                   <V4ChatPane
                     readOnly={Boolean(workspaceReadOnlyReason)}
+                    readOnlyReason={workspaceReadOnlyReason}
                     workspacePath={workspaceAbsPath}
                     workspaceIdentity={workspaceIdentity}
                     compactForRemoteControl={isWebRemoteControlShell}
@@ -2468,6 +2469,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                                   绑定语义与 testid 契约（paneId=workspace-main）不变。 */}
                               <V4WorkspaceChatArea
                                 readOnly={Boolean(workspaceReadOnlyReason)}
+                                readOnlyReason={workspaceReadOnlyReason}
                                 foregroundEnabled={isWorkspaceVisible}
                                 workspacePath={workspaceAbsPath}
                                 workspaceIdentity={workspaceIdentity}
