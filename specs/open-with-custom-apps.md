@@ -39,3 +39,9 @@
 8. Web 端 / Office 模式：不出现「选择应用程序…」入口。
 9. 注册表 JSON 损坏 → 列表按空注册表处理，静态条目不受影响。
 10. 重启应用后自定义条目与选中偏好仍生效。
+
+## 与系统应用查询共存（上游 v3.17.2 补齐后）
+
+- 自定义应用列表**保留**，与上游系统应用查询在同一「打开方式」菜单共存：合并顺序固定为**系统应用（isDefault 置顶）→ 自定义应用（`custom:`）→ 静态编辑器**；目录/远程工作区回退纯 editors 列表（自定义条目按既有 remoteTarget 白名单过滤天然排除）。完整设计见 [file-open-apps-enhancement](./file-open-apps-enhancement.md)。
+- `zcode-last-editor-id` 偏好边界收紧：偏好只作用于 custom:/静态编辑器段；选择系统应用（`file-app:` 前缀 id）不读写该偏好，避免系统应用哈希 id 污染编辑器偏好。
+- 自定义条目的注册表所有者、`SelectAndAddCustomEditor`/`RemoveCustomEditor` IPC 与安全边界（renderer 永不传可执行路径）不变；系统应用查询是独立的 `GetFileApplications`/`OpenFileWithApplication` 通道，二者在 UI 合并、在 main 各自成模块。

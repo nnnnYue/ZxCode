@@ -24,6 +24,7 @@ import {
   type WebRemoteControlTaskTarget,
   type WebRemoteControlWorkspaceTarget,
   type WindowControlsOverlayReadyPayload,
+  type FileApplicationTarget,
 } from "@zcode/shared";
 import { z } from "zod";
 
@@ -42,7 +43,8 @@ const mobileRelayGrantRequestSchema = z
     remoteSessionId: nonEmptyStringSchema.optional(),
   })
   .strict();
-import { getInstalledEditors } from "./editors.js";
+import { getAppIconDataUrl, getInstalledEditors } from "./editors.js";
+import { createFileApplicationService } from "./file-open-apps/index.js";
 import { addCustomEditor, listCustomEditors, removeCustomEditor } from "./customEditors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
 import { exportLogs } from "./exportLogs.js";
@@ -474,6 +476,20 @@ export function registerPlatformIpcHandlers(options: {
     ...(await getInstalledEditors()),
     ...listCustomEditors(),
   ]);
+  // 系统关联应用查询（specs/file-open-apps-enhancement.md）：只接受本机真实文件，
+  // 目录、远端身份与错误路径失败关闭；图标复用 editors.ts 的既有取图能力。
+  const fileApplications = createFileApplicationService({
+    getIcon: (id, path) => getAppIconDataUrl(id, path),
+    logger: options.logger,
+  });
+  ipcMain.handle(PlatformChannels.GetFileApplications, (_event, target: FileApplicationTarget) =>
+    fileApplications.getFileApplications(target),
+  );
+  ipcMain.handle(
+    PlatformChannels.OpenFileWithApplication,
+    (_event, payload: { applicationId: string; target: FileApplicationTarget }) =>
+      fileApplications.openFileWithApplication(payload?.applicationId, payload?.target),
+  );
   ipcMain.handle(
     PlatformChannels.GetApplicationIcon,
     (_event, request: string | ApplicationIconRequest) => getApplicationIcon(request),

@@ -1,5 +1,6 @@
 import type { EditorInfo } from "@zcode/shared";
-import { ChevronDownIcon, CopyIcon, ExternalLinkIcon } from "lucide-react";
+import { isCustomEditorInfo } from "@zcode/shared";
+import { ChevronDownIcon, CopyIcon, ExternalLinkIcon, FolderOpenIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
@@ -11,12 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
+import {
+  FileApplicationChoices,
+  FileSaveAsMenuItem,
+  useFileApplications,
+} from "@/file-menu/index.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useFileContextActions } from "@/hooks/useFileContextActions.js";
 import { useWorkspaceOpenInEditorTarget } from "@/hooks/useWorkspaceOpenInEditorTarget.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { persistLastSelectedEditorId, readLastSelectedEditorId } from "@/lib/editorPreference.js";
+import { persistLastSelectedEditorId } from "@/lib/editorPreference.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
+import { getFileManagerLabel } from "@/workspace-file-tree/helpers.js";
 import { getWorkspaceFileRelativePath } from "@/workspace-file-tree/model.js";
 import { resolveWorkspaceEditorSelection } from "@/lib/workspaceEditorSelection.js";
 import { logger } from "@/logger.js";
@@ -55,7 +62,6 @@ export function OpenSplitButton({
 }: OpenSplitButtonProps) {
   const { intl } = useZCodeIntl();
   const platform = usePlatform();
-  const fileActions = useFileContextActions();
   const previewSource = target.type === "file" ? target.previewSource : undefined;
   const matchedOpenContext = useWorkspaceOpenInEditorTarget({
     workspacePath: previewSource?.workspacePath,
@@ -68,30 +74,53 @@ export function OpenSplitButton({
     previewSource?.workspaceRemoteSessionId ||
     matchedOpenContext.isRemoteWorkspace,
   );
+  const fileActions = useFileContextActions({
+    canOpenLocalFileManager: Boolean(platform.canOpenLocalFiles),
+    isRemoteWorkspace: isRemoteSource,
+    remoteTarget: openInEditorRemoteTarget,
+    workspaceIdentity: previewSource?.workspaceIdentity,
+  });
   const [editors, setEditors] = useState<EditorInfo[]>([]);
   const [editorsLoaded, setEditorsLoaded] = useState(false);
   const [loadingEditors, setLoadingEditors] = useState(false);
-  const sortedEditors = useMemo(
-    () =>
-      isRemoteSource && !openInEditorRemoteTarget
-        ? []
-        : resolveWorkspaceEditorSelection({
-            installedEditors: editors,
-            selectedEditorId: null,
-            remoteTarget: openInEditorRemoteTarget,
-          }).availableEditors,
-    [editors, isRemoteSource, openInEditorRemoteTarget],
+  const fileApplications = useFileApplications(
+    target.type === "file"
+      ? { path: target.path, pathKind: "file", workspaceIdentity: previewSource?.workspaceIdentity }
+      : null,
+    isRemoteSource,
   );
+  const canOpenNative = Boolean(platform.canOpenLocalFiles && !isRemoteSource);
+  // 整合菜单（specs/file-open-apps-enhancement.md）：本地文件 = 系统应用（isDefault 置顶）
+  // → fork 自定义应用（custom: 前缀）→ 静态编辑器；远程回退既有 editors 过滤链路。
+  // zcode-last-editor-id 偏好只作用于 editors/custom 段（系统应用永远按 isDefault 置顶），
+  // 选择系统应用时不写入该偏好，避免把 file-app: 哈希 id 存进编辑器偏好。
+  const sortedEditors: Array<EditorInfo & { isDefault?: boolean }> = useMemo(() => {
+    if (!isRemoteSource) {
+      const customEditors = editors.filter((editor) => isCustomEditorInfo(editor));
+      const staticEditors = resolveWorkspaceEditorSelection({
+        installedEditors: editors.filter((editor) => !isCustomEditorInfo(editor)),
+        selectedEditorId: null,
+        remoteTarget: openInEditorRemoteTarget,
+      }).availableEditors;
+      return [
+        // FileApplicationInfo.iconDataUrl 可缺省；补空串对齐 EditorInfo 的必填图标字段。
+        ...fileApplications.apps.map((app) => ({ ...app, iconDataUrl: app.iconDataUrl ?? "" })),
+        ...customEditors,
+        ...staticEditors,
+      ];
+    }
+    return isRemoteSource && !openInEditorRemoteTarget
+      ? []
+      : resolveWorkspaceEditorSelection({
+          installedEditors: editors,
+          selectedEditorId: null,
+          remoteTarget: openInEditorRemoteTarget,
+        }).availableEditors;
+  }, [editors, isRemoteSource, openInEditorRemoteTarget, fileApplications.apps]);
   const canPreview =
     target.type === "website"
       ? Boolean(onOpenBrowserUrl)
       : Boolean(onOpenFileLink || onOpenCodeViewer);
-  const selectedEditor = useMemo(() => {
-    const selectedEditorId = readLastSelectedEditorId();
-    return (
-      sortedEditors.find((editor) => editor.id === selectedEditorId) ?? sortedEditors[0] ?? null
-    );
-  }, [sortedEditors]);
 
   const stopEventPropagation = (event: { stopPropagation: () => void }) => {
     if (stopPropagation) {
@@ -100,7 +129,14 @@ export function OpenSplitButton({
   };
 
   const loadEditors = useCallback(async () => {
-    if (editorsLoaded || loadingEditors || target.type !== "file") {
+    if (target.type !== "file") {
+      return;
+    }
+    // 本地文件同时刷新系统关联（fileApplications 内部自带竞态防护）。
+    if (!isRemoteSource) {
+      await fileApplications.load();
+    }
+    if (editorsLoaded || loadingEditors) {
       return;
     }
 
@@ -116,7 +152,7 @@ export function OpenSplitButton({
     } finally {
       setLoadingEditors(false);
     }
-  }, [editorsLoaded, loadingEditors, platform, target]);
+  }, [editorsLoaded, loadingEditors, platform, target, isRemoteSource, fileApplications.load]);
 
   const handlePreview = () => {
     if (target.type === "website") {
@@ -145,11 +181,17 @@ export function OpenSplitButton({
     });
   };
 
-  const handleOpenInEditor = (editor: EditorInfo) => {
+  const handleOpenInEditor = (editor: EditorInfo & { isDefault?: boolean }) => {
     if (target.type !== "file") {
       return;
     }
 
+    // 系统关联应用（file-app: 前缀）走平台 openFileWithApplication；不写编辑器偏好，
+    // zcode-last-editor-id 只作用于 custom:/静态编辑器段。
+    if (editor.id.startsWith("file-app:")) {
+      void fileApplications.open({ ...editor, isDefault: Boolean(editor.isDefault) });
+      return;
+    }
     persistLastSelectedEditorId(editor.id);
     void platform
       .openInEditor(editor.id, target.path, {
@@ -190,6 +232,18 @@ export function OpenSplitButton({
         if (!result.success) reportFailure(result.error ?? "unknown-error");
       })
       .catch(reportFailure);
+  };
+
+  const handleOpenDefault = () => {
+    // hook 内部先取系统默认应用；无默认时回退 openExternalFile，失败有 toast 反馈。
+    void fileApplications.openDefault();
+  };
+
+  // macOS / Windows 直达文件并选中；无系统定位能力或远程时由 hook 内部回退/关闭。
+  const revealPath = target.type === "file" ? target.path : undefined;
+  const canReveal = Boolean(revealPath && fileActions.canRevealInFileManager({ path: revealPath }));
+  const handleReveal = () => {
+    if (revealPath) void fileActions.revealFileInFileManager({ path: revealPath, kind: "file" });
   };
 
   if (hideOpenWithMenu) {
@@ -250,7 +304,12 @@ export function OpenSplitButton({
           </Button>
         </DropdownMenuTrigger>
       </div>
-      <DropdownMenuContent align="end" side="top" className="w-44" onClick={stopEventPropagation}>
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        className="w-64 max-w-[calc(100vw-1rem)]"
+        onClick={stopEventPropagation}
+      >
         {target.type === "website" ? (
           <DropdownMenuItem onSelect={handleOpenExternal}>
             <ExternalLinkIcon className="size-4" />
@@ -262,21 +321,27 @@ export function OpenSplitButton({
           </DropdownMenuItem>
         ) : (
           <>
-            {selectedEditor ? (
-              sortedEditors.map((editor) => (
-                <DropdownMenuItem key={editor.id} onSelect={() => handleOpenInEditor(editor)}>
-                  <img src={editor.iconDataUrl} alt={editor.name} className="size-4 shrink-0" />
-                  <span>{editor.name}</span>
-                </DropdownMenuItem>
-              ))
-            ) : (
-              <DropdownMenuItem disabled>
-                {intl.formatMessage({
-                  id: loadingEditors ? "common.loading" : "chat.previewCards.noOpenApps",
-                })}
+            <FileApplicationChoices
+              applications={sortedEditors}
+              loading={loadingEditors || fileApplications.loading}
+              onOpenDefault={
+                canOpenNative && platform.openExternalFile ? handleOpenDefault : undefined
+              }
+              onSelect={handleOpenInEditor}
+            />
+            <DropdownMenuSeparator />
+            {canReveal && (
+              <DropdownMenuItem onSelect={handleReveal}>
+                <FolderOpenIcon className="size-4" />
+                {getFileManagerLabel(intl)}
               </DropdownMenuItem>
             )}
-            <DropdownMenuSeparator />
+            <FileSaveAsMenuItem
+              path={target.path}
+              workspacePath={target.previewSource?.workspacePath}
+              workspaceIdentity={target.previewSource?.workspaceIdentity}
+              workspaceRemoteSessionId={target.previewSource?.workspaceRemoteSessionId}
+            />
             <DropdownMenuItem
               onSelect={() => void fileActions.copyAbsolutePath({ path: target.path })}
             >

@@ -14,12 +14,14 @@ import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { EditorInfo, FileStat, OpenInEditorOptions } from "@zcode/shared";
+import { isCustomEditorInfo } from "@zcode/shared";
 import type { UIMessage } from "ai";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
   ExternalLinkIcon,
+  FolderOpenIcon,
   PanelRightIcon,
 } from "lucide-react";
 import remarkCjkFriendlyGfmStrikethrough from "remark-cjk-friendly-gfm-strikethrough";
@@ -41,6 +43,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { BundledTheme } from "shiki";
@@ -77,7 +80,13 @@ import {
 import { STREAMDOWN_CONTROLS } from "@/components/ai-elements/streamdown-controls.js";
 import { resolveMessageLinkOpenTarget } from "@/embeddedBrowserHelpers.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
-import { persistLastSelectedEditorId, readLastSelectedEditorId } from "@/lib/editorPreference.js";
+import { persistLastSelectedEditorId } from "@/lib/editorPreference.js";
+import {
+  FileApplicationChoices,
+  FileSaveAsMenuItem,
+  useFileApplications,
+} from "@/file-menu/index.js";
+import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import {
   FileDisplayIcon,
   FOLDER_FILE_ICON_SRC,
@@ -92,7 +101,10 @@ import { stripBalancedAssistantPathQuotes } from "@/lib/assistantPathQuotes.js";
 import { getPathLeaf } from "@/lib/path.js";
 import { getWorkspaceFileRelativePath } from "@/workspace-file-tree/model.js";
 import { resolveWorkspaceEditorSelection } from "@/lib/workspaceEditorSelection.js";
-import { sortInstalledEditorsForFileTree } from "@/workspace-file-tree/helpers.js";
+import {
+  getFileManagerLabel,
+  sortInstalledEditorsForFileTree,
+} from "@/workspace-file-tree/helpers.js";
 import type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 import { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
@@ -1137,74 +1149,162 @@ interface MessageFileLinkProps {
   onOpen: () => void;
 }
 
-function MessageFileLink({ className, fileIconSrc, fileLink, onOpen }: MessageFileLinkProps) {
+function MessageFileLink(props: MessageFileLinkProps) {
+  const services = useOptionalServices();
+  if (!services)
+    return <MessageFileLinkButton {...props}>{props.fileLink.label}</MessageFileLinkButton>;
+  return <ScopedMessageFileLink {...props} />;
+}
+
+function ScopedMessageFileLink({ className, fileIconSrc, fileLink, onOpen }: MessageFileLinkProps) {
   const { intl } = useZCodeIntl();
   const platform = usePlatform();
-  const services = useOptionalServices();
-  const fileActions = useFileContextActions();
+  const { fileService } = useWorkspaceServices(
+    fileLink.workspacePath,
+    fileLink.workspaceRemoteSessionId,
+    fileLink.workspaceIdentity,
+  );
+  const [pathKind, setPathKind] = useState<"file" | "directory" | null>(null);
   const openInEditorContext = useWorkspaceOpenInEditorTarget({
     workspacePath: fileLink.workspacePath,
     workspaceIdentity: fileLink.workspaceIdentity,
     workspaceRemoteSessionId: fileLink.workspaceRemoteSessionId,
   });
-  const [editors, setEditors] = useState<EditorInfo[]>([]);
-  const [editorsLoaded, setEditorsLoaded] = useState(false);
-  const [loadingEditors, setLoadingEditors] = useState(false);
-  const sortedEditors = useMemo(
-    () =>
-      openInEditorContext.isRemoteWorkspace && !openInEditorContext.remoteTarget
-        ? []
-        : resolveWorkspaceEditorSelection({
-            installedEditors: editors,
-            selectedEditorId: null,
-            remoteTarget: openInEditorContext.remoteTarget,
-          }).availableEditors,
-    [editors, openInEditorContext],
+  const isRemote = Boolean(
+    fileLink.workspaceIdentity ||
+    fileLink.workspaceRemoteSessionId ||
+    openInEditorContext.isRemoteWorkspace,
   );
-  const selectedEditor = useMemo(() => {
-    const selectedEditorId = readLastSelectedEditorId();
-    return (
-      sortedEditors.find((editor) => editor.id === selectedEditorId) ?? sortedEditors[0] ?? null
-    );
-  }, [sortedEditors]);
+  // 与 OpenSplitButton 的「在 Finder / 资源管理器中打开」同源：本机或 WSL 才能定位，SSH 等远程不显示。
+  const fileActions = useFileContextActions({
+    canOpenLocalFileManager: Boolean(platform.canOpenLocalFiles),
+    isRemoteWorkspace: isRemote,
+    remoteTarget: openInEditorContext.remoteTarget,
+    workspaceIdentity: fileLink.workspaceIdentity,
+  });
+  const canReveal = fileActions.canRevealInFileManager({ path: fileLink.path });
+  const fileApplications = useFileApplications(
+    { path: fileLink.path, pathKind: "file", workspaceIdentity: fileLink.workspaceIdentity },
+    isRemote,
+  );
+  const [editors, setEditors] = useState<EditorInfo[]>([]);
+  const [loadingEditors, setLoadingEditors] = useState(false);
+  // 整合菜单（specs/file-open-apps-enhancement.md）：本地文件 = 系统应用（isDefault 置顶）
+  // → fork 自定义应用（custom: 前缀）→ 静态编辑器；目录与远程回退既有 editors 过滤链路。
+  const sortedEditors: Array<EditorInfo & { isDefault?: boolean }> = useMemo(() => {
+    if (pathKind === "file" && !isRemote) {
+      const customEditors = editors.filter((editor) => isCustomEditorInfo(editor));
+      const staticEditors = resolveWorkspaceEditorSelection({
+        installedEditors: editors.filter((editor) => !isCustomEditorInfo(editor)),
+        selectedEditorId: null,
+        remoteTarget: openInEditorContext.remoteTarget,
+      }).availableEditors;
+      return [
+        // FileApplicationInfo.iconDataUrl 可缺省；补空串对齐 EditorInfo 的必填图标字段。
+        ...fileApplications.apps.map((app) => ({ ...app, iconDataUrl: app.iconDataUrl ?? "" })),
+        ...customEditors,
+        ...staticEditors,
+      ];
+    }
+    return isRemote && !openInEditorContext.remoteTarget
+      ? []
+      : resolveWorkspaceEditorSelection({
+          installedEditors: editors,
+          selectedEditorId: null,
+          remoteTarget: openInEditorContext.remoteTarget,
+        }).availableEditors;
+  }, [editors, openInEditorContext, pathKind, isRemote, fileApplications.apps]);
+  const query = useRef(0);
+  const queryKey = `${fileLink.path}\u0000${fileLink.workspaceIdentity ?? ""}\u0000${fileLink.workspaceRemoteSessionId ?? ""}`;
+  const currentQueryKey = useRef(queryKey);
+  currentQueryKey.current = queryKey;
+  useEffect(() => {
+    setPathKind(null);
+    setEditors([]);
+    setLoadingEditors(false);
+    query.current += 1;
+    return () => {
+      query.current += 1;
+    };
+  }, [queryKey]);
 
   const loadEditors = useCallback(async () => {
-    if (editorsLoaded || loadingEditors) {
-      return;
-    }
-
+    if (loadingEditors) return;
+    const request = ++query.current;
     setLoadingEditors(true);
     try {
+      // Markdown 渲染层无法从名称可靠判断文件/目录；菜单打开时先 stat 定型，再决定查询分支。
+      const stat = await fileService.stat({ path: fileLink.path });
+      if (request !== query.current || currentQueryKey.current !== queryKey) return;
+      setPathKind(stat.type);
+      if (stat.type === "file" && !isRemote) {
+        await fileApplications.load();
+      }
       const installedEditors = await platform.getInstalledEditors();
-      setEditors(installedEditors);
-      setEditorsLoaded(true);
+      if (request === query.current && currentQueryKey.current === queryKey)
+        setEditors(installedEditors);
     } catch (error) {
       logger.warn("[MessageResponse] 获取 markdown 链接打开方式失败", {
         path: fileLink.path,
         error: error instanceof Error ? error.message : String(error),
       });
     } finally {
-      setLoadingEditors(false);
+      if (request === query.current) setLoadingEditors(false);
     }
-  }, [editorsLoaded, fileLink.path, loadingEditors, platform]);
+  }, [
+    fileLink.path,
+    loadingEditors,
+    platform,
+    fileService,
+    isRemote,
+    fileApplications.load,
+    queryKey,
+  ]);
 
-  const handleOpenInEditor = (editor: EditorInfo) => {
-    if (!services) {
-      logger.warn("[MessageResponse] 无法确认 markdown 链接文件类型", {
-        editorId: editor.id,
-        path: fileLink.path,
-        error: "workspace-file-service-unavailable",
-      });
+  const hasDefaultShortcut =
+    pathKind === "file" &&
+    !isRemote &&
+    Boolean(platform.canOpenLocalFiles && platform.openExternalFile);
+
+  const handleOpenInEditor = (editor: EditorInfo & { isDefault?: boolean }) => {
+    // 本地文件的系统关联应用直接走平台 openFileWithApplication；偏好只作用于 editors/custom 段。
+    if (pathKind === "file" && !isRemote && editor.id.startsWith("file-app:")) {
+      void fileApplications.open({ ...editor, isDefault: Boolean(editor.isDefault) });
       return;
     }
-
+    if (pathKind === "file" && !isRemote) {
+      persistLastSelectedEditorId(editor.id);
+      void platform
+        .openInEditor(editor.id, fileLink.path, {
+          pathKind: "file",
+          workspaceIdentity: fileLink.workspaceIdentity,
+        })
+        .then((result) => {
+          if (result.success) {
+            return;
+          }
+          logger.warn("[MessageResponse] 第三方 App 打开 markdown 文件链接失败", {
+            editorId: editor.id,
+            path: fileLink.path,
+            error: result.error ?? "unknown-error",
+          });
+        })
+        .catch((error) => {
+          logger.warn("[MessageResponse] 打开 markdown 文件链接失败", {
+            editorId: editor.id,
+            path: fileLink.path,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+      return;
+    }
     persistLastSelectedEditorId(editor.id);
     void openMessageFileLinkInEditor({
       editorId: editor.id,
       fileLink,
       openInEditor: (editorId, path, options) => platform.openInEditor(editorId, path, options),
       remoteTarget: openInEditorContext.remoteTarget,
-      statFile: (params) => services.fileService.stat(params),
+      statFile: (params) => fileService.stat(params),
     })
       .then((result) => {
         if (result.success) {
@@ -1238,24 +1338,45 @@ function MessageFileLink({ className, fileIconSrc, fileLink, onOpen }: MessageFi
           {fileLink.label}
         </MessageFileLinkButton>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
+      <ContextMenuContent className="w-64 max-w-[calc(100vw-1rem)]">
         <ContextMenuItem onSelect={onOpen}>
+          <PanelRightIcon aria-hidden="true" className="size-4" />
           {intl.formatMessage({ id: "common.open" })}
         </ContextMenuItem>
+        {platform.canOpenLocalFiles && (!isRemote || openInEditorContext.remoteTarget) && (
+          <FileApplicationChoices
+            variant="context"
+            applications={sortedEditors}
+            loading={loadingEditors}
+            onOpenDefault={
+              hasDefaultShortcut ? () => void fileApplications.openDefault() : undefined
+            }
+            onSelect={handleOpenInEditor}
+          />
+        )}
         <ContextMenuSeparator />
-        {selectedEditor ? (
-          sortedEditors.map((editor) => (
-            <ContextMenuItem key={editor.id} onSelect={() => handleOpenInEditor(editor)}>
-              <img src={editor.iconDataUrl} alt={editor.name} className="size-4 shrink-0" />
-              <span>{editor.name}</span>
-            </ContextMenuItem>
-          ))
-        ) : (
-          <ContextMenuItem disabled>
-            {intl.formatMessage({
-              id: loadingEditors ? "common.loading" : "chat.previewCards.noOpenApps",
-            })}
+        {canReveal && (
+          <ContextMenuItem
+            onSelect={() =>
+              // 文件：打开所在目录并选中；目录：直接打开该目录。stat 未返回前按链接提示判断。
+              void fileActions.revealFileInFileManager({
+                path: fileLink.path,
+                kind: (pathKind ?? fileLink.pathKind) === "directory" ? "directory" : "file",
+              })
+            }
+          >
+            <FolderOpenIcon className="size-4" />
+            {getFileManagerLabel(intl)}
           </ContextMenuItem>
+        )}
+        {pathKind === "file" && (
+          <FileSaveAsMenuItem
+            variant="context"
+            path={fileLink.path}
+            workspacePath={fileLink.workspacePath}
+            workspaceIdentity={fileLink.workspaceIdentity}
+            workspaceRemoteSessionId={fileLink.workspaceRemoteSessionId}
+          />
         )}
         <ContextMenuSeparator />
         <ContextMenuItem

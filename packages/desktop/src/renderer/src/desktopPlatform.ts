@@ -1,13 +1,29 @@
 import { buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
+import type { FileApplicationInfo, FileApplicationTarget } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
 import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
+
+// fork：desktop renderer 的 tsconfig 未引入 @zcode/client/globals 全局声明（存量 window.zxcode
+// 访问均以 TS2339 记账），新增的系统关联桥接按本文件既有的显式断言模式收口，不扩大存量错误面。
+const fileApplicationsBridge = (
+  window as Window & {
+    zxcode?: {
+      getFileApplications?: (target: FileApplicationTarget) => Promise<FileApplicationInfo[]>;
+      openFileWithApplication?: (
+        applicationId: string,
+        target: FileApplicationTarget,
+      ) => Promise<{ success: boolean; error?: string }>;
+    };
+  }
+).zxcode;
 
 export function createDesktopPlatform(options: {
   isLocalDevelopmentRuntime: boolean;
 }): IPlatformService {
   return {
     canSelectFilePath: true,
+    canOpenLocalFiles: true,
     pluginSandbox: createDesktopPluginSandboxPlatform(),
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
@@ -150,6 +166,13 @@ export function createDesktopPlatform(options: {
     onApplicationLocaleChanged: (callback) =>
       window.zxcode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
     getInstalledEditors: () => window.zxcode.getInstalledEditors(),
+    getFileApplications: (target) =>
+      fileApplicationsBridge?.getFileApplications?.(target) ?? Promise.resolve([]),
+    openFileWithApplication: async (applicationId, target) =>
+      (await fileApplicationsBridge?.openFileWithApplication?.(applicationId, target)) ?? {
+        success: false,
+        error: "unsupported",
+      },
     getApplicationIcon: (bundleId) =>
       window.zxcode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>

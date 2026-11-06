@@ -50,6 +50,8 @@ import type {
   EmbeddedBrowserDataClearResult,
   WSLDistro,
   OpenInEditorOptions,
+  FileApplicationInfo,
+  FileApplicationTarget,
 } from "@zcode/shared";
 
 /**
@@ -321,6 +323,13 @@ declare global {
       }>;
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(): Promise<EditorInfo[]>;
+      /** 查询系统为本机文件注册的打开应用（目录/远端/非本机路径返回空数组） */
+      getFileApplications?(target: FileApplicationTarget): Promise<FileApplicationInfo[]>;
+      /** 重新确认系统关联后，用指定系统应用打开本机文件 */
+      openFileWithApplication?(
+        applicationId: string,
+        target: FileApplicationTarget,
+      ): Promise<{ success: boolean; error?: string }>;
       /** 按兼容 bundle id 或结构化 locator 获取系统应用图标 */
       getApplicationIcon?(
         request: string | ApplicationIconRequest,

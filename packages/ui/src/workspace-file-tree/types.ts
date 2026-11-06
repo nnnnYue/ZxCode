@@ -44,6 +44,7 @@ export interface WorkspaceFileTreeEditorState {
   installedEditors: EditorInfo[];
   isRemoteWorkspaceFileTree: boolean;
   remoteTarget?: OpenInEditorRemoteTarget;
+  workspaceRemoteSessionId?: string;
 }
 
 export type WorkspaceFileGitStatusLabels = Record<WorkspaceFileGitStatus, string>;

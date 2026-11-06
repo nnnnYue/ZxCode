@@ -601,6 +601,7 @@ export function WorkspaceFileTree({
     installedEditors: availableEditors,
     isRemoteWorkspaceFileTree,
     remoteTarget,
+    workspaceRemoteSessionId,
   };
 
   return (

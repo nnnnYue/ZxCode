@@ -47,6 +47,7 @@ import type {
   EmbeddedBrowserSitePermissionsSnapshot,
   Locale,
   EditorInfo,
+  FileApplicationTarget,
   OpenInEditorOptions,
   RemoteTarget,
   TaskNotificationPayload,
@@ -704,6 +705,12 @@ contextBridge.exposeInMainWorld("zxcode", {
   getDesktopSessionActivity: () => ipcRenderer.invoke(PlatformChannels.GetDesktopSessionActivity),
   /** 获取已安装的编辑器/终端列表（含图标） */
   getInstalledEditors: () => ipcRenderer.invoke(PlatformChannels.GetInstalledEditors),
+  /** 查询系统为本机文件注册的打开应用（目录/远端/非本机路径返回空数组） */
+  getFileApplications: (target: FileApplicationTarget) =>
+    ipcRenderer.invoke(PlatformChannels.GetFileApplications, target),
+  /** 重新确认系统关联后，用指定系统应用打开本机文件 */
+  openFileWithApplication: (applicationId: string, target: FileApplicationTarget) =>
+    ipcRenderer.invoke(PlatformChannels.OpenFileWithApplication, { applicationId, target }),
   getApplicationIcon: (request: string | ApplicationIconRequest) =>
     ipcRenderer.invoke(PlatformChannels.GetApplicationIcon, request),
   /** 用指定编辑器打开路径 */
