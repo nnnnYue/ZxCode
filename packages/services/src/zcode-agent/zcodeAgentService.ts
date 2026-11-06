@@ -121,6 +121,7 @@ import {
   zcodeWorkspaceCancelGenerateTextResultSchema,
   zcodeWorkspaceGenerateTextResultSchema,
   zcodeWorkspaceHookTrustGrantResultSchema,
+  zcodeWorkspaceMcpTrustResultSchema,
   zcodeWorkspaceUpdateInteractionPreferencesResultSchema,
   zcodeWorkspaceUpdateModelIoPreferencesResultSchema,
   type ZCodeSessionStateSnapshot,
@@ -3533,6 +3534,20 @@ export function createZCodeAgentService(
           hookDeclarationDigest: params.hookDeclarationDigest,
         },
         zcodeWorkspaceHookTrustGrantResultSchema,
+      );
+    },
+
+    async setWorkspaceMcpTrust(params) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.workspaceMcpTrust,
+        {
+          workspace: buildWorkspaceRef(params),
+          serverName: params.serverName,
+          declarationDigest: params.declarationDigest,
+          trusted: params.trusted,
+        },
+        zcodeWorkspaceMcpTrustResultSchema,
       );
     },
 

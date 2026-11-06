@@ -82,6 +82,8 @@ import type {
   ZCodeWorkspaceGenerateTextResult,
   ZCodeWorkspaceGenerateTextParams,
   ZCodeWorkspaceHookTrustGrantResult,
+  WorkspaceMcpTrustDecision,
+  ZCodeWorkspaceMcpTrustResult,
   ZCodeAutomationBotDeliveryTarget,
 } from "@zcode/shared";
 import type {
@@ -657,6 +659,7 @@ export interface IZCodeAgentService {
   grantWorkspaceHookTrust(
     params: ZCodeAgentGrantWorkspaceHookTrustParams,
   ): Promise<ZCodeWorkspaceHookTrustGrantResult>;
+  setWorkspaceMcpTrust(params: WorkspaceMcpTrustDecision): Promise<ZCodeWorkspaceMcpTrustResult>;
   listMcpServerStatuses(params: ZCodeAgentListMcpServerStatusesParams): Promise<ZCodeMcpListResult>;
   listPlugins(params: ZCodeAgentPluginViewParams): Promise<ZCodePluginsListResult>;
   /**

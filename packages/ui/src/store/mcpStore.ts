@@ -655,7 +655,12 @@ export const useMcpStore = create<McpStoreState>((set, get) => {
 
       const result: ZCodeAgentMcpServer[] = [];
       for (const server of candidates.values()) {
-        const zcodeAgentServer = convertToZCodeAgentMcpServer(server.name, server.config);
+        // scope 透传给 mcp/list：workspace 声明才有 trust 审核（上游 v3.17.2 workspaceTrust）。
+        const zcodeAgentServer = convertToZCodeAgentMcpServer(
+          server.name,
+          server.config,
+          server.scope === "workspace" ? "workspace" : "user",
+        );
         if (zcodeAgentServer) result.push(zcodeAgentServer);
       }
       return result;

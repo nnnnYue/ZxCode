@@ -14,12 +14,14 @@ import {
 } from "@zcode/shared";
 import type {
   RemoteTarget,
+  WorkspaceMcpTrustDecision,
   ZCodeAvailablePluginSummary,
   ZCodeAgentMcpServer,
   ZCodeMcpListMode,
   ZCodeMcpServer,
   ZCodeMcpServerStatusSnapshot,
   ZCodePluginInfo,
+  ZCodeWorkspaceMcpTrustResult,
 } from "@zcode/shared";
 import { isZCodeAgentMcpStatusModeUnsupportedError, type IMcpSyncService } from "@zcode/services";
 import { Button } from "@/components/ui/button.js";
@@ -77,6 +79,17 @@ const DEFAULT_MCP_SOURCE: ServerScope = "zxcodeagentmcp";
 const MCP_OAUTH_AUTHORIZATION_STATUS_REFRESH_MS = 1_000;
 const MCP_OAUTH_AUTHORIZATION_STATUS_REFRESH_DURATION_MS = 5 * 60_000;
 const MCP_OAUTH_AUTHORIZATION_FOLLOWUP_REFRESH_ATTEMPTS = 10;
+
+export async function applyWorkspaceMcpTrustDecision(
+  request: WorkspaceMcpTrustDecision,
+  isCurrentTarget: () => boolean,
+  decide: (request: WorkspaceMcpTrustDecision) => Promise<ZCodeWorkspaceMcpTrustResult>,
+): Promise<boolean> {
+  if (!isCurrentTarget()) return false;
+  const result = await decide(request);
+  if (!result.accepted) throw new Error(result.reasonCode ?? "workspace_mcp_trust_unavailable");
+  return isCurrentTarget();
+}
 
 export function createMcpOAuthAuthorizationStatusRefreshDeadline(
   now: () => number = Date.now,
@@ -335,7 +348,12 @@ export function buildMcpOAuthAuthorizationStatusRefreshServers(
     if (!hasPendingAuthorization || seenNames.has(server.name)) {
       continue;
     }
-    const zcodeAgentServer = convertToZCodeAgentMcpServer(server.name, server.config);
+    // scope 透传给 mcp/list：workspace 声明才有 trust 审核链路（上游 v3.17.2）。
+    const zcodeAgentServer = convertToZCodeAgentMcpServer(
+      server.name,
+      server.config,
+      server.scope === "workspace" ? "workspace" : "user",
+    );
     if (!zcodeAgentServer) {
       continue;
     }
@@ -1219,6 +1237,77 @@ export function McpSettingsSection({
     ? formatRemoteSkillSyncTarget(connectedRemoteSyncTarget, activeWorkspacePath ?? "")
     : "";
 
+  const trustTargetRef = useRef({
+    workspaceKey: activeWorkspaceKey,
+    service: services.mcpSyncService,
+  });
+  trustTargetRef.current = { workspaceKey: activeWorkspaceKey, service: services.mcpSyncService };
+
+  const trustAbortRef = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      trustAbortRef.current?.abort();
+      trustAbortRef.current = null;
+    },
+    [activeWorkspaceKey, services.mcpSyncService],
+  );
+
+  async function handleWorkspaceMcpTrust(server: ZCodeMcpServer) {
+    const review = server.workspaceTrust;
+    if (trustAbortRef.current) return;
+    const controller = new AbortController();
+    const target = trustTargetRef.current;
+    const isCurrentTarget = () =>
+      !controller.signal.aborted &&
+      target.workspaceKey === trustTargetRef.current.workspaceKey &&
+      target.service === trustTargetRef.current.service;
+    const workspacePath = activeWorkspacePath;
+    const decide = services.mcpSyncService.setWorkspaceMcpTrust;
+    if (!review || !workspacePath || !decide || server.scope !== "workspace") return;
+    trustAbortRef.current = controller;
+    const trusted = !review.trusted;
+    const confirmed = await confirmDialog(
+      {
+        title: intl.formatMessage(
+          { id: trusted ? "settings.mcp.trust.title" : "settings.mcp.trust.revokeTitle" },
+          { name: server.name },
+        ),
+        description: [
+          intl.formatMessage({ id: "settings.mcp.trust.description" }),
+          ...review.sourcePaths,
+          // Host 已脱敏并格式化声明；fork 确认框暂无 codeBlock 分区，摘要并入说明区保留缩进。
+          review.display,
+        ].join("\n\n"),
+        confirmLabel: intl.formatMessage({
+          id: trusted ? "settings.mcp.trust.action" : "settings.mcp.trust.revoke",
+        }),
+      },
+      controller.signal,
+    );
+    if (!confirmed) {
+      if (trustAbortRef.current === controller) trustAbortRef.current = null;
+      return;
+    }
+    try {
+      const current = await applyWorkspaceMcpTrustDecision(
+        {
+          workspacePath,
+          ...(activeWorkspaceIdentity ? { workspaceIdentity: activeWorkspaceIdentity } : {}),
+          serverName: server.name,
+          declarationDigest: review.declarationDigest,
+          trusted,
+        },
+        isCurrentTarget,
+        (request) => decide.call(services.mcpSyncService, request),
+      );
+      if (current) await requestMcpServerStatusList({ mode: "status" });
+    } catch {
+      if (isCurrentTarget()) toast(intl.formatMessage({ id: "settings.mcp.trust.failed" }));
+    } finally {
+      if (trustAbortRef.current === controller) trustAbortRef.current = null;
+    }
+  }
+
   async function handleToggle(id: string, enabled: boolean) {
     await toggleServer(id, enabled);
 
@@ -1492,6 +1581,7 @@ export function McpSettingsSection({
               onEdit={handleEdit}
               onToggle={handleToggle}
               onOpenAuthorization={handleOpenAuthorization}
+              onTrust={handleWorkspaceMcpTrust}
               emptyTitle={intl.formatMessage({ id: "settings.mcp.emptyTitle" })}
               emptyDescription={intl.formatMessage({
                 id: "settings.mcp.emptyDescription",

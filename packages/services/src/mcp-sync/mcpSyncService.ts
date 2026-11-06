@@ -70,6 +70,7 @@ const DIRECTORY_MCP_DESCRIPTORS: readonly DirectoryMcpDescriptor[] = [
 ];
 
 export interface McpSyncServiceDependencies {
+  setWorkspaceMcpTrust?: IMcpSyncService["setWorkspaceMcpTrust"];
   /**
    * MCP server 运行态状态检查的执行面。真实 connect/listTools 必须发生在
    * agent 进程（workspace 的 PATH/cwd 环境），host 侧没有可替代实现；无该依赖的
@@ -90,6 +91,10 @@ export function createMcpSyncService(
         throw new Error("MCP server status listing is unavailable in this runtime");
       }
       return dependencies.listMcpServerStatuses(params);
+    },
+    async setWorkspaceMcpTrust(params) {
+      if (!dependencies.setWorkspaceMcpTrust) throw new Error("workspace_mcp_trust_unavailable");
+      return dependencies.setWorkspaceMcpTrust(params);
     },
     async saveMcpToUserDirectory(payload) {
       await saveMcpToUserDirectory(payload);

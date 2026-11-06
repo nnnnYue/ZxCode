@@ -8,9 +8,11 @@ import type {
   McpSyncRemoteStatusResult,
   RemoteSyncWriteAccessResult,
   SaveCliMcpToUserDirectoryRequest,
+  WorkspaceMcpTrustDecision,
   ZCodeAgentMcpServer,
   ZCodeMcpListMode,
   ZCodeMcpListResult,
+  ZCodeWorkspaceMcpTrustResult,
 } from "@zcode/shared";
 import { ServiceChannels } from "@zcode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
@@ -30,6 +32,11 @@ export interface IMcpSyncService {
     mcpServers?: ZCodeAgentMcpServer[];
     mode?: ZCodeMcpListMode;
   }): Promise<ZCodeMcpListResult>;
+  /**
+   * workspace MCP 信任决定（上游 v3.17.2 workspace/mcp/trust）。可选方法：无 agent
+   * 透传依赖的构造（纯目录同步用途/单测）调用会显式抛 workspace_mcp_trust_unavailable。
+   */
+  setWorkspaceMcpTrust?(params: WorkspaceMcpTrustDecision): Promise<ZCodeWorkspaceMcpTrustResult>;
   saveMcpToUserDirectory(payload: SaveCliMcpToUserDirectoryRequest): Promise<void>;
   listLocalUserMcpCandidates(): Promise<McpSyncCandidateListResult>;
   listRemoteUserMcpStatuses(params: { names: string[] }): Promise<McpSyncRemoteStatusResult>;

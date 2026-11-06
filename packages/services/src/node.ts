@@ -1470,6 +1470,8 @@ export function createLocalServices(options: {
   const mcpSyncService = createMcpSyncService({
     // mcp/list 的 host 消费点收拢到 mcpSync 服务；真实状态检查仍在 agent 进程。
     listMcpServerStatuses: (params) => zcodeAgentService.listMcpServerStatuses(params),
+    // workspace/mcp/trust 同样透传到 agent 进程；信任落库在 agent 侧用户存储。
+    setWorkspaceMcpTrust: (params) => zcodeAgentService.setWorkspaceMcpTrust(params),
   });
   const pluginSyncService = createPluginSyncService();
   const pluginUiAccounts = createPluginUiAccountBindings({
