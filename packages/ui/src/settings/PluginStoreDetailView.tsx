@@ -129,16 +129,16 @@ export function PluginStoreDetailView({
       <div className="space-y-3">
         <PluginStoreAvatar item={item} className="size-16 rounded-2xl" iconClassName="size-6" />
         <div
-          className="flex min-w-0 items-center justify-between gap-3"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-3"
           data-testid="plugin-store-title-actions"
         >
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-foreground">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="min-w-0 break-words text-2xl font-medium text-foreground">
               {displayName}
             </h1>
             <PluginStorePaidPlanBadge item={item} />
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {item.installed ? (
               <>
                 <PluginStoreItemMenu

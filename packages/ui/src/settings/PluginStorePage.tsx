@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- 插件商店容器统一编排列表/详情、市场源对话框、卸载确认、试用跳转与技能刷新收尾，集中维护保证交互一致。 */
 import { PluginAddMenu } from "@/settings/PluginAddMenu.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, Settings } from "lucide-react";
+import { ArrowLeft, RefreshCw, Settings } from "lucide-react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
@@ -381,6 +381,12 @@ export function PluginStorePage({
         }
         onSectionSelect={backToStore}
       />
+      {view === "detail" ? (
+        <Button variant="ghost" data-testid="plugin-store-detail-back" onClick={backToStore}>
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          {intl.formatMessage({ id: "settings.plugins.store.back" })}
+        </Button>
+      ) : null}
       {view === "store" ? (
         <h1
           data-testid="plugin-store-title"

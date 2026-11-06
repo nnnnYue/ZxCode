@@ -328,7 +328,7 @@ function StoreSection({
   return (
     <section className={className}>
       <div className="pb-2">
-        <h2 className="text-ui-lg font-semibold text-foreground">{title}</h2>
+        <h2 className="text-ui-lg font-medium text-foreground">{title}</h2>
       </div>
       <div aria-hidden="true" className="h-px bg-surface" />
       <div className="mt-2">{children}</div>
