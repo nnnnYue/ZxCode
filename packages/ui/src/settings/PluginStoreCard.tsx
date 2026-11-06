@@ -21,6 +21,7 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { PluginStoreAvatar } from "@/settings/PluginStoreAvatar.js";
 import {
   canUpdatePluginItem,
+  isItemBusy,
   resolveItemDescription,
   resolveItemDisplayName,
   type StorePluginItem,
@@ -39,17 +40,6 @@ export interface PluginStoreActions {
   onUpdate: (pluginId: string) => void;
   operationId: string | null;
   togglingPluginId: string | null;
-}
-
-export function isItemBusy(item: StorePluginItem, actions: PluginStoreActions): boolean {
-  return (
-    actions.operationId === `plugin:install:${item.name}@${item.marketplace}` ||
-    actions.operationId === `plugin:restore:${item.id}` ||
-    actions.operationId === `plugin:uninstall:${item.id}` ||
-    actions.operationId === `plugin:update:${item.id}` ||
-    actions.operationId === `plugin:reset-config:${item.id}` ||
-    actions.togglingPluginId === item.id
-  );
 }
 
 /**
@@ -314,6 +304,44 @@ export function PluginStoreUpdateButton({
   );
 }
 
+/** 已安装分组头部「全部更新（N）」：仅在存在可更新插件时出现，口径与行内更新按钮一致。 */
+export function PluginUpdateAllButton({
+  items,
+  actions,
+  pending,
+  onUpdateAll,
+}: {
+  items: readonly StorePluginItem[];
+  actions: PluginStoreActions;
+  pending: boolean;
+  onUpdateAll: (pluginIds: string[]) => void;
+}) {
+  const { intl } = useZCodeIntl();
+  const pluginIds = items.filter(canUpdatePluginItem).map((item) => item.id);
+  if (pluginIds.length === 0) return null;
+  const updating =
+    pending || (actions.operationId !== null && actions.operationId.startsWith("plugin:update:"));
+  return (
+    <Button
+      type="button"
+      data-testid="plugin-settings-update-all"
+      variant="outline"
+      disabled={updating}
+      onClick={() => onUpdateAll(pluginIds)}
+    >
+      {updating ? (
+        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <Download className="size-3.5" aria-hidden="true" />
+      )}
+      {intl.formatMessage(
+        { id: "settings.plugins.updateAll" },
+        { count: String(pluginIds.length) },
+      )}
+    </Button>
+  );
+}
+
 /**
  * 商店卡片（双列网格单元）：40px 头像 + 显示名 + 单行截断描述；
  * 尾部动作：已安装 → 「…」菜单，未安装 → 「安装」胶囊。点击主体进入详情页。
@@ -376,7 +404,11 @@ export function PluginStoreCard({
             <PluginStoreUpdateButton item={item} actions={actions} />
             {/* Bugfix：旧版误写 suppression 后可能只剩安装记录、没有运行时 info；
                 此时仍须保留卸载菜单，让用户能清理安装记录与脏 suppression。 */}
-            <PluginStoreItemMenu item={item} actions={actions} />
+            <PluginStoreItemMenu
+              item={item}
+              actions={actions}
+              triggerClassName="text-foreground-subtle opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+            />
           </>
         ) : (
           <PluginStoreInstallButton item={item} actions={actions} />

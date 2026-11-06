@@ -76,7 +76,7 @@ import {
   type WorkspaceSidePaneTab,
 } from "@/lib/workspaceSidePane.js";
 import { isSidePaneTabVisibleForParent } from "@/lib/workspaceSidePane.js";
-import { openPluginUiSidePane } from "@/plugin-ui/index.js";
+import { openPluginUiSidePane, usePluginUiPaneTarget } from "@/plugin-ui/index.js";
 import type { OpenPluginUiSideTabRequest } from "@/plugin-ui/contract.js";
 import { logger } from "@/logger.js";
 import { getPathLeaf, joinFilePath, toFileUrl } from "@/lib/path.js";
@@ -180,6 +180,20 @@ export function useAppPanels(options: {
   } = options;
   const supportsEmbeddedBrowser = explicitSupportsEmbeddedBrowser ?? Boolean(isDesktop);
   const activeWorkspaceKey = workspaceIdentity?.trim() || workspaceAbsPath;
+  // 插件面板按 pane 的有效 session（含草稿预热）归属；scope 解析与打开动作都使用该投影。
+  const pluginUiTarget = usePluginUiPaneTarget({
+    workspacePath: workspaceAbsPath,
+    workspaceIdentity,
+    remoteSessionId: workspaceRemoteSessionId ?? undefined,
+    sessionId: activeTaskId,
+  });
+  const pluginUiWorkspaceKey =
+    pluginUiTarget.workspaceIdentity?.trim() || pluginUiTarget.workspacePath;
+  const pluginUiScopeRef = useRef({
+    pluginUiSessionId: pluginUiTarget.sessionId,
+    pluginUiWorkspaceKey,
+  });
+  pluginUiScopeRef.current = { pluginUiSessionId: pluginUiTarget.sessionId, pluginUiWorkspaceKey };
   const { zcodeAgentService, zcodeSessionService } = useServices();
   const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
@@ -337,7 +351,11 @@ export function useAppPanels(options: {
       );
       const resolved = resolveSidePaneScopeState(
         current,
-        { workspaceKey: activeWorkspaceKey, ownerTaskId: sidePaneOwnerId },
+        {
+          workspaceKey: activeWorkspaceKey,
+          ownerTaskId: sidePaneOwnerId,
+          ...pluginUiScopeRef.current,
+        },
         preferredTabId,
         collapsedPreference,
       );
@@ -352,7 +370,14 @@ export function useAppPanels(options: {
       });
       return resolved.sidePaneState;
     });
-  }, [activeTaskId, activeWorkspaceKey, commitSidePaneState, sidePaneOwnerId]);
+  }, [
+    activeTaskId,
+    activeWorkspaceKey,
+    commitSidePaneState,
+    sidePaneOwnerId,
+    pluginUiTarget.sessionId,
+    pluginUiWorkspaceKey,
+  ]);
 
   // 未保存守卫：编辑中的 code-viewer tab 在被关闭或原位刷新前逐个弹三选确认框。
   // 保存失败的错误 toast 由 PreviewPane 内部负责（draft 保持编辑态），这里只负责中止流程。

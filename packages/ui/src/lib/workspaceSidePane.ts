@@ -1101,6 +1101,9 @@ export function isWorkspaceGlobalSidePaneTab(tab: WorkspaceSidePaneTab): boolean
 export interface SidePaneVisibilityScope {
   workspaceKey: string | null;
   ownerTaskId: string | null;
+  /** 插件面板按 pane 的有效 session（含草稿预热）归属，不用 owner task。 */
+  pluginUiSessionId?: string | null;
+  pluginUiWorkspaceKey?: string | null;
 }
 
 function sidePaneTabMatchesWorkspace(
@@ -1145,6 +1148,14 @@ function getVisibleSidePaneTabsByScope(
 ): WorkspaceSidePaneTab[] {
   const ownerKey = sidePaneOwnerKey(scope.ownerTaskId);
   return tabs.filter((tab) => {
+    // 插件面板按 pane 的有效 session 与 workspace 归属；草稿预热 session 转正后 scope 跟随更新。
+    if (tab.type === "plugin-ui") {
+      return (
+        sidePaneTabMatchesWorkspace(tab, scope.pluginUiWorkspaceKey ?? scope.workspaceKey) &&
+        tab.parentSessionId ===
+          (scope.pluginUiSessionId === undefined ? scope.ownerTaskId : scope.pluginUiSessionId)
+      );
+    }
     if (!sidePaneTabMatchesWorkspace(tab, scope.workspaceKey)) return false;
     if (isWorkspaceGlobalSidePaneTab(tab)) return true;
     if (tab.type === "browser-use") return tab.sessionId === scope.ownerTaskId;
@@ -1158,7 +1169,6 @@ function getVisibleSidePaneTabsByScope(
     if (
       tab.type === "selection-side-chat" ||
       tab.type === "plan-detail" ||
-      tab.type === "plugin-ui" ||
       tab.type === "workflow-run" ||
       tab.type === "workflow-actor-session" ||
       tab.type === "workflow-workspace" ||
@@ -1209,7 +1219,13 @@ export function resolveSidePaneScopeState(
       state && state.activeTabId !== (activeTabId ?? "")
         ? { ...state, activeTabId: activeTabId ?? "" }
         : state,
-    isSidePaneCollapsed: activeTabId === null ? true : (collapsedPreference ?? false),
+    // 草稿里打开的插件面板：任务转正后 tab 仍以预热 session 归属，不能因 owner 为空被折叠。
+    isSidePaneCollapsed:
+      activeTabId === null ||
+      (scope.ownerTaskId === null &&
+        !state?.tabs.some((tab) => tab.id === activeTabId && tab.type === "plugin-ui"))
+        ? true
+        : (collapsedPreference ?? false),
   };
 }
 

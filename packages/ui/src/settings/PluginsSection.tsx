@@ -1,6 +1,14 @@
 /* eslint-disable max-lines -- 共享能力外壳聚合 Scope，并承载 Plugin tabs 与独立 Commands 入口。 */
 import { PluginAddMenu } from "@/settings/PluginAddMenu.js";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Loader2,
   Monitor,
@@ -52,6 +60,7 @@ import {
 import {
   PluginStoreUpdateBadge,
   PluginStoreUpdateButton,
+  PluginUpdateAllButton,
   type PluginStoreActions,
 } from "@/settings/PluginStoreCard.js";
 import { SettingsBreadcrumbReporter } from "@/settings/SettingsHeaderBreadcrumb.js";
@@ -69,8 +78,10 @@ import { usePluginUninstall } from "@/settings/usePluginUninstall.js";
 import {
   buildStoreItems,
   canUpdatePluginItem,
+  needsPluginUpdate,
   resolveManagedPluginDisplay,
   resolvePluginDisplayName,
+  updatePluginsSerially,
 } from "@/settings/pluginStoreListing.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
@@ -379,6 +390,85 @@ function PluginList({
       await refreshAfterPluginChange();
     },
     [pluginManagementService, refreshAfterPluginChange, updatePlugin],
+  );
+  const [updatingAll, setUpdatingAll] = useState(false);
+  const updateAllAbortRef = useRef<AbortController | null>(null);
+  // 服务替换后旧 store 的字段不会变化；提交新上下文或卸载时使旧批次永久失效，防止继续写旧目标。
+  // fork 用 pluginManagementService 身份识别服务替换：本地目标的 rpcReady 恒为 true，不会翻转。
+  useLayoutEffect(
+    () => () => updateAllAbortRef.current?.abort(),
+    [targetKey, configScope, pluginManagementService],
+  );
+  // 「全部更新」与已安装、内置分组的展示顺序一致，且不受搜索过滤影响。
+  const updateAllItems = useMemo(
+    () =>
+      [...scopedPluginGroups.installed, ...scopedPluginGroups.builtIn].flatMap((plugin) => {
+        const item = storeItemById.get(plugin.id);
+        return item ? [item] : [];
+      }),
+    [scopedPluginGroups, storeItemById],
+  );
+  const handleUpdateAll = useCallback(
+    async (pluginIds: string[]) => {
+      // 批量期间切换 Scope 时，store 会被新上下文重新 initialize；以点击时的 store 上下文为准，
+      // 变化即中止。结尾不再调用 refreshAfterPluginChange：每次 updatePlugin 已按当前上下文重载，
+      // 旧闭包再 initialize 会把 store 写回旧上下文，导致列表变空。
+      const contextKey = (state: ReturnType<typeof usePluginManagementStore.getState>) =>
+        [state.workspacePath, state.workspaceIdentity, state.configScope].join("\0");
+      const startKey = contextKey(usePluginManagementStore.getState());
+      const batch = new AbortController();
+      updateAllAbortRef.current = batch;
+      setUpdatingAll(true);
+      try {
+        const { succeeded, failed, aborted } = await updatePluginsSerially(
+          pluginIds,
+          // fork 的 updatePlugin 失败走抛错、成功返回 void；这里把「未抛错」映射为成功。
+          (pluginId) => updatePlugin(pluginId, pluginManagementService).then(() => true),
+          {
+            isCurrent: () =>
+              !batch.signal.aborted && contextKey(usePluginManagementStore.getState()) === startKey,
+            // 行内已更新或正在更新的插件不再重复调用 plugins/update。
+            needsUpdate: (pluginId) =>
+              needsPluginUpdate(usePluginManagementStore.getState(), pluginId),
+          },
+        );
+        if (aborted) {
+          toast(
+            intl.formatMessage(
+              { id: "settings.plugins.updateAll.aborted" },
+              { count: String(succeeded.length) },
+            ),
+          );
+          return;
+        }
+        toast(
+          failed.length === 0
+            ? intl.formatMessage(
+                { id: "settings.plugins.updateAll.done" },
+                { count: String(succeeded.length) },
+              )
+            : intl.formatMessage(
+                { id: "settings.plugins.updateAll.partial" },
+                {
+                  succeeded: String(succeeded.length),
+                  failed: String(failed.length),
+                  plugins: failed
+                    .map((pluginId) =>
+                      resolvePluginDisplayName(
+                        storeItemById.get(pluginId) ?? { name: pluginId },
+                        locale,
+                      ),
+                    )
+                    .join(", "),
+                },
+              ),
+          failed.length === 0 ? undefined : { variant: "warning" },
+        );
+      } finally {
+        setUpdatingAll(false);
+      }
+    },
+    [intl, locale, pluginManagementService, storeItemById, updatePlugin],
   );
   const selectedPlugin = plugins.find((plugin) => plugin.id === selectedPluginId) ?? null;
   // 插件自身 warning 诊断（如声明的技能路径扫描为空）：详情高级区展示，避免静默失败。
@@ -809,6 +899,12 @@ function PluginList({
                 </Button>
               </ControlHintTooltip>
             ) : null}
+            <PluginUpdateAllButton
+              items={updateAllItems}
+              actions={actions}
+              pending={updatingAll}
+              onUpdateAll={(pluginIds) => void handleUpdateAll(pluginIds)}
+            />
             <SettingsResourceHeaderActions onRefresh={() => void refreshAfterPluginChange()} />
             {configScope === "user" ? (
               <>

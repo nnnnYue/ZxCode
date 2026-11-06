@@ -46,7 +46,12 @@ import { SubagentDirectorySidePane } from "@/app-shell/SubagentDirectorySidePane
 import { SelectionSideChatPane } from "@/app-shell/SelectionSideChatPane.js";
 import { BackgroundBashOutputSidePane } from "@/app-shell/BackgroundBashOutputSidePane.js";
 import { PlanDetailSidePane } from "@/app-shell/PlanDetailSidePane.js";
-import { PluginUiLauncherItems, PluginUiSidePane, useOpenPluginUi } from "@/plugin-ui/index.js";
+import {
+  PluginUiLauncherItems,
+  PluginUiSidePane,
+  useOpenPluginUi,
+  usePluginUiPaneTarget,
+} from "@/plugin-ui/index.js";
 import { WorkflowRunSidePane } from "@/app-shell/WorkflowRunSidePane.js";
 import { WorkflowRunDirectorySidePane } from "@/app-shell/WorkflowRunDirectorySidePane.js";
 import { WorkflowActorSessionSidePane } from "@/app-shell/WorkflowActorSessionSidePane.js";
@@ -415,6 +420,14 @@ export function AnimatedSidePanePanel({
   mobileStacked?: boolean;
 }) {
   const onOpenPluginUi = useOpenPluginUi();
+  const pluginUiTarget = usePluginUiPaneTarget({
+    workspacePath: workspaceAbsPath,
+    workspaceIdentity,
+    remoteSessionId: workspaceRemoteSessionId ?? undefined,
+    sessionId: activeTaskId,
+  });
+  const pluginUiWorkspaceKey =
+    pluginUiTarget.workspaceIdentity?.trim() || pluginUiTarget.workspacePath;
   const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const developerToolsEnabled = useDeveloperToolsVisibility();
@@ -435,8 +448,10 @@ export function AnimatedSidePanePanel({
       getVisibleSidePaneTabs(tabs, {
         workspaceKey,
         ownerTaskId: sidePaneOwnerId,
+        pluginUiSessionId: pluginUiTarget.sessionId,
+        pluginUiWorkspaceKey,
       }),
-    [sidePaneOwnerId, tabs, workspaceKey],
+    [sidePaneOwnerId, tabs, workspaceKey, pluginUiTarget.sessionId, pluginUiWorkspaceKey],
   );
   const activeTabId = sidePaneState?.activeTabId ?? "";
   const visibleActiveTabId = visibleTabs.some((tab) => tab.id === activeTabId)
@@ -778,10 +793,10 @@ export function AnimatedSidePanePanel({
         {onOpenPluginUi ? (
           <PluginUiLauncherItems
             variant="menu"
-            workspacePath={workspaceAbsPath}
-            workspaceIdentity={workspaceIdentity}
-            remoteSessionId={workspaceRemoteSessionId}
-            sessionId={activeTaskId}
+            workspacePath={pluginUiTarget.workspacePath}
+            workspaceIdentity={pluginUiTarget.workspaceIdentity}
+            remoteSessionId={pluginUiTarget.remoteSessionId ?? undefined}
+            sessionId={pluginUiTarget.sessionId}
             onOpenPluginUi={onOpenPluginUi}
           />
         ) : null}
@@ -882,10 +897,10 @@ export function AnimatedSidePanePanel({
             })}
             {onOpenPluginUi ? (
               <PluginUiLauncherItems
-                workspacePath={workspaceAbsPath}
-                workspaceIdentity={workspaceIdentity}
-                remoteSessionId={workspaceRemoteSessionId}
-                sessionId={activeTaskId}
+                workspacePath={pluginUiTarget.workspacePath}
+                workspaceIdentity={pluginUiTarget.workspaceIdentity}
+                remoteSessionId={pluginUiTarget.remoteSessionId ?? undefined}
+                sessionId={pluginUiTarget.sessionId}
                 onOpenPluginUi={onOpenPluginUi}
                 itemClassName={OPEN_TAB_LAUNCHER_BUTTON_CLASS}
               />

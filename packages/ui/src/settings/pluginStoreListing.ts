@@ -86,6 +86,64 @@ export function canUpdatePluginItem(
   return Boolean(item && !item.orphaned && isPluginUpdatePending(item.installedMeta?.updateStatus));
 }
 
+/**
+ * 「全部更新」每轮读 store 判断是否仍需更新：updateStatus 要等 loadInto 结束才变 none，
+ * 行内更新已发出但未结束时只能靠 operationId 识别，否则同一插件会并发两次 plugins/update。
+ * fork 的 pluginManagementStore 是单操作模型（operationId），上游是 activeOperations 数组。
+ */
+export function needsPluginUpdate(
+  state: {
+    installedPlugins: readonly Pick<ZCodeInstalledPluginSummary, "id" | "updateStatus">[];
+    operationId: string | null;
+  },
+  pluginId: string,
+): boolean {
+  if (state.operationId === `plugin:update:${pluginId}`) return false;
+  return isPluginUpdatePending(
+    state.installedPlugins.find((plugin) => plugin.id === pluginId)?.updateStatus,
+  );
+}
+
+/**
+ * 市场和右侧推荐共用按插件的忙碌判定，避免安装一个插件时禁用整个列表。
+ * 上游按 activeOperations 数组判定；fork store 是单操作模型，语义等价改为 operationId 精确匹配。
+ */
+export function isItemBusy(
+  item: StorePluginItem,
+  actions: { operationId: string | null; togglingPluginId: string | null },
+): boolean {
+  return (
+    actions.operationId === `plugin:install:${item.name}@${item.marketplace}` ||
+    actions.operationId === `plugin:restore:${item.id}` ||
+    actions.operationId === `plugin:uninstall:${item.id}` ||
+    actions.operationId === `plugin:update:${item.id}` ||
+    actions.operationId === `plugin:reset-config:${item.id}` ||
+    actions.togglingPluginId === item.id
+  );
+}
+
+/**
+ * 「全部更新」：逐个等待单插件更新，单个失败（含抛错）不中断后续插件。
+ * guard 读 store 当前状态：批量耗时较长，期间用户可能切换 Scope 或在行内先更新了某个插件。
+ * 上下文变化即中止，且不计入切换期间完成的那一个（runWorkspaceOperation 此时返回 false，但可能已落盘）。
+ */
+export async function updatePluginsSerially(
+  pluginIds: readonly string[],
+  update: (pluginId: string) => Promise<boolean>,
+  guard: { isCurrent: () => boolean; needsUpdate: (pluginId: string) => boolean },
+): Promise<{ succeeded: string[]; failed: string[]; aborted: boolean }> {
+  const succeeded: string[] = [];
+  const failed: string[] = [];
+  for (const pluginId of pluginIds) {
+    if (!guard.isCurrent()) return { succeeded, failed, aborted: true };
+    if (!guard.needsUpdate(pluginId)) continue;
+    const ok = await update(pluginId).catch(() => false);
+    if (!guard.isCurrent()) return { succeeded, failed, aborted: true };
+    (ok ? succeeded : failed).push(pluginId);
+  }
+  return { succeeded, failed, aborted: false };
+}
+
 export function resolveLocalizedList(
   locale: string,
   base: string[] | undefined,

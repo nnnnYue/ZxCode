@@ -4,6 +4,7 @@
  *
  * 从 zcodeSessionStore.ts 拆分出来，供 store 本体和 selectors / navigation 等子模块共享。
  */
+import type { DraftPluginUiOpenRequest } from "@/plugin-ui/contract.js";
 import {
   buildNativeSupplierKey,
   ZXCODE_AGENT_PROVIDER,
@@ -165,6 +166,10 @@ export interface WorkspaceZCodeUIState {
    * legacy 草稿通过 draftSessionId 关闭，protocol-v4 草稿用该版本重建 pane 内预热会话。
    */
   draftRuntimeInvalidationVersion: number;
+  pluginUiOpenVersion: number;
+  pluginUiOpenRequest:
+    | (DraftPluginUiOpenRequest & { requestId: number; invalidationVersion: number })
+    | null;
   composerTextInsertVersion: number;
   composerTextInsertRequest: ComposerTextInsertRequest | null;
   timelineBottomRequestVersion: number;
@@ -238,6 +243,12 @@ export interface ZCodeSessionStoreState {
     workspaceIdentity?: string,
   ) => void;
   invalidateDraftRuntime: (workspacePath: string, workspaceIdentity?: string) => void;
+  requestPluginUiOpen: (request: DraftPluginUiOpenRequest) => void;
+  clearPluginUiOpenRequest: (
+    workspacePath: string,
+    requestId: number,
+    workspaceIdentity?: string,
+  ) => void;
   requestComposerTextInsert: (
     workspacePath: string,
     text: string,
@@ -519,6 +530,8 @@ export function createDefaultWorkspaceState(
     draftRuntime: { status: "idle", error: null },
     draftSessionId: null,
     draftRuntimeInvalidationVersion: 0,
+    pluginUiOpenVersion: 0,
+    pluginUiOpenRequest: null,
     composerTextInsertVersion: 0,
     composerTextInsertRequest: null,
     timelineBottomRequestVersion: 0,
