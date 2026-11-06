@@ -17,6 +17,27 @@ import {
 } from "@/WorkspaceHeaderSections.js";
 import type { WorkspaceHeaderVariant } from "@/WorkspaceHeaderSections/shared.js";
 
+/**
+ * 侧栏收起时左上角浮层（侧栏开关、前进后退、新建）盖在内容区顶栏上，顶栏需要让出的左侧留白。
+ * WorkspaceHeader 与 Side Pane 完整视图的 tab 栏共用这一规则。
+ * 上游还按「更新就绪」按钮加宽留白；fork 已剔除自动更新域，这里只保留常态留白。
+ */
+export function resolveTopOverlayLeadingPaddingClass({
+  isSidebarVisible,
+  isMacDesktop,
+  isMacFullscreen,
+}: {
+  isSidebarVisible: boolean;
+  isMacDesktop?: boolean;
+  isMacFullscreen?: boolean;
+}): string | false {
+  if (isSidebarVisible) return false;
+  if (isMacDesktop) {
+    return isMacFullscreen ? "pl-38" : "pl-58";
+  }
+  return "pl-38";
+}
+
 export function WorkspaceHeader({
   variant = "task",
 
@@ -118,19 +139,15 @@ export function WorkspaceHeader({
   allowOpenWorkspace?: boolean;
 }) {
   const [selectedEditor, setSelectedEditor] = useState<EditorInfo | null>(null);
-  const shouldOffsetHeaderForWindowControls = !isSidebarVisible;
   // Linux 与 Windows 共用内联窗控，不再预留旧悬浮窗控的标题栏区域。
   const usesInlineWindowControls = Boolean(isWindowsDesktop || (isDesktop && !isMacDesktop));
 
-  let headerWindowControlsPaddingClass: string | false = false;
-  if (shouldOffsetHeaderForWindowControls) {
-    // 更新状态按钮已随自动更新功能删除；这里只保留常态的窗口控制区安全留白。
-    headerWindowControlsPaddingClass = isMacDesktop
-      ? isMacFullscreen
-        ? "pl-38"
-        : "pl-58"
-      : "pl-38";
-  }
+  // 侧栏收起时的窗口控制区安全留白与 Side Pane 完整视图的 tab 栏共用同一规则。
+  const headerWindowControlsPaddingClass = resolveTopOverlayLeadingPaddingClass({
+    isSidebarVisible,
+    isMacDesktop,
+    isMacFullscreen,
+  });
 
   return (
     <header
