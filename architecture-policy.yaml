@@ -1569,3 +1569,8 @@ exceptions:
     paths:
       - packages/zcode-cua/src/**
     reason: The whole zcode-cua producer package (broker, native adapters, tools) entered the repo after the gate timestamp as pre-existing code moved from a separate repository; adopting its internal layers needs a dedicated CONTRACT pass (it has known internal cycles by design), not a mechanical split in this branch.
+  - id: bot-group-task-scope-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/desktop/src/host/botGroupTaskScope.ts
+    reason: 上游 v3.17.2 准入的 bot 分组 scope 文件经缝合适配（ad49abe4：对上游新增 source-settings 变体不注入远程三元组，保持 fork 手机远控语义）；host 目录仍属未受管 desktop 模块，接管需独立模块边界重构，不在本次同步范围内。
