@@ -26,6 +26,7 @@ import type {
 import type { ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
 import type { RuntimeMessageEntry } from "../agent/message-history.js";
+import type { ProviderToolRound } from "./provider-tool-rounds/contract.js";
 import type {
   CompactPhase,
   CompactReason,
@@ -886,8 +887,10 @@ export interface RunModelTextRequestOptions {
 }
 
 export interface RuntimeModelStreamSnapshot {
+  /** 当前轮（最后一个服务端内置工具之后）的内容；之前的轮在 providerToolRounds。 */
   reasoning: ModelReasoningContentBlock[];
   text: string;
+  providerToolRounds?: readonly ProviderToolRound[];
 }
 
 export interface StreamedToolExecutionResult {
@@ -905,6 +908,8 @@ export interface RuntimeModelTextResult {
   reasoning?: ModelReasoningContentBlock[];
   text: string;
   toolCalls?: ModelToolCall[];
+  /** 服务端内置工具切出的前序轮次；text/reasoning 只保留最后一轮。 */
+  providerToolRounds?: ProviderToolRound[];
   usage: ModelUsage;
 }
 

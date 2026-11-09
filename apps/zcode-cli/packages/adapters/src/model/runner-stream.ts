@@ -1607,6 +1607,8 @@ function observeVisibleStreamEvent(
     case "tool_input_delta":
     case "tool_call":
       return { contentMs: elapsed, outputCommitted: true };
+    case "provider_tool_result":
+      return { contentMs: elapsed, outputCommitted: true };
     case "text_start":
     case "reasoning_start":
     case "tool_input_start":
