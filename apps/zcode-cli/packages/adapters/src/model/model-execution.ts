@@ -354,8 +354,10 @@ export class AiSdkModelExecution {
       httpProxy: this.network.httpProxy,
       noProxy: this.network.noProxy,
     });
-    this.providerTransports.set(providerId, networkTransport);
-    return networkTransport;
+    // 观测若放在底层 fetch 注入点，配置代理或 CA 时会被网络适配器绕过。
+    const observedTransport = observeProviderFetch(networkTransport, this.logger, providerId);
+    this.providerTransports.set(providerId, observedTransport);
+    return observedTransport;
   }
 }
 
@@ -491,6 +493,55 @@ export function createProviderBusinessErrorFetch(
       throw businessError;
     }
     return response;
+  };
+}
+
+/** 位于请求安全处理以内的网络边界；只读关联头，不记录 URL 或消费响应 body。 */
+export function observeProviderFetch(
+  fetch: ProviderFetch,
+  logger: Logger | undefined,
+  providerId: string,
+): ProviderFetch {
+  if (!logger) return fetch;
+  return async (input, init) => {
+    const headers = new Headers(
+      init?.headers ?? (input instanceof Request ? input.headers : undefined),
+    );
+    const requestId = headers.get("x-request-id");
+    const querySource = headers.get("x-zcode-query-source");
+    if (!requestId || (querySource !== "main_turn" && querySource !== "compact"))
+      return fetch(input, init);
+    const start = performance.timeOrigin + performance.now();
+    const log = (name: string, statusCode?: number) => {
+      const at = performance.timeOrigin + performance.now();
+      try {
+        logger.info("Model transport diagnostic", {
+          event: `ttft.model.${name}`,
+          requestId,
+          querySource,
+          providerId,
+          queryId: headers.get("x-query-id") ?? undefined,
+          sessionId: headers.get("x-session-id") ?? undefined,
+          traceId: (headers.get("x-zxcode-trace-id") ?? undefined) as
+            | import("@zcode/contracts").TraceId
+            | undefined,
+          at,
+          durationMs: at - start,
+          statusCode,
+        });
+      } catch {
+        /* 日志异常不能改变网络返回值。 */
+      }
+    };
+    log("fetch_started");
+    try {
+      const response = await fetch(input, init);
+      log("response_headers", response.status);
+      return response;
+    } catch (error) {
+      log("fetch_failed");
+      throw error;
+    }
   };
 }
 

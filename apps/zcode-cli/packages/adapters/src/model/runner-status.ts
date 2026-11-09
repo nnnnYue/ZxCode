@@ -300,6 +300,27 @@ function modelStatusLogContext(event: ModelNetworkStatusEvent): Record<string, u
 }
 
 function logStatusEvent(event: ModelNetworkStatusEvent, logger?: Logger): void {
+  // 只保留每个 attempt 的边界；旧 first_content 接受空 block start，不能用于本地首有效内容。
+  if (event.querySource === "main_turn" || event.querySource === "compact") {
+    const names: Partial<Record<ModelNetworkStatusEvent["type"], string>> = {
+      model_request_queued: "queued",
+      model_request_admitted: "admitted",
+      model_request_started: "request_started",
+      model_request_completed: "completed",
+      model_request_failed: "failed",
+      model_retry_scheduled: "retry_wait",
+      model_first_provider_event: "first_provider_event",
+    };
+    const name = names[event.type];
+    if (name)
+      logLocalModelMilestone(logger, event, name, {
+        ...("attempt" in event ? { attempt: event.attempt } : {}),
+        ...("queuedMs" in event ? { queuedMs: event.queuedMs } : {}),
+        ...("durationMs" in event ? { durationMs: event.durationMs } : {}),
+        ...("delayMs" in event ? { delayMs: event.delayMs } : {}),
+        ...("statusCode" in event ? { statusCode: event.statusCode } : {}),
+      });
+  }
   switch (event.type) {
     case "model_request_queued":
       logger?.debug("Model request queued for admission", {
@@ -383,5 +404,31 @@ function logStatusEvent(event: ModelNetworkStatusEvent, logger?: Logger): void {
         status: "completed",
       });
       return;
+  }
+}
+
+/** 本地生产诊断只保留关联和耗时，不把请求 URL、Header 或正文写进日志。 */
+export function logLocalModelMilestone(
+  logger: Logger | undefined,
+  context: ModelStatusContext | ModelNetworkStatusEvent,
+  name: string,
+  fields: Record<string, unknown> = {},
+): void {
+  try {
+    logger?.info("Model first-response diagnostic", {
+      event: `ttft.model.${name}`,
+      traceId: context.traceId,
+      sessionId: context.sessionId,
+      turnId: context.turnId,
+      queryId: context.queryId,
+      querySource: context.querySource,
+      requestId: context.requestId,
+      providerId: context.providerId,
+      modelId: context.modelId,
+      at: performance.timeOrigin + performance.now(),
+      ...fields,
+    });
+  } catch {
+    /* 诊断不能中断流或重试。 */
   }
 }
