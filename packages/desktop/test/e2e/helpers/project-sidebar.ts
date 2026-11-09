@@ -39,21 +39,16 @@ export async function startProjectPointerDrag(selector: string) {
     },
   ]);
   // 跨阈值的事件只负责激活 sensor；等待该 owner 的状态，再发第二次位移，避免事件合并造成零位移。
-  await browser.waitUntil(
-    async () => (await $(selector).getAttribute("aria-pressed")) === "true",
-    {
-      timeout: 5000,
-      timeoutMsg: "项目拖拽未激活",
-    },
-  );
+  await browser.waitUntil(async () => (await $(selector).getAttribute("aria-pressed")) === "true", {
+    timeout: 5000,
+    timeoutMsg: "项目拖拽未激活",
+  });
   await browser.performActions([
     {
       type: "pointer",
       id: "project-drag",
       parameters: { pointerType: "mouse" },
-      actions: [
-        { type: "pointerMove", x: position.x, y: position.y + 24, duration: 0 },
-      ],
+      actions: [{ type: "pointerMove", x: position.x, y: position.y + 24, duration: 0 }],
     },
   ]);
   return position;
@@ -70,9 +65,8 @@ export async function startProjectPointerDrag(selector: string) {
  */
 export function projectNameForWorkspace(workspacePath: string): string {
   return (
-    (workspacePath.includes("\\")
-      ? win32Basename(workspacePath)
-      : posixBasename(workspacePath)) || workspacePath
+    (workspacePath.includes("\\") ? win32Basename(workspacePath) : posixBasename(workspacePath)) ||
+    workspacePath
   );
 }
 
@@ -103,10 +97,7 @@ async function projectRowExists(workspacePath: string): Promise<boolean> {
 
 export async function waitForProjectRow(
   workspacePath: string,
-  {
-    timeout = 30_000,
-    timeoutMsg = `侧栏没有显示项目: ${workspacePath}`,
-  }: WaitOptions = {},
+  { timeout = 30_000, timeoutMsg = `侧栏没有显示项目: ${workspacePath}` }: WaitOptions = {},
 ): Promise<void> {
   await browser.waitUntil(() => projectRowExists(workspacePath), {
     timeout,
@@ -117,19 +108,13 @@ export async function waitForProjectRow(
 
 export async function waitForProjectRowGone(
   workspacePath: string,
-  {
-    timeout = 30_000,
-    timeoutMsg = `项目移除后仍在侧栏: ${workspacePath}`,
-  }: WaitOptions = {},
+  { timeout = 30_000, timeoutMsg = `项目移除后仍在侧栏: ${workspacePath}` }: WaitOptions = {},
 ): Promise<void> {
-  await browser.waitUntil(
-    async () => !(await projectRowExists(workspacePath)),
-    {
-      timeout,
-      interval: 100,
-      timeoutMsg,
-    },
-  );
+  await browser.waitUntil(async () => !(await projectRowExists(workspacePath)), {
+    timeout,
+    interval: 100,
+    timeoutMsg,
+  });
 }
 
 /** 等待一组 workspace 对应的项目行全部出现在侧栏（启动恢复 / 首次迁移完成）。 */
@@ -185,10 +170,7 @@ export async function ensureProjectExpanded(
 }
 
 /** 真实 hover 项目行；hover 操作区（文件树 / 新建任务 / 更多）按 hover 挂载透明度。 */
-export async function hoverProjectRow(
-  workspacePath: string,
-  timeout = 15_000,
-): Promise<void> {
+export async function hoverProjectRow(workspacePath: string, timeout = 15_000): Promise<void> {
   const row = $(projectRowSelector(workspacePath));
   await row.waitForDisplayed({
     timeout,
@@ -212,9 +194,7 @@ export async function clickProjectAction(
         (selector, targetTestId) => {
           const target = document
             .querySelector(selector)
-            ?.querySelector<HTMLButtonElement>(
-              `[data-testid="${targetTestId}"]`,
-            );
+            ?.querySelector<HTMLButtonElement>(`[data-testid="${targetTestId}"]`);
           if (!target || target.disabled) return false;
           target.click();
           return true;
@@ -239,8 +219,7 @@ export async function openProjectFileTree(
   await browser.waitUntil(
     () =>
       browser.execute(
-        (panelTestId) =>
-          Boolean(document.querySelector(`[data-testid="${panelTestId}"]`)),
+        (panelTestId) => Boolean(document.querySelector(`[data-testid="${panelTestId}"]`)),
         TID_WORKSPACE_FILE_TREE_PANEL,
       ),
     { timeout, timeoutMsg: "文件树面板没有打开" },
@@ -257,8 +236,7 @@ export async function startDraftFromProject(
     const project = $(projectSectionSelector(workspacePath));
     await project.waitForDisplayed({ timeout: 30_000 });
     workspaceIdentity =
-      (await project.getAttribute("data-project-workspace-identity")) ||
-      undefined;
+      (await project.getAttribute("data-project-workspace-identity")) || undefined;
   }
   // 远端草稿按 Source identity 存储；只传目录时也从目标项目读取身份，不能一直等待不存在的路径键。
   const draftKey = workspaceIdentity || workspacePath;
@@ -276,14 +254,10 @@ export async function startDraftFromProject(
   }, draftKey);
   if (workspaceIdentity) {
     // 跨 Source 可以有同名同路径项目；显式 identity 时不能落到名称匹配的第一行。
-    const project = $(
-      `[data-project-workspace-identity=${JSON.stringify(workspaceIdentity)}]`,
-    );
+    const project = $(`[data-project-workspace-identity=${JSON.stringify(workspaceIdentity)}]`);
     await project.waitForDisplayed({ timeout: 30_000 });
     await project.moveTo();
-    await project
-      .$(`[data-testid="${TID_VIRTUAL_PROJECT_CREATE_TASK}"]`)
-      .click();
+    await project.$(`[data-testid="${TID_VIRTUAL_PROJECT_CREATE_TASK}"]`).click();
   } else {
     await hoverProjectRow(workspacePath);
     await clickProjectAction(workspacePath, TID_VIRTUAL_PROJECT_CREATE_TASK, {
@@ -296,21 +270,11 @@ export async function startDraftFromProject(
   await browser.waitUntil(
     () =>
       browser.execute(
-        (
-          inputId,
-          panePrefix,
-          workspaceTriggerId,
-          projectName,
-          identity,
-          key,
-          previousVersion,
-        ) => {
+        (inputId, panePrefix, workspaceTriggerId, projectName, identity, key, previousVersion) => {
           const inputs = document.querySelectorAll(
             `[data-testid="${panePrefix}-workspace-main"] [data-testid="${inputId}"]`,
           );
-          const pane = inputs[0]?.closest<HTMLElement>(
-            `[data-testid^="${panePrefix}-"]`,
-          );
+          const pane = inputs[0]?.closest<HTMLElement>(`[data-testid^="${panePrefix}-"]`);
           const trigger = document.querySelector<HTMLElement>(
             `[data-testid="${workspaceTriggerId}"]`,
           );
@@ -333,8 +297,8 @@ export async function startDraftFromProject(
                   };
                 };
               }
-            ).__zcodeSessionStoreE2E?.getState().workspaces[key]
-              ?.draftFocusVersion ?? 0) > previousVersion &&
+            ).__zcodeSessionStoreE2E?.getState().workspaces[key]?.draftFocusVersion ?? 0) >
+              previousVersion &&
             (!identity || activeIdentity === identity) &&
             inputs.length === 1 &&
             pane?.dataset.sessionId === "draft" &&
@@ -401,11 +365,8 @@ export async function openProjectMenuAction(
   await browser.waitUntil(
     () =>
       browser.execute((targetTestId) => {
-        const item = document.querySelector<HTMLElement>(
-          `[data-testid="${targetTestId}"]`,
-        );
-        if (!item || item.getAttribute("aria-disabled") === "true")
-          return false;
+        const item = document.querySelector<HTMLElement>(`[data-testid="${targetTestId}"]`);
+        if (!item || item.getAttribute("aria-disabled") === "true") return false;
         item.click();
         return true;
       }, itemTestId),
@@ -431,9 +392,9 @@ export async function readProjectTaskRowState(
 ): Promise<ProjectTaskRowState> {
   return browser.execute(
     (taskTestId, sectionSelector) => {
-      const taskRow = Array.from(
-        document.querySelectorAll<HTMLElement>("[data-testid]"),
-      ).find((element) => element.dataset.testid === taskTestId);
+      const taskRow = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+        (element) => element.dataset.testid === taskTestId,
+      );
       const section = document.querySelector(sectionSelector);
       return {
         active: taskRow?.classList.contains("bg-selected") ?? false,
@@ -466,9 +427,7 @@ export async function waitForTaskRowInProject(
           (selector, toggleTestId) => {
             const toggle = document
               .querySelector(selector)
-              ?.querySelector<HTMLButtonElement>(
-                `[data-testid="${toggleTestId}"]`,
-              );
+              ?.querySelector<HTMLButtonElement>(`[data-testid="${toggleTestId}"]`);
             if (toggle && !toggle.disabled) toggle.click();
           },
           projectSectionSelector(workspacePath),
@@ -483,13 +442,9 @@ export async function waitForTaskRowInProject(
 }
 
 /** 远端身份来自项目行，不再存在 Host 包装层。 */
-export async function readRemoteHostIdForProject(
-  workspacePath: string,
-): Promise<string | null> {
+export async function readRemoteHostIdForProject(workspacePath: string): Promise<string | null> {
   return browser.execute(
-    (selector) =>
-      document.querySelector(selector)?.getAttribute("data-project-host") ??
-      null,
+    (selector) => document.querySelector(selector)?.getAttribute("data-project-host") ?? null,
     projectSectionSelector(workspacePath),
   );
 }
@@ -515,9 +470,7 @@ export async function selectNativeProjectDirectories(paths: string[]) {
       properties: ["openDirectory", "createDirectory", "multiSelections"],
     });
     await $('[data-testid="virtual-project-save"]').waitForEnabled();
-    expect(
-      await $('[data-testid="virtual-project-directory-browser"]').isExisting(),
-    ).toBe(false);
+    expect(await $('[data-testid="virtual-project-directory-browser"]').isExisting()).toBe(false);
     for (const path of paths) {
       await $(
         `[data-testid="virtual-project-root-name"][title=${JSON.stringify(path)}]`,
@@ -530,11 +483,7 @@ export async function selectNativeProjectDirectories(paths: string[]) {
 
 /** 远程目录由所属 Host 浏览，不借本机系统文件选择器。 */
 export async function selectRemoteProjectDirectory(path: string) {
-  if (
-    !(await $(
-      '[data-testid="virtual-project-directory-browser"]',
-    ).isDisplayed())
-  )
+  if (!(await $('[data-testid="virtual-project-directory-browser"]').isDisplayed()))
     await $('[data-testid="virtual-project-browse"]').click();
   const picker = $('[data-testid="virtual-project-directory-browser"]');
   const input = picker.$('input[type="text"]');
@@ -544,10 +493,7 @@ export async function selectRemoteProjectDirectory(path: string) {
     const element = document.querySelector<HTMLInputElement>(
       '[data-testid="virtual-project-directory-browser"] input[type="text"]',
     )!;
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )!.set!.call(element, value);
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(element, value);
     element.dispatchEvent(new Event("input", { bubbles: true }));
   }, path);
   await input.click();

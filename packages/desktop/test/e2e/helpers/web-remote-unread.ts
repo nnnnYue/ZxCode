@@ -1,16 +1,11 @@
 import { once } from "node:events";
 import { createServer } from "node:http";
 import type { BrowserContext, Page } from "playwright-core";
-import {
-  parseWebRemoteControlAppPayload,
-  type WebRemoteControlStatus,
-} from "@zcode/shared";
+import { parseWebRemoteControlAppPayload, type WebRemoteControlStatus } from "@zcode/shared";
 import { parseWebRemoteControlRelayV2IncomingMessage } from "@zcode/shared/web-remote-relay";
 
 /** 只延迟真实回包和丢弃重申；不改 epoch、Reporter 或 Main 查看事实。 */
-export async function replayStaleBootstrapAfterReconnect(
-  context: BrowserContext,
-) {
+export async function replayStaleBootstrapAfterReconnect(context: BrowserContext) {
   let held: string | Buffer | undefined;
   let oldEpoch: string | undefined;
   const evidence = {
@@ -27,21 +22,14 @@ export async function replayStaleBootstrapAfterReconnect(
         payload?: unknown;
       };
       const payload = parseWebRemoteControlAppPayload(frame.payload);
-      if (
-        payload?.zcode_type === "mobile-task-view-update" &&
-        payload.epoch === oldEpoch
-      )
+      if (payload?.zcode_type === "mobile-task-view-update" && payload.epoch === oldEpoch)
         evidence.staleReports += 1;
       server.send(message);
     });
     server.onMessage(async (message) => {
-      const frame = parseWebRemoteControlRelayV2IncomingMessage(
-        JSON.parse(String(message)),
-      );
+      const frame = parseWebRemoteControlRelayV2IncomingMessage(JSON.parse(String(message)));
       const payload =
-        frame?.type === "data"
-          ? parseWebRemoteControlAppPayload(frame.payload)
-          : null;
+        frame?.type === "data" ? parseWebRemoteControlAppPayload(frame.payload) : null;
       if (payload?.zcode_type === "mobile-task-view-request") {
         evidence.droppedRequests += 1;
         return;
@@ -56,8 +44,7 @@ export async function replayStaleBootstrapAfterReconnect(
           return;
         }
         evidence.epochChanged = Boolean(
-          payload.result.mobileTaskViewEpoch &&
-          payload.result.mobileTaskViewEpoch !== oldEpoch,
+          payload.result.mobileTaskViewEpoch && payload.result.mobileTaskViewEpoch !== oldEpoch,
         );
       }
       route.send(message);
@@ -155,8 +142,7 @@ export async function obtainUnreadPairingUrl(
   receiver.listen(0, "127.0.0.1");
   await once(receiver, "listening");
   const address = receiver.address();
-  if (!address || typeof address === "string")
-    throw new Error("MRO03 pair receiver unavailable");
+  if (!address || typeof address === "string") throw new Error("MRO03 pair receiver unavailable");
   try {
     await browser.execute((port) => {
       const target = window as Window & {
@@ -181,9 +167,7 @@ export async function obtainUnreadPairingUrl(
               '[data-testid="web-remote-control-dialog-scroll"] button',
             ),
           ).find(
-            (button) =>
-              /^(复制链接|Copy link)$/u.test(button.innerText.trim()) &&
-              !button.disabled,
+            (button) => /^(复制链接|Copy link)$/u.test(button.innerText.trim()) && !button.disabled,
           );
           copy?.click();
           return Boolean(copy);

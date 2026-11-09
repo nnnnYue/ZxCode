@@ -53,9 +53,7 @@ describe("N16：普通流式响应中切模型的 usage 归属", () => {
     await selectUpstreamModelById(UPSTREAM_MODEL);
 
     const marker = `${MAIN_MARKER}_${Date.now()}`;
-    await sendPrompt(
-      `${marker}: Reply with exactly "upstream-e2e-ok" and no other text.`,
-    );
+    await sendPrompt(`${marker}: Reply with exactly "upstream-e2e-ok" and no other text.`);
     await waitForComposerText("", "N16 首轮发送后输入框没有清空");
     await waitForChatState(
       (snapshot) => snapshot.state === "streaming",
@@ -112,9 +110,7 @@ async function waitForMainTurnUsage(sessionId: string): Promise<ModelUsageRow> {
     },
   );
   if (!latest) {
-    throw new Error(
-      `N16 main_turn model_usage 在等待完成后仍不存在: sessionId=${sessionId}`,
-    );
+    throw new Error(`N16 main_turn model_usage 在等待完成后仍不存在: sessionId=${sessionId}`);
   }
   return latest;
 }

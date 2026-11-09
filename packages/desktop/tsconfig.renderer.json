@@ -13,9 +13,5 @@
   // 从 tsc 程序排除；文件保留，若日后恢复需配 vitest 工程 + 独立 tsconfig。
   "exclude": ["src/renderer/**/*.test.ts"],
   // renderer 直接 import 了 shared；把它补进 references，避免 renderer 单独检查时再走源码回退路径。
-  "references": [
-    { "path": "../shared" },
-    { "path": "../ui" },
-    { "path": "../client" }
-  ]
+  "references": [{ "path": "../shared" }, { "path": "../ui" }, { "path": "../client" }]
 }

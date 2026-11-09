@@ -9,9 +9,7 @@ export async function withCredentialFault<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   const previous = await withFileLock(file, async () => {
-    const current: Record<string, string> = JSON.parse(
-      await readFile(file, "utf8"),
-    );
+    const current: Record<string, string> = JSON.parse(await readFile(file, "utf8"));
     const previous = current[key];
     current[key] = invalidValue;
     await atomicWritePrivateTextFile(file, JSON.stringify(current));
@@ -21,9 +19,7 @@ export async function withCredentialFault<T>(
     return await operation();
   } finally {
     await withFileLock(file, async () => {
-      const current: Record<string, string> = JSON.parse(
-        await readFile(file, "utf8"),
-      );
+      const current: Record<string, string> = JSON.parse(await readFile(file, "utf8"));
       if (previous === undefined) delete current[key];
       else current[key] = previous;
       await atomicWritePrivateTextFile(file, JSON.stringify(current));

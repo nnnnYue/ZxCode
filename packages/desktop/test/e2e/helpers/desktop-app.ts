@@ -40,11 +40,7 @@ const E2E_HOME_DIR =
 const E2E_STORAGE_ROOT = join(E2E_HOME_DIR, ".zcode");
 const E2E_APP_DATA_DIR = join(E2E_STORAGE_ROOT, "v2");
 export const DEFAULT_WORKSPACE = join(E2E_HOME_DIR, "ZCodeProject");
-export const DEFAULT_CONVERSATION_WORKSPACE = join(
-  E2E_STORAGE_ROOT,
-  "workspace",
-  "default",
-);
+export const DEFAULT_CONVERSATION_WORKSPACE = join(E2E_STORAGE_ROOT, "workspace", "default");
 const SETTINGS_FILE = join(E2E_APP_DATA_DIR, "setting.json");
 const CREDENTIALS_FILE = join(E2E_APP_DATA_DIR, "credentials.json");
 const CONFIG_FILE = join(E2E_APP_DATA_DIR, PERSONAL_PROVIDER_CONFIG_FILE_NAME);
@@ -78,10 +74,7 @@ export interface ElectronRendererContentSizeSnapshot {
  * 它只描述测试需要观察的字段，不是 Provider 配置事实源，也不参与运行时装配。
  */
 export interface E2EModelProviderSnapshot {
-  apiFormat:
-    | "anthropic-messages"
-    | "openai-chat-completions"
-    | "openai-responses";
+  apiFormat: "anthropic-messages" | "openai-chat-completions" | "openai-responses";
   apiKey: string;
   apiKeyRequired?: boolean;
   createdAt: number;
@@ -142,29 +135,19 @@ export function createE2EProviderModelSnapshot(params: {
     ...(params.defaultMaxOutputTokens === undefined
       ? {}
       : { defaultMaxOutputTokens: params.defaultMaxOutputTokens }),
-    ...(params.maxOutputTokens === undefined
-      ? {}
-      : { maxOutputTokens: params.maxOutputTokens }),
+    ...(params.maxOutputTokens === undefined ? {} : { maxOutputTokens: params.maxOutputTokens }),
     modalities: {
-      input: [
-        ...new Set<E2EProviderModality>(params.modalities?.input ?? ["text"]),
-      ],
-      output: [
-        ...new Set<E2EProviderModality>(params.modalities?.output ?? ["text"]),
-      ],
+      input: [...new Set<E2EProviderModality>(params.modalities?.input ?? ["text"])],
+      output: [...new Set<E2EProviderModality>(params.modalities?.output ?? ["text"])],
     },
-    ...(params.supportsTools === undefined
-      ? {}
-      : { supportsTools: params.supportsTools }),
+    ...(params.supportsTools === undefined ? {} : { supportsTools: params.supportsTools }),
     ...(params.supportsJsonSchemaOutput === undefined
       ? {}
       : { supportsJsonSchemaOutput: params.supportsJsonSchemaOutput }),
   };
 }
 
-export function resolveE2EProviderRuntimeBaseUrl(
-  provider: E2EModelProviderSnapshot,
-): string {
+export function resolveE2EProviderRuntimeBaseUrl(provider: E2EModelProviderSnapshot): string {
   return provider.endpoints.baseURL?.trim().replace(/\/+$/, "") ?? "";
 }
 
@@ -193,39 +176,30 @@ async function ensureAppDataDir() {
   await mkdir(E2E_APP_DATA_DIR, { recursive: true });
 }
 
-export function readExactTestIdAttribute(
-  testId: string,
-  attributeName: string,
-): string | null {
+export function readExactTestIdAttribute(testId: string, attributeName: string): string | null {
   // Bug 根因：Windows workspacePath 含反斜杠，直接拼入 CSS selector 会被当成转义字符。
   // 枚举稳定的 data-testid 节点后按属性值比较，同时兼容 Windows 和 macOS 原生路径。
-  const element = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-testid]"),
-  ).find((item) => item.dataset.testid === testId);
+  const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+    (item) => item.dataset.testid === testId,
+  );
   return element?.getAttribute(attributeName) ?? null;
 }
 
 export function dispatchMouseDownByExactTestId(testId: string): boolean {
   // Bug 根因：Skill option id 包含 Windows 绝对路径，反斜杠直接拼入 CSS selector
   // 会被当成转义字符。按属性值比较后派发 mousedown，兼容所有原生路径格式。
-  const element = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-testid]"),
-  ).find((item) => item.dataset.testid === testId);
+  const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+    (item) => item.dataset.testid === testId,
+  );
   if (!element) {
     return false;
   }
-  element.dispatchEvent(
-    new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
-  );
+  element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
   return true;
 }
 
 async function hasTestId(testId: string) {
-  const value = await browser.execute(
-    readExactTestIdAttribute,
-    testId,
-    "data-testid",
-  );
+  const value = await browser.execute(readExactTestIdAttribute, testId, "data-testid");
   return value === testId;
 }
 
@@ -241,10 +215,7 @@ interface SetInputValueByTestIdDomOptions extends DomTestIdOptions {
 
 export async function waitForTestIdByDom(
   testId: string,
-  {
-    timeout = 10000,
-    timeoutMsg = `页面没有渲染 test id: ${testId}`,
-  }: DomTestIdOptions = {},
+  { timeout = 10000, timeoutMsg = `页面没有渲染 test id: ${testId}` }: DomTestIdOptions = {},
 ) {
   await browser.waitUntil(async () => hasTestId(testId), {
     timeout,
@@ -254,10 +225,7 @@ export async function waitForTestIdByDom(
 
 export async function clickTestIdByDom(
   testId: string,
-  {
-    timeout = 10000,
-    timeoutMsg = `页面没有可点击的 test id: ${testId}`,
-  }: DomTestIdOptions = {},
+  { timeout = 10000, timeoutMsg = `页面没有可点击的 test id: ${testId}` }: DomTestIdOptions = {},
 ) {
   // 修复原因：Electron Linux 容器里的 Chromium 会把部分设置页元素排到超大坐标，
   // WebDriver clickable 会误判失败。DOM click 仍触发 React onClick，可专注验证业务逻辑。
@@ -266,9 +234,9 @@ export async function clickTestIdByDom(
     await browser.waitUntil(
       async () => {
         const latest = (await browser.execute((currentTestId) => {
-          const element = Array.from(
-            document.querySelectorAll<HTMLElement>("[data-testid]"),
-          ).find((item) => item.dataset.testid === currentTestId);
+          const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+            (item) => item.dataset.testid === currentTestId,
+          );
           if (!element) {
             return { clicked: false, reason: "missing" };
           }
@@ -312,11 +280,8 @@ export async function ensureWorkspaceItemExpanded(
   });
 
   const isExpanded = async () =>
-    (await browser.execute(
-      readExactTestIdAttribute,
-      workspaceItemTestId,
-      "aria-expanded",
-    )) === "true";
+    (await browser.execute(readExactTestIdAttribute, workspaceItemTestId, "aria-expanded")) ===
+    "true";
   if (!(await isExpanded())) {
     await clickTestIdByDom(workspaceItemTestId, {
       timeout: 15_000,
@@ -334,10 +299,7 @@ export async function ensureWorkspaceItemExpanded(
 
 export async function clickTestIdByWebDriver(
   testId: string,
-  {
-    timeout = 10000,
-    timeoutMsg = `页面没有可点击的 test id: ${testId}`,
-  }: DomTestIdOptions = {},
+  { timeout = 10000, timeoutMsg = `页面没有可点击的 test id: ${testId}` }: DomTestIdOptions = {},
 ) {
   // Bug 根因：Radix DropdownMenu/Select 的 trigger 依赖 pointerdown 手势，
   // element.click() 只派发 click，测试会误报 portal item 不存在。这里保留真实
@@ -349,10 +311,7 @@ export async function clickTestIdByWebDriver(
 
 export async function hoverTestIdByWebDriver(
   testId: string,
-  {
-    timeout = 10000,
-    timeoutMsg = `页面没有可悬停的 test id: ${testId}`,
-  }: DomTestIdOptions = {},
+  { timeout = 10000, timeoutMsg = `页面没有可悬停的 test id: ${testId}` }: DomTestIdOptions = {},
 ) {
   const element = $(sel(testId));
   await element.waitForDisplayed({ timeout, timeoutMsg });
@@ -384,15 +343,14 @@ export async function setInputValueByTestIdDom(
   const attempt = async () => {
     result = (await browser.execute(
       (currentTestId, nextValue) => {
-        const element = Array.from(
-          document.querySelectorAll<HTMLElement>("[data-testid]"),
-        ).find((item) => item.dataset.testid === currentTestId);
+        const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+          (item) => item.dataset.testid === currentTestId,
+        );
         if (
           element &&
           !(element instanceof HTMLInputElement) &&
           !(element instanceof HTMLTextAreaElement) &&
-          (element.isContentEditable ||
-            element.hasAttribute("data-e2e-lexical-bridge"))
+          (element.isContentEditable || element.hasAttribute("data-e2e-lexical-bridge"))
         ) {
           // 原因：冷恢复时 bridge 已挂载但编辑器仍禁用，越权 setText 会与草稿恢复竞争。
           // 只在真实 DOM 开放输入后写入，不能靠延时或再次写入补偿被覆盖的文字。
@@ -432,12 +390,7 @@ export async function setInputValueByTestIdDom(
             value: bridge.getText(),
           };
         }
-        if (
-          !(
-            element instanceof HTMLInputElement ||
-            element instanceof HTMLTextAreaElement
-          )
-        ) {
+        if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
           return {
             ok: false,
             reason: "not-input",
@@ -546,11 +499,7 @@ export async function setInputValueByTestIdDom(
                     const selection = window.getSelection();
                     const focusNode = selection?.focusNode ?? null;
                     const trailingRange = document.createRange();
-                    if (
-                      focusNode !== null &&
-                      element.contains(focusNode) &&
-                      selection
-                    ) {
+                    if (focusNode !== null && element.contains(focusNode) && selection) {
                       trailingRange.setStart(focusNode, selection.focusOffset);
                       trailingRange.setEnd(element, element.childNodes.length);
                     }
@@ -563,9 +512,7 @@ export async function setInputValueByTestIdDom(
                     done({
                       ok: text === nextValue && caretAtEnd,
                       reason:
-                        text === nextValue
-                          ? "caret-not-at-end"
-                          : "text-restored-by-initializer",
+                        text === nextValue ? "caret-not-at-end" : "text-restored-by-initializer",
                       text,
                     });
                   });
@@ -591,13 +538,10 @@ export async function setInputValueByTestIdDom(
 
   await browser.pause(50);
   await browser.execute((currentTestId) => {
-    const element = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-testid]"),
-    ).find((item) => item.dataset.testid === currentTestId);
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement
-    ) {
+    const element = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+      (item) => item.dataset.testid === currentTestId,
+    );
+    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
       element.blur();
       element.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
     }
@@ -677,10 +621,7 @@ async function removeAppDataWithRetry() {
       });
       return;
     } catch (error) {
-      if (
-        !isRetryableRemoveError(error) ||
-        attempt === REMOVE_APP_DATA_MAX_ATTEMPTS
-      ) {
+      if (!isRetryableRemoveError(error) || attempt === REMOVE_APP_DATA_MAX_ATTEMPTS) {
         if (
           !isRetryableRemoveError(error) ||
           process.env.ZCODE_E2E_STRICT_APP_DATA_CLEANUP === "1"
@@ -712,20 +653,11 @@ function isRetryableRemoveError(error: unknown) {
   if (!error || typeof error !== "object" || !("code" in error)) {
     return false;
   }
-  return (
-    error.code === "ENOTEMPTY" ||
-    error.code === "EBUSY" ||
-    error.code === "EPERM"
-  );
+  return error.code === "ENOTEMPTY" || error.code === "EBUSY" || error.code === "EPERM";
 }
 
 function isMissingFileError(error: unknown) {
-  return Boolean(
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    error.code === "ENOENT",
-  );
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "ENOENT");
 }
 
 async function cleanupLeftoverE2EProcesses() {
@@ -754,15 +686,11 @@ function listWindowsLeftoverE2EProcessPids() {
       "Select-Object ProcessId,ParentProcessId,CommandLine |",
       "ConvertTo-Json -Compress",
     ].join(" ");
-    const output = execFileSync(
-      "powershell.exe",
-      ["-NoProfile", "-Command", script],
-      {
-        encoding: "utf-8",
-        maxBuffer: 20 * 1024 * 1024,
-        windowsHide: true,
-      },
-    );
+    const output = execFileSync("powershell.exe", ["-NoProfile", "-Command", script], {
+      encoding: "utf-8",
+      maxBuffer: 20 * 1024 * 1024,
+      windowsHide: true,
+    });
     return collectWindowsE2EProcessTreePids(output, {
       currentPid: process.pid,
       homeDir: E2E_HOME_DIR,
@@ -797,9 +725,7 @@ function isProcessAlive(pid: number) {
 
 export async function readSettings(): Promise<Partial<AppSettings>> {
   try {
-    return JSON.parse(
-      await readFile(SETTINGS_FILE, "utf-8"),
-    ) as Partial<AppSettings>;
+    return JSON.parse(await readFile(SETTINGS_FILE, "utf-8")) as Partial<AppSettings>;
   } catch {
     return {};
   }
@@ -807,18 +733,14 @@ export async function readSettings(): Promise<Partial<AppSettings>> {
 
 async function readCliConfig(): Promise<Record<string, unknown>> {
   try {
-    const json = JSON.parse(
-      await readFile(CLI_CONFIG_FILE, "utf-8"),
-    ) as unknown;
+    const json = JSON.parse(await readFile(CLI_CONFIG_FILE, "utf-8")) as unknown;
     return isRecord(json) ? json : {};
   } catch {
     return {};
   }
 }
 
-export async function readModelProviders(): Promise<
-  E2EModelProviderSnapshot[]
-> {
+export async function readModelProviders(): Promise<E2EModelProviderSnapshot[]> {
   const repository = new NodePersonalProviderConfigRepository({
     filePath: CONFIG_FILE,
     pollingIntervalMs: false,
@@ -834,10 +756,7 @@ export async function readModelProviders(): Promise<
 
 export async function readAgentsState(): Promise<Record<string, unknown>> {
   try {
-    return JSON.parse(await readFile(AGENTS_STATE_FILE, "utf-8")) as Record<
-      string,
-      unknown
-    >;
+    return JSON.parse(await readFile(AGENTS_STATE_FILE, "utf-8")) as Record<string, unknown>;
   } catch {
     return {};
   }
@@ -851,19 +770,14 @@ function convertPersonalProviderConfig(
     const kind = mapPersonalProviderKind(provider);
     return {
       id: providerId,
-      name:
-        document.providers.getRule(providerId)?.providerName?.trim() ||
-        providerId,
+      name: document.providers.getRule(providerId)?.providerName?.trim() || providerId,
       endpoints: {
         baseURL: provider.api?.baseUrl?.trim() || "",
         paths: { [kind]: "" },
       },
       apiFormat: provider.api?.type ?? "openai-chat-completions",
       apiKeyRequired: true,
-      apiKey:
-        provider.access?.type === "api-key"
-          ? provider.access.apiKey?.trim() || ""
-          : "",
+      apiKey: provider.access?.type === "api-key" ? provider.access.apiKey?.trim() || "" : "",
       defaultKind: kind,
       models: (provider.personalModelIds ?? []).map((modelId) =>
         convertPersonalModelConfig(
@@ -900,8 +814,7 @@ function convertPersonalModelConfig(
     kinds: [defaultKind],
     defaultKind,
     contextWindow: properties?.contextWindow ?? undefined,
-    defaultMaxOutputTokens:
-      model.optionSpecs?.maxOutputTokens?.max ?? undefined,
+    defaultMaxOutputTokens: model.optionSpecs?.maxOutputTokens?.max ?? undefined,
     maxOutputTokens: model.optionSpecs?.maxOutputTokens?.max ?? undefined,
     modalities: { input, output: ["text"] },
     supportsTools: properties?.supportsToolCall ?? undefined,
@@ -933,10 +846,7 @@ function mergeRecord(
   const next: Record<string, unknown> = { ...current };
   for (const [key, value] of Object.entries(partial)) {
     const existing = next[key];
-    next[key] =
-      isRecord(existing) && isRecord(value)
-        ? mergeRecord(existing, value)
-        : value;
+    next[key] = isRecord(existing) && isRecord(value) ? mergeRecord(existing, value) : value;
   }
   return next;
 }
@@ -948,9 +858,7 @@ export async function readModelProvider(
   return providers.find((provider) => provider.id === providerId) ?? null;
 }
 
-export async function seedSettings(
-  partial: Partial<AppSettings>,
-): Promise<Partial<AppSettings>> {
+export async function seedSettings(partial: Partial<AppSettings>): Promise<Partial<AppSettings>> {
   const current = await readSettings();
   const next = { ...current, ...partial };
   await ensureAppDataDir();
@@ -979,9 +887,7 @@ export async function snapshotCliConfig(): Promise<CliConfigSnapshot> {
   }
 }
 
-export async function restoreCliConfig(
-  snapshot: CliConfigSnapshot,
-): Promise<void> {
+export async function restoreCliConfig(snapshot: CliConfigSnapshot): Promise<void> {
   // 修复原因：seedCliConfig 写的是隔离 HOME 下的 CLI 全局配置；只清 ~/.zcode/v2
   // 会让 WebFetch 临时代理留到同一 E2E session 后续步骤，必须恢复文件级快照。
   if (snapshot.content === null) {
@@ -1024,18 +930,12 @@ export function probeWorkspaceAppState(
   // 同时存在，才代表用户已经进入可操作的目标工作区。
   // 修复原因：Windows workspacePath 会进入 data-testid，反斜杠直接拼到
   // CSS attribute selector 会被当作转义字符，导致 DOM 里有元素也查不到。
-  const workspaceItem = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-testid]"),
-  ).find((element) => element.dataset.testid === params.workspaceItemTestId);
+  const workspaceItem = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
+    (element) => element.dataset.testid === params.workspaceItemTestId,
+  );
   const conversationWorkspaceReady =
-    params.expectedPath
-      .replace(/\\/g, "/")
-      .endsWith("/.zcode/workspace/default") &&
-    Boolean(
-      document.querySelector(
-        `[data-testid="${params.composerWorkspaceTriggerTestId}"]`,
-      ),
-    );
+    params.expectedPath.replace(/\\/g, "/").endsWith("/.zcode/workspace/default") &&
+    Boolean(document.querySelector(`[data-testid="${params.composerWorkspaceTriggerTestId}"]`));
   // v4 硬切后聊天区是 v4 session pane（testid 带 paneId 后缀，用前缀匹配）。
   return (workspaceItem || conversationWorkspaceReady) &&
     document.querySelector(`[data-testid^="${params.sessionPanePrefix}-"]`)
@@ -1047,10 +947,7 @@ export function probeWorkspaceAppState(
 // 不再稳定代表当前工作区名。e2e 改为读取 TID_WORKSPACE_PATH 的 title 属性，
 // 新建任务草稿下 header 路径胶囊不会渲染，因此同时接受侧边栏 workspace item。
 // 这样才能准确覆盖“默认工作区自动打开 / 多标签切换”这条真实产品链路。
-export async function waitForWorkspaceApp(
-  workspacePath: string,
-  timeout = 10000,
-) {
+export async function waitForWorkspaceApp(workspacePath: string, timeout = 10000) {
   const timeoutMsg = `主界面没有切到工作区: ${workspacePath}`;
   const probeParams: WorkspaceAppProbeParams = {
     workspacePathTestId: TID_WORKSPACE_PATH,
@@ -1063,10 +960,7 @@ export async function waitForWorkspaceApp(
   try {
     await browser.waitUntil(
       async () => {
-        const state = await browser.execute(
-          probeWorkspaceAppState,
-          probeParams,
-        );
+        const state = await browser.execute(probeWorkspaceAppState, probeParams);
         if (state === "onboarding") {
           // Bug 根因：此前只有 v4 helper 先跳过引导，conversation-session、automations、
           // smoke 等走本函数的 spec 会被引导页挡满 30s 后失败。关闭后由下一轮轮询确认工作区。
@@ -1083,12 +977,9 @@ export async function waitForWorkspaceApp(
   } catch (error) {
     // 修复原因：e2e 曾经只报等待超时，真实白屏原因藏在 renderer 状态里。
     // 失败时附带当前 DOM、窗口和存储摘要，后续 case 卡住能直接定位初始化边界。
-    throw new Error(
-      `${timeoutMsg}\n${await collectWorkspaceDiagnostics(workspacePath)}`,
-      {
-        cause: error,
-      },
-    );
+    throw new Error(`${timeoutMsg}\n${await collectWorkspaceDiagnostics(workspacePath)}`, {
+      cause: error,
+    });
   }
 }
 
@@ -1096,12 +987,7 @@ async function isWorkspaceAppVisible(workspacePath: string) {
   const workspaceItemTestId = testId(TID_WORKSPACE_ITEM, workspacePath);
   try {
     return await browser.execute(
-      (
-        workspacePathTestId,
-        workspaceItemTestId,
-        sessionPanePrefix,
-        expectedPath,
-      ) => {
+      (workspacePathTestId, workspaceItemTestId, sessionPanePrefix, expectedPath) => {
         const pathBadge = document.querySelector<HTMLElement>(
           `[data-testid="${workspacePathTestId}"]`,
         );
@@ -1118,8 +1004,7 @@ async function isWorkspaceAppVisible(workspacePath: string) {
           document.querySelectorAll<HTMLElement>("[data-testid]"),
         ).find((element) => element.dataset.testid === workspaceItemTestId);
         return Boolean(
-          workspaceItem &&
-          document.querySelector(`[data-testid^="${sessionPanePrefix}-"]`),
+          workspaceItem && document.querySelector(`[data-testid^="${sessionPanePrefix}-"]`),
         );
       },
       TID_WORKSPACE_PATH,
@@ -1136,9 +1021,7 @@ async function isWorkspaceAppVisible(workspacePath: string) {
 
 export async function getActiveWorkspacePath() {
   return browser.execute((workspacePathTestId) => {
-    const pathBadge = document.querySelector<HTMLElement>(
-      `[data-testid="${workspacePathTestId}"]`,
-    );
+    const pathBadge = document.querySelector<HTMLElement>(`[data-testid="${workspacePathTestId}"]`);
     return pathBadge?.getAttribute("title") ?? null;
   }, TID_WORKSPACE_PATH);
 }
@@ -1171,9 +1054,7 @@ async function collectWorkspaceDiagnostics(expectedPath: string) {
         return {
           bodyText: document.body?.innerText?.slice(0, 1200) ?? "",
           readyState: document.readyState,
-          testIds: Array.from(
-            document.querySelectorAll<HTMLElement>("[data-testid]"),
-          )
+          testIds: Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
             .slice(0, 80)
             .map((element) => element.dataset.testid ?? ""),
           title: document.title,
@@ -1269,9 +1150,7 @@ export async function setCurrentElectronRendererContentSize(
   const result = await browser.electron.execute(
     (electron, targetUrl, nextWidth, nextHeight) => {
       const target = electron.BrowserWindow.getAllWindows().find(
-        (candidate) =>
-          !candidate.isDestroyed() &&
-          candidate.webContents.getURL() === targetUrl,
+        (candidate) => !candidate.isDestroyed() && candidate.webContents.getURL() === targetUrl,
       );
       if (!target) {
         return {
@@ -1320,12 +1199,8 @@ export async function setCurrentElectronRendererContentSize(
     );
   }
 
-  const expectedRendererWidth = Math.round(
-    result.appliedWidth / result.zoomFactor,
-  );
-  const expectedRendererHeight = Math.round(
-    result.appliedHeight / result.zoomFactor,
-  );
+  const expectedRendererWidth = Math.round(result.appliedWidth / result.zoomFactor);
+  const expectedRendererHeight = Math.round(result.appliedHeight / result.zoomFactor);
   let latestRendererViewport: { height: number; width: number } | null = null;
   try {
     await browser.waitUntil(
@@ -1337,8 +1212,7 @@ export async function setCurrentElectronRendererContentSize(
         return (
           Math.abs(latestRendererViewport.width - expectedRendererWidth) <= 1 &&
           (height === undefined ||
-            Math.abs(latestRendererViewport.height - expectedRendererHeight) <=
-              1)
+            Math.abs(latestRendererViewport.height - expectedRendererHeight) <= 1)
         );
       },
       {
@@ -1384,10 +1258,7 @@ export async function restoreElectronRendererContentSize(
   }
 }
 
-export async function switchToWorkspaceRendererWindow(
-  workspacePath: string,
-  timeout = 10000,
-) {
+export async function switchToWorkspaceRendererWindow(workspacePath: string, timeout = 10000) {
   let latestResult: WorkspaceRendererSwitchResult = {
     switched: false,
     reason: "not-started",
@@ -1436,8 +1307,7 @@ async function trySwitchToWorkspaceRendererWindow(
     };
   }
   const windowUrl =
-    windows.find((win) => isWorkspaceRendererUrl(win.url, workspacePath))
-      ?.url ??
+    windows.find((win) => isWorkspaceRendererUrl(win.url, workspacePath))?.url ??
     windows.find((win) => isRendererUrl(win.url))?.url ??
     null;
 
@@ -1452,14 +1322,9 @@ async function trySwitchToWorkspaceRendererWindow(
   const targets = await getBrowserTargetInfo().catch(() => []);
   const handles = await browser.getWindowHandles().catch(() => []);
   const target =
-    targets.find(
-      (item) =>
-        item.id && isExpectedRendererUrl(item.url, windowUrl, workspacePath),
-    ) ?? null;
-  const candidates = collectE2EWebDriverPageHandleCandidates(
-    handles,
-    targets,
-  ).sort(
+    targets.find((item) => item.id && isExpectedRendererUrl(item.url, windowUrl, workspacePath)) ??
+    null;
+  const candidates = collectE2EWebDriverPageHandleCandidates(handles, targets).sort(
     (left, right) =>
       Number(isExpectedRendererUrl(right.targetUrl, windowUrl, workspacePath)) -
       Number(isExpectedRendererUrl(left.targetUrl, windowUrl, workspacePath)),
@@ -1468,9 +1333,7 @@ async function trySwitchToWorkspaceRendererWindow(
   if (candidates.length === 0) {
     return {
       switched: false,
-      reason: target?.id
-        ? "renderer-target-not-in-webdriver-handles"
-        : "missing-renderer-target",
+      reason: target?.id ? "renderer-target-not-in-webdriver-handles" : "missing-renderer-target",
       currentUrl: await getCurrentRendererUrl().catch(() => null),
       handles,
       target,
@@ -1481,10 +1344,7 @@ async function trySwitchToWorkspaceRendererWindow(
   }
 
   const handleInspections: NonNullable<
-    Exclude<
-      WorkspaceRendererSwitchResult,
-      { switched: true }
-    >["handleInspections"]
+    Exclude<WorkspaceRendererSwitchResult, { switched: true }>["handleInspections"]
   > = [];
   for (const candidate of candidates) {
     try {
@@ -1535,9 +1395,7 @@ async function switchToHandle(handle: string) {
 }
 
 function setElectronWindowHandle(handle: string) {
-  (
-    browser.electron as typeof browser.electron & { windowHandle?: string }
-  ).windowHandle = handle;
+  (browser.electron as typeof browser.electron & { windowHandle?: string }).windowHandle = handle;
 }
 
 async function getBrowserTargetInfo(): Promise<E2EBrowserTargetInfo[]> {
@@ -1557,15 +1415,8 @@ function serializeError(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function isExpectedRendererUrl(
-  currentUrl: string,
-  windowUrl: string,
-  workspacePath: string,
-) {
-  return (
-    currentUrl === windowUrl ||
-    isWorkspaceRendererUrl(currentUrl, workspacePath)
-  );
+function isExpectedRendererUrl(currentUrl: string, windowUrl: string, workspacePath: string) {
+  return currentUrl === windowUrl || isWorkspaceRendererUrl(currentUrl, workspacePath);
 }
 
 function isRendererUrl(url: string) {
@@ -1603,12 +1454,9 @@ export async function switchToNewestWindow() {
 export async function clickAboutMenuItem() {
   await browser.electron.execute((electron) => {
     const menu = electron.Menu.getApplicationMenu();
-    const topMenuLabel =
-      process.platform === "darwin" ? electron.app.name : "Help";
+    const topMenuLabel = process.platform === "darwin" ? electron.app.name : "Help";
     const topMenu = menu?.items.find((item) => item.label === topMenuLabel);
-    const menuItem = topMenu?.submenu?.items.find(
-      (item) => item.label === "About ZCode",
-    );
+    const menuItem = topMenu?.submenu?.items.find((item) => item.label === "About ZCode");
 
     if (!menuItem) {
       throw new Error(`未找到 About ZCode 菜单项: ${topMenuLabel}`);
@@ -1672,9 +1520,7 @@ export async function isPrimaryWindowMinimized(): Promise<boolean> {
 export async function getTabLabels(): Promise<string[]> {
   return browser.execute(() => {
     const workspaceItems = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        "[data-testid^='workspace-item-']",
-      ),
+      document.querySelectorAll<HTMLElement>("[data-testid^='workspace-item-']"),
     );
     if (workspaceItems.length > 0) {
       return workspaceItems
@@ -1685,9 +1531,7 @@ export async function getTabLabels(): Promise<string[]> {
         .filter(Boolean);
     }
 
-    return Array.from(
-      document.querySelectorAll<HTMLElement>("[data-testid^='tab-item-'] span"),
-    )
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-testid^='tab-item-'] span"))
       .map((node) => node.textContent?.trim() ?? "")
       .filter(Boolean);
   });

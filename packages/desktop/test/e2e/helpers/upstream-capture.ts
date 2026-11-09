@@ -30,9 +30,7 @@ export async function waitForUpstreamNetworkCapture(expectedText: string) {
         latestArtifact = await readCaptureArtifact();
         const record = findUpstreamRequestRecord(latestArtifact, expectedText);
         return Boolean(
-          record?.requestJson &&
-          record.status === "complete" &&
-          record.statusCode !== undefined,
+          record?.requestJson && record.status === "complete" && record.statusCode !== undefined,
         );
       },
       {
@@ -42,11 +40,7 @@ export async function waitForUpstreamNetworkCapture(expectedText: string) {
     );
   } catch (error) {
     throw new Error(
-      `没有捕获到 上游 请求\n${JSON.stringify(
-        summarizeCaptureArtifact(latestArtifact),
-        null,
-        2,
-      )}`,
+      `没有捕获到 上游 请求\n${JSON.stringify(summarizeCaptureArtifact(latestArtifact), null, 2)}`,
       { cause: error },
     );
   }
@@ -58,9 +52,7 @@ export async function waitForUpstreamNetworkCapture(expectedText: string) {
   return record;
 }
 
-export async function waitForUpstreamNetworkRequestStarted(
-  expectedText: string,
-) {
+export async function waitForUpstreamNetworkRequestStarted(expectedText: string) {
   let latestArtifact: E2ENetworkCaptureArtifact | null = null;
   try {
     await browser.waitUntil(
@@ -105,58 +97,39 @@ export function assertUpstreamRequestCapture(
     expect(record.protocol).toBe(expectedProtocol);
   }
   expect(record.method).toBe("POST");
-  expect(
-    record.path.includes("/messages") ||
-      record.path.includes("/chat/completions"),
-  ).toBe(true);
-  if (
-    !record.statusCode ||
-    record.statusCode < 200 ||
-    record.statusCode >= 300
-  ) {
+  expect(record.path.includes("/messages") || record.path.includes("/chat/completions")).toBe(true);
+  if (!record.statusCode || record.statusCode < 200 || record.statusCode >= 300) {
     throw new Error(
       `上游 请求没有返回 2xx\n${JSON.stringify(summarizeCaptureRecord(record), null, 2)}`,
     );
   }
   expect(readModelFromCapture(record.requestJson)).toBe(assertion.model);
-  expect(captureContainsText(record.requestJson, assertion.expectedText)).toBe(
-    true,
-  );
+  expect(captureContainsText(record.requestJson, assertion.expectedText)).toBe(true);
 }
 
 export function assertUpstreamThoughtLevelCapture(
   record: E2ENetworkCaptureRecord,
   thoughtLevel: string,
 ) {
-  const isThinkingToggleLevel =
-    thoughtLevel === "enabled" || thoughtLevel === "disabled";
-  if (
-    record.path.includes("/anthropic/") ||
-    record.path.includes("/messages")
-  ) {
+  const isThinkingToggleLevel = thoughtLevel === "enabled" || thoughtLevel === "disabled";
+  if (record.path.includes("/anthropic/") || record.path.includes("/messages")) {
     expect(readNestedString(record.requestJson, ["thinking", "type"])).toBe(
       isThinkingToggleLevel ? thoughtLevel : "enabled",
     );
     if (!isThinkingToggleLevel) {
-      expect(
-        readNestedString(record.requestJson, ["output_config", "effort"]),
-      ).toBe(thoughtLevel);
+      expect(readNestedString(record.requestJson, ["output_config", "effort"])).toBe(thoughtLevel);
     }
     return;
   }
 
   if (!isThinkingToggleLevel) {
-    expect(readNestedString(record.requestJson, ["reasoning_effort"])).toBe(
-      thoughtLevel,
-    );
+    expect(readNestedString(record.requestJson, ["reasoning_effort"])).toBe(thoughtLevel);
   }
   expect(readNestedString(record.requestJson, ["thinking", "type"])).toBe(
     isThinkingToggleLevel ? thoughtLevel : "enabled",
   );
   expect(readNested(record.requestJson, ["extra_body"])).toBeUndefined();
-  expect(
-    readNestedBoolean(record.requestJson, ["stream_options", "include_usage"]),
-  ).toBe(true);
+  expect(readNestedBoolean(record.requestJson, ["stream_options", "include_usage"])).toBe(true);
 }
 
 export function readUpstreamUsageFromCapture(
@@ -170,31 +143,19 @@ export function readUpstreamUsageFromCapture(
   }
 
   const providerInputTokens = numberValue(
-    usage.prompt_tokens ??
-      usage.input_tokens ??
-      usage.inputTokens ??
-      usage.input,
+    usage.prompt_tokens ?? usage.input_tokens ?? usage.inputTokens ?? usage.input,
   );
   const cacheReadTokens = numberValue(
-    usage.cache_read_input_tokens ??
-      usage.cacheReadTokens ??
-      usage.cache_read_tokens,
+    usage.cache_read_input_tokens ?? usage.cacheReadTokens ?? usage.cache_read_tokens,
   );
   const cacheWriteTokens = numberValue(
-    usage.cache_creation_input_tokens ??
-      usage.cacheWriteTokens ??
-      usage.cache_write_tokens,
+    usage.cache_creation_input_tokens ?? usage.cacheWriteTokens ?? usage.cache_write_tokens,
   );
   // 修复原因：上游 Anthropic-compatible 响应会把 prompt token 和 cache token 拆开返回；
   // runtime context meter 展示的是本次请求实际占用的上下文总量，抓包断言必须同口径相加。
-  const inputTokens =
-    (providerInputTokens ?? 0) +
-    (cacheReadTokens ?? 0) +
-    (cacheWriteTokens ?? 0);
+  const inputTokens = (providerInputTokens ?? 0) + (cacheReadTokens ?? 0) + (cacheWriteTokens ?? 0);
   if (!inputTokens || inputTokens <= 0) {
-    throw new Error(
-      `Upstream usage 缺少有效 input tokens\n${JSON.stringify({ usage }, null, 2)}`,
-    );
+    throw new Error(`Upstream usage 缺少有效 input tokens\n${JSON.stringify({ usage }, null, 2)}`);
   }
 
   const completionDetails = asRecord(usage.completion_tokens_details);
@@ -203,25 +164,16 @@ export function readUpstreamUsageFromCapture(
     cacheWriteTokens,
     inputTokens,
     outputTokens: numberValue(
-      usage.completion_tokens ??
-        usage.output_tokens ??
-        usage.outputTokens ??
-        usage.output,
+      usage.completion_tokens ?? usage.output_tokens ?? usage.outputTokens ?? usage.output,
     ),
-    totalTokens: numberValue(
-      usage.total_tokens ?? usage.totalTokens ?? usage.total,
-    ),
+    totalTokens: numberValue(usage.total_tokens ?? usage.totalTokens ?? usage.total),
     reasoningTokens: numberValue(
-      completionDetails.reasoning_tokens ??
-        usage.reasoning_tokens ??
-        usage.reasoningTokens,
+      completionDetails.reasoning_tokens ?? usage.reasoning_tokens ?? usage.reasoningTokens,
     ),
   };
 }
 
-export async function waitForContextUsageFromCapture(
-  usage: UpstreamUsageSnapshot,
-) {
+export async function waitForContextUsageFromCapture(usage: UpstreamUsageSnapshot) {
   const trigger = $(sel(TID_CHAT_CONTEXT_USAGE_TRIGGER));
   await trigger.waitForDisplayed({
     timeout: 45000,
@@ -240,8 +192,7 @@ export async function waitForContextUsageFromCapture(
       // 估算和少量系统开销；回放验证只需要确认 usage 已进入 UI 且没有大幅偏离。
       return (
         latestUsedTokens >= expectedContextTokens &&
-        latestUsedTokens - expectedContextTokens <=
-          CONTEXT_USAGE_CAPTURE_TOLERANCE_TOKENS
+        latestUsedTokens - expectedContextTokens <= CONTEXT_USAGE_CAPTURE_TOLERANCE_TOKENS
       );
     },
     {
@@ -268,17 +219,14 @@ function findUpstreamRequestRecord(
       return (
         (!expectedHost || record.host === expectedHost) &&
         record.method === "POST" &&
-        (record.path.includes("/messages") ||
-          record.path.includes("/chat/completions")) &&
+        (record.path.includes("/messages") || record.path.includes("/chat/completions")) &&
         !isTitleGenerationRequest(record)
       );
     }) ?? [];
 
   if (expectedText) {
     return (
-      records.findLast((record) =>
-        captureContainsText(record.requestJson, expectedText),
-      ) ?? null
+      records.findLast((record) => captureContainsText(record.requestJson, expectedText)) ?? null
     );
   }
 
@@ -296,9 +244,7 @@ async function readCaptureArtifact(): Promise<E2ENetworkCaptureArtifact | null> 
   }
 
   try {
-    return JSON.parse(
-      await readFile(capturePath, "utf-8"),
-    ) as E2ENetworkCaptureArtifact;
+    return JSON.parse(await readFile(capturePath, "utf-8")) as E2ENetworkCaptureArtifact;
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return null;
@@ -348,9 +294,7 @@ function mergeSseUsage(
 
 function readContextUsageLabel() {
   return browser.execute((triggerTestId) => {
-    const trigger = document.querySelector<HTMLElement>(
-      `[data-testid="${triggerTestId}"]`,
-    );
+    const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerTestId}"]`);
     return (
       trigger?.getAttribute("aria-label") ??
       trigger?.getAttribute("title") ??
@@ -386,9 +330,7 @@ function captureContainsText(value: unknown, expected: string): boolean {
   if (!value || typeof value !== "object") {
     return false;
   }
-  return Object.values(value).some((child) =>
-    captureContainsText(child, expected),
-  );
+  return Object.values(value).some((child) => captureContainsText(child, expected));
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -398,23 +340,15 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function numberValue(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function readNestedString(
-  value: unknown,
-  path: readonly string[],
-): string | null {
+function readNestedString(value: unknown, path: readonly string[]): string | null {
   const found = readNested(value, path);
   return typeof found === "string" ? found : null;
 }
 
-function readNestedBoolean(
-  value: unknown,
-  path: readonly string[],
-): boolean | null {
+function readNestedBoolean(value: unknown, path: readonly string[]): boolean | null {
   const found = readNested(value, path);
   return typeof found === "boolean" ? found : null;
 }
@@ -436,8 +370,7 @@ function summarizeCaptureArtifact(artifact: E2ENetworkCaptureArtifact | null) {
     configured: Boolean(process.env.E2E_PROVIDER_CAPTURE_PATH),
     mode: process.env.E2E_PROVIDER_CAPTURE_MODE,
     proxyUrl: process.env.E2E_PROVIDER_CAPTURE_PROXY_URL,
-    records:
-      artifact?.records.map((record) => summarizeCaptureRecord(record)) ?? [],
+    records: artifact?.records.map((record) => summarizeCaptureRecord(record)) ?? [],
   };
 }
 

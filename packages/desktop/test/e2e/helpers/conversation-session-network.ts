@@ -62,8 +62,7 @@ export async function countUpstreamRequests(
   return (
     artifact?.records.filter(
       (record, recordIndex) =>
-        isWithinIndexOptions(recordIndex, options) &&
-        matchesUpstreamRequest(record, query),
+        isWithinIndexOptions(recordIndex, options) && matchesUpstreamRequest(record, query),
     ).length ?? 0
   );
 }
@@ -85,8 +84,7 @@ export async function getUpstreamRequestEvidence(
   return (artifact?.records ?? [])
     .filter(
       (record, recordIndex) =>
-        isWithinIndexOptions(recordIndex, options) &&
-        matchesUpstreamRequest(record, query),
+        isWithinIndexOptions(recordIndex, options) && matchesUpstreamRequest(record, query),
     )
     .map((record) => ({
       fixtureId: record.replay?.fixtureId ?? null,
@@ -107,28 +105,17 @@ export async function getLatestUpstreamToolResultByToolCallId(
 ): Promise<UpstreamToolResultSnapshot | null> {
   const artifact = await readUpstreamCaptureArtifact();
   const records = artifact?.records ?? [];
-  for (
-    let recordIndex = records.length - 1;
-    recordIndex >= 0;
-    recordIndex -= 1
-  ) {
-    const result = readUpstreamToolResultFromRequest(
-      records[recordIndex]?.requestJson,
-      toolCallId,
-    );
+  for (let recordIndex = records.length - 1; recordIndex >= 0; recordIndex -= 1) {
+    const result = readUpstreamToolResultFromRequest(records[recordIndex]?.requestJson, toolCallId);
     if (result) return result;
   }
   return null;
 }
 
 /** 返回首个匹配 provider 请求实际暴露的工具名，用于核对 turn-scoped 工具权限边界。 */
-export async function getUpstreamRequestToolNames(
-  query: UpstreamRequestQuery,
-): Promise<string[]> {
+export async function getUpstreamRequestToolNames(query: UpstreamRequestQuery): Promise<string[]> {
   const record = await findUpstreamRequestRecord(query);
-  return readUpstreamRequestTools(record?.requestJson)
-    .map(readUpstreamToolName)
-    .filter(Boolean);
+  return readUpstreamRequestTools(record?.requestJson).map(readUpstreamToolName).filter(Boolean);
 }
 
 /** 返回首个匹配 provider 请求里的原始工具 contract，覆盖 description 与 input schema。 */
@@ -152,8 +139,7 @@ export async function findFirstUpstreamRequestIndex(
   const records = artifact?.records ?? [];
   const index = records.findIndex(
     (record, recordIndex) =>
-      isWithinIndexOptions(recordIndex, options) &&
-      matchesUpstreamRequest(record, query),
+      isWithinIndexOptions(recordIndex, options) && matchesUpstreamRequest(record, query),
   );
   return index >= 0 ? index : null;
 }
@@ -165,25 +151,15 @@ export async function findLastUpstreamRequestIndex(
   const artifact = await readUpstreamCaptureArtifact();
   const records = artifact?.records ?? [];
   for (let index = records.length - 1; index >= 0; index--) {
-    if (
-      isWithinIndexOptions(index, options) &&
-      matchesUpstreamRequest(records[index]!, query)
-    ) {
+    if (isWithinIndexOptions(index, options) && matchesUpstreamRequest(records[index]!, query)) {
       return index;
     }
   }
   return null;
 }
 
-export async function waitForUpstreamRequestContaining(
-  text: string,
-  timeout = 30000,
-) {
-  await waitForUpstreamRequest(
-    { includes: [text] },
-    `没有捕获到 上游 请求 body: ${text}`,
-    timeout,
-  );
+export async function waitForUpstreamRequestContaining(text: string, timeout = 30000) {
+  await waitForUpstreamRequest({ includes: [text] }, `没有捕获到 上游 请求 body: ${text}`, timeout);
 }
 
 export async function waitForUpstreamRequest(
@@ -218,10 +194,7 @@ export async function waitForUpstreamRequest(
   }
 }
 
-export async function expectNoUpstreamRequestForTextWithin(
-  text: string,
-  durationMs: number,
-) {
+export async function expectNoUpstreamRequestForTextWithin(text: string, durationMs: number) {
   const before = await countUpstreamRequestsContaining(text);
   await browser.pause(durationMs);
   const after = await countUpstreamRequestsContaining(text);
@@ -234,9 +207,7 @@ async function readUpstreamCaptureArtifact(): Promise<E2ENetworkCaptureArtifact 
     return null;
   }
   try {
-    return JSON.parse(
-      await readFile(capturePath, "utf-8"),
-    ) as E2ENetworkCaptureArtifact;
+    return JSON.parse(await readFile(capturePath, "utf-8")) as E2ENetworkCaptureArtifact;
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return null;
@@ -255,9 +226,7 @@ function captureContainsText(value: unknown, expected: string): boolean {
   if (!value || typeof value !== "object") {
     return false;
   }
-  return Object.values(value).some((child) =>
-    captureContainsText(child, expected),
-  );
+  return Object.values(value).some((child) => captureContainsText(child, expected));
 }
 
 function matchesUpstreamRequest(
@@ -271,37 +240,23 @@ function matchesUpstreamRequest(
   return (
     record.method === "POST" &&
     isUpstreamModelRequestPath(record.path) &&
-    (query.includeTitle ||
-      !captureContainsText(record.requestJson, "Generate a concise title")) &&
-    (query.includes ?? []).every((text) =>
-      captureContainsText(record.requestJson, text),
-    ) &&
-    !(query.excludes ?? []).some((text) =>
-      captureContainsText(record.requestJson, text),
-    ) &&
-    (query.lastUserMessageIncludes ?? []).every((text) =>
-      latestUserMessageText.includes(text),
-    ) &&
-    !(query.lastUserMessageExcludes ?? []).some((text) =>
-      latestUserMessageText.includes(text),
-    )
+    (query.includeTitle || !captureContainsText(record.requestJson, "Generate a concise title")) &&
+    (query.includes ?? []).every((text) => captureContainsText(record.requestJson, text)) &&
+    !(query.excludes ?? []).some((text) => captureContainsText(record.requestJson, text)) &&
+    (query.lastUserMessageIncludes ?? []).every((text) => latestUserMessageText.includes(text)) &&
+    !(query.lastUserMessageExcludes ?? []).some((text) => latestUserMessageText.includes(text))
   );
 }
 
 function isUpstreamModelRequestPath(path: string): boolean {
   return (
-    path.includes("/messages") ||
-    path.includes("/chat/completions") ||
-    path.includes("/responses")
+    path.includes("/messages") || path.includes("/chat/completions") || path.includes("/responses")
   );
 }
 
 async function findUpstreamRequestRecord(query: UpstreamRequestQuery) {
   const artifact = await readUpstreamCaptureArtifact();
-  return (
-    artifact?.records.find((record) => matchesUpstreamRequest(record, query)) ??
-    null
-  );
+  return artifact?.records.find((record) => matchesUpstreamRequest(record, query)) ?? null;
 }
 
 function readUpstreamRequestTools(requestJson: unknown): unknown[] {
@@ -348,11 +303,7 @@ export function readUpstreamToolResultFromRequest(
   if (!requestJson || typeof requestJson !== "object") return null;
   const messages = (requestJson as { messages?: unknown }).messages;
   if (!Array.isArray(messages)) return null;
-  for (
-    let messageIndex = messages.length - 1;
-    messageIndex >= 0;
-    messageIndex -= 1
-  ) {
+  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
     const message = messages[messageIndex];
     if (!message || typeof message !== "object") continue;
     const openAiMessage = message as {
@@ -361,10 +312,7 @@ export function readUpstreamToolResultFromRequest(
       content?: unknown;
       is_error?: unknown;
     };
-    if (
-      openAiMessage.role === "tool" &&
-      openAiMessage.tool_call_id === toolCallId
-    ) {
+    if (openAiMessage.role === "tool" && openAiMessage.tool_call_id === toolCallId) {
       // Chat Completions 使用独立 tool 消息，不放在 Anthropic content[].tool_result。
       // 标准 OpenAI 没有错误布尔字段，调用方还须核对预期输出，不能仅凭 isError=false 判成功。
       return {
@@ -422,14 +370,9 @@ function readMessageContentText(content: unknown): string {
     .join("\n");
 }
 
-function isWithinIndexOptions(
-  index: number,
-  options: UpstreamRequestIndexOptions,
-) {
-  if (options.afterIndex !== undefined && index <= options.afterIndex)
-    return false;
-  if (options.beforeIndex !== undefined && index >= options.beforeIndex)
-    return false;
+function isWithinIndexOptions(index: number, options: UpstreamRequestIndexOptions) {
+  if (options.afterIndex !== undefined && index <= options.afterIndex) return false;
+  if (options.beforeIndex !== undefined && index >= options.beforeIndex) return false;
   return true;
 }
 
@@ -444,21 +387,17 @@ function summarizeUpstreamCapture(
     recordCount: records.length,
     records: records.slice(-12).map((record, offset) => {
       const index = Math.max(0, records.length - 12) + offset;
-      const latestUserMessageText = readLatestUserMessageText(
-        record.requestJson,
-      );
+      const latestUserMessageText = readLatestUserMessageText(record.requestJson);
       return {
         fixtureId: record.replay?.fixtureId ?? null,
         index,
-        matches:
-          isWithinIndexOptions(index, options) &&
-          matchesUpstreamRequest(record, query),
+        matches: isWithinIndexOptions(index, options) && matchesUpstreamRequest(record, query),
         missingIncludes: (query.includes ?? []).filter(
           (text) => !captureContainsText(record.requestJson, text),
         ),
-        missingLastUserMessageIncludes: (
-          query.lastUserMessageIncludes ?? []
-        ).filter((text) => !latestUserMessageText.includes(text)),
+        missingLastUserMessageIncludes: (query.lastUserMessageIncludes ?? []).filter(
+          (text) => !latestUserMessageText.includes(text),
+        ),
         status: record.status,
         statusCode: record.statusCode ?? null,
       };

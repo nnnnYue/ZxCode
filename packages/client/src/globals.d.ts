@@ -75,11 +75,7 @@ declare global {
   interface Window {
     /** 插件 UI 沙箱 preload 命名空间；旧 preload 下为 undefined。 */
     zcodePluginSandbox?: {
-      setExecutionActive?(
-        sandboxId: string,
-        initId: number,
-        active: boolean,
-      ): Promise<void>;
+      setExecutionActive?(sandboxId: string, initId: number, active: boolean): Promise<void>;
       supportsRetainedMove?: boolean;
       copyImage?(
         input: import("@zcode/shared/mcp-apps").PluginSandboxCaptureRequest,
@@ -177,13 +173,9 @@ declare global {
         payload: import("@zcode/shared").MaterializeWorkflowArtifactFileRequest,
       ): Promise<import("@zcode/shared").MaterializeWorkflowArtifactFileResult>;
       /** 订阅当前窗口内远程连接过程日志，返回 disposer */
-      onRemoteConnectionLog(
-        handler: (entry: RemoteConnectionRuntimeLog) => void,
-      ): () => void;
+      onRemoteConnectionLog(handler: (entry: RemoteConnectionRuntimeLog) => void): () => void;
       /** 订阅远程 workspace session 关闭事件，返回 disposer */
-      onRemoteSessionClosed(
-        handler: (event: RemoteSessionClosedEvent) => void,
-      ): () => void;
+      onRemoteSessionClosed(handler: (event: RemoteSessionClosedEvent) => void): () => void;
       /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
       onBotRemoteWorkspaceReconnected(
         handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
@@ -201,13 +193,9 @@ declare global {
       /** 查询自部署手机远控 relay 连接状态 */
       getMobileRelayStatus(): Promise<MobileRelayStatus>;
       /** 请求 relay 签发手机远控授权链接（链接即凭证，TTL 内复用同一链接） */
-      requestMobileRelayGrant(
-        payload: MobileRelayGrantRequest,
-      ): Promise<MobileRelayGrantResult>;
+      requestMobileRelayGrant(payload: MobileRelayGrantRequest): Promise<MobileRelayGrantResult>;
       /** 同步当前窗口里 Web 远程控制允许切换的 workspace */
-      syncWebRemoteControlWorkspaces?(
-        workspaces: WebRemoteControlWorkspaceTarget[],
-      ): void;
+      syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
       /** 同步当前窗口里 Web 远程控制可展示的 task 快照 */
       syncWebRemoteControlTasks?(tasks: WebRemoteControlTaskTarget[]): void;
       /** 注册手机端 Web 远控请求重连 workspace 的回调 */
@@ -222,9 +210,7 @@ declare global {
       /** 同步需要 main 进程即时感知的应用设置 */
       syncAppSettings?(patch: Partial<AppSettings>): void;
       /** 查询关闭驻留托盘能力（Linux 置灰判断；spec：docs/desktop/linux-close-to-tray.md） */
-      getCloseToTrayCapability?(): Promise<
-        import("@zcode/shared").DesktopCloseToTrayCapability
-      >;
+      getCloseToTrayCapability?(): Promise<import("@zcode/shared").DesktopCloseToTrayCapability>;
       /** 快捷键设置页录制态开关：main 暂时摘除可配置菜单 accelerator，防止录制按键触发原命令 */
       setShortcutRecordingActive?(active: boolean): void;
       /** 注册 main 进程要求聚焦指定 workspace tab 的回调，返回 disposer */
@@ -234,9 +220,7 @@ declare global {
       /** 注册 main 进程请求关闭当前上下文的回调，返回 disposer */
       onCloseActiveContextRequest?(handler: () => void): () => void;
       /** 注册内置浏览器 webview 请求打开新页面的回调，返回 disposer */
-      onOpenBrowserUrl?(
-        handler: (request: EmbeddedBrowserOpenUrlRequest) => void,
-      ): () => void;
+      onOpenBrowserUrl?(handler: (request: EmbeddedBrowserOpenUrlRequest) => void): () => void;
       /** 注册内置浏览器网页权限/源选择/设备选择弹窗请求，返回 disposer */
       onEmbeddedBrowserPermissionPrompt?(
         handler: (event: EmbeddedBrowserPermissionPromptEvent) => void,
@@ -267,9 +251,7 @@ declare global {
           browserGeneration: number;
         }) => void,
       ): () => void;
-      onBrowserViewOperation?(
-        handler: (payload: BrowserViewOperationPayload) => void,
-      ): () => void;
+      onBrowserViewOperation?(handler: (payload: BrowserViewOperationPayload) => void): () => void;
       onBrowserViewVisibility?(
         handler: (payload: {
           visible: boolean;
@@ -290,9 +272,7 @@ declare global {
       onBrowserViewScreenshotSurfaceRelease?(
         handler: (payload: BrowserViewScreenshotSurfaceReleasePayload) => void,
       ): () => void;
-      browserViewScreenshotSurfaceReady?(
-        payload: BrowserViewScreenshotSurfaceReadyPayload,
-      ): void;
+      browserViewScreenshotSurfaceReady?(payload: BrowserViewScreenshotSurfaceReadyPayload): void;
       onBrowserViewCloseTab?(
         handler: (payload: BrowserViewCloseTabNotification) => void,
       ): () => void;
@@ -309,9 +289,7 @@ declare global {
       /** 注册 main 进程通过 deep link 直接打开本地工作区目录的回调，返回 disposer */
       onOpenWorkspacePath?(handler: (path: string) => void): () => void;
       /** 注册窗口全屏状态变化回调，返回 disposer */
-      onWindowFullscreenChanged(
-        handler: (isFullscreen: boolean) => void,
-      ): () => void;
+      onWindowFullscreenChanged(handler: (isFullscreen: boolean) => void): () => void;
       /** 读取窗口最大化状态与系统原生圆角能力 */
       getDesktopWindowChromeState?(): Promise<DesktopWindowChromeState>;
       /** 订阅窗口最大化状态与系统原生圆角能力变化 */
@@ -327,21 +305,15 @@ declare global {
       /** 读取当前桌面窗口页面缩放档位 */
       getDesktopZoomLevel?(): Promise<DesktopZoomState>;
       /** 订阅当前桌面窗口页面缩放档位变化 */
-      onDesktopZoomLevelChanged?(
-        handler: (state: DesktopZoomState) => void,
-      ): () => void;
+      onDesktopZoomLevelChanged?(handler: (state: DesktopZoomState) => void): () => void;
       /** 注册用户点击系统通知后跳转到对应任务的回调，返回 disposer */
       onTaskNotificationClick(handler: (taskId: string) => void): () => void;
       /** 打开外部 URL */
       openExternal(url: string): void;
       /** 在系统文件管理器中打开指定路径 */
-      openInFileManager(
-        path: string,
-      ): Promise<{ success: boolean; error?: string }>;
+      openInFileManager(path: string): Promise<{ success: boolean; error?: string }>;
       /** 使用系统默认应用打开本地文件 */
-      openExternalFile(
-        path: string,
-      ): Promise<{ success: boolean; error?: string }>;
+      openExternalFile(path: string): Promise<{ success: boolean; error?: string }>;
       /** 打开 ZxCode Computer Use 完整权限引导 */
       openCuaPermissionOnboarding?(
         options?: OpenCuaPermissionOnboardingOptions,
@@ -378,21 +350,11 @@ declare global {
         residencyGeneration?: number;
       }): Promise<BrowserGuestAttachResult>;
       /** 重建 `<webview>` 前让 main 精确断开旧 guest 的 CDP。 */
-      browserViewDetachGuest?(payload: {
-        key: string;
-        webContentsId: number;
-      }): Promise<boolean>;
+      browserViewDetachGuest?(payload: { key: string; webContentsId: number }): Promise<boolean>;
       browserViewCloseTab?(payload: BrowserViewCloseTabRequest): Promise<void>;
-      browserViewReportResidency?(
-        payload: BrowserViewResidencyReportPayload,
-      ): Promise<void>;
-      browserViewSuspendReady?(payload: {
-        tabId: string;
-        generation: number;
-      }): Promise<void>;
-      browserViewEnsureResident?(
-        payload: BrowserViewCloseTabRequest,
-      ): Promise<void>;
+      browserViewReportResidency?(payload: BrowserViewResidencyReportPayload): Promise<void>;
+      browserViewSuspendReady?(payload: { tabId: string; generation: number }): Promise<void>;
+      browserViewEnsureResident?(payload: BrowserViewCloseTabRequest): Promise<void>;
       browserViewRestoreTabs?(
         payload: BrowserViewRestoreTabsRequest,
       ): Promise<BrowserViewRestoredTabShell[]>;
@@ -406,15 +368,11 @@ declare global {
         options?: import("@zcode/shared").ChromeBrowserDataImportOptions,
       ): Promise<ChromeBrowserDataImportResult>;
       /** 清理内置浏览器缓存或全部站点数据。 */
-      clearEmbeddedBrowserData?(
-        mode: "cache" | "all",
-      ): Promise<EmbeddedBrowserDataClearResult>;
+      clearEmbeddedBrowserData?(mode: "cache" | "all"): Promise<EmbeddedBrowserDataClearResult>;
       /** 读取开发态 stdio tap proxy 开关状态 */
       getZCodeStdioTapDevState?(): Promise<ZCodeStdioTapDevState>;
       /** 注册应用语言变化，返回 disposer */
-      onApplicationLocaleChanged?(
-        callback: (locale: Locale) => void,
-      ): () => void;
+      onApplicationLocaleChanged?(callback: (locale: Locale) => void): () => void;
       /** 订阅 main 进程修改 settings 后的通知 */
       onSettingsChanged?(callback: () => void): () => void;
       /** 查询桌面端正在运行的会话数量 */
@@ -424,9 +382,7 @@ declare global {
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(): Promise<EditorInfo[]>;
       /** 查询系统为本机文件注册的打开应用（目录/远端/非本机路径返回空数组） */
-      getFileApplications?(
-        target: FileApplicationTarget,
-      ): Promise<FileApplicationInfo[]>;
+      getFileApplications?(target: FileApplicationTarget): Promise<FileApplicationInfo[]>;
       /** 重新确认系统关联后，用指定系统应用打开本机文件 */
       openFileWithApplication?(
         applicationId: string,

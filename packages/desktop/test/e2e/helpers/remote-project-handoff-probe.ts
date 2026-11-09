@@ -1,10 +1,4 @@
-import {
-  BufferReader,
-  BufferWriter,
-  deserialize,
-  serialize,
-  VSBuffer,
-} from "@zcode/rpc";
+import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@zcode/rpc";
 import { PlatformChannels, ServiceChannels } from "@zcode/shared";
 import type { RemoteProjectDirectory } from "@zcode/services";
 
@@ -34,9 +28,7 @@ export async function installHandoffRpcProbe() {
           const receive = (event: MessageEvent) => {
             if (!(event.data instanceof Uint8Array)) return;
             if (
-              !prefixes.some((prefix) =>
-                prefix.every((byte, index) => event.data[index] === byte),
-              )
+              !prefixes.some((prefix) => prefix.every((byte, index) => event.data[index] === byte))
             )
               return;
             target.removeEventListener("message", receive);
@@ -51,31 +43,20 @@ export async function installHandoffRpcProbe() {
         delete window.__remoteProjectHandoffRpc;
       },
     };
-    MessagePort.prototype.postMessage = function (
-      message: unknown,
-      options?: unknown,
-    ) {
-      if (
-        message instanceof Uint8Array &&
-        new TextDecoder().decode(message).includes(channel)
-      ) {
+    MessagePort.prototype.postMessage = function (message: unknown, options?: unknown) {
+      if (message instanceof Uint8Array && new TextDecoder().decode(message).includes(channel)) {
         // RPC 端口由平台回调的 this 提供，受控命令必须复用同一端口。
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         port = this;
         probe.ready = true;
       }
-      Reflect.apply(
-        original,
-        this,
-        options === undefined ? [message] : [message, options],
-      );
+      Reflect.apply(original, this, options === undefined ? [message] : [message, options]);
     };
     window.__remoteProjectHandoffRpc = probe;
     window.dispatchEvent(new Event("focus"));
   }, ServiceChannels.RemoteProjects);
   await browser.waitUntil(
-    () =>
-      browser.execute(() => Boolean(window.__remoteProjectHandoffRpc?.ready)),
+    () => browser.execute(() => Boolean(window.__remoteProjectHandoffRpc?.ready)),
     {
       timeout: 30_000,
       timeoutMsg: "未捕获 Window Host 项目端口",
@@ -97,16 +78,14 @@ export async function callHandoffHost<T>(
     return Array.from(prefix.buffer.buffer);
   });
   const response = await browser.execute(
-    (request, prefixes) =>
-      window.__remoteProjectHandoffRpc!.call(request, prefixes),
+    (request, prefixes) => window.__remoteProjectHandoffRpc!.call(request, prefixes),
     Array.from(writer.buffer.buffer),
     prefixes,
   );
   const reader = new BufferReader(VSBuffer.wrap(Uint8Array.from(response)));
   const header = deserialize(reader) as [number, number];
   const body = deserialize(reader);
-  if (header[0] !== 201)
-    throw new Error(typeof body === "string" ? body : body.message);
+  if (header[0] !== 201) throw new Error(typeof body === "string" ? body : body.message);
   return body as T;
 }
 
@@ -114,14 +93,8 @@ export async function callHandoffHost<T>(
  * 在线远程项目菜单与本地项目一致，不再提供「从本机移除」；用例按项目行身份直接调用本机入口服务，
  * 语义仍是只移除本机入口与缓存，不改远端项目与会话。
  */
-export async function removeRemoteProjectEntryForRow(
-  sectionSelector: string,
-): Promise<void> {
-  if (
-    !(await browser.execute(() =>
-      Boolean(window.__remoteProjectHandoffRpc?.ready),
-    ))
-  )
+export async function removeRemoteProjectEntryForRow(sectionSelector: string): Promise<void> {
+  if (!(await browser.execute(() => Boolean(window.__remoteProjectHandoffRpc?.ready))))
     await installHandoffRpcProbe();
   const row = await browser.execute((selector) => {
     const element = document.querySelector<HTMLElement>(selector);
@@ -135,13 +108,10 @@ export async function removeRemoteProjectEntryForRow(
     "readDirectory",
   );
   const entry = directory.entries.find(
-    (candidate) =>
-      candidate.projectId === row.projectId && candidate.hostId === row.hostId,
+    (candidate) => candidate.projectId === row.projectId && candidate.hostId === row.hostId,
   );
   if (!entry) throw new Error(`${sectionSelector} 没有对应的本机远程项目入口`);
-  await callHandoffHost(ServiceChannels.RemoteProjects, "removeEntry", [
-    entry.id,
-  ]);
+  await callHandoffHost(ServiceChannels.RemoteProjects, "removeEntry", [entry.id]);
 }
 
 type BindHandler = (...args: unknown[]) => Promise<unknown>;
@@ -179,10 +149,7 @@ export async function holdProjectBind(workspacePath: string) {
       };
       handlers.set(channel, async (...args) => {
         const result = await original(...args);
-        if (
-          (args[1] as { workspacePath?: string })?.workspacePath === path &&
-          !probe.held
-        ) {
+        if ((args[1] as { workspacePath?: string })?.workspacePath === path && !probe.held) {
           probe.held = true;
           await barrier;
         }
@@ -196,10 +163,7 @@ export async function holdProjectBind(workspacePath: string) {
 }
 export async function waitForHeldProjectBind() {
   await browser.waitUntil(
-    () =>
-      browser.electron.execute(() =>
-        Boolean(globalThis.__remoteProjectBindProbe?.held),
-      ),
+    () => browser.electron.execute(() => Boolean(globalThis.__remoteProjectBindProbe?.held)),
     {
       timeout: 120_000,
       timeoutMsg: "真实项目 bind 未到达完成屏障",
@@ -207,13 +171,9 @@ export async function waitForHeldProjectBind() {
   );
 }
 export async function releaseProjectBind() {
-  await browser.electron.execute(() =>
-    globalThis.__remoteProjectBindProbe?.release(),
-  );
+  await browser.electron.execute(() => globalThis.__remoteProjectBindProbe?.release());
 }
 export async function restoreHandoffProbes() {
-  await browser.electron.execute(() =>
-    globalThis.__remoteProjectBindProbe?.restore(),
-  );
+  await browser.electron.execute(() => globalThis.__remoteProjectBindProbe?.restore());
   await browser.execute(() => window.__remoteProjectHandoffRpc?.restore());
 }

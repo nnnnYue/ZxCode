@@ -1,9 +1,7 @@
 import { resolveSeededReplayBaseUrl } from "./custom-openai-provider-store.js";
 
 /** 在关键 UI 动作/运行态断言完成后释放 fixture；不修改产品时钟或生产响应。 */
-export async function releaseControlledReplay(
-  fixtureId: string,
-): Promise<void> {
+export async function releaseControlledReplay(fixtureId: string): Promise<void> {
   const baseUrl = await resolveSeededReplayBaseUrl();
   if (!baseUrl) throw new Error("受控回放缺少本轮服务地址");
   await browser.waitUntil(
@@ -21,13 +19,9 @@ export async function releaseControlledReplay(
       timeoutMsg: `fixture 没有进入等待释放状态: ${fixtureId}`,
     },
   );
-  const result = await fetch(
-    `${baseUrl}/__e2e__/release/${encodeURIComponent(fixtureId)}`,
-    {
-      method: "POST",
-      signal: AbortSignal.timeout(5000),
-    },
-  );
-  if (result.status !== 204)
-    throw new Error(`fixture 释放失败: ${fixtureId} (${result.status})`);
+  const result = await fetch(`${baseUrl}/__e2e__/release/${encodeURIComponent(fixtureId)}`, {
+    method: "POST",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (result.status !== 204) throw new Error(`fixture 释放失败: ${fixtureId} (${result.status})`);
 }

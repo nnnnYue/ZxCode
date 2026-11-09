@@ -15,10 +15,7 @@ import {
   setInputValueByTestIdDom,
   waitForWorkspaceApp,
 } from "./helpers/desktop-app.js";
-import {
-  UPSTREAM_PROVIDER_ID,
-  UPSTREAM_PROVIDER_NAV_KEY,
-} from "./helpers/upstream-provider.js";
+import { UPSTREAM_PROVIDER_ID, UPSTREAM_PROVIDER_NAV_KEY } from "./helpers/upstream-provider.js";
 import {
   PASSIVE_AGENT_STARTUP_SCENARIO,
   getPassiveAgentStartupWorkspacePaths,
@@ -50,10 +47,8 @@ describe("provider 保存不启动 dormant workspace Agent", () => {
       dirname(DEFAULT_WORKSPACE),
       PASSIVE_AGENT_STARTUP_SCENARIO.workspaceCount,
     );
-    const activeWorkspacePath =
-      workspacePaths[PASSIVE_AGENT_STARTUP_SCENARIO.activeWorkspaceIndex];
-    if (!activeWorkspacePath)
-      throw new Error("启动 fixture 缺少 active workspace");
+    const activeWorkspacePath = workspacePaths[PASSIVE_AGENT_STARTUP_SCENARIO.activeWorkspaceIndex];
+    if (!activeWorkspacePath) throw new Error("启动 fixture 缺少 active workspace");
     const expectedWarmupWorkspacePaths = pickWorkspacePaths(
       workspacePaths,
       PASSIVE_AGENT_STARTUP_SCENARIO.expectedWarmupWorkspaceIndexes,
@@ -86,9 +81,7 @@ describe("provider 保存不启动 dormant workspace Agent", () => {
   });
 });
 
-async function saveUpstreamApiKeyThroughSettings(
-  nextApiKey: string,
-): Promise<void> {
+async function saveUpstreamApiKeyThroughSettings(nextApiKey: string): Promise<void> {
   await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON, {
     timeout: 15_000,
     timeoutMsg: "没有找到设置入口按钮",
@@ -98,13 +91,10 @@ async function saveUpstreamApiKeyThroughSettings(
     timeout: 15_000,
     timeoutMsg: "设置页没有出现模型供应商分区入口",
   });
-  await clickTestIdByDom(
-    testId(TID_MODEL_PROVIDER_NAV_ITEM, UPSTREAM_PROVIDER_NAV_KEY),
-    {
-      timeout: 30_000,
-      timeoutMsg: "设置页没有出现 上游 E2E provider",
-    },
-  );
+  await clickTestIdByDom(testId(TID_MODEL_PROVIDER_NAV_ITEM, UPSTREAM_PROVIDER_NAV_KEY), {
+    timeout: 30_000,
+    timeoutMsg: "设置页没有出现 上游 E2E provider",
+  });
 
   await setInputValueByTestIdDom(TID_MODEL_PROVIDER_API_KEY_INPUT, nextApiKey, {
     timeout: 15_000,
@@ -113,9 +103,7 @@ async function saveUpstreamApiKeyThroughSettings(
   await browser.waitUntil(
     async () =>
       (await readModelProviders()).some(
-        (provider) =>
-          provider.id === UPSTREAM_PROVIDER_ID &&
-          provider.apiKey === nextApiKey,
+        (provider) => provider.id === UPSTREAM_PROVIDER_ID && provider.apiKey === nextApiKey,
       ),
     {
       timeout: 30_000,

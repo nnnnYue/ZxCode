@@ -25,7 +25,7 @@
 
 - `main` 历史不被 rebase 重写；每个同步为一个 merge commit，剔除项为独立 commit。
 - 合并双方都改动品牌保护文件时，结果一律为本仓库版本。
-- 合并完成的判定：`pnpm typecheck`、`pnpm lint`、`pnpm architecture:check --changed` 全部通过，且回潜门禁脚本通过，方可将同步分支 fast-forward 回 `main`。
+- 合并完成的判定：分包 tsc 按[类型基线](#desktop-类型基线2026-11-09)门禁执行（desktop 子包以错误数零新增为准，勿直接用根级 `pnpm typecheck`——desktop 存量红与根级 OOM 已知）、`pnpm lint`、`pnpm architecture:check --changed` 全部通过，且回潜门禁脚本通过，方可将同步分支 fast-forward 回 `main`。
 
 ## 验收场景
 
@@ -36,3 +36,16 @@
 ## 补齐批次（2026-11-07，v3.17.2）
 
 合并域级回退导致的可视缺口按五阶段补齐工程回收（`4aa059db`…`11c5556f`，基线上游快照 `a9fe401e`）：Phase 1 纯 UI 低风险批、Phase 2 九个中等专项（2a–2i）、Phase 3 侧栏整体换 project-sidebar 骨架（`specs/sidebar-project-skeleton-swap.md`）、Phase 4 Electron 44 转正、Phase 5 定案落档（REMOVALS.md 第十节）。方法论沉淀：上游 hunk 逐段摘取适配 fork 基线（禁整文件替换）、分包 tsc 删 tsbuildinfo 后跑（根级 OOM 已知）、desktop tsc 以错误文件集合零新增为门禁、每批独立 commit 过 architecture:check --changed。后续同步遇到同类缺口按此法逐批补齐，剔除域判定以 REMOVALS.md 第十节定案为准。
+
+## desktop 类型基线（2026-11-09）
+
+v3.17.2 合并遗留的 desktop 1514 个 tsc 错按两层专项清偿（`a20a7e17` renderer 声明链、`66cb3fbb` e2e 基建），当前基线以分包 tsc（删 tsbuildinfo 后跑）为准：
+
+| 分包                     | 基线   | 构成                                                                                                                                                       |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tsconfig.renderer.json` | **0**  | 声明经 `@zcode/client/globals` type-only import 进程序；globals.d.ts 已按 preload 实测补齐                                                                 |
+| `tsconfig.e2e.json`      | **0**  | `#e2e/*` subpath imports 已恢复；helpers 按「现存测试引用的最小闭包」自 a9fe401e 恢复/对齐                                                                 |
+| `tsconfig.main.json`     | **67** | 存量定性见 `ad49abe4`：上游功能「类型层已进、实现层未合」（source-server 连接/任务全局历史/runtime-config 等），挂账随上游功能合并专项清偿，禁止零新增恶化 |
+| `tsconfig.host.json`     | **6**  | 同上                                                                                                                                                       |
+
+门禁口径：desktop 四分包错误数合计 **73** 为基线，同步/补齐批次只允许降不允许升（此前口径为「错误文件集合零新增」，本表起改为按分包错误数记账）。renderer 的 `window.zxcode` 声明唯一入口是 `desktopPlatform.ts` 顶部的 `import type {} from "@zcode/client/globals"`，禁止改为值导入（vite 运行时解析 .d.ts 会失败）。e2e 基建附带事实：`VITE_ZXCODE_E2E_STORE_BRIDGE` 为 fork 品牌拼写（读取侧 rebrand 在先），新引入注入侧行一律用 ZXCODE\_ 拼写；wdio 单 spec 冒烟已验证 `#e2e` 运行时解析与 session store bridge 安装，workspace-ready 级别的用例验收属 e2e admission 专项（另见 e2e-case-lifecycle 技能）。

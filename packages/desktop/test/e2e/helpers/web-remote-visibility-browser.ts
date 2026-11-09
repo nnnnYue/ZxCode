@@ -22,8 +22,7 @@ async function useNativeVisibility(page: Page) {
   // 新CDP session不能撤销原session的覆盖；只关闭本地driver原始session的测试仿真，
   // 后续完全使用Chrome真实tab切换，不修改document getter或派发visibility事件。
   const local = page as LocalChromiumPage;
-  const client =
-    local._connection?.toImpl?.(page)?.delegate?._mainFrameSession?._client;
+  const client = local._connection?.toImpl?.(page)?.delegate?._mainFrameSession?._client;
   if (typeof client?.send !== "function")
     throw new Error(
       "MRO03: Playwright local Chromium visibility ABI changed; native visibility is required",
@@ -38,8 +37,7 @@ export async function createWebRemoteVisibilityBrowser(
 ) {
   const caseMarker = options.caseMarker ?? "MRO03";
   const executablePath =
-    process.env.ZCODE_E2E_MOBILE_BROWSER_EXECUTABLE ||
-    process.env.R3_MOBILE_CHROME;
+    process.env.ZCODE_E2E_MOBILE_BROWSER_EXECUTABLE || process.env.R3_MOBILE_CHROME;
   const chrome = await chromium.launch({
     ...(executablePath ? { executablePath } : { channel: "chrome" }),
     headless: false,
@@ -91,17 +89,11 @@ export async function createWebRemoteVisibilityBrowser(
   let cover: Page | undefined;
   return {
     page,
-    evaluate: <T>(expression: string) =>
-      page.evaluate<T, void>(expression, undefined),
-    async navigate(
-      url: string,
-      credentials: Record<string, string>,
-      readySelector?: string,
-    ) {
+    evaluate: <T>(expression: string) => page.evaluate<T, void>(expression, undefined),
+    async navigate(url: string, credentials: Record<string, string>, readySelector?: string) {
       await context.addInitScript((values) => {
         if (!location.protocol.startsWith("http")) return;
-        for (const [key, value] of Object.entries(values))
-          localStorage.setItem(key, value);
+        for (const [key, value] of Object.entries(values)) localStorage.setItem(key, value);
       }, credentials);
       if (readySelector)
         await openMobilePairingPage(page, url, {

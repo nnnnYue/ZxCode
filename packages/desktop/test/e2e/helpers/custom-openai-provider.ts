@@ -26,10 +26,7 @@ import { sel } from "./selectors.js";
 import { createAndConfigurePersonalProvider } from "./personal-provider-settings.js";
 import { saveProviderModelMetadataDialog } from "./provider-model-metadata-dialog.js";
 
-export {
-  seedCustomOpenAIChatCompletionsProvider,
-  saveProviderModelMetadataDialog,
-};
+export { seedCustomOpenAIChatCompletionsProvider, saveProviderModelMetadataDialog };
 export { seedCustomAnthropicMessagesProvider };
 
 interface CreateCustomOpenAIProviderOptions {
@@ -49,9 +46,7 @@ export async function restartWithSeededOpenAIProviders(
       // 每个 spec 已有独立 HOME，但同一 HOME 内仍必须等旧 Electron/Host/Agent 全退出，
       // 再原子地建立下一次启动读取的唯一 Personal Provider Config。
       for (const provider of providers) {
-        seededProviders.push(
-          await seedCustomOpenAIChatCompletionsProvider(provider),
-        );
+        seededProviders.push(await seedCustomOpenAIChatCompletionsProvider(provider));
       }
     },
   });
@@ -65,8 +60,7 @@ export async function createCustomOpenAIChatCompletionsProvider({
   modelId,
   providerName,
 }: CreateCustomOpenAIProviderOptions) {
-  const baseURL =
-    explicitBaseURL?.trim() || (await resolveSeededReplayBaseUrl());
+  const baseURL = explicitBaseURL?.trim() || (await resolveSeededReplayBaseUrl());
   if (!baseURL) {
     throw new Error(
       "没有找到已 seed 的 replay provider Base URL，无法新增 OpenAI-compatible provider",
@@ -87,12 +81,7 @@ export async function createCustomOpenAIChatCompletionsProvider({
   });
   await addModelThroughMetadataDialog(modelId);
 
-  return waitForCreatedOpenAIProvider(
-    providerName,
-    baseURL,
-    modelId,
-    explicitApiFormat,
-  );
+  return waitForCreatedOpenAIProvider(providerName, baseURL, modelId, explicitApiFormat);
 }
 
 export async function refreshSeededOpenAIProvidersThroughSettings(
@@ -118,17 +107,13 @@ export async function refreshSeededOpenAIProvidersThroughSettings(
   await browser.waitUntil(
     async () =>
       browser.execute(() => {
-        const button = Array.from(
-          document.querySelectorAll<HTMLButtonElement>("button"),
-        ).find((candidate) => {
-          const label = candidate.getAttribute("aria-label")?.trim() ?? "";
-          return label === "Refresh" || label === "刷新";
-        });
-        if (
-          !button ||
-          button.disabled ||
-          button.getAttribute("aria-busy") === "true"
-        ) {
+        const button = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
+          (candidate) => {
+            const label = candidate.getAttribute("aria-label")?.trim() ?? "";
+            return label === "Refresh" || label === "刷新";
+          },
+        );
+        if (!button || button.disabled || button.getAttribute("aria-busy") === "true") {
           return false;
         }
         button.click();
@@ -190,16 +175,11 @@ async function addModelThroughMetadataDialog(modelId: string) {
     if (!dialog) {
       return -1;
     }
-    const inputs = Array.from(
-      dialog.querySelectorAll<HTMLInputElement>("input"),
-    );
+    const inputs = Array.from(dialog.querySelectorAll<HTMLInputElement>("input"));
     return inputs.findIndex((input) => {
-      const label =
-        input.parentElement?.querySelector("label")?.textContent?.trim() ?? "";
+      const label = input.parentElement?.querySelector("label")?.textContent?.trim() ?? "";
       const placeholder = input.getAttribute("placeholder") ?? "";
-      return [label, placeholder].some((text) =>
-        /^(模型 ID|Model ID)$/i.test(text.trim()),
-      );
+      return [label, placeholder].some((text) => /^(模型 ID|Model ID)$/i.test(text.trim()));
     });
   });
   if (inputIndex < 0) {
@@ -209,19 +189,14 @@ async function addModelThroughMetadataDialog(modelId: string) {
   const inputs = await $$('[role="dialog"] input');
   const modelInput = inputs[inputIndex];
   if (!modelInput) {
-    throw new Error(
-      `新增 provider 模型 metadata 输入框索引失效: ${inputIndex}`,
-    );
+    throw new Error(`新增 provider 模型 metadata 输入框索引失效: ${inputIndex}`);
   }
   await modelInput.waitForDisplayed({ timeout: 5000 });
   await modelInput.setValue(modelId);
-  await browser.waitUntil(
-    async () => (await modelInput.getValue()) === modelId,
-    {
-      timeout: 5000,
-      timeoutMsg: `新增 provider 模型 ID 没有写入输入框: ${modelId}`,
-    },
-  );
+  await browser.waitUntil(async () => (await modelInput.getValue()) === modelId, {
+    timeout: 5000,
+    timeoutMsg: `新增 provider 模型 ID 没有写入输入框: ${modelId}`,
+  });
 
   await saveProviderModelMetadataDialog("provider");
 }
@@ -236,16 +211,12 @@ async function waitForCreatedOpenAIProvider(
   await browser.waitUntil(
     async () => {
       latestProviders = await readModelProviders();
-      const provider = latestProviders.find(
-        (candidate) => candidate.name === providerName,
-      );
+      const provider = latestProviders.find((candidate) => candidate.name === providerName);
       return Boolean(
         provider &&
         provider.apiFormat === apiFormat &&
         provider.defaultKind ===
-          (apiFormat === "anthropic-messages"
-            ? "anthropic"
-            : "openai-compatible") &&
+          (apiFormat === "anthropic-messages" ? "anthropic" : "openai-compatible") &&
         provider.apiKey.trim() === getUpstreamApiKey() &&
         hasEndpoint(provider, baseURL) &&
         resolveE2EProviderRuntimeBaseUrl(provider) === baseURL &&
@@ -258,9 +229,7 @@ async function waitForCreatedOpenAIProvider(
     },
   );
 
-  const provider = latestProviders.find(
-    (candidate) => candidate.name === providerName,
-  );
+  const provider = latestProviders.find((candidate) => candidate.name === providerName);
   if (!provider) {
     throw new Error(`新增 provider 等待后仍不存在: ${providerName}`);
   }

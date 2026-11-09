@@ -51,8 +51,7 @@ export async function seedCustomOpenAIChatCompletionsProvider({
   providerId,
   providerName,
 }: SeedCustomOpenAIProviderOptions): Promise<E2EModelProviderSnapshot> {
-  const baseURL =
-    explicitBaseURL?.trim() || (await resolveSeededReplayBaseUrl());
+  const baseURL = explicitBaseURL?.trim() || (await resolveSeededReplayBaseUrl());
   if (!baseURL) {
     throw new Error(
       "没有找到已 seed 的 replay provider Base URL，无法写入 OpenAI-compatible provider",
@@ -133,11 +132,7 @@ export async function seedCustomAnthropicMessagesProvider({
         providerName,
         config: providerConfig,
       }),
-      models: current.models.setExact(
-        providerId,
-        modelId,
-        createE2EModelConfig(["text"]),
-      ),
+      models: current.models.setExact(providerId, modelId, createE2EModelConfig(["text"])),
     }));
   } finally {
     repository.dispose();
@@ -243,9 +238,7 @@ function createSeededOpenAIProvider({
     maxOutputTokens: E2E_MODEL_MAX_OUTPUT_TOKENS,
     supportsTools: true,
     supportsJsonSchemaOutput: false,
-    ...(inputModalities
-      ? { modalities: { input: inputModalities, output: ["text"] } }
-      : {}),
+    ...(inputModalities ? { modalities: { input: inputModalities, output: ["text"] } } : {}),
   });
   return {
     id: providerId,
@@ -276,9 +269,7 @@ async function readPersonalProviderConfig(): Promise<ProviderConfigLayerSnapshot
 
 async function readReplayRootBaseUrlFromRuntimeFile() {
   try {
-    const json = JSON.parse(
-      await readFile(E2E_PROVIDER_RUNTIME_FILE, "utf-8"),
-    ) as {
+    const json = JSON.parse(await readFile(E2E_PROVIDER_RUNTIME_FILE, "utf-8")) as {
       baseUrl?: string;
     };
     return normalizeReplayRootBaseUrl(json.baseUrl ?? "");
@@ -290,7 +281,5 @@ async function readReplayRootBaseUrlFromRuntimeFile() {
 function normalizeReplayRootBaseUrl(baseURL: string) {
   const trimmed = baseURL.trim().replace(/\/+$/, "");
   if (!trimmed) return "";
-  return trimmed.endsWith("/anthropic")
-    ? trimmed.slice(0, -"/anthropic".length)
-    : trimmed;
+  return trimmed.endsWith("/anthropic") ? trimmed.slice(0, -"/anthropic".length) : trimmed;
 }

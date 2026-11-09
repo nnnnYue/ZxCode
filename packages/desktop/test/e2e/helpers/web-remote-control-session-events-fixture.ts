@@ -26,10 +26,7 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
   const relay = await createFakeRelayV2({
     users: { "mock-token": "zcode-e2e-user" },
     onHttp: (call) => {
-      if (
-        options.mobilePush &&
-        call.path === "/api/v1/remote/notification/status"
-      )
+      if (options.mobilePush && call.path === "/api/v1/remote/notification/status")
         return {
           status: 200,
           body: {
@@ -46,9 +43,8 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
           status: 200,
           body: {
             messages: relay.messages,
-            queries: relay.httpCalls.filter(
-              (x) => x.path === "/api/v1/remote/notification/status",
-            ).length,
+            queries: relay.httpCalls.filter((x) => x.path === "/api/v1/remote/notification/status")
+              .length,
           },
         };
       if (call.path.startsWith("/api/v1/remote/")) return;
@@ -85,12 +81,9 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
     ZCODE_ENDPOINT_ORIGIN: relay.httpUrl,
     ZCODE_TEST_BASE_URL: relay.httpUrl,
     ZCODE_WEB_REMOTE_CONTROL_RELAY_WS_URL: relay.wsUrl,
-    ZCODE_WEB_REMOTE_CONTROL_URL:
-      options.webUrl ?? `${relay.httpUrl}/remote/v4`,
+    ZCODE_WEB_REMOTE_CONTROL_URL: options.webUrl ?? `${relay.httpUrl}/remote/v4`,
   };
-  const previous = Object.fromEntries(
-    Object.keys(envPatch).map((key) => [key, process.env[key]]),
-  );
+  const previous = Object.fromEntries(Object.keys(envPatch).map((key) => [key, process.env[key]]));
   Object.assign(process.env, envPatch);
   const webPort = options.webUrl ? new URL(options.webUrl).port : undefined;
   // 手机入口与 desktop relay 必须连接同一个隔离服务，不能沿用开发服务器的线上代理。
@@ -98,10 +91,7 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
     ? spawn(
         process.execPath,
         [
-          resolve(
-            import.meta.dirname,
-            "../../../scripts/e2e-mobile-web-server.mjs",
-          ),
+          resolve(import.meta.dirname, "../../../scripts/e2e-mobile-web-server.mjs"),
           webPort || "5173",
         ],
         {
@@ -139,13 +129,9 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
       web.stderr.on("data", (chunk) => process.stderr.write(chunk));
     });
   }
-  await writeFile(
-    options.credentialsFile,
-    JSON.stringify(WEB_REMOTE_CONTROL_FIXTURE_CREDENTIALS),
-    {
-      mode: 0o600,
-    },
-  );
+  await writeFile(options.credentialsFile, JSON.stringify(WEB_REMOTE_CONTROL_FIXTURE_CREDENTIALS), {
+    mode: 0o600,
+  });
   const settings = JSON.parse(await readFile(options.settingsFile, "utf8"));
   await writeFile(
     options.settingsFile,

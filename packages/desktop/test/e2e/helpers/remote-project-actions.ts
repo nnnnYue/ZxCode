@@ -5,11 +5,7 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@zcode/shared/test-ids";
-import {
-  clickTestIdByDom,
-  readSettings,
-  waitForTestIdByDom,
-} from "./desktop-app.js";
+import { clickTestIdByDom, readSettings, waitForTestIdByDom } from "./desktop-app.js";
 import {
   readRemoteTabSnapshot,
   waitForRemoteTab,
@@ -50,10 +46,7 @@ export async function disconnectRemoteSource(
         { timeout: 30_000, timeoutMsg: `${caseMarker}: 目标项目未离线` },
       );
     } catch (cause) {
-      throw new Error(
-        `${caseMarker}: 目标项目未离线；latest=${JSON.stringify(latest)}`,
-        { cause },
-      );
+      throw new Error(`${caseMarker}: 目标项目未离线；latest=${JSON.stringify(latest)}`, { cause });
     }
   }
 }
@@ -96,18 +89,14 @@ function remoteDeviceCardSelector(sourceId: string): string {
 }
 
 /** RDUX-13：设备默认收起成一行，连接、项目、日志与横幅在展开区；已展开时不重复切换。 */
-export async function expandRemoteDeviceRow(
-  sourceId: string,
-  caseMarker: string,
-): Promise<void> {
+export async function expandRemoteDeviceRow(sourceId: string, caseMarker: string): Promise<void> {
   const card = remoteDeviceCardSelector(sourceId);
   const toggle = $(`${card} [data-source-server-toggle]`);
   await toggle.waitForDisplayed({
     timeout: 30_000,
     timeoutMsg: `${caseMarker}: 找不到设备行 ${sourceId}`,
   });
-  if ((await toggle.getAttribute("aria-expanded")) !== "true")
-    await toggle.click();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
   await $(`${card} [data-device-details]`).waitForDisplayed({
     timeout: 10_000,
     timeoutMsg: `${caseMarker}: 设备行 ${sourceId} 没有展开`,
@@ -129,15 +118,11 @@ export async function selectRemoteDeviceMenuItem(
       await $(trigger).click();
       const selected = await browser.execute((allowedLabels) => {
         const item = Array.from(
-          document.querySelectorAll<HTMLElement>(
-            '[role="menu"] [role="menuitem"]',
-          ),
+          document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]'),
         ).find(
           (candidate) =>
             !candidate.hasAttribute("data-disabled") &&
-            allowedLabels.some((label) =>
-              candidate.textContent?.trim().startsWith(label),
-            ),
+            allowedLabels.some((label) => candidate.textContent?.trim().startsWith(label)),
         );
         item?.click();
         return Boolean(item);
@@ -160,17 +145,11 @@ export async function selectRemoteDeviceMenuItem(
 export async function expandRemoteDeviceRowsNeedingAttention(): Promise<number> {
   return browser.execute(() => {
     let expanded = 0;
-    for (const row of document.querySelectorAll<HTMLElement>(
-      "[data-source-server-row]",
-    )) {
+    for (const row of document.querySelectorAll<HTMLElement>("[data-source-server-row]")) {
       const toggle = row.querySelector<HTMLElement>(
         '[data-source-server-toggle][aria-expanded="false"]',
       );
-      if (
-        !toggle ||
-        !row.querySelector('[data-remote-connection-status="pending"]')
-      )
-        continue;
+      if (!toggle || !row.querySelector('[data-remote-connection-status="pending"]')) continue;
       toggle.click();
       expanded += 1;
     }
@@ -206,9 +185,7 @@ async function clickRemoteSourceAction(
   action: "connect" | "disconnect",
 ): Promise<void> {
   const settings = await readSettings();
-  const source = settings.sourceServers?.find(
-    (item) => item.sourceServerId === sourceId,
-  );
+  const source = settings.sourceServers?.find((item) => item.sourceServerId === sourceId);
   if (!source) throw new Error(`${caseMarker}: 找不到 Source ${sourceId}`);
   await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON, { timeout: 15_000 });
   await waitForTestIdByDom(TID_SETTINGS_PAGE, { timeout: 15_000 });
@@ -216,11 +193,7 @@ async function clickRemoteSourceAction(
     timeout: 15_000,
   });
   if (action === "disconnect") {
-    await selectRemoteDeviceMenuItem(
-      sourceId,
-      ["断开", "Disconnect"],
-      caseMarker,
-    );
+    await selectRemoteDeviceMenuItem(sourceId, ["断开", "Disconnect"], caseMarker);
     return;
   }
   // 按权威 sourceServerId 定位设备行；连接是需要处理时的行内主操作。
@@ -228,9 +201,7 @@ async function clickRemoteSourceAction(
     () =>
       browser.execute((card) => {
         const button = Array.from(
-          document.querySelectorAll<HTMLButtonElement>(
-            `${card} [data-device-row-actions] button`,
-          ),
+          document.querySelectorAll<HTMLButtonElement>(`${card} [data-device-row-actions] button`),
         ).find(
           (item) =>
             item.getClientRects().length &&
@@ -249,13 +220,9 @@ async function clickRemoteSourceAction(
 }
 
 /** 点击已有项目保留原目录意图；不重新输入线路，也不创建远程无项目聊天。 */
-export async function reconnectRemoteProject(
-  identity: string,
-  caseMarker: string,
-): Promise<void> {
+export async function reconnectRemoteProject(identity: string, caseMarker: string): Promise<void> {
   const before = await readRemoteTabSnapshot(identity);
-  if (!before.workspacePath)
-    throw new Error(`${caseMarker}: 找不到保留项目路径`);
+  if (!before.workspacePath) throw new Error(`${caseMarker}: 找不到保留项目路径`);
   await requestRemoteProjectConnection(identity, caseMarker);
   await waitForSSHDirectoryStep(caseMarker);
   await waitForRemoteTab({
@@ -272,9 +239,7 @@ export async function requestRemoteProjectConnection(
   options: { retryFailure?: boolean } = {},
 ): Promise<void> {
   await selectTaskOrganizeMode(["项目", "Project"]);
-  const row = $(
-    `[data-project-workspace-identity=${JSON.stringify(identity)}]`,
-  );
+  const row = $(`[data-project-workspace-identity=${JSON.stringify(identity)}]`);
   await row.waitForDisplayed({
     timeout: 30_000,
     timeoutMsg: `${caseMarker}: 项目入口未保留`,
@@ -289,13 +254,10 @@ export async function requestRemoteProjectConnection(
       if ((await readRemoteTabSnapshot(identity)).remoteSessionId) return true;
       return browser.execute(() => {
         const button = Array.from(
-          document.querySelectorAll<HTMLButtonElement>(
-            '[data-testid="ssh-dialog"] button',
-          ),
+          document.querySelectorAll<HTMLButtonElement>('[data-testid="ssh-dialog"] button'),
         ).find(
           (item) =>
-            /^(重试|重新连接|Retry|Reconnect)$/iu.test(item.innerText.trim()) &&
-            !item.disabled,
+            /^(重试|重新连接|Retry|Reconnect)$/iu.test(item.innerText.trim()) && !item.disabled,
         );
         button?.click();
         return Boolean(button);
