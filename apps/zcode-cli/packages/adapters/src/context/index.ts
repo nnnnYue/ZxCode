@@ -19,7 +19,7 @@ import type {
   ResolvedUserInstructions,
   UserInstructionsOptions,
 } from "@zcode/contracts";
-import { resolveGitSnapshot } from "./git-snapshot.js";
+import { findGitRoot, resolveGitSnapshot, resolveIsGitRepository } from "./git-snapshot.js";
 
 const DEFAULT_PRIORITY_FILES = ["AGENTS.md"];
 const DEFAULT_MAX_BYTES = 100 * 1024;
@@ -42,7 +42,11 @@ export class NodeContextSourceAdapter implements ContextSourcePort {
 
     const envInfo =
       request.envInfo ??
-      (await this.detectEnvInfo(workingDirectory, request.effectiveShellDisplayName));
+      (await this.detectEnvInfo(
+        workingDirectory,
+        request.effectiveShellDisplayName,
+        await resolveIsGitRepository(workingDirectory, projectRoot),
+      ));
     const userInstructions = request.userInstructions
       ? await resolveUserInstructions(
           {
@@ -69,11 +73,14 @@ export class NodeContextSourceAdapter implements ContextSourcePort {
 
   private async detectEnvInfo(
     workingDirectory: string,
-    effectiveShellDisplayName?: string,
+    effectiveShellDisplayName: string | undefined,
+    isGitRepository: boolean,
   ): Promise<EnvInfo> {
     const shellPath = this.env.SHELL ?? this.env.ComSpec ?? this.env.COMSPEC ?? "";
     const shell = effectiveShellDisplayName ?? (shellPath ? basename(shellPath) : "unknown");
-    const gitSnapshot = await resolveGitSnapshot(workingDirectory);
+    // 修复原因：findProjectRoot 已经从同一个目录向上查找过 `.git`，快照里再查一遍，
+    // 每次 context 初始化都多做一轮 stat。是否在仓库由调用方先判断好传入。
+    const gitSnapshot = await resolveGitSnapshot(workingDirectory, undefined, isGitRepository);
     return {
       cwd: workingDirectory,
       platform: process.platform,
@@ -317,24 +324,10 @@ async function detectProjectContext(projectRoot: string): Promise<ProjectContext
   };
 }
 
+// 项目根：从打开时的路径向上最近的含 .git 的目录（AGENTS.md 查找、Project Context），
+// 指令文件路径保持用户打开的写法。是否在仓库按真实路径判断，见 resolveIsGitRepository。
 async function findProjectRoot(startDir: string): Promise<string | null> {
-  let current = resolve(startDir);
-
-  while (current !== dirname(current)) {
-    if (await hasGitMarker(current)) return current;
-    current = dirname(current);
-  }
-
-  return null;
-}
-
-async function hasGitMarker(directory: string): Promise<boolean> {
-  try {
-    await stat(join(directory, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
+  return (await findGitRoot(resolve(startDir))) ?? null;
 }
 
 async function isFile(path: string): Promise<boolean> {
