@@ -1,6 +1,9 @@
 import { TOOL_SEARCH_NAME, type ModelToolContract } from "@zcode/contracts";
 import { buildToolSearchAnnouncement, buildToolExposure } from "../../tool/search/exposure.js";
-import { prepareRuntimeProviderRequest } from "../helpers/runtime-provider-request-messages.js";
+import {
+  prepareRuntimeProviderRequest,
+  shouldFoldRemindersIntoToolResults,
+} from "../helpers/runtime-provider-request-messages.js";
 import { collectDiscoveredTools, compactDiscoveryMetadata } from "../../tool/search/history.js";
 import { collectRuntimeAgentListing } from "../helpers/agent-listing.js";
 import {
@@ -351,6 +354,7 @@ async function compactActiveConversationImpl(
             ? requestMessages
             : buildCompactSummaryRequestMessages(recordableEntries, compactPrompt, {
                 useMidConversationSystem,
+                foldRemindersIntoToolResults: shouldFoldRemindersIntoToolResults(compactModel),
                 loadedToolCallIds: prepared.loadedToolCallIds,
               });
         // Compact 曾只执行 capability projection，漏掉普通 turn 共用的聚合

@@ -44,7 +44,11 @@ export type ModelResult = ModelTextResult;
 export type ModelEvent = ModelStreamEvent;
 
 export interface Model {
-  readonly requestCapabilities?: { readonly toolSearch?: ToolSearchCapability };
+  readonly requestCapabilities?: {
+    readonly toolSearch?: ToolSearchCapability;
+    /** 协议会把 tool result 与其后的 user 文本合成同一条消息时为 true，投影据此把紧随的提醒并入 tool result。 */
+    readonly foldRemindersIntoToolResults?: boolean;
+  };
   readonly providerId: ModelProviderId;
   readonly modelId: ModelId;
   readonly displayName?: string;

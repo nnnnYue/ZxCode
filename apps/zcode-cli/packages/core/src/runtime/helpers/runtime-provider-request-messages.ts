@@ -13,6 +13,12 @@ type RequestRuntime = {
   readonly config: Pick<AgentRuntimeConfig, "midConversationSystem" | "toolSearch">;
 };
 
+export function shouldFoldRemindersIntoToolResults(
+  model: Pick<Model, "requestCapabilities">,
+): boolean {
+  return model.requestCapabilities?.foldRemindersIntoToolResults === true;
+}
+
 interface MessageProjectionInput {
   entries: readonly RuntimeMessageEntry[];
   applyCacheControl?: boolean;
@@ -74,5 +80,6 @@ export function buildRuntimeProviderRequestMessages(
   return buildProviderRequestMessages({
     ...input,
     useMidConversationSystem,
+    foldRemindersIntoToolResults: shouldFoldRemindersIntoToolResults(input.model),
   });
 }

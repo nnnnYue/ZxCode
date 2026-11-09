@@ -41,7 +41,7 @@ import {
   type AiSdkModelTextRequest,
   type ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { resolveToolSearchCapability } from "./tool-search.js";
+import { resolveModelRequestCapabilities } from "./tool-search.js";
 import { createModel, type ModelExecutionRequest } from "./model.js";
 
 export type { AiSdkModelRetryOptions } from "./retry-policy.js";
@@ -201,12 +201,10 @@ export class AiSdkModelAdapter {
       });
     };
     return createModel({
-      requestCapabilities: {
-        toolSearch: resolveToolSearchCapability(
-          options.providerConfig.api.type,
-          options.providerConfig.access,
-        ),
-      },
+      requestCapabilities: resolveModelRequestCapabilities(
+        options.providerConfig.api.type,
+        options.providerConfig.access,
+      ),
       providerId: resolved.providerId,
       modelId: resolved.modelId,
       displayName: options.displayName,

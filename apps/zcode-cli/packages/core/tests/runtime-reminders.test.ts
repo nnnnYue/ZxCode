@@ -417,6 +417,7 @@ describe("runtime request reminders", () => {
     );
 
     expect(messages).toHaveLength(5);
+    // 不传合并能力：不补换行。
     expect(messages[1]).toEqual({
       role: "user",
       content: "<system-reminder>\nprefix\n</system-reminder>",
@@ -448,6 +449,8 @@ describe("runtime request reminders", () => {
         ),
         { message: { role: "user", content: "hello" }, metadata: realUserRuntimeMetadata() },
       ],
+      // 补换行只在合并相邻 user 内容的协议上（Anthropic）。
+      foldRemindersIntoToolResults: true,
     });
 
     expect(messages[1]).toEqual({

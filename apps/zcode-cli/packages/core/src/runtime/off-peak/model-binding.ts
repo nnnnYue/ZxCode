@@ -1,9 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type {
-  Model,
-  ModelRequestAuth,
-  ModelRequestAuthSource,
-  ModelRequestDependencies,
+import {
+  modelDescriptorOf,
+  type Model,
+  type ModelRequestAuth,
+  type ModelRequestAuthSource,
+  type ModelRequestDependencies,
 } from "@zcode/contracts";
 import { projectExecutionErrorPayload } from "../helpers/turn-errors.js";
 import type { OffPeakLifecycle } from "./lifecycle.js";
@@ -87,12 +88,7 @@ export class OffPeakTicketAuthority {
     const { lifecycle, attempts } = this;
     const wrap = (model: Model): Model =>
       Object.freeze<Model>({
-        providerId: model.providerId,
-        modelId: model.modelId,
-        displayName: model.displayName,
-        properties: model.properties,
-        optionSpecs: model.optionSpecs,
-        options: model.options,
+        ...modelDescriptorOf(model),
         bind: (options) => wrap(model.bind(options)),
         async generateText(request) {
           while (true) {
