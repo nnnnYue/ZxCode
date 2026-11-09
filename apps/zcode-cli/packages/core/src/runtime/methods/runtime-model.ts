@@ -1,4 +1,8 @@
-import type { ModelRequestSessionType, ModelRetryBudget } from "@zcode/contracts";
+import {
+  modelDescriptorOf,
+  type ModelRequestSessionType,
+  type ModelRetryBudget,
+} from "@zcode/contracts";
 import {
   CoreErrorType,
   createCoreError,
@@ -80,13 +84,7 @@ export function withModelInvocationContext(
   createContext: (request: ModelRequest) => ModelInvocationContext,
 ): Model {
   const wrapped: Model = {
-    providerId: model.providerId,
-    modelId: model.modelId,
-    displayName: model.displayName,
-    properties: model.properties,
-    requestCapabilities: model.requestCapabilities,
-    optionSpecs: model.optionSpecs,
-    options: model.options,
+    ...modelDescriptorOf(model),
     bind(options) {
       return withModelInvocationContext(model.bind(options), createContext);
     },
