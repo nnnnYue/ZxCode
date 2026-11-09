@@ -79,7 +79,10 @@ import type {
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
 import { resolveModelForAttempt } from "./runner-runtime-headers.js";
-import { retryAllowedByFailurePolicy } from "./workflow-model-failure-policy.js";
+import {
+  nextUnrecognizedCodeStreak,
+  retryAllowedByFailurePolicy,
+} from "./workflow-model-failure-policy.js";
 import {
   modelFailureStatusFields,
   providerRequestIdFromHeaders,
@@ -120,6 +123,15 @@ export async function* runStreamText(input: {
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
   let emptyCompletionRetryCount = 0;
+  // 不认识的业务码在本次请求里连续出现的次数：workflow 策略表据此停下，见 workflow-model-failure-policy.ts。
+  // 每次失败（外层 catch 与流内错误块两条路径）都经它更新一次。
+  let unrecognizedCodeStreak = 0;
+  const countUnrecognizedCode = (failure: ClassifiedModelFailure, error: unknown): number =>
+    (unrecognizedCodeStreak = nextUnrecognizedCodeStreak(
+      unrecognizedCodeStreak,
+      failure,
+      inspectProviderFailure(error).providerErrorCode,
+    ));
 
   for (
     let attempt = 1;
@@ -362,6 +374,7 @@ export async function* runStreamText(input: {
             requestHeaderCount,
             requestHeaders,
             repairThinkingSignatureRejection,
+            countUnrecognizedCode,
             retryBudgetAttempt,
             startedAt,
             statusContext,
@@ -502,6 +515,7 @@ export async function* runStreamText(input: {
                 "response_body",
               ),
               errorPhase: "stream",
+              unrecognizedCodeStreak: countUnrecognizedCode(failure, hiddenProviderBusinessError),
             }),
           );
         }
@@ -526,6 +540,10 @@ export async function* runStreamText(input: {
                   "response_body",
                 ),
                 errorPhase: "stream",
+                unrecognizedCodeStreak: countUnrecognizedCode(
+                  failure,
+                  streamEndedWithoutOutputError,
+                ),
               }),
             );
           }
@@ -681,6 +699,7 @@ export async function* runStreamText(input: {
       }
       const classified = classifyModelFailure(error, input.request.abortSignal);
       const failure: ClassifiedModelFailure = classified;
+      countUnrecognizedCode(failure, error);
       const errorPhase =
         readModelFailureErrorPhase(error) ?? (streamIterator === undefined ? "prepare" : "stream");
       awaitIteratorClose = failure.reason !== ModelFailureReasonValue.Cancelled;
@@ -700,6 +719,7 @@ export async function* runStreamText(input: {
         streamErrorChunkObserved: Boolean(
           diagnostics.lastErrorChunk || diagnostics.lastFinishChunk,
         ),
+        unrecognizedCodeStreak,
       });
       if (retryWithRepairedHistory) {
         failureDecision.canRetry = true;
@@ -773,6 +793,7 @@ export async function* runStreamText(input: {
         throw toAdapterError(error, failure, statusContext, attempt, {
           ...failureDecision.context,
           errorPhase,
+          unrecognizedCodeStreak,
         });
       }
 
@@ -975,6 +996,8 @@ async function handleStreamChunk(input: {
   };
   pendingRetrySafeEvents: ModelStreamEvent[];
   repairThinkingSignatureRejection: (error: unknown) => boolean;
+  /** 记一次失败，返回不认识的业务码连续出现的次数（含这一次）。 */
+  countUnrecognizedCode: (failure: ClassifiedModelFailure, error: unknown) => number;
   retryBudgetAttempt: number;
   requestHeaderCount: number;
   requestHeaders: Record<string, string>;
@@ -1179,6 +1202,7 @@ async function handleStreamErrorEvent(
     : input.statusContext;
   const classified = classifyModelFailure(error, input.input.request.abortSignal);
   const failure: ClassifiedModelFailure = classified;
+  const unrecognizedCodeStreak = input.countUnrecognizedCode(failure, error);
   const responseHeaders = sanitizeModelNetworkHeaders(getResponseHeaders(unwrapRetryError(error)));
   const failureDecision = resolveStreamFailureDecision({
     attempt: input.retryBudgetAttempt,
@@ -1190,6 +1214,7 @@ async function handleStreamErrorEvent(
     responseHeaders,
     retryBudget: input.input.request.modelRetryBudget,
     streamErrorChunkObserved: true,
+    unrecognizedCodeStreak,
   });
   if (retryWithRepairedHistory) {
     failureDecision.canRetry = true;
@@ -1253,6 +1278,7 @@ async function handleStreamErrorEvent(
         toAdapterError(error, failure, statusContext, input.attempt, {
           ...failureDecision.context,
           errorPhase: "stream",
+          unrecognizedCodeStreak,
         }),
       ),
     });
@@ -1365,6 +1391,7 @@ function resolveStreamFailureDecision(input: {
   retryBudget?: ModelRetryBudget;
   streamErrorChunkObserved?: boolean;
   streamIteratorCreated?: boolean;
+  unrecognizedCodeStreak: number;
 }): { canRetry: boolean; context?: Record<string, unknown> } {
   const httpResponseStatus = input.preserveProviderStreamBoundaries
     ? resolveCompactHttpResponseStatus(input.error)
@@ -1390,6 +1417,7 @@ function resolveStreamFailureDecision(input: {
       preserveProviderStreamBoundaries: input.preserveProviderStreamBoundaries,
       retryBudget: input.retryBudget,
       streamFailurePhase,
+      unrecognizedCodeStreak: input.unrecognizedCodeStreak,
     }),
     context: compactStreamFailureContext(
       input.preserveProviderStreamBoundaries,
@@ -1409,6 +1437,7 @@ function canRetryStreamFailure(input: {
   preserveProviderStreamBoundaries?: boolean;
   retryBudget?: ModelRetryBudget;
   streamFailurePhase?: StreamFailurePhase;
+  unrecognizedCodeStreak: number;
 }): boolean {
   // workflow 流量（无上限预算）不读分类器的 retryable，读策略表：只有确定性的模型侧错误
   // 才不重试；3008/3009/3010 这类并发上限在这里是 retry。
@@ -1434,7 +1463,14 @@ function canRetryStreamFailure(input: {
     return true;
   }
 
-  if (!retryAllowedByFailurePolicy(input.failure, input.retryBudget, providerCode)) {
+  if (
+    !retryAllowedByFailurePolicy(
+      input.failure,
+      input.retryBudget,
+      providerCode,
+      input.unrecognizedCodeStreak,
+    )
+  ) {
     return false;
   }
 
