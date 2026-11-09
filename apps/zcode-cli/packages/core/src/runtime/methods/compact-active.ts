@@ -577,6 +577,8 @@ async function compactActiveConversationImpl(
 
       const summaryMessageId = createMessageId();
       const summaryMessageContent = buildCompactSummaryMessage(persistedSummary, {
+        // 与 summary 之前的请求前公告用同一判定：保留段非空。
+        preservedMessagesKept: preservedEntries.length > 0,
         suppressFollowup: true,
       });
       // Continue 没有对应 Session message；无 store 的统计也不能把它计入保留记录。

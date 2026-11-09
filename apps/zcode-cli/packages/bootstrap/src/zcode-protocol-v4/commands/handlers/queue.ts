@@ -232,7 +232,14 @@ async function sendQueuedNow(
       throw new V4QueueItemReservedError(payload.queueItemId);
     }
     if (queueItem.kind === "compact") {
-      await startManualCompact(host, record, queueItem.sourceCommandId, foregroundPromotionLeaseId);
+      // 旧提升只传 commandId，丢失入队时的 B；与普通输入一样恢复完整意图，禁止重读 Composer。
+      const intent = inputIntentMetadataFromQueueItem(queueItem, queueItem.text);
+      intent.modelSelection ??= resolveSessionFallbackModelSelection(record);
+      await startManualCompact(host, record, {
+        inputId: queueItem.sourceCommandId,
+        foregroundPromotionLeaseId,
+        intent,
+      });
       leaseReleaseOwnedByBackground = true;
     } else if (queueItem.kind === "sendGoalCommand") {
       const intent = inputIntentMetadataFromQueueItem(queueItem, objective ?? queueItem.text);
