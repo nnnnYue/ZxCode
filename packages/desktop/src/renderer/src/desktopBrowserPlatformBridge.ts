@@ -1,14 +1,17 @@
 import type { IPlatformService } from "@zcode/shared";
 
-// fork：desktop renderer 未引入 window.zxcode 全局声明（TS2339 记账），新增桥接按
-// desktopPlatform.ts 的显式断言模式收口，不扩大存量错误面。
+// fork：onBrowserViewDownloadStarted / browserViewLoadUrl 尚未进入 @zcode/client/globals 的
+// window.zxcode 声明，按 desktopPlatform.ts 的显式可选断言模式收口（非桌面宿主下同样缺桥）。
 const preloadBrowserBridge = (
   window as Window & {
     zxcode?: {
       onBrowserViewDownloadStarted?: (
         handler: (payload: { webContentsId: number; urls: string[] }) => void,
       ) => () => void;
-      browserViewLoadUrl?: (payload: { webContentsId: number; url: string }) => Promise<void>;
+      browserViewLoadUrl?: (payload: {
+        webContentsId: number;
+        url: string;
+      }) => Promise<void>;
     };
   }
 ).zxcode;
@@ -47,23 +50,34 @@ export const desktopBrowserPlatformBridge = {
     window.zxcode.saveFile?.(payload) ??
     Promise.resolve({ success: false, error: "not_supported" }),
   // 条件定义而非兜底返回失败：UI 靠方法是否存在做能力检测，旧 preload 下必须保持 undefined
-  printPageToPdf: window.zxcode.printPageToPdf ? () => window.zxcode.printPageToPdf!() : undefined,
+  printPageToPdf: window.zxcode.printPageToPdf
+    ? () => window.zxcode.printPageToPdf!()
+    : undefined,
   onBrowserViewDownloadStarted: (handler) =>
     preloadBrowserBridge?.onBrowserViewDownloadStarted?.(handler) ?? (() => {}),
-  onBrowserViewReady: (handler) => window.zxcode.onBrowserViewReady?.(handler) ?? (() => {}),
+  onBrowserViewReady: (handler) =>
+    window.zxcode.onBrowserViewReady?.(handler) ?? (() => {}),
   onBrowserViewOperation: (handler) =>
     window.zxcode.onBrowserViewOperation?.(handler) ?? (() => {}),
   onBrowserViewViewportChanged: (handler) =>
     window.zxcode.onBrowserViewViewportChanged?.(handler) ?? (() => {}),
   onBrowserViewVisibility: (handler) =>
     window.zxcode.onBrowserViewVisibility?.(handler) ?? (() => {}),
-  onBrowserViewCloseTab: (handler) => window.zxcode.onBrowserViewCloseTab?.(handler) ?? (() => {}),
-  onBrowserViewSuspend: (handler) => window.zxcode.onBrowserViewSuspend?.(handler) ?? (() => {}),
-  onBrowserViewRestore: (handler) => window.zxcode.onBrowserViewRestore?.(handler) ?? (() => {}),
-  browserViewLoadUrl: (payload) => preloadBrowserBridge!.browserViewLoadUrl!(payload),
+  onBrowserViewCloseTab: (handler) =>
+    window.zxcode.onBrowserViewCloseTab?.(handler) ?? (() => {}),
+  onBrowserViewSuspend: (handler) =>
+    window.zxcode.onBrowserViewSuspend?.(handler) ?? (() => {}),
+  onBrowserViewRestore: (handler) =>
+    window.zxcode.onBrowserViewRestore?.(handler) ?? (() => {}),
+  browserViewLoadUrl: (payload) =>
+    preloadBrowserBridge!.browserViewLoadUrl!(payload),
   browserViewAttachGuest: (payload) =>
     window.zxcode.browserViewAttachGuest?.(payload) ??
-    Promise.resolve({ ok: false, reason: "not-found", recoveryRequested: false }),
+    Promise.resolve({
+      ok: false,
+      reason: "not-found",
+      recoveryRequested: false,
+    }),
   browserViewDetachGuest: (payload) =>
     window.zxcode.browserViewDetachGuest?.(payload) ?? Promise.resolve(false),
   browserViewCloseTab: (payload) =>
@@ -89,7 +103,9 @@ export const desktopBrowserPlatformBridge = {
         originsSkipped: 0,
         originsFailed: 0,
       },
-      error: "unsupported",
+      // Bugfix：非桌面宿主无 preload 桥，导入能力不可用；"unsupported" 从未是
+      // ChromeBrowserDataImportError 联合成员（类型接入后暴露），改用合法错误码。
+      error: "chrome_browser_data_import_unavailable",
     }),
   clearEmbeddedBrowserData: (mode) =>
     window.zxcode.clearEmbeddedBrowserData?.(mode) ??
