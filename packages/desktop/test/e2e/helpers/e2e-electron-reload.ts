@@ -1,6 +1,9 @@
 import { execFileSync } from "node:child_process";
 
-import { buildWindowsTaskkillArgs, listE2EProcessTreePids } from "./e2e-process-cleanup.js";
+import {
+  buildWindowsTaskkillArgs,
+  listE2EProcessTreePids,
+} from "./e2e-process-cleanup.js";
 import { reloadE2EElectronServiceBridge } from "./e2e-electron-service-lifecycle.js";
 
 export interface E2EElectronProcessExitOptions {
@@ -27,7 +30,10 @@ interface PendingElectronExitBarrier {
 }
 
 const browsersWithDeleteBarrier = new WeakSet<WebdriverIO.Browser>();
-const pendingExitBarrierByBrowser = new WeakMap<WebdriverIO.Browser, PendingElectronExitBarrier>();
+const pendingExitBarrierByBrowser = new WeakMap<
+  WebdriverIO.Browser,
+  PendingElectronExitBarrier
+>();
 
 export async function reloadElectronSessionSafely(
   browser: WebdriverIO.Browser,
@@ -54,8 +60,11 @@ export async function reloadElectronSessionSafely(
     }
     return appPid;
   });
-  const collectProcessTreePids = options.collectProcessTreePids ?? collectCurrentE2EProcessTreePids;
-  const oldElectronProcessTreePids = normalizeProcessPids(collectProcessTreePids([oldElectronPid]));
+  const collectProcessTreePids =
+    options.collectProcessTreePids ?? collectCurrentE2EProcessTreePids;
+  const oldElectronProcessTreePids = normalizeProcessPids(
+    collectProcessTreePids([oldElectronPid]),
+  );
   if (!oldElectronProcessTreePids.includes(oldElectronPid)) {
     throw new Error(
       `Electron reload 旧进程树未包含 main pid: pid=${oldElectronPid}, tree=${oldElectronProcessTreePids.join(",") || "empty"}`,
@@ -93,7 +102,9 @@ export async function reloadElectronSessionSafely(
       throw new Error("Electron reload 未经过旧进程退出屏障");
     }
     if (pendingBarrier.error) {
-      throw new Error("Electron reload 旧进程退出屏障失败", { cause: pendingBarrier.error });
+      throw new Error("Electron reload 旧进程退出屏障失败", {
+        cause: pendingBarrier.error,
+      });
     }
 
     // Bug 根因：运行中的 Host 会异步刷新并写回 provider/config 数据；测试若在旧进程
@@ -106,7 +117,9 @@ export async function reloadElectronSessionSafely(
     const newSessionId = await browser.reloadSession();
     // Bug 根因：新 WebDriver session 建立后 Electron service.before 不会自动重跑；
     // helper 必须等新 main process 的 CDP bridge 重建并通过 probe，才能向调用方返回。
-    await (options.reloadElectronServiceBridge ?? reloadE2EElectronServiceBridge)(browser);
+    await (
+      options.reloadElectronServiceBridge ?? reloadE2EElectronServiceBridge
+    )(browser);
     return newSessionId;
   } finally {
     pendingExitBarrierByBrowser.delete(browser);
@@ -116,23 +129,29 @@ export async function reloadElectronSessionSafely(
 /** 完整重启 Electron，同时显式复用同一 userData，避免空 profile 掩盖恢复行为。 */
 export async function reloadElectronSessionPreservingBrowserProfile(
   browser: WebdriverIO.Browser,
+  options: E2EElectronProcessExitOptions = {},
 ): Promise<string> {
   const userDataDir = (await browser.electron.execute((electron) =>
     electron.app.getPath("userData"),
   )) as string;
-  const requestedCapabilities = browser.requestedCapabilities as WebdriverIO.Capabilities & {
-    "goog:chromeOptions"?: { args?: string[] };
-  };
+  const requestedCapabilities =
+    browser.requestedCapabilities as WebdriverIO.Capabilities & {
+      "goog:chromeOptions"?: { args?: string[] };
+    };
   const chromeOptions = requestedCapabilities["goog:chromeOptions"] ?? {};
   requestedCapabilities["goog:chromeOptions"] = {
     ...chromeOptions,
     args: [
-      ...(chromeOptions.args ?? []).filter((arg) => !arg.startsWith("--user-data-dir=")),
+      ...(chromeOptions.args ?? []).filter(
+        (arg) => !arg.startsWith("--user-data-dir="),
+      ),
       `--user-data-dir=${userDataDir}`,
     ],
   };
-  await reloadElectronSessionSafely(browser);
-  return (await browser.electron.execute((electron) => electron.app.getPath("userData"))) as string;
+  await reloadElectronSessionSafely(browser, options);
+  return (await browser.electron.execute((electron) =>
+    electron.app.getPath("userData"),
+  )) as string;
 }
 
 function ensureDeleteSessionExitBarrier(browser: WebdriverIO.Browser) {
@@ -168,7 +187,10 @@ function ensureDeleteSessionExitBarrier(browser: WebdriverIO.Browser) {
   };
   // WebdriverIO 的公开运行时允许覆盖 protocol command，但 9.x 类型只列出 browser command；
   // 这里收窄 cast 到已验证的 deleteSession 包装，不扩散到其它 command。
-  browser.overwriteCommand("deleteSession" as never, overwriteDeleteSession as never);
+  browser.overwriteCommand(
+    "deleteSession" as never,
+    overwriteDeleteSession as never,
+  );
   browsersWithDeleteBarrier.add(browser);
 }
 
@@ -176,7 +198,9 @@ export async function waitForElectronProcessExit(
   pidOrPids: number | number[],
   options: E2EElectronProcessExitOptions = {},
 ) {
-  const trackedPids = normalizeProcessPids(Array.isArray(pidOrPids) ? pidOrPids : [pidOrPids]);
+  const trackedPids = normalizeProcessPids(
+    Array.isArray(pidOrPids) ? pidOrPids : [pidOrPids],
+  );
   const cleanupTimedOutProcessTreePids =
     options.cleanupTimedOutProcessTreePids ??
     ((pids: number[]) => cleanupTimedOutElectronProcessTreePids(pids, options));
@@ -184,9 +208,11 @@ export async function waitForElectronProcessExit(
   const delay = options.delay ?? defaultDelay;
   const isProcessAlive = options.isProcessAlive ?? defaultIsProcessAlive;
   const now = options.now ?? Date.now;
-  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_ELECTRON_EXIT_POLL_INTERVAL_MS;
+  const pollIntervalMs =
+    options.pollIntervalMs ?? DEFAULT_ELECTRON_EXIT_POLL_INTERVAL_MS;
   const timeoutMs = options.timeoutMs ?? DEFAULT_ELECTRON_EXIT_TIMEOUT_MS;
-  const forceKillGraceMs = options.forceKillGraceMs ?? DEFAULT_ELECTRON_FORCE_KILL_GRACE_MS;
+  const forceKillGraceMs =
+    options.forceKillGraceMs ?? DEFAULT_ELECTRON_FORCE_KILL_GRACE_MS;
   const waitOptions = {
     collectProcessTreePids,
     delay,
@@ -194,13 +220,21 @@ export async function waitForElectronProcessExit(
     now,
     pollIntervalMs,
   };
-  let remainingPids = await waitForProcessTreeExit(trackedPids, timeoutMs, waitOptions);
+  let remainingPids = await waitForProcessTreeExit(
+    trackedPids,
+    timeoutMs,
+    waitOptions,
+  );
   if (remainingPids.length === 0) return;
 
   // 修复原因：自然退出超时后不能让 reloadSession 带着旧资源继续建新 session；复用
   // runner 的 Windows taskkill /T /F 与 POSIX TERM -> KILL 口径，随后再按身份严格复扫。
   await cleanupTimedOutProcessTreePids(remainingPids);
-  remainingPids = await waitForProcessTreeExit(trackedPids, forceKillGraceMs, waitOptions);
+  remainingPids = await waitForProcessTreeExit(
+    trackedPids,
+    forceKillGraceMs,
+    waitOptions,
+  );
   if (remainingPids.length === 0) return;
 
   throw new Error(
@@ -233,11 +267,15 @@ async function waitForProcessTreeExit(
 
 function getRemainingProcessTreePids(
   trackedPids: number[],
-  options: Pick<ProcessTreeWaitOptions, "collectProcessTreePids" | "isProcessAlive">,
+  options: Pick<
+    ProcessTreeWaitOptions,
+    "collectProcessTreePids" | "isProcessAlive"
+  >,
 ) {
-  return normalizeProcessPids([...trackedPids, ...options.collectProcessTreePids()]).filter(
-    options.isProcessAlive,
-  );
+  return normalizeProcessPids([
+    ...trackedPids,
+    ...options.collectProcessTreePids(),
+  ]).filter(options.isProcessAlive);
 }
 
 async function cleanupTimedOutElectronProcessTreePids(
@@ -257,14 +295,20 @@ async function cleanupTimedOutElectronProcessTreePids(
   }
 
   signalPosixProcesses(pids, "SIGTERM");
-  const forceKillGraceMs = options.forceKillGraceMs ?? DEFAULT_ELECTRON_FORCE_KILL_GRACE_MS;
-  const remainingAfterTerm = await waitForProcessTreeExit(pids, forceKillGraceMs, {
-    collectProcessTreePids: () => [],
-    delay: options.delay ?? defaultDelay,
-    isProcessAlive: options.isProcessAlive ?? defaultIsProcessAlive,
-    now: options.now ?? Date.now,
-    pollIntervalMs: options.pollIntervalMs ?? DEFAULT_ELECTRON_EXIT_POLL_INTERVAL_MS,
-  });
+  const forceKillGraceMs =
+    options.forceKillGraceMs ?? DEFAULT_ELECTRON_FORCE_KILL_GRACE_MS;
+  const remainingAfterTerm = await waitForProcessTreeExit(
+    pids,
+    forceKillGraceMs,
+    {
+      collectProcessTreePids: () => [],
+      delay: options.delay ?? defaultDelay,
+      isProcessAlive: options.isProcessAlive ?? defaultIsProcessAlive,
+      now: options.now ?? Date.now,
+      pollIntervalMs:
+        options.pollIntervalMs ?? DEFAULT_ELECTRON_EXIT_POLL_INTERVAL_MS,
+    },
+  );
   signalPosixProcesses(remainingAfterTerm, "SIGKILL");
 }
 
@@ -282,7 +326,9 @@ function collectCurrentE2EProcessTreePids(rootPids: number[] = []) {
   const homeDir = process.env.ZCODE_E2E_HOME_DIR?.trim();
   const runId = process.env.ZXCODE_E2E_RUN_ID?.trim();
   if (!homeDir || !runId) {
-    throw new Error("Electron reload 缺少 ZCODE_E2E_HOME_DIR 或 ZXCODE_E2E_RUN_ID");
+    throw new Error(
+      "Electron reload 缺少 ZCODE_E2E_HOME_DIR 或 ZXCODE_E2E_RUN_ID",
+    );
   }
   return listE2EProcessTreePids({
     currentPid: process.pid,

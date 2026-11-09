@@ -163,7 +163,7 @@ function createBuildEnv(env) {
   return {
     ...buildEnv,
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: "false",
-    VITE_ZCODE_E2E_STORE_BRIDGE: "1",
+    VITE_ZXCODE_E2E_STORE_BRIDGE: "1",
     // Windows full E2E 反复执行时复用 Turbo 内容缓存；冷缓存仍按依赖图构建，
     // targeted/non-Windows 路径不会经过父 runner 的 sharded build env。
     ZCODE_DESKTOP_AGENT_BUILD_MODE: env.ZCODE_DESKTOP_AGENT_BUILD_MODE ?? "turbo",

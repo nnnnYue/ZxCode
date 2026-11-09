@@ -1,7 +1,10 @@
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
-import { ZCODE_DYNAMIC_WORKFLOW_MODE_ENV, type DynamicWorkflowMode } from "@zcode/shared";
+import {
+  ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV,
+  type DynamicWorkflowMode,
+} from "@zcode/shared";
 
 /**
  * 动态工作流灰度（docs/dynamic-workflow/launch.md「Gray release: the `dynamicWorkflow` feature key」）
@@ -11,8 +14,10 @@ import { ZCODE_DYNAMIC_WORKFLOW_MODE_ENV, type DynamicWorkflowMode } from "@zcod
  * 只 mock 服务端 key，不使用 ZCODE_DYNAMIC_WORKFLOW_MODE 本地覆盖：DWG-08 要验证的正是
  * 「服务端说了算」这条链路，覆盖会把它短路掉。
  */
-const DISABLED_SPEC_FRAGMENT = "conversation-session-dynamic-workflow-gray-disabled";
-const ALWAYS_ON_SPEC_FRAGMENT = "conversation-session-dynamic-workflow-gray-always-on";
+const DISABLED_SPEC_FRAGMENT =
+  "conversation-session-dynamic-workflow-gray-disabled";
+const ALWAYS_ON_SPEC_FRAGMENT =
+  "conversation-session-dynamic-workflow-gray-always-on";
 
 export type DynamicWorkflowConfigMockScenario = Extract<
   DynamicWorkflowMode,
@@ -47,7 +52,8 @@ export function resolveDynamicWorkflowConfigMockScenario(
       spec.endsWith("conversation-session-dynamic-workflow-holes.test.ts") ||
       // PLUS05 明确以 catalog 含 workflow 为前置，不能依赖线上灰度值。
       spec.endsWith("conversation-session-plus-menu.test.ts") ||
-      spec.replaceAll("\\", "/").split("/").at(-1) === "automations-workflows-hub.test.ts",
+      spec.replaceAll("\\", "/").split("/").at(-1) ===
+        "automations-workflows-hub.test.ts",
   );
   if (disabled && alwaysOn) {
     // 两个档位靠同一个 endpoint origin 区分，同一个 worker 里无法并存；
@@ -71,14 +77,18 @@ export function applyDynamicWorkflowConfigMockEnv(
   // 未打包 dev 档位下 Main 会把开发者 shell 里的合法 ZCODE_DYNAMIC_WORKFLOW_MODE 透传给 Host
   // （docs/dynamic-workflow/launch.md「The local override」），那会盖掉本用例的服务端判定。
   // worker 进程一轮只跑一个 spec 文件，这里直接删掉即可，不需要回填。
-  delete environment[ZCODE_DYNAMIC_WORKFLOW_MODE_ENV];
+  delete environment[ZXCODE_DYNAMIC_WORKFLOW_MODE_ENV];
 }
 
 export function clearDynamicWorkflowConfigMockEnv(
   environment: Record<string, string | undefined>,
   baseUrl: string,
 ): void {
-  for (const key of ["ZCODE_BASE_URL", "ZCODE_TEST_BASE_URL", "ZCODE_ENDPOINT_ORIGIN"] as const) {
+  for (const key of [
+    "ZCODE_BASE_URL",
+    "ZCODE_TEST_BASE_URL",
+    "ZCODE_ENDPOINT_ORIGIN",
+  ] as const) {
     if (environment[key] === baseUrl) {
       delete environment[key];
     }
@@ -109,7 +119,10 @@ export async function startDynamicWorkflowConfigMockServer(
   let configRequests = 0;
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
-    if (request.method === "GET" && url.pathname === DYNAMIC_WORKFLOW_CONFIG_MOCK_STATUS_PATH) {
+    if (
+      request.method === "GET" &&
+      url.pathname === DYNAMIC_WORKFLOW_CONFIG_MOCK_STATUS_PATH
+    ) {
       sendJson(response, {
         configRequests,
         mode,
@@ -123,7 +136,10 @@ export async function startDynamicWorkflowConfigMockServer(
       return;
     }
 
-    if (request.method === "GET" && url.pathname === "/api/v1/zcode-plan/billing/balance") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/v1/zcode-plan/billing/balance"
+    ) {
       // 灰度 E2E 不验证套餐；返回合法的「无套餐」快照，避免共享 endpoint 产生无关 404。
       sendJson(response, {
         code: 0,
@@ -134,7 +150,10 @@ export async function startDynamicWorkflowConfigMockServer(
       return;
     }
 
-    if (request.method === "GET" && url.pathname === "/api/v2/releases/latest") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/v2/releases/latest"
+    ) {
       // provider preset 同步与 client/configs 共享 endpoint；返回固定 config_version，
       // 让它继续复用本地 fixture，不因为灰度 mock 而等待远端超时。
       sendJson(response, {
@@ -158,7 +177,9 @@ export async function startDynamicWorkflowConfigMockServer(
   await once(server, "listening");
   const address = server.address();
   if (!address || typeof address === "string") {
-    throw new Error("Dynamic workflow gray E2E mock server did not bind to a TCP port");
+    throw new Error(
+      "Dynamic workflow gray E2E mock server did not bind to a TCP port",
+    );
   }
 
   return {
@@ -182,7 +203,11 @@ interface DynamicWorkflowClientConfigFixture {
   };
 }
 
-function sendJson(response: ServerResponse, payload: unknown, statusCode = 200): void {
+function sendJson(
+  response: ServerResponse,
+  payload: unknown,
+  statusCode = 200,
+): void {
   response.writeHead(statusCode, {
     "content-type": "application/json; charset=utf-8",
   });

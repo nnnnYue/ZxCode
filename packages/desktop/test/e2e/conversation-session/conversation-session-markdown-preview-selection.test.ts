@@ -9,15 +9,25 @@ import {
   TID_V4_SESSION_PANE,
   testId,
 } from "@zcode/shared";
-import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import {
+  clearAppData,
+  clickTestIdByDom,
+  DEFAULT_WORKSPACE,
+} from "../helpers/desktop-app.js";
 import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+// fork 修复：草稿提升任务后改用 project-sidebar 的文件树入口（openProjectFileTree），
+// fork 侧改写该用例时补了调用但漏了 import。
+import { openProjectFileTree } from "../helpers/project-sidebar.js";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4TimelineContaining,
 } from "../helpers/v4-conversation.js";
 
-const filePath = resolveE2ERuntimePath("markdown-preview-selection", "selection.md");
+const filePath = resolveE2ERuntimePath(
+  "markdown-preview-selection",
+  "selection.md",
+);
 const marker = "E2E_MARKDOWN_PREVIEW_SELECTED_PARAGRAPH";
 describe("Markdown preview selection", () => {
   after(async () => {
@@ -40,16 +50,24 @@ describe("Markdown preview selection", () => {
         async () =>
           browser.execute(
             (actionId) => {
-              return Boolean(document.querySelector(`[data-testid="${actionId}"]`));
+              return Boolean(
+                document.querySelector(`[data-testid="${actionId}"]`),
+              );
             },
             testId(TID_WORKSPACE_FILE_TREE_BUTTON, DEFAULT_WORKSPACE),
           ),
-        { timeout: 5000, timeoutMsg: "Workspace file tree action did not mount after hover" },
+        {
+          timeout: 5000,
+          timeoutMsg: "Workspace file tree action did not mount after hover",
+        },
       )
       .catch(async (error) => {
         if (process.env.ZXCODE_E2E_ARTIFACT_DIR) {
           await browser.saveScreenshot(
-            join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-file-tree-unavailable.png"),
+            join(
+              process.env.ZXCODE_E2E_ARTIFACT_DIR,
+              "markdown-file-tree-unavailable.png",
+            ),
           );
         }
         console.log(
@@ -57,7 +75,9 @@ describe("Markdown preview selection", () => {
           await browser.execute(() =>
             Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
               .filter((element) =>
-                /workspace|file-tree|sidebar|project/.test(element.dataset.testid ?? ""),
+                /workspace|file-tree|sidebar|project/.test(
+                  element.dataset.testid ?? "",
+                ),
               )
               .map((element) => ({
                 id: element.dataset.testid,
@@ -67,10 +87,14 @@ describe("Markdown preview selection", () => {
         );
         throw error;
       });
-    await clickTestIdByDom(testId(TID_WORKSPACE_FILE_TREE_BUTTON, DEFAULT_WORKSPACE));
+    await clickTestIdByDom(
+      testId(TID_WORKSPACE_FILE_TREE_BUTTON, DEFAULT_WORKSPACE),
+    );
     // 文件树会将单子目录链压缩为一行，入口使用压缩后的最深目录。
     for (const path of [dirname(filePath), filePath]) {
-      const row = await $(`[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, path)}"]`);
+      const row = await $(
+        `[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, path)}"]`,
+      );
       await row.waitForDisplayed({ timeout: 15000 });
       await row.click();
     }
@@ -81,8 +105,11 @@ describe("Markdown preview selection", () => {
       (paneTestId, inputTestId) => {
         const input = document.querySelector(
           `[data-testid="${paneTestId}"] [data-testid="${inputTestId}"]`,
-        ) as HTMLElement & { __zcodeLexicalInputE2E?: { setText: (text: string) => void } };
-        if (!input?.__zcodeLexicalInputE2E) throw new Error("Composer bridge missing");
+        ) as HTMLElement & {
+          __zcodeLexicalInputE2E?: { setText: (text: string) => void };
+        };
+        if (!input?.__zcodeLexicalInputE2E)
+          throw new Error("Composer bridge missing");
         input.__zcodeLexicalInputE2E.setText("E2E_MARKDOWN_DRAFT_KEEP");
       },
       paneId,
@@ -100,30 +127,44 @@ describe("Markdown preview selection", () => {
           const selection = window.getSelection()!;
           selection.removeAllRanges();
           selection.addRange(range);
-          node.parentElement!.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+          node.parentElement!.dispatchEvent(
+            new MouseEvent("mouseup", { bubbles: true }),
+          );
           return;
         }
         throw new Error("Preview text missing");
       }, marker);
-      const action = await $('[data-conversation-selection-action="add-to-task"]');
+      const action = await $(
+        '[data-conversation-selection-action="add-to-task"]',
+      );
       await action.waitForDisplayed({ timeout: 5000 });
       const layout = await browser.execute(() => {
-        const menu = document.querySelector<HTMLElement>("[data-conversation-selection-tooltip]")!;
-        const [add, side] = Array.from(menu.querySelectorAll("button")).map((button) =>
-          button.getBoundingClientRect(),
+        const menu = document.querySelector<HTMLElement>(
+          "[data-conversation-selection-tooltip]",
+        )!;
+        const [add, side] = Array.from(menu.querySelectorAll("button")).map(
+          (button) => button.getBoundingClientRect(),
         );
         if (!add || !side) throw new Error("Selection actions missing");
         const rect = menu.getBoundingClientRect();
         return {
-          horizontal: Math.abs(add.top - side.top) < 1 && side.left >= add.right,
+          horizontal:
+            Math.abs(add.top - side.top) < 1 && side.left >= add.right,
           adaptive: menu.style.width === "max-content",
           inside: rect.left >= 11 && rect.right <= innerWidth - 11,
         };
       });
-      expect(layout).toEqual({ horizontal: true, adaptive: true, inside: true });
+      expect(layout).toEqual({
+        horizontal: true,
+        adaptive: true,
+        inside: true,
+      });
       if (i === 0 && process.env.ZXCODE_E2E_ARTIFACT_DIR) {
         await browser.saveScreenshot(
-          join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-selection-tooltip.png"),
+          join(
+            process.env.ZXCODE_E2E_ARTIFACT_DIR,
+            "markdown-selection-tooltip.png",
+          ),
         );
       }
       await action.click();
@@ -135,13 +176,18 @@ describe("Markdown preview selection", () => {
     expect(await chip.getText()).toContain("selection.md");
     if (process.env.ZXCODE_E2E_ARTIFACT_DIR) {
       await browser.saveScreenshot(
-        join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-selection-composer.png"),
+        join(
+          process.env.ZXCODE_E2E_ARTIFACT_DIR,
+          "markdown-selection-composer.png",
+        ),
       );
     }
     const state = await browser.execute(
       (paneTestId, inputTestId) => {
         const pane = document.querySelector(`[data-testid="${paneTestId}"]`)!;
-        const input = pane.querySelector(`[data-testid="${inputTestId}"]`) as HTMLElement & {
+        const input = pane.querySelector(
+          `[data-testid="${inputTestId}"]`,
+        ) as HTMLElement & {
           __zcodeLexicalInputE2E?: { getText: () => string };
         };
         return {
@@ -152,7 +198,10 @@ describe("Markdown preview selection", () => {
       paneId,
       TID_V4_COMPOSER_INPUT,
     );
-    expect(state).toEqual({ session: "draft", text: "E2E_MARKDOWN_DRAFT_KEEP" });
+    expect(state).toEqual({
+      session: "draft",
+      text: "E2E_MARKDOWN_DRAFT_KEEP",
+    });
     const remove = await $(
       `[data-testid="${paneId}"] button[aria-label="移除对话引用"], [data-testid="${paneId}"] button[aria-label="Remove conversation selection"]`,
     );
@@ -168,20 +217,30 @@ describe("Markdown preview selection", () => {
       selection.addRange(range);
       paragraph.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
     });
-    const addAgain = await $('[data-conversation-selection-action="add-to-task"]');
+    const addAgain = await $(
+      '[data-conversation-selection-action="add-to-task"]',
+    );
     await addAgain.waitForDisplayed();
     await addAgain.click();
-    await sendV4Prompt("E2E_MARKDOWN_SIDE_PARENT Reply with a short acknowledgment.");
+    await sendV4Prompt(
+      "E2E_MARKDOWN_SIDE_PARENT Reply with a short acknowledgment.",
+    );
     await waitForV4TimelineContaining("E2E_MARKDOWN_SIDE_READY", 30000);
     const evidence = await getUpstreamRequestEvidence({
       lastUserMessageIncludes: ["E2E_MARKDOWN_SIDE_PARENT", "# userselect:"],
-      excludes: ["Generate a concise title", "CRITICAL: Respond with TEXT ONLY"],
+      excludes: [
+        "Generate a concise title",
+        "CRITICAL: Respond with TEXT ONLY",
+      ],
     });
     // 仅搜索文件名会被其他上下文误满足；精确检查实际 userselect 发送合同。
     expect(evidence.length).toBeGreaterThan(0);
     for (const record of evidence) {
       const { messages } = record.requestJson as {
-        messages: Array<{ role: string; content: string | Array<{ type: string; text?: string }> }>;
+        messages: Array<{
+          role: string;
+          content: string | Array<{ type: string; text?: string }>;
+        }>;
       };
       const selections = messages
         .filter((message) => message.role === "user")
@@ -208,7 +267,9 @@ describe("Markdown preview selection", () => {
     expect(await historyChip.getText()).toContain("selection.md");
     // 草稿提升为任务会切换 task-owned 侧栏；重新打开文件标签并按实际展开状态定位。
     await openProjectFileTree(DEFAULT_WORKSPACE);
-    const fileRow = $(`[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, filePath)}"]`);
+    const fileRow = $(
+      `[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, filePath)}"]`,
+    );
     if (!(await fileRow.isDisplayed())) {
       const directory = $(
         `[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, dirname(filePath))}"]`,
@@ -223,7 +284,9 @@ describe("Markdown preview selection", () => {
       (paneTestId, inputTestId) => {
         const input = document.querySelector(
           `[data-testid="${paneTestId}"] [data-testid="${inputTestId}"]`,
-        ) as HTMLElement & { __zcodeLexicalInputE2E: { setText: (text: string) => void } };
+        ) as HTMLElement & {
+          __zcodeLexicalInputE2E: { setText: (text: string) => void };
+        };
         input.__zcodeLexicalInputE2E.setText("E2E_MARKDOWN_MAIN_KEEP");
       },
       paneId,
@@ -242,7 +305,9 @@ describe("Markdown preview selection", () => {
       selection.addRange(range);
       paragraph.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
     });
-    const sideAction = await $('[data-conversation-selection-action="ask-in-side-chat"]');
+    const sideAction = await $(
+      '[data-conversation-selection-action="ask-in-side-chat"]',
+    );
     await sideAction.waitForEnabled({ timeout: 15000 });
     await sideAction.click();
     const sideChip = await $(
@@ -251,22 +316,39 @@ describe("Markdown preview selection", () => {
     await sideChip.waitForDisplayed({ timeout: 30000 });
     expect(await sideChip.getText()).toContain("selection.md");
     const sideState = await browser.execute((inputTestId) => {
-      const pane = document.querySelector('[data-testid^="v4-session-pane-selection-side-chat:"]')!;
-      const input = pane.querySelector(`[data-testid="${inputTestId}"]`) as HTMLElement & {
+      const pane = document.querySelector(
+        '[data-testid^="v4-session-pane-selection-side-chat:"]',
+      )!;
+      const input = pane.querySelector(
+        `[data-testid="${inputTestId}"]`,
+      ) as HTMLElement & {
         __zcodeLexicalInputE2E?: { getText: () => string };
       };
-      const main = document.querySelector('[data-testid="v4-session-pane-workspace-main"]')!;
-      const mainInput = main.querySelector(`[data-testid="${inputTestId}"]`) as typeof input;
+      const main = document.querySelector(
+        '[data-testid="v4-session-pane-workspace-main"]',
+      )!;
+      const mainInput = main.querySelector(
+        `[data-testid="${inputTestId}"]`,
+      ) as typeof input;
       return {
         sideText: input.__zcodeLexicalInputE2E?.getText(),
         mainText: mainInput.__zcodeLexicalInputE2E?.getText(),
-        distinct: pane.getAttribute("data-session-id") !== main.getAttribute("data-session-id"),
+        distinct:
+          pane.getAttribute("data-session-id") !==
+          main.getAttribute("data-session-id"),
       };
     }, TID_V4_COMPOSER_INPUT);
-    expect(sideState).toEqual({ sideText: "", mainText: "E2E_MARKDOWN_MAIN_KEEP", distinct: true });
+    expect(sideState).toEqual({
+      sideText: "",
+      mainText: "E2E_MARKDOWN_MAIN_KEEP",
+      distinct: true,
+    });
     if (process.env.ZXCODE_E2E_ARTIFACT_DIR)
       await browser.saveScreenshot(
-        join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-side-conversation.png"),
+        join(
+          process.env.ZXCODE_E2E_ARTIFACT_DIR,
+          "markdown-side-conversation.png",
+        ),
       );
   });
 });

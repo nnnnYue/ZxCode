@@ -10,7 +10,11 @@ describe("desktop renderer Vite dependency aliases", () => {
   });
 
   it("points React singleton dependencies to installed package locations", () => {
-    for (const dependencyName of ["react", "react-dom", "lucide-react"] as const) {
+    for (const dependencyName of [
+      "react",
+      "react-dom",
+      "lucide-react",
+    ] as const) {
       expect(
         existsSync(desktopRendererDependencyAliases[dependencyName]),
         `${dependencyName} alias target should exist`,
@@ -20,11 +24,15 @@ describe("desktop renderer Vite dependency aliases", () => {
 
   it("keeps React subpath aliases loadable for Vite dependency optimization", () => {
     expect(
-      existsSync(resolve(desktopRendererDependencyAliases.react, "jsx-runtime.js")),
+      existsSync(
+        resolve(desktopRendererDependencyAliases.react, "jsx-runtime.js"),
+      ),
       "react/jsx-runtime should resolve from the React package root",
     ).toBe(true);
     expect(
-      existsSync(resolve(desktopRendererDependencyAliases["react-dom"], "client.js")),
+      existsSync(
+        resolve(desktopRendererDependencyAliases["react-dom"], "client.js"),
+      ),
       "react-dom/client should resolve from the React DOM package root",
     ).toBe(true);
   });
@@ -52,8 +60,10 @@ describe("desktop renderer Vite dependency aliases", () => {
       );
 
       expect(result?.config.define).toMatchObject({
-        "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify("https://zcode.z.ai"),
-        "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify("https://zcode.z.ai"),
+        "import.meta.env.VITE_ZCODE_BASE_URL":
+          JSON.stringify("https://zcode.z.ai"),
+        "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN":
+          JSON.stringify("https://zcode.z.ai"),
         __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(false),
       });
     },
@@ -79,7 +89,7 @@ describe("desktop renderer Vite dependency aliases", () => {
       __ZCODE_ENV__: JSON.stringify("production"),
       __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("production"),
       __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(true),
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
+      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify(""),
     });
   });
 
@@ -98,14 +108,16 @@ describe("desktop renderer Vite dependency aliases", () => {
       "silent",
     );
 
-    expect(result?.config.plugins?.some((plugin) => plugin.name === "zcode:pdfjs-cmaps")).toBe(
-      true,
-    );
+    expect(
+      result?.config.plugins?.some(
+        (plugin) => plugin.name === "zcode:pdfjs-cmaps",
+      ),
+    ).toBe(true);
   });
 
   it("injects the E2E store bridge only from the runner flag", async () => {
     vi.stubEnv("ZCODE_ENV", "test");
-    vi.stubEnv("VITE_ZCODE_E2E_STORE_BRIDGE", "1");
+    vi.stubEnv("VITE_ZXCODE_E2E_STORE_BRIDGE", "1");
     const desktopRoot = resolve(import.meta.dirname, "..");
     const configFile = resolve(desktopRoot, "vite.config.ts");
     const result = await loadConfigFromFile(
@@ -123,7 +135,7 @@ describe("desktop renderer Vite dependency aliases", () => {
     expect(result?.config.define).toMatchObject({
       __ZCODE_ENV__: JSON.stringify("test"),
       __ZCODE_PRODUCT_FLAVOR__: JSON.stringify("preview"),
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
+      "import.meta.env.VITE_ZXCODE_E2E_STORE_BRIDGE": JSON.stringify("1"),
     });
   });
 
@@ -162,7 +174,9 @@ describe("desktop React Scan development tools", () => {
       desktopRoot,
       "silent",
     );
-    return result?.config.plugins?.flat().find((plugin) => plugin?.name === "zcode:react-scan");
+    return result?.config.plugins
+      ?.flat()
+      .find((plugin) => plugin?.name === "zcode:react-scan");
   }
 
   it("serves Scan before React only in the main development entry", async () => {
@@ -180,14 +194,22 @@ describe("desktop React Scan development tools", () => {
       const html =
         '<html><head></head><body><script type="module">window.app = true</script></body></html>';
       const transformed = await server.transformIndexHtml("/index.html", html);
-      const scanScript = transformed.match(/<script src="([^"]+react-scan[^"]+)"><\/script>/);
+      const scanScript = transformed.match(
+        /<script src="([^"]+react-scan[^"]+)"><\/script>/,
+      );
       expect(scanScript).not.toBeNull();
       expect(scanScript?.[1]).toMatch(/^\/@fs\//);
       expect(transformed.indexOf(scanScript![0])).toBeLessThan(
         transformed.indexOf('type="module"'),
       );
-      for (const entry of ["resource-manager", "plugin-sandbox", "cua-permission-panel"]) {
-        expect(await server.transformIndexHtml(`/${entry}.html`, html)).not.toContain("react-scan");
+      for (const entry of [
+        "resource-manager",
+        "plugin-sandbox",
+        "cua-permission-panel",
+      ]) {
+        expect(
+          await server.transformIndexHtml(`/${entry}.html`, html),
+        ).not.toContain("react-scan");
       }
     } finally {
       await server.close();

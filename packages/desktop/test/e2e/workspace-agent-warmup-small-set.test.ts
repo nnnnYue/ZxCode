@@ -1,5 +1,9 @@
 import { dirname } from "node:path";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "./helpers/desktop-app.js";
+import {
+  DEFAULT_WORKSPACE,
+  clearAppData,
+  waitForWorkspaceApp,
+} from "./helpers/desktop-app.js";
 import {
   SMALL_AGENT_WARMUP_SCENARIO,
   getPassiveAgentStartupWorkspacePaths,
@@ -16,7 +20,7 @@ import {
   pickWorkspacePaths,
   selectTaskOrganizeMode,
   waitForActiveWorkspacePath,
-  waitForRestoredWorkspaceItems,
+  waitForRestoredProjects,
 } from "./helpers/workspace-agent-warmup.js";
 
 describe("少量候选 workspace 恢复", () => {
@@ -31,8 +35,10 @@ describe("少量候选 workspace 恢复", () => {
       dirname(DEFAULT_WORKSPACE),
       SMALL_AGENT_WARMUP_SCENARIO.workspaceCount,
     );
-    const activeWorkspacePath = workspacePaths[SMALL_AGENT_WARMUP_SCENARIO.activeWorkspaceIndex];
-    if (!activeWorkspacePath) throw new Error("small-set fixture 缺少 active workspace");
+    const activeWorkspacePath =
+      workspacePaths[SMALL_AGENT_WARMUP_SCENARIO.activeWorkspaceIndex];
+    if (!activeWorkspacePath)
+      throw new Error("small-set fixture 缺少 active workspace");
     const expectedWarmupWorkspacePaths = pickWorkspacePaths(
       workspacePaths,
       SMALL_AGENT_WARMUP_SCENARIO.expectedWarmupWorkspaceIndexes,
@@ -40,16 +46,22 @@ describe("少量候选 workspace 恢复", () => {
 
     await waitForWorkspaceApp(activeWorkspacePath, 30_000);
     await waitForActiveWorkspacePath(activeWorkspacePath);
-    await waitForRestoredWorkspaceItems(workspacePaths);
+    await waitForRestoredProjects(workspacePaths);
 
     await openResourceManager();
     await switchToElectronRendererTarget(isResourceManagerUrl);
     await waitForResourceManagerReady();
-    await assertStableAgentSelection(workspacePaths, expectedWarmupWorkspacePaths);
+    await assertStableAgentSelection(
+      workspacePaths,
+      expectedWarmupWorkspacePaths,
+    );
 
     await switchToElectronRendererTarget(isMainRendererUrl);
     await selectTaskOrganizeMode(["分组", "Group"]);
     await switchToElectronRendererTarget(isResourceManagerUrl);
-    await assertStableAgentSelection(workspacePaths, expectedWarmupWorkspacePaths);
+    await assertStableAgentSelection(
+      workspacePaths,
+      expectedWarmupWorkspacePaths,
+    );
   });
 });

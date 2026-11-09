@@ -5,6 +5,9 @@
   "author": "ZxCode",
   "type": "module",
   "main": "out/main/index.js",
+  "imports": {
+    "#e2e/*": "./test/e2e/*.ts"
+  },
   "scripts": {
     "pre-dev": "node scripts/ensure-local-runtime-assets.mjs && node -e \"require('node:fs').rmSync('./out',{recursive:true,force:true})\"",
     "dev": "node ../../scripts/dev-desktop-env.mjs production",

@@ -1,5 +1,12 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -26,7 +33,7 @@ describe("desktop E2E build cache", () => {
     mkdirSync(resolve(ROOT, "src"), { recursive: true });
     writeFileSync(resolve(ROOT, "src/main.ts"), "export const value = 1;\n");
     const base = createE2EDesktopBuildFingerprint({
-      env: { VITE_ZCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
+      env: { VITE_ZXCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
       gitHead: "head-a",
       inputPaths: ["src"],
       repoRoot: ROOT,
@@ -35,7 +42,7 @@ describe("desktop E2E build cache", () => {
     writeFileSync(resolve(ROOT, "src/main.ts"), "export const value = 2;\n");
     expect(
       createE2EDesktopBuildFingerprint({
-        env: { VITE_ZCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
+        env: { VITE_ZXCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
         gitHead: "head-a",
         inputPaths: ["src"],
         repoRoot: ROOT,
@@ -43,7 +50,7 @@ describe("desktop E2E build cache", () => {
     ).not.toBe(base);
     expect(
       createE2EDesktopBuildFingerprint({
-        env: { VITE_ZCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
+        env: { VITE_ZXCODE_E2E_STORE_BRIDGE: "1", ZXCODE_ENV: "test" },
         gitHead: "head-b",
         inputPaths: ["src"],
         repoRoot: ROOT,
@@ -64,7 +71,9 @@ describe("desktop E2E build cache", () => {
     for (const envName of E2E_DESKTOP_BUILD_ENV_NAMES) {
       expect(
         createE2EDesktopBuildFingerprint({
-          env: { [envName]: envName === "ZCODE_E2E_COVERAGE" ? "1" : "changed" },
+          env: {
+            [envName]: envName === "ZCODE_E2E_COVERAGE" ? "1" : "changed",
+          },
           gitHead: "head-a",
           inputPaths: ["src"],
           repoRoot: ROOT,
@@ -97,7 +106,10 @@ describe("desktop E2E build cache", () => {
       )) {
         // Vite 配置同时包含 serve/build；Scan 仅用于 serve，不应让生产构建缓存失效。
         // 只排除此文件的开发开关，build 分支不装配 Scan 由 viteRendererConfig.test.ts 验证。
-        if (configPath === "packages/desktop/vite.config.ts" && match[1] === "ZCODE_REACT_SCAN") {
+        if (
+          configPath === "packages/desktop/vite.config.ts" &&
+          match[1] === "ZCODE_REACT_SCAN"
+        ) {
           continue;
         }
         referencedEnvNames.add(match[1]);
@@ -127,8 +139,14 @@ describe("desktop E2E build cache", () => {
   it("invalidates when a workspace dependency or production env file changes", () => {
     mkdirSync(resolve(ROOT, "packages/desktop/src"), { recursive: true });
     mkdirSync(resolve(ROOT, "packages/server/src"), { recursive: true });
-    writeFileSync(resolve(ROOT, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-    writeFileSync(resolve(ROOT, "package.json"), JSON.stringify({ name: "fixture" }));
+    writeFileSync(
+      resolve(ROOT, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+    );
+    writeFileSync(
+      resolve(ROOT, "package.json"),
+      JSON.stringify({ name: "fixture" }),
+    );
     writeFileSync(resolve(ROOT, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
     writeFileSync(
       resolve(ROOT, "packages/desktop/package.json"),
@@ -141,26 +159,51 @@ describe("desktop E2E build cache", () => {
       resolve(ROOT, "packages/server/package.json"),
       JSON.stringify({ name: "@zcode/server" }),
     );
-    writeFileSync(resolve(ROOT, "packages/desktop/src/main.ts"), "export const desktop = 1;\n");
-    writeFileSync(resolve(ROOT, "packages/server/src/index.ts"), "export const server = 1;\n");
-    writeFileSync(resolve(ROOT, ".env"), "ZXCODE_BASE_URL=https://one.example\n");
+    writeFileSync(
+      resolve(ROOT, "packages/desktop/src/main.ts"),
+      "export const desktop = 1;\n",
+    );
+    writeFileSync(
+      resolve(ROOT, "packages/server/src/index.ts"),
+      "export const server = 1;\n",
+    );
+    writeFileSync(
+      resolve(ROOT, ".env"),
+      "ZXCODE_BASE_URL=https://one.example\n",
+    );
     writeFileSync(resolve(ROOT, ".env.production"), "CDN_DOMAIN=one.example\n");
 
     const inputPaths = resolveE2EDesktopBuildInputPaths({ repoRoot: ROOT });
     expect(inputPaths).toContain("packages/server/package.json");
     expect(inputPaths).toContain("packages/server/src");
     const fingerprint = () =>
-      createE2EDesktopBuildFingerprint({ env: {}, gitHead: "head-a", repoRoot: ROOT });
+      createE2EDesktopBuildFingerprint({
+        env: {},
+        gitHead: "head-a",
+        repoRoot: ROOT,
+      });
     const base = fingerprint();
 
-    writeFileSync(resolve(ROOT, "packages/server/src/index.ts"), "export const server = 2;\n");
+    writeFileSync(
+      resolve(ROOT, "packages/server/src/index.ts"),
+      "export const server = 2;\n",
+    );
     expect(fingerprint()).not.toBe(base);
 
-    writeFileSync(resolve(ROOT, "packages/server/src/index.ts"), "export const server = 1;\n");
-    writeFileSync(resolve(ROOT, ".env"), "ZXCODE_BASE_URL=https://two.example\n");
+    writeFileSync(
+      resolve(ROOT, "packages/server/src/index.ts"),
+      "export const server = 1;\n",
+    );
+    writeFileSync(
+      resolve(ROOT, ".env"),
+      "ZXCODE_BASE_URL=https://two.example\n",
+    );
     expect(fingerprint()).not.toBe(base);
 
-    writeFileSync(resolve(ROOT, ".env"), "ZXCODE_BASE_URL=https://one.example\n");
+    writeFileSync(
+      resolve(ROOT, ".env"),
+      "ZXCODE_BASE_URL=https://one.example\n",
+    );
     writeFileSync(resolve(ROOT, ".env.production"), "CDN_DOMAIN=two.example\n");
     expect(fingerprint()).not.toBe(base);
   });
@@ -173,16 +216,28 @@ describe("desktop E2E build cache", () => {
     writeFileSync(stampPath, JSON.stringify({ fingerprint: "same" }));
     writeFileSync(output, "built");
 
-    expect(isE2EDesktopBuildCacheHit({ fingerprint: "same", outputs: [output], stampPath })).toBe(
-      true,
-    );
-    expect(isE2EDesktopBuildCacheHit({ fingerprint: "other", outputs: [output], stampPath })).toBe(
-      false,
-    );
+    expect(
+      isE2EDesktopBuildCacheHit({
+        fingerprint: "same",
+        outputs: [output],
+        stampPath,
+      }),
+    ).toBe(true);
+    expect(
+      isE2EDesktopBuildCacheHit({
+        fingerprint: "other",
+        outputs: [output],
+        stampPath,
+      }),
+    ).toBe(false);
     writeFileSync(output, "");
-    expect(isE2EDesktopBuildCacheHit({ fingerprint: "same", outputs: [output], stampPath })).toBe(
-      false,
-    );
+    expect(
+      isE2EDesktopBuildCacheHit({
+        fingerprint: "same",
+        outputs: [output],
+        stampPath,
+      }),
+    ).toBe(false);
     expect(
       isE2EDesktopBuildCacheHit({
         fingerprint: "same",
@@ -211,16 +266,25 @@ describe("desktop E2E build cache", () => {
 
     writeE2EDesktopBuildStampAtomic({ fingerprint: "new", stampPath });
 
-    expect(JSON.parse(readFileSync(stampPath, "utf8"))).toMatchObject({ fingerprint: "new" });
-    expect(readdirSync(resolve(ROOT, "cache")).some((name) => name.endsWith(".tmp"))).toBe(false);
+    expect(JSON.parse(readFileSync(stampPath, "utf8"))).toMatchObject({
+      fingerprint: "new",
+    });
+    expect(
+      readdirSync(resolve(ROOT, "cache")).some((name) => name.endsWith(".tmp")),
+    ).toBe(false);
   });
 
   it("serializes concurrent runners and rechecks the cache after locking", async () => {
     mkdirSync(resolve(ROOT, "src"), { recursive: true });
     writeFileSync(resolve(ROOT, "src/main.ts"), "export const value = 1;\n");
 
-    const workerOutputs = await Promise.all([runBuildCacheWorker(), runBuildCacheWorker()]);
-    const buildPids = readFileSync(resolve(ROOT, "builds.log"), "utf8").trim().split(/\r?\n/u);
+    const workerOutputs = await Promise.all([
+      runBuildCacheWorker(),
+      runBuildCacheWorker(),
+    ]);
+    const buildPids = readFileSync(resolve(ROOT, "builds.log"), "utf8")
+      .trim()
+      .split(/\r?\n/u);
     expect(buildPids).toHaveLength(1);
     expect(workerOutputs.join("\n")).toContain("[e2e-build-cache] miss");
     expect(workerOutputs.join("\n")).toContain("[e2e-build-cache] hit");
@@ -228,16 +292,22 @@ describe("desktop E2E build cache", () => {
       expect(existsSync(resolve(ROOT, outputPath)), outputPath).toBe(true);
     }
     expect(existsSync(resolve(ROOT, "cache/desktop-build.lock"))).toBe(false);
-    expect(readdirSync(resolve(ROOT, "cache")).some((name) => name.endsWith(".tmp"))).toBe(false);
     expect(
-      JSON.parse(readFileSync(resolve(ROOT, "cache/desktop-build-stamp.json"), "utf8")),
+      readdirSync(resolve(ROOT, "cache")).some((name) => name.endsWith(".tmp")),
+    ).toBe(false);
+    expect(
+      JSON.parse(
+        readFileSync(resolve(ROOT, "cache/desktop-build-stamp.json"), "utf8"),
+      ),
     ).toMatchObject({ fingerprint: expect.any(String) });
   });
 
   it("does not commit a stamp when required outputs are incomplete", () => {
     mkdirSync(resolve(ROOT, "src"), { recursive: true });
     writeFileSync(resolve(ROOT, "src/main.ts"), "export const value = 1;\n");
-    const outputs = E2E_DESKTOP_REQUIRED_OUTPUT_PATHS.map((path) => resolve(ROOT, path));
+    const outputs = E2E_DESKTOP_REQUIRED_OUTPUT_PATHS.map((path) =>
+      resolve(ROOT, path),
+    );
     const stampPath = resolve(ROOT, "cache/desktop-build-stamp.json");
     const lockPath = resolve(ROOT, "cache/desktop-build.lock");
     mkdirSync(resolve(ROOT, "cache"), { recursive: true });
@@ -250,7 +320,11 @@ describe("desktop E2E build cache", () => {
           writeFileSync(resolve(ROOT, "out/main/index.js"), "partial\n");
         },
         env: {},
-        fingerprintOptions: { gitHead: "head-a", inputPaths: ["src"], repoRoot: ROOT },
+        fingerprintOptions: {
+          gitHead: "head-a",
+          inputPaths: ["src"],
+          repoRoot: ROOT,
+        },
         lockPath,
         outputs,
         stampPath,
@@ -265,13 +339,20 @@ describe("desktop E2E build cache", () => {
     mkdirSync(lockPath, { recursive: true });
     writeFileSync(
       resolve(lockPath, "owner.json"),
-      JSON.stringify({ acquiredAt: new Date(0).toISOString(), pid: 2_147_483_647, token: "dead" }),
+      JSON.stringify({
+        acquiredAt: new Date(0).toISOString(),
+        pid: 2_147_483_647,
+        token: "dead",
+      }),
     );
 
     let entered = false;
-    withE2EDesktopBuildLock({ lockPath, retryDelayMs: 1, timeoutMs: 1_000 }, () => {
-      entered = true;
-    });
+    withE2EDesktopBuildLock(
+      { lockPath, retryDelayMs: 1, timeoutMs: 1_000 },
+      () => {
+        entered = true;
+      },
+    );
     expect(entered).toBe(true);
     expect(existsSync(lockPath)).toBe(false);
   });
@@ -301,7 +382,9 @@ function runBuildCacheWorker() {
         resolveRun(stdout);
         return;
       }
-      rejectRun(new Error(`build cache worker failed (${signal ?? code}): ${stderr}`));
+      rejectRun(
+        new Error(`build cache worker failed (${signal ?? code}): ${stderr}`),
+      );
     });
   });
 }

@@ -1,7 +1,11 @@
 import { dirname } from "node:path";
 import { PlatformChannels } from "@zcode/shared";
 import type { BrowserViewCloseTabNotification } from "@zcode/shared";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "./helpers/desktop-app.js";
+import {
+  DEFAULT_WORKSPACE,
+  clearAppData,
+  waitForWorkspaceApp,
+} from "./helpers/desktop-app.js";
 import {
   SMALL_AGENT_WARMUP_SCENARIO,
   getPassiveAgentStartupWorkspacePaths,
@@ -9,7 +13,7 @@ import {
 import {
   openWorkspaceDraftFromSidebar,
   waitForActiveWorkspacePath,
-  waitForRestoredWorkspaceItems,
+  waitForRestoredProjects,
 } from "./helpers/workspace-agent-warmup.js";
 import {
   openFirstBrowserTab,
@@ -41,13 +45,15 @@ describe("Browser tab 跨 workspace 关闭通知 E2E", () => {
       SMALL_AGENT_WARMUP_SCENARIO.workspaceCount,
     );
     // 启动时活跃的那个当作 workspace A，省掉一次切换；剩下的那个当 workspace B。
-    const workspaceA = workspacePaths[SMALL_AGENT_WARMUP_SCENARIO.activeWorkspaceIndex];
+    const workspaceA =
+      workspacePaths[SMALL_AGENT_WARMUP_SCENARIO.activeWorkspaceIndex];
     const workspaceB = workspacePaths.find((path) => path !== workspaceA);
-    if (!workspaceA || !workspaceB) throw new Error("跨 workspace 用例需要两个 workspace fixture");
+    if (!workspaceA || !workspaceB)
+      throw new Error("跨 workspace 用例需要两个 workspace fixture");
 
     await waitForWorkspaceApp(workspaceA, 30_000);
     await waitForActiveWorkspacePath(workspaceA);
-    await waitForRestoredWorkspaceItems(workspacePaths);
+    await waitForRestoredProjects(workspacePaths);
 
     await openFirstBrowserTab();
     const [tabIdA] = await readBrowserTabIds();
@@ -92,8 +98,11 @@ async function sendCloseTabNotification(
 ): Promise<void> {
   const deliveredCount = (await browser.electron.execute(
     (electron, channel, payload) => {
-      const windows = electron.BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed());
-      for (const win of windows) win.webContents.send(channel as string, payload);
+      const windows = electron.BrowserWindow.getAllWindows().filter(
+        (win) => !win.isDestroyed(),
+      );
+      for (const win of windows)
+        win.webContents.send(channel as string, payload);
       return windows.length;
     },
     PlatformChannels.BrowserViewCloseTab,
