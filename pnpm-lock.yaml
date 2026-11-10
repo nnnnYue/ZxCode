@@ -822,54 +822,6 @@ importers:
 
   apps/zcode-cli/packages/zcode-guide-plugin: {}
 
-  apps/zcode-cli/packages/zcode-site-plugin:
-    devDependencies:
-      '@modelcontextprotocol/client':
-        specifier: 2.0.0
-        version: 2.0.0
-      '@modelcontextprotocol/core':
-        specifier: 2.0.0
-        version: 2.0.0
-      '@modelcontextprotocol/ext-apps':
-        specifier: 2.0.0
-        version: 2.0.0(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/core@2.0.0)(@modelcontextprotocol/server@2.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@4.6.5)
-      '@modelcontextprotocol/sdk':
-        specifier: 1.29.0
-        version: 1.29.0(zod@4.6.5)
-      '@types/node':
-        specifier: ^24.0.0
-        version: 24.12.2
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../../../../packages/shared
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
-      lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
-      react:
-        specifier: 19.2.7
-        version: 19.2.7
-      react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vitest:
-        specifier: ^4.1.5
-        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-
   apps/zcode-cli/tools/prompt-trajectory:
     devDependencies:
       '@types/node':
@@ -881,46 +833,6 @@ importers:
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
-
-  apps/zcode-cli/tools/provider-regression:
-    dependencies:
-      '@zcode/adapters':
-        specifier: workspace:*
-        version: link:../../packages/adapters
-      '@zcode/bootstrap':
-        specifier: workspace:*
-        version: link:../../packages/bootstrap
-      '@zcode/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@zcode/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@zcode/model-option-map':
-        specifier: workspace:*
-        version: link:../../../../packages/model-option-map
-      '@zcode/provider':
-        specifier: workspace:*
-        version: link:../../../../packages/provider
-      '@zcode/provider-node':
-        specifier: workspace:*
-        version: link:../../../../packages/provider-node
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-    devDependencies:
-      '@types/node':
-        specifier: ^24.0.0
-        version: 24.12.2
-      tsx:
-        specifier: ^4.20.0
-        version: 4.21.0
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-      vitest:
-        specifier: ^4.1.5
-        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
   apps/zcode-cli/tools/typescript: {}
 
