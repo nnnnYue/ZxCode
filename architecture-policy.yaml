@@ -1536,6 +1536,10 @@ exceptions:
     rule: unmanaged-new-file
     paths: [apps/zcode-cli/packages/core/src/tool/handlers/workflow-skill-gate.ts]
     reason: 已入库的工作流技能门只更新一句注释，跟随 compaction 后读取状态改为只留补回的文件；门的判据、代码与 Core 模块边界不变，接管整个 tool 目录不在本次范围内。
+  - id: mcp-resource-telemetry-unmanaged-edit
+    rule: unmanaged-new-file
+    paths: [apps/zcode-cli/packages/adapters/src/mcp/resource-telemetry.ts]
+    reason: 已入库的 MCP 资源遥测采样器只随 rebrand 基线恢复把常量引用改回 ZXCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS（与 shared 导出名一致）；采样行为与模块边界不变，接管 apps/zcode-cli 需要独立的模块边界重构。
   - id: conversation-telemetry-existing-state-machine-size
     rule: max-file-lines
     paths:
