@@ -1467,7 +1467,7 @@ describe("v4 原生 sendText", () => {
       app,
       restoreWarning: {
         message: "runtime model unavailable",
-        type: "ZCODE_RUNTIME_MODEL_UNAVAILABLE",
+        type: "ZXCODE_RUNTIME_MODEL_UNAVAILABLE",
       },
     });
     await new V4CommandExecutor(
@@ -1482,7 +1482,7 @@ describe("v4 原生 sendText", () => {
     const record = makeRecord({
       restoreWarning: {
         message: "runtime model unavailable",
-        type: "ZCODE_RUNTIME_MODEL_UNAVAILABLE",
+        type: "ZXCODE_RUNTIME_MODEL_UNAVAILABLE",
       },
     });
     await expect(

@@ -2521,7 +2521,7 @@ describe("NodeExecutionAdapter", () => {
         platform: "linux",
         processEnv: {
           ZCODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
-          ZCODE_HTTP_PROXY: "127.0.0.1:8888",
+          ZXCODE_HTTP_PROXY: "127.0.0.1:8888",
           [ZCODE_NO_PROXY_ENV_KEY]: "localhost,127.0.0.1",
         },
       },

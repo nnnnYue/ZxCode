@@ -34,14 +34,14 @@ for (const minify of [false, true]) {
     try {
       await writeFile(
         serverPath,
-        `const socketVisibleAtImport = process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET !== undefined;
+        `const socketVisibleAtImport = process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET !== undefined;
 export async function main() {
   process.stdout.write(JSON.stringify({
     args: process.argv.slice(2),
     nodeEnvRemoved: process.env.NODE_ENV === undefined,
     socketVisibleAtImport,
-    socketVisibleAtMain: process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET !== undefined,
-    tokenVisibleAtMain: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN !== undefined,
+    socketVisibleAtMain: process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET !== undefined,
+    tokenVisibleAtMain: process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN !== undefined,
   }));
 }`,
       );
@@ -94,8 +94,8 @@ export async function main() {
         ...process.env,
         NODE_ENV: "untrusted",
         ZCODE_PLUGIN_ID: "computer-use@zcode-plugins-official",
-        ZCODE_CUA_PERMISSION_BROKER_SOCKET: brokerSocket,
-        ZCODE_CUA_PERMISSION_BROKER_TOKEN: "test-scoped-token",
+        ZXCODE_CUA_PERMISSION_BROKER_SOCKET: brokerSocket,
+        ZXCODE_CUA_PERMISSION_BROKER_TOKEN: "test-scoped-token",
         ZCODE_CUA_PLUGIN_AUTHORITY: "test-official-authority",
         // broker 已改身份模式（Helper 按对端代码签名裁决连接），凭据组只剩 socket +
         // pluginAuthority；captured 凭据只允许启动 shared node_repl 宿主，由这个标记声明。

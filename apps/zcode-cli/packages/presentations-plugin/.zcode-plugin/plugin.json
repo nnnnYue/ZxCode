@@ -16,10 +16,10 @@
     "presentations": {
       "type": "stdio",
       "command": "node",
-      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
-      "cwd": "${ZCODE_PROJECT_DIR}",
+      "args": ["${ZXCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZXCODE_PROJECT_DIR}",
       "env": {
-        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}"
+        "ZCODE_WORKSPACE_ROOT": "${ZXCODE_PROJECT_DIR}"
       }
     }
   },

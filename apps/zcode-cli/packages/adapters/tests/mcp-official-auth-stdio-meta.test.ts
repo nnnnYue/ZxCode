@@ -188,7 +188,9 @@ describe("official stdio MCP auth via tools/call _meta", () => {
 
     const meta = lastWireMeta();
     expect(meta?.[OFFICIAL_MCP_AUTH_META_KEY]).toMatchObject({ ok: true });
-    expect(meta?.["com.zcode/request-context"]).toEqual({
+    // fork rebrand 键（品牌项 keep-ours，见 REMOVALS.md 第十一节）：
+    // mcpRequestMeta 写 com.zxcode/，与 node-repl-host 读取键同源。
+    expect(meta?.["com.zxcode/request-context"]).toEqual({
       session_id: "session-1",
       trace_id: "trace-1",
     });

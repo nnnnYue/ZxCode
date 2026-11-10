@@ -214,9 +214,9 @@ function resolveMcpServerConfig(
     const env = resolveStringRecord(
       {
         CLAUDE_PROJECT_DIR: context.workingDirectory,
-        ZCODE_PLUGIN_DATA: context.dataPath,
-        ZCODE_PLUGIN_ROOT: context.loaded.rootPath,
-        ZCODE_PROJECT_DIR: context.workingDirectory,
+        ZXCODE_PLUGIN_DATA: context.dataPath,
+        ZXCODE_PLUGIN_ROOT: context.loaded.rootPath,
+        ZXCODE_PROJECT_DIR: context.workingDirectory,
         CLAUDE_PLUGIN_DATA: context.dataPath,
         CLAUDE_PLUGIN_ROOT: context.loaded.rootPath,
         ...(isRecord(server.env) ? server.env : {}),
@@ -388,22 +388,22 @@ function resolveTemplate(
   return value.replace(TEMPLATE_PATTERN, (match, name: string) => {
     switch (name) {
       case "CLAUDE_PLUGIN_ROOT":
-      case "ZCODE_PLUGIN_ROOT":
+      case "ZXCODE_PLUGIN_ROOT":
         return context.loaded.rootPath;
       case "CLAUDE_PLUGIN_DATA":
-      case "ZCODE_PLUGIN_DATA":
+      case "ZXCODE_PLUGIN_DATA":
         return context.dataPath;
       case "CLAUDE_PROJECT_DIR":
-      case "ZCODE_PROJECT_DIR":
+      case "ZXCODE_PROJECT_DIR":
         return context.workingDirectory;
       case "CLAUDE_CODE_SESSION_ID":
       case "CLAUDE_SESSION_ID":
-      case "ZCODE_SESSION_ID":
+      case "ZXCODE_SESSION_ID":
         throw new PluginVariableError(
           `Plugin variable requires a runtime session context: ${name}`,
         );
       case "CLAUDE_SKILL_DIR":
-      case "ZCODE_SKILL_DIR":
+      case "ZXCODE_SKILL_DIR":
         throw new PluginVariableError(`Plugin variable requires a skill context: ${name}`);
       default:
         break;
@@ -425,7 +425,7 @@ function resolveTemplate(
       }
       return String(configValue);
     }
-    if (name.startsWith("ZCODE_")) {
+    if (name.startsWith("ZXCODE_")) {
       const envValue = context.env[name];
       if (envValue === undefined)
         throw new PluginVariableError(`Missing environment variable: ${name}`);

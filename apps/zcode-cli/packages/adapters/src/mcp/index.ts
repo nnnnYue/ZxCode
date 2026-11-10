@@ -2324,7 +2324,11 @@ function mcpRequestMeta(request: McpCallToolRequest): Record<string, unknown> {
   };
   return {
     ...requestContext,
-    "com.zcode/request-context": requestContext,
+    // fork rebrand 命名空间键（品牌项，keep-ours）：node-repl-host/src/server.ts 只读
+    // com.zxcode/request-context。v3.15.1/3.16.2 上游合并曾把本行整文件覆盖回上游的
+    // com.zcode/，与 host 侧劈叉后 browser/CUA bridge 报 "missing session_id metadata"。
+    // 上游同步不得回退此键（见 REMOVALS.md 第十一节与 zxcode-path-consistency.md 探针 5）。
+    "com.zxcode/request-context": requestContext,
   };
 }
 

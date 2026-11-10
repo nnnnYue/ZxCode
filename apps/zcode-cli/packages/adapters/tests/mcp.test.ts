@@ -1,7 +1,7 @@
 import { dirname } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnauthorizedError } from "@modelcontextprotocol/client";
-import { ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
+import { ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
 import type { SharedZCodeCredentialStore } from "../src/auth/shared-credentials.js";
 
 const {
@@ -272,7 +272,7 @@ describe("createMcpAdapter", () => {
         arguments: { code: "1 + 1" },
         name: "js",
         _meta: {
-          "com.zcode/request-context": {
+          "com.zxcode/request-context": {
             parent_span_id: "parent-1",
             runtime_scope: "subagent",
             session_id: "session-1",
@@ -835,7 +835,7 @@ describe("createMcpAdapter", () => {
     const adapter = createMcpAdapter({
       env: {
         PATH: dirname(process.execPath),
-        ZCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
+        ZXCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
       },
       network: {
         httpProxy: "127.0.0.1:8888",
@@ -875,7 +875,7 @@ describe("createMcpAdapter", () => {
   it("restores captured user network env into stdio MCP transports", async () => {
     const adapter = createMcpAdapter({
       env: {
-        [ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
+        [ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
           NODE_EXTRA_CA_CERTS: "/tmp/user-ca.pem",
           http_proxy: "http://user-proxy:8080",
         }),
@@ -895,13 +895,13 @@ describe("createMcpAdapter", () => {
       PATH: dirname(process.execPath),
       http_proxy: "http://user-proxy:8080",
     });
-    expect(options.env?.[ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
+    expect(options.env?.[ZXCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
   });
 
   it("passes proxy-aware fetch into HTTP and SSE MCP transports", async () => {
     const adapter = createMcpAdapter({
       env: {
-        ZCODE_HTTP_PROXY: "http://127.0.0.1:8888",
+        ZXCODE_HTTP_PROXY: "http://127.0.0.1:8888",
       },
       network: {},
     });

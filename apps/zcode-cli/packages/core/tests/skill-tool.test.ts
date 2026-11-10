@@ -93,7 +93,7 @@ describe("Skill integration", () => {
           return {
             metadata: skillOutcome.skills[0]!,
             content:
-              "# Demo Skill\n\nRead ${CLAUDE_SKILL_DIR}/references.md and ${ZCODE_SKILL_DIR}/notes.md.",
+              "# Demo Skill\n\nRead ${CLAUDE_SKILL_DIR}/references.md and ${ZXCODE_SKILL_DIR}/notes.md.",
             baseDirectory: "/workspace/.zcode/skills/demo-skill",
             bytesRead: 91,
             sizeBytes: 91,

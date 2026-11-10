@@ -244,9 +244,9 @@ describe("protocol slash command surface", () => {
         CLAUDE_PLUGIN_ROOT: pluginRoot,
         CLAUDE_PROJECT_DIR: workspace,
         CLAUDE_SESSION_ID: sessionId,
-        ZCODE_PLUGIN_ROOT: pluginRoot,
-        ZCODE_PROJECT_DIR: workspace,
-        ZCODE_SESSION_ID: sessionId,
+        ZXCODE_PLUGIN_ROOT: pluginRoot,
+        ZXCODE_PROJECT_DIR: workspace,
+        ZXCODE_SESSION_ID: sessionId,
       });
     } finally {
       await rm(tempRoot, { force: true, recursive: true });

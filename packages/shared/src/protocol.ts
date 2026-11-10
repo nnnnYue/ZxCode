@@ -465,6 +465,6 @@ export interface AppSettings {
     workspaceIdentity?: string;
     initialTaskId?: string;
   };
-  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
+  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZXCODE_BASE_URL env 管理。 */
   zcodeEndpointOrigin?: string;
 }

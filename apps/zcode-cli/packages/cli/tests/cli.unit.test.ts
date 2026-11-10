@@ -184,7 +184,7 @@ test("prepares a sanitized CLI runtime env with ZCode-owned runtime keys", () =>
     NODE_ENV: "development",
     HTTP_PROXY: "http://ambient-proxy:8080",
     NODE_EXTRA_CA_CERTS: "/tmp/ambient-ca.pem",
-    ZCODE_HTTP_PROXY: "http://zcode-proxy:8080",
+    ZXCODE_HTTP_PROXY: "http://zcode-proxy:8080",
     no_proxy: ".example.test",
     npm_config_proxy: "http://npm-proxy:8080",
   };
@@ -193,7 +193,7 @@ test("prepares a sanitized CLI runtime env with ZCode-owned runtime keys", () =>
   const toolEnv = readZCodeToolEnvPassthroughEnv(env);
 
   assert.equal(env.ZCODE_RUNTIME_ENV, "production");
-  assert.equal(env.ZCODE_HTTP_PROXY, "http://zcode-proxy:8080");
+  assert.equal(env.ZXCODE_HTTP_PROXY, "http://zcode-proxy:8080");
   assert.deepEqual(toolEnv, {
     HTTP_PROXY: "http://ambient-proxy:8080",
     NODE_EXTRA_CA_CERTS: "/tmp/ambient-ca.pem",
@@ -4126,8 +4126,8 @@ test("retired argv-based CUA host fails closed without the shared node_repl mark
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
+    "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
+    "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
     ZCODE_PLUGIN_ID_ENV_KEY,
     ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
@@ -4142,15 +4142,15 @@ test("retired argv-based CUA host fails closed without the shared node_repl mark
       `import { writeFile } from "node:fs/promises";
 export async function main() {
   await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN,
+    token: process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN,
   }));
 }
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
     process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
     process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
@@ -4185,8 +4185,8 @@ test("shared node_repl host restores the captured CUA broker credentials", async
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
+    "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
+    "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
     ZCODE_PLUGIN_ID_ENV_KEY,
     ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
@@ -4201,8 +4201,8 @@ test("shared node_repl host restores the captured CUA broker credentials", async
       `import { writeFile } from "node:fs/promises";
 export async function main() {
   await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    socket: process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET,
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN,
+    socket: process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET,
+    token: process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN,
   }));
 }
 `,
@@ -4210,8 +4210,8 @@ export async function main() {
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
     process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
     process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
     process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
@@ -4229,8 +4229,8 @@ export async function main() {
     assert.equal(hostEnv.socket, "/tmp/cua-broker.sock");
     assert.equal(hostEnv.token, undefined);
     // 宿主只在运行期间短暂恢复，跑完父进程 env 必须回到已剔除状态。
-    assert.equal(process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET, undefined);
-    assert.equal(process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN, undefined);
+    assert.equal(process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET, undefined);
+    assert.equal(process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN, undefined);
   } finally {
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     for (const key of keys) {
@@ -4249,8 +4249,8 @@ test("shared node_repl host launches with identity-mode credentials (socket + au
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
+    "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
+    "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
     ZCODE_PLUGIN_ID_ENV_KEY,
     ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
@@ -4265,8 +4265,8 @@ test("shared node_repl host launches with identity-mode credentials (socket + au
       `import { writeFile } from "node:fs/promises";
 export async function main() {
   await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    socket: process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET,
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN ?? null,
+    socket: process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET,
+    token: process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN ?? null,
   }));
 }
 `,
@@ -4274,8 +4274,8 @@ export async function main() {
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
     process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
     process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    delete process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN;
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    delete process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN;
     process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
@@ -4302,8 +4302,8 @@ test("plugin host refuses non-official code while product broker credentials are
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
+    "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
+    "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
     ZCODE_PLUGIN_ID_ENV_KEY,
     ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
@@ -4317,14 +4317,14 @@ test("plugin host refuses non-official code while product broker credentials are
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, String(Boolean(process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN)));
+  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, String(Boolean(process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN)));
 }
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
     process.env[ZCODE_PLUGIN_ID_ENV_KEY] = "zcode-cua@third-party";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "must-not-leak";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "must-not-leak";
     process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "captured-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
@@ -4711,7 +4711,7 @@ test("loads nearest dotenv without overriding shell env", async () => {
     await mkdir(nested, { recursive: true });
     await writeFile(
       join(tempRoot, ".env"),
-      ["ZCODE_API_KEY=from-file", "ZCODE_BASE_URL=https://example.test"].join("\n"),
+      ["ZCODE_API_KEY=from-file", "ZXCODE_BASE_URL=https://example.test"].join("\n"),
     );
 
     const env: NodeJS.ProcessEnv = {
@@ -4721,9 +4721,9 @@ test("loads nearest dotenv without overriding shell env", async () => {
 
     assert.equal(findDotenv(nested), join(tempRoot, ".env"));
     assert.equal(result.loaded, true);
-    assert.deepEqual(result.keys.sort(), ["ZCODE_API_KEY", "ZCODE_BASE_URL"].sort());
+    assert.deepEqual(result.keys.sort(), ["ZCODE_API_KEY", "ZXCODE_BASE_URL"].sort());
     assert.equal(env.ZCODE_API_KEY, "from-shell");
-    assert.equal(env.ZCODE_BASE_URL, "https://example.test");
+    assert.equal(env.ZXCODE_BASE_URL, "https://example.test");
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

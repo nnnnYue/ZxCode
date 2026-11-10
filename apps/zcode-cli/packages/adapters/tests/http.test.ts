@@ -61,7 +61,7 @@ describe("NodeHttpClientAdapter", () => {
     expect(init?.body).toEqual(Buffer.from(body));
   });
 
-  it("routes requests through explicit ZCODE_HTTP_PROXY env", async () => {
+  it("routes requests through explicit ZXCODE_HTTP_PROXY env", async () => {
     const proxyRequests: string[] = [];
     const upstream = http.createServer((request, response) => {
       response.writeHead(200, { "content-type": "application/json" });
@@ -101,7 +101,7 @@ describe("NodeHttpClientAdapter", () => {
       const proxyBaseUrl = await listenServer(proxy);
       const adapter = createNodeHttpClientAdapter({
         env: {
-          ZCODE_HTTP_PROXY: proxyBaseUrl,
+          ZXCODE_HTTP_PROXY: proxyBaseUrl,
         },
       });
 
@@ -116,7 +116,7 @@ describe("NodeHttpClientAdapter", () => {
       expect(response.egress).toMatchObject({
         proxied: true,
         proxyHost: new URL(proxyBaseUrl).host,
-        proxySource: "env:ZCODE_HTTP_PROXY",
+        proxySource: "env:ZXCODE_HTTP_PROXY",
       });
       expect(proxyRequests).toEqual([`${upstreamBaseUrl}/v1/search?q=test`]);
     } finally {
@@ -142,7 +142,7 @@ describe("NodeHttpClientAdapter", () => {
       const proxyBaseUrl = await listenServer(proxy);
       const adapter = createNodeHttpClientAdapter({
         env: {
-          ZCODE_HTTP_PROXY: proxyBaseUrl,
+          ZXCODE_HTTP_PROXY: proxyBaseUrl,
         },
         noProxy: "127.0.0.1",
       });
@@ -166,7 +166,7 @@ describe("NodeHttpClientAdapter", () => {
     }
   });
 
-  it("bypasses explicit proxy when ZCODE_NO_PROXY matches the target host", async () => {
+  it("bypasses explicit proxy when ZXCODE_NO_PROXY matches the target host", async () => {
     const proxyRequests: string[] = [];
     const upstream = http.createServer((_request, response) => {
       response.writeHead(200, { "content-type": "application/json" });
@@ -183,8 +183,8 @@ describe("NodeHttpClientAdapter", () => {
       const proxyBaseUrl = await listenServer(proxy);
       const adapter = createNodeHttpClientAdapter({
         env: {
-          ZCODE_HTTP_PROXY: proxyBaseUrl,
-          ZCODE_NO_PROXY: "127.0.0.1",
+          ZXCODE_HTTP_PROXY: proxyBaseUrl,
+          ZXCODE_NO_PROXY: "127.0.0.1",
         },
       });
 

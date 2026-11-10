@@ -22,6 +22,7 @@
 2. `git grep -n 'dist/zcode\.cjs'` 无命中（产物名 split-brain 探针）。
 3. `git grep -n '"ZCODE_'` 无新增无 X 前缀 env 名。
 4. 重打包前验证 `apps/zcode-cli/packages/cli/dist/zxcode.cjs` 含当次协议改动（本次事故探针：`grep -c toolSearchMode` > 0）。
+5. MCP request-context 命名空间键 split-brain 探针：`git grep -n 'com\.zcode/request-context'` 无命中。该键（`com.zxcode/request-context`）属品牌项 keep-ours，adapters 写入方与 node-repl-host 读取方必须同键；劈叉症状为 Browser Use / Computer Use 报 `missing session_id metadata`（v3.15.1/3.16.2 两次上游合并均把 adapters 打回上游键，2026-11-09 修复，详见 REMOVALS.md 第十一节）。
 
 ## 验收场景
 

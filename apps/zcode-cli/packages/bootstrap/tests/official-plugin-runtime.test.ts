@@ -56,7 +56,7 @@ describe("official plugin runtime manifest", () => {
     const remote = { type: "http", url: "https://example.com/mcp" };
     const sourceManifestContents = JSON.stringify({
       mcpServers: {
-        pdf: { command: "node", args: ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs", "--flag"] },
+        pdf: { command: "node", args: ["${ZXCODE_PLUGIN_ROOT}/dist/server.mjs", "--flag"] },
         search: remote,
       },
     });

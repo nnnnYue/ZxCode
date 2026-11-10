@@ -100,3 +100,6 @@ packages/desktop/src/scheduler/*.d.ts.map
 
 # 发布日志仅本地维护，不入库（按用户要求不提交推送）。
 release-notes/
+
+# adapters 测试运行时落盘的会话备份（backup.json/tables.sqlite），按时间戳生成，不入库。
+apps/zcode-cli/packages/adapters/backup/

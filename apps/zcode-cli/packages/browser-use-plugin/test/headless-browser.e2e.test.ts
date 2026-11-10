@@ -68,7 +68,7 @@ realBrowserTest(
     });
     await broker.ready;
 
-    setEnv("ZCODE_PLUGIN_ROOT", pluginRoot);
+    setEnv("ZXCODE_PLUGIN_ROOT", pluginRoot);
     setEnv(NODE_REPL_BROWSER_BROKER_SOCKET_ENV, broker.socketPath);
     setEnv(NODE_REPL_BROWSER_BROKER_TOKEN_ENV, broker.token);
     setEnv("DISPLAY", undefined);
@@ -89,7 +89,7 @@ realBrowserTest(
           "if (globalThis.agent?.browsers == null) {",
           "  const { join } = await import('node:path');",
           "  const { pathToFileURL } = await import('node:url');",
-          "  const root = process.env.ZCODE_PLUGIN_ROOT;",
+          "  const root = process.env.ZXCODE_PLUGIN_ROOT;",
           "  if (!root) throw new Error('missing browser plugin root');",
           "  const clientUrl = pathToFileURL(join(root, 'scripts', 'browser-client.mjs')).href;",
           "  const { setupBrowserRuntime } = await import(clientUrl);",
@@ -110,7 +110,7 @@ realBrowserTest(
         code: [
           "const { join } = await import('node:path');",
           "const { pathToFileURL } = await import('node:url');",
-          "const root = process.env.ZCODE_PLUGIN_ROOT;",
+          "const root = process.env.ZXCODE_PLUGIN_ROOT;",
           "if (!root) throw new Error('missing browser plugin root');",
           "const clientUrl = pathToFileURL(join(root, 'scripts', 'browser-client.mjs')).href;",
           "const { setupBrowserRuntime } = await import(clientUrl);",
@@ -152,7 +152,7 @@ realBrowserTest(
 
 function requestMeta(turnId: string) {
   return {
-    "com.zcode/request-context": {
+    "com.zxcode/request-context": {
       runtime_scope: "main" as const,
       session_id: "headless-e2e-session",
       turn_id: turnId,

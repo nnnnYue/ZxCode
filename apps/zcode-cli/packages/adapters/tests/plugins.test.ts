@@ -116,7 +116,7 @@ describe("NodePluginAdapter", () => {
           pluginCount: 0,
         },
       ]);
-      vi.stubEnv("ZCODE_HTTP_PROXY", "");
+      vi.stubEnv("ZXCODE_HTTP_PROXY", "");
       vi.stubEnv(
         ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
         JSON.stringify({ HTTP_PROXY: await listenServer(proxy) }),
@@ -557,10 +557,10 @@ describe("NodePluginAdapter", () => {
             "ios-simulator": {
               command: "bun",
               args: ["${CLAUDE_PLUGIN_ROOT}/src/mcp/server.ts"],
-              cwd: "${ZCODE_PROJECT_DIR}",
+              cwd: "${ZXCODE_PROJECT_DIR}",
               env: {
                 IOS_SIM_DEFAULT_DEVICE: "${user_config.default_device}",
-                IOS_SIM_PLUGIN_DATA: "${ZCODE_PLUGIN_DATA}",
+                IOS_SIM_PLUGIN_DATA: "${ZXCODE_PLUGIN_DATA}",
               },
             },
           },
@@ -2154,7 +2154,7 @@ describe("NodePluginAdapter", () => {
           pluginCount: 0,
         },
       ]);
-      vi.stubEnv("ZCODE_GIT_BINARY", join(dir, "missing-git"));
+      vi.stubEnv("ZXCODE_GIT_BINARY", join(dir, "missing-git"));
 
       expect(await updateMarketplace({ marketplace: "credential-market", storageRoot })).toEqual(
         [],
@@ -4578,7 +4578,7 @@ async function writeTripletPluginFixture(
           command: "node",
           env: {
             PLUGIN_DATA: "${CLAUDE_PLUGIN_DATA}",
-            PROJECT_DIR: "${ZCODE_PROJECT_DIR}",
+            PROJECT_DIR: "${ZXCODE_PROJECT_DIR}",
           },
         },
       },

@@ -305,8 +305,8 @@ describe("config adapters", () => {
   it("parses the supported ZCODE environment surface", () => {
     const config = parseEnvConfig({
       ZCODE_STORAGE_DIR: "/tmp/zcode",
-      ZCODE_HTTP_PROXY: "http://127.0.0.1:7890",
-      ZCODE_NO_PROXY: "localhost,127.0.0.1",
+      ZXCODE_HTTP_PROXY: "http://127.0.0.1:7890",
+      ZXCODE_NO_PROXY: "localhost,127.0.0.1",
       ZCODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
       ZCODE_HTTP_TIMEOUT: "1234",
       ZCODE_LOCALE: "zh-CN",

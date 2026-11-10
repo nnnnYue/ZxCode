@@ -23,7 +23,7 @@ import {
 // 缺失的命名导出不报链接错误、只是 undefined，于是 `process.env[undefined]` 变成读
 // `"undefined"` 键，`toBeUndefined()` 之类断言全部永真。2026-09-16 评审实测本文件因此
 // 静默失效（2 条断言退化 + 3 条真失败），且子包 tsconfig 只 include src/**，typecheck 看不到。
-const LEGACY_BROKER_TOKEN_ENV = "ZCODE_CUA_PERMISSION_BROKER_TOKEN";
+const LEGACY_BROKER_TOKEN_ENV = "ZXCODE_CUA_PERMISSION_BROKER_TOKEN";
 
 describe("project MCP config", () => {
   // CUA 已不再声明任何 MCP server（.zcode-plugin/plugin.json 去掉 mcpServers，执行面搬到
@@ -130,14 +130,14 @@ describe("project MCP config", () => {
     const previousSocket = process.env[ZCODE_CUA_BROKER_SOCKET_ENV];
     const previousToken = process.env[LEGACY_BROKER_TOKEN_ENV];
     const previousAuthority = process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
-    const previousRefreshMarker = process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
+    const previousRefreshMarker = process.env["ZXCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
     const previousUnavailable = process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     try {
       process.env[ZCODE_CUA_BROKER_SOCKET_ENV] = socketPath;
       process.env[LEGACY_BROKER_TOKEN_ENV] = token;
       process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "dev.zcode.cua-helper/dev";
-      process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] =
+      process.env["ZXCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] =
         `${socketPath}.permission-refresh.json`;
       delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
 
@@ -161,7 +161,7 @@ describe("project MCP config", () => {
       // 旧 Helper 认的口令又发给了子进程。
       expect(env[LEGACY_BROKER_TOKEN_ENV]).toBeUndefined();
       expect(env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]).toBe("dev.zcode.cua-helper/dev");
-      expect(env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"]).toBe(
+      expect(env["ZXCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"]).toBe(
         `${socketPath}.permission-refresh.json`,
       );
     } finally {
@@ -173,8 +173,8 @@ describe("project MCP config", () => {
       if (previousAuthority === undefined) delete process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
       else process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = previousAuthority;
       if (previousRefreshMarker === undefined)
-        delete process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
-      else process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] = previousRefreshMarker;
+        delete process.env["ZXCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
+      else process.env["ZXCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] = previousRefreshMarker;
       if (previousUnavailable === undefined) delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
       else process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV] = previousUnavailable;
     }

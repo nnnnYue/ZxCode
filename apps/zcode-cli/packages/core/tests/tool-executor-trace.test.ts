@@ -1397,11 +1397,11 @@ describe("ToolExecutor trace propagation", () => {
       CLAUDE_PLUGIN_ROOT: "/tmp/superpowers",
       CLAUDE_PROJECT_DIR: "/workspace",
       CLAUDE_SESSION_ID: sessionId,
-      ZCODE_PLUGIN_DATA: "/tmp/plugin-data",
+      ZXCODE_PLUGIN_DATA: "/tmp/plugin-data",
       ZCODE_PLUGIN_ID: "superpowers@zcode-plugins-official",
-      ZCODE_PLUGIN_ROOT: "/tmp/superpowers",
-      ZCODE_PROJECT_DIR: "/workspace",
-      ZCODE_SESSION_ID: sessionId,
+      ZXCODE_PLUGIN_ROOT: "/tmp/superpowers",
+      ZXCODE_PROJECT_DIR: "/workspace",
+      ZXCODE_SESSION_ID: sessionId,
     });
     expect(JSON.parse(String(capturedRequest?.stdin))).toMatchObject({
       hook_event_name: "SessionStart",

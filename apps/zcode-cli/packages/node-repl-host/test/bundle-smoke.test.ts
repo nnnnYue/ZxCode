@@ -129,7 +129,7 @@ describe("node_repl host and browser-use runtime bundles", () => {
         expect(client.getNegotiatedProtocolVersion()).toBe("2026-07-28");
         expect(listed.tools.map((tool) => tool.name).sort()).toEqual(["js"]);
         const meta = {
-          "com.zcode/request-context": {
+          "com.zxcode/request-context": {
             runtime_scope: "main",
             session_id: "bundle-session",
           },

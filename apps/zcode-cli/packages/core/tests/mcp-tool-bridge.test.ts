@@ -81,8 +81,8 @@ function cuaActionReceipt(overrides: Record<string, unknown> = {}): string {
 // capture 路径（sanitize 时捕获完整凭据组）来播种，绝不能直接改写内部状态。
 function seedCapturedBrokerCredentials(): void {
   sanitizeZCodeRuntimeEnv({
-    ZCODE_CUA_PERMISSION_BROKER_SOCKET: "/tmp/zcode-cua-test.sock",
-    ZCODE_CUA_PERMISSION_BROKER_TOKEN: "test-broker-token",
+    ZXCODE_CUA_PERMISSION_BROKER_SOCKET: "/tmp/zcode-cua-test.sock",
+    ZXCODE_CUA_PERMISSION_BROKER_TOKEN: "test-broker-token",
     [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: TEST_PLUGIN_AUTHORITY,
   });
 }

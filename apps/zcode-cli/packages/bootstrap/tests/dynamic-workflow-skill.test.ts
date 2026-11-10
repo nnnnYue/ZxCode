@@ -435,7 +435,7 @@ describe("bundled dynamic-workflows skill", () => {
     // 完整示例（2026-09-21 起在 examples.md §5）按条流水：确认者链在各自文件的评审之后，名字带路径
     // 与序号；旧的屏障式阶段名不再出现。SKILL.md §11 只留指路。
     expect(skill).toContain("## 11. A complete example");
-    expect(skill).toContain("`${ZCODE_SKILL_DIR}/examples.md` §5");
+    expect(skill).toContain("`${ZXCODE_SKILL_DIR}/examples.md` §5");
     const movedExample = await readSkillFile("examples.md");
     expect(movedExample).toContain("## 5. Changed-file review with confirmation as reviews land");
     expect(movedExample).toContain("confirmer-${p}-${index}");

@@ -96,6 +96,12 @@ v3.17.2 合并（`11e88869`）沿用「协议/服务引擎层采纳、desktop ma
 
 - workflow blocked 通知行、MCP 工作区信任 agent 边界（trust 落库在 CLI 剔除域，UI→host→services 三层已通）、初始化失败条与 /reload（CLI 不发射 lifecycle）、远程断连横幅（桌面远程项目未合并）、项目草稿归属管道（虚拟项目域未合入）
 
+## 十一、rebrand 协议命名空间键（keep-ours，上游同步不得回退）
+
+- MCP `_meta` 命名空间键 `com.zxcode/request-context`（rebrand 提交 `b8ea19cf` 自上游 `com.zcode/` 改名）是 fork 品牌项。client 写入方 `apps/zcode-cli/packages/adapters/src/mcp/index.ts`（`mcpRequestMeta`）与 host 读取方 `apps/zcode-cli/packages/node-repl-host/src/server.ts`（`buildRequestMeta`）必须同键。
+- 事故：v3.15.1（`6ba801ec`）与 v3.16.2（`f785503b`/`00dbc590`）上游合并把 adapters 整文件覆盖回上游 `com.zcode/`，与 host 侧 `com.zxcode/` 劈叉。host 按"安全边界"静默降级 requestMeta 为 `{}`，普通 js 调用不受影响，但 Browser Use / Computer Use 的 bridge 因拿不到 `session_id` 报 `node_repl browser request is missing session_id metadata`。2026-11-09 修复（adapters 改回 `com.zxcode/`）。
+- 合并判据：上游对 `adapters/src/mcp/index.ts` 的改动凡涉及该键字面量 → **keep-ours**。守护防线：`node-repl-host/test/request-context-key.test.ts`（两侧键一致）与 [specs/zxcode-path-consistency.md](specs/zxcode-path-consistency.md) 探针 5。
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。

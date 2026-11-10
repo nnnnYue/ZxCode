@@ -239,7 +239,7 @@ describe("Hook runner lifecycle", () => {
               hooks: [
                 {
                   type: "process",
-                  command: "${ZCODE_PLUGIN_ROOT}/hooks/check.mjs",
+                  command: "${ZXCODE_PLUGIN_ROOT}/hooks/check.mjs",
                   args: ["--token", "secret-value"],
                   timeoutMs: 5_000,
                   statusMessage: "Checking policy",

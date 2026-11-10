@@ -594,7 +594,7 @@ export const zcodeMcpTelemetryEventSchema = z.discriminatedUnion("kind", [
 export type ZCodeMcpTelemetryEvent = z.infer<typeof zcodeMcpTelemetryEventSchema>;
 
 /** MCP 每五分钟只探测一次，周期由生产者与设备总量过期判据共用。 */
-export const ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
+export const ZXCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS = 5 * 60_000;
 
 export const zcodeMcpResourceSampleSchema = z
   .object({
