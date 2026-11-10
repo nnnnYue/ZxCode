@@ -57,7 +57,10 @@ export async function main(argv = process.argv.slice(2)) {
         "test",
         {
           root,
-          project: ["engineering"],
+          // v3.17.2 缝合（70bda35d）把根 vitest 恢复为 fork 基线的 unit+fork-isolated 双
+          // project，但本脚本沿用上游的 engineering 过滤名，任何 push 门禁都选不中项目
+          // 直接 exit 2。这里跟随实际 project 名，覆盖 unit 与 fork-isolated 两档。
+          project: ["unit", "fork-isolated"],
           watch: false,
           run: true,
           reporters: ["default"],
