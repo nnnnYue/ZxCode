@@ -1,7 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { extractRemoteTargetSpecs } from "../packages/desktop/scripts/r3-remote-spec-inventory.mjs";
 
 export async function checkRemoteTargetSpecs(root = process.cwd()) {
   try {
@@ -11,6 +10,11 @@ export async function checkRemoteTargetSpecs(root = process.cwd()) {
     if (error.code === "ENOENT") return "skipped: private queue absent";
     throw error;
   }
+  // 惰性 import：清单提取器在开源树已被剔除（3.16.2 同步 c2468d56），顶层静态 import
+  // 会在跳过逻辑生效前直接炸掉推送门禁。私有队列目录恢复后若模块缺失，此处应显式报错。
+  const { extractRemoteTargetSpecs } = await import(
+    "../packages/desktop/scripts/r3-remote-spec-inventory.mjs"
+  );
   const queue = await readFile(resolve(root, "harness/remote/run-all-remote.sh"), "utf8");
   const actual = JSON.parse(
     await readFile(resolve(root, "packages/desktop/scripts/e2e-remote-target-specs.json"), "utf8"),
