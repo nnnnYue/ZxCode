@@ -46,6 +46,15 @@ fork 桌面侧栏是 v3.15 时代旧骨架（`SortableWorkspaceSidebar` + 1928 �
   永不重算归属——任务永久落任务区。刷新后重放以 `clientContext.projectId`（提交时刻快照）
   为准，不读当前草稿。已保存工作流直启/提升（useSavedWorkflowLauncher/useSavedWorkflowPromote）
   同口径：`SavedWorkflowLaunchTarget.projectId`（源自 useSavedWorkflowProjectOptions）。
+- **文件树面板挂点（2026-11-11 补记，装包实测 bug 3b 修复）**：`WorkspaceFileTree` 以侧栏内
+  覆盖面板形式挂载在 `project-sidebar/index.tsx`（相对容器的第二子层，translate-x 过渡），
+  复刻换骨架前 WorkspaceSidebar 的范式。入口统一收口到 `useProjectFileTree`：
+  项目/任务「查看文件」（openFiles/openTaskFiles）与 shell 命令式请求
+  （`fileTreeOpenRequest`，markdown 目录链接与 Git reveal 走 `openFileTreeRequest`）共用同一
+  面板；`props.onOpenFileManager` 外部提供时优先，缺省落到内部面板（此前全仓无提供方，
+  「查看文件」是静默 no-op 死按钮）。开合经 `onFileTreeOpenChange` 回传 shell（顶部
+  New Task 按钮显隐依赖 `isSidebarFileTreeOpen`）。预览打开沿用旧语义：source 附加目标
+  workspace 作用域后走 `onOpenCodeViewer`，不切换当前 workspace。
 
 ## 验收场景
 

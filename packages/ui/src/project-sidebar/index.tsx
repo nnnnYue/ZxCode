@@ -4,12 +4,13 @@ import { SortableProjects } from "@/project-sidebar/SortableProjects.js";
 export { ArchiveManagement } from "@/project-sidebar/ArchiveManagement.js";
 export { useWebRemoteControlRendererActions } from "@/project-sidebar/useWebRemoteControlRendererActions.js";
 export { ProjectManagement } from "@/project-sidebar/ProjectManagement.js";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollFadeViewport } from "@/components/ui/scroll-fade-viewport.js";
 import { TID_SIDEBAR } from "@zcode/shared/test-ids";
 import { remoteHostIdFromWorkspaceIdentity } from "@/project-sidebar/contract.js";
 import type {
   ProjectSidebarProps,
+  SidebarFileTreeTarget,
   VirtualProject,
   Locale,
   Theme,
@@ -54,6 +55,7 @@ import { ProjectSidebarListHeader } from "@/project-sidebar/ProjectSidebarListHe
 import { ProjectSidebarNavigation } from "@/project-sidebar/ProjectSidebarNavigation.js";
 import { HomeOnlyWorkspaceRows } from "@/project-sidebar/HomeOnlyWorkspaceRows.js";
 import { WorkspaceSidebarFooter } from "@/WorkspaceSidebarFooter.js";
+import { WorkspaceFileTree } from "@/workspace-file-tree/WorkspaceFileTree.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useTabStoreApi } from "@/store/TabStoreProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
@@ -103,7 +105,26 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
     ),
   );
   const [remotePicker, setRemotePicker] = useState<RemoteProjectHost | null>(null);
-  const { openFiles, openTaskFiles } = useProjectFileTree(props, directory, remoteService);
+  // 文件树覆盖面板（换骨架 Phase 3c 接线缺口，2026-11-11 bug 3b 修复）：「查看文件」此前
+  // 落 props.onOpenFileManager?.()——全仓无提供方，纯静默 no-op；且 WorkspaceFileTree 组件
+  // 换骨架后无渲染点。恢复旧骨架范式：侧栏内覆盖面板，shell 命令式请求（fileTreeOpenRequest，
+  // markdown 目录链接/Git reveal）与本地查看文件共用；外部显式提供 onOpenFileManager 时优先。
+  const [fileTreeTarget, setFileTreeTarget] = useState<SidebarFileTreeTarget | null>(null);
+  const [isFileTreeOpen, setIsFileTreeOpen] = useState(false);
+  const openFileManager = useCallback((target: SidebarFileTreeTarget) => {
+    setFileTreeTarget(target);
+    setIsFileTreeOpen(true);
+  }, []);
+  // 开合回传 shell：文件树覆盖侧栏时顶部 New Task 按钮仍可用（isSidebarFileTreeOpen）。
+  useEffect(() => {
+    props.onFileTreeOpenChange?.(isFileTreeOpen);
+    return () => props.onFileTreeOpenChange?.(false);
+  }, [isFileTreeOpen, props.onFileTreeOpenChange]);
+  const { openFiles, openTaskFiles } = useProjectFileTree(
+    { ...props, onOpenFileManager: props.onOpenFileManager ?? openFileManager },
+    directory,
+    remoteService,
+  );
   const remoteControlEnabled = useWebRemoteControlFeatureEnabled();
   const mobileStatus = useWebRemoteControlStatus({
     enabled: Boolean(props.isDesktop && remoteControlEnabled),
@@ -354,6 +375,38 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                 isDesktop={props.isDesktop}
               />
             </div>
+            {fileTreeTarget ? (
+              <div
+                className={`absolute inset-0 z-10 bg-sidebar transition-transform duration-200 ease-out ${
+                  isFileTreeOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
+                }`}
+                aria-hidden={!isFileTreeOpen}
+              >
+                <WorkspaceFileTree
+                  workspacePath={fileTreeTarget.workspacePath}
+                  workspaceName={fileTreeTarget.workspaceName}
+                  workspaceIdentity={fileTreeTarget.workspaceIdentity}
+                  workspaceRemoteSessionId={fileTreeTarget.workspaceRemoteSessionId}
+                  revealPath={fileTreeTarget.revealPath}
+                  temporaryExternalDirectory={fileTreeTarget.temporaryExternalDirectory}
+                  canOpenLocalFileManager={props.isDesktop}
+                  activePreviewPath={props.activePreviewPath}
+                  onClose={() => setIsFileTreeOpen(false)}
+                  onOpenBrowserUrl={props.isDesktop ? props.onOpenBrowserUrl : undefined}
+                  onOpenPreview={(source) => {
+                    // 文件树可以查看非当前 workspace 的文件：预览 source 携带 workspace 作用域，
+                    // PreviewPane 才能用正确 host 读取远程文件；同时不切换当前 workspace，
+                    // 避免「Add to chat」丢给错误的 composer。
+                    props.onOpenCodeViewer?.({
+                      ...source,
+                      workspacePath: fileTreeTarget.workspacePath,
+                      workspaceIdentity: fileTreeTarget.workspaceIdentity,
+                      workspaceRemoteSessionId: fileTreeTarget.workspaceRemoteSessionId,
+                    });
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
           {creating && service && remoteService ? (
             <ProjectCreation
