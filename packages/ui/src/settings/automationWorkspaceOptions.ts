@@ -8,6 +8,8 @@ export interface AutomationWorkspaceOption {
   remoteTarget?: RemoteTarget;
   label: string;
   workspacePurpose?: WorkspacePurpose;
+  /** 项目归属（useSavedWorkflowProjectOptions 提供）：createSession 预留归属用，漏传会落任务区。 */
+  projectId?: string;
 }
 
 export function resolveAutomationWorkspaceSelectionKey(

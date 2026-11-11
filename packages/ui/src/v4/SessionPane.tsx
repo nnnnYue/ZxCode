@@ -1146,8 +1146,9 @@ export function SessionPane({
     modelSelectionService,
   });
 
-  // fork 现状：项目草稿归属（draftProjectId）随虚拟项目域未合入，scope 恒为 null 项目；
-  // ComposerScope 管道保留，Phase 3 远程项目合入后在此接入 draftProjectId。
+  // Composer 草稿文本 scope 按 workspace 组织（null 项目）；创建归属不在这里——
+  // draftProjectId 在 dispatchCommand 的 createSession 分支读取并经 RPC params 传给 Host
+  // 预留归属（2026-11-11 bug 3a 修复），clientContext.projectId 供刷新后重放恢复。
   const newTaskComposerScope = useMemo(
     () => resolveComposerScope(null, workspaceIdentity),
     [workspaceIdentity],
@@ -1361,6 +1362,8 @@ export function SessionPane({
       sessionCreateSource?: SessionCreateSource,
       recentSubmissionOverride?: ComposerSubmissionConfig | null,
       submittedDraftText?: string,
+      /** createSession 归属覆盖：重放时以提交时刻的 clientContext.projectId 为准（草稿可能已变）。 */
+      creationProjectId?: string | null,
     ): Promise<CommandAck> => {
       const submission = submissionConfigFromCommand(type, payload);
       // 加速轮 payload 的 modelSelection 会被执行材料覆盖为隐藏加速 Provider；Recent 记录的是
@@ -1403,6 +1406,17 @@ export function SessionPane({
           ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
               .draftTaskGroupId
           : undefined;
+      // 项目归属（2026-11-11 装包实测 bug 3a 修复）：createSession 必须把草稿的 draftProjectId
+      // 传到 RPC params（Host 在 CLI 首发前 reserveCreatedTask 写 project_id+bit8）；漏传时 Host
+      // 按「全局任务」写 NULL+bit8，本地行按 I17 永不重算——项目下新建任务会落任务区。
+      // 显式 null = 全局任务；clientContext.projectId 供刷新后重放恢复归属。
+      const projectId =
+        type === "createSession"
+          ? creationProjectId !== undefined
+            ? creationProjectId
+            : (useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+                .draftProjectId ?? null)
+          : undefined;
       pendingCommandRegistry.record(
         envelope,
         type === "createSession"
@@ -1412,6 +1426,7 @@ export function SessionPane({
                 ...(workspaceIdentity ? { workspaceIdentity } : {}),
               },
               taskGroupId,
+              projectId,
               ...composerClientContext,
               sessionCreateSource:
                 sessionCreateSource ??
@@ -1445,7 +1460,7 @@ export function SessionPane({
             targetSessionId,
           );
         }
-        ack = await sendCommand(envelope);
+        ack = await sendCommand(envelope, projectId !== undefined ? { projectId } : undefined);
         if (localTtft && ack.reasonCode === "guard.heldQueueConfirmationStale")
           getLocalTtftObserver()?.confirmationRetry(localTtft);
         else if (localTtft) getLocalTtftObserver()?.ack(localTtft, ack.status, ack.ttftExcluded);
@@ -4146,7 +4161,23 @@ export function SessionPane({
       commandId: recoverableCommand.commandId,
     });
     if (!replay) return;
-    void dispatchCommand(replay.type, replay.payload, replay.sessionId, replay.baseRevision)
+    // 重放以提交时刻的 clientContext.projectId 为准（草稿可能已被替换或清除）。
+    const replayProjectId: string | null =
+      replay.type === "createSession" ? (replay.clientContext?.projectId ?? null) : null;
+    void dispatchCommand(
+      replay.type,
+      replay.payload,
+      replay.sessionId,
+      replay.baseRevision,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      replayProjectId,
+    )
       .then((ack) => {
         if (
           replay.type === "createSession" &&

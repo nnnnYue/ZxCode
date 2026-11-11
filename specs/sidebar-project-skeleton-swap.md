@@ -37,6 +37,15 @@ fork 桌面侧栏是 v3.15 时代旧骨架（`SortableWorkspaceSidebar` + 1928 �
 - IProjectService/ITaskGroupService/IRemoteProjectService 经 host overrides 暴露给 renderer accessor；手机远控 Replayable 时侧栏组织服务**不随 attachment 换库**（`overrides.set(IProjectService.channelName, ...)`）。
 - `readProjectSidebarTree`（project-tree-reader.ts）：本机 `projectService.readTree({includeDeleted,includeDeletedTasks})` + remote host 并行 readTree（桩=空）+ `mergeProjectTrees`；实时层 sessions-index 只补活动 + windowController 修订号驱动重读 + 未读 CAS。
 - services 先对齐上游 `project/`（data/ 重构）；fork 的 `project-storage` 增补 ~500 行保留。
+- **创建归属传递（2026-11-11 补记，装包实测 bug 3a 修复）**：项目下新建任务的归属链为
+  `startDraft({projectId})` →（首条消息提交）`SessionPane.dispatchCommand` createSession 分支读
+  `draftProjectId` → `ConversationTransport.sendCommand(envelope, {projectId})` → RPC params
+  `ZCodeAgentConversationCommandParams.projectId`（仅 Host 消费；**绝不进 CLI 可见的 wire
+  payload**，I4）→ Host `reserveCreatedTask` 在 CLI 首发前原子写 project_id+bit8。
+  显式 `null` = 全局任务。约束：漏传时 Host 按「全局任务」写 NULL+bit8，本地行按 I17
+  永不重算归属——任务永久落任务区。刷新后重放以 `clientContext.projectId`（提交时刻快照）
+  为准，不读当前草稿。已保存工作流直启/提升（useSavedWorkflowLauncher/useSavedWorkflowPromote）
+  同口径：`SavedWorkflowLaunchTarget.projectId`（源自 useSavedWorkflowProjectOptions）。
 
 ## 验收场景
 
@@ -46,7 +55,9 @@ fork 桌面侧栏是 v3.15 时代旧骨架（`SortableWorkspaceSidebar` + 1928 �
 4. 虚拟项目分组与 roots 不变量：项目移动只改 project_id；session cwd 不变。
 5. 手机远控：relay 工作区列表在新骨架可见可切，workspaceKey 唯一；bridge/snapshot 不串工作区。
 6. automations 入口、conversations 分区、ArchiveManagement 管理页可用。
-7. 门禁：分包 tsc（删 tsbuildinfo）零新增错；desktop main/host tsc 错误文件集合与基线零新增；`pnpm architecture:check --changed` 通过；`pnpm test:engineering` 相关包绿；CDP 冒烟覆盖侧栏四视图+手机远控链路。
+7. 项目下新建任务（含已保存工作流直启/提升）：任务出生即在项目折叠下（tasks.project_id
+   实证），刷新后重放归属不变；全局新建任务显式落任务区。
+8. 门禁：分包 tsc（删 tsbuildinfo）零新增错；desktop main/host tsc 错误文件集合与基线零新增；`pnpm architecture:check --changed` 通过；`pnpm test:engineering` 相关包绿；CDP 冒烟覆盖侧栏四视图+手机远控链路。
 
 ## 明确不做
 

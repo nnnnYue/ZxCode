@@ -18,7 +18,6 @@ export function useSavedWorkflowProjectOptions(): AutomationWorkspaceOption[] {
         return [
           {
             projectId: project.id,
-            hostId: project.hostId,
             workspacePath: root,
             label: project.name,
             ...(project.hostId === "local"

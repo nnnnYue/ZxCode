@@ -22,6 +22,8 @@ export interface SavedWorkflowLaunchTarget {
   workspacePath: string;
   workspaceIdentity?: string;
   remoteSessionId?: string;
+  /** createSession 预留归属（RPC params 层）：漏传时 Host 写 NULL+bit8，任务落任务区。 */
+  projectId?: string;
 }
 
 /** 启动请求：name 由解析结果保证（不变式 6），scope 定向查找，args 已由实参窗收齐。 */
@@ -155,12 +157,14 @@ export function useSavedWorkflowLauncher(params: {
       let createdSessionId: string | null = null;
       try {
         // ① 空会话：无 firstInput、无 config，用 runtime 缺省模型 / 模式（不复用 composer 草稿配置）。
+        // projectId 走 RPC params（bug 3a 同类缺口）：漏传时 Host 预留 NULL+bit8，任务落任务区。
         const createAck = await lease.transport.sendCommand(
           createCommandEnvelope({
             type: "createSession",
             payload: { workspaceId },
             sessionId: null,
           }),
+          { projectId: target.projectId ?? null },
         );
         if (createAck.status !== "accepted" || createAck.result?.type !== "createSession") {
           // 会话没建成：不发 start、不留会话，通用错误。

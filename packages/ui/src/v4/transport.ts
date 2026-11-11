@@ -62,8 +62,16 @@ export interface ConversationTransport {
   resync(params: ConversationResyncParams): Promise<V4ConversationResyncResult>;
   /** v4/conversation/unsubscribe。 */
   unsubscribe(subscriptionId: string): Promise<void>;
-  /** v4/command。 */
-  sendCommand(envelope: CommandEnvelope): Promise<CommandAck>;
+  /**
+   * v4/command。createSession 时可带 creation.projectId（RPC params 层、Host 消费，绝不进
+   * CLI 可见的 wire payload，I4）：漏传时 Host 会以「全局任务」预留 project_id=NULL+bit8，
+   * 本地行按 I17 永不重算归属——项目下新建任务会落任务区（2026-11-11 装包实测 bug 3a）。
+   * 实现方不识别时忽略该参数，保持签名向后兼容。
+   */
+  sendCommand(
+    envelope: CommandEnvelope,
+    creation?: { projectId?: string | null },
+  ): Promise<CommandAck>;
   /** v4/commands/query：重连后按 commandId 与 CLI 权威事实对账。 */
   queryCommands(params: CommandsQueryParams): Promise<CommandsQueryResult>;
   /** v4/conversation/rowsRange（loadOlder）：按游标向上取一窗历史行。 */

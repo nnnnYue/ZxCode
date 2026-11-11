@@ -72,6 +72,7 @@ export function useSavedWorkflowPromote(params: {
       setPending(true);
       const lease = acquireLaunchLease(target, agentService);
       try {
+        // projectId 走 RPC params（bug 3a 同类缺口）：漏传时 Host 预留 NULL+bit8，任务落任务区。
         const ack = await lease.transport.sendCommand(
           createCommandEnvelope({
             type: "createSession",
@@ -81,6 +82,7 @@ export function useSavedWorkflowPromote(params: {
             },
             sessionId: null,
           }),
+          { projectId: target.projectId ?? null },
         );
         if (ack.status !== "accepted" || ack.result?.type !== "createSession") {
           logger.warn("[saved-workflow-promote] createSession(firstInput) 被拒", {

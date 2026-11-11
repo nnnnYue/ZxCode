@@ -187,8 +187,8 @@ export function useDraftConfigControl(params: {
   const { settings: sharedSettings } = useSettings();
   const appFollowupMode = resolveAppFollowupMode(sharedSettings);
   const scopeId = sessionId ?? V4_DRAFT_SCOPE_ROOT;
-  // fork 现状：项目草稿归属（draftProjectId）随虚拟项目域未合入，scope 恒为 null 项目；
-  // ComposerScope 管道保留，Phase 3 远程项目合入后在此接入 draftProjectId。
+  // Composer 草稿文本 scope 按 workspace 组织（null 项目）；创建归属不经 ComposerScope——
+  // draftProjectId 由 dispatchCommand 的 createSession 分支读取并传 RPC params（bug 3a 修复）。
   const rootScope = useMemo(
     () => resolveComposerScope(null, workspaceIdentity),
     [workspaceIdentity],
