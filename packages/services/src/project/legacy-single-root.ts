@@ -164,6 +164,9 @@ export function createLegacySingleRootProjectService(
     reorderProjects: readOnly,
     measureProjectData: readOnly,
     deleteProjectData: readOnly,
+    // 旧 Server 没有组织库，无从产生未归类候选；恢复引导只在控制端本机发起。
+    listRestoreCandidates: async () => [],
+    restoreProjects: readOnly,
   };
   return service;
 }

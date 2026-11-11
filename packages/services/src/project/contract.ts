@@ -55,6 +55,24 @@ export interface IProjectService {
     hostId?: string;
     addMissingRoot?: boolean;
   }): Promise<void>;
+  /**
+   * 项目恢复引导候选（specs/project-restore-guide.md）：本机未归类任务按目录聚合的只读
+   * 派生（含任务数与最近活动），排除系统会话目录；不写库、不建项目（I17：仅建议）。
+   */
+  listRestoreCandidates(): Promise<
+    Array<{ path: string; name: string; taskCount: number; lastActivityAt: number }>
+  >;
+  /**
+   * 用户确认后的批量恢复：逐目录复用未删除项目或创建，并归入该目录未归类任务。
+   * 只写组织态（project_id 等），不触碰 cwd 与 CLI 事实列；幂等可重试，远端 Host 拒绝。
+   * 目录缺失/不可用不构成失败：跳过并随 skipped 明细返回（修复 2026-11-11 装包实测
+   * bug 1/2——整批 throw 会造成「报错但项目已迁入」且部分写入不广播）。
+   */
+  restoreProjects(input: { paths: string[] }): Promise<{
+    projects: number;
+    adoptedTasks: number;
+    skipped: Array<{ path: string; reason: "missing" | "unavailable" }>;
+  }>;
   reorderProjects(ids: string[], hostId?: string): Promise<void>;
   /** 固化本次创建 cwd 并复检主目录；已配置目录失效时拒绝，空项目或全局任务才创建默认目录。 */
   prepareSession(params?: {

@@ -45,6 +45,8 @@ import {
   runProjectAction as action,
 } from "@/project-sidebar/ProjectSidebarNode.js";
 import { ProjectCreation } from "@/project-sidebar/ProjectCreation.js";
+import { ProjectRestoreGuide } from "@/project-sidebar/ProjectRestoreGuide.js";
+import { useProjectRestoreGuide } from "@/project-sidebar/useProjectRestoreGuide.js";
 import { ProjectEditor } from "@/project-sidebar/ProjectEditor.js";
 import { RemoteProjectPicker } from "@/project-sidebar/RemoteProjectPicker.js";
 import { ProjectSections } from "@/project-sidebar/ProjectSections.js";
@@ -155,6 +157,15 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
     });
   };
   const projects = preferences.sort(selectSortedProjects(tree));
+  // 项目恢复引导：本机未删项目为 0 且存在未归类任务目录时的一次性卡片（specs/project-restore-guide.md）。
+  // 一键全量恢复（2026-11-10 拍板）：点击卡片即确认，成功后写标记并刷新树。
+  const restoreGuide = useProjectRestoreGuide({
+    service,
+    loading,
+    error,
+    localProjectsEmpty: !projects.some((project) => project.hostId === "local" && !project.deleted),
+    onRestored: () => void refresh().catch(() => undefined),
+  });
   const expandableProjects = projects.filter(
     (project) => availability.get(projectKey(project))?.online !== false,
   );
@@ -271,6 +282,15 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                               preferences.setAllExpanded(expandableProjects, !hasExpandedProjects)
                             }
                           />
+                          {restoreGuide.visible ? (
+                            <ProjectRestoreGuide
+                              count={restoreGuide.count}
+                              restoring={restoreGuide.restoring}
+                              error={restoreGuide.restoreError}
+                              onRestore={() => void restoreGuide.restore()}
+                              onDismiss={() => void restoreGuide.dismiss().catch(() => undefined)}
+                            />
+                          ) : null}
                         </>
                       ) : view === "grouped" ? (
                         <>

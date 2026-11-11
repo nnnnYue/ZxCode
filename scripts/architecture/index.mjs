@@ -171,7 +171,9 @@ export async function checkArchitecture({
     }
     if (
       path.basename(file) === "contract.ts" &&
-      countPublicMethods(source) > policy.global.maxPublicMethods
+      countPublicMethods(source) > policy.global.maxPublicMethods &&
+      // 例外登记对其生效：与 disable-count 一致，登记过的契约可显式豁免方法数上限。
+      !isException(policy, "max-public-methods", file, cwd)
     ) {
       violations.push(
         violation({

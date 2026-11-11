@@ -72,6 +72,20 @@ export interface ProjectRepositoryContract {
 
   /** 单事务纯按 CLI 最后活动时间筛选，置顶与 activeTasks 除外，仅写组织态；覆盖未归类 cwd。 */
   archiveInactive(input: AutoArchiveInput): ProjectTaskRef[];
+  /**
+   * 项目恢复引导候选（specs/project-restore-guide.md）：本地未归类、未删除、未归档任务
+   * 按目录聚合的只读派生；排除系统会话目录（.zxcode / .zcode 双拼写 GLOB）。
+   */
+  listRestoreCandidates(): Array<{ path: string; taskCount: number; lastActivityAt: number }>;
+  /**
+   * 恢复引导确认后的单目录写入：同事务语义下复用未删除项目或创建（reuseExistingRoot），
+   * 再把该目录未归类任务整批归入（project_id + OWNERSHIP_DECIDED；root_path 缺失按
+   * workspace_path 回填，先例 initializeLegacyTaskIdentity）。只写组织态，可重试。
+   */
+  restoreUnclassifiedDirectory(input: { path: string }): {
+    project: VirtualProject;
+    adoptedTasks: number;
+  };
   /** 可只取目录，并参与调用方已有的 SQLite 读快照。 */
   readTree(options?: {
     includeDeleted?: boolean;

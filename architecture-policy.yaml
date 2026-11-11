@@ -1596,3 +1596,7 @@ exceptions:
       - packages/ui/src/remote-connection/RemoteTaskDeviceLabel.tsx
       - packages/ui/src/WorkspaceSidebar/RemoteProjectConnectionDetails.tsx
     reason: 侧栏换骨架（Phase 3c）为满足上游 project-sidebar 依赖面落盘的散文件——远程连接投影 Context、presentation 类型、任务来源归因、连接状态图标/徽标/链接轨/设备标签与连接详情；均位于 ui 既有 legacy 根目录且与目录内 fork 存量文件同构演进，单文件迁入新 managed 模块会切断同目录演进同步。
+  - id: project-restore-guide-contract-methods
+    rule: max-public-methods
+    paths: [packages/services/src/project/contract.ts]
+    reason: 项目恢复引导（specs/project-restore-guide.md）向 IProjectService 追加 listRestoreCandidates/restoreProjects 两条本机组织库命令（14>12）；它们与 readTree/saveProject 同属项目域单一 owner 的组织态读写，拆出第二服务会让侧栏与 host 通道出现两份项目契约，不合拆分本意。

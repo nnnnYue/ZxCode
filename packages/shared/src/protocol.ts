@@ -270,6 +270,11 @@ export interface AppSettings {
   mobileRelay?: MobileRelaySettings;
   /** 当前 App/Host 不再显示提交前体验套餐推荐；不改变任何入口的模型选择。 */
   startPlanRecommendationDismissed?: boolean;
+  /**
+   * 侧栏项目恢复引导（specs/project-restore-guide.md）的一次性关闭标记。
+   * 仅用户交互写入（恢复成功 / 显式不再提示）；候选为空不写，保持零成本重评。
+   */
+  projectRestoreGuideDismissed?: boolean;
   recentProjects: string[]; // 最近项目列表，最多保留 10 个
   locale: Locale; // 界面语言
   /**

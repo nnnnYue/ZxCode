@@ -192,6 +192,11 @@ it("readTree only reads the snapshot and never archives or broadcasts", async ()
 });
 
 it("routes every foreign project operation to its existing owner and never falls back to the local repository", async () => {
+  const remoteDirectories = {
+    projectId: "remote-p",
+    workspacePath: "/remote",
+    additionalDirectories: ["/extra"],
+  };
   const repository = vi.fn(async () => {
     throw new Error("must not read local storage");
   });
@@ -204,18 +209,12 @@ it("routes every foreign project operation to its existing owner and never falls
     restoreProject: vi.fn(async () => ({ id: "remote-p" }) as VirtualProject),
     moveTask: vi.fn(async () => {}),
     reorderProjects: vi.fn(async () => {}),
+    listRestoreCandidates: vi.fn(async () => []),
+    restoreProjects: vi.fn(async () => ({ projects: 0, adoptedTasks: 0, skipped: [] })),
     measureProjectData: vi.fn(async () => ({ projects: [] })),
     deleteProjectData: vi.fn(async () => ({}) as ProjectDataDeleteResult),
-    prepareSession: vi.fn(async () => ({
-      projectId: "remote-p",
-      workspacePath: "/remote",
-      additionalDirectories: ["/extra"],
-    })),
-    resolveSessionDirectories: vi.fn(async () => ({
-      projectId: "remote-p",
-      workspacePath: "/remote",
-      additionalDirectories: ["/extra"],
-    })),
+    prepareSession: vi.fn(async () => remoteDirectories),
+    resolveSessionDirectories: vi.fn(async () => remoteDirectories),
   } satisfies IProjectService;
   const resolveHost = vi.fn(async (hostId: string) => {
     if (hostId === "offline") throw new Error("project.host-offline");
@@ -241,8 +240,13 @@ it("routes every foreign project operation to its existing owner and never falls
   await service.resolveSessionDirectories({ workspacePath: "/remote", taskId: "s" }, "source");
   await expect(service.readTree({ hostId: "offline" })).rejects.toThrow("project.host-offline");
   expect(repository).not.toHaveBeenCalled();
-  // 数据命令本机限定不路由：远端 hostId 直接拒绝，remote 桩与本地仓库全程零触碰。
-  const localOnlyCommands = ["measureProjectData", "deleteProjectData"];
+  // 数据命令与恢复引导本机限定不路由（读控制端本机组织库），remote 桩与本地仓库全程零触碰。
+  const localOnlyCommands = [
+    "measureProjectData",
+    "deleteProjectData",
+    "listRestoreCandidates",
+    "restoreProjects",
+  ];
   for (const [name, method] of Object.entries(remote))
     if (!localOnlyCommands.includes(name)) expect(method).toHaveBeenCalledTimes(1);
   for (const run of [

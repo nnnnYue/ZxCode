@@ -371,6 +371,61 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
       }));
   }
 
+  listRestoreCandidates(): Array<{ path: string; taskCount: number; lastActivityAt: number }> {
+    // 引导候选只统计未归档任务（只剩归档任务的目录不值得建议）；恢复写入时会收编该目录
+    // 全部未删任务。会话目录双拼写排除：0005/0006 存量 migration 只排了 .zcode（I10 不可改），
+    // fork 实际数据根是 .zxcode，这里两个都排。
+    return this.db
+      .prepare(
+        `SELECT coalesce(root_path,workspace_path) AS cwd, count(*) AS taskCount,
+          max(coalesce(cli_updated_at,updated_at)) AS lastActivityAt
+        FROM tasks
+        WHERE host_id=? AND project_id IS NULL AND deleted=0 AND coalesce(cli_deleted,0)=0 AND archived=0
+          AND replace(coalesce(root_path,workspace_path), char(92), '/') NOT GLOB '*/.zxcode/workspace/*'
+          AND replace(coalesce(root_path,workspace_path), char(92), '/') NOT GLOB '*/.zcode/workspace/*'
+        GROUP BY cwd ORDER BY lastActivityAt DESC, cwd`,
+      )
+      .all(this.ownerHostId ?? "local")
+      .map((row) => ({
+        path: String(row.cwd),
+        taskCount: Number(row.taskCount),
+        lastActivityAt: Number(row.lastActivityAt),
+      }));
+  }
+
+  restoreUnclassifiedDirectory(input: { path: string }): {
+    project: VirtualProject;
+    adoptedTasks: number;
+  } {
+    const host = this.ownerHostId ?? "local";
+    if (host !== "local") throw new Error("project.invalid-directory-open");
+    // saveProject 自开写事务（reuseExistingRoot：同事务复用未删除项目或创建），
+    // SQLite 不允许嵌套 BEGIN，归入语句独立成事务；两步各自原子，重试幂等。
+    const project = this.saveProject({
+      roots: [input.path],
+      primaryRoot: input.path,
+      defaultName: basename(input.path),
+      reuseExistingRoot: true,
+    });
+    // 与 migrate-projects 远端分支同构：整目录未归类任务归入；root_path 缺失按 workspace_path
+    // 回填（host 侧执行目录快照，写入先例 initializeLegacyTaskIdentity），避免 moveTask 的 root 匹配失败。
+    const adoptedTasks = Number(
+      transaction(
+        this.db,
+        () =>
+          this.db
+            .prepare(
+              `UPDATE tasks SET project_id=?,root_path=coalesce(root_path,workspace_path),
+                handoff_pending=handoff_pending | ?
+              WHERE host_id='local' AND project_id IS NULL AND deleted=0 AND coalesce(cli_deleted,0)=0
+                AND coalesce(root_path,workspace_path)=?`,
+            )
+            .run(project.id, OWNERSHIP_DECIDED, input.path).changes,
+      ),
+    );
+    return { project, adoptedTasks };
+  }
+
   purgeTasks(tasks: readonly ProjectTaskRef[]): void {
     const host = this.ownerHostId ?? "local";
     // 分组准入表只在新版本库里存在；旧库或测试库缺表时没有可删的行。

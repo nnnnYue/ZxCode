@@ -3,7 +3,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import type { Stats } from "node:fs";
 import { mkdir, stat } from "node:fs/promises";
-import { isAbsolute, join, normalize } from "node:path";
+import { isAbsolute, join, normalize, posix, win32 } from "node:path";
 import type { ProjectRepositoryContract } from "#src/project-storage/contract.js";
 import type { ProjectDataRepositoryContract } from "#src/project-storage/index.js";
 import type {
@@ -267,6 +267,53 @@ export function createProjectService(options: {
       (await options.repository()).reorderProjects(ids);
       await changed();
     },
+    async listRestoreCandidates() {
+      // 引导候选是本机组织库的只读派生；远端 Host 的引导由其控制端自己发起，不做跨 Host 路由。
+      if (options.ownerHostId && options.ownerHostId !== "local")
+        throw new Error("project.data-local-only");
+      const directoryName = (path: string) =>
+        (path.includes("\\") ? win32 : posix).basename(path) || path;
+      // 修复（2026-11-11 装包实测 bug 1）：候选此前只查库不查盘，已删除目录会进入候选且
+      // 一键恢复必炸（旧 restoreProjects 对缺失目录整批 throw）。仓储层保持纯 SQL，存在性
+      // 在服务层过滤（复用 prepareSession 的 readPrimaryRootStatus，含超时与 in-flight 去重）；
+      // 死目录不进候选，其任务保留任务区（合法未归类，I17）。
+      const alive: Array<{ path: string; taskCount: number; lastActivityAt: number }> = [];
+      for (const candidate of (await options.repository()).listRestoreCandidates()) {
+        if ((await readPrimaryRootStatus(candidate.path)) === "available") alive.push(candidate);
+      }
+      return alive.map((candidate) => ({ ...candidate, name: directoryName(candidate.path) }));
+    },
+    async restoreProjects(input) {
+      const paths = z.array(z.string().min(1)).max(100).parse(input.paths);
+      if (options.ownerHostId && options.ownerHostId !== "local")
+        throw new Error("project.data-local-only");
+      const repository = await options.repository();
+      let projects = 0;
+      let adoptedTasks = 0;
+      const skipped: Array<{ path: string; reason: "missing" | "unavailable" }> = [];
+      // 修复（2026-11-11 装包实测 bug 1/2）：旧实现对缺失目录整批 throw，但
+      // restoreUnclassifiedDirectory 每路径独立事务、throw 前的路径已落库——表现为「报错但
+      // 项目已迁入」；且 changed() 只在循环后调用，部分写入当次会话不广播、重启才出现。
+      // 现在目录缺失/不可用改为跳过并汇总上报（不构成失败）；try/finally 保证只要有写入
+      // 就广播 state:projects，与 saveProject 的存在性约束保持一致（不把已消失目录固化成 root）。
+      try {
+        for (const rawPath of paths) {
+          if (!isAbsolute(rawPath)) throw new Error("project.absolute-path-required");
+          const path = normalize(rawPath);
+          const status = await readPrimaryRootStatus(path);
+          if (status !== "available") {
+            skipped.push({ path, reason: status === "missing" ? "missing" : "unavailable" });
+            continue;
+          }
+          const result = repository.restoreUnclassifiedDirectory({ path });
+          projects++;
+          adoptedTasks += result.adoptedTasks;
+        }
+      } finally {
+        if (projects > 0) await changed();
+      }
+      return { projects, adoptedTasks, skipped };
+    },
     async resolveSessionDirectories(task, hostId) {
       const remote = await route(hostId);
       if (remote) return remote.resolveSessionDirectories(task);
@@ -385,6 +432,9 @@ export function bindRemoteProjectIdentities(
     restoreProject: (id, hostId) => service.restoreProject(id, hostId),
     moveTask: (input) => service.moveTask(input),
     reorderProjects: (ids, hostId) => service.reorderProjects(ids, hostId),
+    // 恢复引导是控制端本机组织库的命令，透传远端 attachment 服务（远端自身会拒绝）。
+    listRestoreCandidates: () => service.listRestoreCandidates(),
+    restoreProjects: (input) => service.restoreProjects(input),
     measureProjectData: (ids, hostId) => service.measureProjectData(ids, hostId),
     deleteProjectData: (id, hostId) => service.deleteProjectData(id, hostId),
     async prepareSession(params) {

@@ -291,6 +291,35 @@ test("relative public entrypoints resolve from a module root", async () => {
   );
 });
 
+test("max-public-methods 超限时按例外登记放行", async () => {
+  // 回归锚点：max-public-methods 分支曾遗漏 isException 判断，例外登记对该规则完全失效。
+  const methods = Array.from({ length: 13 }, (_, index) => `  m${index}(): void;\n`).join("");
+  const fatContract = `export interface Big {\n${methods}}\n`;
+  const withException = `${POLICY}\nexceptions:\n  - id: big-contract-methods\n    rule: max-public-methods\n    paths: [src/alpha/contract.ts]\n`;
+  await fixture(
+    {
+      "architecture-policy.yaml": POLICY,
+      "src/alpha/contract.ts": fatContract,
+      "src/beta/contract.ts": "export const beta = 1;\n",
+    },
+    async (cwd) => {
+      const result = await checkArchitecture({ cwd });
+      assert.ok(result.violations.some((v) => v.rule === "max-public-methods"));
+    },
+  );
+  await fixture(
+    {
+      "architecture-policy.yaml": withException,
+      "src/alpha/contract.ts": fatContract,
+      "src/beta/contract.ts": "export const beta = 1;\n",
+    },
+    async (cwd) => {
+      const result = await checkArchitecture({ cwd });
+      assert.equal(result.violations.filter((v) => v.rule === "max-public-methods").length, 0);
+    },
+  );
+});
+
 test("expired exceptions are global blocking violations", async () => {
   const policy = `${POLICY}\nexceptions:\n  - id: old\n    rule: deep-import\n    paths: [src/**]\n    expires: 2020-01-01\n`;
   await fixture(
