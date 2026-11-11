@@ -40,3 +40,12 @@ Electron 交互候选：`packages/desktop/test/e2e/ui-shell/manual-review/pendin
 - Electron：`desktop-e2e-20260915125744659-p84856-08e67d2dd0407c35`，2/2 通过，包含 NDP01/NDP02、既有 WCP01 删除后重启回归及明暗截图。
 - `architecture:check --changed --base HEAD` 为 0 violations；默认 staging 基线检查仍有开工前已存在的 `packages/ui/src/root/resolveConversationWorkspaceTarget.ts` unmanaged-new-file，未新增违规。
 - 未运行真实手机配对、SSH/WSL Host、Windows/Linux GUI 或原生弹窗内手动多选；这些边界不以桌面弹窗 mock 代替实测。
+
+## 验证记录（2026-11-11，合并回补）
+
+- 回归成因：v3.17.2 合并时 `packages/desktop/src` 整体回退到 fork 版本，桌端三段接线（main 的 `SelectDirectories` handler、preload 的 `selectDirectories` 桥、renderer 平台的 `selectDirectories` 方法）一起丢失，`packages/client/src/globals.d.ts` 的类型声明也被覆盖；shared 侧频道与 `IPlatformService.selectDirectories?` 仍在，`ProjectEditor` 因此判定「平台无原生能力」并退化为应用内 DirectoryBrowser（只能手动输入路径）。
+- 回补内容：恢复 main handler（`openDirectory` + `createDirectory` + `multiSelections`，取消返回 `[]`）、preload 转发、renderer 平台委托与 `window.zxcode` 类型声明；远端 / Web / 手机路径不变，仍走 Host 浏览。
+- 回归防线：新增 `packages/desktop/test/desktopNativeDirectoryPicker.test.ts`，覆盖 main 注册、preload 转发、renderer 委托三段；撤销回补时 3 项全红，回补后 3 项全绿。
+- `pnpm test:engineering packages/desktop/test/desktopNativeDirectoryPicker.test.ts` 3/3 通过；`pnpm lint` 0 errors / 74 既有 warnings（改动文件无告警）；`pnpm fmt:check` 通过；`pnpm architecture:check --changed` 0 violations。
+- `pnpm typecheck` 仍为开工前既有红：本次改动前后同为 73 条存量错误（diff 为空），且无一条落在本次改动的文件或新增测试上。
+- 未做：未在真实桌面端点击验证系统弹窗（改动位于 main/preload，需重新构建或 `pnpm dev:desktop` 后人工确认）；未覆盖原生窗口内的鼠标多选、Windows/Linux GUI。

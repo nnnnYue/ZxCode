@@ -33,6 +33,7 @@ export function createDesktopPlatform(options: {
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
     selectDirectory: () => window.zxcode.selectDirectory(),
+    selectDirectories: () => window.zxcode.selectDirectories(),
     selectFile: () => window.zxcode.selectFile(),
     selectFiles: () => window.zxcode.selectFiles?.() ?? Promise.resolve([]),
     createTempTextAttachment: (payload) => window.zxcode.createTempTextAttachment(payload),

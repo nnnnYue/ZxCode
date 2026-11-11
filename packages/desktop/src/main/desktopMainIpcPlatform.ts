@@ -157,6 +157,16 @@ export function registerPlatformIpcHandlers(options: {
     return result.filePaths[0];
   });
 
+  // 恢复原因：v3.17.2 合并时桌面 src 整体回退到 fork 版本，本 handler 被一并丢掉，
+  // 只剩 shared 的 SelectDirectories 频道与 ProjectEditor 调用方，导致桌面本地项目
+  // 的「选择文件夹」退化为应用内 DirectoryBrowser（需手动输入路径）。
+  ipcMain.handle(PlatformChannels.SelectDirectories, async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory", "multiSelections"],
+    });
+    return result.canceled ? [] : result.filePaths;
+  });
+
   ipcMain.handle(PlatformChannels.SelectFile, async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile"],
