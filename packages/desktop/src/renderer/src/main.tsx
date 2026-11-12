@@ -11,6 +11,7 @@ import {
   registerRemoteWorkspaceSession,
   unregisterRemoteWorkspaceSession,
   createRemoteWorkspaceDisconnectedError,
+  installDocumentHiddenMotionPause,
   playTaskNotificationSound,
   setStreamClientId,
 } from "@zcode/ui";
@@ -149,6 +150,9 @@ const desktopPlatform = createDesktopPlatform({ isLocalDevelopmentRuntime });
  */
 // 之前用匿名函数注册 addEventListener("message")，reload/HMR 时会重复注册，
 // 导致多次 createRoot 在同一 DOM 节点上挂载。用 flag 防止重复初始化。
+// 窗口 hidden 时禁用 CSS 动画，避免 DocumentTimeline 持有已卸载的 DOM 子树。
+// 上游 v3.18.0 删除了该调用（动画改组件自管）；fork 裁决继续保留（web 侧同款修复已恢复）。
+installDocumentHiddenMotionPause();
 let appInitialized = false;
 const databaseStartupAdmission = new DatabaseStartupAdmission();
 const appRoot = createRoot(document.getElementById("root")!);
