@@ -1,3 +1,4 @@
+import type { IManagedWorktreeService } from "#src/managed-worktree-tasks/contract.js";
 import type { IGenUiService } from "./gen-ui/contract.js";
 import type { IHighspeedCardService } from "./highspeed/highspeedCard.js";
 import type { IPluginUiBridgeService } from "./plugin-ui-bridge/contract.js";
@@ -24,6 +25,13 @@ import type {
 } from "./model-provider/providerFacadeServices.js";
 import type { ISkillsService } from "./skills/skills.js";
 import type { ISkillSyncService } from "./skill-sync/skillSync.js";
+// fork：data-sync / provider-provisioning-status / voice-input 的 accessor 接入不引入（剔除域），
+// 仅采纳 extension-host 三个门面。
+import type {
+  IExtensionGrantsService,
+  IExtensionsService,
+  IExtensionViewsService,
+} from "./extensions/index.js";
 import type { IMcpSyncService } from "./mcp-sync/mcpSync.js";
 import type { IPluginSyncService } from "./plugin-sync/pluginSync.js";
 import type { IPluginsService } from "./plugins/plugins.js";
@@ -50,6 +58,8 @@ export interface IServiceAccessor {
 
   readonly taskGroupService?: ITaskGroupService;
   readonly projectService?: IProjectService;
+  /** 受管 worktree 管理；仅本地桌面 Host 提供，手机与旧 Host 缺省。 */
+  readonly managedWorktreeService?: IManagedWorktreeService;
   readonly remoteProjectService?: IRemoteProjectService;
   readonly windowProjectDirectory?: WindowProjectDirectoryServices;
   /** Source Server 端 workspace 身份解析；本地 Host 也注册一份以保持合同一致。 */
@@ -79,6 +89,12 @@ export interface IServiceAccessor {
   readonly providerSettingsService: IProviderSettingsService;
   /** 当前 Environment Registry 发布的唯一模型选择 View。 */
   readonly modelSelectionService: IModelSelectionService;
+  /** 仅桌面本机 Host 注册：扩展（docs/plugins/extension-host.md）。Web / 手机 / 远端不提供。 */
+  readonly extensionsService?: IExtensionsService;
+  /** 仅桌面本机 Host 注册：扩展视图（与 extensionsService 同一开关）。Web / 手机 / 远端不提供。 */
+  readonly extensionViewsService?: IExtensionViewsService;
+  /** 仅桌面本机 Host 注册：扩展授权（与 extensionsService 同一开关，§17.7）。Web / 手机 / 远端不提供。 */
+  readonly extensionGrantsService?: IExtensionGrantsService;
   // Highspeed 卡服务只在本地 Desktop Host 装配；web/远端 RemoteServiceAccess 不提供，
   // 可选化避免连锁必填（fork 修复：上游把该成员设为必填导致 4 处远端实现报错）。
   readonly highspeedCardService?: IHighspeedCardService;

@@ -107,6 +107,13 @@ export interface WorkspaceSettingsLayerProps {
   windowsWindowControlsRightPaddingPx?: number;
   captionWorkspacePath?: string | null;
   onBack?: () => void;
+  // 合并修复：上游类型来自会话分享域（conversation-share-interaction，fork 保持剔除），
+  // 改为与 SettingsPage.tsx 一致的内联结构，保留「设置页跳转对话」导航语义。
+  onOpenTask?: (target: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+    taskId: string;
+  }) => void;
   onCreateTask?: (request?: CreateTaskRequest) => void;
   onOpenWorkspace?: () => void;
   allowOpenWorkspace?: RootProps["allowOpenWorkspace"];

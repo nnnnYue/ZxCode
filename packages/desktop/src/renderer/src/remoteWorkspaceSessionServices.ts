@@ -1,4 +1,36 @@
-import type { IServiceAccessor } from "@zcode/services";
+// fork：采纳上游"高速卡只在本地生效"的远程不路由兜底；off-peak 本地归属注入随域剔除。
+import type { IHighspeedCardService, IServiceAccessor } from "@zcode/services";
+import type { RemoteTarget } from "@zcode/shared";
+
+/**
+ * 高速卡与闲时任务只在本地生效（2026-10-21 产品决定），远程 workspace 一律不得路由到远端。
+ *
+ * Bug 原因：3.16 起已识别 Source 的远程 workspace 整套使用远端服务，远端合同没有
+ * highspeed-card / off-peak-task 频道。发送前 await prepareTurn 要等满 Host ChannelServer
+ * 的 1000ms 未知频道超时才继续；闲时通知轮询每 30s 同样超时一次。
+ * 修复：高速卡注入不 draw 的实现，发送立即走普通模型；闲时任务只属于本地项目，固定取本地服务。
+ */
+const remoteUnsupportedHighspeedCardService: IHighspeedCardService = {
+  prepareTurn: async () => ({ kind: "fallback", reason: "unavailable", nextDrawAt: null }),
+  getSnapshot: async () => ({ card: null, nextDrawAt: null, drawing: false }),
+  invalidateCard: async () => false,
+  // 远程不支持高速卡，但共用 SessionPane 仍会查询归属；漏实现会在挂载时同步抛错。
+  getCurrentOwnerKey: async () => null,
+  healthy: async () => {
+    throw new Error("highspeed.remote-unsupported");
+  },
+};
+
+function withLocalOnlyAccountServices(
+  baseServices: IServiceAccessor,
+  services: IServiceAccessor,
+): IServiceAccessor {
+  return {
+    ...services,
+    highspeedCardService: remoteUnsupportedHighspeedCardService,
+    // fork：offPeakTaskService（off-peak 激活域）不在 accessor 上，本地归属注入随域剔除。
+  };
+}
 
 export function buildRemoteWorkspaceSessionServices(
   baseServices: IServiceAccessor,
@@ -50,10 +82,25 @@ export function buildRemoteWorkspaceSessionServices(
 }
 
 export function buildServerRemoteWorkspaceSessionServices(
-  _baseServices: IServiceAccessor,
+  baseServices: IServiceAccessor,
   remoteServices: IServiceAccessor,
 ): IServiceAccessor {
   // Server remote 连接的是完整运行中的 ZCode server；workspace/runtime/model-provider
   // 等状态以 server 为准，本地 renderer 只保留窗口与 UI shell 状态。
-  return remoteServices;
+  // 高速卡只在本地生效：远程会话注入不 draw 的实现，避免远端频道 1000ms 超时。
+  return withLocalOnlyAccountServices(baseServices, remoteServices);
+}
+
+export function buildRemoteWorkspaceSessionServicesForRegistration(params: {
+  baseServices: IServiceAccessor;
+  remoteServices: IServiceAccessor;
+  targetKind: RemoteTarget["kind"];
+  sourceServerId?: string;
+}): IServiceAccessor {
+  // Bug 根因（上游注释保留）：Source Server 可经 SSH/WSL/Docker transport 到达，target.kind
+  // 描述线路而非服务权威。Host 注入 sourceServerId 后必须使用完整远端服务集合；只有尚未
+  // 识别为 Source 的 legacy attachment 才保留 desktop-attached mixed services。
+  return params.targetKind === "server" || params.sourceServerId?.trim()
+    ? buildServerRemoteWorkspaceSessionServices(params.baseServices, params.remoteServices)
+    : buildRemoteWorkspaceSessionServices(params.baseServices, params.remoteServices);
 }

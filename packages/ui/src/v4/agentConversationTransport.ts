@@ -1,3 +1,7 @@
+// 合并修复：v3.18 session-lifecycle 面补齐的类型导入（SessionLifecycleSnapshot 为快照类型，
+// ZCodeAgentSessionTarget 为 services 公开的会话目标参数）。
+import type { SessionLifecycleSnapshot } from "@zcode/shared";
+import type { ZCodeAgentSessionTarget } from "@zcode/services";
 import { sendWithConversationDelayE2E } from "@/v4/conversationTransportDelayE2E.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 import { calibrateLocalTtftClock, localTtftNow } from "@zcode/shared";
@@ -77,11 +81,16 @@ type ConversationV4AgentService = Pick<
   | "attachmentAbortV4"
   | "attachmentPreviewSourceV4"
   | "attachmentReadV4"
+  | "onDynamicSessionLifecycle"
   | "onDynamicConversationFrame"
   | "onDynamicLocalTtftFacts"
   | "onAgentRuntimeRestarted"
 > &
-  Partial<Pick<IZCodeAgentService, "onAgentRuntimeLifecycle">>;
+  Partial<Pick<IZCodeAgentService, "onAgentRuntimeLifecycle">> & {
+    // 合并修复：v3.18 session-lifecycle 拉取面。services 分片落地 IZCodeAgentService.getSessionLifecycle
+    // 之前以可选结构签名接线（签名与上游完全一致，落地后结构兼容）；运行时缺省走 null 快照回落。
+    getSessionLifecycle?(params: ZCodeAgentSessionTarget): Promise<SessionLifecycleSnapshot | null>;
+  };
 
 /**
  * 一条 host 连接（= 一个 workspace）上的 v4 conversation 传输面。
@@ -168,11 +177,87 @@ export function createAgentConversationTransport(
   let runtimeRestartUpstream: { dispose(): void } | null = null;
   let runtimeLifecycleUpstream: { dispose(): void } | null = null;
   let runtimeGeneration = 0;
+  // 合并修复：v3.18 上游新增——session 停止代际与生命周期监听集（冲突解决时声明丢失导致 12 条 TS 错误）。
+  const sessionGenerations = new Map<string, number>();
+  const sessionLifecycleListeners = new Set<(snapshot: SessionLifecycleSnapshot) => void>();
+  let sessionLifecycleUpstream: { dispose(): void } | null = null;
   const targetWorkspaceKey = target.workspaceIdentity?.trim() || target.workspacePath;
   const lifecycleContext = {
     workspaceKey: targetWorkspaceKey,
     workspacePath: target.workspacePath,
     ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
+  };
+
+  // Bug 原因：上游回调若创建在 onX(listener) 内，会与退订闭包共享作用域，
+  // Set.delete 后仍保留首个 listener 及其已关闭 store。上游创建只捕获 transport 本身。
+  const attachSessionLifecycleUpstream = () => {
+    sessionLifecycleUpstream ??= agentService.onDynamicSessionLifecycle(workspace)((snapshot) => {
+      if (snapshot.state === "stopping") {
+        const topic = `conversation/${snapshot.sessionId}`;
+        sessionGenerations.set(topic, (sessionGenerations.get(topic) ?? 0) + 1);
+        for (const [id, subscriptionTopic] of topicBySubscriptionId) {
+          if (subscriptionTopic !== topic) continue;
+          barrier.forget(id);
+          decoder.discard(topic, id);
+          topicBySubscriptionId.delete(id);
+        }
+      }
+      for (const callback of sessionLifecycleListeners) callback(snapshot);
+    });
+  };
+  const attachFrameUpstream = () => {
+    if (!upstream) {
+      if (!target.workspaceIdentity?.trim())
+        ttftUpstream = agentService.onDynamicLocalTtftFacts?.(workspace)((facts) => {
+          try {
+            getLocalTtftObserver()?.checkpoint(target.workspacePath, facts);
+            // CLI 在 admitted/execution/各准备阶段都会发检查点：排队输入开始执行时
+            // 就能在首输出前拿到 60 秒内的新校准，不需要额外定时器或协议。
+            calibrate();
+          } catch (error) {
+            logger.debug("[local-ttft] checkpoint failed", { error });
+          }
+        });
+      upstream = agentService.onDynamicConversationFrame(workspace)((frame) =>
+        barrier.accept(frame),
+      );
+      logger.lifecycle.info("v4 conversation frame upstream attached", {
+        ...lifecycleContext,
+        event: "v4.conversation.frames.upstream_attached",
+        listenerCount: listeners.size,
+        module: "ui.v4.conversation_transport",
+        runtimeGeneration,
+        status: "completed",
+      });
+    }
+  };
+  const attachRuntimeRestartUpstream = () => {
+    runtimeRestartUpstream ??= agentService.onAgentRuntimeRestarted((event) => {
+      if (event.workspaceKey !== targetWorkspaceKey) return;
+      if (!target.workspaceIdentity?.trim())
+        getLocalTtftObserver()?.interrupt(target.workspacePath);
+      runtimeGeneration += 1;
+      // runtime generation 可复用 subId/ordinal；ownership 与 assembler 必须原子失效。
+      barrier.clear();
+      decoder.clear();
+      topicBySubscriptionId.clear();
+      for (const restartListener of runtimeRestartListeners) restartListener("runtimeRestart");
+    });
+  };
+  const attachRuntimeLifecycleUpstream = () => {
+    runtimeLifecycleUpstream ??=
+      agentService.onAgentRuntimeLifecycle?.((event) => {
+        if (event.workspaceKey !== targetWorkspaceKey) return;
+        if (event.state === "unavailable" && !target.workspaceIdentity?.trim())
+          getLocalTtftObserver()?.interrupt(target.workspacePath);
+        // 只转发、不动 runtimeGeneration/barrier/decoder/topicBySubscriptionId：那是
+        // onRuntimeRestart 的语义（新 runtime 已存在、可安全重订阅）。unavailable 时
+        // 旧 CLI 已死不会再有帧到达，而提前递增 generation 会让随后 restart 的
+        // ownership 判定错位。available 与 restart 同刻到达，清理由那一路完成。
+        for (const lifecycleListener of runtimeLifecycleListeners) {
+          lifecycleListener(event.state);
+        }
+      }) ?? null;
   };
 
   const decodeBase64Chunk = (value: string): Uint8Array => {
@@ -184,6 +269,24 @@ export function createAgentConversationTransport(
     return bytes;
   };
   return {
+    getSessionLifecycle(sessionId) {
+      // 合并修复：services 侧 IZCodeAgentService.getSessionLifecycle 未落地时返回 null 快照，
+      // 下游按「无生命周期事实」处理并回落常规订阅（与旧 CLI method-not-found 的上游语义一致）。
+      return (
+        agentService.getSessionLifecycle?.({ ...workspace, sessionId }) ?? Promise.resolve(null)
+      );
+    },
+    onSessionLifecycle(listener) {
+      sessionLifecycleListeners.add(listener);
+      attachSessionLifecycleUpstream();
+      return () => {
+        sessionLifecycleListeners.delete(listener);
+        if (sessionLifecycleListeners.size === 0) {
+          sessionLifecycleUpstream?.dispose();
+          sessionLifecycleUpstream = null;
+        }
+      };
+    },
     async subscribe(params: SubscribeParams): Promise<V4ConversationSubscribeResult> {
       const sessionId = parseConversationTopic(params.topic);
       if (!sessionId) {
@@ -204,13 +307,22 @@ export function createAgentConversationTransport(
         await ensureHandshake();
         pending = barrier.begin(params.topic);
         const subscribeRuntimeGeneration = runtimeGeneration;
+        // 合并修复：v3.18 上游新增——session 停止（stopping）也会 bump 代际，
+        // 防 session 重启后旧订阅迟到 ACK 复用新 subscription 的 subId。
+        const subscribeSessionGeneration = sessionGenerations.get(params.topic) ?? 0;
         const result = await agentService.subscribeConversationV4({
           ...workspace,
           sessionId,
           ...(params.base ? { base: params.base } : {}),
           ...(params.visibility ? { visibility: params.visibility } : {}),
+          ...(params.retryInitialization
+            ? { retryInitialization: params.retryInitialization }
+            : {}),
         });
-        if (subscribeRuntimeGeneration !== runtimeGeneration) {
+        if (
+          subscribeRuntimeGeneration !== runtimeGeneration ||
+          subscribeSessionGeneration !== (sessionGenerations.get(params.topic) ?? 0)
+        ) {
           // 旧 runtime 的迟到 ACK 可能复用新 runtime 的 subId；此处只能
           // 丢本地 pending，不能向新 runtime 盲退订同名 subscription。
           barrier.cancel(pending);
@@ -539,30 +651,7 @@ export function createAgentConversationTransport(
       ) => void,
     ): () => void {
       listeners.add(listener);
-      if (!upstream) {
-        if (!target.workspaceIdentity?.trim())
-          ttftUpstream = agentService.onDynamicLocalTtftFacts?.(workspace)((facts) => {
-            try {
-              getLocalTtftObserver()?.checkpoint(target.workspacePath, facts);
-              // CLI 在 admitted/execution/各准备阶段都会发检查点：排队输入开始执行时
-              // 就能在首输出前拿到 60 秒内的新校准，不需要额外定时器或协议。
-              calibrate();
-            } catch (error) {
-              logger.debug("[local-ttft] checkpoint failed", { error });
-            }
-          });
-        upstream = agentService.onDynamicConversationFrame(workspace)((frame) =>
-          barrier.accept(frame),
-        );
-        logger.lifecycle.info("v4 conversation frame upstream attached", {
-          ...lifecycleContext,
-          event: "v4.conversation.frames.upstream_attached",
-          listenerCount: listeners.size,
-          module: "ui.v4.conversation_transport",
-          runtimeGeneration,
-          status: "completed",
-        });
-      }
+      attachFrameUpstream();
       return () => {
         listeners.delete(listener);
         if (listeners.size === 0) {
@@ -587,17 +676,7 @@ export function createAgentConversationTransport(
     },
     onRuntimeRestart(listener) {
       runtimeRestartListeners.add(listener);
-      runtimeRestartUpstream ??= agentService.onAgentRuntimeRestarted((event) => {
-        if (event.workspaceKey !== targetWorkspaceKey) return;
-        if (!target.workspaceIdentity?.trim())
-          getLocalTtftObserver()?.interrupt(target.workspacePath);
-        runtimeGeneration += 1;
-        // runtime generation 可复用 subId/ordinal；ownership 与 assembler 必须原子失效。
-        barrier.clear();
-        decoder.clear();
-        topicBySubscriptionId.clear();
-        for (const restartListener of runtimeRestartListeners) restartListener("runtimeRestart");
-      });
+      attachRuntimeRestartUpstream();
       return () => {
         runtimeRestartListeners.delete(listener);
         if (runtimeRestartListeners.size === 0) {
@@ -610,19 +689,7 @@ export function createAgentConversationTransport(
       ? {
           onRuntimeLifecycle(listener: (state: "available" | "unavailable") => void) {
             runtimeLifecycleListeners.add(listener);
-            runtimeLifecycleUpstream ??=
-              agentService.onAgentRuntimeLifecycle?.((event) => {
-                if (event.workspaceKey !== targetWorkspaceKey) return;
-                if (event.state === "unavailable" && !target.workspaceIdentity?.trim())
-                  getLocalTtftObserver()?.interrupt(target.workspacePath);
-                // 只转发、不动 runtimeGeneration/barrier/decoder/topicBySubscriptionId：那是
-                // onRuntimeRestart 的语义（新 runtime 已存在、可安全重订阅）。unavailable 时
-                // 旧 CLI 已死不会再有帧到达，而提前递增 generation 会让随后 restart 的
-                // ownership 判定错位。available 与 restart 同刻到达，清理由那一路完成。
-                for (const lifecycleListener of runtimeLifecycleListeners) {
-                  lifecycleListener(event.state);
-                }
-              }) ?? null;
+            attachRuntimeLifecycleUpstream();
             return () => {
               runtimeLifecycleListeners.delete(listener);
               if (runtimeLifecycleListeners.size === 0) {

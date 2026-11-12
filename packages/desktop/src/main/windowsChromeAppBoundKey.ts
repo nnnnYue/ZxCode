@@ -76,6 +76,10 @@ interface HelperProcessResult {
 interface ReadAppBoundKeyOptions {
   appExecutablePath?: string;
   chromeExecutablePath: string;
+  // 上游 v3.18.0 新增：打包版校验 helper 自报的版本/commit 与当前应用一致（合并丢字段导致
+  // 下方 options.expectedAppVersion/expectedBuildCommit 读取报 TS2339）。
+  expectedAppVersion?: string;
+  expectedBuildCommit?: string;
   helperPath?: string;
   isPackaged?: boolean;
   logger: BrowserDataLogger;

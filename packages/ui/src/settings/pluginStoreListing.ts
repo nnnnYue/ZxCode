@@ -16,6 +16,7 @@ import {
   resolvePluginDisplayName,
   ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
 } from "@zcode/shared";
+import { isExtensionEngineCompatible } from "@zcode/shared/extension-host";
 import { DEFAULT_MARKETPLACE_ID } from "@/settings/recommendedPlugins.js";
 import { pluginSearchMatches } from "@/settings/pluginSearch.js";
 
@@ -77,13 +78,42 @@ export function isPluginUpdatePending(
 }
 
 /**
+ * 目录里的这一版带扩展，且本 App 的插件 API 版本跑不了它（docs/plugins/plugin-publishing.md §3.2、§4.3）。
+ * 用扩展进程加载清单时的同一个判断；范围写法不认识时也算不兼容（新版 App 可能认识）。
+ * 没有扩展摘要（不带扩展，或旧 CLI 没给）时不挡，装上后由扩展进程判「版本不兼容」。
+ */
+export function isExtensionIncompatible(
+  listing: Pick<ZCodePluginStoreListing, "extensionSummary"> | undefined,
+): boolean {
+  const range = listing?.extensionSummary?.engines.zcode;
+  return range !== undefined && !isExtensionEngineCompatible(range);
+}
+
+/** 未安装条目要先更新 ZCode 才能装。卡片、详情页按钮与 handleInstall 共用这一个判断。 */
+export function isStoreItemInstallBlocked(
+  item: Pick<StorePluginItem, "installed" | "restorable" | "listing">,
+): boolean {
+  return !item.installed && !item.restorable && isExtensionIncompatible(item.listing);
+}
+
+/**
+ * CLI 只按版本号报更新；目录最新版不兼容时 App 不提示更新（§4.3）。
+ * 已装插件的 listing 来自目录最新版条目，所以这里看的是最新版的扩展摘要。
+ */
+export function hasInstallableUpdate(
+  summary: Pick<ZCodeInstalledPluginSummary, "updateStatus" | "listing"> | undefined,
+): boolean {
+  return isPluginUpdatePending(summary?.updateStatus) && !isExtensionIncompatible(summary?.listing);
+}
+
+/**
  * 孤立插件可能保留删除来源前的 updateStatus；若各入口只判断该缓存状态，
- * 详情页会在菜单已禁用更新时仍显示更新按钮。更新能力必须同时满足“来源存在”和“有更新”。
+ * 详情页会在菜单已禁用更新时仍显示更新按钮。更新能力必须同时满足“来源存在”和“有可装的更新”。
  */
 export function canUpdatePluginItem(
   item: Pick<StorePluginItem, "installedMeta" | "orphaned"> | null | undefined,
 ): boolean {
-  return Boolean(item && !item.orphaned && isPluginUpdatePending(item.installedMeta?.updateStatus));
+  return Boolean(item && !item.orphaned && hasInstallableUpdate(item.installedMeta));
 }
 
 /**
@@ -108,6 +138,14 @@ export function needsPluginUpdate(
  * 市场和右侧推荐共用按插件的忙碌判定，避免安装一个插件时禁用整个列表。
  * 上游按 activeOperations 数组判定；fork store 是单操作模型，语义等价改为 operationId 精确匹配。
  */
+export function isUiPluginItem(item: StorePluginItem): boolean {
+  // 已安装清单优先于目录宣传；禁用仍保留经过校验的 surface 元数据。
+  if (item.info) return Boolean(item.info.uiSurfaces?.length);
+  return Boolean(
+    (item.installedMeta?.componentTypes ?? item.summary?.componentTypes)?.includes("ui"),
+  );
+}
+
 export function isItemBusy(
   item: StorePluginItem,
   actions: { operationId: string | null; togglingPluginId: string | null },

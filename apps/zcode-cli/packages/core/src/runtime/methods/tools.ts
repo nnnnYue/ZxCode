@@ -81,6 +81,7 @@ export async function executeTools(
   });
 
   const generator = this.executor.executeSchedule(executableCalls, schedule, {
+    pluginDiscoveryUi: options?.pluginDiscoveryUi,
     automationTurn: options?.automationTurn,
     offPeakTurn: options?.offPeakTurn,
     signal: options?.signal,

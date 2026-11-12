@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // fork：main 工程经 references 引用本工程，取 contract 的 declaration；composite 引用
+    // 不允许 noEmit（TS6310），改为只产 .d.ts。运行时 js 由 tsup 打包，不经本工程产出。
+    "emitDeclarationOnly": true,
+    "declarationDir": "out/extension-host",
+    "outDir": "out/extension-host",
+    "rootDir": "src",
+    "lib": ["es2025"],
+    // 扩展进程只把 Electron.MessageEvent / MessagePortMain 当类型用，不 import "electron" 值。
+    "types": ["node", "electron"]
+  },
+  "include": ["src/extension-host"],
+  "references": [{ "path": "../shared" }, { "path": "../rpc" }]
+}

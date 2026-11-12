@@ -151,6 +151,8 @@ export interface V4ComposerToolbarProps {
   draftConfig?: Partial<SessionConfigState>;
   usage: SessionUsageState | null;
   disabled: boolean;
+  modelSelectionPending?: boolean;
+  onConnectionPendingChange?: (pending: boolean) => void;
   /** Highspeed 卡生效时固定本轮模型，禁止通过选择器或快捷键切换。 */
   modelLocked?: boolean;
   /** 扩散尾段开始后（恢复入场则立即）展示 Highspeed 模型与倒计时。 */
@@ -175,7 +177,7 @@ export interface V4ComposerToolbarProps {
     model: string,
     sourceModel: ModelSelectionSource | null,
     reasoningLevel?: string,
-  ) => void;
+  ) => void | Promise<void>;
   /** 选中思考深度；modelContext 固定本次用户操作的目标模型。 */
   onSelectThought: (thought: string, modelContext: { provider: string; model: string }) => void;
   onSwitchMode: (mode: string) => void;
@@ -195,6 +197,8 @@ function V4ComposerModelControlsImpl({
   modelSelectionState = MODEL_SELECTION_LOADING_STATE,
   modelSelectionReload,
   modelSelectionRefresh,
+  // 合并修复：v3.18 上游将 sessionId 透传给 connection switch 作 scopeId（草稿态为 null→undefined）。
+  sessionId,
   provider,
   isWebRemoteControl = false,
   isMobileViewport = false,
@@ -202,6 +206,8 @@ function V4ComposerModelControlsImpl({
   draftConfig,
   usage,
   disabled,
+  modelSelectionPending = false,
+  onConnectionPendingChange,
   modelLocked = false,
   highspeedPresented = false,
   highspeedEntranceAnimated = false,
@@ -235,6 +241,12 @@ function V4ComposerModelControlsImpl({
   // Ctrl+M 热键：递增 openRequestKey 请求 ModelConfigSelect 打开菜单（旧 handleOpenModelMenuShortcut 语义）。
   const [modelMenuOpenRequestKey, setModelMenuOpenRequestKey] = useState(0);
   const [recoveryPending, setRecoveryPending] = useState(false);
+  // 独立档位下拉沿用选中关闭；合并模型面板不能因 ACK 等待收起，否则选模和滑杆都会中断。
+  useEffect(() => {
+    if (modelSelectionPending) {
+      onConfigPickerOpenChange("thought", false);
+    }
+  }, [modelSelectionPending, onConfigPickerOpenChange]);
   const handleOpenModelMenuShortcut = useCallback(() => {
     setModelMenuOpenRequestKey((current) => current + 1);
   }, []);
@@ -396,17 +408,20 @@ function V4ComposerModelControlsImpl({
       }
       if (decoded) {
         if (reasoningLevel !== undefined)
-          onSelectModel(decoded.providerId, decoded.modelName ?? "", sourceModel, reasoningLevel);
-        else onSelectModel(decoded.providerId, decoded.modelName ?? "", sourceModel);
-        return;
+          return onSelectModel(
+            decoded.providerId,
+            decoded.modelName ?? "",
+            sourceModel,
+            reasoningLevel,
+          );
+        else return onSelectModel(decoded.providerId, decoded.modelName ?? "", sourceModel);
       }
       const slashIndex = value.indexOf("/");
       if (slashIndex > 0) {
-        onSelectModel(value.slice(0, slashIndex), value.slice(slashIndex + 1), sourceModel);
-        return;
+        return onSelectModel(value.slice(0, slashIndex), value.slice(slashIndex + 1), sourceModel);
       }
       // 裸 model id：provider 沿用当前（宿主从最新投影补齐）。
-      onSelectModel("", value, sourceModel);
+      return onSelectModel("", value, sourceModel);
     },
     [
       configOptionsError,
@@ -435,10 +450,13 @@ function V4ComposerModelControlsImpl({
     [modelSelectGroups, providerSettingsView, sharedSettings?.providerFamilyConnectionSelections],
   );
   const connectionSwitch = useComposerConnectionSwitch({
+    scopeId: sessionId ?? undefined,
+    onPendingChange: onConnectionPendingChange,
     workspacePath,
     workspaceIdentity,
     agentProvider: displayProvider,
     normalizedValue: normalizedModelValue,
+    currentReasoningLevel: effectiveConfig?.thought,
     onSelectModel: handleModelValueChange,
     waitForPresentation: true,
     refreshPresentation: modelSelectionRefresh,
@@ -547,7 +565,7 @@ function V4ComposerModelControlsImpl({
       providerMenu: {
         groups: planGroups,
         selectedKey: selectedPlanKey,
-        pending: connectionSwitch.pending,
+        pending: connectionSwitch.pending || modelSelectionPending,
         // 团队目录查询不是用户的连接切换操作，不能把登录错误挂到 API 菜单。
         error: connectionSwitch.error,
         onSelect: (group) => {
@@ -593,6 +611,7 @@ function V4ComposerModelControlsImpl({
       planGroups,
       selectedPlanKey,
       connectionSwitch.pending,
+      modelSelectionPending,
       connectionSwitch.error,
       selectConnection,
       normalizedModelValue,
@@ -619,9 +638,15 @@ function V4ComposerModelControlsImpl({
       : undefined;
   useToolbarShortcutBindings({
     hasAnyOption: Boolean(modelOption) || Boolean(thoughtOption),
-    toolbarDisabled: disabled || recoveryPending || connectionSwitch.pending,
+    toolbarDisabled:
+      disabled || recoveryPending || connectionSwitch.pending || modelSelectionPending,
     modelMenuDisabled:
-      disabled || recoveryPending || modelLocked || connectionSwitch.pending || !modelMenuVisible,
+      disabled ||
+      recoveryPending ||
+      modelLocked ||
+      connectionSwitch.pending ||
+      modelSelectionPending ||
+      !modelMenuVisible,
     modelOption,
     thoughtOption: thoughtOption ?? undefined,
     onOpenModelMenu: handleOpenModelMenuShortcut,
@@ -729,8 +754,14 @@ function V4ComposerModelControlsImpl({
           })}
           isItemLocked={isModelOptionLocked}
           onValueChange={handleModelValueChange}
+          pending={modelSelectionPending || connectionSwitch.pending}
           disabled={
-            disabled || recoveryPending || modelLocked || modelSelectionState.status !== "ready"
+            disabled ||
+            modelSelectionPending ||
+            recoveryPending ||
+            modelLocked ||
+            (modelSelectionState.status !== "ready" &&
+              !(modelSelectionState.status === "loading" && modelSelectionState.catalog))
           }
           tooltipTitle={modelTriggerDisplay.fullLabel}
           shortcutLabel={modelShortcutLabel}
@@ -758,12 +789,12 @@ function V4ComposerModelControlsImpl({
           triggerClassName={cn(highspeedPresented && "text-ui-caption")}
           option={thoughtOption}
           onValueChange={handleThoughtValueChange}
-          disabled={disabled || recoveryPending}
+          disabled={disabled || recoveryPending || modelSelectionPending}
           intl={intl}
           provider={displayProvider}
           shortcutLabel={thoughtShortcutLabel}
           triggerRef={thoughtTriggerRef}
-          open={activeConfigPicker === "thought"}
+          open={!modelSelectionPending && activeConfigPicker === "thought"}
           onOpenChange={handleThoughtPickerOpenChange}
           restoreFocusSelector={V4_COMPOSER_INPUT_SELECTOR}
         />

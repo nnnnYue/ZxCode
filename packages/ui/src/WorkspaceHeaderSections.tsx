@@ -12,13 +12,14 @@ import { useMemo, useRef, useState } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
-import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
+import { Cloud, Ellipsis, Folder, FolderGit2, GitBranch, LoaderCircle } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 // 侧栏换骨架：Header 设备名与侧栏共享同一目录 owner（Host target 回退），
 // 不再各自从 tab/路径反推设备身份。
 import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
 import { remoteHostIdFromWorkspaceIdentity } from "@/project-sidebar/contract.js";
 import { formatRemoteDeviceName } from "@/lib/remoteConnectionPresentation.js";
+import { formatWorktreeLabel } from "@/managed-worktrees/index.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useTaskListItemContextActions } from "@/useTaskListItemContextActions.js";
@@ -204,7 +205,12 @@ export function WorkspaceHeaderTitleSection({
   );
   const workspaceContextLabel = showRemoteWorkspaceHostLabel
     ? `${workspaceDisplayLabel} @ ${remoteWorkspaceHostLabel}`
-    : workspaceDisplayLabel;
+    : workspaceDisplayLabel; // worktree 任务的头部标识只读当前任务的 worktree 根目录（docs/git/worktree.md §3.7）。
+  const managedWorktreeLabel =
+    activeTaskMeta?.taskId === activeTaskId
+      ? formatWorktreeLabel(intl, activeTaskMeta?.worktreeRoot)
+      : null;
+  const managedWorktree = managedWorktreeLabel !== null;
   const workspaceBranchLabel = gitSummary.isRepository
     ? resolveGitBranchTriggerLabel({
         headRefType: gitSummary.headRefType,
@@ -358,7 +364,6 @@ export function WorkspaceHeaderTitleSection({
         });
       });
   };
-
   return (
     <div
       className={cn(
@@ -399,6 +404,8 @@ export function WorkspaceHeaderTitleSection({
               <span className="flex min-w-0 items-start gap-2">
                 {isRemoteWorkspace ? (
                   <Cloud className="size-4 shrink-0" />
+                ) : managedWorktree ? (
+                  <FolderGit2 className="size-4 shrink-0" />
                 ) : (
                   <Folder className="size-4 shrink-0" />
                 )}
@@ -408,7 +415,12 @@ export function WorkspaceHeaderTitleSection({
                   </span>
                   {workspaceContextOpen ? (
                     <WorkspaceContextPath
-                      workspacePath={workspaceAbsPath}
+                      // worktree 任务显示自己的 cwd，而不是项目主目录（§3.7）。
+                      workspacePath={
+                        (activeTaskMeta?.taskId === activeTaskId
+                          ? activeTaskMeta?.cwd
+                          : undefined) ?? workspaceAbsPath
+                      }
                       workspaceIdentity={workspaceIdentity}
                       remoteSessionId={remoteSessionId}
                     />
@@ -441,6 +453,8 @@ export function WorkspaceHeaderTitleSection({
           >
             {isRemoteWorkspace ? (
               <Cloud className="size-4 text-foreground-subtle" />
+            ) : managedWorktree ? (
+              <FolderGit2 className="size-4 text-foreground-subtle" />
             ) : (
               <Folder className="size-4 text-foreground-subtle" />
             )}
@@ -615,9 +629,6 @@ export function WorkspaceHeaderTitleSection({
                     });
                 }}
                 onStartRenameTask={handleStartRenameTask}
-                onArchiveTask={() => {
-                  void handleArchiveTask();
-                }}
                 onMarkTaskAsUnread={() => {
                   if (!resolvedTaskActionTaskId) {
                     return;
@@ -772,7 +783,7 @@ export function WorkspaceHeaderTitleSection({
                 compact ? "size-6" : "size-7",
               )}
             >
-              <LoaderIcon className={cn("animate-spin", compact ? "size-3.5" : "size-4")} />
+              <LoaderCircle className={cn("animate-spin", compact ? "size-3.5" : "size-4")} />
             </span>
           </ControlHintTooltip>
         ) : null}

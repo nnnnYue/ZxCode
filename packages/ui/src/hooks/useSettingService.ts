@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL, type AppSettings } from "@zcode/shared";
-import type { ISettingService } from "@zcode/services";
+import type { IServiceAccessor, ISettingService } from "@zcode/services";
 import { useServices } from "./useServices.js";
 import { usePlatform } from "./usePlatform.js";
 
@@ -105,8 +105,13 @@ async function refreshSettingsStore(settingService: ISettingService | undefined)
 }
 
 /** 获取和更新应用设置 */
-export function useSettings() {
-  const { botsService, broadcastService, settingService, zcodeAgentService } = useServices();
+// 合并修复：v3.18 上游新增 options.services——SettingsPage 可在远端 workspace 的 ServiceProvider
+// 下渲染，本机界面偏好（如 HTML 单击打开方式）需显式绑定 base host 的 services，避免写到远端 setting；
+// fork 的 store 已按 settingService 实例隔离，这里只需支持注入 services，无需上游的 cacheKey。
+export function useSettings(options: { services?: IServiceAccessor } = {}) {
+  const contextualServices = useServices();
+  const { botsService, broadcastService, settingService, zcodeAgentService } =
+    options.services ?? contextualServices;
   const platform = usePlatform();
   const settingsStore = getSettingsStore(settingService);
   const [snapshot, setSnapshot] = useState<SettingsSnapshot>(settingsStore.snapshot);
@@ -144,9 +149,16 @@ export function useSettings() {
       await refresh();
       if (
         typeof patch.askUserQuestionAutoResolutionEnabled === "boolean" ||
-        typeof patch.modelIoFullRetentionEnabled === "boolean"
+        typeof patch.modelIoFullRetentionEnabled === "boolean" ||
+        typeof patch.pluginAutoRecommendationEnabled === "boolean"
       ) {
+        // 合并修复：上游以 getSettingsSnapshot(cacheKey).settings 读取最新事实；
+        // fork 的 settingsStore 架构中等价为 refresh 后的 store 快照，补回丢失的声明。
+        const currentSettings = settingsStore.snapshot.settings;
         const preferences = {
+          pluginAutoRecommendationEnabled:
+            patch.pluginAutoRecommendationEnabled ??
+            currentSettings?.pluginAutoRecommendationEnabled === true,
           askUserQuestionAutoResolutionEnabled:
             patch.askUserQuestionAutoResolutionEnabled ??
             settingsStore.snapshot.settings?.askUserQuestionAutoResolutionEnabled !== false,

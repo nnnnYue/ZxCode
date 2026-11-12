@@ -316,10 +316,13 @@ class IabPlaywrightLocatorSession {
             // force pointer action 仍等待稳定并滚动，但跳过 hit-target 校验。
             needsHitTarget: needsPointer && action.force !== true,
             needsStable: needsPointer,
+            // 恢复上游非空收窄：noUncheckedIndexedAccess 下数组下标访问是 T | undefined，
+            // scrollAlignment 合同要求非空 ScrollAlignment。
             scrollAlignment:
               action.force === true
-                ? POINTER_SCROLL_ALIGNMENTS[0]
-                : POINTER_SCROLL_ALIGNMENTS[pointerAttempt % POINTER_SCROLL_ALIGNMENTS.length],
+                ? POINTER_SCROLL_ALIGNMENTS[0]!
+                : (POINTER_SCROLL_ALIGNMENTS[pointerAttempt % POINTER_SCROLL_ALIGNMENTS.length] ??
+                  POINTER_SCROLL_ALIGNMENTS[0]!),
           },
           remaining,
         );

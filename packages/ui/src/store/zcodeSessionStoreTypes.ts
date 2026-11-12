@@ -25,6 +25,7 @@ import {
   type ZCodeContextUsageBreakdownItem,
   type InputId,
   type SessionCreateSource,
+  type ManagedWorktreeCreation,
 } from "@zcode/shared";
 import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
 import type {
@@ -136,7 +137,20 @@ export interface TimelineBottomRequest {
   taskId: string;
 }
 
+import type { SessionConfigState, SubmissionMode } from "@zcode/shared/zcode-protocol-v4";
+
+export type ComposerInitialConfig = Pick<
+  Partial<SessionConfigState>,
+  "planEnabled" | "modelSelection"
+> & { mode?: SubmissionMode };
+export interface ComposerInitialization {
+  taskId: string;
+  config: ComposerInitialConfig;
+}
+
 export interface WorkspaceZCodeUIState {
+  /** 首次创建任务的导航参数；接收、换任务或新建后结束，不持久化。 */
+  composerInitialization?: ComposerInitialization;
   /** 当前 workspace 激活中的 task */
   activeTaskId: string | null;
   /**
@@ -151,6 +165,18 @@ export interface WorkspaceZCodeUIState {
   draftRuntime: DraftRuntimeState;
   /** 未发送草稿对应的 agent draft session；不进入 task 列表，首发时提升为真实 task。 */
   draftSessionId: string | null;
+  /**
+   * 草稿开启了"在新 worktree 中运行"（docs/git/worktree.md §3.2）；ref 为 null 表示当前 HEAD。
+   * 每次 startDraft 重置为关闭，不记住上次的选择。
+   */
+  draftWorktree?: { ref: string | null } | null;
+  /** 当前 workspace 主区展示的 worktree 创建记录；记录本身只在 Host（§6.2）。 */
+  draftWorktreeCreationId?: string | null;
+  /**
+   * worktree 创建成功后、会话首个快照到达前的交接（§3.3）：Host 已删除创建记录，这里保留最后一份
+   * 用于在会话上方继续显示创建视图。会话时间线出现内容或订阅出错时由 SessionPane 清除。
+   */
+  worktreeHandoff?: { sessionId: string; creation: ManagedWorktreeCreation } | null;
   /**
    * 草稿运行时能力失效版本；插件、Skill 等能力变化时递增。
    * legacy 草稿通过 draftSessionId 关闭，protocol-v4 草稿用该版本重建 pane 内预热会话。
@@ -249,6 +275,29 @@ export interface ZCodeSessionStoreState {
   clearTimelineBottomRequest: (
     workspacePath: string,
     requestId: number,
+    workspaceIdentity?: string,
+  ) => void;
+  setDraftWorktree: (
+    workspacePath: string,
+    worktree: { ref: string | null } | null,
+    workspaceIdentity?: string,
+  ) => void;
+  /** 记录 worktree 创建成功后的交接（§3.3）。 */
+  beginWorktreeHandoff: (
+    workspacePath: string,
+    handoff: { sessionId: string; creation: ManagedWorktreeCreation },
+    workspaceIdentity?: string,
+  ) => void;
+  /** 会话时间线已出现内容（或订阅出错）时结束交接；只清除属于该会话的交接。 */
+  finishWorktreeHandoff: (
+    workspacePath: string,
+    sessionId: string,
+    workspaceIdentity?: string,
+  ) => void;
+  /** 主区切到某条 worktree 创建记录（进入草稿态后再设置，草稿开关同时关闭）。 */
+  viewWorktreeCreation: (
+    workspacePath: string,
+    creationId: string | null,
     workspaceIdentity?: string,
   ) => void;
   startDraft: (

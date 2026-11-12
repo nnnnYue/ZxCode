@@ -4,6 +4,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { webContents, type WebFrameMain } from "electron";
 import {
+  BROWSER_VIEW_DRAFT_SESSION_ID,
   BROWSER_VIEWPORT_LIMITS,
   DEFAULT_AGENT_BROWSER_VIEWPORT,
   type BrowserClientMode,
@@ -19,12 +20,14 @@ import {
   type BrowserTabSummary,
   type BrowserUserTabInfo,
   type BrowserViewCloseTabRequest,
+  type BrowserViewPromoteDraftTabsRequest,
   type BrowserViewResidencyReportPayload,
   type BrowserViewResidencyTransitionPayload,
   type BrowserViewRestoredTabShell,
   type BrowserViewportSize,
 } from "@zcode/shared";
 import { executeBrowserCommandOnView, type ControlledView } from "./browserCommandExecutor.js";
+import type { ControlledViewKeyInputEvent } from "./browserCommandTypes.js";
 import { executeIabPlaywrightLocator } from "./browserPlaywrightLocatorExecutor.js";
 import { recordBrowserVideo, type BrowserWebmRecorderFactory } from "./browserVideoRecorder.js";
 import { normalizePlaywrightTimeout } from "./browserPlaywrightTimeout.js";
@@ -63,6 +66,7 @@ interface GuestWebContents {
   stop(): void;
   capturePage(): Promise<{ toPNG(): Buffer }>;
   executeJavaScript(script: string, userGesture?: boolean): Promise<unknown>;
+  sendInputEvent(event: ControlledViewKeyInputEvent): void;
   navigationHistory: {
     canGoBack(): boolean;
     canGoForward(): boolean;
@@ -77,6 +81,7 @@ interface GuestWebContents {
   };
   close(options?: { waitForBeforeUnload?: boolean }): void;
   isCurrentlyAudible?(): boolean;
+  setAudioMuted?(muted: boolean): void;
   isBeingCaptured?(): boolean;
   on?(event: string, listener: (...args: unknown[]) => void): void;
   removeListener?(event: string, listener: (...args: unknown[]) => void): void;
@@ -190,6 +195,8 @@ interface ManagedTab {
   crashGuardCleanup?: () => void;
   loading: boolean;
   mediaActive: boolean;
+  /** 最近一次 renderer 上报的「属于当前对话」；未上报前不静音。 */
+  currentTask?: boolean;
   cachedUrl: string;
   cachedTitle: string;
   cachedFaviconUrl: string | null;
@@ -585,7 +592,7 @@ export class BrowserGuestManager {
             // human tab 原来只按 workspace 登记为全局 unclaimed，任意新对话都能
             // 从 user.openTabs() 枚举并接管。ownerTaskId 现在随 attach 冻结；旧 renderer
             // 未传 sessionId 时保留不可认领哨兵，宁可隐藏也不能跨对话泄漏。
-            sessionId: options.sessionId?.trim() || "unscoped",
+            sessionId: options.sessionId?.trim() || BROWSER_VIEW_DRAFT_SESSION_ID,
             ...(options.remoteSessionId ? { remoteSessionId: options.remoteSessionId } : {}),
             clientMode: "desktop-continuous" as const,
           }
@@ -712,6 +719,7 @@ export class BrowserGuestManager {
       cdpAttached = safeBool(() => guest.debugger.isAttached(), false);
     }
     tab.guest = guest;
+    this.applyGuestAudioMuted(tab);
     tab.cdpAttached = cdpAttached;
     tab.guestLifecycle = "attached";
     tab.guestTeardownFlight = undefined;
@@ -836,6 +844,8 @@ export class BrowserGuestManager {
     if (payload.title !== undefined) tab.cachedTitle = payload.title ?? "";
     if (payload.faviconUrl !== undefined) tab.cachedFaviconUrl = payload.faviconUrl;
     tab.loading = payload.loading;
+    tab.currentTask = payload.currentTask;
+    this.applyGuestAudioMuted(tab);
     this.residencyCoordinator.report(tab.tabId, {
       selected: payload.selected,
       visible: payload.visible,
@@ -860,6 +870,61 @@ export class BrowserGuestManager {
     }
     await this.persistShell(tab);
     await this.residencyCoordinator.whenIdle();
+  }
+
+  /** 只有当前对话的 tab 出声；后台保活的 guest 静音。新 guest（含 rebind）沿用最近上报值。 */
+  private applyGuestAudioMuted(tab: ManagedTab): void {
+    if (tab.currentTask === undefined) return;
+    const muted = !tab.currentTask;
+    try {
+      tab.guest?.setAudioMuted?.(muted);
+    } catch {
+      // guest 已销毁时下一次 attach 会重新应用。
+    }
+  }
+
+  /**
+   * 草稿首发升级：草稿 human tab 的 owner 在 attach 时冻结为 unscoped，renderer 迁移归属后
+   * 若不同步升级，后续 attach/residency/close 都会 session-mismatch，tab 关不掉、AI 也认领不到。
+   * 只接受同窗口、同工作区、同远端连接、仍属草稿的用户 tab；改写同步完成，保证同一 frame
+   * 随后的 IPC 看到新 owner。
+   */
+  promoteDraftTabs(payload: BrowserViewPromoteDraftTabsRequest & { windowId: number }): string[] {
+    const promoted: string[] = [];
+    for (const tabId of payload.tabIds) {
+      const tab = this.tabs.get(tabId);
+      if (
+        !tab ||
+        tab.lifecycle === "closed" ||
+        !this.isUserOwnedTab(tab) ||
+        tab.owner.sessionId !== BROWSER_VIEW_DRAFT_SESSION_ID ||
+        tab.owner.windowId !== payload.windowId ||
+        tab.owner.workspaceKey !== payload.workspaceKey ||
+        (tab.owner.remoteSessionId ?? "") !== (payload.remoteSessionId ?? "")
+      ) {
+        continue;
+      }
+      const previousKey = scopeKey(tab.owner);
+      const owner = { ...tab.owner, sessionId: payload.sessionId };
+      tab.owner = owner;
+      tab.userOwner = { ...owner };
+      const nextKey = scopeKey(owner);
+      if (this.activeTabByScope.get(previousKey) === tabId) {
+        this.activeTabByScope.delete(previousKey);
+        this.activeTabByScope.set(nextKey, tabId);
+      }
+      if (this.defaultTabByScope.get(previousKey) === tabId) {
+        this.defaultTabByScope.delete(previousKey);
+        this.defaultTabByScope.set(nextKey, tabId);
+      }
+      this.residencyCoordinator.rekeySession(tabId, payload.sessionId);
+      void this.persistShell(tab);
+      promoted.push(tabId);
+      this.log?.(
+        `[browser-use] promote draft tab tabId=${tabId} windowId=${payload.windowId} sessionId=${payload.sessionId}`,
+      );
+    }
+    return promoted;
   }
 
   acknowledgeSuspend(payload: { tabId: string; generation: number; windowId: number }): void {
@@ -1964,7 +2029,8 @@ export class BrowserGuestManager {
    */
   private isInFlightScreenshotAlive(tracked: InFlightScreenshot): boolean {
     const running = this.runningRequests.get(tracked.requestId);
-    return Boolean(running) && !running.controller.signal.aborted;
+    // Boolean() 不具备类型收窄能力，恢复上游的显式 undefined 判定以收窄 running。
+    return running !== undefined && !running.controller.signal.aborted;
   }
 
   private createRecordingEntry(
@@ -2232,6 +2298,10 @@ export class BrowserGuestManager {
         if (result.kind === "timeout")
           throw new Error(`recording action timed out: ${result.reason}`);
         return;
+      }
+      // 合并时丢失了上游的窄化守卫，导致下方 action.x/y/button/doubleClick 访问未收窄到 click 分支；恢复上游守卫。
+      if (action.type !== "click") {
+        throw new Error(`recording ${action.type} requires a selector`);
       }
       if (typeof action.x !== "number" || typeof action.y !== "number") {
         throw new Error("recording click requires selector or (x,y)");
@@ -2639,7 +2709,12 @@ export class BrowserGuestManager {
       // 如果 destroyed/mismatch 已经发起过重绑，沿用该请求，避免同一 tab 重复创建 webview。
       if (!tab.rebindRequested) this.onOpenTabRequested?.(tab.tabId, tab.owner);
       // 某些测试/旧 renderer 会在 Ready 回调内同步 attach；不能在 attach 已成功后再注册 waiter。
-      if (tab.guest && !safeBool(() => tab.guest.isDestroyed(), true)) return tab.guest;
+      // Bug 原因：guest 是可变字段，进入回调后 TypeScript 会撤销属性收窄；固定本轮引用，
+      // 同时保证销毁检查与返回的是同一个 guest。恢复上游写法。
+      const attachedGuest = tab.guest;
+      if (attachedGuest && !safeBool(() => attachedGuest.isDestroyed(), true)) {
+        return attachedGuest;
+      }
       const guest = await this.waitForGuest(tab.tabId);
       if (guest && !safeBool(() => guest.isDestroyed(), true)) return guest;
       if (attempt === 0 && !tab.hasAttachedGuest && !tab.attachFailure) return null;
@@ -2793,7 +2868,10 @@ export class BrowserGuestManager {
       title: tab.cachedTitle,
       viewport: await this.readTabViewport(tab),
       ...(this.effectiveActiveTabId(tab.owner) === tab.tabId ? { active: true } : {}),
-      ...(tab.lifecycle !== "active" ? { lifecycle: tab.lifecycle } : {}),
+      // 恢复上游条件：BrowserTabSummary 的 lifecycle 不含 "closed"，需显式排除，只透出 deliverable/handoff。
+      ...(tab.lifecycle === "deliverable" || tab.lifecycle === "handoff"
+        ? { lifecycle: tab.lifecycle }
+        : {}),
     };
   }
 
@@ -3631,6 +3709,10 @@ export class BrowserGuestManager {
           assertCurrent();
           return guest.executeJavaScript(script, true);
         },
+        sendInputEvent: (event) => {
+          assertCurrent();
+          guest.sendInputEvent(event);
+        },
       },
       cdp: {
         send: (method, params, sessionId) => {
@@ -3877,8 +3959,17 @@ export class BrowserGuestManager {
   ): Promise<GuestWebContents | null> {
     if (tab.lifecycle === "closed" || tab.guest !== guest) return null;
     const restored = await this.restoreGuestState(tab, guest);
-    if (!restored || tab.lifecycle === "closed" || tab.guest !== guest) {
-      if (tab.lifecycle !== "closed" && tab.guest === guest) {
+    if (tab.guest === guest) {
+      // 附件 URL 会开始下载但不提交页面（ERR_ABORTED/ERR_FAILED，或 loadURL 直接 resolve）。
+      // cachedUrl 曾保留这个未提交的 URL，每次 rebind 都再下载一次；这里回落为已提交 URL。
+      const committedUrl = safeStr(() => guest.getURL(), tab.cachedUrl).trim();
+      tab.cachedUrl = committedUrl === "about:blank" ? "" : committedUrl;
+    }
+    // await 期间 tab 可能被关闭；lifecycle 是可变字段，重新读取以撤销上面的收窄。
+    // 恢复上游写法：函数入口的 "closed" 判定会把后续比较收窄成无重叠（TS2367）。
+    const lifecycleAfterRestore = tab.lifecycle as TabLifecycle;
+    if (!restored || lifecycleAfterRestore === "closed" || tab.guest !== guest) {
+      if (lifecycleAfterRestore !== "closed" && tab.guest === guest) {
         this.warn(`browser tab guest rebind restore failed tabId=${tab.tabId}`);
       }
       return null;
@@ -4069,11 +4160,19 @@ export class BrowserGuestManager {
 
   private requestGuestRebind(tab: ManagedTab, reason: GuestRecoveryReason): boolean {
     tab.attachFailure = reason;
+    // human tab 的 guest 只能由所属 workspace 里已有的 Browser shell 创建（上游 v3.18.0 语义）。
+    // Ready 是 Browser Use 事件，renderer 会在当前 workspace 为同一 tabId 新建隐藏的
+    // browser-use shell 并恢复页面，曾导致切走 workspace 后在后台反复请求附件 URL。
+    if (this.isUserOwnedTab(tab)) return false;
     if (tab.lifecycle === "closed" || tab.rebindRequested || !this.onOpenTabRequested) return false;
     tab.rebindRequested = true;
     this.log?.(`[browser-use] request guest rebind tabId=${tab.tabId} reason=${reason}`);
     this.onOpenTabRequested?.(tab.tabId, tab.owner);
     return true;
+  }
+
+  private isUserOwnedTab(tab: ManagedTab): boolean {
+    return tab.userOwner !== undefined && tab.owner.requestId === tab.userOwner.requestId;
   }
 
   private closeGuestWebContents(tab: ManagedTab, guest = tab.guest): void {

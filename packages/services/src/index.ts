@@ -101,6 +101,7 @@ export type {
   WindowHostControllerMutation,
   WindowHostControllerTaskListItem,
   WindowHostControllerTaskListResult,
+  WindowHostTasksRemovedSignal,
 } from "./window-controller/windowController.js";
 
 // ZxCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
@@ -110,6 +111,8 @@ export {
   ZXCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
 } from "./zcode-agent/zcodeAgent.js";
 export {
+  isZCodeAgentModelSelectionBasisUnsupportedError,
+  ZCodeAgentModelSelectionBasisUnsupportedError,
   isZCodeAgentMcpStatusModeUnsupportedError,
   ZXCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
   ZCodeAgentMcpStatusModeUnsupportedError,
@@ -131,6 +134,7 @@ export type {
   ZCodeAgentCuaPermissionObservation,
   ZCodeAgentInitializeResult,
   ZCodeAgentStorageStartupSnapshot,
+  ZCodeAgentRuntimeExitedEvent,
   ZCodeAgentRuntimeLifecycleEvent,
   ZCodeAgentRuntimePolicy,
   ZCodeAgentReadSessionParams,
@@ -205,6 +209,13 @@ export { ISkillSyncService } from "./skill-sync/skillSync.js";
 export { IDeviceSyncStateService, IUserConfigSyncService } from "./data-sync/index.js";
 export type { IDataSyncCategoryService } from "./data-sync/index.js";
 export { IProviderProvisioningStatusService } from "./provider-provisioning-status/index.js";
+export {
+  IExtensionGrantsService,
+  IExtensionsService,
+  IExtensionViewsService,
+  type ExtensionsContributionsMessage,
+} from "./extensions/index.js";
+// fork：IVoiceInputService / VoiceInput* 类型导出不引入（voice-input 云 ASR 域剔除）。
 export { IMcpSyncService } from "./mcp-sync/mcpSync.js";
 export { IPluginSyncService } from "./plugin-sync/pluginSync.js";
 export {
@@ -242,6 +253,19 @@ export type {
   PromptAttachmentTransferPhase,
   PromptAttachmentTransferProgress,
 } from "./prompt-attachment-transfer/promptAttachmentTransfer.js";
+// fork：反馈工单（Feedback*）类型随剔除域拒绝，不导出。
+// IProjectService / Project* 类型沿用 fork 既有导出位置；此处只补 fork 缺失的
+// managed-worktree、RemoteProjectCache 与 project-catalog 导出。
+export {
+  IManagedWorktreeService,
+  type ManagedWorktreeGroup,
+  type ManagedWorktreeWorkspace,
+  type StartManagedWorktreeCreationResult,
+} from "#src/managed-worktree-tasks/contract.js";
+export type { RemoteProjectCache } from "#src/remote-projects/contract.js";
+export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/index.js";
+export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
+
 // 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
 export {
   createPluginUiBridgeService,

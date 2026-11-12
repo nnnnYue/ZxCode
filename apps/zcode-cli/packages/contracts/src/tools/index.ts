@@ -18,6 +18,8 @@ export * from "./agent.js";
 export * from "./skill.js";
 export * from "./todo.js";
 export * from "./automation.js";
+// fork 剔除了 tools/off-peak.ts（off-peak 激活面保持删除），仅采纳上游新增的 plugin-discovery 导出。
+export * from "./plugin-discovery.js";
 export * from "./target.js";
 export * from "./plan-mode.js";
 export * from "./ask-user-question.js";
@@ -25,7 +27,6 @@ export * from "./send-message.js";
 export * from "./respond-to-coordinator.js";
 export * from "./task-output.js";
 export * from "./task-stop.js";
-export * from "./read-session-context.js";
 export * from "./submit-result.js";
 export * from "./websearch.js";
 export * from "./workflow.js";

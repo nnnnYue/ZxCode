@@ -5,6 +5,7 @@
 export const projectSidebarModule = {
   id: "project-sidebar",
   requires: [
+    "resource-manager",
     "services",
     "shared",
     "ui",
@@ -13,6 +14,11 @@ export const projectSidebarModule = {
     "remote-connection-flow",
     // fork 剔除域遗留的 data-sync 行已随侧栏换骨架 Phase 3d 退役清理：
     // 代码从未经它建立依赖，policy 与本清单同步删除（策略修正，非豁免）。
+    "managed-worktree-ui",
+    // 分组会话行复用同一张悬停卡片（docs/ui/task-row-hover-details.md）。
+    "task-row-hover",
+    // 主导航挂 nav.primary 插槽组件（docs/plugins/extension-host.md §16.4）。
+    "extension-slots",
   ],
   provides: ["project-sidebar"],
   publicEntrypoints: [

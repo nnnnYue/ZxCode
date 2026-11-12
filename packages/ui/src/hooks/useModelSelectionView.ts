@@ -7,8 +7,11 @@ import type {
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import { logger } from "@/logger.js";
 
+// 合并修复：v3.18 上游为 loading 分支增加可选 catalog（重读时保留旧目录骨架，触发器不禁用）。
+// fork 的 hook 实现暂不产出该字段（loading 时 catalog 恒 undefined，触发器保持禁用），
+// 仅做类型对齐以便上游版 V4ComposerToolbar 编译；后续带入 retainedCatalog 演进时行为即可恢复。
 export type ModelSelectionState =
-  | { status: "loading" }
+  | { status: "loading"; catalog?: Pick<ModelSelectionView, "revision" | "providers"> }
   | { status: "ready"; view: ModelSelectionView }
   | { status: "unavailable"; reason: "remote-waiting" | "missing-target" }
   | { status: "error"; error: Error };

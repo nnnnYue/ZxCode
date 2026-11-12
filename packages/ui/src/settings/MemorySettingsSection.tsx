@@ -4,11 +4,8 @@ import { TID_SETTINGS_MEMORY_SWITCH } from "@zcode/shared";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
 import { Switch } from "@/components/ui/switch.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import {
-  MemorySettingsViewer,
-  type MemoryViewerLoadingState,
-} from "@/settings/MemorySettingsViewer.js";
-import { SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
+import { logger } from "@/logger.js";
+import { PluginScopeMenu } from "@/settings/PluginScopeMenu.js";
 
 type MemoryCatalogService = Pick<IMemoryService, "listProjectMemories">;
 
@@ -43,17 +40,27 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+import {
+  MemorySettingsViewer,
+  type MemoryViewerLoadingState,
+} from "@/settings/MemorySettingsViewer.js";
+import { SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
+
 export function MemorySettingsSection({
   memoryEnabled,
   memoryService,
   onMemoryEnabledChange,
+  disabled = false,
   projectMemoryViewerAvailable,
+  remoteDevice = false,
   workspaceDisplayNames = [],
 }: {
   memoryEnabled: boolean;
   memoryService: MemoryCatalogService;
   onMemoryEnabledChange: (enabled: boolean) => Promise<void>;
+  disabled?: boolean;
   projectMemoryViewerAvailable: boolean;
+  remoteDevice?: boolean;
   workspaceDisplayNames?: readonly string[];
 }) {
   const { intl } = useZCodeIntl();
@@ -155,6 +162,7 @@ export function MemorySettingsSection({
     <div className="space-y-6">
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.memory.workspaceMemory"
           label={intl.formatMessage({
             id: "settings.memory.workspaceMemory",
           })}
@@ -167,6 +175,7 @@ export function MemorySettingsSection({
                 id: "settings.memory.workspaceMemory",
               })}
               checked={memoryEnabled}
+              disabled={disabled}
               data-testid={TID_SETTINGS_MEMORY_SWITCH}
               onCheckedChange={(checked) => {
                 void onMemoryEnabledChange(checked);
@@ -177,8 +186,15 @@ export function MemorySettingsSection({
       </SettingsGroupCard>
 
       {!projectMemoryViewerAvailable ? (
-        <div className="rounded-xl border border-dashed border-border bg-transparent px-4 py-8 text-center text-ui-base text-foreground-subtle">
-          {intl.formatMessage({ id: "settings.memory.viewer.localOnly" })}
+        <div
+          data-testid={remoteDevice ? "settings-memory-remote-details" : undefined}
+          className="rounded-xl border border-dashed border-border bg-transparent px-4 py-8 text-center text-ui-base text-foreground-subtle"
+        >
+          {intl.formatMessage({
+            id: remoteDevice
+              ? "settings.memory.viewer.remoteUnavailable"
+              : "settings.memory.viewer.localOnly",
+          })}
         </div>
       ) : !memoryEnabled ? null : (
         <MemorySettingsViewer

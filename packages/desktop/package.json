@@ -6,7 +6,8 @@
   "type": "module",
   "main": "out/main/index.js",
   "imports": {
-    "#e2e/*": "./test/e2e/*.ts"
+    "#e2e/*": "./test/e2e/*.ts",
+    "#src/*": "./src/*"
   },
   "scripts": {
     "pre-dev": "node scripts/ensure-local-runtime-assets.mjs && node -e \"require('node:fs').rmSync('./out',{recursive:true,force:true})\"",
@@ -20,12 +21,14 @@
     "prepare:glm": "node ../../scripts/download-glm.mjs",
     "prepare:agent-bundle": "node scripts/prepare-agent-node-bundle.mjs",
     "prepare:windows-cua-helper": "node scripts/prepare-windows-cua-helper.mjs",
+    "prepare:windows-runtime-host": "node ../../scripts/build-windows-runtime-host.mjs",
     "prepare:native-search": "node ../../scripts/prepare-native-search-tools.mjs",
     "prepare:browser-import-helper": "node scripts/build-windows-browser-import-helper.mjs",
     "prepare:macos-window-bounds": "node scripts/build-macos-window-bounds.mjs",
     "build:no-runtime-assets": "pnpm prepare:build-meta && node scripts/run-production-build.mjs",
     "build": "pnpm prepare:runtime-assets && pnpm run build:no-runtime-assets",
     "test:installer-nsh-smoke": "node scripts/test-installer-nsh-smoke.mjs",
+    "test:project-token-retry-after-smoke": "node scripts/project-token-retry-after-smoke.mjs",
     "test:browser-background-activity-smoke": "electron scripts/browser-background-activity-smoke.mjs",
     "test:browser-hidden-guest-screenshot-smoke": "electron scripts/browser-hidden-guest-screenshot-smoke.mjs",
     "test:browser-screenshot-surface-smoke": "electron scripts/browser-screenshot-surface-smoke.mjs",
@@ -50,7 +53,8 @@
     "postinstall": "node scripts/node-pty-rebuild.mjs",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "test:e2e:retention": "tsx --test test/e2e/conversation-session/manual-review/pending/conversation-session-snapshot-retention.test.ts"
+    "test:agent-crash-diagnostic": "tsx --test test/agent-crash-diagnostic.node.test.ts",
+    "test:e2e:retention": "tsx --test test/e2e/conversation-session/runtime/manual-review/pending/conversation-session-snapshot-retention.test.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.5",
@@ -61,6 +65,8 @@
     "@modelcontextprotocol/client": "2.0.0",
     "@modelcontextprotocol/core": "2.0.0",
     "@modelcontextprotocol/ext-apps": "2.0.0",
+    "@modelcontextprotocol/server": "2.0.0",
+    "@napi-rs/keyring": "2.1.2",
     "@zcode/client": "workspace:*",
     "@zcode/e2e-report": "workspace:*",
     "@zcode/provider": "workspace:*",
@@ -74,6 +80,7 @@
     "module-details-from-path": "^1.0.4",
     "node-forge": "^1.4.0",
     "node-pty": "^1.0.0",
+    "pkijs": "3.4.3",
     "playwright-core": "1.59.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -108,6 +115,7 @@
     "electron": "44.7.0",
     "electron-builder": "26.17.0",
     "electron-to-chromium": "1.5.452",
+    "esbuild": "^0.25.0",
     "http-mitm-proxy": "^1.1.0",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",

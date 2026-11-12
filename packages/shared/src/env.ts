@@ -38,6 +38,13 @@ export const ZXCODE_APP_VERSION_ENV = "ZXCODE_APP_VERSION" as const;
 export const ZXCODE_BUILD_COMMIT_ID_ENV = "ZXCODE_BUILD_COMMIT_ID" as const;
 /** 桌面 host 下发用户自定义模型请求头的 env；值为 JSON `Array<{name, value}>`。 */
 export const ZXCODE_MODEL_CUSTOM_HEADERS_ENV = "ZXCODE_MODEL_CUSTOM_HEADERS" as const;
+/**
+ * Desktop 启动 Agent 子进程时写入的当前界面语言（BCP-47），供 Agent 模型请求的 X-Client-Language。
+ * Agent 进程 Intl 只代表系统语言（Dock 启动无 LANG 时回退 en-US），所以由 Host 在 spawn 时显式下发；
+ * 规则见 apps/zcode-cli/docs/design/v2/model/README.md。
+ * fork 说明：CLI bootstrap 已按上游名 ZCODE_CLIENT_LANGUAGE_ENV 消费，此处保留上游命名保证两侧一致。
+ */
+export const ZCODE_CLIENT_LANGUAGE_ENV = "ZCODE_CLIENT_LANGUAGE" as const;
 
 // ── 运行时环境变量（不经过编译打包，启动时从 process.env 读取） ──
 // 启用调试模式，值为 inspect-brk 的端口号，如 ZXCODE_DEBUG=9230

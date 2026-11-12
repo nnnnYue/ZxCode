@@ -1,4 +1,5 @@
 import {
+  // fork：communityUrl 域保持剔除，openCommunity 相关 import（locale 收敛 + 社群遥测 schema）不引入。
   type IPlatformService,
   type RemoteTarget,
   type WebRemoteControlStatus,
@@ -123,6 +124,8 @@ export function createWebPlatform(options?: {
       }
       window.open(feedbackUrl, "_blank", "noopener,noreferrer");
     },
+    // fork：openCommunity / canOpenCommunity 保持剔除（communityUrl 属 clientConfig 在线下发域，
+    // 且 resolveWebCommunityUrl 已随域删除）。
     openInFileManager: () =>
       Promise.resolve({ success: false, error: "Not supported in web mode" }),
     openExternalFile: () => Promise.resolve({ success: false, error: "Not supported in web mode" }),

@@ -9,13 +9,16 @@ function fixture(kind: "gen-ui" | "mcp-app", html = fragment, missing = false) {
   const instance = { runtimeId: "a", generation: 1, token: "one", appIdentity: "a".repeat(64) };
   const handle = registry.register({
     instance,
-    contentKind: kind,
     ownerWebContentsId: 1,
     workspacePath: "/repo",
     sessionId: "s",
     scopeId: "view",
     html,
-    ...(kind === "mcp-app" ? { pluginId: "p", serverName: "m" } : {}),
+    // 合同是判别联合：contentKind 只有 "gen-ui" | "extension"，MCP App 走缺省分支且必须
+    // 携带 pluginId/serverName。两个分支放进同一个条件展开，让 TS 保持判别关联。
+    ...(kind === "gen-ui"
+      ? { contentKind: "gen-ui" as const }
+      : { pluginId: "p", serverName: "m" }),
   });
   const resources: Record<string, string> = {
     "visualize.css": "/* preset styles */",

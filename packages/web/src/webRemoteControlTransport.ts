@@ -6,10 +6,9 @@ import {
 import {
   WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS,
   WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS,
-  WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS,
+  WEB_REMOTE_CONTROL_V2_RECONNECT_SPREAD_MS,
   getWebRemoteControlHeartbeatDelayMs,
   getWebRemoteControlHeartbeatJitterMs,
-  getWebRemoteControlReconnectJitterMs,
   WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS,
   parseWebRemoteControlAppPayload,
   type WebRemoteControlAppPayload,
@@ -633,10 +632,16 @@ export class WebRemoteControlTerminalTransport {
       baseIntervalMs,
       this.options.heartbeatJitterMs,
     );
-    return getWebRemoteControlReconnectJitterMs(
+    // 上游 v3.18.0 把 getWebRemoteControlReconnectJitterMs 收敛进 WebRemoteControlV2RetryPolicy，
+    // shared 只保留 WEB_REMOTE_CONTROL_V2_RECONNECT_SPREAD_MS 打散窗口。此处对齐新导出名，
+    // 并保留原语义：在 [0, jitter] 内均匀打散，非法配置归零。
+    const configuredJitterMs =
       this.options.reconnectJitterMs ??
-        Math.min(heartbeatJitterMs, WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS),
-    );
+      Math.min(heartbeatJitterMs, WEB_REMOTE_CONTROL_V2_RECONNECT_SPREAD_MS);
+    if (!Number.isFinite(configuredJitterMs) || configuredJitterMs <= 0) {
+      return 0;
+    }
+    return Math.floor(Math.random() * (Math.floor(configuredJitterMs) + 1));
   }
 
   private sendPairStatusQuery(): boolean {

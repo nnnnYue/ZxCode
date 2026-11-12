@@ -8,17 +8,70 @@ import {
   clearCodingPlanTeamMockEnv,
   clearCodingPlanUpgradeMockEnv,
   shouldPrepareCodingPlanTeamMock,
+  shouldReuseDesktopE2EBuild,
 } from "./e2e/helpers/coding-plan-mock-env.js";
 
 describe("Coding Plan E2E mock env", () => {
+  // 合并说明（v3.18.0）：采上游 mock 基建新用例（构建复用判据、Logo 外观隔离）；
+  // 拒 off-peak 域（isOffPeakTeamPlanSpec 已随域剔除）与会话分享域（share-publish-import）
+  // 及 fork 无对应用例的 off-peak UI 新增断言。
+  it("网页 mock 分配新端口后不能复用父构建，源码证据也必须标记重新构建", () => {
+    expect(shouldReuseDesktopE2EBuild({})).toBe(false);
+    expect(shouldReuseDesktopE2EBuild({ ZCODE_E2E_SKIP_BUILD: "1" })).toBe(true);
+    expect(
+      shouldReuseDesktopE2EBuild({
+        ZCODE_E2E_SKIP_BUILD: "1",
+        [CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV]: "http://127.0.0.1:43123",
+      }),
+    ).toBe(false);
+  });
+  it.each([
+    "settings/general/settings-ui-polish.test.ts",
+    "ui-shell/panels/side-pane-tabs-responsive-interactions.test.ts",
+  ])("Logo 外观回归隔离模拟账号控制面：%s", (spec) => {
+    expect(shouldPrepareCodingPlanTeamMock([`./test/e2e/${spec}`])).toBe(true);
+  });
   it("定时任务创建遥测回归隔离账号控制面", () => {
     expect(
       shouldPrepareCodingPlanTeamMock([
-        "./test/e2e/conversation-session/conversation-session-automation-run-title-stable.test.ts",
+        "./test/e2e/conversation-session/automations/conversation-session-automation-run-title-stable.test.ts",
       ]),
     ).toBe(true);
   });
   it.each([
+    "./test/e2e/conversation-session/*.test.ts",
+    "test/e2e/conversation-session/*.test.ts",
+    ".\\test\\e2e\\conversation-session\\*.test.ts",
+    "test\\e2e\\conversation-session\\*.test.ts",
+    "./test/e2e/**/*.test.ts",
+    "test/e2e/**/*.test.ts",
+    ".\\test\\e2e\\**\\*.test.ts",
+    "./test/e2e/conversation-session/queue/**/*.test.ts",
+    "./test/e2e/settings/providers/*.test.ts",
+  ])("prepares the mock before workers expand the suite glob %s", (spec) => {
+    expect(shouldPrepareCodingPlanTeamMock([spec])).toBe(true);
+  });
+
+  it("prepares the mock for the formal CI suite without opting unrelated workers in", () => {
+    const unrelatedSpecs = [
+      "./test/e2e/plugins/*.test.ts",
+      "./test/e2e/workspace/files/workspace-file-tree-refresh.test.ts",
+      "./test/e2e/conversation-session/background/conversation-session-background.test.ts",
+    ];
+    expect(
+      shouldPrepareCodingPlanTeamMock([
+        "./test/e2e/conversation-session/*.test.ts",
+        ...unrelatedSpecs,
+      ]),
+    ).toBe(true);
+    expect(shouldPrepareCodingPlanTeamMock(unrelatedSpecs)).toBe(false);
+    expect(shouldPrepareCodingPlanTeamMock([])).toBe(false);
+  });
+
+  it.each([
+    // 合并说明：仅采 fork 存活用例（ssh-remote-cold-reconnect marker 已保留）；
+    // 拒 fork 无对应用例的 ToolSearch / rpn / r3-mixed-entries / r3-mobile / ssh-disconnect 断言。
+    "conversation-session-ssh-remote-cold-reconnect.test.ts",
     "conversation-session-create-telemetry.test.ts",
     "conversation-session-offpeak-create.test.ts",
     "conversation-session-offpeak-create-existing-session.test.ts",
@@ -32,9 +85,11 @@ describe("Coding Plan E2E mock env", () => {
     ).toBe(true);
   });
   it("prepares account APIs for the formal real-app provider responsive case", () => {
-    expect(shouldPrepareCodingPlanTeamMock(["./test/e2e/provider-family-responsive.test.ts"])).toBe(
-      true,
-    );
+    expect(
+      shouldPrepareCodingPlanTeamMock([
+        "./test/e2e/settings/providers/provider-family-responsive.test.ts",
+      ]),
+    ).toBe(true);
   });
   it.each([
     "conversation-session-highspeed-card.test.ts",
@@ -85,12 +140,12 @@ describe("Coding Plan E2E mock env", () => {
     ).toBe(true);
     expect(
       shouldPrepareCodingPlanTeamMock([
-        "./test/e2e/conversation-session/conversation-session-model-provider-settings-transition.test.ts",
+        "./test/e2e/conversation-session/models/conversation-session-model-provider-settings-transition.test.ts",
       ]),
     ).toBe(true);
     expect(
       shouldPrepareCodingPlanTeamMock([
-        "./test/e2e/conversation-session/manual-review/pending/conversation-session-off-peak-team-plan.test.ts",
+        "./test/e2e/conversation-session/automations/conversation-session-off-peak-team-plan.test.ts",
       ]),
     ).toBe(true);
     expect(

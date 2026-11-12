@@ -1,11 +1,12 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import type { PluginLoadOutcome } from "@zcode/contracts";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// 协议 handler 只从 workspace 推导 storageRoot，user config 仍解析到 ~/.zcode/cli/config.json
+// 协议 handler 只从 workspace 推导 storageRoot，user config 仍解析到 ~/.zxcode/cli/config.json
 // （getDefaultConfigPath 无 env 覆盖）。为隔离 restore/overview 的 user-config 往返，把 node:os
-// 的 homedir 重定向到一次性临时目录；tmpdir 等其余实现保留原值。这样 resolvePath("~/.zcode/cli")
+// 的 homedir 重定向到一次性临时目录；tmpdir 等其余实现保留原值。这样 resolvePath("~/.zxcode/cli")
 // 落到隔离目录，绝不触碰真实 HOME。
 // 回归原因：vi.mock 会提升到普通 const 初始化之前；临时 HOME 也必须通过 vi.hoisted
 // 提前建立，否则 mock factory 读取 FAKE_HOME 时会命中 TDZ，导致整个 suite 无法收集。
@@ -31,6 +32,7 @@ import {
   zcodePluginsMarketplaceMutationResultSchema,
   zcodePluginsMarketplaceUpdateParamsSchema,
   zcodePluginsOverviewParamsSchema,
+  zcodePluginsOverviewResultSchema,
   zcodePluginsCancelOperationParamsSchema,
   zcodePluginsCancelOperationResultSchema,
   zcodePluginsSetEnabledParamsSchema,
@@ -38,6 +40,7 @@ import {
 } from "@zcode/shared";
 import { getCliStorageRoot, getPluginStorageRoot } from "../src/app/paths.js";
 import { installZCodeMarketplacePlugin } from "../src/plugins.js";
+import { createOfficialPluginPreparation } from "../src/app/bundled-plugins.js";
 import {
   addPluginMarketplace,
   describePlugin,
@@ -55,15 +58,112 @@ afterAll(async () => {
   await rm(FAKE_HOME, { force: true, recursive: true });
 });
 
+const NODE_REPL_HOST_PLUGIN_ID = "node-repl-host@zcode-plugins-official";
+
 // 协议契约层面的回归: 确保 plugins/list 与 plugins/setEnabled 已注册且 schema 可用。
 // 端到端发现逻辑由 bootstrap/tests/plugins.test.ts (resolveZCodePlugins) 覆盖。
 describe("plugins protocol contracts", () => {
+  it.each([true, false])(
+    "normalizes external userConfig before strict list validation (enabled=%s)",
+    async (enabled) => {
+      const root = await mkdtemp(join(tmpdir(), "zcode-plugin-user-config-"));
+      const pluginRoot = join(root, "extension");
+      const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
+      const manifestPath = join(pluginRoot, ".claude-plugin", "plugin.json");
+      const userConfig = {
+        track: { type: "string", default: "auto", options: ["auto", "transform"] },
+        panel: { type: "string", default: "auto", options: ["auto", "off"] },
+        token: { type: "string", required: true, sensitive: true, title: "Token" },
+      };
+      const manifest = JSON.stringify({ name: "extension", userConfig });
+      try {
+        await writeTestFile(manifestPath, manifest);
+        await writeTestFile(
+          join(root, "healthy", ".claude-plugin", "plugin.json"),
+          JSON.stringify({ name: "healthy" }),
+        );
+        await writeTestFile(
+          userConfigPath,
+          JSON.stringify({
+            plugins: {
+              dirs: [pluginRoot, join(root, "healthy")],
+              enabledPlugins: { "extension@inline": enabled },
+              options: { "extension@inline": { token: "fixture-secret" } },
+            },
+          }),
+        );
+        const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
+          workspace: { workspacePath: root, workspaceKey: root },
+        });
+        const parsed = zcodePluginsListResultSchema.parse(result);
+        expect(parsed.plugins.map((plugin) => plugin.id)).toContain("healthy@inline");
+        expect(parsed.plugins.find((plugin) => plugin.id === "extension@inline")).toMatchObject({
+          enabled,
+          userConfig: {
+            track: { type: "string", default: "auto" },
+            panel: { type: "string", default: "auto" },
+            token: userConfig.token,
+          },
+        });
+        expect(JSON.stringify(parsed)).not.toContain("fixture-secret");
+        expect(await readFile(manifestPath, "utf8")).toBe(manifest);
+      } finally {
+        await rm(userConfigPath, { force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([
+    null,
+    [],
+    { token: null },
+    { token: { sensitive: "true" } },
+    { token: { type: "unknown" } },
+    { token: { default: [] } },
+  ])("isolates invalid known userConfig fields: %j", async (userConfig) => {
+    const root = await mkdtemp(join(tmpdir(), "zcode-plugin-invalid-config-"));
+    const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
+    try {
+      for (const name of ["healthy", "invalid"]) {
+        await writeTestFile(
+          join(root, name, ".claude-plugin", "plugin.json"),
+          JSON.stringify({
+            name,
+            ...(name === "invalid" ? { userConfig } : {}),
+          }),
+        );
+      }
+      await writeTestFile(
+        userConfigPath,
+        JSON.stringify({ plugins: { dirs: [join(root, "invalid"), join(root, "healthy")] } }),
+      );
+      const result = zcodePluginsListResultSchema.parse(
+        await listPlugins({} as ZCodeProtocolAgentServerContext, {
+          workspace: { workspacePath: root, workspaceKey: root },
+        }),
+      );
+      expect(result.plugins.some((plugin) => plugin.id === "healthy@inline")).toBe(true);
+      expect(result.plugins.some((plugin) => plugin.id === "invalid@inline")).toBe(false);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: "plugin_manifest_invalid",
+          pluginId: "invalid@inline",
+          severity: "error",
+        }),
+      );
+    } finally {
+      await rm(userConfigPath, { force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("serializes marketplace mutations behind the workspace plugin storage lock", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-marketplace-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+    process.env.ZXCODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.ZXCODE_STORAGE_DIR),
     );
     let releaseLock = (): void => {};
     let markLockEntered = (): void => {};
@@ -102,18 +202,18 @@ describe("plugins protocol contracts", () => {
     } finally {
       releaseLock();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+      else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
 
   it("describes a cached marketplace candidate while a long install holds the storage lock", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-describe-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+    process.env.ZXCODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.ZXCODE_STORAGE_DIR),
     );
     const marketplaceDir = join(pluginStorageRoot, "marketplaces", "e2e-describe");
     await writeTestFile(
@@ -146,18 +246,18 @@ describe("plugins protocol contracts", () => {
     } finally {
       lock.resolve();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+      else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
 
   it("keeps describe behind the storage lock when the marketplace manifest must be written", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-describe-fetch-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+    process.env.ZXCODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.ZXCODE_STORAGE_DIR),
     );
     const lock = Promise.withResolvers<void>();
     const entered = Promise.withResolvers<void>();
@@ -183,8 +283,8 @@ describe("plugins protocol contracts", () => {
     } finally {
       lock.resolve();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+      else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
@@ -272,7 +372,7 @@ describe("plugins protocol contracts", () => {
     const pluginRoot = join(root, "plugins", "workspace-demo");
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".zxcode", "config.json"),
         JSON.stringify({ plugins: { dirs: [pluginRoot], enabledPlugins: { "workspace-demo@inline": false } } }),
       );
       await writeTestFile(
@@ -299,10 +399,43 @@ describe("plugins protocol contracts", () => {
     }
   });
 
+  it("reports each plugin's data path for the App extension context", async () => {
+    // docs/plugins/extension-host.md §18.1 H6：ctx.extension.dataPath 只取 plugins/list 的 dataPath，
+    // 与 MCP server 的 ${ZXCODE_PLUGIN_DATA} 同一个值（<CLI 插件存储根>/data/<插件 id>）。
+    const root = await mkdtemp(join(tmpdir(), "zcode-plugin-data-path-"));
+    const pluginRoot = join(root, "plugins", "data-demo");
+    const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
+    try {
+      await writeTestFile(
+        userConfigPath,
+        JSON.stringify({
+          plugins: { dirs: [pluginRoot], enabledPlugins: { "data-demo@inline": true } },
+        }),
+      );
+      await writeTestFile(
+        join(pluginRoot, ".zcode-plugin", "plugin.json"),
+        JSON.stringify({ name: "data-demo", version: "1.0.0" }),
+      );
+
+      const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
+        workspace: { workspacePath: root, workspaceKey: root },
+        configScope: "user",
+      });
+
+      expect(result.plugins.find((plugin) => plugin.id === "data-demo@inline")?.dataPath).toBe(
+        join(FAKE_HOME, ".zxcode", "cli", "plugins", "data", "data-demo@inline"),
+      );
+      expect(() => zcodePluginsListResultSchema.parse(result)).not.toThrow();
+    } finally {
+      await rm(userConfigPath, { force: true });
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
   it("keeps the User projection independent from Workspace enable overrides", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-config-view-"));
     const pluginId = "skill-creator@zcode-plugins-official";
-    const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
+    const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
     try {
       await writeTestFile(
         userConfigPath,
@@ -311,7 +444,7 @@ describe("plugins protocol contracts", () => {
         }),
       );
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".zxcode", "config.json"),
         JSON.stringify({
           plugins: { enabledPlugins: { [pluginId]: false } },
         }),
@@ -354,7 +487,7 @@ describe("plugins protocol contracts", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-option-source-view-"));
     const pluginRoot = join(root, "user-plugin");
     const pluginId = "option-source-view@inline";
-    const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
+    const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
     try {
       await writeTestFile(
         join(pluginRoot, ".claude-plugin", "plugin.json"),
@@ -390,12 +523,86 @@ describe("plugins protocol contracts", () => {
     }
   });
 
+  it.each([
+    { name: "list", query: listPlugins, duringQuery: false },
+    { name: "overview", query: getPluginsOverview, duringQuery: false },
+    { name: "list", query: listPlugins, duringQuery: true },
+    { name: "overview", query: getPluginsOverview, duringQuery: true },
+  ])(
+    "rejects degraded management $name (duringQuery=$duringQuery)",
+    async ({ query, duringQuery }) => {
+      const root = await mkdtemp(join(tmpdir(), "zcode-plugin-degraded-query-"));
+      const previousStorage = process.env.ZXCODE_STORAGE_DIR;
+      process.env.ZXCODE_STORAGE_DIR = join(root, "storage");
+      const preparation = createOfficialPluginPreparation({ startupTimeoutMs: 3000 });
+      const pluginId = "skill-creator@zcode-plugins-official";
+      const entered = Promise.withResolvers<void>();
+      const pending = Promise.withResolvers<PluginLoadOutcome>();
+      const discoverPlugins = () => {
+        entered.resolve();
+        return pending.promise;
+      };
+      try {
+        await writeTestFile(
+          join(root, ".zxcode", "config.json"),
+          JSON.stringify({ plugins: { enabledPlugins: { [pluginId]: true } } }),
+        );
+        const params = {
+          workspace: { workspacePath: root, workspaceKey: root },
+          configScope: "workspace",
+        };
+        const baseline = await listPlugins({} as ZCodeProtocolAgentServerContext, params);
+        const installed = baseline.plugins.find((p) => p.id === pluginId)!;
+        expect(installed.rootPath).toBeTruthy();
+        expect(installed.packageStatus).not.toBe("missing");
+        const markerPath = join(installed.rootPath, ".zxcode-plugin-seed.json");
+        const marker = await readFile(markerPath, "utf8");
+        vi.useFakeTimers();
+        if (!duringQuery) {
+          const fallback = preparation.resolvePlugins(discoverPlugins);
+          await vi.advanceTimersByTimeAsync(3000);
+          expect((await fallback).diagnostics).toEqual(
+            expect.arrayContaining([expect.objectContaining({ code: "plugin_startup_timeout" })]),
+          );
+        }
+        const context = {
+          deps: { pluginPreparation: preparation, pluginDiscovery: { discoverPlugins } },
+        } as ZCodeProtocolAgentServerContext;
+        const result = query(context, params).then(
+          (value) => ({ value }),
+          (error) => ({ error }),
+        );
+        if (duringQuery) {
+          await entered.promise;
+          await vi.advanceTimersByTimeAsync(3000);
+        }
+        vi.useRealTimers();
+        expect(await result).toMatchObject({ error: { code: "ZCODE_PLUGIN_STARTUP_TIMEOUT" } });
+        expect(await readFile(markerPath, "utf8")).toBe(marker);
+      } finally {
+        vi.useRealTimers();
+        pending.resolve({
+          plugins: [],
+          diagnostics: [],
+          hooks: {},
+          mcpServers: {},
+          skillRoots: [],
+          commandRoots: [],
+        });
+        await preparation.dispose();
+        if (previousStorage === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+        else process.env.ZXCODE_STORAGE_DIR = previousStorage;
+        await rm(root, { force: true, recursive: true });
+      }
+    },
+  );
+
   it("keeps a Workspace declaration visible when its package is missing", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-missing-package-view-"));
     const pluginId = "missing-fixture@personal-market";
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".zxcode", "config.json"),
         JSON.stringify({
           plugins: { enabledPlugins: { [pluginId]: true } },
         }),
@@ -423,22 +630,31 @@ describe("plugins protocol contracts", () => {
     }
   });
 
-  it("projects the host node_repl association for the official browser-use plugin", async () => {
+  it("hides the node-repl-host plugin and its host node_repl MCP from settings projections", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-browser-host-mcp-protocol-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "cli");
+    const previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+    process.env.ZXCODE_STORAGE_DIR = join(root, "cli");
 
     try {
       const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
       });
+      expect(result.plugins.some((plugin) => plugin.hostMcpServerNames !== undefined)).toBe(false);
+      expect(result.plugins.map((plugin) => plugin.id)).not.toContain(NODE_REPL_HOST_PLUGIN_ID);
+
+      const overview = await getPluginsOverview({} as ZCodeProtocolAgentServerContext, {
+        workspace: { workspacePath: root, workspaceKey: root },
+      });
       expect(
-        result.plugins.find((plugin) => plugin.id === "browser-use@zcode-plugins-official")
-          ?.hostMcpServerNames,
-      ).toEqual(["node_repl"]);
+        [
+          ...overview.availablePlugins,
+          ...overview.installedPlugins,
+          ...overview.restorableBuiltins,
+        ].map((plugin) => plugin.id),
+      ).not.toContain(NODE_REPL_HOST_PLUGIN_ID);
     } finally {
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+      else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
@@ -558,19 +774,19 @@ async function writeKnownMarketplaces(
 }
 
 // updatePlugin 走真实 bootstrap 路径：它从 workspace 的 config 推导 pluginStorageRoot，
-// 因此用 ZCODE_STORAGE_DIR 把存储根锚定到临时目录（storage.dir 以 "cli" 结尾时
+// 因此用 ZXCODE_STORAGE_DIR 把存储根锚定到临时目录（storage.dir 以 "cli" 结尾时
 // getCliStorageRoot 原样返回，故 pluginStorageRoot = <storageDir>/plugins）。
 describe("updatePlugin handler diagnostics", () => {
   const noopContext = {} as unknown as ZCodeProtocolAgentServerContext;
   let previousStorageDir: string | undefined;
 
   beforeEach(() => {
-    previousStorageDir = process.env.ZCODE_STORAGE_DIR;
+    previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
   });
 
   afterEach(() => {
-    if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-    else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+    if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+    else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
   });
 
   it("update returns diagnostics when a target fails to reinstall", async () => {
@@ -579,7 +795,7 @@ describe("updatePlugin handler diagnostics", () => {
     const pluginStorageRoot = getPluginStorageRoot(getCliStorageRoot(storageDir));
     const marketplaceRoot = join(root, "marketplace");
     const pluginRoot = join(marketplaceRoot, "plugins", "demo");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.ZXCODE_STORAGE_DIR = storageDir;
 
     try {
       // Arrange: a directory marketplace declaring demo@1.0.0, installed into the
@@ -638,30 +854,127 @@ describe("updatePlugin handler diagnostics", () => {
   });
 });
 
-// restoreBuiltinPlugin / overview 走真实 bootstrap 路径：storageRoot 由 ZCODE_STORAGE_DIR
-// 锚定（storage.dir 以 "cli" 结尾时 getCliStorageRoot 原样返回，pluginStorageRoot =
-// <storageDir>/plugins）；suppressedBuiltins 必须写到 handler 实际解析的 user config，即
-// ~/.zcode/cli/config.json（文件头部已把 homedir 重定向到 FAKE_HOME，故落在隔离目录）。
-describe("restoreBuiltinPlugin handler", () => {
+// 扩展摘要的版本兼容（docs/plugins/plugin-publishing.md §4.3）：商店信息与 overview 结果是 strict，
+// services 可能比 CLI 旧。CLI 只在参数带 includeExtensionSummary 时才写 listing.extensionSummary；
+// 安装等其他结果一律不带。componentTypes 的 "extension" 是开放字符串，照常透传。
+describe("plugins/overview extension summary", () => {
   const noopContext = {} as unknown as ZCodeProtocolAgentServerContext;
-  const builtinId = "skill-creator@zcode-plugins-official";
-  const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
   let previousStorageDir: string | undefined;
 
   beforeEach(() => {
-    previousStorageDir = process.env.ZCODE_STORAGE_DIR;
+    previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+  });
+
+  afterEach(() => {
+    if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+    else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
+  });
+
+  it("adds listing.extensionSummary only when the request asks for it", async () => {
+    const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-extension-summary-"));
+    const storageDir = join(root, "cli");
+    const pluginStorageRoot = getPluginStorageRoot(getCliStorageRoot(storageDir));
+    const marketplaceRoot = join(root, "marketplace");
+    process.env.ZXCODE_STORAGE_DIR = storageDir;
+    const summary = { engines: { zcode: "^1.4.0" }, grants: ["sessions.fullAccess"] };
+
+    try {
+      await writeKnownMarketplaces(pluginStorageRoot, [
+        {
+          id: "ext-market",
+          source: { source: "directory", path: marketplaceRoot },
+          name: "ext-market",
+          addedAt: "2026-01-01T00:00:00.000Z",
+          pluginCount: 0,
+        },
+      ]);
+      await writeTestFile(
+        join(marketplaceRoot, ".claude-plugin", "marketplace.json"),
+        JSON.stringify({
+          name: "ext-market",
+          plugins: [
+            {
+              name: "ext-ok",
+              source: "./plugins/ext-ok",
+              version: "1.0.0",
+              displayName: "Ext OK",
+              componentTypes: ["extension"],
+              extensionSummary: { ...summary, unknownKey: true },
+            },
+            { name: "plain", source: "./plugins/plain", version: "1.0.0" },
+          ],
+        }),
+      );
+      for (const name of ["ext-ok", "plain"]) {
+        const pluginRoot = join(marketplaceRoot, "plugins", name);
+        await writeTestFile(
+          join(pluginRoot, ".claude-plugin", "plugin.json"),
+          JSON.stringify({ name, skills: "skills", version: "1.0.0" }),
+        );
+        await writeTestFile(join(pluginRoot, "skills", name, "SKILL.md"), `# ${name}`);
+      }
+      const workspace = { workspacePath: root, workspaceKey: root };
+      const install = await installPlugin(noopContext, {
+        workspace,
+        marketplace: "ext-market",
+        pluginName: "ext-ok",
+      });
+      expect(install.installedPlugins.map((plugin) => plugin.id)).toContain("ext-ok@ext-market");
+      expect(JSON.stringify(install)).not.toContain("extensionSummary");
+
+      const legacy = await getPluginsOverview(noopContext, { workspace });
+      // 旧 services 的 strict schema 没有这个键；不要求时线上不能出现它。
+      expect(JSON.stringify(legacy)).not.toContain("extensionSummary");
+      expect(
+        legacy.availablePlugins.find((plugin) => plugin.id === "ext-ok@ext-market")
+          ?.componentTypes,
+      ).toContain("extension");
+
+      const params = { workspace, includeExtensionSummary: true };
+      expect(zcodePluginsOverviewParamsSchema.parse(params)).toEqual(params);
+      const overview = zcodePluginsOverviewResultSchema.parse(
+        await getPluginsOverview(noopContext, params),
+      );
+      const available = overview.availablePlugins.find(
+        (plugin) => plugin.id === "ext-ok@ext-market",
+      );
+      expect(available?.listing).toEqual({ displayName: "Ext OK", extensionSummary: summary });
+      expect(
+        overview.installedPlugins.find((plugin) => plugin.id === "ext-ok@ext-market")?.listing,
+      ).toEqual({ displayName: "Ext OK", extensionSummary: summary });
+      const plain = overview.availablePlugins.find((plugin) => plugin.id === "plain@ext-market");
+      expect(plain?.listing).toBeUndefined();
+      expect(plain?.componentTypes ?? []).not.toContain("extension");
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+});
+
+// restoreBuiltinPlugin / overview 走真实 bootstrap 路径：storageRoot 由 ZXCODE_STORAGE_DIR
+// 锚定（storage.dir 以 "cli" 结尾时 getCliStorageRoot 原样返回，pluginStorageRoot =
+// <storageDir>/plugins）；suppressedBuiltins 必须写到 handler 实际解析的 user config，即
+// ~/.zxcode/cli/config.json（文件头部已把 homedir 重定向到 FAKE_HOME，故落在隔离目录）。
+describe("restoreBuiltinPlugin handler", () => {
+  const noopContext = {} as unknown as ZCodeProtocolAgentServerContext;
+  const builtinId = "skill-creator@zcode-plugins-official";
+  const userConfigPath = join(FAKE_HOME, ".zxcode", "cli", "config.json");
+  let previousStorageDir: string | undefined;
+
+  beforeEach(() => {
+    previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
   });
 
   afterEach(async () => {
-    if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-    else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+    if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+    else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
     await rm(userConfigPath, { force: true });
   });
 
   it("restoreBuiltinPlugin clears suppression via protocol handler", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-restore-handler-"));
     const storageDir = join(root, "cli");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.ZXCODE_STORAGE_DIR = storageDir;
 
     try {
       // Arrange: user config (the path the handler actually reads/writes) suppresses
@@ -699,7 +1012,7 @@ describe("restoreBuiltinPlugin handler", () => {
   it("restores a suppressed bundled plugin through the locked install handler without deadlocking", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-install-handler-"));
     const storageDir = join(root, "cli");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.ZXCODE_STORAGE_DIR = storageDir;
 
     try {
       await writeTestFile(

@@ -1,3 +1,4 @@
+import { keyringPlatformPackage } from "../../../scripts/stage-credential-keyring.mjs";
 const SUPPORTED_DESKTOP_PLATFORM_KEYS = [
   "darwin-arm64",
   "darwin-x64",
@@ -16,7 +17,26 @@ function assertSupportedTargetPlatformKey(targetPlatformKey) {
 export function createDesktopNativePackagePrunePatterns(targetPlatformKey) {
   assertSupportedTargetPlatformKey(targetPlatformKey);
 
+  const keyringVariants = [
+    "darwin-arm64",
+    "darwin-x64",
+    "win32-arm64",
+    "win32-x64",
+    "linux-arm64",
+    "linux-x64",
+  ].map(keyringPlatformPackage);
+  keyringVariants.push(
+    "@napi-rs/keyring-linux-arm64-musl",
+    "@napi-rs/keyring-linux-x64-musl",
+    "@napi-rs/keyring-win32-ia32-msvc",
+    "@napi-rs/keyring-freebsd-x64",
+    "@napi-rs/keyring-linux-riscv64-gnu",
+    "@napi-rs/keyring-linux-arm-gnueabihf",
+  );
   return [
+    ...keyringVariants
+      .filter((name) => name !== keyringPlatformPackage(targetPlatformKey))
+      .map((name) => `!node_modules/${name}/**`),
     // PDF 预览已经由 Vite 打进 renderer，pdfjs-dist 的 Canvas optional dependency
     // 只服务 Node 渲染；pnpm 跨平台安装的 8 套 Canvas native 不应带进桌面安装包。
     "!node_modules/@napi-rs/canvas/**",
@@ -69,6 +89,23 @@ export function findDesktopNativePackageViolations(entries, targetPlatformKey) {
       path.startsWith("/node_modules/@napi-rs/canvas-")
     ) {
       violations.push(`不应打包 renderer 无需的 Canvas native: ${path}`);
+      continue;
+    }
+
+    // 采上游 v3.18.0：keyring/sharp 平台变体 fail-closed 检查（credential-security keyring v2 与打包裁剪守护）。
+    const keyringMatch = /^\/node_modules\/(@napi-rs\/keyring-[a-z0-9-]+)(?:\/|$)/.exec(path);
+    if (keyringMatch && keyringMatch[1] !== keyringPlatformPackage(targetPlatformKey)) {
+      violations.push(`keyring 包含非目标平台变体: ${keyringMatch[1]}`);
+      continue;
+    }
+
+    // 裁剪规则漏网或收集器行为回退时，非目标平台的 @img/sharp 变体必须在这里 fail-closed。
+    const sharpVariantMatch = /^\/node_modules\/@img\/(sharp-[a-z0-9-]+)(?:\/|$)/.exec(path);
+    if (
+      sharpVariantMatch &&
+      !SHARP_VARIANTS_BY_PLATFORM[targetPlatformKey].includes(sharpVariantMatch[1])
+    ) {
+      violations.push(`sharp 包含非目标平台变体: ${sharpVariantMatch[1]} ${path}`);
       continue;
     }
 

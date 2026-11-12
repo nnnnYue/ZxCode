@@ -147,14 +147,7 @@ function generateTask({ workspacePath, turnCount, title, backup }) {
           now,
         );
       }
-      insertEntry.run(
-        `${sessionId}:bash_shell_selection`,
-        sessionId,
-        "runtime/bash_shell_selection",
-        baseTime,
-        now,
-        json({ selection: { path: "/bin/zsh", display: { name: "zsh" } }, createdAt: baseTime }),
-      );
+      // v3.18.0 合并：随上游移除 bash_shell_selection 注入（bash-shell-snapshot 已在 CLI 引擎侧移除）。
       insertEntry.run(
         `${sessionId}:fixture_note`,
         sessionId,
@@ -250,12 +243,14 @@ function generateTask({ workspacePath, turnCount, title, backup }) {
 }
 
 function insertSession(db, input) {
+  // 本地会话按目录归属；把目录哈希写成显式身份会使冷恢复报 session-lineage-invalid。
+  // v3.18.0 合并：随上游把 workspace_id 写 null（原 fork 写 input.workspaceHash 触发冷恢复校验失败）。
   db.prepare(
     `insert into session (id, project_id, workspace_id, parent_id, trace_id, task_type, slug, directory, path, title, title_source, title_message_id, version, share_url, summary_additions, summary_deletions, summary_files, summary_diffs, revert, permission, time_created, time_updated, time_title_updated, time_compacting, time_archived) values (?, ?, ?, null, ?, 'interactive', ?, ?, ?, ?, 'custom', null, 'perf-fixture', null, ?, ?, ?, ?, null, ?, ?, ?, ?, null, null)`,
   ).run(
     input.sessionId,
     `perf-${input.workspaceHash}`,
-    input.workspaceHash,
+    null,
     input.traceId,
     slug(input.title),
     input.workspacePath,

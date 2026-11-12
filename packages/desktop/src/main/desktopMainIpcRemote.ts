@@ -8,9 +8,10 @@ import {
   remoteTargetSchema,
   type RemoteTarget,
 } from "@zcode/shared";
-import { dispatchTaskNotification } from "./desktopNotifications.js";
+// fork：OAuth deep link（desktopOAuthDeepLink）与 ARMS 遥测（desktopArmsCustomEvent /
+// desktopRemoteUsageArmsTelemetry）import 不引入（登录与遥测域）；扩展系统通知派发采纳。
+import { dispatchExtensionNotification, dispatchTaskNotification } from "./desktopNotifications.js";
 import { clearPendingRoutesForWindow, deliverPendingDeepLink } from "./desktopDeepLink.js";
-import type { RemoteConnectionStats } from "./desktopRemoteSessions.js";
 import {
   registerWebRemoteControlIpcHandlers,
   type WebRemoteControlIpcManager,
@@ -57,7 +58,8 @@ export function registerRemoteIpcHandlers(options: {
     requestId?: string,
     context?: { workspacePath: string; workspaceIdentity?: string },
   ) => Promise<string>;
-  getRemoteConnectionStats: () => RemoteConnectionStats;
+  // fork：getRemoteConnectionStats 仅服务 ARMS remote usage telemetry（遥测域剔除），
+  // 调用点与 deps 声明一并裁剪，不在 IPC 层保留死接线。
   disposeRemoteWorkspaceSession: (
     sessionId: string,
     reason: string,
@@ -132,6 +134,9 @@ export function registerRemoteIpcHandlers(options: {
   });
   ipcMain.handle(PlatformChannels.ShowTaskNotification, (event, payload: unknown) =>
     dispatchTaskNotification({ event, payload, logger: options.logger }),
+  );
+  ipcMain.handle(PlatformChannels.ShowExtensionNotification, (event, payload: unknown) =>
+    dispatchExtensionNotification({ event, payload, logger: options.logger }),
   );
 
   app.on("browser-window-created", (_, win) => {

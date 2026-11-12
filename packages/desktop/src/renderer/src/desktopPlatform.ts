@@ -1,12 +1,19 @@
-import { buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
+import {
+  buildLocalMediaPreviewUrl,
+  resolveLocaleFromLanguageTag,
+  type IPlatformService,
+} from "@zcode/shared";
 import type { FileApplicationInfo, FileApplicationTarget } from "@zcode/shared";
 // fork 修复：window.zxcode 全局声明此前不在任何 tsc 程序里（renderer 的 window.zxcode 访问
 // 全部 TS2339 记账）。renderer tsconfig rootDir 限死 src/renderer，跨树 include 声明文件会破坏
 // 输出布局，故经 @zcode/client 的 "./globals" exports 子路径把声明拉进程序；type-only import
 // 运行时零影响，禁止改成值导入（vite 运行时解析 .d.ts 会失败）。
 import type {} from "@zcode/client/globals";
+// fork：recordArmsCustomEventForE2E（遥测域）与 DesktopCommandIds / unwrapRemoteWorkspaceBindResult
+//（bind 结构化结果 main 侧未合并）不引入；resolveLocaleFromLanguageTag 采纳。
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
+import { registerAppControlNavigationHandler } from "#src/app-control-navigation/renderer.js";
 import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
 
 // 浏览器 context 兜底：window.zxcode 由 desktop preload 注入，非桌面宿主下不存在，
@@ -27,6 +34,20 @@ export function createDesktopPlatform(options: {
   isLocalDevelopmentRuntime: boolean;
 }): IPlatformService {
   return {
+    onAppControlNavigation: (handler) =>
+      registerAppControlNavigationHandler(
+        {
+          subscribe: (listener) => window.zxcode.onAppControlNavigationMessage(listener),
+          register: (generation) =>
+            window.zxcode.sendAppControlNavigation({ type: "register", generation }),
+          unregister: (generation) =>
+            window.zxcode.sendAppControlNavigation({ type: "unregister", generation }),
+          reply: (message) =>
+            window.zxcode.sendAppControlNavigation({ type: "result", ...message }),
+        },
+        handler,
+        crypto.randomUUID(),
+      ),
     canSelectFilePath: true,
     canOpenLocalFiles: true,
     pluginSandbox: createDesktopPluginSandboxPlatform(),
@@ -105,6 +126,9 @@ export function createDesktopPlatform(options: {
       ? (sample) => window.zxcode.reportRendererHeapSample!(sample)
       : undefined,
     showTaskNotification: (payload) => window.zxcode.showTaskNotification(payload),
+    // 扩展的系统通知（§18.1 H8）：只有桌面实现；Web 与手机远控没有这两个方法，Renderer 按 unsupported 处理。
+    showExtensionNotification: (payload) => window.zxcode.showExtensionNotification(payload),
+    onExtensionNotificationClick: (handler) => window.zxcode.onExtensionNotificationClick(handler),
     syncWindowTabs: (paths) => window.zxcode.syncWindowTabs(paths),
     syncWindowWorkspace: (payload) => window.zxcode.syncWindowWorkspace?.(payload),
     getMobileRelayStatus: () => window.zxcode.getMobileRelayStatus?.(),
@@ -208,7 +232,7 @@ export function createDesktopPlatform(options: {
     setApplicationLocale: (locale) => window.zxcode.setApplicationLocale(locale),
     getSystemLocale: () =>
       window.zxcode.getSystemLocale?.() ??
-      Promise.resolve(navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US"),
+      Promise.resolve(resolveLocaleFromLanguageTag(navigator.language)),
     setTitleBarTheme: (theme) => window.zxcode.setTitleBarTheme(theme),
     getDeviceId: () =>
       (window as Window & { __ZXCODE_DEVICE_ID__?: string }).__ZXCODE_DEVICE_ID__ ?? "",

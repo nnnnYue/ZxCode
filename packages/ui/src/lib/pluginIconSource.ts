@@ -1,3 +1,4 @@
+import designIconUrl from "@/assets/plugin-icons/design.png";
 import documentsIconUrl from "@/assets/plugin-icons/documents.png";
 import imageSearchIconUrl from "@/assets/plugin-icons/image-search.png";
 import pdfIconUrl from "@/assets/plugin-icons/pdf.png";
@@ -8,9 +9,11 @@ import {
   OFFICIAL_PLUGIN_HERO_BY_ID_GENERATED,
   OFFICIAL_PLUGIN_ICON_BY_ID_GENERATED,
 } from "@/lib/officialPluginIcons.generated.js";
+import visualizeIconUrl from "@/assets/plugin-icons/visualize.png";
 import { isTrustedImageUrl } from "@/lib/trustedImageUrl.js";
 
 const OFFICIAL_PLUGIN_ICON_BY_ID: Readonly<Record<string, string>> = {
+  "design@zcode-plugins-official": designIconUrl,
   "documents@zcode-plugins-official": documentsIconUrl,
   "image-search@zcode-plugins-official": imageSearchIconUrl,
   "pdf@zcode-plugins-official": pdfIconUrl,
@@ -20,6 +23,7 @@ const OFFICIAL_PLUGIN_ICON_BY_ID: Readonly<Record<string, string>> = {
   // 官方市场离线化后的随包图标快照（scripts/fetch-official-marketplace.mjs 生成），
   // 覆盖全部官方插件 id；listing 里即便残留远端 icon URL 也不会再被 UI 加载。
   ...OFFICIAL_PLUGIN_ICON_BY_ID_GENERATED,
+  "visualize@zcode-plugins-official": visualizeIconUrl,
 };
 
 const TRUSTED_BUNDLED_PLUGIN_ICONS = new Set(Object.values(OFFICIAL_PLUGIN_ICON_BY_ID));

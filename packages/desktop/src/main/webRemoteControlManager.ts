@@ -130,6 +130,8 @@ interface WindowControlRuntime {
 }
 
 interface WebRemoteControlManagerDependencies {
+  /** 当前界面语言（Main 的 currentApplicationLocale），用于 ZCode endpoint 请求的 X-Client-Language。 */
+  getClientLanguage?: () => string | undefined;
   getEndpointUrls?: () => Promise<ZCodeEndpointUrls> | ZCodeEndpointUrls;
   relayWsUrl: string;
   mobileRemoteControlUrl: string;
@@ -690,6 +692,8 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
     };
   }
 
+  // fork：上游 syncRuntimeRemoteSession（窗口快照跟随 remoteSessionId 换代）未随 fork 的
+  // syncAvailableWorkspaces 路径接线，函数移除；fork runtime 的 remoteSessionId 语义不变。
   function getRuntimeStatusTarget(runtime: WindowControlRuntime): WebRemoteControlWorkspaceTarget {
     // Bugfix: 手机端可以在同一个远控会话里切到窗口内的其他 workspace。
     // 之前 getStatus() 复用了当前 bridge 目标，导致桌面弹层按启动 workspace 轮询时误判为“不是同一会话”，
@@ -812,7 +816,8 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
         ]);
       })
       .sort();
-    const taskSignatureEntries = result.tasks
+    // tasks 在 WebRemoteControlWorkspaceListResult 中为可选字段（旧桌面不携带）；签名函数需容忍缺席。
+    const taskSignatureEntries = (result.tasks ?? [])
       .map((task) => {
         const workspaceKey = resolveWebRemoteControlWorkspaceKey(task);
         return JSON.stringify([
@@ -1522,17 +1527,21 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
       if (!currentContext) {
         return false;
       }
+      // 上游语义：persistedTarget = 上次启用目标仍在本窗口的候选；fork 版由上面的
+      // 精确匹配给出（命中即目标在窗口里），未命中分支已在上方提前 return。
+      const persistedTarget = currentContext;
 
       startupRestoreClaimed = true;
       dependencies.logger.info(
-        `[web-remote-control] restoring previous enabled state window=${windowId} workspace=${currentContext.workspacePath} remoteSession=${currentContext.remoteSessionId ?? "none"}`,
+        `[web-remote-control] restoring previous enabled state window=${windowId} target=${persistedTarget ? "saved" : "window"} workspace=${currentContext.workspacePath} remoteSession=${currentContext.remoteSessionId ?? "none"}`,
       );
       try {
         await this.start(windowId, {
           workspacePath: currentContext.workspacePath,
           workspaceIdentity: currentContext.workspaceIdentity,
           remoteSessionId: currentContext.remoteSessionId,
-          initialTaskId: persistedContext.initialTaskId,
+          // 任务只属于上次启用目标；换成窗口里的其他工作区时不能带过去。
+          initialTaskId: persistedTarget ? persistedContext.initialTaskId : undefined,
         });
         return true;
       } catch (error) {

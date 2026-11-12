@@ -8,10 +8,8 @@ import {
 import {
   WEB_REMOTE_CONTROL_HEARTBEAT_ACK_TIMEOUT_MS,
   WEB_REMOTE_CONTROL_HEARTBEAT_INTERVAL_MS,
-  WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS,
   getWebRemoteControlHeartbeatDelayMs,
   getWebRemoteControlHeartbeatJitterMs,
-  getWebRemoteControlReconnectJitterMs,
   WEB_REMOTE_CONTROL_RPC_TRANSPORT_LIMITS,
   parseWebRemoteControlAppPayload,
   type WebRemoteControlAppPayload,
@@ -20,6 +18,22 @@ import {
   type WebRemoteControlRelayOutgoingMessage,
 } from "@zcode/shared";
 import type { WebRemoteControlRelayAuthProvider } from "./webRemoteControlRelayAuthProvider.js";
+
+// fork：上游 v3.18.0 把重连 jitter 移入 web-remote-relay V2 retry 域并删除了旧导出；
+// fork 保持平铺 transport + 自部署 relay，不采用 V2 重写，这里按原 shared 实现本地恢复等价语义。
+const WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS = 2_000;
+
+function getWebRemoteControlReconnectJitterMs(
+  configuredJitterMs: number = WEB_REMOTE_CONTROL_RECONNECT_JITTER_MS,
+  random: () => number = Math.random,
+): number {
+  if (!Number.isFinite(configuredJitterMs) || configuredJitterMs <= 0) {
+    return 0;
+  }
+  const value = random();
+  const safeValue = Number.isFinite(value) ? Math.min(0.999999999, Math.max(0, value)) : 0;
+  return Math.floor(safeValue * (Math.floor(configuredJitterMs) + 1));
+}
 
 // fork：desktopNetworkTelemetry（网络遥测源）已随 REMOVALS 移除；transport 保留调用点
 // 但改为本地空操作，不采集/上报 relay 连接指标。

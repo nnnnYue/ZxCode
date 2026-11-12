@@ -3,10 +3,10 @@ import {
   Moon,
   Settings,
   Settings2,
+  SlidersHorizontal,
   Package,
   Bot,
   Palette,
-  SlidersHorizontal,
   Folders,
   Archive,
   Sun,
@@ -84,6 +84,12 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     id: "personalization",
     icon: User,
     titleId: "settings.personalization.title",
+    groupId: "agentCapabilities",
+  },
+  {
+    id: "agentBehavior",
+    icon: SlidersHorizontal,
+    titleId: "settings.agentBehavior.title",
     groupId: "agentCapabilities",
   },
   {
@@ -242,3 +248,15 @@ export function resolveSettingsSectionForPlatform(
 }
 
 export type { SettingsSectionId };
+
+/** 依赖本机 Source Server 管理与设备连接的设置页，Web 与手机远控不显示。 */
+// fork 剔除了 remoteDevices/dataSync/shares 分区，当前没有桌面专属设置分区；
+// 保留函数签名供 settings-search 基建与 SettingsPage 使用。
+const DESKTOP_ONLY_SETTINGS_SECTIONS = new Set<SettingsSectionId>([]);
+
+export function isSettingsSectionAvailable(
+  section: SettingsSectionId,
+  isDesktop: boolean,
+): boolean {
+  return isDesktop || !DESKTOP_ONLY_SETTINGS_SECTIONS.has(section);
+}

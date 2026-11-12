@@ -8,6 +8,7 @@ type RpcLogLevel = "debug" | "info" | "warn";
  */
 export function resolveRpcLogLevel(message: string, ...args: unknown[]): RpcLogLevel {
   // 后台详情每秒读取一次，成功日志会持续落盘；只降低该查询的成功级别，保留失败诊断。
+  // fork 品牌：channel 名为 zxcode-agent；voice-input 域剔除，对应降噪规则不引入。
   if (message.startsWith("[rpc:call] zxcode-agent.backgroundBashOutputV4 OK (")) return "debug";
 
   // workspace 首次绑定时，provider registry 会在 runtime identity 查询之后同步；

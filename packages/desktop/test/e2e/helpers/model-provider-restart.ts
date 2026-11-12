@@ -26,11 +26,16 @@ import {
   type SeedReplayProviderModel,
 } from "./model-provider-restart-config.js";
 import { getV4DraftThoughtState } from "./v4-conversation.js";
+import { skipOccupationOnboardingIfPresent } from "./occupation-onboarding.js";
 
 const paths = getE2EAppDataPaths();
 const SETTINGS_FILE = join(paths.appDataDir, "setting.json");
 const CREDENTIALS_FILE = paths.credentialsFile;
 const MODEL_SELECTION_RECENT_KEY_PREFIX = "zcode-model-selection-recent-v1";
+// seedBigModelOAuthCredential/seedBigModelStartPlanCredential 引用该常量；
+// v3.18.0 合并取了上游函数体但丢失了上游侧的常量定义（HEAD/MERGE_HEAD 对照确认
+// 定义位于 MERGE_HEAD 第 34 行），按上游原值找回。
+const BIGMODEL_E2E_USER_ID = "bigmodel-e2e-user";
 
 export { seedTurboAgentStartupModel } from "./model-provider-restart-runtime.js";
 
@@ -71,7 +76,7 @@ export async function seedBigModelOAuthCredential() {
     "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
-      id: "bigmodel-e2e-user",
+      id: BIGMODEL_E2E_USER_ID,
       username: "bigmodel-e2e-user",
     }),
   });
@@ -89,7 +94,7 @@ export async function seedBigModelStartPlanCredential() {
     "oauth:bigmodel:access_token": "e2e-bigmodel-token",
     "oauth:bigmodel:user_info": JSON.stringify({
       displayName: "BigModel E2E",
-      id: "bigmodel-e2e-user",
+      id: BIGMODEL_E2E_USER_ID,
       username: "bigmodel-e2e-user",
     }),
     zcodejwttoken: "e2e-bigmodel-start-plan-jwt",

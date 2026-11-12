@@ -252,4 +252,7 @@ function ConversationTurnNavigatorImpl({
   );
 }
 
+// 合并修复：上游 v3.18.0 把条目渲染拆成 ConversationTurnNavigatorItemView 并新增 enabled prop，
+// fork 保留内联渲染与既有 memo 导出；此前冲突解决误保留了上游的 ItemView 定义与
+// 引用 enabled 的自定义比较器（渲染体未采用、props 无该字段），按 fork HEAD 移除。
 export const ConversationTurnNavigator = memo(ConversationTurnNavigatorImpl);

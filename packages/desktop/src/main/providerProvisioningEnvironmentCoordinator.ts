@@ -5,6 +5,8 @@ type ExecuteSync = (trigger: ProviderProvisioningTrigger) => Promise<void>;
 interface Registration {
   readonly id: string;
   readonly execute: ExecuteSync;
+  /** 该注册所属的 Source 设备；上游按它把 lane 与数据同步页关联（fork 暂无消费方，仅保留数据形状）。 */
+  readonly sourceServerId?: string;
 }
 
 interface EnvironmentLane {
@@ -25,13 +27,18 @@ export class ProviderProvisioningEnvironmentCoordinator {
     environmentKey: string,
     registrationId: string,
     execute: ExecuteSync,
+    sourceServerId?: string,
   ): {
     initialSync: Promise<void>;
     dispose(): void;
   } {
     const lane = this.#lanes.get(environmentKey) ?? createLane();
     const wasOffline = lane.registrations.size === 0;
-    lane.registrations.set(registrationId, { id: registrationId, execute });
+    lane.registrations.set(registrationId, {
+      id: registrationId,
+      execute,
+      ...(sourceServerId ? { sourceServerId } : {}),
+    });
     this.#lanes.set(environmentKey, lane);
     if (wasOffline) {
       lane.generation += 1;

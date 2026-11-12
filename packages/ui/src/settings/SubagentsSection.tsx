@@ -1,6 +1,6 @@
 /* eslint-disable max-lines -- 子智能体管理页集中维护作用域列表、表单和启用状态，避免状态分散 */
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Bot, Check, Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { completeNewModelSelection } from "@zcode/provider";
 import {
   TID_SUBAGENT_BUILT_IN_MODEL_TRIGGER,
@@ -48,7 +48,8 @@ import {
 import { resolveModelThoughtOption } from "@/lib/modelThoughtOption.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
 import { encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
-import { SUBAGENT_COLORS, SUBAGENT_COLOR_CLASS } from "@/lib/subagentColors.js";
+import { WorkflowAgentFace } from "@/components/workflow-timeline/WorkflowAgentFace.js";
+import { SUBAGENT_COLORS, SUBAGENT_WORKFLOW_COLOR } from "@/lib/subagentColors.js";
 import { SettingsResourceGroupHeader } from "@/settings/SettingsResourceGroupHeader.js";
 import { SettingsResourceHeaderActions } from "@/settings/SettingsResourceHeaderActions.js";
 import { SettingsBreadcrumbReporter } from "@/settings/SettingsHeaderBreadcrumb.js";
@@ -79,7 +80,6 @@ import type { StorePluginItem } from "@/settings/pluginStoreListing.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 
 const AGENT_COLORS: AgentColor[] = [...SUBAGENT_COLORS];
-const COLOR_DOT_CLASS: Record<AgentColor, string> = SUBAGENT_COLOR_CLASS;
 const MODEL_ITEM_NEVER_LOCKED = () => false;
 const INHERIT_MODEL_VALUE = "inherit";
 const TOOL_OPTIONS = [
@@ -345,18 +345,6 @@ function FormFieldLabel({ children }: { children: string }) {
   );
 }
 
-function AgentColorDot({ color }: { color?: AgentColor }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex size-2 shrink-0 rounded-full",
-        color ? COLOR_DOT_CLASS[color] : "bg-foreground-subtlest",
-      )}
-      aria-hidden="true"
-    />
-  );
-}
-
 function AgentBadge({ children, className }: { children: string; className?: string }) {
   return (
     <span
@@ -511,17 +499,40 @@ function AgentListRow({
           <PluginStoreAvatar
             item={pluginIconItem}
             className="size-9 bg-background"
-            fallbackIcon={<Bot className="size-4" />}
+            fallbackIcon={
+              <WorkflowAgentFace
+                avatarIndex={undefined}
+                name={agent.name}
+                color={agent.color ? SUBAGENT_WORKFLOW_COLOR[agent.color] : undefined}
+                idle
+                status={undefined}
+                className="size-5"
+              />
+            }
           />
         ) : (
           <div className="flex size-9 items-center justify-center rounded-xl bg-background text-foreground-subtle">
-            <Bot className="size-4" />
+            <WorkflowAgentFace
+              avatarIndex={undefined}
+              name={agent.name}
+              color={agent.color ? SUBAGENT_WORKFLOW_COLOR[agent.color] : undefined}
+              idle
+              status={undefined}
+              className="size-5"
+            />
           </div>
         )}
-        {agent.color ? (
-          // 右下角颜色点之前溢出头像容器，会让列表行视觉高度变高。
-          <span className="absolute -bottom-1 -right-1 inline-flex size-3.5 items-center justify-center rounded-full border border-card bg-card p-px leading-none">
-            <AgentColorDot color={agent.color} />
+        {pluginIconItem ? (
+          // 插件保留品牌图标，身份头像只放在右下角；绝对定位不改变列表行高度。
+          <span className="absolute -bottom-1 -right-1 inline-flex size-5 items-center justify-center rounded-lg border border-card bg-card leading-none">
+            <WorkflowAgentFace
+              avatarIndex={undefined}
+              name={agent.name}
+              color={agent.color ? SUBAGENT_WORKFLOW_COLOR[agent.color] : undefined}
+              idle
+              status={undefined}
+              className="size-4 min-h-4! min-w-4!"
+            />
           </span>
         ) : null}
       </div>
@@ -1051,9 +1062,9 @@ function SubagentForm({
             className="relative inline-grid w-56 grid-cols-8 rounded-lg border border-input-border bg-input p-1"
           >
             <span
-              className="pointer-events-none absolute top-1 size-6 rounded-full border border-border-hover bg-surface shadow-xs transition-[left]"
+              className="pointer-events-none absolute top-0.5 size-7 rounded-xl border-2 border-border bg-surface transition-[left]"
               style={{
-                left: `calc(0.25rem + ((100% - 0.5rem) / ${AGENT_COLORS.length}) * ${selectedColorIndex})`,
+                left: `calc(0.125rem + ((100% - 0.5rem) / ${AGENT_COLORS.length}) * ${selectedColorIndex})`,
               }}
               aria-hidden="true"
             />
@@ -1066,10 +1077,17 @@ function SubagentForm({
                 aria-label={intl.formatMessage({
                   id: `settings.subagents.color.${option}`,
                 })}
-                className="relative z-10 flex size-6 items-center justify-center rounded-full outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+                className="relative z-10 flex size-6 items-center justify-center rounded-lg outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => setColor(option)}
               >
-                <span className={cn("size-3.5 rounded-full", COLOR_DOT_CLASS[option])} />
+                <WorkflowAgentFace
+                  avatarIndex={undefined}
+                  name={name}
+                  color={SUBAGENT_WORKFLOW_COLOR[option]}
+                  status={undefined}
+                  idle
+                  className="size-5"
+                />
               </button>
             ))}
           </div>
@@ -1285,8 +1303,19 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingAgent, setEditingAgent] = useState<AgentSummary | null>(null);
   const [saving, setSaving] = useState(false);
-  const [operatingAgentId, setOperatingAgentId] = useState<string | null>(null);
   const [selectedScopeKey, setSelectedScopeKey] = useState("user");
+  // 修复原因：只读刷新不再禁用整个列表后，多行写操作可能重叠；单值 id 会让后开始的行覆盖、
+  // 先结束的行清空，导致仍在写盘的行提前解禁。按行记录写操作，结束时只移除本行。
+  const [operatingAgentIds, setOperatingAgentIds] = useState<ReadonlySet<string>>(() => new Set());
+  const markAgentOperating = useCallback((agentId: string, operating: boolean) => {
+    setOperatingAgentIds((current) => {
+      if (current.has(agentId) === operating) return current;
+      const next = new Set(current);
+      if (operating) next.add(agentId);
+      else next.delete(agentId);
+      return next;
+    });
+  }, []);
   const selectedWorkspace = workspaceTabs.find(
     (tab) => getPluginWorkspaceKey(tab) === selectedScopeKey,
   );
@@ -1440,7 +1469,7 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
       if (!confirmed) {
         return;
       }
-      setOperatingAgentId(agent.id);
+      markAgentOperating(agent.id, true);
       try {
         await subagentsService.deleteAgent({
           agentId: agent.id,
@@ -1452,10 +1481,10 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
       } catch (deleteError) {
         toast(deleteError instanceof Error ? deleteError.message : String(deleteError));
       } finally {
-        setOperatingAgentId(null);
+        markAgentOperating(agent.id, false);
       }
     },
-    [confirmDialog, intl, refresh, refreshMentionStore, subagentsService],
+    [confirmDialog, intl, markAgentOperating, refresh, refreshMentionStore, subagentsService],
   );
 
   const handleToggle = useCallback(
@@ -1463,7 +1492,7 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
       if (!supportsEnabledToggle(agent)) {
         return;
       }
-      setOperatingAgentId(agent.id);
+      markAgentOperating(agent.id, true);
       try {
         await subagentsService.setEnabled({
           agentId: agent.id,
@@ -1473,10 +1502,10 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
       } catch (toggleError) {
         toast(toggleError instanceof Error ? toggleError.message : String(toggleError));
       } finally {
-        setOperatingAgentId(null);
+        markAgentOperating(agent.id, false);
       }
     },
-    [refresh, refreshMentionStore, subagentsService],
+    [markAgentOperating, refresh, refreshMentionStore, subagentsService],
   );
 
   const handleModelOverrideChange = useCallback(
@@ -1485,7 +1514,7 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
       if (!agentName && agent.source !== "plugin") {
         return;
       }
-      setOperatingAgentId(agent.id);
+      markAgentOperating(agent.id, true);
       try {
         const modelSelection = toSubagentModelSelection(config.model, config.thoughtLevel);
         if (agentName) {
@@ -1496,7 +1525,7 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
         }
       } catch (changeError) {
         toast(changeError instanceof Error ? changeError.message : String(changeError));
-        setOperatingAgentId(null);
+        markAgentOperating(agent.id, false);
         throw changeError;
       }
       try {
@@ -1505,10 +1534,10 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
         // 持久化成功即为提交点；后续投影刷新失败只能提示，不能让控件回滚磁盘状态。
         toast(refreshError instanceof Error ? refreshError.message : String(refreshError));
       } finally {
-        setOperatingAgentId(null);
+        markAgentOperating(agent.id, false);
       }
     },
-    [refresh, refreshMentionStore, subagentsService],
+    [markAgentOperating, refresh, refreshMentionStore, subagentsService],
   );
 
   const handleEdit = useCallback((agent: AgentSummary) => {
@@ -1669,7 +1698,10 @@ export function SubagentsSection({ onManageModels }: SubagentsSectionProps) {
                     }
                   : undefined
             }
-            isOperating={operatingAgentId === agent.id || refreshing}
+            // Bug 根因：插件资源初始化完成后会在任意时刻触发只读 loadAgents，旧写法让 refreshing
+            // 禁用所有行，Radix Select 被禁用即关闭用户已打开的档位菜单。只读刷新不改动行数据提交，
+            // 行控件只随该行自身的写操作禁用；refreshing 仍由 Refresh 按钮展示。
+            isOperating={operatingAgentIds.has(agent.id)}
             modelGroups={chatModelSelectGroups}
             modelSelectionView={modelSelectionView}
             modelSelectionLoading={modelSelectionLoading}

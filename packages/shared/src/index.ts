@@ -29,7 +29,25 @@ export type {
   MobileRelaySettings,
 } from "./protocol.js";
 export type { WorkspacePurpose } from "./workspacePurpose.js";
-export { DEFAULT_LOCALE } from "./protocol.js";
+export { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./protocol.js";
+export {
+  hasLegacyIncompatiblePersistedLocale,
+  isLocale,
+  isLocalePreference,
+  LOCALE_NATIVE_NAMES,
+  resolveLocaleFromLanguageTag,
+  resolvePersistedUiLocale,
+  resolvePersistedUiLocalePreference,
+  toLegacyPersistedLocalePreference,
+  toPersistedSettingsLocaleFields,
+  toZhOrEnLocale,
+} from "./locale.js";
+export type {
+  LegacyPersistedLocale,
+  LegacyPersistedLocalePreference,
+  PersistedSettingsLocaleFields,
+} from "./locale.js";
+// fork 品牌：version 常量保持 ZXCODE_ 前缀导出。
 export { ZXCODE_VERSION, ZXCODE_COMMIT, ZXCODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
 export type { ZCodeEnv, ZCodeProductFlavor } from "./env.js";
@@ -68,6 +86,8 @@ export {
   ZXCODE_APP_VERSION_ENV,
   ZXCODE_BUILD_COMMIT_ID_ENV,
   ZXCODE_MODEL_CUSTOM_HEADERS_ENV,
+  // 上游新增：Agent 子进程界面语言下发（CLI bootstrap 按此名消费，见 env.ts 注释）。
+  ZCODE_CLIENT_LANGUAGE_ENV,
   RUNTIME_ZXCODE_DEBUG,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,
@@ -134,6 +154,7 @@ export {
   BROWSER_SCREENSHOT_SURFACE_PREPARE_TIMEOUT_MS,
   BROWSER_VIEW_RESTORE_BOOTSTRAP_URL,
   LOCAL_MEDIA_PREVIEW_SCHEME,
+  BROWSER_VIEW_DRAFT_SESSION_ID,
   BROWSER_LOCAL_PREVIEW_SCHEME,
   CUSTOM_EDITOR_ID_PREFIX,
   DesktopCommandIds,
@@ -156,6 +177,7 @@ export type {
   BrowserTabResidencyState,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
+  BrowserViewPromoteDraftTabsRequest,
   BrowserViewOperationPayload,
   BrowserViewResidencyReportPayload,
   BrowserViewResidencyTransitionPayload,
@@ -178,6 +200,10 @@ export type {
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
+  // fork：MicrophoneAccessResult / MicrophoneSettingsTarget 不再导出（microphone-access 域剔除）。
+  CaptureBrowserGuestPageClip,
+  CaptureBrowserGuestPageRequest,
+  CaptureBrowserGuestPageResult,
   DesktopCloseToTrayCapability,
   DesktopCommandId,
   CuaOsSupport,
@@ -201,6 +227,11 @@ export type {
   EmbeddedBrowserSitePermissionUpdateRequest,
   EmbeddedBrowserSitePermissionsSnapshot,
   IPlatformService,
+  AppNavigationTarget,
+  AppNavigationResult,
+  AppNavigationHandler,
+  DesktopZoomState,
+  WindowControlsOverlayMetrics,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
   RemoteConnectionRuntimeLog,
@@ -310,6 +341,7 @@ export { redactFeedbackText } from "./feedbackPrivacy.js";
 export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
 export {
   projectAccessTokenFingerprint,
+  projectAccessTokenRetryAfterMs,
   ProjectAccessTokenError,
   ProjectAccessTokenHttpStatusError,
   ProjectAccessTokenTransientError,
@@ -328,6 +360,7 @@ export * from "./channel-mention.js";
 export * from "./pluginTelemetry.js";
 // fork 命名别名（zcode-cli 用 ZXCODE_ 前缀引用上游 ZCODE_ 常量）
 export { DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY } from "./zcode-protocol/index.js";
+export * from "./plugin-store-visibility.js";
 
 // fork：request-security 域已剔除；保留类型别名兼容 zcode-cli 引用。
 export type RequestVerificationReason = string;

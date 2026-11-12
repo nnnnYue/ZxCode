@@ -79,6 +79,9 @@ import { createTempTextAttachment } from "./tempTextAttachment.js";
 import { materializeWorkflowArtifactFile } from "./workflowArtifactFile.js";
 import { registerDesktopSaveFileIpcHandler } from "./desktopSaveFile.js";
 import { registerDesktopPrintToPdfIpcHandler } from "./desktopPrintToPdf.js";
+// fork：microphone-access（voice-input 域）与 desktopCommandIpc 抽离重构（文件未随 fork 引入，
+// ExecuteDesktopCommand 保持本文件内联 handler）不采纳；CaptureBrowserGuestPage（design 桥）采纳。
+import { registerDesktopCaptureBrowserGuestPageIpcHandler } from "./desktopCaptureBrowserGuestPage.js";
 import { registerCuaPipActiveSessionIpc } from "./desktopCuaPipIpc.js";
 
 export function registerPlatformIpcHandlers(options: {
@@ -113,7 +116,9 @@ export function registerPlatformIpcHandlers(options: {
   getDesktopSessionActivity: () => {
     runningAgentSessionCount: number;
   };
-  syncAppSettings: (patch: unknown) => void;
+  // fork 曾把参数放宽为 unknown，导致 index.ts 传入 (patch: Partial<AppSettings>) => void 时
+  // 因逆变不兼容报 TS2322；恢复上游（与 merge-base 一致）的 schema 派生类型。
+  syncAppSettings: (patch: ReturnType<typeof appSettingsPatchSchema.parse>) => void;
   /** renderer 上报当前窗口 active workspace 三元组（手机远控 presence 数据源）。 */
   syncWindowWorkspace?: (
     windowId: number,
@@ -189,6 +194,9 @@ export function registerPlatformIpcHandlers(options: {
 
   registerDesktopSaveFileIpcHandler(options.logger);
   registerDesktopPrintToPdfIpcHandler(options.logger);
+  // fork：registerDesktopMicrophoneIpcHandlers 随 microphone-access（voice-input 域）剔除，
+  // 残留的调用行一并删除（目录本就不存在，调用会在启动时抛 ReferenceError）。
+  registerDesktopCaptureBrowserGuestPageIpcHandler(options.logger);
 
   ipcMain.handle(
     PlatformChannels.CreateTempTextAttachment,

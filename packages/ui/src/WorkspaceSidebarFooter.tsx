@@ -1,5 +1,5 @@
 /* oxlint-disable eslint(max-lines) -- footer 聚合主题、模式和快捷键菜单。 */
-import type { Locale } from "@zcode/shared";
+import { LOCALE_NATIVE_NAMES, SUPPORTED_LOCALES, type Locale } from "@zcode/shared";
 import { memo, useCallback, useEffect, useState, type ReactNode } from "react";
 import { DesktopCommandIds, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
@@ -143,16 +143,12 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
                       id: "sidebar.settings.systemDefault",
                     })}
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="en-US">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.locale.en-US",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="zh-CN">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.locale.zh-CN",
-                    })}
-                  </DropdownMenuRadioItem>
+                  {/* 语言选项显示各语言本名（LOCALE_NATIVE_NAMES），不随界面语言翻译。 */}
+                  {SUPPORTED_LOCALES.map((locale) => (
+                    <DropdownMenuRadioItem key={locale} value={locale} lang={locale}>
+                      {LOCALE_NATIVE_NAMES[locale]}
+                    </DropdownMenuRadioItem>
+                  ))}
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>

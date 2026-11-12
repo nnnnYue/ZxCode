@@ -7,11 +7,14 @@ export interface SessionSubscriptionErrorPanelProps {
   sessionId: string;
   workspacePath: string;
   onReconnect: () => void;
+  /** 上游 v3.18.0：runtime faulted 时按钮文案换成「恢复工作区」；缺省仍显示「重新连接」。 */
+  reconnectLabel?: string;
 }
 
 export function SessionSubscriptionErrorPanel({
   error,
   onReconnect,
+  reconnectLabel,
 }: SessionSubscriptionErrorPanelProps) {
   const { intl } = useZCodeIntl();
 
@@ -20,7 +23,7 @@ export function SessionSubscriptionErrorPanel({
       <p className="max-w-full break-words text-center font-mono text-destructive">{error}</p>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button type="button" data-testid={TID_V4_RETRY_SUBSCRIBE} onClick={onReconnect}>
-          {intl.formatMessage({ id: "workspaceSidebar.reconnect" })}
+          {reconnectLabel ?? intl.formatMessage({ id: "workspaceSidebar.reconnect" })}
         </Button>
       </div>
     </div>

@@ -11,8 +11,18 @@ const CODING_PLAN_COMMON_ENV_KEYS = [
   "ZCODE_E2E_CODING_PLAN_MOCK_URL",
 ] as const;
 
-const DEFAULT_FULL_E2E_SPEC_GLOB = "./test/e2e/**/*.test.ts";
+// 合并说明（v3.18.0）：采上游「用例在 fork 存活且非剔除域」的新增 marker
+// （ssh-remote-cold-reconnect、remote-composer-plan-reselect、settings-ui-polish、
+// side-pane-tabs-responsive-interactions）；拒会话分享域（share-* 三个）与
+// fork 不存在对应用例的新增 marker（toolsearch、rpn、r3-mixed-entries、
+// r3-mobile、ssh-disconnect-experience、highspeed 新增抽卡、provider-builtin-refresh-failure）。
 const CODING_PLAN_TEAM_SPEC_MARKERS = [
+  "conversation-session-ssh-remote-cold-reconnect.test.ts",
+  // 远端 Composer 切回已生效套餐：本机与容器（经 SSH 反向隧道）共用同一账号 mock。
+  "conversation-session-remote-composer-plan-reselect.test.ts",
+  // 模拟登录态访问线上账号接口会触发 401 弹窗，遮挡 Logo 的真实 hover 和截图。
+  "settings-ui-polish.test.ts",
+  "side-pane-tabs-responsive-interactions.test.ts",
   "conversation-session-start-plan-independent.test.ts",
   // 创建埋点回归复用本地账号控制面，避免初始化/发送访问真实套餐与登录服务。
   "conversation-session-create-telemetry.test.ts",
@@ -27,6 +37,8 @@ const CODING_PLAN_TEAM_SPEC_MARKERS = [
   "conversation-session-model-provider-settings-transition.test.ts",
   "conversation-session-model-provider-effective-selection.test.ts",
   "conversation-session-worker-effective-selection.test.ts",
+  "highspeed-owner-compat.test.ts",
+  "highspeed-owner-ui-race.test.ts",
   "conversation-session-model-provider-turbo-recovery.test.ts",
   "conversation-session-model-provider-turbo-switch.test.ts",
   // Highspeed 抽卡 case 要按 Coding Plan 权益判定资格，缺 team mock 时抽卡入口不曝光。
@@ -49,9 +61,13 @@ const CODING_PLAN_TEAM_SPEC_MARKERS = [
 
 export function shouldPrepareCodingPlanTeamMock(specs: readonly string[]) {
   return specs.some((spec) => {
-    const normalized = spec.replaceAll("\\", "/");
+    const normalized = spec.replaceAll("\\", "/").replace(/^\.\//u, "");
     return (
-      normalized === DEFAULT_FULL_E2E_SPEC_GLOB ||
+      // 场景 glob 在 launcher 尚未展开，需提前启动共用 mock；worker 仍按具体用例决定是否使用。
+      (/^test\/e2e\/(?:\*\*\/|conversation-session\/|settings\/providers\/|automations\/|coding-plan\/|ui-shell\/)/u.test(
+        normalized,
+      ) &&
+        /[*?[{]/u.test(normalized)) ||
       CODING_PLAN_TEAM_SPEC_MARKERS.some((marker) => normalized.includes(marker))
     );
   });
@@ -86,6 +102,15 @@ export function applyCodingPlanUpgradeMockEnv(environment: MutableEnvironment, b
   environment.BIGMODEL_TEST_API_BASE_URL = baseUrl;
   environment.VITE_CODING_PLAN_WEBVIEW_ORIGIN = baseUrl;
   environment.ZAI_BUSINESS_BASE_URL = baseUrl;
+}
+
+// 采上游 v3.18.0：子 shard 的动态端口晚于父构建；构建决策和源码证据必须共用这个判据。
+// codingPlanE2EMockEnv.test.ts 与 wdio.conf.ts 的 prepareDesktopAppBuild 都依赖它。
+export function shouldReuseDesktopE2EBuild(environment: MutableEnvironment): boolean {
+  return (
+    environment.ZCODE_E2E_SKIP_BUILD === "1" &&
+    !environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV]?.trim()
+  );
 }
 
 export function clearCodingPlanUpgradeMockEnv(environment: MutableEnvironment, baseUrl: string) {

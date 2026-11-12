@@ -1,4 +1,7 @@
-import { createConfig } from "@zcode/adapters/config";
+import { createNodePluginAdapter } from "@zcode/adapters/plugins";
+import { createOfficialPluginPreparation } from "./app/bundled-plugins.js";
+import { resolveZCodePlugins } from "./plugins.js";
+import { createConfig, resolvePath } from "@zcode/adapters/config";
 import type { McpElicitationPort, McpNotificationPort } from "@zcode/contracts";
 import { createNodeModelSelectionFacade } from "@zcode/provider-node";
 import { createNodeLoggerFactory } from "@zcode/adapters/logging";
@@ -29,12 +32,14 @@ import {
 } from "./zcode-protocol/storage-startup.js";
 import { closeSessionStore, getSessionDbPath } from "./app/session-store.js";
 import { startProcessProviderRegistryRuntime } from "./app/process-provider-registry-runtime.js";
+import { getCliStorageRoot, getPluginStorageRoot } from "./app/paths.js";
 import { scheduleStartupLogRetentionCleanup } from "./log-retention.js";
 import { StartupTimer, startupNow } from "./startup-logging.js";
 import { installZCodeProtocolAiSdkWarningLogger } from "./zcode-protocol/ai-sdk-warning-logger.js";
 import {
   createOfficialMcpTrustedOriginRegistry,
   OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV,
+  ZXCODE_WORKSPACE_IDENTITY_ENV,
   resolveRuntimeZCodeEndpointOrigin,
 } from "@zcode/shared";
 import { ZCodeProtocolAgentServer } from "./zcode-protocol/server.js";
@@ -117,6 +122,12 @@ export async function runZCodeProtocolAgent(
   });
 
   let sessionStore: SqliteSessionStore | undefined;
+  // 修复原因：原先给 seed+discovery 共 3 秒预算，超时后整个进程到重启前都不加载插件。
+  // Windows 实测冷启动 seed 官方插件约 3.0~3.1 秒，插件版本升级后的首次启动必然超时。
+  // 先停用启动预算：seed 等锁仍由 15 秒共享锁预算兜住，超时按单插件降级回退旧缓存。
+  const pluginPreparation = createOfficialPluginPreparation();
+  let pluginDiscovery: ReturnType<typeof createNodePluginAdapter> | undefined;
+  let pluginPrewarm: Promise<void> | undefined;
   let serverForCleanup: ZCodeProtocolAgentServer | undefined;
   let nodeReplBrowserBroker: NodeReplBrowserBroker | undefined;
   let mcpConnectionPool: McpConnectionPool | undefined;
@@ -146,6 +157,28 @@ export async function runZCodeProtocolAgent(
             }),
         }),
     });
+    pluginDiscovery = createNodePluginAdapter({
+      storageRoot: getPluginStorageRoot(
+        getCliStorageRoot(resolvePath(configResult.config.storage.dir)),
+      ),
+    });
+    pluginPrewarm = resolveZCodePlugins({
+      pluginDiscovery,
+      workspaceIdentity: (options.env ?? process.env)[ZXCODE_WORKSPACE_IDENTITY_ENV]?.trim(),
+      env: options.env,
+      logger,
+      workingDirectory: options.cwd,
+      pluginPreparation,
+    }).then(
+      () => undefined,
+      (error: unknown) => {
+        if (!pluginPreparation.signal.aborted)
+          logger.warn("Plugin startup preparation failed", {
+            event: "zcode_protocol.plugins.prewarm.failed",
+            errorType: error instanceof Error ? error.name : typeof error,
+          });
+      },
+    );
     const runtimeEnv = options.env ?? process.env;
     options.lifecycle?.signal.throwIfAborted();
     providerRegistryRuntime = await acquireProtocolStartupResource({
@@ -258,6 +291,8 @@ export async function runZCodeProtocolAgent(
       mcpPort,
       mcpTelemetry: mcpTelemetryTracker,
       sessionStore,
+      pluginPreparation,
+      pluginDiscovery,
       refreshProviderRegistry: async (reason) => {
         await activeProviderRegistryRuntime.runtime.registryService.refresh(reason);
       },
@@ -329,6 +364,13 @@ export async function runZCodeProtocolAgent(
       logger,
       deadlineAt: options.lifecycle?.deadlineAt,
       server: serverForCleanup,
+      pluginPreparation: {
+        dispose: async () => {
+          pluginDiscovery?.dispose();
+          await pluginPreparation.dispose();
+          await pluginPrewarm;
+        },
+      },
       processResourceSampler,
       mcpTelemetryTracker,
       nodeReplBrowserBroker,

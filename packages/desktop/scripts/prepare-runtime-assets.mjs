@@ -33,6 +33,7 @@ const shouldPrepareMacosWindowBounds = target.os === "darwin";
 // 未配置时解包仓库内置的同名归档，两种情况都不需要额外开关。
 const localRuntimeScripts = [
   "prepare:agent-bundle",
+  ...(target.os === "win32" ? ["prepare:windows-runtime-host"] : []),
   ...(shouldPrepareWindowsCuaHelper ? ["prepare:windows-cua-helper"] : []),
   ...(nativeSearchReleasePlan.enabled ? ["prepare:native-search"] : []),
   ...(shouldPrepareWindowsBrowserImportHelper ? ["prepare:browser-import-helper"] : []),

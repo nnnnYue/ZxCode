@@ -1,3 +1,4 @@
+import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
 import { readFile } from "node:fs/promises";
 
 import type { ModelSelectionView } from "@zcode/provider";
@@ -225,6 +226,68 @@ export function createBotsServiceHarness(options: BotsServiceHarnessOptions): Bo
     service,
     subscriptions,
     zcodeTaskService,
+  };
+}
+
+/** case-local 项目事实；不依赖真实 settings 历史或在线 runtime。 */
+// 取自 MERGE_HEAD（上游 v3.18.0）版 bots-service-harness：上游用例
+// feishu-streaming-card-lifecycle 需要该导出，fork 版 helper 缺少它。
+export function createBotProjectFixture(
+  workspaces: Array<{ workspacePath: string; workspaceIdentity?: unknown; projectId?: unknown }> = [
+    { workspacePath: E2E_BOT_WORKSPACE },
+  ],
+) {
+  const projects = workspaces.map((workspace, index) => ({
+    id: typeof workspace.projectId === "string" ? workspace.projectId : `e2e-project-${index}`,
+    hostId:
+      typeof workspace.workspaceIdentity === "string"
+        ? remoteHostIdFromWorkspaceIdentity(workspace.workspaceIdentity)!
+        : "local",
+    name: `E2E project ${index}`,
+    roots: [{ rootPath: workspace.workspacePath, position: 0, isPrimary: true }],
+    nameOverridden: false,
+    position: index,
+    pinned: false,
+    deleted: false,
+    createdAt: 1,
+    updatedAt: 1,
+  }));
+  return {
+    projectService: {
+      readProjects: async (input?: { hostId?: string }) =>
+        projects.filter((project) => project.hostId === (input?.hostId ?? "local")),
+      readTree: async () => ({ projects, tasks: [] }),
+      prepareSession: async (input: { projectId: string }) => {
+        const index = projects.findIndex((project) => project.id === input.projectId);
+        if (index < 0) throw new Error("fixture project missing");
+        return { ...workspaces[index], projectId: input.projectId, additionalDirectories: [] };
+      },
+    },
+    remoteProjectService: {
+      readDirectory: async () => ({
+        hosts: [
+          ...new Set(projects.map((project) => project.hostId).filter((id) => id !== "local")),
+        ].map((id) => ({
+          id,
+          membershipId: id,
+          kind: "server",
+          target: null,
+          position: 0,
+          connectionStatus: "online",
+        })),
+        entries: projects
+          .filter((project) => project.hostId !== "local")
+          .map((project) => ({
+            id: project.id,
+            projectId: project.id,
+            hostId: project.hostId,
+            name: project.name,
+            roots: project.roots,
+            legacyWorkspace: null,
+            lastSyncedAt: 1,
+          })),
+      }),
+    },
   };
 }
 

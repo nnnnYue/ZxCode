@@ -86,7 +86,6 @@ export {
 } from "./lib/fileDisplay.js";
 export type { FileDisplayDescriptor, FileDisplayOptions } from "./lib/fileDisplay.js";
 export { playTaskNotificationSound } from "./lib/taskNotificationSound.js";
-export { installDocumentHiddenMotionPause } from "./lib/documentHiddenMotionPause.js";
 export {
   applyUiFontSizePx,
   loadUiFontSizePx,
@@ -99,6 +98,15 @@ export {
   USER_ACTION_CATALOG,
 } from "./lib/userActionTraceCatalog.js";
 export { generateMobileDeviceFingerprint, setStreamClientId } from "./lib/streamClientId.js";
+// 合并修复：上游 v3.18.0 移除了 hidden 文档动画暂停（改为组件自管动画），但 fork 在
+// web/手机切后台场景保留该内存修复（见 web/src/main.tsx 的 fork 裁决注释），模块与导出按 fork HEAD 恢复。
+export { installDocumentHiddenMotionPause } from "./lib/documentHiddenMotionPause.js";
 export { GlobalDatabaseStartupLoading } from "./root/GlobalDatabaseStartupLoading.js";
 
+// fork 侧 v4/telemetry 已拍平 local-ttft 子目录，保持 fork 导出路径；上游新增 composerDraftStore 导出一并采纳。
 export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
+export {
+  ensurePendingTaskDraft,
+  readPendingTaskDraft,
+  readComposerWorkspaceScope,
+} from "@/v4/composer/composerDraftStore.js";

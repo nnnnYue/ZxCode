@@ -39,12 +39,19 @@ export {
   usePluginUiToolBinding,
 } from "./adapters/PluginUiProviders.js";
 export { usePluginUiModelContexts } from "./adapters/pluginUiModelContextEvents.js";
-export { usePluginUiContextImages } from "./adapters/usePluginUiContextImages.js";
+export {
+  useContextImageAttachments,
+  usePluginUiContextImages,
+  type ContextImageAttachmentsOptions,
+  type ContextImageAttachmentsPort,
+} from "./adapters/usePluginUiContextImages.js";
 export { PluginUiModelContextChip } from "./adapters/PluginUiModelContextChip.js";
 export { PluginUiFollowUpDialogHost } from "./components/PluginUiFollowUpDialogHost.js";
 export { PluginUiSidePane } from "./PluginUiSidePane.js";
 export {
   PluginUiLauncherItems,
+  // 合并修复：v3.18 上游新增导出，ExtensionLauncherSection 的侧栏启动行组件。
+  SidePaneLauncherRow,
   buildPluginUiLauncherItemId,
 } from "@/plugin-ui/components/PluginUiLauncherItems.js";
 export {

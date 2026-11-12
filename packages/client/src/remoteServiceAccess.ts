@@ -15,6 +15,7 @@ import {
   IZCodeAgentService,
   IZCodeSessionService,
   IProjectService,
+  IManagedWorktreeService,
   ITaskGroupService,
   ISourceServerWorkspaceService,
   IRemoteProjectService,
@@ -24,6 +25,12 @@ import {
   IModelSelectionService,
   IProviderSettingsService,
   IProviderProvisioningTargetService,
+  // fork：采纳 extension-host 与 managed-worktrees 域；其余上游新增接入
+  // （source-server 管理/设备同步、voice-input、usage-stats、coding-plan、clientConfig、
+  // 营销、off-peak 激活、highspeed 卡片）随剔除域拒绝，不接入 client accessor。
+  IExtensionsService,
+  IExtensionViewsService,
+  IExtensionGrantsService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
@@ -71,6 +78,7 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly zcodeSessionService: IZCodeSessionService;
   readonly taskGroupService: ITaskGroupService;
   readonly projectService: IProjectService;
+  readonly managedWorktreeService?: IManagedWorktreeService;
   readonly remoteProjectService: IRemoteProjectService;
   readonly sourceServerWorkspaceService: ISourceServerWorkspaceService;
   // cuaPermissionService 在 IServiceAccessor 上是可选（远端/bots host 不提供），但桌面 renderer
@@ -82,6 +90,10 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly modelSelectionService: IModelSelectionService;
   /** Host-only target proxy；不属于 IServiceAccessor，避免向 Renderer 暴露 Secret 写入接口。 */
   readonly providerProvisioningTargetService!: IProviderProvisioningTargetService;
+  /** 仅 desktop base attachment 注册：扩展（docs/plugins/extension-host.md）。 */
+  readonly extensionsService?: IExtensionsService;
+  readonly extensionViewsService?: IExtensionViewsService;
+  readonly extensionGrantsService?: IExtensionGrantsService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
@@ -102,7 +114,12 @@ export class RemoteServiceAccess implements IServiceAccessor {
 
   constructor(
     channelClient: IChannelClient,
-    options: { sourceServerManagementService?: boolean; windowProjectDirectory?: boolean } = {},
+    options: {
+      sourceServerManagementService?: boolean;
+      extensionsService?: boolean;
+      managedWorktreeService?: boolean;
+      windowProjectDirectory?: boolean;
+    } = {},
   ) {
     // 远端工作区的 project 必须保留 Source 语义；只有显式能力才创建完整窗口目录组。
     if (options.windowProjectDirectory) {
@@ -171,6 +188,12 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.sourceServerWorkspaceService = ProxyChannel.toService<ISourceServerWorkspaceService>(
       channelClient.getChannel(ISourceServerWorkspaceService.channelName),
     );
+    // 代理对象不能证明远端注册了频道；只在桌面 base 明确提供能力时创建，避免远程/手机误订阅。
+    this.managedWorktreeService = options.managedWorktreeService
+      ? ProxyChannel.toService<IManagedWorktreeService>(
+          channelClient.getChannel(IManagedWorktreeService.channelName),
+        )
+      : undefined;
     this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
       channelClient.getChannel(IZCodeSessionService.channelName),
     );
@@ -195,6 +218,27 @@ export class RemoteServiceAccess implements IServiceAccessor {
       ),
       enumerable: false,
     });
+    // Bug 原因（上游注释保留）：ProxyChannel 是惰性的，无论服务端是否注册 channel 都能构造出
+    // “看似存在”的对象，optional 合同因此在首次调用时才失败。scope 创建时必须显式声明能力。
+    // fork：只保留 extension-host 三个门面的能力开关接线；source-server 管理、设备同步、
+    // voice-input、usage-stats、coding-plan、clientConfig、营销、off-peak、highspeed 卡片不接入。
+    this.extensionsService = options.extensionsService
+      ? ProxyChannel.toService<IExtensionsService>(
+          channelClient.getChannel(IExtensionsService.channelName),
+        )
+      : undefined;
+    // 扩展视图门面与扩展门面同一开关：同一个 Window Host 服务，只是另一个频道（§8）。
+    this.extensionViewsService = options.extensionsService
+      ? ProxyChannel.toService<IExtensionViewsService>(
+          channelClient.getChannel(IExtensionViewsService.channelName),
+        )
+      : undefined;
+    // 扩展授权门面与扩展门面同一开关（§17.7）：只在桌面 base 连接打开，不进手机白名单。
+    this.extensionGrantsService = options.extensionsService
+      ? ProxyChannel.toService<IExtensionGrantsService>(
+          channelClient.getChannel(IExtensionGrantsService.channelName),
+        )
+      : undefined;
     this.skillsService = ProxyChannel.toService<ISkillsService>(
       channelClient.getChannel(ISkillsService.channelName),
     );

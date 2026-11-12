@@ -1,3 +1,4 @@
+import { createSystemCredentialCipher } from "@zcode/shared/credential-security";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -11,10 +12,7 @@ import type {
   ProviderConfigLayerSnapshot,
 } from "@zcode/provider";
 import { decodeProviderConfigFile, encodeProviderConfigFile } from "@zcode/provider-node";
-import {
-  createCredentialCipherProvider,
-  type CredentialCipherProvider,
-} from "../credential/providers/credentialCipherProvider.js";
+import { type CredentialCipherProvider } from "../credential/providers/credentialCipherProvider.js";
 import type { ISettingService } from "../setting/setting.js";
 
 const CREDENTIAL_FILE_NAME = "credentials.json";
@@ -22,6 +20,7 @@ const CREDENTIAL_FILE_NAME = "credentials.json";
  * 去平台化：OAuth 登录删除后不再存在可同步的 oauth-session 凭据；
  * 保留空列表维持 Provisioning credential allowlist 的结构（仅剩 account-provider key 分类），
  * 旧凭据条目即使残留在本机 credential store 也不会再被导出同步。
+ * fork：上游 v3 的 LEGACY + OAuth 会话组 key 列表随 OAuth 登录域一并剔除，不引入。
  */
 export const PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS = [] as const;
 
@@ -41,12 +40,16 @@ export interface ProviderProvisioningSourceOptions {
 export function createProviderProvisioningSource(
   options: ProviderProvisioningSourceOptions,
 ): ProviderProvisioningSource {
+  // 同步源会反复读取快照；复用 cipher，避免每次同步都重新申请系统凭据访问。
+  const cipher =
+    options.cipherProvider ??
+    createSystemCredentialCipher({ filePath: options.credentialFilePath });
   return {
     async read(syncId: string): Promise<ProviderProvisioningEnvelope> {
       const [personal, settings, credentials] = await Promise.all([
         readProvisionablePersonalConfig(options.personalRepository, options.personalConfigFilePath),
         options.settingService.get(),
-        readProvisioningCredentials(options.credentialFilePath, options.cipherProvider),
+        readProvisioningCredentials(options.credentialFilePath, cipher),
       ]);
       // 默认与规则来自同一份持锁读取，不能把两次读取的值拼成不存在的配置版本。
       const personalConfig = encodeProviderConfigFile(personal).config;
@@ -55,7 +58,7 @@ export function createProviderProvisioningSource(
         providerFamilyConnectionSelections: settings.providerFamilyConnectionSelections ?? {},
       };
       return providerProvisioningEnvelopeSchema.parse({
-        schemaVersion: 2,
+        schemaVersion: 3,
         syncId,
         personalConfig,
         accountSettings,
@@ -105,7 +108,7 @@ export async function readProvisionablePersonalConfig(
 
 async function readProvisioningCredentials(
   credentialFilePath: string,
-  cipherProvider?: CredentialCipherProvider,
+  cipher: CredentialCipherProvider,
 ): Promise<ProviderProvisioningCredentialEntry[]> {
   let raw: string;
   try {
@@ -118,7 +121,6 @@ async function readProvisioningCredentials(
   if (!isRecord(parsed)) {
     throw new Error("Credential Store 必须是 JSON 对象");
   }
-  const cipher = cipherProvider ?? createCredentialCipherProvider();
   const allowedKeys = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS);
   const entries: ProviderProvisioningCredentialEntry[] = [];
   // Credential Store 还可能包含不属于 Provisioning allowlist 的历史记录；
@@ -130,7 +132,7 @@ async function readProvisioningCredentials(
     if (typeof encrypted !== "string") {
       throw new Error(`Credential allowlist value must be a string: ${key}`);
     }
-    const value = cipher.decrypt(encrypted);
+    const value = await cipher.decrypt(encrypted);
     if (!value.trim()) continue;
     entries.push({ scope: "oauth-session", key, value });
   }

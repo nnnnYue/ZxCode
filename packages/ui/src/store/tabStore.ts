@@ -6,6 +6,7 @@
  * 标签页状态通过 settingService 持久化（见 useTabPersistence）。
  */
 import { create } from "zustand";
+import type { FileManagerTarget } from "@/lib/workspaceSidePane.js";
 import {
   createUuid,
   type RemoteTarget,
@@ -97,6 +98,11 @@ export function isSettingsTab(tab: WindowTabState): tab is SettingsTabState {
 // ============================================================================
 
 export interface TabStoreState {
+  // 合并修复：v3.18 上游新增——跨 workspace 文件管理导航的一次性请求信箱。
+  /** 仅窗口内的一次性导航请求，目标 Shell 消费后清除，不持久化。 */
+  pendingFileManagerTarget: FileManagerTarget | null;
+  requestFileManager: (target: FileManagerTarget) => void;
+  consumeFileManager: (target: FileManagerTarget) => boolean;
   /** 当前窗口所有打开的标签页（有序） */
   tabs: WindowTabState[];
   /** 当前激活的标签页 ID，null 表示无激活标签 */
@@ -249,6 +255,21 @@ interface StorageLike {
 export function createTabStore(storage: StorageLike | null | undefined = undefined) {
   return create<TabStoreState>()((set, get) => ({
     tabs: [],
+    // 合并修复：v3.18 上游新增——跨 workspace 文件管理导航的一次性请求信箱。
+    pendingFileManagerTarget: null,
+    requestFileManager: (target) => {
+      // 先记录目标再激活 workspace，目标 Shell 完成切换后才创建标签，避免借用旧任务归属。
+      set({ pendingFileManagerTarget: target });
+      get().addTab(target.workspacePath, {
+        workspaceIdentity: target.workspaceIdentity,
+        remoteSessionId: target.workspaceRemoteSessionId,
+      });
+    },
+    consumeFileManager: (target) => {
+      if (get().pendingFileManagerTarget !== target) return false;
+      set({ pendingFileManagerTarget: null });
+      return true;
+    },
     activeTabId: null,
     activeWorkspacePath: null,
     activeWorkspaceIdentity: null,
@@ -543,17 +564,13 @@ export function createTabStore(storage: StorageLike | null | undefined = undefin
 
     activateTabByPath: (path: string, options) => {
       const stateBefore = get();
-      const tab = stateBefore.tabs.find((currentTab): currentTab is WorkspaceTabState => {
-        if (!isWorkspaceTab(currentTab) || currentTab.workspacePath !== path) {
-          return false;
-        }
-
-        if (options?.workspaceIdentity) {
-          return currentTab.workspaceIdentity === options.workspaceIdentity;
-        }
-
-        return true;
-      });
+      // Bug 原因：未传 identity 时这里只按路径取第一个 tab；本地项目与远程项目同路径且远程 tab
+      // 在前时，点击本地任务会激活远程 tab，主区继续显示远程任务。与 addTab 共用匹配规则：
+      // 未传 identity 只命中本地 tab。
+      const tab = stateBefore.tabs.find(
+        (currentTab): currentTab is WorkspaceTabState =>
+          isWorkspaceTab(currentTab) && isSameWorkspaceTab(currentTab, path, options),
+      );
       if (!tab) {
         return false;
       }

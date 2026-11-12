@@ -21,8 +21,10 @@ export function registerDesktopPrintToPdfIpcHandler(logger: {
         preferCSSPageSize: true,
         margins: { top: 0, bottom: 0, left: 0, right: 0 },
       });
-      // Buffer 可能是池化视图，切出独立 ArrayBuffer 再走 structured clone
-      const data = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+      // Buffer 可能是池化视图，切出独立 ArrayBuffer 再走 structured clone。
+      // @types/node 25 里 buffer.buffer 是 ArrayBuffer | SharedArrayBuffer（TS2322），
+      // 恢复上游写法：Uint8Array.from 复制出独立的纯 ArrayBuffer。
+      const data = Uint8Array.from(buffer).buffer;
       return { success: true, data };
     } catch (error) {
       logger.warn(

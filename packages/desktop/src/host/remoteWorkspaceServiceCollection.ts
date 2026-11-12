@@ -44,6 +44,7 @@ import {
   createOutputStyleService,
 } from "@zcode/services/node";
 import {
+  DEFAULT_APP_TOOL_SEARCH_MODE,
   DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
   type ZCodeSessionRuntimePreferencesResult,
 } from "@zcode/shared";
@@ -146,6 +147,9 @@ export function createRemoteWorkspaceServiceCollection(params: {
               askUserQuestionAutoResolutionEnabled:
                 settings.askUserQuestionAutoResolutionEnabled !== false,
               nativeSearchEnhancementsEnabled: settings.nativeSearchEnhancementsEnabled !== false,
+              // 与本地 Host（services/node.ts resolveSessionRuntimePreferences）同源：
+              // 上游 v3.18.0 把 toolSearchMode 纳入 runtime preferences 必填合同，缺失会拒绝整个响应。
+              toolSearchMode: settings.toolSearchMode ?? DEFAULT_APP_TOOL_SEARCH_MODE,
               memoryEnabled: settings.memoryEnabled === true,
               modelContextBudgetStrategy,
               // remote workspace 与本地 Host 保持同一 scope 边界，首次执行不得再次等待 client config。
@@ -209,6 +213,17 @@ export function createRemoteWorkspaceServiceCollection(params: {
       createBotsService({
         credentialService: localCredentialService,
         zcodeTaskService: remoteZCodeTaskService,
+        // fork：手机远控的 legacy 远端 wire 不含 project 通道（LEGACY_REMOTE_WORKSPACE_RPC_CHANNELS
+        // 无 projectService），bot 的项目绑定 / 任务选择入口在本路径不可用；按接口合同提供显式失败的
+        // stub（与 zcodeTaskServiceAdapter 的 grouped-task stub 同风格），触达时抛错而非静默空数据。
+        projectService: {
+          readProjects: () =>
+            Promise.reject(new Error("project service unavailable on remote workspace host")),
+          readTree: () =>
+            Promise.reject(new Error("project service unavailable on remote workspace host")),
+          prepareSession: () =>
+            Promise.reject(new Error("project service unavailable on remote workspace host")),
+        },
         broadcastService: localBroadcastService,
         settingService: localSettingService,
         modelSelectionService: params.connectionServices.modelSelectionService,

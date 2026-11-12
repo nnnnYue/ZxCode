@@ -136,7 +136,7 @@ export function createInProcessNodeReplExecutor(): NodeReplExecutor {
             documentationRoot: cuaDocumentationRoot,
           }),
         }),
-      restrictProcess: true,
+      protectProtocolStdio: true,
     });
     activeCall = {
       generation,

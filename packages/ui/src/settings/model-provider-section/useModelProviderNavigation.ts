@@ -8,7 +8,6 @@ import {
   type ProviderOrderView,
 } from "@/lib/modelProviderOrdering.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-
 interface UseModelProviderNavigationOptions {
   modelProviders: ProviderSettingsFormProvider[];
   displayOrder?: ProviderOrderView;

@@ -159,6 +159,7 @@ async function generateTitleCandidateImpl(
     positiveTimeoutMs(this.config.titleGeneration?.timeoutMs),
   );
   const modelStartedAt = Date.now();
+  using statusSink = this.createModelStatusSink(modelTraceContext, events);
   const invocationContext = {
     metadata: traceContextToLogContext(modelTraceContext),
     modelCall: {
@@ -168,7 +169,7 @@ async function generateTitleCandidateImpl(
           : ("session_title_generation" as const),
       reasoning: { requestedLevel: model.options.reasoningLevel },
     },
-    statusSink: this.createModelStatusSink(modelTraceContext, events),
+    statusSink,
     traceContext: modelTraceContext,
   };
 

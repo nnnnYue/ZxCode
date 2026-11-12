@@ -12,6 +12,8 @@ import {
 } from "./databaseStartupRelay.js";
 import { ensureDesktopDeviceMidSync } from "./desktopDeviceMid.js";
 import { createDesktopRelayClient, type DesktopRelayClientHandle } from "./desktopRelayClient.js";
+// v3.18.0：语言冷启动竞态修复抽出为独立模块（合并时残留调用缺 import，此处补齐）。
+import { readBootstrapApplicationLocale } from "./desktopApplicationLocaleBootstrap.js";
 import { buildBrowserViewCloseTabNotification } from "./browserView/browserCloseTabNotification.js";
 import { BrowserGuestManager } from "./browserView/browserGuestManager.js";
 import { createElectronBrowserWebmRecorder } from "./browserView/electronBrowserWebmRecorder.js";
@@ -58,15 +60,18 @@ import {
 } from "@zcode/services/node";
 import {
   desktopMenuMessageIds,
+  type HostQuitBlocker,
   type Locale,
   type AppSettings,
   PlatformChannels,
   ZXCODE_ENV,
   ZXCODE_PRODUCT_FLAVOR,
+  appSettingsPatchSchema,
   DEFAULT_ZXCODE_ENDPOINT_ORIGIN,
   // fork 重命名导出（ZXCODE_*）；合并进来的上游代码块引用旧名，用别名保持两者可用。
   DEFAULT_ZXCODE_ENDPOINT_ORIGIN as DEFAULT_ZCODE_ENDPOINT_ORIGIN,
   DEFAULT_LOCALE,
+  // fork：toZhOrEnLocale（移动推送文案收敛）不引入，移动推送域剔除。
   TEST_ZCODE_ENDPOINT_ORIGIN,
   ZXCODE_VERSION as ZCODE_VERSION,
   buildZCodeEndpointUrls,
@@ -95,6 +100,7 @@ import {
 import { createWebRemoteControlManager } from "./webRemoteControlManager.js";
 import { createNodeWebRemoteControlRelayAuthProvider } from "./webRemoteControlRelayAuthProvider.js";
 import { createWebRemoteControlRelayAuthStorageProvider } from "./webRemoteControlRelayAuthStorageProvider.js";
+// fork：mobile push / web-remote-relay 目录的 import 不引入（官方云中继 V2 域保持剔除）。
 import { createWebRemoteControlFeatureGate } from "./webRemoteControlFeatureGate.js";
 import { reconnectWebRemoteControlWorkspaceInRenderer } from "./webRemoteControlRendererReconnect.js";
 import { sendWebRemoteControlStatusChangedToWindow } from "./webRemoteControlStatusEvents.js";
@@ -150,6 +156,7 @@ import {
   spawnHostProcess,
 } from "./desktopHostProcess.js";
 import { spawnCronScheduler, type CronSchedulerHandle } from "./desktopCronScheduler.js";
+import { createExtensionHostSupervisor } from "#src/main/extensionHostSupervisor.js";
 import {
   clearPendingRoutesForWindow,
   handleDeepLink,
@@ -173,6 +180,7 @@ import { setBrowserUseGuestWebContentsIdsProvider } from "./resourceManagerWindo
 import { createWebRemoteControlSharedHostAttachments } from "./webRemoteControlSharedHostAttachments.js";
 import { registerPlatformIpcHandlers } from "./desktopMainIpcPlatform.js";
 // fork：webRemoteControlManager platformHandlers 依赖（本地 MCP 用户目录读写与临时文本附件）。
+import { registerAppControlNavigationIpc } from "#src/app-control-navigation/main.js";
 import {
   loadCliMcpFromUserDirectory,
   migrateLegacyCommonMcp,
@@ -244,7 +252,17 @@ const linuxDesktopIntegrationIconPath =
       ? join(process.resourcesPath, "icon_512x512.png")
       : join(import.meta.dirname, "../../build/icons/512x512.png")
     : iconPath;
-let currentApplicationLocale: Locale = DEFAULT_LOCALE;
+// 冷启动竞态修复：初值取 setting.json 里持久化的界面语言（同步读取），而不是 DEFAULT_LOCALE。
+// 以前要等 whenReady 异步读完设置才赋值，这之前发出的请求（远控 notification/status、遥测等）
+// 都带 X-Client-Language=zh-CN。首次启动没有设置文件时，在 app ready 后按系统语言确定。
+const bootstrapApplicationLocale = readBootstrapApplicationLocale();
+let currentApplicationLocale: Locale = bootstrapApplicationLocale ?? DEFAULT_LOCALE;
+// 界面语言是否已确定（持久化设置 / 系统语言 / renderer 推送三者之一）。未确定前，
+// 可选带语言头的请求一律不带 X-Client-Language，不能拿 DEFAULT_LOCALE 冒充用户语言。
+let applicationLocaleResolved = bootstrapApplicationLocale !== undefined;
+function resolveKnownApplicationLocale(): Locale | undefined {
+  return applicationLocaleResolved ? currentApplicationLocale : undefined;
+}
 let closeToTrayOnWindows = true;
 // CR-01：托盘实例创建结果（模块级，关窗分支读取）。DBus 能力探测通过不等于 Electron
 // Tray 创建成功；隐藏窗口前必须确认最终用户入口真实存在，否则隐藏即失联。
@@ -589,6 +607,7 @@ const cuaPipFocusRouter = createCuaPipFocusRouter({
   },
 });
 const hostRunningTaskCountMap = new Map<ElectronUtilityProcess, number>();
+const hostQuitBlockersMap = new Map<ElectronUtilityProcess, HostQuitBlocker[]>();
 const windowsCuaOperationIndicator = createWindowsCuaOperationIndicator({
   platform: process.platform,
   getLocale: () => currentApplicationLocale,
@@ -597,6 +616,21 @@ const windowsCuaOperationIndicator = createWindowsCuaOperationIndicator({
 
 // 常驻 cron scheduler 进程句柄；app ready 后拉起，退出前销毁。
 let cronScheduler: CronSchedulerHandle | null = null;
+// 全 App 唯一的扩展进程监管器（docs/plugins/extension-host.md §12.1）。
+// 先于任何窗口创建，以便登记每个 Window Host；扩展进程在首个 Window Host 就绪时才拉起。
+// 每次启动扩展进程前读一次设置页的网络出口（§18.1 H3）；读取发生在拉起时，晚于 mainSettingService 初始化。
+let extensionHostSupervisor: ReturnType<typeof createExtensionHostSupervisor> | null =
+  createExtensionHostSupervisor({
+    logger,
+    readNetworkSettings: async () => {
+      const settings = await mainSettingService.get();
+      return {
+        httpProxy: settings.httpProxy,
+        noProxy: settings.httpProxyNoProxy,
+        caCertPath: settings.httpProxyCaCertPath,
+      };
+    },
+  });
 // host → main 的定时任务派发结果，转交给 scheduler 结算。经模块变量转发以避免 spawn 顺序耦合。
 function forwardCronRunResult(
   result: Parameters<CronSchedulerHandle["handleCronRunResult"]>[0],
@@ -618,6 +652,7 @@ const disposingHostProcessTimers = new WeakMap<
 const webRemoteControlManagerRef = {
   current: null as ReturnType<typeof createWebRemoteControlManager> | null,
 };
+// fork：更新状态窗口 / appLaunch gate / 遥测与自动更新凭据服务不引入（自动更新与遥测域）。
 const mainSettingService = createSettingService();
 const webRemoteControlCredentialService = createCredentialService();
 async function resolveCurrentZCodeEndpointOrigin() {
@@ -627,6 +662,9 @@ async function resolveCurrentZCodeEndpointOrigin() {
     overrideOrigin: (await mainSettingService.get()).zcodeEndpointOrigin,
   });
 }
+// fork：desktopContextPromptRollout（clientConfig 在线下发域）与 appTelemetryCore /
+// appTelemetryRuntime / 远程会话遥测派发（遥测域）整体剔除，不引入。
+
 app.on("browser-window-focus", (_event, win) => {
   rebuildMenu();
   // 设置/更新等无 Host 的 ZxCode 窗口也算前台：router 会先把旧 workspace Host 清成 null，
@@ -755,6 +793,8 @@ const webRemoteControlManager = createWebRemoteControlManager({
     overrideUrl: webRemoteControlRelayWsEnvOverride,
   }),
   mobileRemoteControlUrl: webRemoteControlUrlEnvOverride || defaultZCodeEndpointUrls.remoteUrl,
+  // 远控通知轮询在模块加载时就启动，界面语言确定前不带语言头（不拿默认中文冒充）。
+  getClientLanguage: resolveKnownApplicationLocale,
   deviceMid,
   deviceName: hostname(),
   appVersion: webRemoteControlAppVersion,
@@ -817,6 +857,7 @@ const webRemoteControlManager = createWebRemoteControlManager({
     webRemoteControlSharedHostAttachments.disposeRemoteSession(remoteSessionId),
 });
 webRemoteControlManagerRef.current = webRemoteControlManager;
+// fork：移动推送（startNotifications / onMobilePushRun / onMobilePushEvent）不接线（移动推送域）。
 
 function resolveExternalWorkspaceConfirmationCopy() {
   const effectiveLocale =
@@ -878,7 +919,9 @@ function syncCloseToTrayOnWindows(value: unknown) {
   logger.info(`[settings] closeToTrayOnWindows=${value}`);
 }
 
-function syncImmediateAppSettings(patch: Partial<AppSettings>) {
+// 恢复上游签名：直接以 appSettingsPatchSchema 的解析结果为参数。Partial<AppSettings> 与
+// schema 推导类型存在字段宽度差异（逆变不兼容），且 IPC 层已按 schema 校验后传入。
+function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchema.parse>) {
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
 
   if (patch.mobileRelay !== undefined) {
@@ -936,6 +979,8 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
 
   const cronSchedulerToDispose = cronScheduler;
   cronScheduler = null;
+  const extensionHostToDispose = extensionHostSupervisor;
+  extensionHostSupervisor = null;
 
   const hostProcesses = [
     ...new Set([...windowHostProcessMap.values(), ...listDisposingHostProcesses()]),
@@ -954,6 +999,14 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
         await cronSchedulerToDispose?.dispose();
       } catch (error) {
         logger.warn(`[app-quit] cron scheduler dispose failed (${reason}):`, error);
+      }
+    })(),
+    // 扩展进程与 Host、Cron 无关闭依赖，并行进入同一屏障；自身 1.5 秒内强杀，不放大退出预算。
+    (async () => {
+      try {
+        await extensionHostToDispose?.dispose();
+      } catch (error) {
+        logger.warn(`[app-quit] extension host dispose failed (${reason}):`, error);
       }
     })(),
     // remote session、attachment 和 transport 都由窗口 Host 持有；这里先清理
@@ -1044,9 +1097,53 @@ function logWindowsBundledRuntimeIntegrityDiagnostic() {
   );
 }
 
+// fork：Windows 更新前的进程清理（prepareWindowsProcessesForUpdateInstall）随自动更新域剔除；
+// 受管 worktree 的退出确认（quit blocker）采纳。
+
+/** 正在新 worktree 中启动的任务数；hosts 缺省为全部 Host（docs/git/worktree.md §6.4）。 */
+function getCreatingWorktreeCount(
+  hosts: Iterable<ElectronUtilityProcess> = hostQuitBlockersMap.keys(),
+) {
+  let count = 0;
+  for (const host of hosts)
+    for (const blocker of hostQuitBlockersMap.get(host) ?? [])
+      if (blocker.kind === "worktree-creating") count += blocker.count;
+  return count;
+}
+
 function shouldConfirmAppQuit() {
   // 开发环境里的普通会话经常需要重启 Electron，只在 production 下拦截，避免打断调试。
-  return ZXCODE_ENV === "production" && getRunningAgentSessionCount() > 0;
+  // 正在创建的 worktree 关闭后无法恢复，任何环境都要确认。
+  return (
+    (ZXCODE_ENV === "production" && getRunningAgentSessionCount() > 0) ||
+    getCreatingWorktreeCount() > 0
+  );
+}
+
+function worktreeCreatingDetailLine(count: number, isZh: boolean): string | null {
+  if (count <= 0) return null;
+  return isZh
+    ? `正在新 worktree 中启动的任务：${count} 个，关闭后会丢失。`
+    : `Tasks starting in new worktrees: ${count}. They will be lost after closing.`;
+}
+
+/** 只关闭一个窗口时：仅当该窗口的 Host 有正在创建的 worktree 才确认，否则直接放行。 */
+function confirmWindowCloseWithQuitBlockers(win: BrowserWindow): boolean {
+  const host = windowHostProcessMap.get(win.id);
+  const count = host ? getCreatingWorktreeCount([host]) : 0;
+  if (count === 0) return true;
+  const isZh = currentApplicationLocale === "zh-CN";
+  const result = dialog.showMessageBoxSync(win, {
+    type: "question",
+    buttons: isZh ? ["关闭", "取消"] : ["Close", "Cancel"],
+    defaultId: 1,
+    cancelId: 1,
+    title: isZh ? "关闭确认" : "Confirm Close",
+    message: isZh ? "确认关闭这个窗口？" : "Close this window?",
+    detail: worktreeCreatingDetailLine(count, isZh) ?? "",
+    icon: nativeImage.createFromPath(iconPath),
+  });
+  return result === 0;
 }
 
 function confirmAppQuit(originWindow?: BrowserWindow | null) {
@@ -1063,6 +1160,7 @@ function confirmAppQuit(originWindow?: BrowserWindow | null) {
         ? `正在进行的会话：${runningAgentSessionCount} 个，退出后会被中断。`
         : `In-progress sessions: ${runningAgentSessionCount}. They will be interrupted after quitting.`
       : null,
+    worktreeCreatingDetailLine(getCreatingWorktreeCount(), isZh),
   ].filter((line): line is string => line !== null);
   const targetWindow =
     originWindow && !originWindow.isDestroyed()
@@ -1202,6 +1300,7 @@ function getApplicationWindowsExcludingCuaIndicator(): BrowserWindow[] {
 }
 
 function getMainApplicationWindows(): BrowserWindow[] {
+  // fork：独立更新状态窗口（UpdateStatusWindow 函数群）随自动更新域剔除。
   return getApplicationWindowsExcludingCuaIndicator();
 }
 
@@ -1230,6 +1329,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         logger,
         shouldConfirmQuit: shouldConfirmAppQuit(),
         confirmQuit: () => confirmAppQuit(win),
+        confirmWindowClose: () => confirmWindowCloseWithQuitBlockers(win),
         requestQuit: () => {
           markForceQuit(`last-window-close:${label}`);
           app.quit();
@@ -1237,7 +1337,14 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         hideWindow: () => win.hide(),
       }),
     windowHostProcessMap,
-    onHostProcessReady: (windowKey) => cuaPipFocusRouter.refreshWindow(windowKey),
+    // fork：采纳 extensionHostSupervisor 的 Window Host 登记；灰度首 Host 裁决门
+    // （awaitFirstHostSpawnDecision，clientConfig 域）不引入。
+    onHostProcessReady: (windowKey) => {
+      cuaPipFocusRouter.refreshWindow(windowKey);
+      // 登记新 Window Host；它的服务就绪（window-ready）后监管器再牵线扩展进程。
+      const host = windowHostProcessMap.get(windowKey);
+      if (host) extensionHostSupervisor?.trackWindowHost(host);
+    },
     spawnHostProcess: (win, label, initMessage) =>
       spawnHostProcess(
         win,
@@ -1254,6 +1361,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
           taskRealtimeBus,
           windowHostProcessMap,
           hostRunningTaskCountMap,
+          hostQuitBlockersMap,
           onCuaOperationStateChanged: (source, event) =>
             windowsCuaOperationIndicator.handleState(source, event),
           onCuaOperationStateSourceExited: (source) =>
@@ -1385,7 +1493,8 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     initialWindowSize: currentDesktopWindowSize,
     currentApplicationLocale: () => currentApplicationLocale,
     resolveBrowserViewOwner: (webContentsId) =>
-      browserGuestManager.getTabOwnerByWebContentsId(webContentsId),
+      // 合并时丢了 ?? undefined：窗口侧签名要求 undefined 而不是 null；恢复上游写法。
+      browserGuestManager.getTabOwnerByWebContentsId(webContentsId) ?? undefined,
     persistWindowSize: async (state) => {
       currentDesktopWindowSize = state;
       await mainSettingService.update({ desktopWindowSize: state });
@@ -1431,7 +1540,8 @@ app.on("second-instance", (_event, argv, _workingDirectory, additionalData) => {
             (() => getApplicationWindowsExcludingCuaIndicator()[0] ?? null),
         }),
       resolveApplicationWindow: () => getApplicationWindowsExcludingCuaIndicator()[0] ?? null,
-      logger,
+      // fork：上游此处的 logger/forceUpdateBlocked 服务于强制升级门禁域，fork 已剔除该域，
+      // SecondInstanceWorkspaceDeps 不含 logger，剥离多余传参。
       workspaceConfirmationCopy: resolveExternalWorkspaceConfirmationCopy(),
     })
   ) {
@@ -1460,6 +1570,8 @@ app.whenReady().then(async () => {
     preloadPath: join(import.meta.dirname, "../preload/pluginSandbox.cjs"),
     rendererDir: join(import.meta.dirname, "../renderer"),
     aliasDir: join(import.meta.dirname, "../plugin-sandbox"),
+    // Gen UI / MCP App 的摄像头/麦克风等权限确认框跟随界面语言（以前按系统语言）。
+    getApplicationLocale: () => currentApplicationLocale,
     // 开发模式 out/renderer 没有 shell 产物，从 renderer dev server 代理（同 cua-permission-panel 的做法）。
     ...(!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]
       ? { devServerUrl: process.env["ELECTRON_RENDERER_URL"] }
@@ -1488,6 +1600,7 @@ app.whenReady().then(async () => {
     if (bootstrapSettings.locale) {
       loadedBootstrapLocale = true;
       currentApplicationLocale = bootstrapSettings.locale;
+      applicationLocaleResolved = true;
     }
     // Linux 默认值归位迁移（spec：docs/desktop/linux-close-to-tray.md）：shared 迁移无平台
     // 概念、曾把存量 Linux 用户归为 true，但 Linux 此前无设置入口，存量 true 非用户显式
@@ -1561,6 +1674,8 @@ app.whenReady().then(async () => {
   if (!loadedBootstrapLocale) {
     currentApplicationLocale = resolveSystemApplicationLocale();
   }
+  applicationLocaleResolved = true;
+  // fork：灰度预热（desktopContextPromptRollout.refresh，clientConfig 域）不引入。
   installFinderOpenFolderWorkflow({
     platform: process.platform,
     locale: currentApplicationLocale,
@@ -1601,6 +1716,8 @@ app.whenReady().then(async () => {
   }
 
   logWindowsBundledRuntimeIntegrityDiagnostic();
+
+  // fork：initAutoUpdater（自动更新域）不接线。
 
   if (process.platform === "darwin" || process.platform === "win32") {
     app.clearRecentDocuments();
@@ -1651,6 +1768,7 @@ app.whenReady().then(async () => {
     });
   }
 
+  registerAppControlNavigationIpc(ipcMain, (contents) => BrowserWindow.fromWebContents(contents));
   registerPlatformIpcHandlers({
     logger,
     // CDP-on-guest pivot：renderer `<webview>` dom-ready 上报 guest webContentsId → attach。
@@ -1684,6 +1802,7 @@ app.whenReady().then(async () => {
         browserGuestManager.detachGuestBeforeReplacement(key, webContentsId, windowId),
       closeBrowserTab: (payload) => browserGuestManager.closeTabFromRenderer(payload),
       reportBrowserTabResidency: (payload) => browserGuestManager.reportResidency(payload),
+      promoteDraftBrowserTabs: (payload) => browserGuestManager.promoteDraftTabs(payload),
       acknowledgeBrowserTabSuspend: (payload) => browserGuestManager.acknowledgeSuspend(payload),
       ensureBrowserTabResident: (payload) =>
         browserGuestManager.ensureResidentFromRenderer(payload),
@@ -1691,6 +1810,11 @@ app.whenReady().then(async () => {
     },
     applyApplicationLocale: async (locale) => {
       currentApplicationLocale = locale;
+      applicationLocaleResolved = true;
+      // Host 的 Agent 请求 X-Client-Language 以此为实时语言；setting.json 写入可能滞后或失败，不能作为来源。
+      for (const child of windowHostProcessMap.values()) {
+        child.postMessage({ type: HostMessageTypes.ApplicationLocaleChanged, locale });
+      }
       windowsCuaOperationIndicator.refreshContent();
       rebuildMenu();
       for (const win of getApplicationWindowsExcludingCuaIndicator()) {
@@ -1780,7 +1904,7 @@ app.whenReady().then(async () => {
     logger,
     webRemoteControlManager,
     createRemoteWorkspaceSession: remoteSessionManager.createRemoteWorkspaceSession,
-    getRemoteConnectionStats: remoteSessionManager.getRemoteConnectionStats,
+    // fork：getRemoteConnectionStats 接线随 ARMS remote usage telemetry（遥测域剔除）一并移除。
     disposeRemoteWorkspaceSession: remoteSessionManager.disposeRemoteWorkspaceSession,
     cancelPendingRemoteWorkspaceSessionsForWindow:
       remoteSessionManager.cancelPendingRemoteWorkspaceSessionsForWindow,
@@ -1791,6 +1915,9 @@ app.whenReady().then(async () => {
     listAvailableDockerContainers,
     listSSHConfigAliases,
   });
+
+  // fork：ARMS / 稳定性 / 资源 / 网络 / 数据体积遥测与远端强制升级 gate
+  // （configureDesktop*Telemetry、maybeBlockStartupForForceUpdate）整体剔除，不接线。
 
   logger.info("[startup] 创建主窗口");
   await primaryWindowCoordinator.ensurePrimaryWindow("app-ready");
@@ -1807,7 +1934,8 @@ app.whenReady().then(async () => {
   });
 
   const protocolUrl = extractDeepLinkUrlFromArgs(process.argv);
-  if (startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
+  // 合并时丢了 protocolUrl && 判空，导致 null 传入 handleDeepLink 报 TS2345；恢复上游守卫。
+  if (protocolUrl && startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
     handleDeepLink(protocolUrl, logger, {
       confirmationCopy: resolveExternalWorkspaceConfirmationCopy(),
       resolveApplicationWindow: () => getApplicationWindowsExcludingCuaIndicator()[0] ?? null,

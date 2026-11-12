@@ -6,7 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Copy, Maximize2, SlidersHorizontal, X } from "lucide-react";
+import { Copy, LoaderCircle, Maximize2, SlidersHorizontal, X } from "lucide-react";
 import type { GenUiReference } from "@zcode/shared/gen-ui";
 import { Button } from "@/components/ui/button.js";
 import {
@@ -161,12 +161,16 @@ export function GenUiCard({
       <TweakPanel snapshot={snapshot} page={page} />
     ) : null;
   // 会话父容器已经负责宽度；卡片再次限宽会让 inline UI 无法填满正文。
+  const loading = supported && online && snapshot.phase !== "error" && !acquisitionError;
   return (
     <section className="my-3 w-full" data-testid="gen-ui-card" data-gen-ui-phase={snapshot.phase}>
       <div className="group relative flow-root">
         {(snapshot.phase !== "ready" || !page) && (
-          <div className="space-y-2 py-3 text-ui-sm text-foreground-subtle" role="status">
-            <p>{status}</p>
+          <div className="space-y-2 py-3 text-ui-base text-foreground-subtle" role="status">
+            <p className="flex items-center gap-2">
+              {loading && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+              {status}
+            </p>{" "}
             {(snapshot.error || acquisitionError) && (
               <p className="break-words text-ui-xs">{snapshot.error || acquisitionError}</p>
             )}

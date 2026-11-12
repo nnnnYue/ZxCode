@@ -5,6 +5,8 @@ export type QuickPickCommandIcon =
   | "folder"
   | "message"
   | "mcp"
+  | "reload"
+  | "logs"
   | "settings"
   | "sidebarClose"
   | "sidebarOpen"
@@ -54,6 +56,10 @@ interface QuickPickCommandHandlers {
   openTerminalTab: () => void;
   openBrowserTab: () => void;
   openReviewTab: () => void;
+  /** 只有桌面本机 Host 提供扩展门面时才有（docs/plugins/extension-host.md §12.1）。 */
+  reloadExtensions?: () => void;
+  /** 打开扩展日志标签（§16.8）：与 reloadExtensions 同一条件。 */
+  openExtensionLogs?: () => void;
 }
 
 interface CreateQuickPickCommandsOptions {

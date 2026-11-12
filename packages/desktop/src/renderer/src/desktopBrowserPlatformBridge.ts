@@ -28,6 +28,7 @@ type DesktopBrowserPlatformBridge = Pick<
   | "browserViewDetachGuest"
   | "browserViewCloseTab"
   | "browserViewReportResidency"
+  | "browserViewPromoteDraftTabs"
   | "browserViewSuspendReady"
   | "browserViewEnsureResident"
   | "browserViewRestoreTabs"
@@ -37,6 +38,8 @@ type DesktopBrowserPlatformBridge = Pick<
   | "getPathForFile"
   | "saveFile"
   | "printPageToPdf"
+  | "microphone"
+  | "captureBrowserGuestPage"
 >;
 
 // Rebase 集成：browser bridge 若继续内联在 renderer 入口，会让入口越过 max-lines 门禁。
@@ -48,6 +51,10 @@ export const desktopBrowserPlatformBridge = {
     Promise.resolve({ success: false, error: "not_supported" }),
   // 条件定义而非兜底返回失败：UI 靠方法是否存在做能力检测，旧 preload 下必须保持 undefined
   printPageToPdf: window.zxcode.printPageToPdf ? () => window.zxcode.printPageToPdf!() : undefined,
+  // fork：microphone（voice-input 域）不接入；CaptureBrowserGuestPage（design 桥）采纳。
+  captureBrowserGuestPage: window.zxcode.captureBrowserGuestPage
+    ? (payload) => window.zxcode.captureBrowserGuestPage!(payload)
+    : undefined,
   onBrowserViewDownloadStarted: (handler) =>
     preloadBrowserBridge?.onBrowserViewDownloadStarted?.(handler) ?? (() => {}),
   onBrowserViewReady: (handler) => window.zxcode.onBrowserViewReady?.(handler) ?? (() => {}),
@@ -74,6 +81,9 @@ export const desktopBrowserPlatformBridge = {
     window.zxcode.browserViewCloseTab?.(payload) ?? Promise.resolve(),
   browserViewReportResidency: (payload) =>
     window.zxcode.browserViewReportResidency?.(payload) ?? Promise.resolve(),
+  // 草稿首发后把草稿 human tab 的 owner 升级为新会话（上游 v3.18.0）。
+  browserViewPromoteDraftTabs: (payload) =>
+    window.zxcode.browserViewPromoteDraftTabs?.(payload) ?? Promise.resolve([]),
   browserViewSuspendReady: (payload) =>
     window.zxcode.browserViewSuspendReady?.(payload) ?? Promise.resolve(),
   browserViewEnsureResident: (payload) =>

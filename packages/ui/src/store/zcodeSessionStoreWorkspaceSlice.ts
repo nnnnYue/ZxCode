@@ -1,5 +1,6 @@
 import type { DraftPluginUiOpenRequest } from "@/plugin-ui/contract.js";
-import type { SessionCreateSource } from "@zcode/shared";
+import type { ComposerInitialization } from "./zcodeSessionStoreTypes.js";
+import type { ManagedWorktreeCreation, SessionCreateSource } from "@zcode/shared";
 /* eslint-disable max-lines -- workspace 级状态动作集中在同一 slice，先保持收口便于维护。 */
 import {
   buildNativeSupplierKey,
@@ -456,6 +457,92 @@ export function createWorkspaceSlice(set: SetFn) {
       );
     },
 
+    consumeComposerInitialization: (
+      workspacePath: string,
+      initialization: ComposerInitialization,
+      workspaceIdentity?: string,
+    ) => {
+      set((state) =>
+        updateWorkspaceState(
+          state,
+          workspacePath,
+          (current) =>
+            current.composerInitialization === initialization
+              ? { ...current, composerInitialization: undefined }
+              : current,
+          workspaceIdentity,
+        ),
+      );
+    },
+
+    setDraftWorktree: (
+      workspacePath: string,
+      worktree: { ref: string | null } | null,
+      workspaceIdentity?: string,
+    ) => {
+      set((state) =>
+        updateWorkspaceState(
+          state,
+          workspacePath,
+          (current) => ({ ...current, draftWorktree: worktree }),
+          workspaceIdentity,
+        ),
+      );
+    },
+
+    beginWorktreeHandoff: (
+      workspacePath: string,
+      handoff: { sessionId: string; creation: ManagedWorktreeCreation },
+      workspaceIdentity?: string,
+    ) => {
+      set((state) =>
+        updateWorkspaceState(
+          state,
+          workspacePath,
+          (current) => ({ ...current, worktreeHandoff: handoff }),
+          workspaceIdentity,
+        ),
+      );
+    },
+
+    finishWorktreeHandoff: (
+      workspacePath: string,
+      sessionId: string,
+      workspaceIdentity?: string,
+    ) => {
+      // 没有属于该会话的交接时返回原 state，避免 SessionPane 的 effect 引起无效渲染。
+      set((state) =>
+        state.getWorkspaceState(workspacePath, workspaceIdentity).worktreeHandoff?.sessionId !==
+        sessionId
+          ? state
+          : updateWorkspaceState(
+              state,
+              workspacePath,
+              (current) => ({ ...current, worktreeHandoff: null }),
+              workspaceIdentity,
+            ),
+      );
+    },
+
+    viewWorktreeCreation: (
+      workspacePath: string,
+      creationId: string | null,
+      workspaceIdentity?: string,
+    ) => {
+      set((state) =>
+        updateWorkspaceState(
+          state,
+          workspacePath,
+          (current) => ({
+            ...current,
+            ...(creationId ? { activeTaskId: null, draftWorktree: null } : {}),
+            draftWorktreeCreationId: creationId,
+          }),
+          workspaceIdentity,
+        ),
+      );
+    },
+
     startDraft: (
       workspacePath: string,
       provider?: ZCodeProvider,
@@ -517,6 +604,9 @@ export function createWorkspaceSlice(set: SetFn) {
               // 侧栏换骨架 Phase 3c：未提交草稿的项目/分组意图只存 Renderer 内存，已提交归属只在 Host。
               draftProjectId: options?.projectId,
               draftTaskGroupId: options?.taskGroupId,
+              // 新草稿默认在本地运行，也不再展示之前的 worktree 创建记录（§3.2）。
+              draftWorktree: null,
+              draftWorktreeCreationId: null,
               // 同 cwd 可属于多个项目；换项目不能复用前一个项目的预热 runtime 目录范围。
               draftRuntimeInvalidationVersion:
                 current.draftRuntimeInvalidationVersion +

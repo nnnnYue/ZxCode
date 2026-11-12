@@ -1,4 +1,14 @@
-/* eslint-disable max-lines -- host process 统一处理 main↔host 生命周期、日志、ZxCode Agent，拆分前先保持跨进程消息收口。 */
+// fork：HostRemoteConversationTelemetryResponse 与 ARMS 资源遥测 ingest（desktopResourceTelemetry /
+// processResourceMcpTelemetrySource 文件未随 fork 引入）不采纳；credential-security cipher、
+// HostQuitBlocker 与 app-control-navigation host 绑定采纳。
+import type { HostQuitBlocker } from "@zcode/shared";
+import {
+  createSystemCredentialCipher,
+  executeCredentialCipherRequest,
+} from "@zcode/shared/credential-security";
+import { getAppConfigDir } from "@zcode/services/node";
+import { bindAppControlNavigationHost } from "#src/app-control-navigation/main.js";
+/* eslint-disable max-lines -- host process 统一处理 main↔host 生命周期、日志、ZCode Agent，拆分前先保持跨进程消息收口。 */
 import {
   type HostAgentProcessErrorResponse,
   type HostAgentProcessExceptionResponse,
@@ -160,6 +170,8 @@ export function spawnHostProcess(
     taskRealtimeBus?: TaskRealtimeBus;
     windowHostProcessMap: Map<number, ElectronUtilityProcess>;
     hostRunningTaskCountMap: Map<ElectronUtilityProcess, number>;
+    /** 每个 Host 当前阻止退出的事项（docs/git/worktree.md §6.4）；空集合时删除条目。 */
+    hostQuitBlockersMap: Map<ElectronUtilityProcess, HostQuitBlocker[]>;
     onWorkspaceRunningTaskCountChanged?: (
       child: ElectronUtilityProcess,
       event: {
@@ -236,6 +248,10 @@ export function spawnHostProcess(
   options?: SpawnHostProcessOptions,
 ): ElectronUtilityProcess {
   const hostId = randomUUID();
+  // 系统库只由 Main 访问；路径在 fork 时绑定，Host 不能指定其他凭据目录。
+  const credentialCipher = createSystemCredentialCipher({
+    filePath: join(getAppConfigDir(), "credentials.json"),
+  });
   const glmBinaryPath = resolveBundledGlmBinaryPath();
   const execArgv = [
     ...(RUNTIME_ZXCODE_DEBUG ? [`--inspect-brk=${RUNTIME_ZXCODE_DEBUG}`] : []),
@@ -281,9 +297,27 @@ export function spawnHostProcess(
   });
 
   const databaseStartupRelay = bindDatabaseStartupRelay(win, child, hostId);
+  const unbindAppNavigation = bindAppControlNavigationHost(win, child, (id) =>
+    BrowserWindow.fromId(id),
+  );
+  child.once("exit", unbindAppNavigation);
   child.on("message", (message: unknown) => {
     const result = hostResponseMessageSchema.safeParse(message);
     if (!result.success) {
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.CredentialCipherRequest) {
+      const { type: _type, ...request } = result.data;
+      void executeCredentialCipherRequest(credentialCipher, request)
+        .then((reply) => {
+          if (!exitedHostProcesses.has(child)) {
+            child.postMessage({ type: HostMessageTypes.CredentialCipherResult, ...reply });
+          }
+        })
+        .catch(() => {
+          // Host 已退出时只能放弃回包；任何凭据输入/结果都不得进入日志。
+        });
       return;
     }
 
@@ -353,7 +387,9 @@ export function spawnHostProcess(
         return;
       }
       void Promise.resolve()
-        .then(() => register(request))
+        // schema 的 refine 已按 contentKind 校验归属（扩展视图无会话，其他类型必须有会话）；
+        // zod 的推导类型表达不出这层判别，这里收窄成契约的判别联合。
+        .then(() => register(request as PluginSandboxRegisterRequestPayload))
         .then((handle) => reply({ requestId: request.requestId, ok: true, ...handle }))
         .catch((error: unknown) =>
           reply({
@@ -467,6 +503,16 @@ export function spawnHostProcess(
 
     if (result.data.type === HostResponseTypes.CronSchedulerWakeRequest) {
       dependencies.onCronSchedulerWakeRequested?.(result.data.automationId);
+      return;
+    }
+
+    // fork：OffPeakSchedulerWakeRequest（off-peak 域）不处理；QuitBlockersChanged（受管 worktree 创建计数）采纳。
+    if (result.data.type === HostResponseTypes.QuitBlockersChanged) {
+      if (result.data.blockers.length > 0) {
+        dependencies.hostQuitBlockersMap.set(child, result.data.blockers);
+      } else {
+        dependencies.hostQuitBlockersMap.delete(child);
+      }
       return;
     }
 
@@ -680,6 +726,7 @@ export function spawnHostProcess(
     hostLogRelay.flushRawLogs();
     dependencies.logger.info(`[spawnHostProcess] host process (${label}) exited with code ${code}`);
     dependencies.hostRunningTaskCountMap.delete(child);
+    dependencies.hostQuitBlockersMap.delete(child);
     if (shouldRegisterBroadcast) {
       dependencies.broadcastHub.unregister(windowId, child);
     }

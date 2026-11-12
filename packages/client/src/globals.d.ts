@@ -15,6 +15,7 @@ import type {
   BrowserViewViewportChangedPayload,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
+  BrowserViewPromoteDraftTabsRequest,
   BrowserViewResidencyReportPayload,
   BrowserViewResidencyTransitionPayload,
   BrowserViewRestoredTabShell,
@@ -168,6 +169,10 @@ declare global {
       ): Promise<import("@zcode/shared").SaveFileResult>;
       /** 将当前页面的 print 媒体版面导出为 PDF（Chromium 打印引擎，矢量文本） */
       printPageToPdf?(): Promise<import("@zcode/shared").PrintPageToPdfResult>;
+      /** 在 main 截取内置浏览器 guest 当前视口为 PNG（renderer 侧 <webview>.capturePage 会崩溃） */
+      captureBrowserGuestPage?(
+        payload: import("@zcode/shared").CaptureBrowserGuestPageRequest,
+      ): Promise<import("@zcode/shared").CaptureBrowserGuestPageResult>;
       /** 从系统拖拽/文件输入得到的 Web File 解析真实本地路径；File 跨 contextBridge 原型丢失，契约与 IPlatformService 一致按 unknown */
       getPathForFile?(file: unknown): string | null;
       /** dwf 产物「作为文件打开」：把某一版的字节落成本机副本，返回其路径 */
@@ -310,6 +315,13 @@ declare global {
       onDesktopZoomLevelChanged?(handler: (state: DesktopZoomState) => void): () => void;
       /** 注册用户点击系统通知后跳转到对应任务的回调，返回 disposer */
       onTaskNotificationClick(handler: (taskId: string) => void): () => void;
+      // fork：上游 v3.18.0 把 app-control navigation 挂在 window.zcode 上；fork preload 只暴露
+      // window.zxcode（packages/desktop/src/preload/index.ts exposeInMainWorld("zxcode")），
+      // 故类型与 renderer 调用统一收口到 zxcode 命名空间，防止运行时 undefined。
+      /** 订阅 main 进程 app-control navigation 消息，返回 disposer */
+      onAppControlNavigationMessage?(handler: (message: unknown) => void): () => void;
+      /** 向 main 进程发送 app-control navigation 注册/注销/结果消息 */
+      sendAppControlNavigation?(payload: unknown): void;
       /** 打开外部 URL */
       openExternal(url: string): void;
       /** 在系统文件管理器中打开指定路径 */
@@ -355,6 +367,7 @@ declare global {
       browserViewDetachGuest?(payload: { key: string; webContentsId: number }): Promise<boolean>;
       browserViewCloseTab?(payload: BrowserViewCloseTabRequest): Promise<void>;
       browserViewReportResidency?(payload: BrowserViewResidencyReportPayload): Promise<void>;
+      browserViewPromoteDraftTabs?(payload: BrowserViewPromoteDraftTabsRequest): Promise<string[]>;
       browserViewSuspendReady?(payload: { tabId: string; generation: number }): Promise<void>;
       browserViewEnsureResident?(payload: BrowserViewCloseTabRequest): Promise<void>;
       browserViewRestoreTabs?(

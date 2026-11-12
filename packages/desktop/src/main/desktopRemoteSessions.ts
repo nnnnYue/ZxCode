@@ -15,6 +15,8 @@ import {
   type ProviderProvisioningTrigger,
   type WindowHostRemoteWorkspaceDescriptor,
   type WebRemoteControlFailure,
+  type HostPreparedProjectWorkspace,
+  type HostProjectWorkspaceNavigationInput,
 } from "@zcode/shared";
 import type { RemoteAssetDirs } from "./desktopRuntimeEnv.js";
 
@@ -41,6 +43,9 @@ interface PendingConnect {
 }
 
 interface RemoteAttachmentRoute {
+  /** 手机创建的目录 scope 不自动建立桌面 tab；桌面显式 join 后才提升。 */
+  mobileOnly?: boolean;
+  providerProvisioningReady?: Promise<void>;
   webContentsId: number;
   // Main 只保留端口转发所需的 request/session 关联和脱敏 descriptor；连接/任务事实归 Host。
   descriptor: WindowHostRemoteWorkspaceDescriptor;
@@ -56,6 +61,9 @@ interface RemoteAttachmentRoute {
   attachmentState: "attachable" | "closed";
   connectedAtMonotonicMs: number;
   connectFinalized: boolean;
+  // fork：remote usage telemetry（ARMS）随遥测域剔除不装配，上游的必填降为可选；
+  // 手机项目导航创建的 route 显式置 false，桌面首连 route 不写即视为不可计入。
+  remoteUsageTelemetryEligible?: boolean;
   providerProvisioningDispose?: () => void;
 }
 
@@ -138,11 +146,28 @@ export function createRemoteWorkspaceSessionManager(options: {
   webRemoteControlManagerRef: {
     current: {
       failRemoteSession(sessionId: string, reason: string, failure: WebRemoteControlFailure): void;
+      replaceRemoteSession?(event: {
+        previousSessionId: string;
+        sessionId: string;
+        workspacePath: string;
+        workspaceIdentity: string;
+      }): Promise<void>;
     } | null;
   };
   providerProvisioningCoordinator?: ProviderProvisioningEnvironmentCoordinator;
 }) {
   const pendingByRequestKey = new Map<string, PendingConnect>();
+  // 项目导航（Host PrepareProjectWorkspace 往返）的 pending 表；acceptPreparedProjectWorkspace 消费。
+  const pendingProjectNavigations = new Map<
+    string,
+    {
+      child: ElectronUtilityProcess;
+      win: BrowserWindow;
+      requestId: string;
+      resolve(value: HostPreparedProjectWorkspace): void;
+      reject(error: Error): void;
+    }
+  >();
   const routesBySessionId = new Map<string, RemoteAttachmentRoute>();
   const listenedHosts = new WeakSet<ElectronUtilityProcess>();
   const reconnectsByWorkspaceKey = new Map<string, Promise<string>>();
@@ -327,6 +352,17 @@ export function createRemoteWorkspaceSessionManager(options: {
         sessionId: payload.sessionId,
         attachmentId: payload.attachmentId,
       });
+      // Bug 原因：Main 放弃 attachment 并删除 route（如换代 ready 超时）后，Renderer 才处理 port 并登记 session。
+      // 这条 session 已没有 route 和 Host 连接，导航却仍按目录找到它：点击任务报“未找到”，查看文件读已关闭的连接。
+      // ACK 在登记之后发出，由它触发释放不会早于登记，不需要超时或墓碑；route 还在时由当前 attachment 负责，不释放。
+      if (!route) {
+        const win = BrowserWindow.getAllWindows().find(
+          (candidate) => candidate.webContents.id === webContentsId,
+        );
+        if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+          win.webContents.send(InternalChannels.ScopedServicePortReleased, payload);
+        }
+      }
       return;
     }
 
@@ -414,6 +450,117 @@ export function createRemoteWorkspaceSessionManager(options: {
       });
   }
 
+  // fork：采纳上游 Source 重连换代处理（desktop-continuous 恢复 + 手机 replayable 旁路降级）。
+  function handleReconnected(
+    child: ElectronUtilityProcess,
+    webContentsId: number,
+    previousRemoteSessionId: string,
+    descriptor: WindowHostRemoteWorkspaceDescriptor,
+  ): void {
+    const route = routesBySessionId.get(previousRemoteSessionId);
+    const win = BrowserWindow.getAllWindows().find(
+      (candidate) => candidate.webContents.id === webContentsId,
+    );
+    if (!route || route.webContentsId !== webContentsId || !win) {
+      child.postMessage({
+        type: HostMessageTypes.DisposeRemoteWorkspaceSession,
+        requestId: randomUUID(),
+        remoteSessionId: descriptor.remoteSessionId,
+      });
+      return;
+    }
+    routesBySessionId.delete(previousRemoteSessionId);
+    route.descriptor = descriptor;
+    route.attachmentState = "attachable";
+    routesBySessionId.set(descriptor.remoteSessionId, route);
+    // Bug 原因：Provisioning lane 以 remoteSessionId 登记，execute 闭包也绑定旧 sessionId；
+    // Source 重连换代后若不重新登记，后续下发都会命中 Host 已失效的旧 session，远端再也收不到配置。
+    // 先摘掉旧登记再登记新 session，让 lane 按 Environment 重新上线整份重下发（离线期间的本机
+    // 配置变更由此补齐）；重连不是首连发布屏障，失败只记录 warning，不拆除已恢复的 Workspace。
+    route.providerProvisioningDispose?.();
+    const environmentKey = buildRemoteEnvironmentKey(descriptor.target);
+    const registration = providerProvisioningCoordinator.register(
+      environmentKey,
+      descriptor.remoteSessionId,
+      (trigger) =>
+        executeProviderProvisioning(child, descriptor.remoteSessionId, environmentKey, trigger),
+      descriptor.sourceServerId,
+    );
+    route.providerProvisioningDispose = registration.dispose;
+    registration.initialSync.catch((error: unknown) => {
+      options.logger.warn(
+        "[provider-provisioning] Environment resync after reconnect did not apply",
+        {
+          environmentKey,
+          previousRemoteSessionId,
+          remoteSessionId: descriptor.remoteSessionId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
+    });
+    void (
+      route.mobileOnly
+        ? Promise.resolve()
+        : attachRendererPort(win, route, "source-server-reconnected")
+    )
+      .then(() => {
+        if (!descriptor.workspacePath || !descriptor.workspaceIdentity) return;
+        // Bug 原因：手机 bridge 换代曾被 await 在 Desktop 关键路径上，手机 attachment
+        // 失败会落入外层 catch 并 dispose 已就绪的 Desktop session。Desktop continuous
+        // 先完成换代；手机 replayable 恢复是隔离的旁路，失败只降级手机。
+        if (!route.mobileOnly)
+          win.webContents.send(PlatformChannels.RemoteSessionReconnected, {
+            previousSessionId: previousRemoteSessionId,
+            sessionId: descriptor.remoteSessionId,
+            workspacePath: descriptor.workspacePath,
+            workspaceIdentity: descriptor.workspaceIdentity,
+          });
+        emitConnectionLog(win, {
+          sessionId: descriptor.remoteSessionId,
+          level: "info",
+          message: `远程 ${descriptor.target.kind} workspace 已自动重连`,
+        });
+        void options.webRemoteControlManagerRef.current
+          ?.replaceRemoteSession?.({
+            previousSessionId: previousRemoteSessionId,
+            sessionId: descriptor.remoteSessionId,
+            workspacePath: descriptor.workspacePath,
+            workspaceIdentity: descriptor.workspaceIdentity,
+          })
+          .catch((error: unknown) => {
+            options.logger.warn("[window-host-remote] mobile bridge recovery failed", {
+              previousRemoteSessionId,
+              remoteSessionId: descriptor.remoteSessionId,
+              error,
+            });
+          });
+      })
+      .catch((error: unknown) => {
+        route.providerProvisioningDispose?.();
+        routesBySessionId.delete(descriptor.remoteSessionId);
+        child.postMessage({
+          type: HostMessageTypes.DisposeRemoteWorkspaceSession,
+          requestId: randomUUID(),
+          remoteSessionId: descriptor.remoteSessionId,
+        });
+        options.logger.warn("[window-host-remote] Source reconnect attachment failed", {
+          previousRemoteSessionId,
+          remoteSessionId: descriptor.remoteSessionId,
+          error,
+        });
+        // Bug 原因：窗口只收到过旧 session 的可恢复断连。这里回收换代 session 后不再通知，窗口的 tab
+        // 一直留着旧 id、“连接中”不结束，导航一直等待，重连入口也因 tab 仍有 id 而跳过。
+        // 换代无法交付就是这次恢复的终点：按终止断连通知窗口与手机，由各自 owner 收尾。
+        publishRemoteSessionClosed(win, {
+          remoteSessionId: previousRemoteSessionId,
+          exitCode: null,
+          signal: null,
+          error: error instanceof Error ? error.message : String(error),
+          recoverable: false,
+        });
+      });
+  }
+
   function executeProviderProvisioning(
     child: ElectronUtilityProcess,
     remoteSessionId: string,
@@ -471,14 +618,56 @@ export function createRemoteWorkspaceSessionManager(options: {
     mutate();
   }
 
+  // fork：采纳上游统一的断连通知（publishRemoteSessionClosed 同时收口手机 bridge）；
+  // fork 旧版 handleClosed（内联 failRemoteSession）由统一版替代。
+  interface RemoteSessionClosedNotice {
+    remoteSessionId: string;
+    exitCode?: number | null;
+    signal?: string | null;
+    error?: string;
+    recoverable?: boolean;
+    recoveryAttempt?: number;
+    recoveryLimit?: number;
+    recoveryBudgetExhausted?: boolean;
+    reasonCode?: string;
+    retryable?: boolean;
+  }
+
+  /** 把 session 断连通知给窗口；终止断连同时结束手机 bridge 上的同一 session。 */
+  function publishRemoteSessionClosed(
+    win: BrowserWindow | undefined,
+    event: RemoteSessionClosedNotice,
+  ): void {
+    if (event.recoverable !== true) {
+      options.webRemoteControlManagerRef.current?.failRemoteSession(
+        event.remoteSessionId,
+        "window-host:connection-offline",
+        {
+          reason: "workspace-closed",
+          message: "远程工作区连接已结束，请在桌面端重新连接。",
+        },
+      );
+    }
+    if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+      win.webContents.send(PlatformChannels.RemoteSessionClosed, {
+        sessionId: event.remoteSessionId,
+        reason: "host-exit" as const,
+        exitCode: event.exitCode ?? null,
+        signal: event.signal ?? null,
+      });
+      emitConnectionLog(win, {
+        sessionId: event.remoteSessionId,
+        level: "warn",
+        message: event.error || "远程 workspace 连接已断开",
+      });
+    }
+  }
+
+  // fork：统一版 handleClosed（消费 RemoteSessionClosedNotice；手机 bridge 由 publishRemoteSessionClosed 收口）。
   function handleClosed(
     webContentsId: number,
-    event: {
-      remoteSessionId: string;
+    event: RemoteSessionClosedNotice & {
       reason: "connection-closed" | "disposed" | "connect-cancelled";
-      exitCode?: number | null;
-      signal?: string | null;
-      error?: string;
     },
   ): void {
     const route = routesBySessionId.get(event.remoteSessionId);
@@ -506,30 +695,98 @@ export function createRemoteWorkspaceSessionManager(options: {
       "session-connection-closed",
       new Error(`远程 workspace 已关闭，sessionId=${event.remoteSessionId}`),
     );
-    const win = BrowserWindow.getAllWindows().find(
-      (candidate) => candidate.webContents.id === webContentsId,
+    publishRemoteSessionClosed(
+      BrowserWindow.getAllWindows().find((candidate) => candidate.webContents.id === webContentsId),
+      event,
     );
-    options.webRemoteControlManagerRef.current?.failRemoteSession(
-      event.remoteSessionId,
-      "window-host:connection-closed",
-      {
-        reason: "workspace-closed",
-        message: "远程工作区连接已结束，请在桌面端重新连接。",
-      },
-    );
-    if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
-      win.webContents.send(PlatformChannels.RemoteSessionClosed, {
-        sessionId: event.remoteSessionId,
-        reason: "host-exit" as const,
-        exitCode: event.exitCode ?? null,
-        signal: event.signal ?? null,
-      });
-      emitConnectionLog(win, {
-        sessionId: event.remoteSessionId,
-        level: "warn",
-        message: event.error || "远程 workspace 连接已断开",
-      });
+  }
+
+  function acceptPreparedProjectWorkspace(
+    child: ElectronUtilityProcess,
+    webContentsId: number,
+    requestId: string,
+    result: { ok: true; value: HostPreparedProjectWorkspace } | { ok: false; error: string },
+  ): void {
+    const key = requestKey(webContentsId, requestId);
+    const pending = pendingProjectNavigations.get(key);
+    if (!pending || pending.child !== child) return;
+    if (!result.ok) {
+      pendingProjectNavigations.delete(key);
+      pending.reject(new Error(result.error));
+      return;
     }
+    const descriptor = result.value.remote;
+    if (!descriptor) {
+      pendingProjectNavigations.delete(key);
+      pending.resolve(result.value);
+      return;
+    }
+    const resolveWhenReady = (route: RemoteAttachmentRoute, ownsRegistration: boolean) => {
+      void (route.providerProvisioningReady ?? Promise.resolve()).then(
+        () => {
+          // 每个 join 都必须等同一屏障，并保留自己的取消资格到成功提交。
+          if (pendingProjectNavigations.get(key) !== pending) return;
+          pendingProjectNavigations.delete(key);
+          if (
+            routesBySessionId.get(descriptor.remoteSessionId) !== route ||
+            route.attachmentState !== "attachable"
+          )
+            pending.reject(new Error("项目导航 scope 已失效"));
+          else pending.resolve(result.value);
+        },
+        (error: unknown) => {
+          if (pendingProjectNavigations.get(key) === pending) pendingProjectNavigations.delete(key);
+          if (
+            ownsRegistration &&
+            routesBySessionId.get(descriptor.remoteSessionId) === route &&
+            route.mobileOnly
+          ) {
+            routesBySessionId.delete(descriptor.remoteSessionId);
+            route.providerProvisioningDispose?.();
+            child.postMessage({
+              type: HostMessageTypes.DisposeRemoteWorkspaceSession,
+              requestId: randomUUID(),
+              remoteSessionId: descriptor.remoteSessionId,
+            });
+          }
+          pending.reject(error instanceof Error ? error : new Error(String(error)));
+        },
+      );
+    };
+    const existing = routesBySessionId.get(descriptor.remoteSessionId);
+    if (existing) {
+      if (
+        existing.webContentsId !== webContentsId ||
+        existing.attachmentState !== "attachable" ||
+        existing.descriptor.workspaceIdentity !== descriptor.workspaceIdentity ||
+        existing.descriptor.workspacePath !== descriptor.workspacePath
+      ) {
+        pendingProjectNavigations.delete(key);
+        pending.reject(new Error("Project navigation scope conflicts with existing route"));
+      } else resolveWhenReady(existing, false);
+      return;
+    }
+    const route: RemoteAttachmentRoute = {
+      webContentsId,
+      descriptor,
+      mobileOnly: true,
+      attachmentState: "attachable",
+      connectedAtMonotonicMs: monotonicNowMs(),
+      connectFinalized: true,
+      remoteUsageTelemetryEligible: false,
+    };
+    routesBySessionId.set(descriptor.remoteSessionId, route);
+    const environmentKey = buildRemoteEnvironmentKey(descriptor.target);
+    const registration = providerProvisioningCoordinator.register(
+      environmentKey,
+      descriptor.remoteSessionId,
+      (trigger) =>
+        executeProviderProvisioning(child, descriptor.remoteSessionId, environmentKey, trigger),
+      descriptor.sourceServerId,
+    );
+    route.providerProvisioningDispose = registration.dispose;
+    route.providerProvisioningReady = registration.initialSync;
+    resolveWhenReady(route, true);
   }
 
   function ensureHostListener(child: ElectronUtilityProcess, webContentsId: number): void {
@@ -538,6 +795,15 @@ export function createRemoteWorkspaceSessionManager(options: {
     child.on("message", (message: unknown) => {
       const parsed = hostResponseMessageSchema.safeParse(message);
       if (!parsed.success) return;
+      if (parsed.data.type === HostResponseTypes.ProjectWorkspacePrepared) {
+        acceptPreparedProjectWorkspace(
+          child,
+          webContentsId,
+          parsed.data.requestId,
+          parsed.data.result,
+        );
+        return;
+      }
       if (parsed.data.type === HostResponseTypes.RemoteWorkspaceConnectionLog) {
         const pending = pendingByRequestKey.get(requestKey(webContentsId, parsed.data.requestId));
         if (!pending) return;
@@ -590,6 +856,16 @@ export function createRemoteWorkspaceSessionManager(options: {
       }
       if (parsed.data.type === HostResponseTypes.RemoteWorkspaceConnected) {
         handleConnected(child, webContentsId, parsed.data.requestId, parsed.data.descriptor);
+        return;
+      }
+      // fork（采纳上游）：Source 自动重连换代通知，按新 descriptor 重建 route 与 Provisioning lane。
+      if (parsed.data.type === HostResponseTypes.RemoteWorkspaceReconnected) {
+        handleReconnected(
+          child,
+          webContentsId,
+          parsed.data.previousRemoteSessionId,
+          parsed.data.descriptor,
+        );
         return;
       }
       if (parsed.data.type === HostResponseTypes.RemoteWorkspaceConnectFailed) {
@@ -949,9 +1225,38 @@ export function createRemoteWorkspaceSessionManager(options: {
     }).port;
   }
 
+  /** 手机项目导航：让 Host 预备项目 workspace；结果经 acceptPreparedProjectWorkspace 收口。 */
+  function prepareProjectWorkspace(
+    win: BrowserWindow,
+    request: HostProjectWorkspaceNavigationInput,
+    requestId: string = randomUUID(),
+  ): Promise<HostPreparedProjectWorkspace> {
+    if (appShutdownStarted || win.isDestroyed() || win.webContents.isDestroyed())
+      return Promise.reject(new Error("窗口已关闭，项目导航已取消"));
+    const child = getWindowHost(win);
+    const key = requestKey(win.webContents.id, requestId);
+    if (pendingProjectNavigations.has(key))
+      return Promise.reject(new Error("项目导航 requestId 重复"));
+    return new Promise((resolve, reject) => {
+      pendingProjectNavigations.set(key, { child, win, requestId, resolve, reject });
+      try {
+        child.postMessage({
+          type: HostMessageTypes.PrepareProjectWorkspace,
+          requestId,
+          ...request,
+          clientMode: "web-remote-replayable",
+        });
+      } catch (error) {
+        pendingProjectNavigations.delete(key);
+        reject(error);
+      }
+    });
+  }
+
   return {
     createRemoteWorkspaceSession,
     attachRemoteWorkspaceSessionHost,
+    prepareProjectWorkspace,
     // 手机远控 relay 的 presence 只读镜像：Main 不新增第二份连接事实，
     // 每次调用从 routesBySessionId 现算快照（windowId 反查自 BrowserWindow）。
     // 3.16.2 合并把本方法从返回对象中丢掉而 index.ts:698 仍接线，导致
@@ -997,6 +1302,8 @@ export function createRemoteWorkspaceSessionManager(options: {
     disposeAllAndWaitForAppShutdown: async (_reason: string) => {
       appShutdownStarted = true;
       const error = new Error("应用正在退出，远程连接已取消");
+      for (const pending of pendingProjectNavigations.values()) pending.reject(error);
+      pendingProjectNavigations.clear();
       for (const pending of pendingByRequestKey.values()) pending.reject(error);
       pendingByRequestKey.clear();
       for (const [sessionId, route] of Array.from(routesBySessionId)) {

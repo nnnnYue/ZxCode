@@ -194,7 +194,6 @@ export function useRemoteWorkspaceTabLifecycle({
 
     previousWorkspaceTabsRef.current = nextWorkspaceTabs;
   }, [onRemoteWorkspaceTabsClosed, platform, tabs]);
-
   useEffect(() => {
     if (!activeWorkspaceTab?.remoteSessionId) {
       return;

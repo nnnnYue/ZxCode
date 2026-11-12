@@ -1,12 +1,16 @@
 /* eslint-disable max-lines -- Controller source 聚合、路由、订阅与生命周期属于同一个 Host 边界。 */
-import { Emitter } from "@zcode/rpc";
+import { Emitter, Event } from "@zcode/rpc";
 import type { ZCodeTaskMeta } from "@zcode/shared";
 import type {
   ControllerSubscribeParams,
   WindowHostControllerTaskRow,
   WindowHostTaskAddress,
 } from "@zcode/shared/zcode-protocol-v4";
-import { matchesTaskListMembershipKind } from "@zcode/shared/zcode-protocol-v4";
+import {
+  CONTROLLER_TASKS_INDEX_TOPIC,
+  matchesTaskListMembershipKind,
+  windowHostTaskAddressSchema,
+} from "@zcode/shared/zcode-protocol-v4";
 import type {
   IWindowControllerService,
   IZCodeAgentService,
@@ -14,6 +18,8 @@ import type {
   WindowHostControllerFrame,
   WindowHostControllerTaskListItem,
   WindowHostControllerTaskListResult,
+  WindowHostTaskUnreadSignal,
+  WindowHostTasksRemovedSignal,
   ZCodeTaskListQuery,
   ZCodeTaskListWorkspaceScope,
 } from "@zcode/services";
@@ -136,14 +142,19 @@ function liveStatusFromMeta(meta: ZCodeTaskMeta): WindowHostControllerTaskRow["l
  */
 export function createWindowHostControllerRuntime(options: {
   createId: () => string;
+  // "host" 全局历史查询直接交给持久化 owner（taskIndexRepo），不经过 Controller 的 source 投影。
+  readHostTaskList: IZCodeTaskService["listTaskList"];
   resolveSource: (scope: ZCodeTaskListWorkspaceScope) => ResolvedWindowHostControllerSource | null;
   onSourceError?: (
     scope: WindowHostControllerSourceScope,
     operation: "refresh" | "search",
     error: unknown,
   ) => void;
+  onTasksArchivedOrDeleted?: (scope: WindowHostControllerSourceScope, taskIds: string[]) => void;
 }) {
   const projection = createWindowHostControllerProjection({ createId: options.createId });
+  const unreadSignals = new Emitter<WindowHostTaskUnreadSignal>();
+  const tasksRemovedSignals = new Emitter<WindowHostTasksRemovedSignal>();
   const registeredScopes = new Map<string, WindowHostControllerSourceScope>();
   const sourceAvailability = new Map<string, "online" | "offline">();
   const sourceTaskServices = new Map<string, IZCodeTaskService>();
@@ -227,6 +238,23 @@ export function createWindowHostControllerRuntime(options: {
     });
   }
 
+  function notifyTasksRemoved(
+    scope: WindowHostControllerSourceScope,
+    taskIds: string[],
+    permanentlyDeleted = false,
+  ): void {
+    options.onTasksArchivedOrDeleted?.(scope, taskIds);
+    tasksRemovedSignals.fire({
+      permanentlyDeleted,
+      workspacePath: scope.workspacePath,
+      ...(scope.workspaceIdentity ? { workspaceIdentity: scope.workspaceIdentity } : {}),
+      ...(scope.kind === "remote" && scope.remoteSessionId
+        ? { remoteSessionId: scope.remoteSessionId }
+        : {}),
+      taskIds,
+    });
+  }
+
   async function executeMutation(
     scope: WindowHostControllerSourceScope,
     address: WindowHostTaskAddress,
@@ -245,27 +273,25 @@ export function createWindowHostControllerRuntime(options: {
         await service.setTaskPinned({ ...base, pinned: mutation.pinned });
         break;
       case "archive":
-        if (mutation.archived) {
-          await service.archiveTask(base);
-        } else {
-          await service.unarchiveTask(base);
-        }
+        if (mutation.archived) await service.archiveTask(base);
+        else await service.unarchiveTask(base);
         break;
       case "delete":
         await service.deleteTask(base);
         break;
       case "delete-archived":
-        return service.deleteArchivedTask(base);
-      case "delete-archived-batch":
+        return await service.deleteArchivedTask(base);
+      case "delete-archived-batch": {
         // 确认期间远端 session 可能已替换；不能将旧地址的批次写入同 identity 的新 source。
         if (sourceKey(current.scope) !== sourceKey(scope)) {
           throw new Error("归档删除批次的 source 已替换");
         }
-        return service.deleteArchivedTasks({
+        return await service.deleteArchivedTasks({
           workspacePath: base.workspacePath,
           workspaceIdentity: base.workspaceIdentity,
           taskIds: mutation.taskIds,
         });
+      }
       case "mark-read":
         await service.setTaskUnread({
           ...base,
@@ -314,15 +340,62 @@ export function createWindowHostControllerRuntime(options: {
       sourceTaskServices.get(key) !== resolved.taskService
     ) {
       sourceEventSubscriptions.get(key)?.dispose();
-      sourceTaskServices.set(key, resolved.taskService);
+      const taskService = resolved.taskService;
+      const isCurrentSource = () => {
+        const current = resolveCurrentSource(resolved.scope);
+        return (
+          sourceTaskServices.get(key) === taskService &&
+          sourceAvailability.get(key) === "online" &&
+          current?.taskService === taskService &&
+          current?.sourceAvailability === "online"
+        );
+      };
+      sourceTaskServices.set(key, taskService);
       sourceEventSubscriptions.set(
         key,
-        resolved.taskService.onDynamicWorkspaceEvent({
+        taskService.onDynamicWorkspaceEvent({
           workspacePath: resolved.scope.workspacePath,
           ...(resolved.scope.workspaceIdentity
             ? { workspaceIdentity: resolved.scope.workspaceIdentity }
             : {}),
-        })(() => {
+        })((event) => {
+          // Bug 根因：Controller 接管观察后只刷新列表，丢掉了 Host 的明确完成信号。
+          // 沿现有 source 监听转发实时事实；旧连接、离线 source 和普通快照都不能制造未读。
+          if (!isCurrentSource()) return;
+          const signal: WindowHostTaskUnreadSignal | undefined =
+            event.type === "workspace_task_list_changed" &&
+            event.reason === "task_status_changed" &&
+            event.unreadSignal === "background_terminal" &&
+            event.taskMeta &&
+            (event.taskMeta.status === "completed" || event.taskMeta.status === "error")
+              ? {
+                  address: {
+                    taskId: event.taskId ?? event.taskMeta.taskId,
+                    workspacePath: resolved.scope.workspacePath,
+                    ...(resolved.scope.workspaceIdentity
+                      ? { workspaceIdentity: resolved.scope.workspaceIdentity }
+                      : {}),
+                    // fork：远程 identity 只按 remoteSessionId 匹配（source-server 域剔除后
+                    // scope 无 sourceServerId，且 fork 的 remote scope.remoteSessionId 恒存在）。
+                    ...(resolved.scope.kind === "remote"
+                      ? { remoteSessionId: resolved.scope.remoteSessionId }
+                      : {}),
+                  },
+                  updatedAt: event.taskMeta.updatedAt,
+                  status: event.taskMeta.status,
+                }
+              : undefined;
+          // Bug 根因：等列表 IO 后才通知会漏记期间的查看；立即交给窗口记录，行就绪由 mutation 验证。
+          if (signal) unreadSignals.fire(signal);
+          // Bug 根因：tab 清理曾挂在 executeMutation 上，自动归档、CLI 删除等不经命令入口的移除会漏掉，
+          // 出声的 Browser guest 留在后台。改为跟随 source 的任务事实流；批量永久删除只针对已归档任务，事件不带 taskId。
+          if (
+            event.type === "workspace_task_list_changed" &&
+            (event.reason === "task_archived" || event.reason === "task_deleted") &&
+            event.taskId
+          ) {
+            notifyTasksRemoved(resolved.scope, [event.taskId]);
+          }
           // workspace event 可能在列表首轮 refresh 读取途中到达；直接复用
           // single-flight 会把事件吞掉。先等在途读取结束，再把多个事件合并成下一轮 refresh。
           const inFlight = sourceRefreshFlights.get(key)?.promise;
@@ -388,6 +461,39 @@ export function createWindowHostControllerRuntime(options: {
     return Array.from(membershipByTaskKey.values());
   }
 
+  async function replayPermanentRemovals(
+    resolved: ResolvedWindowHostControllerSource,
+    emit: (signal: WindowHostTasksRemovedSignal) => void,
+  ): Promise<void> {
+    const list = resolved.taskService?.listPermanentlyDeletedTaskIds;
+    if (!list || resolved.sourceAvailability !== "online") return;
+    try {
+      const taskIds = await list({
+        workspacePath: resolved.scope.workspacePath,
+        workspaceIdentity: resolved.scope.workspaceIdentity,
+      });
+      const current = resolveCurrentSource(resolved.scope);
+      if (
+        !current ||
+        current.taskService !== resolved.taskService ||
+        current.sourceAvailability !== "online"
+      )
+        return;
+      if (taskIds.length)
+        emit({
+          workspacePath: resolved.scope.workspacePath,
+          workspaceIdentity: resolved.scope.workspaceIdentity,
+          ...(resolved.scope.kind === "remote"
+            ? { remoteSessionId: resolved.scope.remoteSessionId }
+            : {}),
+          taskIds,
+          permanentlyDeleted: true,
+        });
+    } catch (error) {
+      options.onSourceError?.(resolved.scope, "refresh", error);
+    }
+  }
+
   async function refreshSource(
     resolved: ResolvedWindowHostControllerSource,
     force = false,
@@ -405,6 +511,8 @@ export function createWindowHostControllerRuntime(options: {
     sourceRefreshGenerations.set(key, generation);
     const promise = (async () => {
       const taskIndex = await readSourceTaskIndex(resolved);
+      // 手机/其他窗口可能错过实时删除事件；快照恢复前按原 source 补清最小删除凭据。
+      await replayPermanentRemovals(resolved, (signal) => tasksRemovedSignals.fire(signal));
       if (sourceRefreshGenerations.get(key) !== generation) {
         throw new Error("Controller source refresh generation 已失效");
       }
@@ -472,6 +580,29 @@ export function createWindowHostControllerRuntime(options: {
   async function listTaskList(
     query: ZCodeTaskListQuery,
   ): Promise<WindowHostControllerTaskListResult> {
+    if (query.workspaceScopes === "host") {
+      // 已注册 source 也只覆盖打开过的工作区；全局历史必须直接交给持久化 owner。
+      // 不 refreshSource，因此搜索不会为未打开目录创建 CLI/runtime 或远程连接。
+      const result = await options.readHostTaskList(query);
+      const localRows = new Map(
+        projection
+          .getTasks()
+          .filter((row) => !row.address.sourceServerId && !row.address.remoteSessionId)
+          .map((row) => [taskKey(row.meta), row]),
+      );
+      return {
+        ...result,
+        items: result.items.map((item) => {
+          const projected = localRows.get(taskKey(item));
+          return {
+            ...item,
+            sourceAvailability: "online" as const,
+            liveStatus: projected?.liveStatus ?? liveStatusFromMeta(item),
+            ...(projected?.activity ? { activity: projected.activity } : {}),
+          };
+        }),
+      };
+    }
     const resolvedSources = resolveQuerySources(query.workspaceScopes);
     await Promise.all(
       resolvedSources.map(async (source) => {
@@ -585,11 +716,112 @@ export function createWindowHostControllerRuntime(options: {
     return { items: visible, total, hasMore: total > visible.length };
   }
 
-  function createAttachmentService(): IWindowControllerService & { dispose(): void } {
+  function createAttachmentService(
+    ownsUnreadSignals = true,
+  ): IWindowControllerService & { dispose(): void } {
     const frameEmitter = new Emitter<WindowHostControllerFrame>();
+    const unreadEmitter = new Emitter<WindowHostTaskUnreadSignal>();
+    const unreadSubscription = ownsUnreadSignals
+      ? unreadSignals.event((signal) => unreadEmitter.fire(signal))
+      : undefined;
+    const tasksRemovedEmitter = new Emitter<WindowHostTasksRemovedSignal>();
+    // Bug 根因：曾与未读信号共用 ownsUnreadSignals，手机 attachment 拿到 Event.None，
+    // 归档后手机端终端等任务 tab 留在其 registry。移除信号只驱动各端清理自己的 registry，幂等，每个 attachment 都要收到。
+    const tasksRemovedSubscription = tasksRemovedSignals.event((signal) =>
+      tasksRemovedEmitter.fire(signal),
+    );
     const subscriptions = new Map<string, { dispose(): void }>();
+    let attachmentDisposed = false;
+    function deletionSource(input: WindowHostTaskAddress) {
+      const address = windowHostTaskAddressSchema.parse(input);
+      const resolved = options.resolveSource({
+        workspacePath: address.workspacePath,
+        workspaceIdentity: address.workspaceIdentity,
+      });
+      if (
+        attachmentDisposed ||
+        !resolved ||
+        resolved.sourceAvailability !== "online" ||
+        !resolved.taskService
+      )
+        throw new Error("session-data.unavailable");
+      const scope = resolved.scope;
+      if (
+        scope.workspacePath !== address.workspacePath ||
+        scope.workspaceIdentity !== address.workspaceIdentity ||
+        // fork：远程 source 只按 remoteSessionId 匹配（source-server 域剔除，scope 无 sourceServerId）；
+        // 带 sourceServerId 的地址在 fork 没有对应 source，一律按 identity 不匹配拒绝。
+        (scope.kind === "remote"
+          ? address.remoteSessionId !== scope.remoteSessionId || address.sourceServerId != null
+          : address.remoteSessionId != null || address.sourceServerId != null)
+      )
+        throw new Error("session-data.identity-mismatch");
+      return resolved;
+    }
     return {
       listTaskList,
+      async previewArchivedTaskDeletion({ address }) {
+        const source = deletionSource(address);
+        const result = await source.taskService!.previewArchivedTaskDeletion(
+          mutationParams(address),
+        );
+        if (deletionSource(address).taskService !== source.taskService)
+          throw new Error("session-data.changed");
+        return result;
+      },
+      async permanentlyDeleteArchivedTask({ address, revision, operationId }) {
+        const source = deletionSource(address);
+        const result = await source.taskService!.permanentlyDeleteArchivedTask({
+          ...mutationParams(address),
+          revision,
+          operationId,
+        });
+        if (result.status === "deleted") {
+          notifyTasksRemoved(source.scope, result.sessionIds, true);
+          await refreshSource(source, true).catch((error) =>
+            options.onSourceError?.(source.scope, "refresh", error),
+          );
+        }
+        return result;
+      },
+      async getTaskMeta(params) {
+        const address = windowHostTaskAddressSchema.parse(params.address);
+        const resolved = options.resolveSource({
+          workspacePath: address.workspacePath,
+          ...(address.workspaceIdentity ? { workspaceIdentity: address.workspaceIdentity } : {}),
+        });
+        const taskService = resolved?.taskService;
+        const assertCurrentSource = (current: ResolvedWindowHostControllerSource | null) => {
+          if (
+            attachmentDisposed ||
+            !resolved ||
+            !taskService ||
+            !current ||
+            current.sourceAvailability !== "online" ||
+            current.taskService !== taskService ||
+            current.scope.workspacePath !== address.workspacePath ||
+            current.scope.workspaceIdentity !== address.workspaceIdentity ||
+            sourceKey(current.scope) !== sourceKey(resolved.scope) ||
+            (current.scope.kind === "remote" &&
+              resolved.scope.kind === "remote" &&
+              current.scope.remoteSessionId !== resolved.scope.remoteSessionId)
+          )
+            throw new Error("任务读取期间 source 已失效");
+          const mismatched =
+            current.scope.kind === "remote"
+              ? address.remoteSessionId !== current.scope.remoteSessionId ||
+                address.sourceServerId != null
+              : address.remoteSessionId != null || address.sourceServerId != null;
+          if (mismatched) throw new Error("任务地址与 source 不匹配");
+        };
+        assertCurrentSource(resolved);
+        // Bug 根因：列表读取失败可保留旧投影；把它当已读 marker 会漏清或误清。
+        // 直接读唯一持久 owner，IO 前后复查同一服务与 attachment，不吞错、不物化整表。
+        const result = await taskService!.getTaskMeta(mutationParams(address));
+        assertCurrentSource(resolveCurrentSource(resolved!.scope));
+        if (result && result.taskId !== address.taskId) throw new Error("任务读取返回地址不匹配");
+        return result ? normalizeTaskMeta(result, resolved!.scope) : null;
+      },
       async deleteArchivedTasks({ address, taskIds }) {
         if (taskIds.length === 0) {
           return { deletedTaskIds: [], skippedTaskIds: [], failedTaskIds: [] };
@@ -654,6 +886,12 @@ export function createWindowHostControllerRuntime(options: {
         return { ack: subscription.ack };
       },
       async resyncControllerV4(params) {
+        for (const scope of registeredScopes.values()) {
+          const source = resolveCurrentSource(scope);
+          if (source)
+            await replayPermanentRemovals(source, (signal) => tasksRemovedEmitter.fire(signal));
+        }
+        if (attachmentDisposed) throw new Error("Controller attachment 已释放");
         return { ack: projection.resync(params.subscriptionId) };
       },
       async unsubscribeControllerV4(params) {
@@ -663,7 +901,35 @@ export function createWindowHostControllerRuntime(options: {
       onDynamicControllerFrame() {
         return frameEmitter.event;
       },
+      onDynamicTaskUnreadSignal() {
+        return ownsUnreadSignals ? unreadEmitter.event : Event.None;
+      },
+      onDynamicTasksRemovedSignal() {
+        return (listener) => {
+          const subscription = tasksRemovedEmitter.event(listener);
+          let disposed = false;
+          // 手机的清理监听晚于列表订阅。只在列表快照前发凭据会丢事件，必须在本监听接好后补发。
+          for (const scope of registeredScopes.values()) {
+            const source = resolveCurrentSource(scope);
+            if (source)
+              void replayPermanentRemovals(source, (signal) => {
+                if (!disposed && !attachmentDisposed) listener(signal);
+              });
+          }
+          return {
+            dispose() {
+              disposed = true;
+              subscription.dispose();
+            },
+          };
+        };
+      },
       dispose() {
+        attachmentDisposed = true;
+        unreadSubscription?.dispose();
+        unreadEmitter.dispose();
+        tasksRemovedSubscription.dispose();
+        tasksRemovedEmitter.dispose();
         for (const subscription of subscriptions.values()) {
           subscription.dispose();
         }
@@ -677,6 +943,11 @@ export function createWindowHostControllerRuntime(options: {
   return {
     service,
     createAttachmentService,
+    // 扩展门面（extension-host §17.5）消费的进程内行快照与变更订阅。
+    readTaskRows: (): WindowHostControllerTaskRow[] => projection.getTasks(),
+    /** 投影行任一变化即回调；订阅时会立即收到一次快照回调。 */
+    subscribeTaskRows: (onChange: () => void): { dispose(): void } =>
+      projection.subscribe({ topic: CONTROLLER_TASKS_INDEX_TOPIC, onFrame: () => onChange() }),
     replaceDisconnectedSource,
     async resolveTaskAddress(params: {
       taskId: string;
@@ -781,6 +1052,8 @@ export function createWindowHostControllerRuntime(options: {
     },
     dispose(): void {
       service.dispose();
+      unreadSignals.dispose();
+      tasksRemovedSignals.dispose();
       for (const scope of registeredScopes.values()) {
         projection.removeSource(scope);
       }

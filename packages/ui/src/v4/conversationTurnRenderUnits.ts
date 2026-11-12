@@ -1,3 +1,4 @@
+import { isPluginUiPinnedToolRow } from "@/plugin-ui/domain/pluginUiRowPolicy.js";
 import type {
   ConversationTurnRenderUnit,
   BuildConversationTurnRenderUnitsOptions,

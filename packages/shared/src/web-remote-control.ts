@@ -912,6 +912,9 @@ export interface WebRemoteControlWindowBootstrapResult {
   /** 当前连接的桌面实际版本；旧桌面缺失时手机保留原 URL。 */
   desktopAppVersion?: string;
   workspaces: WebRemoteControlWorkspaceTarget[];
+  // fork：手机任务列表仍走任务快照投影（上游 3.16 已删任务面）；desktop manager 在
+  // bootstrap 里附带可见任务，手机首页直接渲染。上游接口无此字段，属 fork 合同扩展。
+  tasks?: WebRemoteControlTaskTarget[];
   initialViewState?: WebRemoteControlMobileViewState;
   mobileViewState?: WebRemoteControlMobileViewState;
   /** 仅新端提供；用 bootstrap 补足配对瞬间的重申请求，不能用来恢复可见任务。 */

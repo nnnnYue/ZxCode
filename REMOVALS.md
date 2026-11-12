@@ -102,6 +102,38 @@ v3.17.2 合并（`11e88869`）沿用「协议/服务引擎层采纳、desktop ma
 - 事故：v3.15.1（`6ba801ec`）与 v3.16.2（`f785503b`/`00dbc590`）上游合并把 adapters 整文件覆盖回上游 `com.zcode/`，与 host 侧 `com.zxcode/` 劈叉。host 按"安全边界"静默降级 requestMeta 为 `{}`，普通 js 调用不受影响，但 Browser Use / Computer Use 的 bridge 因拿不到 `session_id` 报 `node_repl browser request is missing session_id metadata`。2026-11-09 修复（adapters 改回 `com.zxcode/`）。
 - 合并判据：上游对 `adapters/src/mcp/index.ts` 的改动凡涉及该键字面量 → **keep-ours**。守护防线：`node-repl-host/test/request-context-key.test.ts`（两侧键一致）与 [specs/zxcode-path-consistency.md](specs/zxcode-path-consistency.md) 探针 5。
 
+## 十二、v3.18.0 同步剔除（2026-11-12）
+
+v3.18.0 合并（`b95ebaff` sync）沿用「引擎/新功能采纳、智谱联网域拒入」策略。本节记录本轮新增剔除与拍板：
+
+### 新增剔除域（上游 v3.18.0 新功能中的智谱联网面）
+
+- **voice-input 语音输入**：云端 ASR（`/api/v1/asr/tickets` + WS 转发 PCM16，`voiceInputService.ts`）+ `zcodejwttoken` 登录令牌双重命中剔除域。整域拒入：`packages/services/src/voice-input/`、`packages/ui/src/voice-input/`、`packages/desktop/src/main/microphone-access/`、node.ts 注册块、ConversationComposer 接线、i18n key、e2e（asr-mock-server）。TID 常量保留为休眠。
+- **Web 区域化登录**（`packages/web/src/auth/webRegionalOAuth.ts`，`chat.z.ai/oauth/authorize`）与 **Web 分享管理页**（`packages/web/src/share-manage/`，zcode-server 分享 API）：随登录/分享域拒入。
+- **移动推送**：`mobilePushEnabled` 设置、`webRemoteControlV2Http` 的 `/api/v1/remote/notification/events` 上报、`mobilePushConnection`——依赖登录账号与官方推送服务，拒入（`web-remote-relay/` 整目录继续保 fork 删除，自部署 relay 不受影响）。
+- **插件推荐设置**：`PluginAutoRecommendationSetting`（数据源 `useUiPluginRecommendations` 读 clientConfig 在线下发）。
+- **i18n 新语言（ja-JP/ko-KR/ru-RU）中的剔除域 key**：三语言文件按 zh-CN/en-US 最终 key 集白名单裁剪（各删约 880+ 条：manualClaimPlan 分享、globalNotice.highspeed、highspeed `zcode.z.ai` 下载链接、conversationShare、mobilePush、login.\* 等）。
+
+### 上游对既有剔除域的演进（全部拒入，维持 fork 现状）
+
+- Coding Plan 配额/用量/购买（含 CONFIRMING(type) 确认页、highspeed-owner 账号域）、off-peak 激活面、营销（marketing-touch task-completion）、自动更新（autoUpdater `resolveZcodeJwtToken` 更新 feed 鉴权、forceUpdate、manifest provider、auto-update smoke 脚本与 `UpdateStatusDialog`）、遥测（desktopStabilityTelemetry 崩溃脱敏移出、`/event/report`）、source-server/数据同步 UI（`packages/ui/src/data-sync/` 复活已清）、zhipu 账号 provider 运行时、official-mcp 凭据、clientConfig/help 在线下发、Sites（site-analytics、official-command-endpoint 身份链路）、反馈工单。
+
+### 本轮拍板（fork 主动决策）
+
+- **web 远控前端保 fork 平铺结构**：上游 `packages/web/src/web-remote-control/` 子目录化重构（含 regional-login 接线）拒入；上游手机草稿恢复链（依赖 `webRemoteControlBridgeRecovery`）一并保 fork 旧恢复链路。
+- **CLI 凭据侧未接 keyring v2**：`adapters/src/auth/{credential-cipher,shared-credentials}.ts` 上游演进与智谱账号域（saveZaiLoginCredentials、zcodejwttoken）深度耦合，保 fork 版（AES-GCM `enc:v1`）；桌面侧 credential-security（keyring v2）已采纳，读取 fork 凭据走 `createLegacyCredentialCipher` 兼容 v1 格式。
+- **UI 组件保守取 fork 版**：AssistantPreviewCards、RemoteConnectionFields/ConnectingStep、WorkspaceSidebarFooter、DesktopTopOverlay、MemorySettingsPage（settings-scope 依赖）等上游重写未采纳（fork API 面不支持或依赖剔除域）；ToolCallBlocks 分组渲染器（changes/cua/execute-group）随上游渲染重构退役。
+- **conversationTimeline 保 fork 数组版**：上游「历史+尾轮」分区管线（`getConversationRowsPartition`）依赖 conversationProjectionStore 上游版，fork 侧未引入，timeline/liveTail 按数组版对齐（仅缺上游性能优化，行为等价）。
+- **data-sync e2e 保留**：fork 既有数据同步 e2e 用例（测自建 relay/stub 降级路径）随上游目录重组迁至 `remote/data-sync/`，属 fork 保留域（与 source-server UI 剔除不冲突）。
+- **CLI v4 遥测契约休眠面**（`contracts/telemetry`、`conversation-telemetry-facts`、`zcode-protocol-v4/telemetry`）继续保留（v3.17.2 既定决策，本地会话指标，无上报链路）。
+- **ZXCODE\_ 环境键族**：上游把 `ZXCODE_BASE_URL/ENDPOINT_ORIGIN/...` 等改回 `ZCODE_*`，fork 消费基线键名不回退（判据同 §十一，以 `git show 1ed5dd2d` 全族为准）；`ZCODE_CLIENT_LANGUAGE_ENV` 为拍板例外（按上游名）。
+
+### 采纳面备注
+
+- 桌面 `desktopNetworkPolicy` 采纳上游 X.509 完整链验证（pkijs），剥离 `electron-updater` import 与 auto-updater 出口规则（fork 无该依赖）。
+- `config/provider/zxcode-builtin.json` 采纳 revision 44（新增 `gpt-6.1-terra` API key 模板；无 `account:zai-*` 规则）。
+- `session-lifecycle`/`input-prediction`/`session-features`/`conversation-quote-context` 等 CLI 本地引擎域本轮采纳（此前 v3.17.2 保基线未合）。
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。

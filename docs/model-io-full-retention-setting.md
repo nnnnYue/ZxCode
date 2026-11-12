@@ -8,7 +8,7 @@
 
 ## 用户语义
 
-Settings / General 提供“完整保留模型 I/O”开关：
+Settings / Agent 能力 / 行为与工具 提供“完整保留模型 I/O”开关：
 
 - 关闭：保持当前 bounded 模式。生产态最多保留 3 个 session 文件，单 session 达到 64 MiB 后重置；开发态单 session 达到 256 MiB 后重置；请求消息使用 `full` / `delta` / `tail` 压缩，生产态裁剪重复的大字段。
 - 开启：从下一次模型 attempt 开始写完整记录，不淘汰旧 session 文件，不按单 session 容量重置，不生成 `delta` / `tail`，也不执行生产态字段裁剪。
@@ -76,20 +76,20 @@ sanitize headers / request metadata       always
 
 ### Feature Summary
 
-| Field            | Value                                                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Developer intent | 增加默认关闭的 ModelIO 全量保留开关                                                                                       |
-| Capability       | ModelIO diagnostics retention                                                                                             |
-| Change layer     | presentation / draft-default / commit-effect / persistence                                                                |
-| Operating mode   | planning                                                                                                                  |
-| Primary seeds    | `GeneralSectionContent`, `appSettingsSchema`, `syncAppRuntimePreferences`, `AiSdkModelAdapter`, `writeModelIODebugRecord` |
-| Out of scope     | conversation 内容、task snapshot、queue、stream replay、ModelIO 读取 UI、日志导出策略                                     |
+| Field            | Value                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Developer intent | 增加默认关闭的 ModelIO 全量保留开关                                                                                             |
+| Capability       | ModelIO diagnostics retention                                                                                                   |
+| Change layer     | presentation / draft-default / commit-effect / persistence                                                                      |
+| Operating mode   | planning                                                                                                                        |
+| Primary seeds    | `AgentBehaviorSectionContent`, `appSettingsSchema`, `syncAppRuntimePreferences`, `AiSdkModelAdapter`, `writeModelIODebugRecord` |
+| Out of scope     | conversation 内容、task snapshot、queue、stream replay、ModelIO 读取 UI、日志导出策略                                           |
 
 ### UI Surface Matrix
 
-| User scenario        | UI entry           | Shared implementation              | Display/draft owner           | Default/inherit source              | Validation/gating | Commit action                                      | Authority/persistence                                    | Mode boundary                               | Must remain isolated from                              |
-| -------------------- | ------------------ | ---------------------------------- | ----------------------------- | ----------------------------------- | ----------------- | -------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
-| 保留完整模型诊断轨迹 | Settings / General | `GeneralSectionContent` + `Switch` | `useSettings` shared snapshot | `appSettingsSchema` default `false` | boolean schema    | `ISettingService.update` + runtime preference sync | `~/.zcode/v2/setting.json` + active CLI runtime snapshot | desktop/web UI 共用；local/remote Host 同步 | conversation/session recovery、provider 配置、日志脱敏 |
+| User scenario        | UI entry                           | Shared implementation                    | Display/draft owner           | Default/inherit source              | Validation/gating | Commit action                                      | Authority/persistence                                    | Mode boundary                               | Must remain isolated from                              |
+| -------------------- | ---------------------------------- | ---------------------------------------- | ----------------------------- | ----------------------------------- | ----------------- | -------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| 保留完整模型诊断轨迹 | Settings / Agent 能力 / 行为与工具 | `AgentBehaviorSectionContent` + `Switch` | `useSettings` shared snapshot | `appSettingsSchema` default `false` | boolean schema    | `ISettingService.update` + runtime preference sync | `~/.zcode/v2/setting.json` + active CLI runtime snapshot | desktop/web UI 共用；local/remote Host 同步 | conversation/session recovery、provider 配置、日志脱敏 |
 
 ### Shared And Divergent Behavior
 
@@ -130,12 +130,12 @@ sanitize headers / request metadata       always
 
 ### Codegraph Evidence
 
-| Seed                        | Query                           | Direct callers / key path                               | Depth | Interpretation                                         |
-| --------------------------- | ------------------------------- | ------------------------------------------------------- | ----- | ------------------------------------------------------ |
-| repository root             | settings/runtime/modelIO impact | codegraph index unavailable; used focused `rg` fallback | 0     | graph drift must be checked by text/type/test evidence |
-| `GeneralSectionContent`     | callers                         | `SettingsPage`                                          | 1     | single UI entry                                        |
-| `syncAppRuntimePreferences` | callers                         | Root/useSettings/Bot remote bridge                      | 2     | local and remote runtime sync owner                    |
-| `writeModelIODebugRecord`   | callers                         | generate/stream recorder                                | 2     | single persistence boundary                            |
+| Seed                          | Query                           | Direct callers / key path                               | Depth | Interpretation                                         |
+| ----------------------------- | ------------------------------- | ------------------------------------------------------- | ----- | ------------------------------------------------------ |
+| repository root               | settings/runtime/modelIO impact | codegraph index unavailable; used focused `rg` fallback | 0     | graph drift must be checked by text/type/test evidence |
+| `AgentBehaviorSectionContent` | callers                         | `SettingsPage`                                          | 1     | single UI entry                                        |
+| `syncAppRuntimePreferences`   | callers                         | Root/useSettings/Bot remote bridge                      | 2     | local and remote runtime sync owner                    |
+| `writeModelIODebugRecord`     | callers                         | generate/stream recorder                                | 2     | single persistence boundary                            |
 
 ### Graph Drift And Delta
 

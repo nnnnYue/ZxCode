@@ -1,5 +1,17 @@
 /* eslint-disable max-lines -- Root 当前集中编排启动和 workspace shell wiring，先保持入口收口避免跨层状态拆散。 */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ProjectDirectoryProvider } from "@/project-sidebar/ProjectDirectoryProvider.js";
+import { RemoteProjectPicker } from "@/project-sidebar/RemoteProjectPicker.js";
+import {
+  buildRemoteWorkspaceIdentity,
+  buildServerRemoteWorkspaceIdentity,
+  remoteHostIdFromWorkspaceIdentity,
+} from "@zcode/shared";
+import type { RemoteProjectHost } from "@zcode/services";
+import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
+import { RemoteConnectionProgressProvider } from "@/remote-connection-flow/ui/RemoteConnectionProgress.js";
+import { RemoteProjectPresentationProvider } from "@/hooks/RemoteProjectPresentationContext.js";
+import { lazy, Suspense } from "react";
 import { LucideProvider, RefreshCw } from "lucide-react";
 import {
   APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL,
@@ -13,6 +25,7 @@ import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { useDynamicWorkflowUserModeSync } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { DirectoryBrowser } from "@/DirectoryBrowser.js";
+
 import { useTabPersistence } from "@/hooks/useTabPersistence.js";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -51,11 +64,12 @@ import type { RootProps } from "@/root/types.js";
 import { DiffsWorkerPoolProvider } from "@/root/DiffsWorkerPoolProvider.js";
 // 侧栏换骨架 Phase 3c：目录 owner、远端项目重连事实与手机渲染端动作通道。
 import {
-  ProjectDirectoryProvider,
+  attachRemoteProjectWorkspace,
+  resolveEntryProject,
+  useRemoteWorkspaceConnectionGate,
   useWebRemoteControlRendererActions,
 } from "@/project-sidebar/index.js";
-import { RemoteProjectPresentationProvider } from "@/hooks/RemoteProjectPresentationContext.js";
-import { RemoteConnectionProgressProvider } from "@/remote-connection-flow/ui/RemoteConnectionProgress.js";
+import { resolveConversationWorkspaceTarget } from "@/conversation-workspace-target/index.js";
 import type { RemoteConnectionOpenPreference } from "@/app-shell/types.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import {
@@ -191,7 +205,6 @@ function WebRemoteControlTaskSync({
 
   return null;
 }
-
 /**
  * Root —— 应用根组件
  *
@@ -225,7 +238,7 @@ export function Root(props: RootProps) {
                         {/* 连接进度摘要的唯一发布/订阅通道；fork 由 Root 既有连接流程后续接入 publish。 */}
                         <RemoteConnectionProgressProvider>
                           <RootInner {...props} />
-                        </RemoteConnectionProgressProvider>
+                        </RemoteConnectionProgressProvider>{" "}
                       </AssistantCodeCommentFeatureProvider>
                     </WebRemoteControlFeatureProvider>
                   </DiffsWorkerPoolProvider>
@@ -269,7 +282,7 @@ function RootInner({
     };
   }, [platform]);
 
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale, localeResolved } = useZCodeIntl();
   const theme = useZCodeStore((state) => state.theme);
   const { settings: appSettings, refresh: refreshAppSettings } = useSettings();
   // 动态工作流灰度快照的 app 级唯一取数：自动化页与 run 面板只读
@@ -533,6 +546,7 @@ function RootInner({
     handleOpenFolderFromWorkspaceMenu,
     handleCreateTask,
     handleBackFromSettings,
+    handleOpenTaskFromSettings,
   } = useRootWorkspaceActions({
     intl,
     platform,
@@ -591,7 +605,25 @@ function RootInner({
     addTab,
     onWorkspaceActivated: handleRemoteWorkspaceActivated,
   });
+  const waitForRemoteWorkspaceConnection = useRemoteWorkspaceConnectionGate(
+    reconnectingRemoteWorkspaceKeys,
+  );
 
+  // 上游 openPreparedRemoteProjectWorkspace 依赖 remote/useRemoteWorkspaceController
+  // （fork 无此模块，目录未随合并进入仓库），且合并树中无调用方，随剔除域一并省略。
+
+  const handleResolveConversationWorkspaceForShell = useCallback(
+    async () =>
+      // Bug 原因：此前只回传 workspacePath，Shell 再按路径反查 identity；多设备 conversation 路径
+      // 相同时会归到错误 Source。改为在这里按 Source 归属一次性解析 path + identity。
+      await resolveConversationWorkspaceTarget({
+        getTabs: () => tabStoreApi.getState().tabs,
+        activeWorkspacePath,
+        activeWorkspaceIdentity,
+        resolveLocalConversationWorkspacePath: handleResolveConversationWorkspace,
+      }),
+    [activeWorkspacePath, activeWorkspaceIdentity, handleResolveConversationWorkspace, tabStoreApi],
+  );
   useEffect(() => {
     if (!platform.onWebRemoteControlReconnectWorkspace) {
       return;
@@ -686,6 +718,7 @@ function RootInner({
     allowOpenWorkspace,
     isDesktop,
     locale,
+    localeResolved,
     tabs,
     totalUnreadTaskCount,
     webRemoteControlFeatureEnabled,
@@ -870,6 +903,7 @@ function RootInner({
     isWebRemoteControl: Boolean(webRemoteControlWorkspaceSwitcher),
     captionWorkspacePath: activeWorkspacePath,
     onBack: activeWorkspacePath ? handleBackFromSettings : undefined,
+    onOpenTask: handleOpenTaskFromSettings,
     onCreateTask: handleCreateTask,
     onOpenWorkspace: handleOpenWorkspace,
     allowOpenWorkspace,
@@ -965,6 +999,7 @@ function RootInner({
               remoteWorkspaceSessions={remoteWorkspaceSessions}
               allowRemoteWorkspace={allowRemoteWorkspace}
               handleBackFromSettings={handleBackFromSettings}
+              handleOpenTaskFromSettings={handleOpenTaskFromSettings}
               reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
               remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
               reconnectingRemoteWorkspaceLogsByWorkspaceKey={
@@ -976,7 +1011,6 @@ function RootInner({
               initialWebRemoteControlMobileNavigationIntent={
                 initialWebRemoteControlMobileNavigationIntent
               }
-              initialWebRemoteControlWorkspaceList={initialWebRemoteControlWorkspaceList}
               webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
               isDesktop={isDesktop}
               isMacDesktop={isMacDesktop}
@@ -984,17 +1018,6 @@ function RootInner({
               supportsEmbeddedBrowser={supportsEmbeddedBrowser}
             />
           )}
-          <ScopedErrorBoundary
-            scope="onboarding-dialog"
-            resetKeys={[workspaceShellIdentity?.trim() || workspaceShellPath]}
-            variant="silent"
-          >
-            <OnboardingDialog
-              workspacePath={workspaceShellPath || undefined}
-              workspaceIdentity={workspaceShellIdentity}
-              isDesktop={isDesktop}
-            />
-          </ScopedErrorBoundary>
         </OccupationOnboarding>
       </RemoteProjectPresentationProvider>
     </RootShell>

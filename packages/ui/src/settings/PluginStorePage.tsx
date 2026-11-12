@@ -28,7 +28,8 @@ import type { PluginStoreActions } from "@/settings/PluginStoreCard.js";
 import {
   buildStoreItems,
   canUpdatePluginItem,
-  isPluginUpdatePending,
+  hasInstallableUpdate,
+  isStoreItemInstallBlocked,
   resolveItemDisplayName,
   resolvePluginDisplayName,
   type StorePluginItem,
@@ -266,13 +267,14 @@ export function PluginStorePage({
 
   const handleInstall = useCallback(
     async (item: StorePluginItem) => {
+      // 示例提示词对未安装条目也走这里：不兼容的版本不能装（§4.3），按钮之外的入口同样挡住。
+      if (isStoreItemInstallBlocked(item)) return;
       if (item.restorable) {
         await restoreBuiltin(item.id, pluginManagementService);
       } else {
         await installPlugin(item.name, item.marketplace, pluginManagementService, "user");
       }
-      // 安装/恢复会引入新技能与命令，与启停/卸载一样做一次收尾刷新。
-      await refreshAfterPluginChange();
+      // 安装/恢复会引入新技能与命令，与启停/卸载一样做一次收尾刷新。      await refreshAfterPluginChange();
     },
     [installPlugin, pluginManagementService, refreshAfterPluginChange, restoreBuiltin],
   );
@@ -301,7 +303,7 @@ export function PluginStorePage({
     }
     const pendingCount = usePluginManagementStore
       .getState()
-      .installedPlugins.filter((item) => isPluginUpdatePending(item.updateStatus)).length;
+      .installedPlugins.filter(hasInstallableUpdate).length;
     if (pendingCount > 0) {
       toast(
         intl.formatMessage(
@@ -455,9 +457,10 @@ export function PluginStorePage({
         </div>
       ) : null}
 
+      {/* 来源错误可能带连续长路径；允许断行，避免窄屏内容被错误文本撑宽。 */}
       {error && !addSourceOpen ? (
         <div
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-ui-base text-destructive"
+          className="break-words rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-ui-base text-destructive"
           data-testid="plugin-store-error"
         >
           {error}

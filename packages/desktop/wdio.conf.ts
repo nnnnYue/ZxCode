@@ -1,3 +1,7 @@
+// 合并说明（v3.18.0）：采上游 prepareTtftOtlpFixture（ttft 诊断用例 fork 保留）；
+// 拒会话分享 mock route（剔除域）、sidebar-rich-content（fork 已裁剪 helper）与
+// toolsearch-provider（fork 无该 helper 与对应用例）。
+import { prepareTtftOtlpFixture } from "./test/e2e/helpers/ttft-otlp-fixture.js";
 import {
   requestSecurityCaptureMocks,
   recordRequestSecurityCaptureMode,
@@ -13,12 +17,13 @@ import {
 /* eslint-disable max-lines -- WDIO 配置需要集中维护 Electron、Xvfb、代理和容器 demo 参数，拆开会让测试入口更难追踪。 */
 import { execFile, execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { userInfo } from "node:os";
 import {
   captureWorkspaceSources,
   withE2ESourceEvidence,
@@ -50,12 +55,16 @@ import {
   type E2EBrowserTargetInfo,
 } from "./test/e2e/helpers/e2e-window-target.js";
 import { runE2EBeforeSessionSetup } from "./test/e2e/helpers/e2e-before-session.js";
-import { resolveAskUserQuestionClockScaleForWorker } from "./test/e2e/helpers/e2e-worker-environment.js";
+import {
+  resolveAskUserQuestionClockScaleForWorker,
+  resolveE2ECredentialSecret,
+} from "./test/e2e/helpers/e2e-worker-environment.js";
 import {
   CODING_PLAN_TEAM_MOCK_BASE_URL_ENV,
   applyCodingPlanTeamMockEnv,
   clearCodingPlanTeamMockEnv,
   shouldPrepareCodingPlanTeamMock,
+  shouldReuseDesktopE2EBuild,
 } from "./test/e2e/helpers/coding-plan-mock-env.js";
 import {
   HIGHSPEED_MOCK_SCENARIO_ENV,
@@ -79,8 +88,13 @@ import {
   workerSpecsContain,
 } from "./test/e2e/helpers/e2e-worker-isolation.js";
 import { createE2EStartupCredentialSeed } from "./test/e2e/helpers/e2e-startup-credentials.js";
+import {
+  installOfficialPluginCacheTemplate,
+  prepareOfficialPluginCacheTemplate,
+} from "./test/e2e/helpers/official-plugin-cache-prewarm.js";
 import { prepareOAuthCompletionRaceFixture } from "./test/e2e/helpers/oauth-completion-race-fixture.js";
 import { prepareAccessToken401Fixture } from "./test/e2e/helpers/access-token-401-fixture.js";
+import { prepareMcpFailureGuidanceFixture } from "#e2e/helpers/mcp-failure-guidance-fixture";
 import { createE2EReplayFixtureVariables } from "./test/e2e/helpers/e2e-runtime-paths.js";
 import { stageE2EAppOutput } from "./test/e2e/helpers/e2e-app-output-stage.js";
 import { ensureSshRemoteReleaseAssets } from "./test/e2e/helpers/e2e-ssh-remote-release-assets.js";
@@ -239,7 +253,10 @@ const ELECTRON_APP_BINARY_PATH =
     installTimeoutMs: E2E_ELECTRON_INSTALL_TIMEOUT_MS,
     repoRoot: REPO_ROOT,
   });
-const UPSTREAM_PROVIDER_SPEC = "./test/e2e/upstream-provider.test.ts";
+// 合并说明：UPSTREAM_PROVIDER_SPEC 采上游路径重构；manual-review glob 常量保留 fork 版
+// （body 仍按 fork 门禁引用）。TURN_STEER_PROBE_SPEC 指向的用例已被上游转正到
+// conversation-session/execution/，常量保留以维持 body 的显式排除语义。
+const UPSTREAM_PROVIDER_SPEC = "./test/e2e/infrastructure/smoke/upstream-provider.test.ts";
 const TURN_STEER_PROBE_SPEC =
   "./test/e2e/conversation-session/manual-review/pending/conversation-session-turn-steer-probe.test.ts";
 const MANUAL_REVIEW_SPEC_GLOB = "./test/e2e/conversation-session/manual-review/**/*.test.ts";
@@ -534,6 +551,10 @@ if (!E2E_RUN_ID) {
 }
 const E2E_RUN_CACHE_DIR = resolve(DESKTOP_DIR, ".e2e-cache", E2E_RUN_ID);
 const E2E_APP_OUTPUT_DIR = resolve(E2E_RUN_CACHE_DIR, "app");
+const E2E_OFFICIAL_PLUGIN_CACHE_TEMPLATE_HOME = resolve(
+  E2E_RUN_CACHE_DIR,
+  "official-plugin-cache-home",
+);
 const E2E_APP_ENTRY_POINT = resolve(E2E_APP_OUTPUT_DIR, "main/index.js");
 const E2E_APP_RENDERER_ASSETS_DIR = resolve(E2E_APP_OUTPUT_DIR, "renderer/assets");
 const E2E_REMOTE_ASSET_VERSION = String(
@@ -572,6 +593,13 @@ process.env.ZXCODE_DATA_BASE_DIR = E2E_HOME_DIR;
 process.env.ZXCODE_DESKTOP_APPLICATION_NAME = "ZCode E2E";
 process.env.ZXCODE_DESKTOP_HOME_DIR = E2E_HOME_DIR;
 process.env.ZXCODE_DESKTOP_USE_ELECTRON_DEFAULT_USER_DATA = "1";
+// 采上游 v3.18.0 修复：从 ZCode 客户端拉起的 shell 里带有应用自身环境
+// （ZXCODE_ENV=production、ZXCODE_BASE_URL=生产域）。它们会被 onPrepare 的 agent 构建读走并
+// 固化进产物，让 E2E 打到生产域、忽略 settings 里的 endpoint，fixture mock server 收不到请求。
+// 桌面包的归一在 ensure-e2e-desktop-build 内完成，这里保证 WDIO 侧构建链路一致（fork 键名 ZXCODE_*）。
+process.env.ZXCODE_ENV = "test";
+delete process.env.ZXCODE_BASE_URL;
+delete process.env.ZXCODE_RUNTIME_ENV;
 // Bugfix: renderer E2E store bridge 只能由 WDIO 进程显式打开，避免 ZXCODE_ENV=test 的产品测试环境暴露全局可变 store。
 process.env.VITE_ZXCODE_E2E_STORE_BRIDGE = "1";
 // Bugfix: e2e session 由 Chromedriver 管理调试端口；禁用主进程开发态固定的 9229，
@@ -587,6 +615,8 @@ let modelContextBudgetConfigMockServer: ModelContextBudgetConfigMockServer | nul
 let dynamicWorkflowConfigMockServer: DynamicWorkflowConfigMockServer | null = null;
 let stopOAuthCompletionRaceFixture: (() => Promise<void>) | null = null;
 let stopAccessToken401Fixture: (() => Promise<void>) | null = null;
+let stopMcpFailureGuidanceFixture: (() => Promise<void>) | null = null;
+let stopTtftOtlpFixture: (() => Promise<void>) | null = null;
 let pluginCdnZipFixtureServer: PluginCdnZipFixtureServer | null = null;
 let upstreamE2EBaseUrl: string = e2eProviderPreset.baseUrl;
 let e2eRunnerExitWatchdog: ReturnType<typeof setTimeout> | null = null;
@@ -884,8 +914,14 @@ function prepareDesktopAppBuild() {
     console.log(`[e2e] using packaged app: ${E2E_PACKAGED_APP_BINARY_PATH}`);
     return;
   }
+  // Bug 根因：Windows 上 Agent CLI 只能经过 zcode-runtime-host.exe 启动，而下面的
+  // build:no-runtime-assets 不产出它，Windows CI 全部 case 报 runtime host missing /
+  // slash 目录为空。复用构建（ZCODE_E2E_SKIP_BUILD）也必须检查，产物不受 out stamp 保护。
+  ensureWindowsRuntimeHost();
   // 修复原因：WDIO 配置会先被 esbuild 解析，CI 可执行字符串必须保持 ASCII 引号。
-  if (process.env.ZCODE_E2E_SKIP_BUILD === "1") {
+  // 采上游 v3.18.0：复用判据统一走 shouldReuseDesktopE2EBuild——coding-plan 网页 mock
+  // 分配新端口后不能复用父构建，源码证据也必须标记重新构建。
+  if (shouldReuseDesktopE2EBuild(process.env)) {
     console.log("[e2e] ZCODE_E2E_SKIP_BUILD=1, skipping onPrepare build");
     assertDesktopE2EBuildReady("ZCODE_E2E_SKIP_BUILD=1");
     return;
@@ -897,7 +933,20 @@ function prepareDesktopAppBuild() {
   assertDesktopE2EBuildReady("onPrepare build");
 }
 
-function runPnpmWorkspaceCommand(args: string[], options?: { timeoutMs?: number }) {
+// 非 Windows 由脚本 --if-windows 跳过；--ensure 按源码摘要复用已有产物，只在缺失或过期时调用 CMake。
+// 调用方持有 E2E build 锁，分片 runner 不会并发写同一个 bundled-tools 目录。
+function ensureWindowsRuntimeHost() {
+  execFileSync(
+    process.execPath,
+    [resolve(REPO_ROOT, "scripts/build-windows-runtime-host.mjs"), "--if-windows", "--ensure"],
+    { cwd: REPO_ROOT, env: createPnpmChildEnv(), stdio: "inherit" },
+  );
+}
+
+function runPnpmWorkspaceCommand(
+  args: string[],
+  options?: { timeoutMs?: number; env?: Record<string, string> },
+) {
   execFileSync(PNPM_COMMAND, args, {
     cwd: REPO_ROOT,
     env: createPnpmChildEnv(),
@@ -1168,7 +1217,8 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
     | "fiveHourUse"
     | "multiFiveHourUse"
     | "multiFiveHourUseLagging"
-    | "urgentOpportunity" = "none";
+    | "urgentOpportunity"
+    | "weekToggle" = "none";
   let resetScenarioStartedAt = Date.now();
   let resetOpportunityGranted = false;
   let resetUseAccepted = false;
@@ -1183,6 +1233,9 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
   // multiFiveHourUseLagging（QR-E2E-15）：在 multiFiveHourUse 基础上，/use 核销结果延迟
   // RESET_USE_VISIBLE_LAG_MS 才在 /status 可见；窗口内 /status 返回核销前快照（上一张 used_at）。
   const RESET_USE_VISIBLE_LAG_MS = 600;
+  // weekToggle（QR-E2E-16）：FIVE_HOUR、WEEK 各 1 张；WEEK 是否在 /status 里可见由测试经
+  // /__e2e/coding-plan/reset-week-available 切换，模拟周机会被别处核销后又重新发放。
+  let resetWeekAvailable = true;
   let resetMultiLag: {
     usedAt: number | null;
     usedCount: number;
@@ -1270,7 +1323,8 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
         body.resetScenario === "fiveHourUse" ||
         body.resetScenario === "multiFiveHourUse" ||
         body.resetScenario === "multiFiveHourUseLagging" ||
-        body.resetScenario === "urgentOpportunity"
+        body.resetScenario === "urgentOpportunity" ||
+        body.resetScenario === "weekToggle"
           ? body.resetScenario
           : "none";
       resetOpportunityGranted = false;
@@ -1281,8 +1335,15 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
       resetMultiUsedKeys.clear();
       resetMultiUnread = false;
       resetMultiLag = null;
+      resetWeekAvailable = true;
       requests.length = 0;
       writeJson(response, { ok: true, resetScenario });
+      return;
+    }
+    if (url.pathname === "/__e2e/coding-plan/reset-week-available" && request.method === "POST") {
+      const body = await readRequestJson<{ available?: unknown }>(request);
+      resetWeekAvailable = body.available === true;
+      writeJson(response, { ok: true, available: resetWeekAvailable });
       return;
     }
     if (url.pathname === "/__e2e/coding-plan/reset-confirm-use" && request.method === "POST") {
@@ -1364,7 +1425,9 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
     ) {
       writeJson(
         response,
-        buildProviderResponsiveStartBalance(startIndependent ? "GLM-5.2" : undefined),
+        // 推荐依赖目标模型的真实额度；与 SIP 使用的当前模型保持一致。
+        // GLM-5-Turbo 已退役，Start balance 固定返回 GLM-5.3，不再按本轮 specs 切换模型。
+        buildProviderResponsiveStartBalance("GLM-5.3"),
       );
       return;
     }
@@ -1433,7 +1496,9 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
                 [{ expire_at: Date.now() + 120_000 }]
               : [{ expire_at: resetScenarioStartedAt + 3_600_000 }];
       const availableWeekResets =
-        resetScenario === "existingMultiple" || resetScenario === "fiveHourUse"
+        resetScenario === "existingMultiple" ||
+        resetScenario === "fiveHourUse" ||
+        (resetScenario === "weekToggle" && resetWeekAvailable)
           ? [{ expire_at: resetScenarioStartedAt + 86_400_000 }]
           : [];
       writeJson(response, {
@@ -2007,8 +2072,10 @@ async function startCodingPlanDataPlaneProxy(specs: readonly string[]) {
     : null;
   // Highspeed 抽卡 case 的每轮请求都走 Team Coding Plan 内建 HTTPS Endpoint（spec §7）；
   // 静态 body 无法区分轮次，多轮 case 会在首轮就误判完成，必须按轮次标记回放。
-  const highspeedFixtures = specs.some((spec) =>
-    spec.includes("conversation-session-highspeed-card"),
+  const highspeedFixtures = specs.some(
+    (spec) =>
+      spec.includes("conversation-session-highspeed-card") ||
+      spec.includes("highspeed-owner-ui-race.test.ts"),
   )
     ? (
         await Promise.all(
@@ -2213,7 +2280,7 @@ async function startPluginCdnZipFixtureIfNeeded(specs: string[] = []) {
   if (!shouldUsePluginCdnZipMarketplaceFixture(specs)) {
     return;
   }
-  pluginCdnZipFixtureServer ??= await startPluginCdnZipFixtureServer();
+  pluginCdnZipFixtureServer ??= await startPluginCdnZipFixtureServer(specs);
 }
 
 async function stopPluginCdnZipFixture() {
@@ -2712,7 +2779,15 @@ function forceFinalizeE2ERunnerFromGuard() {
 async function resetE2EHome(specs: string[] = []) {
   await removeE2EHomeWithRetry();
   mkdirSync(E2E_HOME_DIR, { recursive: true });
+  // 先拷官方插件缓存，再写各 spec 的 fixture，避免覆盖 fixture 自己写入的插件状态。
+  await installOfficialPluginCacheTemplate({
+    homeDir: E2E_HOME_DIR,
+    templateHome: E2E_OFFICIAL_PLUGIN_CACHE_TEMPLATE_HOME,
+  });
   seedE2EStartupState(specs);
+  // 合并说明：保 fork 的 usesGroupedHeaderPinVisibilityFixture 条件（TSL27 用例 fork 保留）；
+  // 拒上游 seedRemoteOnboardingFixture / seedProjectUpgradeOrderFixture /
+  // seedSidebarRichContentFixture（对应 helper 已按 fork 基线裁剪，marketing-touch 属剔除域）。
   if (
     usesProviderReadinessColdStartFixture(specs) ||
     usesGroupedHeaderPinVisibilityFixture(specs) ||
@@ -2831,6 +2906,7 @@ function seedE2EPluginCdnZipMarketplace(specs: string[] = []) {
     e2eHomeDir: E2E_HOME_DIR,
     server: pluginCdnZipFixtureServer,
     lastUpdated: resolvePluginCdnZipMarketplaceLastUpdated(specs),
+    localCatalog: specs.some((spec) => spec.includes("agent-plugin-discovery.test.ts")),
   });
 }
 
@@ -2849,7 +2925,12 @@ function seedE2EPluginMcpSkillInstalledPlugins(specs: string[] = []) {
       : "installed-plugins.disabled.template.json";
   const fixturePath = resolve(DESKTOP_DIR, "test/e2e/fixtures/plugin-mcp-skill", templateName);
   const pluginRoot = resolve(DESKTOP_DIR, "test/e2e/fixtures/plugin-mcp-skill/e2e-plugin-mcp-ping");
-  const template = readFileSync(fixturePath, "utf-8").replaceAll("__INSTALL_PATH__", pluginRoot);
+  // 修复原因：Windows 路径的反斜杠直接拼进 JSON 字符串会成为非法转义（如 `\U`），
+  // installed_plugins.json 解析失败后插件安装记录整体丢失；必须按 JSON 字符串编码替换。
+  const template = readFileSync(fixturePath, "utf-8").replaceAll(
+    '"__INSTALL_PATH__"',
+    JSON.stringify(pluginRoot),
+  );
   // pluginStorageRoot = <home>/.zcode/cli/plugins
   const targetDir = resolve(E2E_STORAGE_ROOT, "cli/plugins");
   mkdirSync(targetDir, { recursive: true });
@@ -3022,6 +3103,10 @@ function seedE2EStartupState(specs: string[] = []) {
     ),
     "utf-8",
   );
+  if (workerSpecsContain(specs, "credential-store-recovery.test.ts")) {
+    // 容器恢复专项只能在隔离 HOME 注入损坏字节，不能复用真实用户凭据。
+    writeFileSync(E2E_APP_CREDENTIALS_FILE, '{"bot:fixture":"synthetic",', "utf8");
+  }
 }
 
 function usesProviderReadinessColdStartFixture(specs: string[] = []) {
@@ -4060,6 +4145,8 @@ export const config: WebdriverIO.Config = {
       : {}),
     HOME: E2E_HOME_DIR,
     USERPROFILE: E2E_HOME_DIR,
+    ZCODE_CREDENTIAL_SECRET:
+      resolveE2ECredentialSecret(configuredE2ESpecs, process.env.ZCODE_CREDENTIAL_SECRET) ?? "",
     // PLM-LC-010 使用非 ZCODE_ 前缀验证插件 MCP 的 Claude-compatible env 展开。
     // 值只供 fixture 做 hash 比对，工具结果和截图都不得回显原值。
     E2E_PLUGIN_RUNTIME_SECRET: "e2e-plugin-runtime-secret-fixture-20260718",
@@ -4130,6 +4217,10 @@ export const config: WebdriverIO.Config = {
         appArgs: [
           ...(E2E_PACKAGED_APP_BINARY_PATH ? [] : [`--app=${E2E_APP_ENTRY_POINT}`]),
           "--no-sandbox",
+          // 语音输入 E2E（docs/chat/composer-voice-input.md）：用 Chromium 假麦克风设备，
+          // 不访问真实设备，也不弹出系统授权；其他用例不调用 getUserMedia，不受影响。
+          "--use-fake-device-for-media-stream",
+          "--use-fake-ui-for-media-stream",
           // 修复原因：环境变量不会出现在进程命令行；同时传 runId 与 HOME identity，
           // 让跨平台清理优先命中当前 run，并为 Windows shard 保留路径级兜底。
           buildE2ERunIdArg(E2E_RUN_ID),
@@ -4204,20 +4295,76 @@ export const config: WebdriverIO.Config = {
     // Bug 根因：Mocha adapter 会在进入 test body 前按 config timeout 包裹用例，
     // 因此用例内的 this.timeout 无法为人工保留阶段追加预算。显式 hold 只扩展
     // manual-review 运行，不改变普通 E2E 的 120 秒上限。
+    // 修复原因：旧写法是嵌套三元，按出现顺序取第一个命中；同一分片同时包含多个长预算 spec 时，
+    // 排在前面的较小预算会截断后面的较长用例（例如 240s 截断 background-bash 的 360s）。
+    // 改为对所有命中的预算取最大值，新增分支与顺序无关。
     timeout:
-      (pluginNoGitGitHubArchiveE2E ||
-      workspacePluginRemoteExplicitSyncE2E ||
-      // 双 Host 参数化场景复用同一组已存在 session，覆盖完整保存/故障链后再核对整段轨迹。
-      configuredE2ESpecs.some((spec) =>
-        spec.endsWith("conversation-session-subagent-cross-host.test.ts"),
-      )
-        ? 600000
-        : // 后台 Bash 冷恢复回归等待真实 child 结束、120s publisher grace 及 60s 清理节拍。
-          configuredE2ESpecs.some((spec) =>
+      Math.max(
+        requestSecuritySpecTimeout(configuredE2ESpecs, 120000),
+        ...[
+          {
+            // 此用例包含真实 SSH 首装、目录复用、设置定位、16 张截图和原目录重连；
+            // 探测校验用例同样经过真实首装与已有设备故障恢复，不能在到达状态断言前被截断。
+            // Mocha 外层须与用例的 15 分钟预算一致，不能在首装解压时被默认 120 秒截断。
+            matched: configuredE2ESpecs.some(
+              (spec) =>
+                spec.endsWith("conversation-session-remote-sidebar-menus.test.ts") ||
+                spec.endsWith("conversation-session-ssh-probe-validation.test.ts"),
+            ),
+            ms: 15 * 60_000,
+          },
+          {
+            // 用例不稳定原因：RDUX15 串行走 SSH、Docker 四个入口的后台连接，用例内声明 20 分钟预算，
+            // 但 this.timeout 无法覆盖外层，负载高时在 Docker 段被 120 秒截断（Error: Timeout）。
+            matched: configuredE2ESpecs.some((spec) =>
+              spec.endsWith("conversation-session-background-connection.test.ts"),
+            ),
+            ms: 20 * 60_000,
+          },
+          {
+            // 走查用例串行完成真实首装、失败/取消/后台、设置页与停容器掉线恢复，并全程录屏；
+            // 与用例内 30 分钟预算一致。
+            matched: configuredE2ESpecs.some((spec) =>
+              spec.endsWith("conversation-session-remote-ui-walkthrough.test.ts"),
+            ),
+            ms: 30 * 60_000,
+          },
+          {
+            // 此用例串行完成真实 SSH 安装、两次 relay 配对和断网恢复；同步其原定预算，
+            // 避免 WDIO 在手机离线期间按默认 120 秒截断，this.timeout 无法覆盖外层。
+            matched: configuredE2ESpecs.some((spec) =>
+              spec.endsWith("conversation-session-r3-mobile.test.ts"),
+            ),
+            ms: 40 * 60_000,
+          },
+          {
+            matched:
+              pluginNoGitGitHubArchiveE2E ||
+              workspacePluginRemoteExplicitSyncE2E ||
+              configuredE2ESpecs.some((spec) =>
+                spec.endsWith("conversation-session-subagent-cross-host.test.ts"),
+              ),
+            ms: 600000,
+          },
+          {
+            // SHR14/SHR17 串行跑两个 workspace、四轮父子请求与设置保存，用例声明
+            // this.timeout(240000)，但外层 Mocha 包裹先按 120 秒截断（Windows 上实测约 130 秒）。
+            matched: configuredE2ESpecs.some((spec) =>
+              spec.endsWith("conversation-session-subagent-multi-workspace.test.ts"),
+            ),
+            ms: 240000,
+          },
+          {
+            // 后台 Bash 冷恢复回归等待真实 child 结束、120s publisher grace 及 60s 清理节拍。
+            matched: configuredE2ESpecs.some((spec) =>
               spec.endsWith("conversation-session-background-bash-output.test.ts"),
-            )
-          ? 360000
-          : requestSecuritySpecTimeout(configuredE2ESpecs, 120000)) + manualReviewHoldMs,
+            ),
+            ms: 360000,
+          },
+        ]
+          .filter((budget) => budget.matched)
+          .map((budget) => budget.ms),
+      ) + manualReviewHoldMs,
   },
   async onPrepare() {
     try {
@@ -4252,7 +4399,7 @@ export const config: WebdriverIO.Config = {
         // 旧覆盖报告只有路径，不能证明源码版本；复用构建不得追认当前工作树。
         if (process.env.ZCODE_E2E_SOURCE_EVIDENCE === "1") {
           await withE2ESourceEvidence({
-            freshBuild: !E2E_PACKAGED_APP_BINARY_PATH && process.env.ZCODE_E2E_SKIP_BUILD !== "1",
+            freshBuild: !E2E_PACKAGED_APP_BINARY_PATH && !shouldReuseDesktopE2EBuild(process.env),
             captureSources: () => captureWorkspaceSources(REPO_ROOT),
             build: buildAndStage,
             appOutputDir: E2E_APP_OUTPUT_DIR,
@@ -4260,6 +4407,13 @@ export const config: WebdriverIO.Config = {
           });
         } else await buildAndStage();
         prepareZCodeAgentServer();
+        // 正式包使用随包 CLI，模板 seed 源不同，不预热；缺模板时各 HOME 照常冷 seed。
+        if (!E2E_PACKAGED_APP_BINARY_PATH) {
+          await prepareOfficialPluginCacheTemplate({
+            cliEntryPoint: ZCODE_CLI_ENTRYPOINT,
+            templateHome: E2E_OFFICIAL_PLUGIN_CACHE_TEMPLATE_HOME,
+          });
+        }
       });
     } catch (error) {
       // 修复原因：WDIO 会把 onPrepare 异常记录成 hook error 后继续派发 worker，
@@ -4304,22 +4458,44 @@ export const config: WebdriverIO.Config = {
       chromeOptions.args ?? [],
       currentE2EChromiumUserDataDir,
     );
+    const storageDiagnostics =
+      process.env.ZCODE_E2E_STORAGE_WORKER_DIAGNOSTICS === "1" &&
+      specs.some((spec) =>
+        spec.endsWith("conversation-session-r3-desktop-settings-authority.test.ts"),
+      );
+    const credentialOwnerProbe = specs.some((spec) =>
+      /system-credential-owner(?:-mcp)?\.test\.ts$/.test(spec),
+    );
     if (
       !E2E_PACKAGED_APP_BINARY_PATH &&
-      specs.some((spec) =>
-        /conversation-session-subagent-(context-boundaries|multi-workspace|cross-host)\.test\.ts/.test(
-          spec,
-        ),
-      )
+      (credentialOwnerProbe ||
+        storageDiagnostics ||
+        specs.some((spec) =>
+          /conversation-session-subagent-(context-boundaries|multi-workspace|cross-host)\.test\.ts/.test(
+            spec,
+          ),
+        ))
     ) {
       // ChromeDriver 会清空 NODE_OPTIONS；测试启动文件在正式 Main 导入前设置代理预加载。
       // 文件放在原 Main 旁边，保留 app 路径；正式 Host/CLI resolver 与存储准备均不替换。
       const entry = resolve(E2E_APP_OUTPUT_DIR, "main/subagent-e2e.mjs");
       const proxy = resolve(
         REPO_ROOT,
-        "packages/desktop/test/e2e/helpers/subagent-config-proxy.mjs",
+        credentialOwnerProbe
+          ? "packages/desktop/test/e2e/helpers/credential-owner-probe.mjs"
+          : storageDiagnostics
+            ? "packages/desktop/test/e2e/helpers/storage-worker-diagnostics.mjs"
+            : "packages/desktop/test/e2e/helpers/subagent-config-proxy.mjs",
       );
-      const preload = `--import=${JSON.stringify(proxy)}`;
+      // Bug 根因：Windows 上 `--import="C:\..."` 会被 ESM loader 当作协议 `c:` 拒绝
+      // （ERR_UNSUPPORTED_ESM_URL_SCHEME）；Host utility process 继承 NODE_OPTIONS 后启动即
+      // exit 1，用例卡在等待工作区。预加载统一传 file:// URL，macOS/Linux 行为不变。
+      const preload = `--import=${JSON.stringify(pathToFileURL(proxy).href)}`;
+      const diagnostics = credentialOwnerProbe
+        ? `process.env.ZCODE_E2E_CREDENTIAL_OWNER_LOG = ${JSON.stringify(resolve(E2E_HOME_DIR, "credential-owner.ndjson"))};\nawait import(${JSON.stringify(pathToFileURL(proxy).href)});\n`
+        : storageDiagnostics
+          ? `process.env.ZCODE_E2E_STORAGE_WORKER_DIAGNOSTICS_DIR = ${JSON.stringify(resolve(e2eReporter.artifactDir, "storage-workers"))};\n`
+          : "";
       await writeFile(
         entry,
         `process.env.NODE_OPTIONS = ${JSON.stringify(preload)};\nawait import(${JSON.stringify(pathToFileURL(E2E_APP_ENTRY_POINT).href)});\n`,
@@ -4343,6 +4519,16 @@ export const config: WebdriverIO.Config = {
         // 动态工作流灰度同样只能在 worker 的 beforeSession 注入动态端口，Main -> Host 的
         // 环境链才会继承到 case-local 的 /client/configs 网关。
         await startDynamicWorkflowConfigE2EMock(specs);
+        // 此 SSH 用例验证会话归属；在 Electron 启动前设置开启前置，避免把本机 mock 的 loopback 交给远端。
+        if (specs.some((spec) => spec.endsWith("conversation-session-r3-subagent.test.ts"))) {
+          process.env.ZCODE_DYNAMIC_WORKFLOW_MODE = "alwaysOn";
+        }
+        const fixtureCredentialSecret = resolveE2ECredentialSecret(
+          specs,
+          process.env.ZCODE_CREDENTIAL_SECRET,
+        );
+        if (fixtureCredentialSecret) process.env.ZCODE_CREDENTIAL_SECRET = fixtureCredentialSecret;
+        else delete process.env.ZCODE_CREDENTIAL_SECRET;
         await runE2EBeforeSessionSetup({
           cid,
           specs,
@@ -4354,12 +4540,37 @@ export const config: WebdriverIO.Config = {
           startUpstreamHttpIfNeeded: startUpstreamE2EHttp,
           startPluginCdnZipFixtureIfNeeded,
         });
+        if (
+          process.platform === "darwin" &&
+          specs.some((spec) => spec.endsWith("system-credential-storage.test.ts"))
+        ) {
+          // Main 首次访问发生在界面就绪前；原生专项必须先准备隔离 HOME 的系统库入口。
+          await mkdir(resolve(E2E_HOME_DIR, "Library"), { recursive: true });
+          await symlink(
+            resolve(userInfo().homedir, "Library/Keychains"),
+            resolve(E2E_HOME_DIR, "Library/Keychains"),
+            "dir",
+          );
+        }
+        // 合并说明：拒上游 startClientScenesE2EMockIfNeeded 调用——其函数定义与
+        // client-scenes mock 基建未随 fork 基线合入，引入未定义调用会破坏加载。
+        await stopTtftOtlpFixture?.();
+        stopTtftOtlpFixture = await prepareTtftOtlpFixture(specs);
         await startRequestSecurityFixture(specs, E2E_HOME_DIR);
         stopOAuthCompletionRaceFixture = await prepareOAuthCompletionRaceFixture(specs);
         stopAccessToken401Fixture = await prepareAccessToken401Fixture({
           specs,
           credentialsFile: E2E_APP_CREDENTIALS_FILE,
           settingsFile: E2E_APP_SETTINGS_FILE,
+        });
+        // 合并说明：拒 prepareVoiceInputFixture（voice-input 剔除域）、
+        // prepareWebRemoteControlAuthGateFixture / prepareOfficialMcpAuthRoutingFixture
+        // （helper 已按 fork 基线裁剪 / official-mcp 凭据剔除域）；采 mcp 失败引导 fixture。
+        stopMcpFailureGuidanceFixture = await prepareMcpFailureGuidanceFixture({
+          specs,
+          credentialsFile: E2E_APP_CREDENTIALS_FILE,
+          settingsFile: E2E_APP_SETTINGS_FILE,
+          workspacePath: resolve(E2E_HOME_DIR, "ZCodeProject"),
         });
         // resetHome 之后、Electron 启动之前安装，Main -> Host -> Agent 才会同时继承
         // case-owned PATH；其他 spec 由 helper 保持 no-op。
@@ -4448,6 +4659,12 @@ export const config: WebdriverIO.Config = {
           stopOAuthCompletionRaceFixture = null;
           await stopAccessToken401Fixture?.();
           stopAccessToken401Fixture = null;
+          // 合并说明：voice-input / official-mcp auth routing fixture 已按剔除域拒入，
+          // 此处仅保留 mcp 失败引导 fixture 的清理。
+          await stopMcpFailureGuidanceFixture?.();
+          stopMcpFailureGuidanceFixture = null;
+          await stopTtftOtlpFixture?.();
+          stopTtftOtlpFixture = null;
           currentE2EBeforeSessionError = null;
           e2eFailureArtifacts = null;
           currentE2EWorkerSessionSpecs = [];
@@ -4526,6 +4743,12 @@ export const config: WebdriverIO.Config = {
           stopOAuthCompletionRaceFixture = null;
           await stopAccessToken401Fixture?.();
           stopAccessToken401Fixture = null;
+          // 合并说明：voice-input / official-mcp auth routing fixture 已按剔除域拒入，
+          // 此处仅保留 mcp 失败引导 fixture 的清理。
+          await stopMcpFailureGuidanceFixture?.();
+          stopMcpFailureGuidanceFixture = null;
+          await stopTtftOtlpFixture?.();
+          stopTtftOtlpFixture = null;
           await stopPluginCdnZipFixture();
         } finally {
           await cleanupE2EElectronProcesses("onComplete");

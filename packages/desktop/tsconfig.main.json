@@ -3,9 +3,22 @@
   "compilerOptions": {
     "outDir": "out/main",
     "rootDir": "src/main",
-    "lib": ["es2025"]
+    "lib": ["es2025", "dom"]
   },
+  // fork：scheduler/extension-host 有独立 tsconfig 工程（由 tsconfig.json solution 汇总），
+  // main 的 rootDir 固定为 src/main，故不随上游把它们并入本工程 include。
   "include": ["src/main"],
   // main 直接依赖 shared 和 services；把引用补齐后，desktop 子工程也能稳定复用上游声明产物。
-  "references": [{ "path": "../shared" }, { "path": "../services" }]
+  "references": [
+    { "path": "../shared" },
+    { "path": "../services" },
+    // 扩展进程源码随 main 一起类型检查（根 typecheck 只覆盖 main/host/e2e 三个工程）。
+    { "path": "../rpc" },
+    { "path": "./tsconfig.app-navigation.json" },
+    // extension-host/scheduler 独立工程：main 经 "#src/*" 引用其 contract 时走 declaration。
+    { "path": "./tsconfig.extension-host.json" },
+    // scheduler 独立工程同上：desktopCronScheduler.ts 相对引用 ../scheduler/schedulerProtocol.js，
+    // 不加引用会把 scheduler 源码拉进 main 工程（rootDir=src/main，TS6059/TS6307）。
+    { "path": "./tsconfig.scheduler.json" }
+  ]
 }

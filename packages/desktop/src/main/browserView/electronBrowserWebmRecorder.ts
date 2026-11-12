@@ -381,7 +381,13 @@ export async function createElectronBrowserWebmRecorder(
       `[browser-recording] recorder console level=${details.level ?? "unknown"} message=${details.message ?? ""}`,
     );
   };
-  recorderWindow.webContents.on("console-message", onConsoleMessage);
+  // Electron 类型升级后 console-message 的重载签名不再匹配自定义 listener 形状（TS2769）；
+  // 恢复上游的类型收窄 shim，注册/反注册走同一视图。
+  const recorderConsoleEvents = recorderWindow.webContents as unknown as {
+    on(event: "console-message", listener: typeof onConsoleMessage): void;
+    removeListener(event: "console-message", listener: typeof onConsoleMessage): void;
+  };
+  recorderConsoleEvents.on("console-message", onConsoleMessage);
 
   const cleanup = async (cancel: boolean): Promise<void> => {
     if (closed) return;
@@ -402,7 +408,7 @@ export async function createElectronBrowserWebmRecorder(
     closePort(rendererPort);
     clearDisplayMediaHandler(recorderSession);
     recorderWindow.webContents.removeListener("render-process-gone", onRendererGone);
-    recorderWindow.webContents.removeListener("console-message", onConsoleMessage);
+    recorderConsoleEvents.removeListener("console-message", onConsoleMessage);
     closeWindow(recorderWindow);
     await rm(recorderDocumentPath, { force: true }).catch(() => undefined);
   };

@@ -1,8 +1,22 @@
+// 远控 / 分享网页运行在用户自己的浏览器里，版本不受我们控制。
+// ZCT-2118215639243444224：Chrome 109 没有 Array.prototype.toSorted，Hook 详情组件渲染时抛
+// TypeError，区域错误边界显示“这块界面出了点问题”。Vite 只降级语法、不补运行时 API，
+// 这里只补产物实际用到、且高于构建语法基线的 API；core-js 会先检测原生实现，不覆盖新版浏览器。
+// 必须放在最前面：ES module 按 import 顺序求值，其他模块执行前 API 需已就绪。
+// 范围与新增规则见 docs/web-remote-control/web-browser-support.md。
+import "core-js/stable/array/to-sorted";
+import "core-js/stable/array/to-reversed";
+import "core-js/stable/object/group-by";
+// fork：createWebPlatform 仍是本文件内的本地实现（未随上游抽到 #src/platform/index.js）；
+// mobilePluginDiscoveryTelemetrySchema 等分享页登录域 import 不引入。
 import { sessionCreateTelemetrySchema } from "@zcode/shared";
 /* eslint-disable max-lines -- Web 远程控制启动、错误页和 web 平台桥接暂时集中在入口编排。 */
 import { createRoot } from "react-dom/client";
 import {
   AppErrorBoundary,
+  // fork：ensurePendingTaskDraft / readPendingTaskDraft / readComposerWorkspaceScope 的
+  // 手机草稿恢复接线依赖上游 web-remote-control/ 子目录化文件（webRemoteControlBridgeRecovery），
+  // fork 保持平铺结构未引入，故此处暂不 import（保守处理，见合并报告）。
   Root,
   ZCodeIntlProvider,
   generateMobileDeviceFingerprint,
@@ -196,8 +210,10 @@ function resolveWebThemePreference(defaultTheme: Theme = WEB_REMOTE_CONTROL_DEFA
   document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
 }
 
-// 浏览器标签页 / 手机切后台时禁用 CSS 动画，避免 DocumentTimeline 持有已卸载的 DOM 子树。
+// fork：浏览器标签页 / 手机切后台时禁用 CSS 动画，避免 DocumentTimeline 持有已卸载的 DOM 子树。
+// 上游 v3.18.0 删除了该调用；fork 侧该修复继续保留（合并时调用被自动合并吞掉，此处恢复）。
 installDocumentHiddenMotionPause();
+
 const root = createRoot(document.getElementById("root")!);
 let isPageUnloading = false;
 let isSwitchingWebRemoteControlWorkspace = false;
@@ -956,6 +972,8 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
         "fileService.applyWorkspaceFileSearchIgnoreTransform",
       ),
       writeWorkspaceFileSearchIgnore: unsupported("fileService.writeWorkspaceFileSearchIgnore"),
+      readDesignSourceFile: unsupported("fileService.readDesignSourceFile"),
+      writeDesignSourceFile: unsupported("fileService.writeDesignSourceFile"),
     },
     mediaPreviewService:
       createUnsupportedHomeOnlyService<NonNullable<RootServices["mediaPreviewService"]>>(

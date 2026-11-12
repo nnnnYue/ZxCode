@@ -30,7 +30,6 @@ import { recordToolUsageFromResult } from "./turn-tool-usage.js";
 
 export interface ToolResultPart {
   partID: PartId;
-  declarationIndex: number;
   input: Record<string, unknown>;
   startedAt: number;
 }
@@ -105,6 +104,7 @@ export async function settleToolResults(
     const content = stringifyToolResultOutput(result);
     const projectedResultToolName = projectToolNameForNonEmptyBoundary(result.toolName);
     const persisted = toolParts.get(result.toolCallId);
+    const toolCall = toolCallById.get(result.toolCallId);
     if (persisted) {
       const mediaPersistence = result.success
         ? await persistToolResultMediaAttachments({
@@ -126,13 +126,11 @@ export async function settleToolResults(
           messageID: options.assistantMessageId,
           type: "tool",
           callID: result.toolCallId,
-          declarationIndex: persisted.declarationIndex,
+          ...(toolCall?.blockIndex !== undefined ? { blockIndex: toolCall.blockIndex } : {}),
           tool: projectedResultToolName.toolName,
           metadata: {
             ...projectedResultToolName.metadata,
-            ...(toolCallById.get(result.toolCallId)?.modelCallWrapper
-              ? { modelCallWrapper: toolCallById.get(result.toolCallId)?.modelCallWrapper }
-              : {}),
+            ...(toolCall?.modelCallWrapper ? { modelCallWrapper: toolCall.modelCallWrapper } : {}),
           },
           state: result.success
             ? {
@@ -197,7 +195,6 @@ export async function settleToolResults(
       deferredCheckpointCancellation ??= error;
       continue;
     }
-    const toolCall = toolCallById.get(result.toolCallId as ToolCallId);
     if (toolCall) {
       const resultPartId = persisted?.partID;
       const recoveryAnchorId = createStreamRecoveryAnchorId(

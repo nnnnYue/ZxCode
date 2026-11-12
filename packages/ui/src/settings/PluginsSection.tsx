@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
+import { useConfirmExtensionEnable } from "@/extension-slots/index.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.js";
 import { Switch } from "@/components/ui/switch.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
@@ -79,6 +80,7 @@ import {
   buildStoreItems,
   canUpdatePluginItem,
   needsPluginUpdate,
+  type StorePluginItem,
   resolveManagedPluginDisplay,
   resolvePluginDisplayName,
   updatePluginsSerially,
@@ -126,6 +128,11 @@ type PluginScope =
   | { kind: "workspace"; key: string; tab: WorkspaceTabState };
 
 interface PluginsSectionProps {
+  onOpenUi?: (
+    item: StorePluginItem,
+    target: WorkspaceTabState | null,
+    enable?: () => Promise<boolean>,
+  ) => void;
   isDesktop?: boolean;
   isMacDesktop?: boolean;
   isWindowsDesktop?: boolean;
@@ -145,6 +152,7 @@ function workspaceKey(tab: WorkspaceTabState): string {
 }
 
 function PluginList({
+  onOpenUi,
   target,
   configScope,
   searchQuery,
@@ -159,6 +167,7 @@ function PluginList({
   showMarketplaceBreadcrumb = false,
   onVisibleCountChange,
 }: {
+  onOpenUi?: PluginsSectionProps["onOpenUi"];
   target: WorkspaceTabState | null;
   configScope: ZCodePluginScope;
   searchQuery: string;
@@ -330,12 +339,23 @@ function PluginList({
       pluginService: pluginManagementService,
     });
   }, [initialize, pluginManagementService, configScope, target, targetServiceResolution.rpcReady]);
+  const confirmExtensionEnable = useConfirmExtensionEnable();
+  const extensionEnableApplies =
+    configScope === "user" && !target?.remoteTarget && !target?.remoteSessionId;
+  const confirmEnable = useCallback(
+    (pluginId: string, pluginLabel: string) =>
+      extensionEnableApplies
+        ? confirmExtensionEnable(pluginId, pluginLabel)
+        : Promise.resolve(true),
+    [confirmExtensionEnable, extensionEnableApplies],
+  );
   const handleSetEnabled = useCallback(
     async (pluginId: string, enabled: boolean) => {
       const plugin = plugins.find((candidate) => candidate.id === pluginId);
       const pluginLabel = plugin
         ? resolveManagedPluginDisplay(plugin, storeItemById.get(plugin.id), locale).name
         : pluginId;
+      if (enabled && !(await confirmEnable(pluginId, pluginLabel))) return;
       const succeeded = await setEnabled(pluginId, enabled, pluginManagementService, configScope);
       if (!succeeded) {
         toast(
@@ -355,7 +375,16 @@ function PluginList({
             : "settings.plugins.toggle.disabled";
       toast(intl.formatMessage({ id: messageId }, { plugin: pluginLabel }));
     },
-    [configScope, intl, locale, pluginManagementService, plugins, setEnabled, storeItemById],
+    [
+      configScope,
+      confirmEnable,
+      intl,
+      locale,
+      pluginManagementService,
+      plugins,
+      setEnabled,
+      storeItemById,
+    ],
   );
   const handleResetPluginConfig = useCallback(
     async (pluginId: string) => {
@@ -541,6 +570,18 @@ function PluginList({
         setSelectedPluginId(pluginId);
         onDetailOpenChange?.(true);
       },
+      onOpenUi: onOpenUi
+        ? (item) =>
+            onOpenUi(
+              item,
+              target,
+              item.info?.enabled
+                ? undefined
+                : async () =>
+                    (await confirmEnable(item.id, resolvePluginDisplayName(item, locale))) &&
+                    setEnabled(item.id, true, pluginManagementService, configScope),
+            )
+        : undefined,
       onInstall: () => onOpenPluginStore(),
       onUninstall: uninstall.requestUninstall,
       onSetEnabled: (pluginId, enabled) => void handleSetEnabled(pluginId, enabled),
@@ -562,6 +603,12 @@ function PluginList({
       operationId,
       togglingPluginId,
       uninstall.requestUninstall,
+      onOpenUi,
+      target,
+      setEnabled,
+      pluginManagementService,
+      confirmEnable,
+      locale,
     ],
   );
   useEffect(() => {
@@ -1047,6 +1094,7 @@ function EmptyState({ message }: { message: string }) {
 }
 
 export function PluginsSection({
+  onOpenUi,
   isDesktop = false,
   isMacDesktop = false,
   isWindowsDesktop = false,
@@ -1385,6 +1433,7 @@ export function PluginsSection({
             }
           >
             <PluginList
+              onOpenUi={onOpenUi}
               target={target}
               configScope={selectedScope.kind === "user" ? "user" : "workspace"}
               isDesktop={isDesktop}

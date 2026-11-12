@@ -69,6 +69,7 @@ import {
   createStatusContext,
   publishModelStatus,
   publishModelTelemetryMilestone,
+  logLocalModelMilestone,
 } from "./runner-status.js";
 import { StreamingToolCallAssembler } from "./streaming-tool-call-assembler.js";
 import type { ResolvedAiSdkModelRetryOptions } from "./retry-policy.js";
@@ -88,7 +89,10 @@ import {
   providerRequestIdFromHeaders,
   readModelFailureErrorPhase,
 } from "./runner-telemetry.js";
-import { repairReasoningHistoryAfterSignatureRejection } from "./reasoning-history-normalization.js";
+import {
+  repairReasoningHistoryAfterSignatureRejection,
+  thinkingSignatureRejectionEvidence,
+} from "./reasoning-history-normalization.js";
 
 type StreamFailurePhase = "request_setup" | "response_body";
 
@@ -122,6 +126,11 @@ export async function* runStreamText(input: {
   const isDev = isDevelopmentModelIOEnv(input.env);
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
+  // 修复后的重试成功时，在 finish 上告诉 core 记 signedReasoningReset，之后的请求不再发被拒的块。
+  const withRepairMarker = (event: ModelStreamEvent): ModelStreamEvent =>
+    signatureRepairAttempted && event.type === "finish"
+      ? { ...event, signedReasoningReset: true }
+      : event;
   let emptyCompletionRetryCount = 0;
   // 不认识的业务码在本次请求里连续出现的次数：workflow 策略表据此停下，见 workflow-model-failure-policy.ts。
   // 每次失败（外层 catch 与流内错误块两条路径）都经它更新一次。
@@ -144,6 +153,7 @@ export async function* runStreamText(input: {
   ) {
     const retryBudgetAttempt = attempt - Number(signatureRepairAttempted);
     const startedAt = Date.now();
+    const localAttemptStartedAt = performance.now();
     // SSE idle timeout 后的重试如果仍固定首请求窗口，容易被同一段 provider 静默窗口反复打断；
     // core recovery 和 adapter 内部 retry 都统一按重试次数每次增加 30s。
     const streamIdleTimeoutMs = resolveModelStreamIdleTimeoutMs({
@@ -184,6 +194,8 @@ export async function* runStreamText(input: {
     let timeToFirstProviderEventMs: number | undefined;
     let timeToFirstContentMs: number | undefined;
     let timeToFirstTextMs: number | undefined;
+    let localFirstContent = false;
+    let localFirstText = false;
     let streamMaxIdleMs = 0;
     let streamStallCount = 0;
     let streamOutputCommitted = false;
@@ -209,21 +221,48 @@ export async function* runStreamText(input: {
         nextAttempt: attempt + 1,
         requestId: statusContext.requestId,
         status: "waiting",
+        // 记下 provider 原文和 prefix 不一致响应头：写明哪一块、因为什么被拒，排查前缀变化时用。
+        ...thinkingSignatureRejectionEvidence(
+          error,
+          sanitizeModelNetworkHeaders(getResponseHeaders(unwrapRetryError(error))),
+        ),
       });
       return true;
     };
     const publishVisibleMilestones = async (observation: {
-      contentMs?: number;
       textMs?: number;
+      outputKind?: "text" | "reasoning" | "tool";
     }): Promise<void> => {
-      if (timeToFirstContentMs === undefined && observation.contentMs !== undefined) {
-        timeToFirstContentMs = observation.contentMs;
+      if (
+        observation.outputKind &&
+        (statusContext.querySource === "main_turn" || statusContext.querySource === "compact")
+      ) {
+        if (!localFirstContent) {
+          localFirstContent = true;
+          logLocalModelMilestone(input.logger, statusContext, "first_content", {
+            attempt,
+            outputKind: observation.outputKind,
+            durationMs: performance.now() - localAttemptStartedAt,
+          });
+        }
+        if (observation.outputKind === "text" && !localFirstText) {
+          localFirstText = true;
+          logLocalModelMilestone(input.logger, statusContext, "first_text", {
+            attempt,
+            durationMs: performance.now() - localAttemptStartedAt,
+          });
+        }
+      }
+      // 接口接收时间独立于业务事件释放；缺少线协议观测时不能回退到缓冲后的时间。
+      const firstContentAt = resolved.streamTiming?.firstContentAt;
+      if (timeToFirstContentMs === undefined && firstContentAt !== undefined) {
+        timeToFirstContentMs = firstContentAt - startedAt;
         await publishModelTelemetryMilestone(
           {
             ...statusContext,
             attempt,
-            elapsedMs: observation.contentMs,
-            timestamp: new Date(startedAt + observation.contentMs).toISOString(),
+            elapsedMs: timeToFirstContentMs,
+            timestamp: new Date(firstContentAt).toISOString(),
             type: "model_first_content",
           },
           { logger: input.logger, statusSink: input.statusSink },
@@ -388,7 +427,7 @@ export async function* runStreamText(input: {
             emittedRetryBoundaryEvent = true;
             for (const pendingEvent of pendingRetrySafeEvents.splice(0)) {
               emittedEvent = true;
-              yield pendingEvent;
+              yield withRepairMarker(pendingEvent);
             }
             // 无 raw message-block provenance 的 provider 可能直接给完整 tool-call。
             // 先把 inferred block stop 交给隐藏 collector，再传播校验错误，避免 HTTP 重放。
@@ -452,7 +491,7 @@ export async function* runStreamText(input: {
             const observation = observeVisibleStreamEvent(visibleEvent, Date.now() - startedAt);
             await publishVisibleMilestones(observation);
             streamOutputCommitted = streamOutputCommitted || observation.outputCommitted;
-            yield visibleEvent;
+            yield withRepairMarker(visibleEvent);
           }
         }
       }
@@ -475,7 +514,7 @@ export async function* runStreamText(input: {
           const observation = observeVisibleStreamEvent(visibleEvent, Date.now() - startedAt);
           await publishVisibleMilestones(observation);
           streamOutputCommitted = streamOutputCommitted || observation.outputCommitted;
-          yield visibleEvent;
+          yield withRepairMarker(visibleEvent);
         }
       }
 
@@ -484,7 +523,7 @@ export async function* runStreamText(input: {
         const observation = observeVisibleStreamEvent(pendingEvent, Date.now() - startedAt);
         await publishVisibleMilestones(observation);
         streamOutputCommitted = streamOutputCommitted || observation.outputCommitted;
-        yield pendingEvent;
+        yield withRepairMarker(pendingEvent);
       }
 
       if (!emittedError) {
@@ -523,11 +562,12 @@ export async function* runStreamText(input: {
         if (isSuspiciousStreamDiagnostics(diagnostics)) {
           // 403 JSON 等业务错误有时不会让 AI SDK 抛出 error chunk，流会以空 completion 结束；
           // 若不在 adapter 层终止，core 会误报 “Model returned no text...”。
-          const streamEndedWithoutOutputError = detectProviderBusinessFinishError({
-            providerId: String(statusContext.providerId),
-            providerKind: statusContext.providerKind,
-            source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
-          });
+          const streamEndedWithoutOutputError =
+            detectProviderBusinessFinishError({
+              providerId: String(statusContext.providerId),
+              providerKind: statusContext.providerKind,
+              source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
+            });
           if (streamEndedWithoutOutputError) {
             const failure = classifyModelFailure(
               streamEndedWithoutOutputError,
@@ -613,6 +653,7 @@ export async function* runStreamText(input: {
       });
       if (!emittedError) {
         const completedAt = Date.now();
+        await publishVisibleMilestones({});
         const responseHeaders = await resolveStreamResponseHeaders(streamResult);
         await publishModelStatus(
           {
@@ -698,6 +739,7 @@ export async function* runStreamText(input: {
         };
       }
       const classified = classifyModelFailure(error, input.request.abortSignal);
+      // fork：request-security（RuntimeHeadersRefreshError）与 off-peak 特判均属剔除域，保持 fork 删除。
       const failure: ClassifiedModelFailure = classified;
       countUnrecognizedCode(failure, error);
       const errorPhase =
@@ -1201,6 +1243,7 @@ async function handleStreamErrorEvent(
       }
     : input.statusContext;
   const classified = classifyModelFailure(error, input.input.request.abortSignal);
+  // fork：off-peak 流内特判属剔除域，保持删除。
   const failure: ClassifiedModelFailure = classified;
   const unrecognizedCodeStreak = input.countUnrecognizedCode(failure, error);
   const responseHeaders = sanitizeModelNetworkHeaders(getResponseHeaders(unwrapRetryError(error)));
@@ -1542,11 +1585,13 @@ function statusPublishOptions(
   input: {
     logger?: Logger;
     request: AiSdkModelTextRequest;
+    resolved?: Pick<ResolvedAiSdkModel, "requestObservations">;
     statusSink?: ModelStatusSink;
   },
   admission?: AttemptAdmission,
 ) {
   return {
+    requestObservations: input.resolved?.requestObservations,
     logger: input.logger,
     requestStatusSink: input.request.statusSink,
     statusSink: input.statusSink,
@@ -1595,27 +1640,41 @@ async function publishRetryScheduledStatus(
 function observeVisibleStreamEvent(
   event: ModelStreamEvent,
   elapsed: number,
-): { contentMs?: number; textMs?: number; outputCommitted: boolean } {
+): {
+  textMs?: number;
+  outputCommitted: boolean;
+  outputKind?: "text" | "reasoning" | "tool";
+} {
   switch (event.type) {
     case "text_delta":
       return {
-        contentMs: elapsed,
         textMs: event.text ? elapsed : undefined,
+        outputKind: event.text.trim() ? "text" : undefined,
         outputCommitted: true,
       };
     case "reasoning_delta":
+      return {
+        outputCommitted: true,
+        outputKind: event.text.trim() ? "reasoning" : undefined,
+      };
     case "tool_input_delta":
+      return {
+        outputCommitted: true,
+        outputKind: event.delta.trim() ? "tool" : undefined,
+      };
     case "tool_call":
-      return { contentMs: elapsed, outputCommitted: true };
+      return {
+        outputCommitted: true,
+        outputKind: event.toolCall.name.trim() ? "tool" : undefined,
+      };
     case "provider_tool_result":
-      return { contentMs: elapsed, outputCommitted: true };
+      return { outputCommitted: true, outputKind: "tool" };
     case "text_start":
     case "reasoning_start":
     case "tool_input_start":
-      return { contentMs: elapsed, outputCommitted: false };
+      return { outputCommitted: false };
     case "compact_stream_boundary":
       return {
-        contentMs: event.boundary === "provider_content_block_start" ? elapsed : undefined,
         outputCommitted:
           event.boundary === "provider_content_block_stop" ||
           event.boundary === "inferred_content_block_stop",

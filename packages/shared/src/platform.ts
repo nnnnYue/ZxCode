@@ -27,6 +27,12 @@ import type {
   WebRemoteControlRendererActionResult,
 } from "#src/web-remote-relay/index.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type {
+  ExtensionNotificationClick,
+  ExtensionNotificationPayload,
+  NotificationsShowResult,
+} from "#src/extension-host/notifications.js";
+// fork：telemetry.js / rendererActionTrace.js 的 import 不引入（遥测域剔除）。
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CuaAccessibilitySettingsResult,
@@ -34,6 +40,19 @@ import type {
   PrepareCuaHelperPermissionDragResult,
 } from "./cuaAccessibilitySettings.js";
 import type { BrowserViewportSize } from "./browser-use/command-metadata.js";
+
+export interface AppNavigationTarget {
+  workspacePath: string;
+  workspaceIdentity?: string;
+  taskId: string;
+}
+export type AppNavigationResult =
+  | { status: "opened"; uiTarget?: string }
+  | { status: "unavailable"; reason?: string; uiTarget?: string };
+export type AppNavigationHandler = (
+  target: AppNavigationTarget,
+  signal: AbortSignal,
+) => Promise<AppNavigationResult>;
 
 export interface TaskNotificationPayload {
   taskId: string;
@@ -96,6 +115,15 @@ export interface BrowserViewResidencyTransitionPayload {
 
 export interface BrowserViewCloseTabRequest {
   tabId: string;
+  workspaceKey: string;
+  remoteSessionId?: string;
+  sessionId: string;
+}
+
+export const BROWSER_VIEW_DRAFT_SESSION_ID = "unscoped";
+
+export interface BrowserViewPromoteDraftTabsRequest {
+  tabIds: string[];
   workspaceKey: string;
   remoteSessionId?: string;
   sessionId: string;
@@ -335,6 +363,34 @@ export interface PrintPageToPdfResult {
   /** PDF 字节；success 时存在 */
   data?: ArrayBuffer;
   /** "print_in_progress" | "print_failed" */
+  error?: string;
+}
+
+// fork：MicrophoneAccessResult / MicrophoneSettingsTarget 与 IPlatformService.microphone
+// 均属 voice-input 云 ASR 域，随域整体剔除，不引入（上游 v3.18.0 新增）。
+
+/** guest 视口内的裁剪区域，全部是 guest CSS px；视口宽高用于换算实际帧的像素比例。 */
+export interface CaptureBrowserGuestPageClip {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}
+
+export interface CaptureBrowserGuestPageRequest {
+  /** 内置浏览器 `<webview>` 的 guest webContents id（renderer 由 `getWebContentsId()` 取得） */
+  webContentsId: number;
+  /** 只要视口内某一块（选元素截图）；不传时返回整个可见视口 */
+  clip?: CaptureBrowserGuestPageClip;
+}
+
+export interface CaptureBrowserGuestPageResult {
+  success: boolean;
+  /** PNG 字节；success 时存在 */
+  data?: ArrayBuffer;
+  /** "guest_not_found" | "guest_not_owned" | "capture_in_progress" | "capture_timeout" | "capture_failed" | "clip_out_of_view" */
   error?: string;
 }
 
@@ -792,6 +848,14 @@ export interface IPlatformService {
   printPageToPdf?(): Promise<PrintPageToPdfResult>;
 
   /**
+   * 在 main 进程截取内置浏览器 guest 当前可见视口为 PNG。renderer 侧 `<webview>.capturePage()`
+   * 会让 renderer 原生崩溃（V8 FATAL），与 Agent 截图一样只能由 main 取帧；仅 Desktop 实现。
+   */
+  captureBrowserGuestPage?(
+    payload: CaptureBrowserGuestPageRequest,
+  ): Promise<CaptureBrowserGuestPageResult>;
+
+  /**
    * 从浏览器 File 对象解析宿主本地路径；只有 Desktop preload 能安全实现。
    * Web/手机端返回 null，避免 UI 层依赖 Electron 的非标准 File.path。
    */
@@ -977,6 +1041,20 @@ export interface IPlatformService {
   showTaskNotification(payload: TaskNotificationPayload): void;
 
   /**
+   * 扩展的系统通知（docs/plugins/extension-host.md §18.1 H8）：Main 判断窗口焦点与平台支持后弹出，
+   * 返回是否弹出与原因。Web 与手机远控不实现。
+   */
+  showExtensionNotification?(
+    payload: ExtensionNotificationPayload,
+  ): Promise<NotificationsShowResult>;
+
+  /** 用户点了扩展通知：Main 恢复并聚焦窗口后回调，带要打开的视图。返回 disposer。 */
+  onExtensionNotificationClick?(handler: (click: ExtensionNotificationClick) => void): () => void;
+
+  // fork：syncTelemetryContext / reportTelemetryEvent / reportArmsCustomEvent /
+  // RendererActionTrace* / reportLocalTtftBatch 接口不引入（遥测域剔除）。
+
+  /**
    * Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，进 `renderer_main` 角色事件。单向 send、fire-and-forget；
    * Web 端与手机远控没有桥，不实现即 no-op。
    */
@@ -1151,6 +1229,9 @@ export interface IPlatformService {
   /** 注册用户点击系统通知后跳转到对应任务的回调，返回 disposer */
   onTaskNotificationClick(handler: (taskId: string) => void): () => void;
 
+  /** 显式 App 导航能力：只在桌面导航 owner 挂载时注册，返回真实导航提交结果。 */
+  onAppControlNavigation?(handler: AppNavigationHandler): () => void;
+
   /** 导出日志：打包 ~/.zxcode/v2 及外部 agent 日志为 zip 并在系统文件浏览器中显示 */
   exportLogs(): Promise<{ success: boolean; path?: string; error?: string }>;
 
@@ -1180,6 +1261,9 @@ export interface IPlatformService {
 
   /** 上报 selected/visible/loading 与恢复元数据。 */
   browserViewReportResidency?(payload: BrowserViewResidencyReportPayload): Promise<void>;
+
+  /** 草稿首发：把草稿 human tab 的 main owner 从 unscoped 升级为新会话；返回已升级的 tabId。 */
+  browserViewPromoteDraftTabs?(payload: BrowserViewPromoteDraftTabsRequest): Promise<string[]>;
 
   /** renderer 已按指定 generation 卸载 guest。 */
   browserViewSuspendReady?(payload: { tabId: string; generation: number }): Promise<void>;

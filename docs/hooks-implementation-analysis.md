@@ -34,7 +34,7 @@ ZCode hooks **不是单一模块**，分两层，行为可能不一致：
 | `PostToolUseFailure` | tool 失败后                                   | 否                             | `tool/executor/hook-flow.ts`                         |
 | `Stop`               | turn 即将 complete 前                         | 是（可续跑，上限 3 次）        | `runtime/methods/turn-stop.ts`                       |
 
-`SessionStart` 的 `source` matcher 值：`startup | resume | clear | compact`。
+`SessionStart` 的 `source` matcher 值：`startup | resume | fork | clear | compact`（分叉会话在第一条输入之前打开时用 `fork`）。
 
 ---
 
@@ -233,22 +233,22 @@ Lifecycle additional context 以 `hook_context` attachment 注入 message histor
 
 ## 9. 关键代码索引
 
-| 模块                   | 路径                                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| 事件 / 输入输出 schema | `apps/zcode-cli/packages/contracts/src/hooks/index.ts`                                        |
-| Hook runner            | `apps/zcode-cli/packages/core/src/hooks/runner.ts`                                            |
-| 配置 → 回调适配        | `apps/zcode-cli/packages/core/src/hooks/configured-runner.ts`                                 |
-| 输出解析与聚合         | `apps/zcode-cli/packages/core/src/hooks/output.ts`                                            |
-| Lifecycle 触发         | `apps/zcode-cli/packages/core/src/runtime/methods/hooks.ts`                                   |
-| Tool 链路触发          | `apps/zcode-cli/packages/core/src/tool/executor/hook-flow.ts`                                 |
-| Runtime 配置合并       | `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`                                 |
-| 插件 hook 发现         | `apps/zcode-cli/packages/adapters/src/plugins/index.ts`                                       |
-| UI 配置读写            | `packages/services/src/hooks/hooksService.ts`                                                 |
-| Shared 类型（UI）      | `packages/shared/src/hooks.ts`                                                                |
-| 插件兼容规范           | `docs/plugin-hooks-compat.md`                                                                 |
-| v2 设计 / 验收         | `apps/zcode-cli/docs/design/v2/hooks.md`                                                      |
-| 7 事件合同测试         | `apps/zcode-cli/packages/core/tests/hooks-seven-events.test.ts`                               |
-| 整体桌面 E2E           | `packages/desktop/test/e2e/conversation-session/conversation-session-hooks-lifecycle.test.ts` |
+| 模块                   | 路径                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| 事件 / 输入输出 schema | `apps/zcode-cli/packages/contracts/src/hooks/index.ts`                                              |
+| Hook runner            | `apps/zcode-cli/packages/core/src/hooks/runner.ts`                                                  |
+| 配置 → 回调适配        | `apps/zcode-cli/packages/core/src/hooks/configured-runner.ts`                                       |
+| 输出解析与聚合         | `apps/zcode-cli/packages/core/src/hooks/output.ts`                                                  |
+| Lifecycle 触发         | `apps/zcode-cli/packages/core/src/runtime/methods/hooks.ts`                                         |
+| Tool 链路触发          | `apps/zcode-cli/packages/core/src/tool/executor/hook-flow.ts`                                       |
+| Runtime 配置合并       | `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`                                       |
+| 插件 hook 发现         | `apps/zcode-cli/packages/adapters/src/plugins/index.ts`                                             |
+| UI 配置读写            | `packages/services/src/hooks/hooksService.ts`                                                       |
+| Shared 类型（UI）      | `packages/shared/src/hooks.ts`                                                                      |
+| 插件兼容规范           | `docs/plugin-hooks-compat.md`                                                                       |
+| v2 设计 / 验收         | `apps/zcode-cli/docs/design/v2/hooks.md`                                                            |
+| 7 事件合同测试         | `apps/zcode-cli/packages/core/tests/hooks-seven-events.test.ts`                                     |
+| 整体桌面 E2E           | `packages/desktop/test/e2e/conversation-session/hooks/conversation-session-hooks-lifecycle.test.ts` |
 
 ---
 
@@ -273,5 +273,5 @@ pnpm exec vitest run packages/services/test/hooksService.test.ts packages/ui/tes
 
 # 整体 7 事件桌面 lifecycle
 pnpm --filter @zcode/desktop exec wdio run wdio.conf.ts \
-  --spec './test/e2e/conversation-session/conversation-session-hooks-lifecycle.test.ts'
+  --spec './test/e2e/conversation-session/hooks/conversation-session-hooks-lifecycle.test.ts'
 ```

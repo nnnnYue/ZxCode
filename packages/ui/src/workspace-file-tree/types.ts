@@ -40,11 +40,14 @@ export interface WorkspaceFileTreeContextMenuLabels {
 }
 
 export interface WorkspaceFileTreeEditorState {
+  // 上游 v3.18.0：远程 identity 贯穿传递（AGENTS.md 要求），编辑器打开等能力按远程会话路由。
+  workspaceRemoteSessionId?: string;
   canOpenLocalFileManager: boolean;
   installedEditors: EditorInfo[];
   isRemoteWorkspaceFileTree: boolean;
   remoteTarget?: OpenInEditorRemoteTarget;
-  workspaceRemoteSessionId?: string;
+  /** 用户偏好：单击本地 .html 文件时进内置浏览器，而不是源码预览 */
+  htmlClickOpensBrowser?: boolean;
 }
 
 export type WorkspaceFileGitStatusLabels = Record<WorkspaceFileGitStatus, string>;

@@ -75,6 +75,11 @@ export interface CreateTaskOptions {
   initialPrompt?: string;
   /** 创建项目后的当前草稿交接，仅在 renderer 内存中传递。 */
   initialComposerDraft?: import("@/v4/composer/composerDraftWorkspaceTransfer.js").ComposerDraftHandoff;
+  /**
+   * 在新的受管 worktree 中准备草稿（docs/git/worktree.md §3.2）：Host 立即创建 worktree，
+   * 草稿迁入后由用户照常发送。仅本地项目；远程由 Host 拒绝。
+   */
+  worktree?: { startRef?: string };
   /** 与 initialPrompt canonical 前缀对应的结构化 mention；仅用于编辑器展示。 */
   initialPromptMention?: ComposerMentionPrefill;
   /** 新任务落在哪个 workspace；缺省取活动 workspace。 */
@@ -165,6 +170,17 @@ export interface AppProps {
   remoteConnectionLogs?: RemoteConnectionLogEntry[];
   onCreateTask: (request?: CreateTaskRequest) => void;
   onCreateConversationTask?: () => void;
+  onCreateConversationTaskOnSource?: (sourceServerId: string) => void;
+  platform?: import("@zcode/shared").IPlatformService;
+  handleOpenPluginMarket?: () => void;
+  handleOpenNewSidePaneTab?: () => void;
+  handleNavigateFileManager?: (
+    tabId: string,
+    source: import("@/lib/codeViewer.js").CodeViewerSource,
+  ) => void;
+  handleOpenFileManager?: (
+    target: import("@/project-sidebar/contract.js").SidebarFileTreeOpenRequest["target"],
+  ) => void;
   onResolveConversationWorkspace?: () => Promise<string>;
   onOpenWorkspace: () => void;
   onOpenFolderFromWorkspaceMenu: () => void;
@@ -259,6 +275,7 @@ export interface WorkspaceShellLayoutProps extends AppProps {
   activeTaskId: string | null;
   /** 右侧栏按对话隔离的归属 id：草稿态 = draftSessionId，正式态 = activeTaskId（两者同值衔接）。 */
   sidePaneOwnerId: string | null;
+  handleSidePaneDraftPromotion: (sessionId: string) => void;
   activeTraceId: string | null;
   activeSessionId: string | null;
   activeTaskProvider: ZCodeProvider | null;

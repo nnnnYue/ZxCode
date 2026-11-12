@@ -394,5 +394,5 @@ function buildRemoteServerCommand(
       );
     }
   }
-  return `${envParts.join(" ")} ~/.zxcode/server/node ~/.zxcode/server/zxcode-server.cjs`;
+  return `${envParts.join(" ")} ~/.zxcode/server/node ~/.zxcode/server/zxcode-server.cjs --prepare-credentials`;
 }

@@ -124,7 +124,9 @@ export function createPluginSandboxProtocolHandler(options: {
     if (!absolute.startsWith(root)) return notFound();
     try {
       const body = await readAsset(absolute);
-      return new Response(body, {
+      // readFile 返回的 Node Buffer 底层可能是 NonSharedBuffer，不满足 DOM BodyInit；
+      // 恢复上游的显式 Uint8Array 拷贝包装。
+      return new Response(new Uint8Array(body), {
         status: 200,
         headers: {
           "Content-Type": MIME_BY_EXTENSION[extname(absolute)] ?? "application/octet-stream",
