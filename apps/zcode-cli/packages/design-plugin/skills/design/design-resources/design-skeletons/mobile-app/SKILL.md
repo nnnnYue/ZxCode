@@ -26,7 +26,7 @@ od:
   craft:
     requires: [state-coverage, animation-discipline]
 ---
-<!-- Modified by ZCode: frameless 390x844 screen instead of a device frame. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
+<!-- Modified by ZxCode: frameless 390x844 screen instead of a device frame. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
 
 # Mobile App Skill
 

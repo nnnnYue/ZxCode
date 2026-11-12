@@ -23,7 +23,7 @@ od:
     requires: true
     sections: [color, typography, layout, components]
 ---
-<!-- Modified by ZCode: responsive instead of desktop-only guidance. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
+<!-- Modified by ZxCode: responsive instead of desktop-only guidance. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
 
 # Web Prototype Skill
 

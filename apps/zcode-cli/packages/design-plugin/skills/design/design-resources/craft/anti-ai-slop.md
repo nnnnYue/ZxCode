@@ -1,4 +1,4 @@
-<!-- Modified by ZCode: rules adapted for the ZCode design plugin. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
+<!-- Modified by ZxCode: rules adapted for the ZCode design plugin. Derived from open-design 0.7.0 (Apache-2.0); see design-resources/NOTICE.md. -->
 
 # Anti-AI-slop rules
 
