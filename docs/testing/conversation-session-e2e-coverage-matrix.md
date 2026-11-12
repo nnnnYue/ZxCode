@@ -4055,6 +4055,8 @@ DWW-03、DWW-04 钉住别的进程持有的在飞 run 在开窗前就被拒绝�
 
 ## SHARE. 会话分享与继续工作覆盖
 
+> fork 注记（2026-11-12）：会话分享域已按 REMOVALS.md 整体剔除（v3.15.1 起分批、v3.18.0 清理完成），本节保留为该域存在期间的历史验收证据；文中引用的 spec/单测/文档（share-popover、share-publish-import、conversation-share-v1.md 等）已随域删除，不再维护。
+
 SHARE-OAUTH01：入口单测 `retired:packages/web/test/webOAuthCallbackEntry.test.ts` 覆盖中英文分享回调、远控对照及参数/路径限制；浏览器候选位于 `packages/web/test/e2e/sharing/authentication/manual-review/pending/share-oauth-callback.mjs`，通过真实完整 Web 入口和受控 OAuth 响应验证 390/1024px、深浅主题、双平台登录后的 token 请求、凭据保存及原分享页回跳。保持 pending，不计入正式 Desktop、真实 OAuth 或部署验收。（retired: 为退役历史证据，不计现行覆盖。）
 
 Todo139：SHARE30/31/32 的共享初始化 Hook／草稿单测与 `packages/ui/test/browser/manual-review/pending/share-import-selection.test.mjs` 10 组已通过，验证初始化、延迟、隔离、可见控件和冻结的 modelSelection/mode。首条完整 RPC 的 context_refs 联合链路尚未实跑；正式 Desktop／手机链路不记为通过，未晋级 formal。
@@ -4344,18 +4346,6 @@ message，有无 summary 时 child 正文相同。E2E 用空白 summary 验证�
 本次 source/origin 改动新增的 coverage 缺口；修复这些基线前，仓库全局 audit 不能宣称
 全绿。当前证据仅覆盖 macOS Electron desktop-continuous，不扩展为手机真机、Windows
 或 Linux 验证。
-
-### SHARE28：确认 Dock 窄宽度布局
-
-候选：`packages/desktop/test/e2e/conversation-session/sharing/conversation-session-share-publish-import.test.ts`。在既有确认阶段约束 Dock 为 320px，检查横向几何、权限文字完整和操作区可见；恢复宽度后检查标题、权限、勾选不变。属于展示层回归，不新增发布 RPC，也不宣称 formal/Docker 准入。
-
-2026-09-11：单测侧 share Dock/Selection 用例全绿（含容器查询类名、未确认时聚焦引导、勾选取消动画与 reduced-motion 降级）。E2E 侧修复 replay fixture 既有缺陷：第二轮 `share-local-ready-second` 无可用 fixture（`maxMatches:1` 被第一轮耗尽后 replay server 返回 500 Missing Fixture），补齐 -second 与 session-b 两条 fixture 后消息链路已验证打通。但本 spec 仍被既有基建缺口阻塞无法本地跑绿：分享入口渲染条件含账号登录态（`user`），zai provider 恢复 user 必须有 `zcodejwttoken`，而默认 seed 不带 JWT（假 JWT 会打真实 `billing/balance` 触发 401 登录失效遮挡交互），且 share 发布 API（`/api/v1` preflight/publish/artifact）无本地 mock。需先建设账号控制面 + share server 本地 mock（参照 coding-plan mock 模式）后，本 spec 才能作为 SHARE28 的 E2E 证据；UI 断言代码已就绪。
-
-### SHARE29：顶部分享再次点击取消
-
-- 组件测试：`retired:packages/ui/test/conversationShareMenu.test.ts` 覆盖全选、部分选择、确认、失败、成功、跨 session 隔离及发布中保护。（retired: 为退役历史证据，不计现行覆盖。）
-- pending E2E：`packages/desktop/test/e2e/conversation-session/sharing/conversation-session-share-publish-import.test.ts` 增补打开、再次点击退出、重新打开断言；未提升为 formal。
-- 2026-09-11 验证：组件/状态测试 33 项通过，typecheck、typecheck:e2e、lint、architecture 和 fixture check 通过。Desktop run `desktop-e2e-20260911082546500-p52712-c04e70dc4c7d45ff` 已启动 Electron，但三条用例均因找不到顶部分享入口失败，尚未执行新增取消断言；不得视为 Desktop 回归通过。
 
 ### ZCT-2098314627607224320：Composer Recent 权限继承
 
@@ -5116,7 +5106,7 @@ accepted，2026-10-13；[规格](../specs/project-creation-folder-confirmation.m
 
 ## SHARE-TOOLS01 / FETCH01
 
-新增候选：WebFetch 分类与权限 URL 摘要、Explore 中 Fetch 子项；多工具默认分组；分享发布→公开页浏览→导入只读上下文。pending 路径：conversation-session/manual-review/pending/conversation-session-share-tool-presentation.test.ts。需 capture UI/网络证据；未经人工 review 不转正式用例。单元/契约测试覆盖版本协商、旧数据回退与资源闭包。
+新增候选：WebFetch 分类与权限 URL 摘要、Explore 中 Fetch 子项；多工具默认分组。需 capture UI/网络证据；未经人工 review 不转正式用例。单元/契约测试覆盖版本协商、旧数据回退与资源闭包。
 
 SHARE-TOOLS01 图片正文回归：`packages/web/test/e2e/sharing/workflows/manual-review/pending/share-workflow-parity.mjs` 覆盖图片 Write 工具展开后静态不可用、无本机资源请求，以及桌面/手机宽度、中英文、深浅主题；保持 pending，不作为 desktop 发布/导入已验收证据。workflow 分页、预算回滚、预检/发布文件来源由 service 回归测试覆盖。
 
@@ -5656,8 +5646,6 @@ WRL01（`pending-promotion-contract-release-state-1-1-20261016-02001f1247`）1/1
 | conversation-session | `test/e2e/conversation-session/models/conversation-session-same-model-provider-identity.test.ts`                                               | PASSED                  | `pending-promotion-formal-isolated-69-20261019` / `pending-promotion-formal-default-69-20261019`                                                                                                                                                                                                   |
 | conversation-session | `test/e2e/conversation-session/branching/conversation-session-selection-side-chat.test.ts`                                                     | PROMOTED                | `pending-resume-52cd-o-68-isolated-20261019` / `pending-resume-52cd-o-68-default-20261019`                                                                                                                                                                                                         |
 | conversation-session | `test/e2e/conversation-session/runtime/conversation-session-settings-connection-completion.test.ts`                                            | PROMOTED                | `r3-server-pending-52cd-a-isolated-settingscompletion` / `r3-server-pending-52cd-a-default-settingscompletion`                                                                                                                                                                                     |
-| conversation-session | `test/e2e/conversation-session/sharing/conversation-session-share-publish-import.test.ts`                                                      | PROMOTED                | `pending-resume-52cd-g-67-isolated-20261019` / `pending-resume-52cd-g-67-default-20261019`                                                                                                                                                                                                         |
-| conversation-session | `test/e2e/conversation-session/sharing/conversation-session-share-tool-presentation.test.ts`                                                   | PROMOTED                | `pending-resume-52cd-g-66-isolated-20261019` / `pending-resume-52cd-g-66-default-20261019`                                                                                                                                                                                                         |
 | conversation-session | `test/e2e/conversation-session/branching/conversation-session-side-chat-escape.test.ts`                                                        | PASSED                  | `pending-promotion-formal-isolated-65-20261019` / `pending-promotion-formal-default-65-20261019`                                                                                                                                                                                                   |
 | conversation-session | `test/e2e/conversation-session/branching/conversation-session-side-slash-arguments.test.ts`                                                    | PROMOTED                | `pending-resume-52cd-g-64-isolated-20261019` / `pending-resume-52cd-g-64-default-20261019`                                                                                                                                                                                                         |
 | conversation-session | `test/e2e/conversation-session/task-management/conversation-session-sidebar-activity-refresh.test.ts`                                          | PROMOTED                | `pending-resume-52cd-g-63-isolated-20261019` / `pending-resume-52cd-g-63-default-20261019`                                                                                                                                                                                                         |
@@ -6135,15 +6123,6 @@ Work 文件动作复审回归：`packages/ui/test/browser/manual-review/pending/
 APC06/APC07/APC12 的文件菜单期望来自正确 fixture 路径的 `getFileApplications({path,pathKind:"file"})`，不再混用固定编辑器清单或装饰图标 alt。无候选必须断言中性默认打开、另存与复制等真实菜单项，而不是空数组 every() 自动通过。APC14 的候选边界使用显式 main IPC fixture；只证明真实 UI 分组、文字、滚动与选择 IPC，不冒充操作系统枚举或实际外部 App 启动。另存原字节、零字节、取消与 Work 所选版本仍由 focused tests 和独立实机报告守护，尚未合入本 APC 自动化。
 
 最终 macOS formal replay（2026-10-21，`desktop-e2e-20261021-135859-595`）仅选择 APC06/APC07、APC14、APC12 音频/视频：4 passed、0 failed、0 skipped，退出码 0。首轮发现旧 renderer helper 仍在预览正文中找文件名，而当前标题已 portal 到文件管理器头部；现按同一个 pane 的所属头部核对文件名，并继续核对 renderer 就绪，修正后重跑通过。此次不代表完整 APC 集合、Windows/Linux 或 Docker 准入。
-
-### 分享 URI 文本回归（2026-10-22）
-
-SHARE-E2E-03：已完成助手正文以 `file:` 或 `data:` 开头时，分享预检允许进入发布。
-复用 `conversation-session-share-publish-import.test.ts` 和 case-local fixture；手机 remote 无分享入口。
-
-macOS 定向回放：隔离 fixture（`desktop-e2e-20261022-115729-294`）和默认 fixture
-（`desktop-e2e-20261022-115934-726`）均为 2 passed。断言预检允许进入披露确认；
-服务发布 payload 和服务端 confirm 由对应单测验证，不代表线上发布或 Windows/Linux 实机验证。
 
 ## 图片预览编辑（IPE01–IPE06）
 

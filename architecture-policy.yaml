@@ -1914,10 +1914,6 @@ exceptions:
     paths:
       - apps/zcode-cli/packages/node-repl-host/src/cua-broker.ts
     reason: 已准入的 node_repl CUA broker 仅增透传可选 actionTitle 字段（node_repl cell title → badge 文字，docs/cua/producer/multi-session-cursor-overlay-spec.md §4.8）——cua-broker 按 ledger meta 构建的 requestContext 注入、parseContext 白名单补字段；签名、broker 形态与模块边界不变，不接管 zcode-cli 目录。
-  - id: conversation-share-manage-scope-passthrough-edit
-    rule: unmanaged-new-file
-    paths: [packages/services/src/conversation-share/conversationShareConnectionScope.ts]
-    reason: 已准入的分享 attachment 作用域包装只追加设置页分享管理的四个方法（docs/conversation-share-v1.md「设置页分享管理」）：桌面分支原样透传，手机远控分支拒绝；不改变 R3 受信连接、发布/导入作用域与模块边界，接管整个 services/conversation-share 目录（含既有超长文件）不在本次范围内。
   - id: conversation-selection-comment-quote-schema-edit
     rule: unmanaged-new-file
     paths: [packages/shared/src/conversationSelection.ts]

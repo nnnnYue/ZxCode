@@ -4123,6 +4123,8 @@ Guarded 的单次询问、多个子代理同时询问、修订后取新的权限
 
 ## SHARE. 会话分享与继续工作
 
+> fork 注记（2026-11-12）：会话分享域已按 REMOVALS.md 整体剔除（v3.15.1 起分批、v3.18.0 清理完成），本节保留为该域存在期间的历史验收证据；文中引用的 spec/单测/文档（share-popover、share-publish-import、conversation-share-v1.md 等）已随域删除，不再维护。
+
 SHARE-OAUTH01（accepted）：完整 Web 入口承载分享页时，从 `/share/:code` 或 `/cn/share/:code` 选择 Z.ai / BigModel 登录，`code` / `authCode` 回到对应分享 callback 后必须调用认证服务，交换 token 并返回原分享页。覆盖 390/1024px、深浅主题；缺少 state 或结果参数及普通分享路径不得误入回调。独立 `web-share` 的路径式回调规则保持不变；本用例不代表真实第三方 OAuth 或部署网关验收。
 
 Todo139 补充 accepted 用例：SHARE30 在 Root／Recent／公共默认三种接收方状态分别首次导入，工具栏及首条 Submission 的 modelSelection/mode 与普通新任务一致，context_refs 保留且 Root 正文不迁移；SHARE31 无模型／View 延迟时内容可打开，空 snapshot 不阻断初始化，用户先编辑后迟到结果不覆盖；SHARE32 同路径不同 identity、远程回退本地及 reused=true，使用结果的实际目标并保留已有会话，导入不更新 Recent。三项均要求 UI 加草稿／提交 payload 证据；不展开与 queue/goal 的无关叉乘，不开放手机导入入口。
@@ -5018,7 +5020,7 @@ WSL、真实手机按用户决定保留 TODO。候选运行证据只代表实际
 
 2026-10-12 审查修复复验：后台候选在 macOS Desktop + 独立 Linux SSH/Docker 环境 1/1 PASS，补验设置普通入口恢复同一在途／完成操作，证据 `packages/desktop/.e2e-artifacts/r3-server-review-20261012-background/`。旧三屏候选的设置进度卡、查看不重拨和显式取消后新建 1/1 PASS，证据 `packages/desktop/.e2e-artifacts/r3-server-review-20261012-threescreen-r4/`。候选状态仍为 pending；五份新增远程候选已补入远程全量回归清单，未转正或加入正式 CI。
 
-Composer 连接展示失败回归：CTP-31 在同 Provider/模型的两团队切换中，目标 revision 的展示刷新失败但独立同步成功，失败后不再发送目录事件；保留旧目录同时发布有归属的失败回执，菜单解除锁并可重试。用例与 spec 见 `docs/testing/coding-plan-team-e2e-cases.md`，不增加超时。
+Composer 连接展示失败回归：CTP-31 在同 Provider/模型的两团队切换中，目标 revision 的展示刷新失败但独立同步成功，失败后不再发送目录事件；保留旧目录同时发布有归属的失败回执，菜单解除锁并可重试。（该 Team Plan 用例文档已随 Coding Plan 配额/购买域剔除移除。）
 
 MR 连接展示消费者隔离：CTP-31 增加恢复重试中旧显式读取 A 被新读取 B 取代后迟到失败，成功展示不得变为错误。OAuth 连接初始化 CAS 的轮询及深链成功收尾由真实设置服务联合测试覆盖。
 
@@ -5558,11 +5560,6 @@ DSYNC-17 的本机对照。只用本机桌面（经本机 Docker 远端 runner �
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | LRCD-01 | 3.15 设置中有一条 legacy SSH 远程条目，其密码 key 在本机无法解密 → 升级首启：本地项目仍在侧栏；Source Directory 迁移版本写为 1，生成的 SSH Profile 不带密码引用（连接时走交互凭据）；旧密码记录原值保留。规则见 [R3 §9.1](architecture/r3-source-server-remote-architecture.md) | `conversation-session/remote/configuration/manual-review/pending/conversation-session-legacy-remote-credential-decrypt.test.ts`，Pending |
 | LRCD-02 | 已连接 SSH Profile 的密码 key 被换成本机解不开的密文（~/.zcode 换机/换用户）→ 冷启动后从侧栏项目菜单点“连接”：连接屏出现密码框，不显示通用的“连接失败”；补充密码后连上原项目，并覆盖原 key。规则见 [R3 §9.1](architecture/r3-source-server-remote-architecture.md)              | `conversation-session/runtime/manual-review/pending/conversation-session-profile-secret-decrypt.test.ts`，Pending                        |
-
-### 分享 URI 文本回归（2026-10-22）
-
-SHARE-E2E-03：已完成助手正文以 `file:` 或 `data:` 开头时，分享预检允许进入发布。
-复用 `conversation-session-share-publish-import.test.ts` 和 case-local fixture；手机 remote 无分享入口。
 
 ## 图片预览编辑（IPE01–IPE06）
 

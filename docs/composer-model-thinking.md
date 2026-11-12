@@ -406,7 +406,7 @@ Renderer 共享设置快照也要重读：原流程靠保存时的 `update` 刷�
 
 不变的部分：真正更换身份（个人 ↔ 团队、团队之间）的同步成本不变。设置页切换连接不经过这个 owner，不受影响。两个窗口同时切换同一品牌时，最终身份仍以共享设置为准。另一个窗口已切到某个团队时，在本窗口点击该团队行，也按共享设置生效。
 
-验收：CTP-32（`docs/testing/coding-plan-team-e2e-cases.md`）。执行“个人 → 普通 API → 个人”和“团队 → 普通 API → 同一团队”，切回后 `providerFamilyDomainUpdatedAt` 与连接映射都不变，模型回到套餐 Provider，思考档位完整，没有错误。CTP-33：模拟另一个窗口把团队 A 改成团队 B，本窗口 Host 未刷新；在 Composer 点击团队 B 行，根 Host 的 `connectionKey` 变为团队 B，连接标签显示团队 B，设置版本不变，没有错误。CTP-28/29/31 的同连接重试、CTP-22 的跨身份切换按原断言回归。远程工作区由 RPR-01（`docs/conversation-session-case-catalog.md`）覆盖：切回已生效连接时没有 `account-settings` 同步；远端未同步时回退原流程，重新推送一次。
+验收：CTP-32。执行“个人 → 普通 API → 个人”和“团队 → 普通 API → 同一团队”，切回后 `providerFamilyDomainUpdatedAt` 与连接映射都不变，模型回到套餐 Provider，思考档位完整，没有错误。CTP-33：模拟另一个窗口把团队 A 改成团队 B，本窗口 Host 未刷新；在 Composer 点击团队 B 行，根 Host 的 `connectionKey` 变为团队 B，连接标签显示团队 B，设置版本不变，没有错误。CTP-28/29/31 的同连接重试、CTP-22 的跨身份切换按原断言回归。远程工作区由 RPR-01（`docs/conversation-session-case-catalog.md`）覆盖：切回已生效连接时没有 `account-settings` 同步；远端未同步时回退原流程，重新推送一次。
 
 ### 旧 CLI 附件输入兼容
 
