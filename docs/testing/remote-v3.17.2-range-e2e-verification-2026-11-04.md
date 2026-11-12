@@ -9,6 +9,10 @@
   - 没有确认任何业务代码 bug。
   - 跑测时发现的失败都属于测试环境或用例问题，已修复 5 项，见“测试环境与用例修复”。
   - MP-UI-06 在 v3.17.2 基线上同样偶发失败，不是本次引入，根因未确认，见“未决项”。
+  - fork 注记（2026-11-12）：R3-UPDATE-CANCEL 用例的 spec 已随 source-server 更新域剔除
+    （REMOVALS.md §十二，v3.18.0 合并时删除
+    `conversation-session-r3-update-cancel.test.ts`）。本文保留为当时（上游代码）的验证记录，
+    对应用例在 fork 不再维护；case catalog 与 coverage matrix 中的同名小节已一并移除。
 
 ## 环境
 

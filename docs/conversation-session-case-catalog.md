@@ -5071,28 +5071,6 @@ SHARE-TOOLS01 补充 accepted：Write/Diff 等工具的图片正文缺少公开�
 | WSL-INSTALL-01             | 发行版与用户默认/显式的四种组合；普通连接与原项目交接                                                 | 显示实际安装目标与预览；默认配置改变后仍确认同一目标；预览失败不丢等待；取消/换入口使旧确认失效 | accepted |
 | WSL-FORM-01                | 已保存 WSL 线路失败后返回配置；四种参数组合与连续切换线路                                             | 回填当前发行版和用户，省略项清空；再次连接保留原参数，不串入上一线路或意外使用默认值            | accepted |
 
-## 更新进行中的连接（ZCT-2116085848489570304，2026-10-30）
-
-合同见 [R3 §6.3「更新期间的连接」](architecture/r3-source-server-remote-architecture.md) 与[连接 UX「安装与更新进度」](architecture/remote-device-connection-ux-spec.md#安装与更新进度)。
-
-| Case                  | 场景                                                                 | 验收                                                                                                                 | 状态     |
-| --------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------- |
-| R3-UPDATE-INFLIGHT-01 | 原项目连接触发向导自动更新；更新进行中，另一入口对同一设备发起连接   | Host 返回 `source-server-update-in-progress`；状态不出现 `needs-upgrade`，更新日志不被连接替换；远端切换到新 release | accepted |
-| R3-UPDATE-INFLIGHT-02 | 同一更新进行中，用户在向导连接屏查看「返回配置」并点击关闭           | 「返回配置」禁用；关闭等同收起并显示后台卡片；更新完成后继续原意图，原项目重新连接                                   | accepted |
-| R3-UPDATE-INFLIGHT-03 | 更新由向导以外的入口发起；更新进行中从原项目连接同一设备并收起向导   | 向导显示等待点“远端服务正在更新”与重试，副题不显示连接失败；后台卡片不显示失败；更新完成后重试打开原项目             | accepted |
-| R3-UPDATE-INFLIGHT-04 | 原项目连接遇到设备身份变化；点击「作为新设备使用」后、确认返回前关闭 | 关闭撤销意图：对话框消失且没有后台卡片；确认迟到返回后不出现“连接已完成”，也不继续连接                               | accepted |
-
-## 更新的本机阶段与取消（ZCT-2117527614209818624，2026-11-03）
-
-合同见 [R3 §6.3「更新的本机阶段与取消」](architecture/r3-source-server-remote-architecture.md) 与[连接 UX「安装与更新进度」](architecture/remote-device-connection-ux-spec.md#安装与更新进度)。用例使用本地下载后上传、测试 CDN（经设置页代理）与空的本机缓存，让更新真的在本机下载 archive。
-
-| Case                | 场景                                                                                           | 验收                                                                                                                                                                                                                                                                                    | 状态     |
-| ------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| R3-UPDATE-CANCEL-01 | 远端 release 损坏导致连接失败；清空本机缓存、测试 CDN 限速；从向导失败页重新安装远端服务       | 本机下载期间向导显示 `download progress` 日志与进度条；Host 快照 `updateCancelable: true`；「取消连接」可用、「返回配置」禁用；点击后数秒内 `updateSource` 以 `remote-connection-canceled` 结束，CDN 请求被中止，本机缓存不留临时文件，远端 release 仍为损坏状态，设备不再是 `updating` | accepted |
-| R3-UPDATE-CANCEL-02 | 取消后解除限速并重试，再次重新安装                                                             | 进入远端阶段（预检、上传、解压、校验、重启）后 Host 快照不再带 `updateCancelable`，「取消连接」禁用；重装完成，远端 release 恢复，原项目重新连接                                                                                                                                        | accepted |
-| R3-UPDATE-CANCEL-03 | 在线设备经 Host RPC 更新（模拟设备卡）；清空缓存、限速；本机下载期间停远端服务，旧在线连接关闭 | 连接失效重新写入 `updating` 后快照仍带 `updateCancelable: true`；`cancelSourceUpdate` 返回 `canceled: true`，CDN 请求立即中止，`updateSource` 以 `remote-connection-canceled` 结束，缓存不留 `.tmp`；恢复意图保留，设备自动恢复 `online`，原项目重新连接                                | accepted |
-| R3-UPDATE-CANCEL-04 | 在线设备本机下载期间，同一 Profile 再发一次 `updateSource`（绕过 UI 禁用，模拟两个入口竞态）   | 第二次在写操作日志前以 `source-server-operation-in-progress` 拒绝且不下载；取消后第一次以 `remote-connection-canceled` 结束，设备恢复 `online`，不停在 `updating`；之后同一 Profile 可再次更新并取消                                                                                    | accepted |
-
 ## 远程介绍回滚兼容（CR-01，2026-10-13）
 
 - R3A-UI-04 / RDUX-11 当前合同：只有明确确认才写 `remoteBoundaryIntroAcknowledgedVersion: 1`；旧字段保持 2 且不再判断已读。未设置/旧 2 补看一次，新 1 与已迁移的旧 3 不重复。前述版本 3 记录为修复前证据。
