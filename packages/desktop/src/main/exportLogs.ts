@@ -17,6 +17,7 @@ import { dirname, join, posix } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { ZipFile } from "yazl";
+import { CLI_MEMORY_DIAGNOSTIC_DIRECTORY, CLI_MEMORY_FILE_PATTERN } from "@zcode/shared";
 
 import {
   getAppConfigDir,
@@ -1255,6 +1256,12 @@ export async function createLogArchiveArtifacts(
   );
 
   const zcodeCliDir = getZCodeCliDir();
+  await collectLogArchiveFilesByName(
+    join(zcodeCliDir, CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
+    posix.join(".zcode", "cli", CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
+    (name) => CLI_MEMORY_FILE_PATTERN.test(name),
+    files,
+  );
   // 排查 agent CLI 问题还需要它的运行配置与模型 IO 轨迹。
   // config.json 是当前生效配置；rollout 是 model-io 调用轨迹，
   // 二者都不在 ~/.zxcode/cli/log 下，需要额外收集才能完整还原现场。

@@ -1495,6 +1495,8 @@ export function createLocalServices(options: {
     hasExistingLocalTask: async () => (await taskIndexRepo.listTaskMetas({})).length > 0,
   });
   // fork：OAuth 凭据仓库 / Account Provider 凭据链 / Team Plan 解析装配不引入（登录域剔除）。
+  // 上游 v3.18.x 在此域新增 loadStartPlanMaterial（Start 与付费套餐分开取材料），
+  // 随登录域一并不引入。
 
   const providerConfigLog = createServiceLogger("provider-config");
   const providerConfigRuntime = createProviderConfigRuntime({

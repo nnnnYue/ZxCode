@@ -56,6 +56,10 @@ import {
 } from "./test/e2e/helpers/e2e-window-target.js";
 import { runE2EBeforeSessionSetup } from "./test/e2e/helpers/e2e-before-session.js";
 import {
+  // fork：PROJECT_UPGRADE_ORDER_SPEC / seedProjectUpgradeOrderFixture（project-upgrade-order
+  // helper fork 未采纳，见下方「拒上游」说明）不引入；isNativeKeychainCredentialSpec 为
+  // 上游 v3.18.2 新增且 worker 凭据种子逻辑已使用，采纳。
+  isNativeKeychainCredentialSpec,
   resolveAskUserQuestionClockScaleForWorker,
   resolveE2ECredentialSecret,
 } from "./test/e2e/helpers/e2e-worker-environment.js";
@@ -66,6 +70,13 @@ import {
   shouldPrepareCodingPlanTeamMock,
   shouldReuseDesktopE2EBuild,
 } from "./test/e2e/helpers/coding-plan-mock-env.js";
+import {
+  CN_UNLINKED_E2E_ZCODE_JWT,
+  buildCnUnlinkedProfileResponse,
+} from "./test/e2e/helpers/start-plan-cn-unlinked-fixture.js";
+// fork：不引入 coding-plan-data-plane-response 的 createCodingPlanDataPlaneResponse /
+// DataPlaneTurnFixture——wdio 本地已定义 DataPlaneTurnFixture 接口（highspeed 数据面），
+// 重复导入 type 会冲突，fork 流程也不消费上游 data-plane 工厂。
 import {
   HIGHSPEED_MOCK_SCENARIO_ENV,
   resolveHighspeedE2EMockScenario,
@@ -1376,6 +1387,21 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
       path: url.pathname,
       query: Object.fromEntries(url.searchParams.entries()),
     });
+
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/v1/oauth/profile" &&
+      request.headers.authorization === `Bearer ${CN_UNLINKED_E2E_ZCODE_JWT}`
+    ) {
+      // 国内新账号没有注册 BigModel：profile 成功返回主体，但没有 bigmodel 关联块。
+      // v3.18.2 采纳：start-plan-cn-unlinked-login 用例经此账号控制面取 profile。
+      writeJson(response, buildCnUnlinkedProfileResponse());
+      return;
+    }
+
+    // fork：不引入上游 presentation（presentationResponse）分发与
+    // SUBAGENT_CODING_PLAN_LOGIN_CATALOG_STALE_MODE 的 /api/v1/oauth/cli/init 路由——
+    // 两组机制的常量与装配在 fork 版 mock server 中不存在，对应 spec 也未采纳。
 
     if (caseMode === "model-provider-plan-surface" && request.method === "GET") {
       if (url.pathname === "/api/v2/releases/latest") {
@@ -4540,10 +4566,7 @@ export const config: WebdriverIO.Config = {
           startUpstreamHttpIfNeeded: startUpstreamE2EHttp,
           startPluginCdnZipFixtureIfNeeded,
         });
-        if (
-          process.platform === "darwin" &&
-          specs.some((spec) => spec.endsWith("system-credential-storage.test.ts"))
-        ) {
+        if (process.platform === "darwin" && specs.some(isNativeKeychainCredentialSpec)) {
           // Main 首次访问发生在界面就绪前；原生专项必须先准备隔离 HOME 的系统库入口。
           await mkdir(resolve(E2E_HOME_DIR, "Library"), { recursive: true });
           await symlink(

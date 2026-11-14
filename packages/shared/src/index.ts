@@ -201,6 +201,7 @@ export type {
   SaveFileResult,
   PrintPageToPdfResult,
   // fork：MicrophoneAccessResult / MicrophoneSettingsTarget 不再导出（microphone-access 域剔除）。
+  // 上游 v3.18.x 新增 MicrophoneAccessResetResult，随该域一并不导出。
   CaptureBrowserGuestPageClip,
   CaptureBrowserGuestPageRequest,
   CaptureBrowserGuestPageResult,

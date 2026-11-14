@@ -29,9 +29,17 @@ export function createEncodedPowerShellArgs(script, values = []) {
   return [...POWERSHELL_COMMON_ARGS, "-EncodedCommand", encodedCommand];
 }
 
+export function escapePowerShellLiteral(value) {
+  // PowerShell 将排版单引号也视为定界符，必须与 ASCII 单引号一样双写，防止路径变成代码。
+  if (/[\0\r\n]/u.test(value)) {
+    throw new Error("PowerShell path literal cannot contain NUL or newline characters");
+  }
+  return `'${value.replace(/['\u2018\u2019\u201A\u201B]/g, "$&$&")}'`;
+}
+
 export function createWindowsPowerShellSecurityArgs(script, values = []) {
   // 由 pwsh 启动的 Node 会继承 PowerShell 7 的 PSModulePath，随后再启动
   // Windows PowerShell 5.1 时可能错误发现不兼容的 Security 模块。直接从当前
-  // powershell.exe 的 PSHOME 加载系统模块，避免把外部环境变量当作模块信任根。
+  // powershell.exe 的 PSHOME 显式加载系统模块，避免把外部环境变量当作模块信任根。
   return createEncodedPowerShellArgs(`${WINDOWS_POWERSHELL_SECURITY_BOOTSTRAP}${script}`, values);
 }

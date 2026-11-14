@@ -366,8 +366,9 @@ export interface PrintPageToPdfResult {
   error?: string;
 }
 
-// fork：MicrophoneAccessResult / MicrophoneSettingsTarget 与 IPlatformService.microphone
-// 均属 voice-input 云 ASR 域，随域整体剔除，不引入（上游 v3.18.0 新增）。
+// fork：MicrophoneAccessResult / MicrophoneAccessResetResult / MicrophoneSettingsTarget 与
+// IPlatformService.microphone 均属 voice-input 云 ASR 域，随域整体剔除，不引入
+// （上游 v3.18.0 新增，v3.18.x 追加 resetAccess，随域一并不引入）。
 
 /** guest 视口内的裁剪区域，全部是 guest CSS px；视口宽高用于换算实际帧的像素比例。 */
 export interface CaptureBrowserGuestPageClip {

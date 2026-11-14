@@ -38,7 +38,8 @@ type DesktopBrowserPlatformBridge = Pick<
   | "getPathForFile"
   | "saveFile"
   | "printPageToPdf"
-  | "microphone"
+  // fork 修正：v3.18.0 同并在 Pick 里带入了 "microphone"，但 platform.ts 已随 voice-input
+  // 域剔除 IPlatformService.microphone，Pick 引用不存在键是 TS2344 隐性类型债；随本次合并移除。
   | "captureBrowserGuestPage"
 >;
 
@@ -51,7 +52,8 @@ export const desktopBrowserPlatformBridge = {
     Promise.resolve({ success: false, error: "not_supported" }),
   // 条件定义而非兜底返回失败：UI 靠方法是否存在做能力检测，旧 preload 下必须保持 undefined
   printPageToPdf: window.zxcode.printPageToPdf ? () => window.zxcode.printPageToPdf!() : undefined,
-  // fork：microphone（voice-input 域）不接入；CaptureBrowserGuestPage（design 桥）采纳。
+  // fork：microphone（voice-input 域）不接入，上游 v3.18.2 的 resetAccess 扩展同样不恢复；
+  // CaptureBrowserGuestPage（design 桥）采纳。
   captureBrowserGuestPage: window.zxcode.captureBrowserGuestPage
     ? (payload) => window.zxcode.captureBrowserGuestPage!(payload)
     : undefined,

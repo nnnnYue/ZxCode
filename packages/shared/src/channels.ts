@@ -66,6 +66,7 @@ import type {
   SaveFileResult,
   PrintPageToPdfResult,
   // fork：MicrophoneAccessResult / MicrophoneSettingsTarget 不再 import（microphone-access 域剔除）。
+  // 上游 v3.18.x 新增 MicrophoneAccessResetResult，随该域一并不引入。
   CaptureBrowserGuestPageRequest,
   CaptureBrowserGuestPageResult,
   OpenInEditorOptions,
@@ -227,7 +228,7 @@ export const PlatformChannels = {
   SaveFile: "zxcode:save-file",
   /** Renderer → Main：用 Chromium 打印引擎把当前页面 print 媒体版面导出为 PDF */
   PrintToPdf: "zxcode:print-to-pdf",
-  // fork：MicrophoneAccess / OpenMicrophoneSettings 通道不引入（voice-input 云 ASR 域整体剔除）。
+  // fork：MicrophoneAccess / ResetMicrophoneAccess / OpenMicrophoneSettings 通道不引入（voice-input 云 ASR 域整体剔除）。
   /** Renderer → Main：在 main 截取内置浏览器 guest 当前视口为 PNG（renderer 侧 capturePage 会崩溃） */
   CaptureBrowserGuestPage: "zxcode:capture-browser-guest-page",
   /** Main → Renderer：转发远程连接过程日志 */
@@ -574,6 +575,8 @@ export const ZXCODE_RPC_HOST_CAPABILITY_HEADER = "x-zxcode-rpc-host-capability";
 export const HostMessageTypes = {
   /** Main → Host：仅经已绑定私有通道返回加解密结果，不含系统主密钥。 */
   CredentialCipherResult: "credential-cipher-result",
+  /** Main → Host：数据存储路径切换时的系统密钥登记结果，只含受控错误码。 */
+  CredentialKeyShareResult: "credential-key-share-result",
   /** main → Host：准备手机项目目录，只复用已在线物理 Source。 */
   PrepareProjectWorkspace: "prepare-project-workspace",
   DatabaseStartupControl: "database-startup-control",
@@ -646,6 +649,11 @@ export const HostMessageTypes = {
 export const HostResponseTypes = {
   /** Host → Main：对本 Host 绑定的凭据目录执行加解密。 */
   CredentialCipherRequest: "credential-cipher-request",
+  /**
+   * Host → Main：数据存储路径切换后，请求 Main 把当前绑定目录的系统密钥登记到目标数据根。
+   * 只传目标数据根，Main 自行推导凭据路径；不读出密钥，也不开放对目标目录的加解密。
+   */
+  CredentialKeyShareRequest: "credential-key-share-request",
   /** Host → main：已准入的目录与 scope，main 不解释项目业务。 */
   ProjectWorkspacePrepared: "project-workspace-prepared",
   DatabaseStartupState: "database-startup-state",
@@ -790,6 +798,7 @@ export interface PlatformChannelMap {
     request: void;
     response: PrintPageToPdfResult;
   };
+
   [PlatformChannels.CaptureBrowserGuestPage]: {
     request: CaptureBrowserGuestPageRequest;
     response: CaptureBrowserGuestPageResult;

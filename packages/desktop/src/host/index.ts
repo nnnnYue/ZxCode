@@ -89,6 +89,9 @@ import {
 } from "@zcode/services/node";
 import { createHostResourceUsageResponder } from "./hostResourceUsage.js";
 import {
+  // fork：offPeakDispatchPlan（assertBoundSessionDispatchable / resolveOffPeakDispatchKind）
+  // 属 off-peak 激活域剔除面，不引入（REMOVALS.md §十二）。
+  CREDENTIAL_KEY_SHARE_UNAVAILABLE_ERROR_CODE,
   HostMessageTypes,
   HostResponseTypes,
   ZXCODE_VERSION,
@@ -249,6 +252,40 @@ function authorizeLocalMediaPreviewPath(path: string): Promise<string> {
     }
   });
 }
+
+interface PendingCredentialKeyShare {
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
+const pendingCredentialKeyShares = new Map<string, PendingCredentialKeyShare>();
+
+/**
+ * 数据存储路径切换复制完成后，请求 Main 把当前系统密钥登记到目标数据根。
+ * 只有 Main 访问系统库；失败时 reject，由设置服务中止切换（见系统安全存储规格）。
+ */
+function shareCredentialKeyWithDataRoot(targetBaseDir: string): Promise<void> {
+  if (!parentPort) {
+    return Promise.reject(new Error("parentPort unavailable"));
+  }
+  const requestId = randomUUID();
+  return new Promise<void>((resolve, reject) => {
+    pendingCredentialKeyShares.set(requestId, { resolve, reject });
+    try {
+      parentPort.postMessage({
+        type: HostResponseTypes.CredentialKeyShareRequest,
+        requestId,
+        targetBaseDir,
+      });
+    } catch (error) {
+      pendingCredentialKeyShares.delete(requestId);
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+// fork：上游此处还有 hostProviderProvisioningStatus（数据同步页「模型提供商」
+// Provisioning lane），属数据同步 UI 剔除面，不接入。
 
 const pluginSandboxRegistrationBridge = createPluginSandboxRegistrationBridge({
   send: (message) => {
@@ -2222,6 +2259,24 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
     return;
   }
 
+  if (msg.type === HostMessageTypes.CredentialKeyShareResult) {
+    const pending = pendingCredentialKeyShares.get(msg.requestId);
+    if (!pending) {
+      return;
+    }
+    pendingCredentialKeyShares.delete(msg.requestId);
+    if (msg.ok) {
+      pending.resolve();
+      return;
+    }
+    pending.reject(
+      Object.assign(new Error("System credential storage is unavailable"), {
+        code: msg.errorCode ?? CREDENTIAL_KEY_SHARE_UNAVAILABLE_ERROR_CODE,
+      }),
+    );
+    return;
+  }
+
   if (msg.type === HostMessageTypes.LocalMediaPreviewPathAuthorizeResult) {
     const pending = pendingLocalMediaPreviewPathAuthorizations.get(msg.requestId);
     if (!pending) return;
@@ -2678,8 +2733,13 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
         logger.info("initializing local services");
         activeSessionRealtimePort = createTaskRealtimeBridgeForHostInit(msg, parentPort);
         // fork：fork 版 createSettingServiceWithMigrations 同样返回迁移句柄；此处解构
-        // service（fork 不下发 prepareLegacyAccountConnections），并读取持久化语言作 X-Client-Language 兜底。
-        const { service: settingService } = createSettingServiceWithMigrations();
+        // service（fork 不下发 prepareLegacyAccountConnections / setWorkspaceProjection，
+        // 其消费方属 source-server 数据同步剔除面），注入上游 v3.18.2 的
+        // shareCredentialKeyWithDataRoot（数据目录切换后把系统密钥登记到目标数据根），
+        // 并读取持久化语言作 X-Client-Language 兜底。
+        const { service: settingService } = createSettingServiceWithMigrations({
+          shareCredentialKeyWithDataRoot,
+        });
         void settingService.get().then(
           (settings) => {
             persistedApplicationLocale = settings.locale;

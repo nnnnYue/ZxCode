@@ -74,6 +74,8 @@ import type {
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
+  // voice-input 剔除：MicrophoneAccessResetResult / MicrophoneAccessResult /
+  // MicrophoneSettingsTarget 类型不随上游恢复（REMOVALS.md §十二）。
   CaptureBrowserGuestPageRequest,
   CaptureBrowserGuestPageResult,
   SSHConfigAliasOption,
@@ -271,7 +273,8 @@ contextBridge.exposeInMainWorld("zxcode", {
   printPageToPdf: (): Promise<PrintPageToPdfResult> =>
     ipcRenderer.invoke(PlatformChannels.PrintToPdf),
   // voice-input 语音输入域按 REMOVALS.md 剔除：麦克风权限通道（ensureMicrophoneAccess /
-  // openMicrophoneSettings 与 shared 的 MicrophoneAccess* 类型、MicrophoneAccess 通道）不进入 fork。
+  // resetMicrophoneAccess / openMicrophoneSettings 与 shared 的 MicrophoneAccess* 类型、
+  // MicrophoneAccess 通道）不随上游 v3.18.2 恢复。
   /** 在 main 截取内置浏览器 guest 当前视口为 PNG（renderer 侧 <webview>.capturePage 会崩溃） */
   captureBrowserGuestPage: (
     payload: CaptureBrowserGuestPageRequest,

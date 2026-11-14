@@ -124,7 +124,7 @@ Docker 准入暂不执行：该 case 不依赖 provider replay，也不属于 co
 
 | 字段             | 内容                                                                                         |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| Spec             | `packages/desktop/test/e2e/provider-readiness-agent-startup.test.ts`                         |
+| Spec             | `packages/desktop/test/e2e/workspace/runtime/provider-readiness-agent-startup.test.ts`       |
 | Fixture manifest | `packages/desktop/test/e2e/fixtures/cases/auth-config/provider-readiness-agent-startup.json` |
 | Provider fixture | 无，`providerRequestPolicy: "none"`                                                          |
 | 当前状态         | 已转正，正式路径 cold-start case                                                             |
@@ -258,7 +258,7 @@ Welcome 展示 Z.ai + BigModel 登录入口
 
 | 字段             | 内容                                                                            |
 | ---------------- | ------------------------------------------------------------------------------- |
-| Spec             | `packages/desktop/test/e2e/jwt-401-auto-logout.test.ts`                         |
+| Spec             | `packages/desktop/test/e2e/auth-config/session/jwt-401-auto-logout.test.ts`     |
 | Fixture manifest | `packages/desktop/test/e2e/fixtures/cases/auth-config/jwt-401-auto-logout.json` |
 | Provider fixture | 无，`providerRequestPolicy: "none"`                                             |
 | 当前状态         | 候选 case，等待人工确认 401 触发提示、凭据清理和重启动作后转正                  |
@@ -606,3 +606,47 @@ Todo103 本轮运行证据记录在 staging-integration ledger。
 此用例不触发模型推理；HTTP 为既有本地 Coding Plan mock，不代表真实后端联调。手机/远程链路由 Provisioning 与鉴权服务测试覆盖，本轮不宣称设备级远程 E2E。保持 pending，不自动转正。
 
 本轮自动复测：2026-09-23，2 cases passed；artifact：`packages/desktop/.e2e-artifacts/desktop-e2e-20260923070315610-p85476-12717808333f5136/summary.md`。未进行人工确认或转正；手机、真实后端及混版本远端不在本 case 范围。
+
+## 系统安全存储迁移（pending）
+
+补充候选 `auth-config/credentials/manual-review/pending/system-credential-owner.test.ts`：启动真实 Main/Host，
+仅拦截系统库边界使用合成密钥。Main 之外的读取直接失败；Host 连续/并发读取并迁移
+后，断言全部成功、系统读取仅一次且来自 Main。此候选尚未人工转正，不等同于签名包
+或系统授权弹窗实测；独立 CLI 仍按自身系统身份验收。
+
+`auth-config/credentials/manual-review/pending/system-credential-storage.test.ts`：隔离目录中的合成旧明文由真实
+Host 读取并委托 Main 迁移为 OS 密文；连续读取十次，重启后再次读取同值。
+用例不设置管理密钥、不连接业务服务；结束清理此隔离目录专属的系统密钥。
+macOS 测试 HOME 仅链接当前用户的 Keychains 目录供系统 API 查找，应用数据保持隔离，
+不复制钥匙串文件、不更改默认钥匙串。
+现有 OAuth race 继续使用显式合成管理密钥，验证账号会话原子更新与退出行为。
+CLI 测试补充系统库不可用、密钥丢失、并发创建与旧密文迁移，不把替身测试视为
+Windows/Linux 原生验收。macOS 运行 1/1 通过：
+`desktop-e2e-20261029085116036-p3009-ac323f62eb79a35a`；真实 Main/Host 读写与重启均已断言。
+用例仍为 pending，不做人工转正或 CI 准入。另有 OAuth/Provisioning 12 项、损坏凭据/
+401/项目缓存恢复 4 项回归通过，详见系统安全存储规格。
+
+Main 唯一 owner 候选通过 `desktop-e2e-20261029084759158-p91327-2f6c2ce829e8bb0d`。
+`auth-config/credentials/manual-review/pending/system-credential-owner-mcp.test.ts` 复用完整的 MCP OAuth、
+持久化和真实 CLI 工具回合，禁止 Host/CLI 读取系统库，仍只观察到一次 Main 读取；
+通过 `desktop-e2e-20261029085309458-p10404-b802c5ceb4f40751`。两项均使用原生 API
+边界替身，与上面的真实 macOS 测试互补，不代表 Windows/Linux 或签名包验收。
+
+macOS 完整签名包的本机更新与凭据保留已另行通过脚本＋原生界面联合验收，
+证据与范围见[系统安全存储规格](../plans/2026-10-29-system-credential-storage.md#macos-完整签名包验收2026-10-29)。
+这不改变上述 pending 用例的人工转正或 CI 准入状态。
+
+`auth-config/credentials/manual-review/pending/system-credential-data-root.test.ts`（SCS-DR01，
+ZCT-2120723935487688704）：默认根的合成旧明文经真实 Host 委托 Main 迁移为 OS 密文；经设置页同一
+Host RPC 把数据存储路径切到隔离子目录，断言新根有同一密文、macOS 新根系统条目存在；冷重启后
+Main 绑定新根仍读回原值，并能在新根写入同指纹的新凭据；原根文件保持不变。
+不设置管理密钥，结束时按两个唯一 account 精确清理系统条目。默认合成 E2E 使用托管密钥，
+密钥与路径无关，因此 CDD01 不覆盖此回归；设置页交互路径仍由 CDD01 覆盖。规格见
+[数据存储路径切换](../plans/2026-10-29-system-credential-storage.md#数据存储路径切换2026-11-12)。
+macOS 运行 1/1 通过：`desktop-e2e-20261112045322400-p11467-319ab851ac3b0783`；去掉登记的对照
+运行按预期失败：`desktop-e2e-20261112045639884-p32108-f3cce587acd337df`。用例仍为 pending，
+不做人工转正或 CI 准入；Windows/Linux 原生未实测。
+
+## LOGIN-LAYOUT：登录页响应式布局
+
+按 `docs/ui/login-page.md` 的布局回归矩阵执行 `auth-config/login/manual-review/pending/login-page-layout.test.ts`。覆盖双主题、双语言、桌面/窄屏/短窗口，普通登录及 API Key 表单均需保持可达，协议不得覆盖卡片。自动验证：4 个场景通过，每个覆盖 3 个视口 × 2 种表单状态，共 24 组布局；证据 `desktop-e2e-20261102064239878-p81237-668713e65a2f83e6/login-layout/`。同批 OAuth 的旧夹具断言失败另行修复并复测，不能把整批称为通过。截图已核对，仍为 pending，未人工转正；不代表实体手机验收。

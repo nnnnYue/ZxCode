@@ -37,6 +37,13 @@ export type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 export { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 
 const CODE_PREVIEW_SETTINGS_KEY = "zcode-code-preview-settings";
+const FONT_SMOOTHING_STORAGE_KEY = "zcode-macos-font-smoothing";
+
+function applyFontSmoothing(enabled: boolean): void {
+  // 仅设置展示标记；CSS 以本机 macOS desktop 为边界，远端设备与 Web 不受影响。
+  document.documentElement.classList.toggle("font-smoothing-enabled", enabled);
+}
+
 const HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY = "zcode-hide-project-device-names";
 const PERFORMANCE_MODE_STORAGE_KEY = "zcode-performance-mode";
 
@@ -86,7 +93,10 @@ export interface ZCodeState {
   codePreviewSettings: CodePreviewSettings;
   setCodePreviewSettings: (patch: Partial<CodePreviewSettings>) => void;
 
-  /** UI 根 rem 字号（px） */
+  /** 本机 macOS 灰度字体平滑偏好。 */
+  fontSmoothingEnabled: boolean;
+  setFontSmoothingEnabled: (enabled: boolean) => void;
+  /** UI 字号 token 的基准值（px），不改变根 rem。 */
   uiFontSizePx: number;
   setUiFontSizePx: (fontSizePx: number) => void;
 
@@ -122,6 +132,7 @@ const BROADCAST_FIELDS = new Set([
   "theme",
   "locale",
   "uiFontSizePx",
+  "fontSmoothingEnabled",
   "interfaceMode",
   "hideProjectDeviceNames",
 ]);
@@ -130,6 +141,7 @@ type BroadcastField =
   | "theme"
   | "locale"
   | "uiFontSizePx"
+  | "fontSmoothingEnabled"
   | "interfaceMode"
   | "hideProjectDeviceNames";
 
@@ -196,6 +208,13 @@ export function createZCodeStore(broadcastService: IBroadcastService) {
         writeSafeLocalStorage(CODE_PREVIEW_SETTINGS_KEY, JSON.stringify(next));
         return { codePreviewSettings: next };
       }),
+
+    fontSmoothingEnabled: readSafeLocalStorage(FONT_SMOOTHING_STORAGE_KEY) !== "false",
+    setFontSmoothingEnabled: (enabled) => {
+      writeSafeLocalStorage(FONT_SMOOTHING_STORAGE_KEY, String(enabled));
+      applyFontSmoothing(enabled);
+      set({ fontSmoothingEnabled: enabled });
+    },
 
     uiFontSizePx: loadUiFontSizePx(),
     setUiFontSizePx: (fontSizePx: number) => {
@@ -311,6 +330,8 @@ export function createZCodeStore(broadcastService: IBroadcastService) {
         (msg.payload === "office" || msg.payload === "coding")
       ) {
         state.setInterfaceMode(normalizeInterfaceMode(msg.payload));
+      } else if (field === "fontSmoothingEnabled" && typeof msg.payload === "boolean") {
+        state.setFontSmoothingEnabled(msg.payload);
       } else if (field === "uiFontSizePx" && typeof msg.payload === "number") {
         state.setUiFontSizePx(msg.payload);
       } else if (field === "hideProjectDeviceNames" && typeof msg.payload === "boolean") {
@@ -324,6 +345,7 @@ export function createZCodeStore(broadcastService: IBroadcastService) {
   syncSystemThemeListener(useStore.getState().theme);
   applyTheme(useStore.getState().theme);
   applyUiFontSizePx(useStore.getState().uiFontSizePx);
+  applyFontSmoothing(useStore.getState().fontSmoothingEnabled);
   document.documentElement.classList.toggle(
     "dark",
     resolveTheme(useStore.getState().theme) === "dark",

@@ -30,6 +30,11 @@ const CODING_PLAN_TEAM_SPEC_MARKERS = [
   "coding-plan-team-usage.test.ts",
   "coding-plan-entitlement-presentation.test.ts",
   "provider-family-responsive.test.ts",
+  // v3.18.2 合并说明：采上游新增 start-plan-cn-unlinked-login marker（用例与 fixture/helper
+  // 已随本次合并入 fork）；继续拒 provider-builtin-refresh-failure（fork 无该用例，维持
+  // v3.18.0 拍板，见上方合并说明）。
+  // 国内新账号 Start 用例需要 Start balance 与 profile 都落在隔离账号控制面。
+  "start-plan-cn-unlinked-login.test.ts",
   // Bugfix：登录后刷新子代理 catalog 的 case 与套餐用量 case 共用 team mock。
   // 抽取 spec 判定时必须保留该入口，否则单跑时 worker 会在业务断言前缺少 mock。
   "subagent-coding-plan-login-catalog-stale.test.ts",
