@@ -16,6 +16,8 @@ const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup();
 });
+// fork 适配：附件 URI 与写入方 adapters/storage/index.ts 同为 zxcode-artifact://；
+// inspectSessionDeletion 与 purge 引用屏障都按该 scheme 扫描，上游的 zcode- 夹具扫不到。
 const params = { sessionId: "root", workspace: { workspacePath: "/work/example" } };
 async function setup() {
   const root = await mkdtemp(join(tmpdir(), "permanent-deletion-runtime-"));
@@ -47,7 +49,7 @@ async function setup() {
   ).run();
   db.prepare(
     "INSERT INTO part(id,message_id,session_id,time_created,time_updated,data) VALUES('p','m','fork',1,1,?)",
-  ).run(JSON.stringify({ url: "zcode-artifact://root/shared" }));
+  ).run(JSON.stringify({ url: "zxcode-artifact://root/shared" }));
   const dir = join(root, "artifacts", "root");
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, "shared.png"), "shared");
@@ -105,7 +107,7 @@ describe("归档永久删除执行面", () => {
     });
     expect(
       Buffer.from(
-        (await artifacts.readToolResultBinaryArtifact({ uri: "zcode-artifact://root/shared" }))
+        (await artifacts.readToolResultBinaryArtifact({ uri: "zxcode-artifact://root/shared" }))
           .bytes,
       ).toString(),
     ).toBe("shared");
@@ -123,7 +125,7 @@ describe("归档永久删除执行面", () => {
     const { host, db } = await setup();
     db.exec(`UPDATE part SET data='{}';
       INSERT INTO dwf_run(id,parent_session_id,caps_max_concurrency,status,time_created,time_updated) VALUES('run','fork',1,'completed',1,1);
-      INSERT INTO dwf_event(run_id,sequence,type,payload_json,time_created) VALUES('run',1,'artifact','{"uri":"zcode-artifact://root/shared"}',1);`);
+      INSERT INTO dwf_event(run_id,sequence,type,payload_json,time_created) VALUES('run',1,'artifact','{"uri":"zxcode-artifact://root/shared"}',1);`);
     expect(
       (await previewSessionDeletionWith(host, params)).retainedArtifacts.map(
         (file) => file.fileName,
@@ -149,7 +151,7 @@ describe("归档永久删除执行面", () => {
     const preview = await previewSessionDeletionWith(host, params);
     db.prepare("UPDATE part SET data=? WHERE id='p'").run(
       JSON.stringify({
-        url: "zcode-artifact://root/private",
+        url: "zxcode-artifact://root/private",
       }),
     );
     expect(await execute(preview.revision)).toMatchObject({ status: "blocked", reason: "changed" });
@@ -159,7 +161,7 @@ describe("归档永久删除执行面", () => {
     expect(() =>
       db.prepare("UPDATE part SET data=? WHERE id='p'").run(
         JSON.stringify({
-          url: "zcode-artifact://root/shared",
+          url: "zxcode-artifact://root/shared",
         }),
       ),
     ).toThrow("session-data.deleting");

@@ -233,12 +233,9 @@ function __report(siteId, item, artifactId) {
 // ⚠ Object.freeze 是**浅**冻结：嵌套对象未冻结，脚本仍能改动 args.foo.bar。v1 接受这个
 // 界限——它挡的是"手滑重新赋值 args"，不是一个安全边界（实参本来就是调用方给的）。
 var __args = Object.freeze(JSON.parse(__argsJson));
-// run 身份（facade 的 run 全局）同一种构造：context 内 JSON.parse、浅冻结（它本身就是平的）。
-var __run = Object.freeze(JSON.parse(__runJson));
 
 globalThis.__host = {
   args: __args,
-  run: __run,
   createActor: __createActor,
   ask: __ask,
   worldRead: __worldRead,
@@ -368,13 +365,15 @@ Math.random = function () {
     __send: (line: unknown) => void;
     __finish: () => void;
     __argsJson: string;
-    __runJson: string;
     __deliver: (line: string) => void;
     __execute: (runFn: unknown) => Promise<void>;
     __checkStalled: () => boolean;
   };
+  // 不透传 run 身份：fork 在 v3.18.0 合并时已对上游「run 身份域」整体取 fork 侧（facade 不声明
+  // run 全局、lowering 不改写、ChildPayload 无 run 字段、harness 不构造）。此处的透传与 bootstrap
+  // 的 JSON.parse(__runJson) 是合并劈叉残留——payload.run 为 undefined 时 JSON.parse(undefined)
+  // 会在每次子进程启动时抛 SyntaxError，故与 protocol.ts/harness.ts 同裁决一并移除。
   sandbox.__argsJson = JSON.stringify(payload.args ?? {});
-  sandbox.__runJson = JSON.stringify(payload.run);
   sandbox.__send = (line) => {
     if (typeof line === "string") deps.stdout.write(line + "\n");
   };

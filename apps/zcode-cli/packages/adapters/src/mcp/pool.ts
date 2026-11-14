@@ -245,7 +245,17 @@ export function createMcpConnectionPool(options: McpConnectionPoolOptions): McpC
           connectionId: connectionContext.mcpConnectionId,
           isolation: connectionContext.mcpIsolation,
           serverName,
-          ...(config.source ? { source: config.source.kind } : {}),
+          // 上游 v3.18.0：MCP server 来源细分为 workspace/user，但 telemetry 协议事件
+          // （shared mcpSource 枚举）仍是 builtin/plugin/custom 三值——遥测边界按上游
+          // 把 workspace/user 折叠为 custom，协议枚举不动。合并时该折叠 hunk 被丢失。
+          ...(config.source
+            ? {
+                source:
+                  config.source.kind === "user" || config.source.kind === "workspace"
+                    ? ("custom" as const)
+                    : config.source.kind,
+              }
+            : {}),
         });
         const adapter = options.createAdapter({
           connectionContext,

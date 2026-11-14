@@ -204,6 +204,12 @@ export function ConfirmDialogHost() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
+        ref={prepareMountedContent}
+        // 修复原因：v3.18.0 合并剔除 SourceServerBoundary 分支时，把上游默认分支的
+        // ref={prepareMountedContent} 与 data-confirm-intent 一并丢弃，带 prepare 的确认框
+        // （归档管理永久删除）检查永远不会启动，弹窗停在「正在检查 0/1」且确认键永久禁用。
+        // 依据：上游 b95ebaff 默认 DialogContent 同时挂载两者；E2E 依赖 data-confirm-intent。
+        data-confirm-intent={displayedRequest?.intent}
         data-testid={displayedRequest?.testId}
         showCloseButton={false}
         overlayClassName={
@@ -226,6 +232,9 @@ export function ConfirmDialogHost() {
               className={cn(
                 "whitespace-pre-line pt-0.5 text-ui-base leading-6 text-foreground-subtle",
                 isAutomationConfirmation && AUTOMATION_CONFIRM_DIALOG_DESCRIPTION_CLASS,
+                // v3.18.0 合并时随 ref 一并丢失：归档删除检查清单很长，声明方期望说明区限高滚动。
+                displayedRequest.scrollableDescription &&
+                  "max-h-96 overflow-y-auto overscroll-contain break-words",
               )}
             >
               {displayedRequest.description}

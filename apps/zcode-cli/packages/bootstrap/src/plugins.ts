@@ -221,7 +221,7 @@ export interface UninstallZCodeMarketplacePluginOptions extends ResolveZCodePlug
   pluginName?: string;
   marketplace?: string;
   removeCache?: boolean;
-  /** 保留 data/<plugin-id> 用户数据目录（`zxcode plugins uninstall --keep-data`）。 */
+  /** 保留 data/<plugin-id> 用户数据目录（`zcode plugins uninstall --keep-data`）。 */
   keepData?: boolean;
 }
 
@@ -498,19 +498,6 @@ export async function getZCodePluginsOverview(
       ),
     ],
   };
-}
-
-export function enrichCachedClaudeMarketplaceIconsForOverview(
-  options: ResolveZCodePluginsOptions = {},
-): void {
-  const configResult = options.configResult ?? createConfig(options);
-  const pluginStorageRoot =
-    options.pluginStorageRoot ??
-    getPluginStorageRoot(getCliStorageRoot(resolvePath(configResult.config.storage.dir)));
-  // 图标是可选展示增强：overview 不等待网络；仅写回阶段进入 storage lock。
-  void enrichCachedClaudeMarketplaceIcons(pluginStorageRoot, (write) =>
-    withPluginStorageLock(pluginStorageRoot, write),
-  );
 }
 
 export async function listZCodePlugins(
@@ -957,7 +944,7 @@ export const uninstallZCodeMarketplacePlugin = pluginMutation(
 );
 
 /**
- * `zxcode plugins update <plugin>`：先刷新所属 marketplace 目录，再按同一条目重装。
+ * `zcode plugins update <plugin>`：先刷新所属 marketplace 目录，再按同一条目重装。
  * cacheMarketplacePlugin 对已存在的安装记录做原地覆盖并保留 installedAt；启用态只会给
  * 用户配置里尚未显式声明的 id 补默认值，因此更新不会改变用户已经做过的开关选择。
  */
@@ -992,7 +979,7 @@ async function updateZCodeMarketplacePluginLocked(
   return { ...installed, previousVersion: record.version };
 }
 
-/** `zxcode plugins validate <path>`：只读校验本地插件目录或 marketplace 目录。 */
+/** `zcode plugins validate <path>`：只读校验本地插件目录或 marketplace 目录。 */
 export async function validateZCodePluginPath(
   options: ValidateZCodePluginPathOptions,
 ): Promise<PluginLoadOutcome["diagnostics"]> {
@@ -1032,6 +1019,9 @@ async function restoreBuiltinPluginCore(options: RestoreBuiltinPluginOptions): P
   ) {
     // overview 虽然隐藏了恢复入口，但协议调用仍可绕过 UI 写用户配置。
     // 功能开关关闭时在写盘前失败，确保用户配置与插件缓存都保持零痕迹。
+    // Bugfix：合并采纳上游时把提示写成了 ZCODE_ 前缀；fork 的真实环境变量是
+    // ZXCODE_CUA_PRODUCT_HELPER（唯一来源 packages/shared/src/runtimeEnv.ts 的
+    // ZXCODE_CUA_PRODUCT_HELPER_ENV_KEY），提示必须与它一致，否则用户照提示设置不生效。
     throw new Error("computer-use built-in plugin requires ZXCODE_CUA_PRODUCT_HELPER to be enabled");
   }
   const { configResult, pluginStorageRoot } = await resolvePluginContext(options);
@@ -1251,11 +1241,14 @@ function resolveEffectiveMarketplaceRecords(input: {
       useCachedManifest: false,
     });
   }
-  // 去平台化：官方市场不再写入 known_marketplaces（默认清单为空，且刷新对官方 id
-  // 一律短路）。目录本身仍由启动 seed 物化为 canonical manifest，这里在 known 缺失时
-  // 直接投影本地快照，让商店「公开」分段与旧安装（known 里仍有官方记录）看到同一目录。
+  // 去平台化：官方市场不再写入 known_marketplaces（默认清单只含上游 Claude GitHub 源，
+  // 且刷新对官方 id 一律短路）。目录本身仍由启动 seed 物化为 canonical manifest，这里在
+  // known 缺失 ZCode 官方 id 时直接投影本地快照，让商店「公开」分段与旧安装看到同一目录。
+  // 修复原因：v3.18.0 合并给 DEFAULT 清单新增了 Claude 官方市场（github 源）注册，守卫若用
+  // isOfficialMarketplaceId 会把 claude-plugins-official 误判成「官方已在 known」而跳过投影，
+  // 商店公开分段因此丢失 ZCode 官方目录；投影只针对 ZCode 官方 id，Claude 注册不应拦截。
   // 官方市场排首位，与旧版 DEFAULT 清单的顺序保持一致。
-  if (!input.known.some((record) => isOfficialMarketplaceId(record.id))) {
+  if (!input.known.some((record) => record.id === ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE)) {
     records.unshift({
       record: {
         id: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
@@ -1478,6 +1471,9 @@ function resolvePluginConfigPath(
   // Workspace Plugin 配置固定落在当前 `<workspace>/.zxcode/config.json`。嵌套 workspace
   // 可能同时发现仓库根与自身的配置，读取端 innermost 优先；写入端也必须锁定当前
   // workspace，不能用 project discovery 的第一个 outermost 文件。
+  // fork 惯例：写侧锁 .zxcode（fork 品牌目录，存量 workspace 配置都在这里）；
+  // 上游 .zcode 只作为读侧兼容（见 isWorkspacePluginConfigPath 双名判定），不作为
+  // 写入目标，否则同一份 workspace 配置会因 fork/上游命名劈叉出现两份事实。
   const workspaceConfigPath = join(workingDirectory, ".zxcode", "config.json");
   const projectConfigPaths = [
     ...(options.projectConfigPath ? [options.projectConfigPath] : []),
@@ -1498,7 +1494,8 @@ export function isWorkspacePluginConfigPath(
 ): boolean {
   // Bugfix：rebrand 残留。fork 写入端是 <workspace>/.zxcode/config.json（本文件
   // workspace 配置写入处），判定却只认上游 .zcode——对 fork 自己写的 workspace
-  // config 判 false。双名兼容：旧 .zcode/config.json 仍判定为 workspace 配置。
+  // config 判 false。双名兼容：.zxcode 是 fork 存量数据目录，.zcode 是上游命名
+  // （v3.18.0 合并采纳的上游逻辑只认它），两种目录名都必须判定为 workspace 配置。
   const isWorkspaceConfigDir = (name: string) => name === ".zxcode" || name === ".zcode";
   if (platform === "win32") {
     const dirName = win32.basename(win32.dirname(path)).toLowerCase();

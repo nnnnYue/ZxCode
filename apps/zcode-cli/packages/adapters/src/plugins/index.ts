@@ -444,7 +444,7 @@ function warnUnsupportedComponents(loaded: LoadedPlugin, diagnostics: PluginDiag
     if (key in loaded.manifest) {
       diagnostics.push({
         code: "plugin_unsupported_component",
-        message: `Plugin component is diagnostic-only in this ZxCode runtime: ${key}`,
+        message: `Plugin component is diagnostic-only in this ZCode runtime: ${key}`,
         path: loaded.manifestPath,
         pluginId: loaded.id,
         severity: "warning",
@@ -535,7 +535,7 @@ function parsePluginHookEvents(input: {
     if (!SUPPORTED_HOOK_EVENTS.has(eventName)) {
       input.diagnostics.push({
         code: "plugin_hook_unsupported_event",
-        message: `Plugin hook event is not supported by this ZxCode runtime: ${eventName}`,
+        message: `Plugin hook event is not supported by this ZCode runtime: ${eventName}`,
         path: input.sourcePath,
         pluginId: input.loaded.id,
         severity: "warning",
@@ -795,7 +795,7 @@ async function findManifest(
   rootPath: string,
   materials: PluginMaterialReader,
 ): Promise<string | null> {
-  const zcodePath = join(rootPath, ZCODE_MANIFEST_PATH);
+  const zcodePath = join(rootPath, ZXCODE_MANIFEST_PATH);
   if (await materials.fileExists(zcodePath)) {
     return zcodePath;
   }

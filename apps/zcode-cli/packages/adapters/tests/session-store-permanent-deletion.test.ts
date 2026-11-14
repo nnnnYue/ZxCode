@@ -16,6 +16,10 @@ afterEach(async () => {
 
 describe("永久删除迁移兼容", () => {
   const migrationId = "0025_session_permanent_deletion";
+  // fork：0026 为 zxcode-artifact:// 引用屏障触发器补建；未记账重放场景必须与 0025 一并覆盖，
+  // 否则 it.each 丢对象后只重放 0025，zxcode 触发器不会恢复，schema 对不上。
+  const forkMigrationId = "0026_session_purge_reference_zxcode_scheme";
+  const pendingMigrationIds = [migrationId, forkMigrationId];
   // 固定已发布 SQL 的摘要，防止测试夹具随实现一起变化而漏掉旧库 checksum 不兼容。
   const publishedChecksum = "608f3ea3aad458679a4b377968413575749f2231c88133765a088564fc20691e";
 
@@ -76,7 +80,7 @@ describe("永久删除迁移兼容", () => {
     }
   }
 
-  it("已按旧 SQL 记账的数据库跳过 025，保留账本和全部数据", async () => {
+  it("已按旧 SQL 记账的数据库跳过 025/026，保留账本和全部数据", async () => {
     const { db, options } = await legacyFixture();
     try {
       const before = contentHashes(db);
@@ -120,16 +124,17 @@ describe("永久删除迁移兼容", () => {
           if (!keep.includes(name)) db.exec(`drop ${type} "${name}"`);
         }
       }
-      db.prepare("delete from schema_migration where id=?").run(migrationId);
+      for (const id of pendingMigrationIds)
+        db.prepare("delete from schema_migration where id=?").run(id);
       const emptyHash = createHash("sha256").update("[]").digest("hex");
       const expectedContents = {
         session_purge: emptyHash,
         session_runtime_presence: emptyHash,
         ...contentHashes(db),
       };
-      expect((await sqliteMigrations.migrate(db, SQLITE_MIGRATIONS, options)).applied).toEqual([
-        migrationId,
-      ]);
+      expect((await sqliteMigrations.migrate(db, SQLITE_MIGRATIONS, options)).applied).toEqual(
+        pendingMigrationIds,
+      );
       expect(schema()).toEqual(expectedSchema);
       expect(contentHashes(db)).toEqual(expectedContents);
       expect(

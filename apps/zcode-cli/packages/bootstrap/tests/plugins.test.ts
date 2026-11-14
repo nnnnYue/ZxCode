@@ -10,7 +10,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createConfig } from "@zcode/adapters/config";
 import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "@zcode/shared";
-import { ZCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
+import { ZXCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
 import type { Logger, PluginDiscoverRequest } from "@zcode/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { resolveStartupPlugins } from "../src/app/startup-marks.js";
@@ -178,64 +178,22 @@ describe("ZCode plugins", () => {
     }
   });
 
-  it("starts cached Claude icon migration without blocking overview callers", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-icon-migration-"));
-    const pluginStorageRoot = join(root, "plugins");
-    const marketplaceRoot = join(pluginStorageRoot, "marketplaces", "claude-plugins-official");
-    try {
-      await mkdir(marketplaceRoot, { recursive: true });
-      await writeFile(
-        join(marketplaceRoot, "marketplace.json"),
-        JSON.stringify({
-          name: "claude-plugins-official",
-          plugins: [{ name: "figma", source: "./figma" }],
-        }),
-      );
-      let resolveFetch!: (response: Response) => void;
-      vi.stubGlobal(
-        "fetch",
-        vi.fn(
-          () =>
-            new Promise<Response>((resolve) => {
-              resolveFetch = resolve;
-            }),
-        ),
-      );
-
-      expect(
-        enrichCachedClaudeMarketplaceIconsForOverview({
-          env: {},
-          pluginStorageRoot,
-          skipUserConfig: true,
-          workingDirectory: root,
-        }),
-      ).toBeUndefined();
-
-      resolveFetch(
-        new Response(
-          JSON.stringify([{ name: "figma", icon: "figma/icon.png", mimeType: "image/png" }]),
-          { status: 200 },
-        ),
-      );
-      await vi.waitFor(async () => {
-        const saved = JSON.parse(
-          await readFile(join(marketplaceRoot, "marketplace.json"), "utf8"),
-        ) as { plugins: Array<{ icon?: string }> };
-        expect(saved.plugins[0]?.icon).toBe(
-          "https://cdn-zcode.z.ai/zcode/official-plugin/assets/figma/icon.png",
-        );
-      });
-    } finally {
-      vi.unstubAllGlobals();
-      await rm(root, { force: true, recursive: true });
-    }
-  });
-
   it("declares the ui component type exactly for bundled plugins with UI surfaces", async () => {
     const packagesRoot = fileURLToPath(new URL("../../", import.meta.url));
+    // 离线快照资源在仓库根 packages/desktop/resources（desktop 不在 apps/zcode-cli/packages 下）。
+    const desktopResourcesRoot = fileURLToPath(
+      new URL("../../../../../packages/desktop/resources/", import.meta.url),
+    );
 
     for (const plugin of OFFICIAL_PLUGIN_DEFINITIONS) {
-      const packageRoot = join(packagesRoot, basename(plugin.rootCandidates[0] ?? ""));
+      const firstCandidate = plugin.rootCandidates[0] ?? "";
+      // 修复原因：v3.18.0 合并把 CDN 目录的离线快照条目并入 OFFICIAL_PLUGIN_DEFINITIONS，
+      // 其 rootCandidates 首项指向 resources 解压目录（official-marketplace/plugins/<name>/<version>），
+      // 不再是 packages/<pkg>；按前缀区分两类条目各自的 manifest 位置，否则 basename 拼出
+      // packages/<version> 必然 ENOENT。
+      const packageRoot = firstCandidate.startsWith("official-marketplace/")
+        ? join(desktopResourcesRoot, firstCandidate)
+        : join(packagesRoot, basename(firstCandidate));
       const pluginManifest = JSON.parse(
         await readFile(join(packageRoot, ".zcode-plugin", "plugin.json"), "utf8"),
       ) as { ui?: { surfaces?: unknown[] } };
@@ -688,11 +646,12 @@ describe("ZCode plugins", () => {
       expect(overview.marketplaces).toEqual(
         expect.arrayContaining([
           // 去平台化：官方目录随包分发，marketplace 摘要不再携带 CDN url source。
+          // zcode-site 按 v3.17.2 剔除决定维持移除，官方目录可见插件数固定为 15。
           expect.objectContaining({
             id: "zcode-plugins-official",
             isOfficial: true,
             name: "zcode-plugins-official",
-            pluginCount: 16,
+            pluginCount: 15,
             source: {
               source: "bundled",
             },
@@ -1969,7 +1928,7 @@ describe("ZCode plugins", () => {
           IOS_SIM_UI_BACKEND: "auto",
         },
       });
-      expect(server?.args?.at(-2)).toBe(ZCODE_PLUGIN_HOST_COMMAND);
+      expect(server?.args?.at(-2)).toBe(ZXCODE_PLUGIN_HOST_COMMAND);
       expect(server?.args?.at(-1)).toContain(
         join(
           "cache",
@@ -1987,7 +1946,8 @@ describe("ZCode plugins", () => {
           "utf8",
         ),
       ).resolves.toContain(IOS_SIMULATOR_PLUGIN_ID.split("@")[0] ?? "ios-simulator");
-      expect(existsSync(join(expectedRoot, ".zcode-plugin-seed.json"))).toBe(true);
+      // fork 数据目录 rebrand：seed 标记文件是 .zxcode 前缀（bundled-plugins.ts SEED_MARKER_FILE）。
+      expect(existsSync(join(expectedRoot, ".zxcode-plugin-seed.json"))).toBe(true);
       expect(existsSync(join(expectedRoot, "dist", "mcp", "server.js"))).toBe(
         existsSync(BUNDLED_PLUGIN_DIST_PATH),
       );
@@ -2066,7 +2026,7 @@ describe("ZCode plugins", () => {
       ]) {
         expect(server?.env).not.toHaveProperty(unusedEnv);
       }
-      expect(server?.args?.at(-2)).toBe(ZCODE_PLUGIN_HOST_COMMAND);
+      expect(server?.args?.at(-2)).toBe(ZXCODE_PLUGIN_HOST_COMMAND);
       expect(server?.args?.at(-1)).toContain(
         join(
           "cache",
@@ -2078,7 +2038,8 @@ describe("ZCode plugins", () => {
           "server.js",
         ),
       );
-      expect(existsSync(join(expectedRoot, ".zcode-plugin-seed.json"))).toBe(true);
+      // fork 数据目录 rebrand：seed 标记文件是 .zxcode 前缀（bundled-plugins.ts SEED_MARKER_FILE）。
+      expect(existsSync(join(expectedRoot, ".zxcode-plugin-seed.json"))).toBe(true);
       expect(existsSync(join(expectedRoot, "dist", "mcp", "server.js"))).toBe(
         existsSync(BUNDLED_ANDROID_PLUGIN_DIST_PATH),
       );
@@ -2635,7 +2596,8 @@ describe("ZCode plugins", () => {
       expect(
         overview.marketplaces.find((marketplace) => marketplace.id === "zcode-plugins-official"),
       ).toMatchObject({
-        pluginCount: 16,
+        // zcode-site 按 v3.17.2 剔除决定维持移除，官方目录可见插件数固定为 15。
+        pluginCount: 15,
         source: {
           source: "bundled",
         },

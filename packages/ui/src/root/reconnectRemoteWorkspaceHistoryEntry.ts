@@ -5,7 +5,6 @@ import type { IServiceAccessor } from "@zcode/services";
 import { toast } from "@/components/ui/toast.js";
 import {
   buildRemoteWorkspaceSessionMutation,
-  buildRemoteWorkspaceIdentity,
   createRemoteTargetFromSnapshot,
   resolveRemoteWorkspaceSessionIdentity,
 } from "@/lib/remoteWorkspaceHistory.js";
@@ -34,12 +33,7 @@ type ManualReconnectRemoteWorkspaceParams = {
     requestId?: string,
     context?: Parameters<IPlatformService["connectRemote"]>[2],
   ) => Promise<string>;
-  resolveRemoteWorkspaceCanonicalPath: (
-    sessionId: string,
-    workspacePath: string,
-  ) => Promise<string>;
   disposeRemoteWorkspaceSession: (sessionId: string) => Promise<void>;
-  bindRemoteWorkspaceSessionContext: BindRemoteWorkspaceSessionContextFn;
   bindRemoteWorkspacePath: typeof bindRemoteWorkspacePath;
   bindRemoteWorkspaceIdentity: typeof bindRemoteWorkspaceIdentity;
   upsertWorkspaceTab: (
@@ -60,6 +54,10 @@ type ManualReconnectRemoteWorkspaceParams = {
   shouldKeepReconnectedWorkspace?: (
     context: Pick<RemoteWorkspaceSessionEntry, "workspacePath" | "workspaceIdentity">,
   ) => boolean;
+  /** 目录当前 tab 上仍在线的 owner session；没有或已失效时返回 undefined。 */
+  readLiveWorkspaceOwner?: (
+    context: Pick<RemoteWorkspaceSessionEntry, "workspacePath" | "workspaceIdentity">,
+  ) => string | undefined;
   onWorkspaceActivated?: (target: { workspacePath: string; workspaceIdentity: string }) => void;
   options?: ReconnectRemoteWorkspaceOptions;
 };
@@ -89,9 +87,7 @@ export async function reconnectRemoteWorkspaceHistoryEntry({
   setReconnectingRemoteWorkspaceKeys,
   loadCredential,
   connectRemoteWorkspaceTarget,
-  resolveRemoteWorkspaceCanonicalPath,
   disposeRemoteWorkspaceSession,
-  bindRemoteWorkspaceSessionContext,
   bindRemoteWorkspacePath,
   bindRemoteWorkspaceIdentity,
   upsertWorkspaceTab,
@@ -100,6 +96,7 @@ export async function reconnectRemoteWorkspaceHistoryEntry({
   logger,
   toast,
   shouldKeepReconnectedWorkspace,
+  readLiveWorkspaceOwner,
   onWorkspaceActivated,
   options,
 }: ManualReconnectRemoteWorkspaceParams): Promise<void> {
@@ -150,36 +147,13 @@ export async function reconnectRemoteWorkspaceHistoryEntry({
       // sibling 从此刻即可复用 initiator credential 创建 attachment，无需等待或重复读取凭据。
       options?.onSshHostReady?.(sshCredentials);
     }
-    resolvedWorkspacePath = await resolveRemoteWorkspaceCanonicalPath(
-      sessionId,
-      sessionEntry.workspacePath,
-    );
-    resolvedWorkspaceIdentity = buildRemoteWorkspaceIdentity(
-      resolvedWorkspacePath,
-      reconnectTarget,
-    );
-
-    if (
-      resolvedWorkspacePath !== sessionEntry.workspacePath ||
-      resolvedWorkspaceIdentity !== fallbackWorkspaceIdentity
-    ) {
-      // connect 只携带历史记录里的 path/identity，main 的 logical session descriptor 也停在这组值上；
-      // realpath 归一化后若结果不同，tab 会用新值而 descriptor 仍是旧值，
-      // 手机远控桥接按 tab 的 path/identity 比对 descriptor 时就会被 REMOTE_WORKSPACE_IDENTITY_MISMATCH 拒绝。
-      // 绑定失败说明 session 与 tab 无法对齐：回收 session 并走失败落库，不留下半连接 workspace。
-      // 这次 await 必须放在下方保留校验之前：校验与 upsertWorkspaceTab 之间不能再有异步间隙，
-      // 否则用户在 bind 等待 ready ACK 期间移除 tab，校验结果已过期，workspace 会被重新加回来。
-      try {
-        await bindRemoteWorkspaceSessionContext({
-          sessionId,
-          workspacePath: resolvedWorkspacePath,
-          workspaceIdentity: resolvedWorkspaceIdentity,
-        });
-      } catch (error) {
-        await disposeRemoteWorkspaceSession(sessionId);
-        throw error;
-      }
-    }
+    // 移植自上游 v3.18.0：重连沿用持久化路径与首次 bind 的 identity，已绑定路径不再做 realpath 归一化。
+    // Bug 原因（上游 3.17.1 用户反馈"设备已连接、会话打不开"）：重连过去先对持久化路径做 realpath，
+    // 项目根是 symlink 时（例如 /home/dev/projects/app → /data/projects/app）会得到另一个 identity，
+    // 下方保留校验按持久化 key 找不到对应 tab，刚连上的 session 被当作"已被移除"静默回收。
+    // 已绑定的 workspace 以首次 bind 的路径为身份：connect context 已携带持久化 path/identity，
+    // main 的 descriptor 与 tab、历史记录保持同一组值，这里不再重新推导 identity，也就无需再 bind 换代。
+    // 首次连接的选目录流程仍保留 realpath 归一化（见 resolveRemoteWorkspaceCanonicalPath 的注释）。
 
     // 手动重连过程中，用户可能先点重连再立即把该远端 tab 移除。
     // 如果这里不在成功落库前再做一次保留校验，会把用户刚移除的 workspace 又重新加回来。
@@ -192,6 +166,23 @@ export async function reconnectRemoteWorkspaceHistoryEntry({
     ) {
       logger.warn("[Root] 远程 workspace 在重连过程中已被移除，跳过恢复并回收 session", {
         workspacePath: resolvedWorkspacePath,
+      });
+      await disposeRemoteWorkspaceSession(sessionId);
+      return;
+    }
+    // 移植自上游 v3.18.0：写入 tab 前复核目录是否已有在线 owner，让出并回收本次连接。
+    // Bug 原因：入口只在发起前检查 tab 是否已有 owner；连接与 Provisioning 等待期间，侧栏导航可能已为
+    // 同一目录写入另一条 session，这里直接覆盖 tab，被替换的 session 无人回收。写入前按同一规则复核，
+    // 与项目打开路径的复用规则一致。
+    const liveOwner = readLiveWorkspaceOwner?.({
+      workspacePath: resolvedWorkspacePath,
+      workspaceIdentity: resolvedWorkspaceIdentity,
+    });
+    if (liveOwner && liveOwner !== sessionId) {
+      logger.warn("[Root] 远程 workspace 在重连过程中已有在线 owner，让出并回收 session", {
+        workspacePath: resolvedWorkspacePath,
+        sessionId,
+        liveOwner,
       });
       await disposeRemoteWorkspaceSession(sessionId);
       return;

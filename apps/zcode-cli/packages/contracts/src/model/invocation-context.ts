@@ -1,4 +1,6 @@
+import type { RequestVerificationReason } from "@zcode/shared";
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { ModelApiCallObservation } from "../telemetry/index.js";
 import type { TraceContext } from "../tracing/tracer.js";
 import type {
@@ -76,6 +78,20 @@ export interface ModelInvocationContext {
   streamIdleTimeoutRetryNumber?: number;
   streamRecovery?: ModelStreamRecoveryStatus;
   preserveProviderStreamBoundaries?: boolean;
+  refreshRuntimeHeadersBeforeAttempt?: (input: {
+    accountAccess?: ZCodeProviderAccountAccess;
+    expectedAccountScope?: string;
+    rejectedProjectTokenFingerprint?: string;
+    attempt: number;
+    reason?: RequestVerificationReason;
+    abortSignal?: AbortSignal;
+    providerId: string;
+    modelId: string;
+    traceContext?: TraceContext;
+  }) => Promise<{
+    headersApplied: boolean;
+    requestAuth?: ModelRequestAuth;
+  }>;
 }
 
 /** Adapter 为单个物理请求 attempt 使用的动态鉴权材料。 */

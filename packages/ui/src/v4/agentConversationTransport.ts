@@ -270,11 +270,21 @@ export function createAgentConversationTransport(
   };
   return {
     getSessionLifecycle(sessionId) {
-      // 合并修复：services 侧 IZCodeAgentService.getSessionLifecycle 未落地时返回 null 快照，
-      // 下游按「无生命周期事实」处理并回落常规订阅（与旧 CLI method-not-found 的上游语义一致）。
-      return (
-        agentService.getSessionLifecycle?.({ ...workspace, sessionId }) ?? Promise.resolve(null)
-      );
+      // Bug 原因：v3.18.0 合并只保留了 UI 侧调用，上游 services 侧实现（zcodeAgentService 的
+      // getSessionLifecycle，含 CLI method-not-found → null 回落）在合并中丢失。renderer 的
+      // agentService 是 rpc ProxyChannel.toService 代理（proxy-channel.ts），任意属性访问都
+      // 返回转发函数，`?.` 永不回落；host 缺该方法时调用抛 "Method not found"，
+      // conversationProjectionStore connect() 在订阅前 await 它失败 → status:"error"，
+      // 订阅根本不发起，历史会话打不开。
+      // 修复依据：对齐上游 services 侧的回落语义——只对 method-not-found 回落 null 快照
+      // （「Method not found: 」是本仓 rpc fromService 的固定措辞，错误经 channelServer 只保留
+      // message），下游按「无生命周期事实」继续常规订阅；断线等真实错误原样上抛不吞。
+      const request = agentService.getSessionLifecycle?.({ ...workspace, sessionId });
+      if (!request) return Promise.resolve(null);
+      return request.catch((error: unknown) => {
+        if (error instanceof Error && error.message.startsWith("Method not found: ")) return null;
+        throw error;
+      });
     },
     onSessionLifecycle(listener) {
       sessionLifecycleListeners.add(listener);

@@ -8,13 +8,13 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE, ZCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
+import { ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE, ZXCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
 import {
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-  ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  ZCODE_PLUGIN_ID_ENV_KEY,
-  ZCODE_RUNTIME_ENV_KEY,
+  ZXCODE_CUA_OFFICIAL_PLUGIN_ID,
+  ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+  ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  ZXCODE_PLUGIN_ID_ENV_KEY,
+  ZXCODE_RUNTIME_ENV_KEY,
   readZCodeToolEnvPassthroughEnv,
   resetCapturedZCodeCuaBrokerCredentialsForTest,
   sanitizeZCodeRuntimeEnvInPlace,
@@ -543,45 +543,6 @@ test("disables automatic Memory Extraction for headless prompts", async () => {
 
   assert.equal(exitCode, 0);
   assert.equal(ctx.stdout.output(), "hello Memory\n");
-});
-
-test("injects process provider endpoint routing into headless prompts", async () => {
-  const ctx = createContext(["--prompt", "route me"]);
-  const providerEndpointRoutingPort = {
-    async resolve(url: string) {
-      return { routed: false, url };
-    },
-  };
-  let routingFactoryCalls = 0;
-  const exitCode = await run(ctx, {
-    ...createPromptDeps(),
-    createProviderEndpointRoutingPort: (options) => {
-      routingFactoryCalls += 1;
-      assert.equal(options.workingDirectory, "/tmp/zcode-routing-headless");
-      return providerEndpointRoutingPort;
-    },
-    createZCodeApp: (options) => {
-      assert.equal(options?.providerEndpointRoutingPort, providerEndpointRoutingPort);
-      return {
-        close: async () => {},
-        runtime: {} as never,
-        sessionId: "session-routing-headless",
-        submitPrompt: async (prompt: string) => ({
-          events: [],
-          projection: fakeProjection as never,
-          response: prompt,
-          traceId: "trace-routing-headless" as never,
-          turnId: "turn-routing-headless" as never,
-        }),
-        traceId: "trace-routing-headless",
-      } as never;
-    },
-    cwd: () => "/tmp/zcode-routing-headless",
-  });
-
-  assert.equal(exitCode, 0);
-  assert.equal(routingFactoryCalls, 1);
-  assert.equal(ctx.stdout.output(), "route me\n");
 });
 
 test("borrows one process provider registry for a headless prompt and disposes it", async () => {
@@ -2465,53 +2426,9 @@ test("keeps shared telemetry alive across TUI session replacement and shuts it d
   assert.equal(telemetryShutdownCount, 1);
 });
 
-test("reuses provider endpoint routing when TUI replaces its active session", async () => {
-  const ctx = createContext(["tui"]);
-  const providerEndpointRoutingPort = {
-    async resolve(url: string) {
-      return { routed: false, url };
-    },
-  };
-  let routingFactoryCalls = 0;
-  let createdApps = 0;
-  const exitCode = await run(ctx, {
-    ...createPromptDeps(),
-    createProviderEndpointRoutingPort: () => {
-      routingFactoryCalls += 1;
-      return providerEndpointRoutingPort;
-    },
-    createZCodeApp: (options) => {
-      assert.equal(options?.providerEndpointRoutingPort, providerEndpointRoutingPort);
-      createdApps += 1;
-      return {
-        close: async () => {},
-        runtime: {} as never,
-        sessionId: `session-routing-tui-${createdApps}`,
-        submitPrompt: async (prompt: string) => ({
-          events: [],
-          projection: fakeProjection as never,
-          response: prompt,
-          traceId: `trace-routing-tui-${createdApps}` as never,
-          turnId: "turn-routing-tui" as never,
-        }),
-        traceId: `trace-routing-tui-${createdApps}`,
-      } as never;
-    },
-    runTui: async (options) => {
-      await options.submitPrompt("first", {
-        abortSignal: new AbortController().signal,
-      });
-      await options.submitPrompt("/new", {
-        abortSignal: new AbortController().signal,
-      });
-      return 0;
-    },
-  });
-
-  assert.equal(exitCode, 0);
-  assert.equal(createdApps, 2);
-  assert.equal(routingFactoryCalls, 1);
-});
+// 「reuses provider endpoint routing when TUI replaces its active session」用例已随
+// endpoint-routing-edition 域剔除删除（fork 剔除轮 d88237c7）：bootstrap 不再导出
+// createDefaultProviderEndpointRoutingPort，CLI 不再构造/透传路由端口。
 
 test("closes the active TUI app on process shutdown signals", async () => {
   const ctx = createContext(["tui"]);
@@ -4134,7 +4051,7 @@ test("official plugin host runs a seeded official plugin server main", async () 
   const pluginRoot = join(
     root,
     "cache",
-    ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+    ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
     "ios-simulator",
     "0.1.0",
   );
@@ -4147,7 +4064,7 @@ test("official plugin host runs a seeded official plugin server main", async () 
     await writeFile(
       join(pluginRoot, ".zcode-plugin-seed.json"),
       JSON.stringify({
-        marketplace: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        marketplace: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
         plugin: "ios-simulator",
         pluginVersion: "0.1.0",
         version: 1,
@@ -4164,7 +4081,7 @@ export async function main() {
     );
 
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([ZXCODE_PLUGIN_HOST_COMMAND, serverPath]);
     const exitCode = await run(ctx);
 
     assert.equal(exitCode, 0);
@@ -4191,9 +4108,9 @@ test("retired argv-based CUA host fails closed without the shared node_repl mark
     "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
     "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    ZXCODE_PLUGIN_ID_ENV_KEY,
+    ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4210,15 +4127,15 @@ export async function main() {
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env[ZXCODE_PLUGIN_ID_ENV_KEY] = ZXCODE_CUA_OFFICIAL_PLUGIN_ID;
     process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
-    assert.equal(process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
+    assert.equal(process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([ZXCODE_PLUGIN_HOST_COMMAND, serverPath]);
     const exitCode = await runPluginHostCommand(ctx, [
       serverPath,
       "--permission-broker-socket",
@@ -4250,9 +4167,9 @@ test("shared node_repl host restores the captured CUA broker credentials", async
     "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
     "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    ZXCODE_PLUGIN_ID_ENV_KEY,
+    ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4270,15 +4187,15 @@ export async function main() {
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
+    process.env[ZXCODE_PLUGIN_ID_ENV_KEY] = ZXCODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env[ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([ZXCODE_PLUGIN_HOST_COMMAND, serverPath]);
     assert.equal(await runPluginHostCommand(ctx, [serverPath]), 0);
     // identity 模式：恢复给宿主的只有 socket（配 authority），没有口令。环境里那个遗留
     // token 是历史键，sanitize 会连它一起剔除，因此宿主根本看不到它 —— 否则旧版 Helper
@@ -4314,9 +4231,9 @@ test("shared node_repl host launches with identity-mode credentials (socket + au
     "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
     "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    ZXCODE_PLUGIN_ID_ENV_KEY,
+    ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4334,15 +4251,15 @@ export async function main() {
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
+    process.env[ZXCODE_PLUGIN_ID_ENV_KEY] = ZXCODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env[ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
     delete process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN;
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([ZXCODE_PLUGIN_HOST_COMMAND, serverPath]);
     assert.equal(await runPluginHostCommand(ctx, [serverPath]), 0);
     assert.deepEqual(JSON.parse(await readFile(outputPath, "utf8")), {
       socket: "/tmp/cua-broker.sock",
@@ -4367,9 +4284,9 @@ test("plugin host refuses non-official code while product broker credentials are
     "ZXCODE_CUA_PERMISSION_BROKER_SOCKET",
     "ZXCODE_CUA_PERMISSION_BROKER_TOKEN",
     "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    ZXCODE_PLUGIN_ID_ENV_KEY,
+    ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    ZXCODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4384,16 +4301,16 @@ export async function main() {
 `,
     );
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = "zcode-cua@third-party";
+    process.env[ZXCODE_PLUGIN_ID_ENV_KEY] = "zcode-cua@third-party";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
     process.env.ZXCODE_CUA_PERMISSION_BROKER_TOKEN = "must-not-leak";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "captured-authority";
+    process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "captured-authority";
     resetCapturedZCodeCuaBrokerCredentialsForTest();
     sanitizeZCodeRuntimeEnvInPlace(process.env);
-    assert.equal(process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
+    assert.equal(process.env[ZXCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
 
     const ctx = createContext([
-      ZCODE_PLUGIN_HOST_COMMAND,
+      ZXCODE_PLUGIN_HOST_COMMAND,
       serverPath,
       "--permission-broker-socket",
       "/tmp/cua-broker.sock",
@@ -4434,7 +4351,7 @@ export async function main() {
     );
 
     process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath, "--", "hello"]);
+    const ctx = createContext([ZXCODE_PLUGIN_HOST_COMMAND, serverPath, "--", "hello"]);
     const exitCode = await run(ctx);
 
     assert.equal(exitCode, 0);
@@ -4471,7 +4388,7 @@ test("plugin host stays alive past the one-shot CLI watchdog deadline", async ()
 
     child = spawn(
       process.execPath,
-      ["--import", tsxLoaderPath, cliEntryPath, ZCODE_PLUGIN_HOST_COMMAND, serverPath],
+      ["--import", tsxLoaderPath, cliEntryPath, ZXCODE_PLUGIN_HOST_COMMAND, serverPath],
       {
         env: process.env,
         stdio: ["pipe", "pipe", "pipe"],
@@ -4543,7 +4460,7 @@ test("failed plugin host still exits when initialization leaves stdin active", a
 
     child = spawn(
       process.execPath,
-      ["--import", tsxLoaderPath, cliEntryPath, ZCODE_PLUGIN_HOST_COMMAND, serverPath],
+      ["--import", tsxLoaderPath, cliEntryPath, ZXCODE_PLUGIN_HOST_COMMAND, serverPath],
       {
         env: process.env,
         stdio: ["pipe", "pipe", "pipe"],
@@ -5904,7 +5821,7 @@ test("dispatches app-server stdio command to the ZCode Protocol runner without p
       assert.equal(options?.output, ctx.stdout);
       assert.equal(options?.version, "0.0.0");
       assert.equal(options?.presentationSurface, "terminal");
-      assert.equal(options?.env?.[ZCODE_RUNTIME_ENV_KEY], "production");
+      assert.equal(options?.env?.[ZXCODE_RUNTIME_ENV_KEY], "production");
     },
   });
 
@@ -5981,7 +5898,7 @@ test("loads dotenv for app-server only in development runtime", async () => {
   const exitCode = await run(ctx, {
     cwd: () => "/workspace",
     env: {
-      [ZCODE_RUNTIME_ENV_KEY]: "development",
+      [ZXCODE_RUNTIME_ENV_KEY]: "development",
     },
     loadDotenv: (options) => {
       dotenvCalls += 1;
@@ -5998,7 +5915,7 @@ test("loads dotenv for app-server only in development runtime", async () => {
     runZCodeProtocolAgent: async (options) => {
       called = true;
       assert.equal(options?.cwd, "/workspace");
-      assert.equal(options?.env?.[ZCODE_RUNTIME_ENV_KEY], "development");
+      assert.equal(options?.env?.[ZXCODE_RUNTIME_ENV_KEY], "development");
       assert.equal(options?.env?.ZCODE_API_KEY, "loaded-for-dev-protocol");
     },
   });

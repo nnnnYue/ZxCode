@@ -66,7 +66,9 @@ describe("subagent initialization source", () => {
       const configPath = join(root, "config.json");
       const logDir = join(root, "logs");
       const invalidDocument = {
-        path: join(workspace, ".zcode", "agents", "invalid.md"),
+        // fork rebrand：CLI 独立 loader 的项目级扫描目录是 .zxcode/agents（src/subagents.ts:57），
+        // 上游仍读 .zcode/agents；fixture 必须跟随 fork 实现，否则 invalid.md 永远不被扫描。
+        path: join(workspace, ".zxcode", "agents", "invalid.md"),
         source: "project" as const,
         content: "This document intentionally lacks frontmatter",
       };
@@ -119,7 +121,7 @@ describe("subagent initialization source", () => {
       let creating: ReturnType<typeof createRegistryBackedTestApp> | undefined;
       try {
         await mkdir(join(storage, "agents"), { recursive: true });
-        await mkdir(join(workspace, ".zcode", "agents"), { recursive: true });
+        await mkdir(join(workspace, ".zxcode", "agents"), { recursive: true });
         if (source === "files") await writeFile(invalidDocument.path, invalidDocument.content);
         await writeFile(
           configPath,
@@ -129,8 +131,11 @@ describe("subagent initialization source", () => {
         creating = createRegistryBackedTestApp({
           loggerFactory: createNodeLoggerFactory({ logDir }),
           env: {
-            ZCODE_STORAGE_DIR: storage,
-            ZCODE_SESSION_DB_PATH: join(storage, "cli", "db", "db.sqlite"),
+            // fork rebrand：env-config.adapter 的 DEFAULT_PREFIX 是 ZXCODE_（上游为 ZCODE_），
+            // 旧前缀会被静默忽略，storage 回落 config.json 的 unused-storage，
+            // 导致 cli/agents 输出根与会话库路径断言全部落空。
+            ZXCODE_STORAGE_DIR: storage,
+            ZXCODE_SESSION_DB_PATH: join(storage, "cli", "db", "db.sqlite"),
           },
           userConfigPath: configPath,
           runtimeConfig: {

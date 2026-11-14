@@ -6,10 +6,8 @@ import type {
   ManagedCdpBrowserRuntimeOptions,
 } from "@zcode/adapters/browser";
 import type {
-  createDefaultProviderEndpointRoutingPort,
   createModelAdapter,
   createZCodeApp,
-  CreateDefaultProviderEndpointRoutingPortOptions,
   CreateModelAdapterOptions,
   inspectZCodeSkill,
   inspectWorkspaceHookTrust,
@@ -48,9 +46,12 @@ export interface RunDependencies extends PluginsCommandOverrides {
   createModelAdapter?: (
     options?: CreateModelAdapterOptions,
   ) => ReturnType<typeof createModelAdapter>;
-  createProviderEndpointRoutingPort?: (
-    options: CreateDefaultProviderEndpointRoutingPortOptions,
-  ) => ReturnType<typeof createDefaultProviderEndpointRoutingPort>;
+  // createProviderEndpointRoutingPort 注入点已随 endpoint 路由域剔除删除：
+  // fork 剔除轮（d88237c7）删除了 bootstrap 的 provider-endpoint-routing.ts 与
+  // adapters 的 endpoint-routing-edition（账号请求安全子系统），bootstrap 不再导出
+  // createDefaultProviderEndpointRoutingPort，全仓也无 ProviderEndpointRoutingPort
+  // 实现方；cli 侧保留接线只会引用不存在的导出。ZCodeAppOptions 上该可选字段
+  // 由宿主按需注入，CLI 不再构造。
   createZCodeApp?: (
     options?: ZCodeAppOptions,
   ) => Awaited<ReturnType<typeof createZCodeApp>> | ReturnType<typeof createZCodeApp>;

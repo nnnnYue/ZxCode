@@ -44,6 +44,11 @@ const enUS: Record<string, string> = {
   "archives.keepFork": "Independent fork: “{title}” (may contain original conversation content)",
   "archives.keepAttachment": "Attachment {name}: referenced by {referrers}; file will be kept",
   "archives.previousReference": "previously confirmed conversations",
+  // v3.18.0 merge dropped these archives keys while useArchiveManagement.ts still
+  // references them in the willKeep section; restored verbatim from upstream b95ebaff.
+  "archives.keepShares": "Published share links and shared copies remain unchanged and accessible.",
+  "archives.keepExternal":
+    "Workspace files, Git/worktrees, directory-level memory and checkpoints, exports, backups and application logs are outside this deletion.",
   "archives.resumeDeletion": "“{title}”: finish the previous permanent deletion",
   "archives.incomplete":
     "Deletion has not been confirmed complete. Retry; removed content cannot be restored.",

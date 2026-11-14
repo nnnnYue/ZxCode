@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { modelConfigDataSchema } from "@zcode/shared/model-config";
-import { providerConfigDataSchema } from "./provider-data-schema.js";
+import { providerConfigDataSchema, zhipuAccountAccessDataSchema } from "./provider-data-schema.js";
 import { ModelConfig, ModelConfigRules } from "./model-config.js";
 import {
   ApiKeyAccessConfig,
@@ -9,6 +9,7 @@ import {
   ProviderConfigMap,
   ProviderTemplate,
   ProviderTemplateMap,
+  ZhipuAccountAccessConfig,
 } from "./provider-config.js";
 import {
   builtinModelConfigRulesSchema,
@@ -22,8 +23,11 @@ import {
   type ProviderTemplateConfigRuleData,
 } from "./rule-data-schema.js";
 
-// 账号型（zhipu-account）Provider 已下线；Account Overlay 仅余历史字段面（无 access）。
-const accountProviderConfigSchema = providerConfigDataSchema.pick({ builtinModelIds: true });
+const accountProviderConfigSchema = providerConfigDataSchema
+  .pick({ builtinModelIds: true })
+  .extend({
+    access: zhipuAccountAccessDataSchema.pick({ type: true, entitled: true }).nullable().optional(),
+  });
 
 export function parseProviderConfigMap(input: unknown): ProviderConfigMap {
   return createProviderRules(z.array(providerConfigRuleSchema).parse(input));
@@ -141,7 +145,12 @@ function createTemplateRules(
 function createProviderConfig(config: z.infer<typeof providerConfigDataSchema>): ProviderConfig {
   return new ProviderConfig({
     ...config,
-    access: config.access == null ? config.access : new ApiKeyAccessConfig(config.access),
+    access:
+      config.access == null
+        ? config.access
+        : config.access.type !== "zhipu-account"
+          ? new ApiKeyAccessConfig(config.access)
+          : new ZhipuAccountAccessConfig(config.access),
     api: config.api == null ? config.api : new ProviderApiConfig(config.api),
   });
 }

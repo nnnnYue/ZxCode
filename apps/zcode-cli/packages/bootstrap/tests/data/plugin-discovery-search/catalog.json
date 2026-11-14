@@ -851,19 +851,6 @@
       "descriptionI18n": {
         "zh-CN": "自动化桌面应用：智能体驱动鼠标、键盘与界面元素，代你完成实际任务。"
       }
-    },
-    {
-      "name": "zcode-site",
-      "displayName": "ZCode Sites",
-      "category": "productivity",
-      "description": "Publish new or throwaway web projects to ZCode Sites for a quick preview or share link, and manage the site.",
-      "displayNameI18n": {
-        "zh-CN": "ZCode Sites"
-      },
-      "descriptionI18n": {
-        "zh-CN": "把 Web 项目改造为可在云端 Linux 运行的部署包，一个 start.sh 即可启动。"
-      },
-      "examplePrompts": ["Deploy this project as a website", "把这个项目部署成网站"]
     }
   ]
 }

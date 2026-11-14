@@ -116,6 +116,7 @@ export type {
   Logger,
   AttachmentStorageMetadata,
   AutomationPort,
+  OffPeakPort,
   TopicResourcePort,
   BackgroundExecutionSnapshot,
   BackgroundTaskCancelResult,
@@ -323,11 +324,6 @@ export {
 } from "../subagent/index.js";
 export type { AgentProfile, ExploreSubagentRuntimeRequest } from "../subagent/index.js";
 export { registerMcpTools } from "../mcp/index.js";
-
 export type { PluginDiscoveryPort } from "@zcode/contracts";
-
-/** fork：off-peak 域已剔除；保留类型占位兼容 types.ts 引用。 */
-export interface OffPeakPort {
-  /** no-op：off-peak 域已删除 */
-  readonly _removed: unique symbol;
-}
+// OffPeakPort 不再本地占位：v3.18.0 合并已采纳 off-peak 域，端口类型由 @zcode/contracts
+// 的 off-peak.port.js 提供（contracts barrel 已补 re-export），fork 旧 stub 随之退役。

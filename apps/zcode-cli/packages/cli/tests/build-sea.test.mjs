@@ -60,7 +60,9 @@ import {
 } from "../scripts/sea-playwright-assets.mjs";
 import {
   collectSeaProviderConfigAssets,
-  SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
+  // rebrand 劈叉修复：脚本导出的是 SEA_ZXCODE_*（资产键 zxcode-provider/zxcode-builtin.json），
+  // 测试此前 import 的 SEA_ZCODE_* 不存在，导致本测试文件 import 期即挂。
+  SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
 } from "../scripts/sea-provider-config-assets.mjs";
 
 const PE_FIXTURE_OFFSET = 0x80;
@@ -85,8 +87,10 @@ const DOS_MAGIC = 0x5a4d;
 
 test("includes the production ZCode Built-in Provider Config as a SEA asset", async () => {
   const root = fileURLToPath(new URL("../../../../..", import.meta.url));
-  const assets = await collectSeaProviderConfigAssets({ root, env: { ZCODE_ENV: "production" } });
-  const zcodeBuiltinFilePath = assets[SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY];
+  // 同一处 rebrand 劈叉：builtin-provider-config.mjs 只认 ZXCODE_ENV，传 ZCODE_ENV 会被
+  // 静默忽略并回退到 "test" 环境，断言就比错了配置文件。
+  const assets = await collectSeaProviderConfigAssets({ root, env: { ZXCODE_ENV: "production" } });
+  const zcodeBuiltinFilePath = assets[SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY];
 
   assert.ok(zcodeBuiltinFilePath);
   assert.deepEqual(
@@ -877,14 +881,6 @@ test("allows skill-only official plugins when SEA runtime assets are required", 
       "packages/zcode-guide-plugin/skills/zcode-configuration-guide/SKILL.md",
       "",
     );
-    await writeTestFile(root, "packages/zcode-site-plugin/.zcode-plugin/plugin.json", "{}");
-    await writeTestFile(root, "packages/zcode-site-plugin/scripts/zcode-site.mjs", "");
-    await writeTestFile(root, "packages/zcode-site-plugin/skills/site-deploy/SKILL.md", "");
-    await writeTestFile(root, "packages/zcode-site-plugin/scripts/stage.mjs", "");
-    await writeTestFile(root, "packages/zcode-site-plugin/scripts/errors.mjs", "");
-    // 0.4.0 起带 Sites 面板：插件自己构建的 server 与面板页面是必需运行时产物。
-    await writeTestFile(root, "packages/zcode-site-plugin/dist/server.mjs", "");
-    await writeTestFile(root, "packages/zcode-site-plugin/dist/ui/panel.html", "");
     // design 是带 hook 的纯内容型插件：requiresRuntime:false，只需 seed 必需文件。
     const designPlugin = officialSeaPlugins.find((plugin) => plugin.name === "design");
     await writeTestFile(root, "packages/design-plugin/.zcode-plugin/plugin.json", "{}");

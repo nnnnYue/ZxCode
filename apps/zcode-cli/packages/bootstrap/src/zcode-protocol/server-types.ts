@@ -12,6 +12,8 @@ import {
   type TraceContext,
 } from "@zcode/contracts";
 import type { McpTelemetryTracker } from "@zcode/adapters";
+// 恢复上游 permanent-deletion 域：会话/记忆数据文件端口由宿主（entrypoint）注入。
+import type { SessionDataFilesPort } from "@zcode/adapters/storage";
 import type { WorkspaceHookPolicyProvider } from "@zcode/core";
 import {
   zcodeProtocolErrorCodes,
@@ -62,6 +64,8 @@ export interface ZCodeProtocolAgentDependencies {
   /** 兼容旧测试/嵌入调用；新代码应通过 sessionResidentPoolOptions 设置 low-water。 */
   sessionResidentTargetCount?: number;
   sessionStore?: SessionStorePort;
+  /** 会话与目录在 CLI 存储根下的文件；只用于「删除项目数据」的测量与删除。 */
+  sessionDataFiles?: SessionDataFilesPort;
   version?: string;
   /** 受信 Host 管理的 Hook policy；workspace/project 配置不得覆盖。 */
   workspaceHookPolicyProvider?: WorkspaceHookPolicyProvider;

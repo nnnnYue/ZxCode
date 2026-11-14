@@ -65,16 +65,26 @@ export const mainToExtensionWindowMessageSchema = z.discriminatedUnion("type", [
 export type MainToExtensionWindowMessage = z.infer<typeof mainToExtensionWindowMessageSchema>;
 
 // —— Window Host → Main ——
+// 拆出具名成员导出：hostResponseMessageSchema（validation.ts）需把这三条消息纳入
+// host → main 联合校验面（BroadcastHub / taskRealtimeBus 对同一 parentPort 消息流做
+// 全量校验），复用本处定义作为唯一权威形状，避免双校验面漂移。
+/** Window Host 的服务已就绪，可以牵线。 */
+export const extensionWindowReadyMessageSchema = z.strictObject({
+  type: z.literal("extension-host/window-ready"),
+});
+/** 重新加载：Main 清零崩溃预算并重启。不经过扩展进程，卡死或已停止时也能用。 */
+export const extensionWindowReloadMessageSchema = z.strictObject({
+  type: z.literal("extension-host/reload"),
+});
+/** 日志快照请求（§16.8）：Main 收到即回 logs-snapshot，Window Host 不留副本。 */
+export const extensionWindowLogsRequestMessageSchema = z.strictObject({
+  type: z.literal("extension-host/logs-request"),
+  requestId: z.string().min(1),
+  ...getExtensionLogsInputSchema.shape,
+});
 export const extensionWindowToMainMessageSchema = z.discriminatedUnion("type", [
-  // Window Host 的服务已就绪，可以牵线。
-  z.strictObject({ type: z.literal("extension-host/window-ready") }),
-  // 重新加载：Main 清零崩溃预算并重启。不经过扩展进程，卡死或已停止时也能用。
-  z.strictObject({ type: z.literal("extension-host/reload") }),
-  // 日志快照请求（§16.8）：Main 收到即回 logs-snapshot，Window Host 不留副本。
-  z.strictObject({
-    type: z.literal("extension-host/logs-request"),
-    requestId: z.string().min(1),
-    ...getExtensionLogsInputSchema.shape,
-  }),
+  extensionWindowReadyMessageSchema,
+  extensionWindowReloadMessageSchema,
+  extensionWindowLogsRequestMessageSchema,
 ]);
 export type ExtensionWindowToMainMessage = z.infer<typeof extensionWindowToMainMessageSchema>;

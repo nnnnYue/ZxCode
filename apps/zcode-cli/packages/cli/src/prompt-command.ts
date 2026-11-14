@@ -1,5 +1,6 @@
 import { extname } from "node:path";
 import { formatJson, type PresentationSurface } from "@zcode/core";
+import type { ToolSearchMode } from "@zcode/contracts";
 import type { RunContext, GlobalOptions } from "@zcode/shared-types";
 import { loadBootstrapModule } from "./bootstrap-loader.js";
 import {
@@ -76,6 +77,11 @@ export const runPrompt = async (
   resumeRequest: CliResumeRequest = { continueSession: false },
   toolDisallowlist?: readonly string[],
   forceMcs = false,
+  // v3.17.x 合并劈叉修复：run.ts 一直按 13 参传入 --toolsearch-mode（解析与作用域
+  // 校验都在 run.ts 保留），而本函数在收口轮丢了这个形参导致 TS2554。按上游
+  // b95ebaff 的签名补回，toolSearch 透传进 runtimeConfig（core AgentRuntimeConfig
+  // 支持，TUI 路径 tui-prompt-handler.ts 同款接线）。
+  toolsearchMode: ToolSearchMode = "off",
   presentationSurface: PresentationSurface = "terminal",
   workflowMode: DynamicWorkflowMode = DEFAULT_CLI_WORKFLOW_MODE,
 ): Promise<number> => {
@@ -198,14 +204,10 @@ export const runPrompt = async (
             },
           },
     );
-    const createProviderEndpointRoutingPort =
-      deps.createProviderEndpointRoutingPort ??
-      bootstrapModule?.createDefaultProviderEndpointRoutingPort;
-    const providerEndpointRoutingPort = createProviderEndpointRoutingPort?.({
-      appVersion: version,
-      env,
-      workingDirectory,
-    });
+    // endpoint 路由端口构造已随 endpoint-routing-edition 域剔除删除（fork 剔除轮
+    // d88237c7 删掉 bootstrap/provider-endpoint-routing.ts，bootstrap 不再导出
+    // createDefaultProviderEndpointRoutingPort，全仓无 ProviderEndpointRoutingPort
+    // 实现方）；宿主仍可经 ZCodeAppOptions.providerEndpointRoutingPort 注入。
     browserRuntime = createCliHeadlessBrowserRuntime(options, deps);
     app = await createApp({
       modelSelectionMode: "cli-default",
@@ -217,13 +219,13 @@ export const runPrompt = async (
       // 这个最小 broker 只按工具名放行 CreateWorkflow，其余工具委托回同一个 deny
       // broker，语义逐字不变。详见 headless-workflow.ts 的注释。
       permissionBroker: createHeadlessPermissionBroker(),
-      ...(providerEndpointRoutingPort ? { providerEndpointRoutingPort } : {}),
       providerRegistry: providerRegistryRuntime.runtime.registryService,
       configuredDefaultModelSelection: providerRegistryRuntime.configuredDefaultModelSelection,
       resume: sessionId !== undefined,
       runtimeConfig: {
         ...(mode ? { mode } : {}),
         ...(toolDisallowlist ? { toolDisallowlist } : {}),
+        toolSearch: { mode: toolsearchMode },
         ...(forceMcs ? { midConversationSystem: { mode: "force" as const } } : {}),
         ...resolveWorkflowModeRuntimeConfig(workflowMode),
         memory: { extractionEnabled: options.memoryBench === true },

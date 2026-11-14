@@ -24,6 +24,7 @@ import {
   type SubAgentConfig,
   type SubagentsListMode,
   type ZCodeProvider,
+  resolveWorkspaceKey,
 } from "@zcode/shared";
 import { normalizeSubagentModelSelection } from "./subagentModelSelection.js";
 import { serializeSubagentMarkdown, parseSubagentMarkdown } from "./subagentMarkdown.js";
@@ -561,6 +562,15 @@ export function createSubagentsService(options?: SubagentsServiceOptions): ISuba
     workspacePath: string;
     workspaceIdentity?: string;
   }): Promise<void>;
+  /**
+   * 读时补 prepare（per-key 去重）：subagentsReadRuntimeConfig 读快照前的唯一前置。
+   * 同 key 幂等（已完成短路 + in-flight 并发合并），首次对某 key 调用时经 prepareRuntimeState
+   * 走同一 writeQueue；key 口径与缓存 key() 一致（resolveWorkspaceKey）。
+   */
+  ensureRuntimeStatePrepared(workspace: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }): Promise<void>;
   readRuntimeConfig(workspace: {
     workspacePath: string;
     workspaceIdentity?: string;
@@ -592,10 +602,20 @@ export function createSubagentsService(options?: SubagentsServiceOptions): ISuba
       return run();
     });
   }
+  // 读时补 prepare 的记账（唯一所有者，只在这一处挡）：
+  // 缓存 prepare 对已注册 key 会 reload=true 全量重建（dispose/重建 watcher + 重读），
+  // 不是幂等操作；读路径高频触发，必须 per-key 去重。ready set 短路已完成的 key，
+  // in-flight map 合并同 key 并发；失败不记账，下次读按 fail-closed 语义重试并原样上抛。
+  // key 口径用 resolveWorkspaceKey，与缓存 key()（workspaceIdentity?.trim() || workspacePath）完全一致，
+  // 不引入第三种 key 口径。
+  const ensuredRuntimeKeys = new Set<string>();
+  const ensureRuntimeInFlight = new Map<string, Promise<void>>();
   const service = {
     readRuntimeConfig: runtimeConfig.read,
     disposeAll() {
       disposed = true;
+      ensuredRuntimeKeys.clear();
+      ensureRuntimeInFlight.clear();
       runtimeConfig.dispose();
     },
     async prepareRuntimeState(workspace?: { workspacePath: string; workspaceIdentity?: string }) {
@@ -608,6 +628,27 @@ export function createSubagentsService(options?: SubagentsServiceOptions): ISuba
         // state 的迁移由缓存读取入口统一执行，IO 失败同样发布回退，不能提前阻断 CLI 启动。
         await runtimeConfig.prepare(workspace);
       });
+    },
+    async ensureRuntimeStatePrepared(workspace: {
+      workspacePath: string;
+      workspaceIdentity?: string;
+    }) {
+      const key = resolveWorkspaceKey(workspace);
+      const inFlight = ensureRuntimeInFlight.get(key);
+      if (inFlight) return inFlight;
+      if (ensuredRuntimeKeys.has(key)) return;
+      // 经 this.prepareRuntimeState 走同一 writeQueue，与显式重启的重建串行化，避免并发
+      // prepare 交叉改写缓存 scope；显式调用 prepareRuntimeState 不受本记账影响，
+      // 其 reload 重建完成后 key 依旧视为已准备。
+      const flight = this.prepareRuntimeState(workspace)
+        .then(() => {
+          ensuredRuntimeKeys.add(key);
+        })
+        .finally(() => {
+          ensureRuntimeInFlight.delete(key);
+        });
+      ensureRuntimeInFlight.set(key, flight);
+      return flight;
     },
 
     async list(params: {

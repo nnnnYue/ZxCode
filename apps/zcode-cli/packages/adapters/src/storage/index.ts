@@ -22,6 +22,9 @@ import type {
 import { maybeThrowStorageFsFault } from "./fs-fault-injection.js";
 
 export * from "./session-store.js";
+// 恢复上游 session-data-files 适配器：会话/记忆数据文件的测量与删除端口，
+// 供 v4/storage/sessionData/*（项目数据彻底删除）执行面使用。
+export * from "./session-data-files/index.js";
 
 // 内存 event store 实现已下沉到 @zcode/contracts，
 // 这里保持 `@zcode/adapters/storage` 的导出路径不变，避免调用方改 import。

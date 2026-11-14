@@ -28,6 +28,8 @@ const zhCN: Record<string, string> = {
   "preview.image.copied": "图片已复制",
   "preview.image.copyFailed": "复制图片失败，请检查剪贴板权限后重试。",
   "archives.nav": "归档管理",
+  // v3.18.0 合并时遗漏：en-US 与上游 b95ebaff 的 zh-CN 均有此 key，删除预检确认键文案依赖它。
+  "archives.checking": "正在检查…",
   "archives.checkingProgress": "正在检查 {completed}/{total} 个会话…",
   "archives.checkingDescription": "检查期间不会删除任何内容。可随时取消，停止后续检查。",
   "archives.deleteCount": "永久删除 {count} 个会话",
@@ -40,6 +42,11 @@ const zhCN: Record<string, string> = {
   "archives.keepFork": "独立分叉：“{title}”（可能含有原对话内容）",
   "archives.keepAttachment": "附件 {name}：被 {referrers} 引用，保留文件",
   "archives.previousReference": "此前确认的其他会话",
+  // v3.18.0 合并丢失的 archives 域 key（消费方 useArchiveManagement.ts 的 willKeep 区在用），
+  // 按上游 b95ebaff 原文恢复；若分享域整体剔除拍板后可随 willKeep 引用一并清理。
+  "archives.keepShares": "已发布的分享链接及分享副本保持不变，链接仍可访问。",
+  "archives.keepExternal":
+    "工作区文件、Git/worktree、目录级记忆与检查点、导出副本、备份和应用日志不在删除范围内。",
   "archives.resumeDeletion": "“{title}”：继续上次未完成的永久删除",
   "archives.incomplete": "删除尚未确认完成，请重试；已删除的内容无法恢复。",
   "archives.reason.running": "任务仍在运行或有待处理输入，请先停止任务并处理队列。",

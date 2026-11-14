@@ -144,6 +144,14 @@ import {
   getSessionLifecycle,
   shutdownSessionRuntime,
 } from "./session-residency.js";
+// 恢复上游 permanent-deletion 域：项目数据彻底删除（measure/purge）与归档永久删除
+// （deletionPreview/deletionExecute）的 CLI 执行面。
+import {
+  measureSessionData,
+  purgeSessionData,
+  previewSessionDeletion,
+  executeSessionDeletion,
+} from "./session-data/index.js";
 import {
   DEFAULT_SESSION_RESIDENT_HIGH_WATER_COUNT,
   SessionResidentPool,
@@ -768,6 +776,15 @@ export class ZCodeProtocolAgentServer {
         return await getTaskTokenUsage(this.context, request.params);
       case V4_METHODS.conversationContextComposition:
         return await getConversationContextComposition(this.context, request.params);
+      // 项目数据彻底删除：不经 v4Gateway 会话投影，直接操作本进程的 store 与会话注册表。
+      case V4_METHODS.sessionDeletionPreview:
+        return previewSessionDeletion(this.context, request.params);
+      case V4_METHODS.sessionDeletionExecute:
+        return executeSessionDeletion(this.context, request.params);
+      case V4_METHODS.sessionDataMeasure:
+        return await measureSessionData(this.context, request.params);
+      case V4_METHODS.sessionDataPurge:
+        return await purgeSessionData(this.context, request.params);
       case V4_METHODS.command:
         return this.requireV4Gateway().handleCommand(request.params);
       case V4_METHODS.commandsQuery:

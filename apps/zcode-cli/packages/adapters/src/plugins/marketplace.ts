@@ -189,7 +189,7 @@ export function buildMarketplaceGitEnv(
 ): Record<string, string> {
   const env = sanitizeZCodeRuntimeEnv(sourceEnv);
   // marketplace 安装会启动 Git 子进程，不能只依赖父进程继承的 shell 代理。
-  // 这里统一从 ZxCode 显式网络环境恢复 HTTP(S)/NO_PROXY/CA，避免安装按钮卡到协议超时。
+  // 这里统一从 ZCode 显式网络环境恢复 HTTP(S)/NO_PROXY/CA，避免安装按钮卡到协议超时。
   return applyNetworkEgressEnv(env, { sourceEnv });
 }
 
@@ -747,7 +747,7 @@ export async function uninstallMarketplacePlugin(input: {
   pluginId: string;
   storageRoot: string;
   removeCache?: boolean;
-  /** `zxcode plugins uninstall --keep-data`：删安装缓存但保留 data/<plugin-id> 用户数据目录。 */
+  /** `zcode plugins uninstall --keep-data`：删安装缓存但保留 data/<plugin-id> 用户数据目录。 */
   keepData?: boolean;
 }): Promise<InstalledPluginRecord | null> {
   const state = loadInstalledPluginsSync(input.storageRoot);
@@ -1525,7 +1525,7 @@ async function clonePluginSource(
   sha?: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zxcode-plugin-src-"));
+  const dir = await mkdtemp(join(tmpdir(), "zcode-plugin-src-"));
   const args = ["clone"];
   if (!sha) args.push("--depth", "1");
   if (ref) args.push("--branch", ref);
@@ -1762,7 +1762,7 @@ async function cloneMarketplaceSource(
   sparsePaths: string[] | undefined,
   signal?: AbortSignal,
 ): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "zxcode-marketplace-src-"));
+  const dir = await mkdtemp(join(tmpdir(), "zcode-marketplace-src-"));
   const args = ["clone", "--depth", "1"];
   if (ref) args.push("--branch", ref);
   if (sparsePaths?.length) args.push("--filter=blob:none", "--sparse");
@@ -2404,7 +2404,7 @@ function pushManifestCompatibilityDiagnostics(input: {
     if (key in input.manifest) {
       input.diagnostics.push({
         code: "plugin_unsupported_component",
-        message: `Plugin component is diagnostic-only in this ZxCode runtime: ${key}`,
+        message: `Plugin component is diagnostic-only in this ZCode runtime: ${key}`,
         path: input.manifestPath,
         pluginId: input.pluginId,
         severity: "warning",

@@ -48,12 +48,12 @@ export interface McpAuthorizationCodeOAuthConfig {
 export type McpOAuthConfig = McpAuthorizationCodeOAuthConfig | McpClientCredentialsOAuthConfig;
 
 /**
- * ZxCode 官方 Server MCP 的鉴权声明。
+ * ZCode 官方 Server MCP 的鉴权声明。
  * 允许出现在 `type: "http"` 与 `type: "stdio"`；`sse` 仍拒。
  * `type`/`provider` 均为精确值，不接受别名或大小写变体。
  *
- * 注意：该字段本身**不构成**官方身份证明。官方身份由运行时解析的 ZxCode API origin 判定
- * （host 侧还会二次校验）；第三方 Plugin 复制该字段只能让凭证流向真实 ZxCode 后端。
+ * 注意：该字段本身**不构成**官方身份证明。官方身份由运行时解析的 ZCode API origin 判定
+ * （host 侧还会二次校验）；第三方 Plugin 复制该字段只能让凭证流向真实 ZCode 后端。
  *
  * 两种形态的凭证投递通道不同：
  * - http：宿主在 fetch wrapper 里逐请求注入身份头，凭证从不进入插件进程；
@@ -139,10 +139,10 @@ export interface McpToolAnnotations {
   openWorldHint?: boolean;
 }
 
-export const ZXCODE_MCP_ERROR_PRESENTATION_META_KEY = "zcode/errorPresentation";
-export const ZXCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY = "message-only";
+export const ZCODE_MCP_ERROR_PRESENTATION_META_KEY = "zcode/errorPresentation";
+export const ZCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY = "message-only";
 /** MCP content 中来自模型显式 tab.screenshot() 的 image block 索引。 */
-export const ZXCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY =
+export const ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY =
   "zcode/browserScreenshotContentIndices";
 /**
  * 本次 node_repl cell 操作的目标应用身份，供工具卡显示 App 图标。
@@ -151,9 +151,19 @@ export const ZXCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY =
  * `zcode.cua/app-associations-v1`，投影成这里的最小形态。producer 那个键本身经
  * `nodeRepl.setResponseMeta` / `nodeRepl.emitStructuredResult` 也能到达 `_meta`，而这两个
  * API 挂在模型可见的 sandbox globals 上，因此不可信、必须在宿主侧丢弃（同
- * `ZXCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY` 的处置）。
+ * `ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY` 的处置）。
  */
-export const ZXCODE_MCP_NODE_REPL_CUA_APP_META_KEY = "zcode/nodeReplCuaApp";
+export const ZCODE_MCP_NODE_REPL_CUA_APP_META_KEY = "zcode/nodeReplCuaApp";
+
+// fork 命名别名（node-repl-host 用 ZXCODE_ 前缀引用上游 ZCODE_ 常量；wire 值不变）。
+export {
+  ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY as ZXCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY,
+  ZCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY as ZXCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
+  ZCODE_MCP_ERROR_PRESENTATION_META_KEY as ZXCODE_MCP_ERROR_PRESENTATION_META_KEY,
+  ZCODE_MCP_NODE_REPL_CUA_APP_META_KEY as ZXCODE_MCP_NODE_REPL_CUA_APP_META_KEY,
+  ZCODE_MCP_NODE_REPL_BROWSER_USE_META_KEY as ZXCODE_MCP_NODE_REPL_BROWSER_USE_META_KEY,
+  ZCODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY as ZXCODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY,
+};
 /**
  * 本次 node_repl cell 调用过浏览器运行时（list/execute 请求到达主线程的浏览器代理 broker，不论成败），
  * 值为 `true`。会话能力标签 `browser_use` 据此派生（docs/design/v2/model/session-features-header.md）。
@@ -174,9 +184,9 @@ export const ZCODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY = "zcode/nodeReplComputer
 /**
  * 官方 Server MCP 响应头里的 `x-request-id`，附在失败的 tool result 上（值为 string）。
  *
- * 用短前缀 `zcode/` 而不是 `com.zxcode/`：这不是跨语言协议——服务端在 header 里给，客户端
- * 读到后自己搬进 `_meta`，产出与消费都在客户端（`com.zxcode/` 留给 Go 侧直接产出的键，
- * 如 `com.zxcode/mcp-unavailable`）。
+ * 用短前缀 `zcode/` 而不是 `com.zcode/`：这不是跨语言协议——服务端在 header 里给，客户端
+ * 读到后自己搬进 `_meta`，产出与消费都在客户端（`com.zcode/` 留给 Go 侧直接产出的键，
+ * 如 `com.zcode/mcp-unavailable`）。
  *
  * 只在 `isError` 时附加：这是给人看的排障线索（拿它去查服务端日志），成功路径上是纯噪声。
  */
@@ -199,8 +209,8 @@ export interface McpToolDescriptor {
    *
    * 唯一用途是信任结果里的结构化标识（额度耗尽 / 无套餐的 `error_code`）。判据是"结果由谁产出"
    * 而不是"插件是谁"：
-   * - http：响应来自 ZxCode 后端。连接存活即意味着每个请求都过了 origin 校验且 fail closed，
-   *   第三方插件即使声明官方鉴权，也只能把请求打到真实 ZxCode，响应体不由它写；
+   * - http：响应来自 ZCode 后端。连接存活即意味着每个请求都过了 origin 校验且 fail closed，
+   *   第三方插件即使声明官方鉴权，也只能把请求打到真实 ZCode，响应体不由它写；
    * - stdio：结果由插件进程自己产出、可任意伪造，因此**不置位**。
    *
    * 刻意**不**按"插件是否来自官方 marketplace"判定：那会让非官方安装源（含本地自测与
@@ -386,6 +396,43 @@ export const MCP_TOOL_META_TIMEOUT_MAX_MS = 30 * 60 * 1_000;
  */
 export type OfficialMcpAuthFailureReason = OfficialMcpAuthPortFailureReason;
 
+export type OfficialMcpAuthHeadersResult =
+  | { ok: true; headers: Record<string, string> }
+  | { ok: false; reason: OfficialMcpAuthFailureReason };
+
+/**
+ * MCP adapter 消费身份头的依赖注入端口。
+ * adapter 不直接依赖 `packages/services`；Agent 进程经该端口向 host 索取本次请求的身份头。
+ *
+ * 失败必须走返回值而非抛异常，调用方禁止从错误文本解析原因。
+ * `workspaceIdentity` / `workspacePath` / `pluginId` / `mcpKey` / `targetOrigin`
+ * 仅用于路由、二次校验与审计，**不参与凭证选择**——凭证是 host 全局状态。
+ */
+export interface OfficialMcpAuthHeadersPort {
+  resolveHeaders(input: {
+    pluginId: string;
+    mcpKey: string;
+    targetOrigin: string;
+    workspaceIdentity?: string;
+    workspacePath?: string;
+    /** 会话所属 workspace 的 key；Host 按它路由，缺省按 identity || workspacePath。 */
+    workspaceKey?: string;
+    signal?: AbortSignal;
+  }): Promise<OfficialMcpAuthHeadersResult>;
+}
+
+/**
+ * 官方 MCP 信任判定。
+ *
+ * 规则只有一条：**目标 origin 逐字符等于当前 ZCode API origin（https、无 username/password）**，
+ * 另有仅放开 http loopback 的本地自测开关。`pluginId` / `mcpKey` 传进来只用于日志与凭证解析
+ * 归属，**不影响判定结果**——曾经的"必须是官方 marketplace 插件"那道检查已于 2026-08 移除
+ * （它让官方插件在发布前无法对真实端点自测，而第三方插件本可用 hook 读到同一份凭证，
+ * 并非真实屏障）。
+ *
+ * 实现在 `@zcode/shared`：host 与 adapter 共用同一份，避免一侧放行一侧拒绝。
+ * 异步是为了让 host 侧能按 settings 覆盖解析 origin。
+ */
 export interface OfficialMcpTrustedOriginRegistry {
   isTrusted(input: { pluginId: string; mcpKey: string; origin: string }): Promise<{
     detail?: string;

@@ -117,12 +117,7 @@ interface OpenRemoteWorkspaceFromHistoryParams {
     target: Parameters<IPlatformService["connectRemote"]>[0],
     requestId?: string,
   ) => Promise<string>;
-  resolveRemoteWorkspaceCanonicalPath: (
-    sessionId: string,
-    workspacePath: string,
-  ) => Promise<string>;
   disposeRemoteWorkspaceSession: (sessionId: string) => Promise<void>;
-  bindRemoteWorkspaceSessionContext: BindRemoteWorkspaceSessionContextFn;
   addTab: (
     workspacePath: string,
     options?: {
@@ -310,6 +305,19 @@ export async function reconnectRemoteWorkspaceGroup(params: {
   }
 }
 
+/** 移植自上游 v3.18.0：tab 是目录 owner 的唯一事实；只认仍注册在 store 中的 session，断连残留的 id 不算 owner。 */
+function readLiveRemoteWorkspaceOwner(
+  tabStoreApi: RemoteWorkspaceTabStoreReader,
+  target: Pick<RemoteWorkspaceSessionEntry, "workspacePath" | "workspaceIdentity">,
+): string | undefined {
+  const key = buildWorkspaceSessionKey(target);
+  const sessionId = tabStoreApi
+    .getState()
+    .tabs.filter(isWorkspaceTab)
+    .find((tab) => buildWorkspaceSessionKey(tab) === key)?.remoteSessionId;
+  return sessionId && getRemoteWorkspaceSession(sessionId) ? sessionId : undefined;
+}
+
 function shouldKeepRemoteWorkspaceInTabs(params: {
   tabStoreApi: RemoteWorkspaceTabStoreReader;
   workspacePath: string;
@@ -369,9 +377,7 @@ export async function openRemoteWorkspaceFromHistoryEntry({
   setReconnectingRemoteWorkspaceKeys,
   loadCredential,
   connectRemoteWorkspaceTarget,
-  resolveRemoteWorkspaceCanonicalPath,
   disposeRemoteWorkspaceSession,
-  bindRemoteWorkspaceSessionContext,
   addTab,
   commitRemoteWorkspaceSessionMutation,
   resetLogsForWorkspaceKey,
@@ -420,9 +426,7 @@ export async function openRemoteWorkspaceFromHistoryEntry({
       setReconnectingRemoteWorkspaceKeys,
       loadCredential,
       connectRemoteWorkspaceTarget,
-      resolveRemoteWorkspaceCanonicalPath,
       disposeRemoteWorkspaceSession,
-      bindRemoteWorkspaceSessionContext,
       bindRemoteWorkspacePath,
       bindRemoteWorkspaceIdentity,
       upsertWorkspaceTab: addTab,
@@ -436,6 +440,7 @@ export async function openRemoteWorkspaceFromHistoryEntry({
           workspacePath,
           workspaceIdentity,
         }),
+      readLiveWorkspaceOwner: (target) => readLiveRemoteWorkspaceOwner(tabStoreApi, target),
       onWorkspaceActivated: (target) => {
         logger.debug("[Root] 远程历史 workspace ready，提交 tab 与 draft 激活", target);
         onWorkspaceActivated?.(target);
@@ -867,9 +872,7 @@ export function useRemoteWorkspaceHistory({
           setReconnectingRemoteWorkspaceKeys,
           loadCredential: services.credentialService.load,
           connectRemoteWorkspaceTarget,
-          resolveRemoteWorkspaceCanonicalPath,
           disposeRemoteWorkspaceSession: handleCancelRemoteProject,
-          bindRemoteWorkspaceSessionContext,
           bindRemoteWorkspacePath,
           bindRemoteWorkspaceIdentity,
           upsertWorkspaceTab,
@@ -883,6 +886,7 @@ export function useRemoteWorkspaceHistory({
               workspacePath,
               workspaceIdentity,
             }),
+          readLiveWorkspaceOwner: (target) => readLiveRemoteWorkspaceOwner(tabStoreApi, target),
           onWorkspaceActivated: (target) => {
             logger.debug("[Root] 远程 workspace ready，提交 tab 与 draft 激活", target);
             onWorkspaceActivated?.(target);
@@ -902,12 +906,10 @@ export function useRemoteWorkspaceHistory({
     },
     [
       activateTabByPath,
-      bindRemoteWorkspaceSessionContext,
       commitRemoteWorkspaceSessionMutation,
       connectRemoteWorkspaceTarget,
       handleCancelRemoteProject,
       onWorkspaceActivated,
-      resolveRemoteWorkspaceCanonicalPath,
       resetLogsForWorkspaceKey,
       services.credentialService,
       tabStoreApi,
@@ -1082,9 +1084,7 @@ export function useRemoteWorkspaceHistory({
         setReconnectingRemoteWorkspaceKeys,
         loadCredential: services.credentialService.load,
         connectRemoteWorkspaceTarget,
-        resolveRemoteWorkspaceCanonicalPath,
         disposeRemoteWorkspaceSession: handleCancelRemoteProject,
-        bindRemoteWorkspaceSessionContext,
         addTab,
         commitRemoteWorkspaceSessionMutation,
         createReconnectRequestId: createUuid,
@@ -1096,11 +1096,9 @@ export function useRemoteWorkspaceHistory({
     [
       activateTabByPath,
       addTab,
-      bindRemoteWorkspaceSessionContext,
       commitRemoteWorkspaceSessionMutation,
       connectRemoteWorkspaceTarget,
       handleCancelRemoteProject,
-      resolveRemoteWorkspaceCanonicalPath,
       resetLogsForWorkspaceKey,
       onWorkspaceActivated,
       services.credentialService,

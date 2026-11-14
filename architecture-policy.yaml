@@ -1854,6 +1854,20 @@ modules:
     layers:
       ui: .
     owner: conversation
+  # request-security-edition-cli：由 architecture:adopt 登记
+  - id: request-security-edition-cli
+    roots:
+      - apps/zcode-cli/packages/adapters/src/model/request-security-edition
+    managed: true
+    requires:
+      - shared
+      - zcode-cli
+    publicEntrypoints:
+      - apps/zcode-cli/packages/adapters/src/model/request-security-edition/index.ts
+      - apps/zcode-cli/packages/adapters/src/model/request-security-edition/contract.ts
+    layers:
+      adapters: .
+    owner: request-security
 
 global:
   # 临时时间戳（2026-09-10）：unmanaged-new-file 只约束此日期之后首次入库的文件。
@@ -2435,3 +2449,8 @@ exceptions:
     paths:
       - packages/ui/src/root/GlobalDatabaseStartupLoading.tsx
     reason: 启动失败页在现有复制诊断/重试/退出旁增加导出日志按钮（docs/desktop/database-migration-startup-gate-plan.md）。只扩展既有失败页交互，不新增文件、不改变启动状态 owner 或模块边界；接管 packages/ui/src/root 不在本次范围内。
+  - id: tui-prompt-handler-runtime-unmanaged-new-file
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/cli/src/tui-prompt-handler-runtime.ts
+    reason: 已准入的 tui-prompt-handler.ts 顶到 oxlint max-lines（400 行）上限，把 createApp 的进程级准备（读 dotenv → 定位恢复会话 → 装 bootstrap 模块 → 起 Provider Registry 常驻运行时 → 读默认模型选择）拆到独立小文件，公开面仍从 tui-prompt-handler.ts 导出；与 interrupt-marker-unmanaged-new-file 的拆分模式相同，不新增 owner 或模块边界，接管整个 cli 包不在本次范围内。

@@ -142,6 +142,9 @@ export type ZCodeAppRuntimeConfigInput = AgentRuntimeConfig;
 export interface ZCodeAppOptions {
   /** fork：provider runtime headers 已随域剔除；类型占位兼容上游 workspace-model-runtime。 */
   providerRuntimeHeadersPort?: unknown;
+  // v3.18.0 合并补齐：上游 create-app 装配 provider endpoint routing 端口（fork 侧沿用），
+  // ZCodeAppOptions 此前缺该成员导致装配点 TS2353/TS2339。
+  providerEndpointRoutingPort?: ProviderEndpointRoutingPort;
   /** 独立 CLI 的配置菜单编辑输入默认值；其他装配保留显式 Session 配置语义。 */
   modelSelectionMode?: "cli-default";
   /** 仅独立 TUI/headless 入口开启；不得由模型或项目配置指定。 */

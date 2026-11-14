@@ -364,3 +364,17 @@ export * from "./plugin-store-visibility.js";
 
 // fork：request-security 域已剔除；保留类型别名兼容 zcode-cli 引用。
 export type RequestVerificationReason = string;
+// v3.18.0 合并补齐：上游 core 的 model-errors 依赖此诊断入口；上游实现本身也是 no-op stub
+// （域在上游处于停用态），这里按同语义提供空实现，维持「域剔除、接口兼容」的裁决不变。
+export function requestVerificationDiagnostics(
+  _input: Record<string, unknown>,
+): Record<string, unknown> {
+  return {};
+}
+// v3.18.0 合并补齐：上游 adapters 的 model-execution 依赖此工具；上游实现即为原样浅拷贝
+// （域停用态下无头可剥），按同语义提供，维持「域剔除、接口兼容」裁决不变。
+export function withoutRequestVerificationHeaders(
+  headers: Record<string, string> | undefined,
+): Record<string, string> {
+  return { ...headers };
+}

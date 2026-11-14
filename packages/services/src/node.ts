@@ -2344,7 +2344,21 @@ export function createLocalServices(options: {
       };
     },
     ...(!isDesktopAttachedRemote
-      ? { readSubagentRuntimeConfig: subagentsService.readRuntimeConfig }
+      ? {
+          readSubagentRuntimeConfig: subagentsService.readRuntimeConfig,
+          // 修复（读时补 prepare，主修）：共享 task runtime 下一个 CLI 进程服务多个 workspace key，
+          // spawn 参数固定是 dataRoot（processManager startClient 的 SHARED_TASK_RUNTIME_KEY 分支），
+          // spawn 时的 prepareRuntimeState 覆盖不到真实会话 workspace；且 CLI 在自身 create-app
+          // 启动期就发出 subagentsReadRuntimeConfig，可能早于 entry 启动屏障。这里接线
+          // ensureRuntimeStatePrepared（per-key 去重的幂等 prepare），agent service 在两处消费：
+          // ① subagentsReadRuntimeConfig handler 读快照前按请求 workspace 补 prepare（覆盖任何来源的读）；
+          // ② entry 启动屏障保留为纵深（放行 session 工作前追平该 key），因已去重不会重复重建。
+          // 远程依附 Host 不持有本机配置，与 read 一样不装配。
+          // 箭头包装保持 this 绑定：ensureRuntimeStatePrepared 内部经 this.prepareRuntimeState
+          // 触发真实 prepare（也便于测试 spy 计数），裸方法引用被 handler/barrier 解绑调用会丢 this。
+          prepareRuntimeWorkspace: (workspace) =>
+            subagentsService.ensureRuntimeStatePrepared(workspace),
+        }
       : {}),
     ...(isDesktopAttachedRemote
       ? { sessionRuntimePreferencesAuthority: "external" as const }

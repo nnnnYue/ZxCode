@@ -267,7 +267,6 @@ interface PluginReferenceListingDisplay {
 async function resolveReferenceListingDisplayByPluginId(
   options: ResolveZCodePluginsOptions,
 ): Promise<Map<string, PluginReferenceListingDisplay>> {
-  enrichCachedClaudeMarketplaceIconsForOverview(options);
   const overview = await getZCodePluginsOverview(options);
   const displayByPluginId = new Map<string, PluginReferenceListingDisplay>();
   for (const plugin of [

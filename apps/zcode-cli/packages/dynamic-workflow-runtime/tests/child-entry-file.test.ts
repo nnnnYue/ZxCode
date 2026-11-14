@@ -89,15 +89,15 @@ describe("child entry file", () => {
     });
 
     expect(settlement).toEqual({ status: "completed", artifact: 7 });
-    const entryPath = join(cwd, ".zcode", "workflow-runs", "dwfrun-1234.mjs");
+    const entryPath = join(cwd, ".zxcode", "workflow-runs", "dwfrun-1234.mjs");
     expect(spawnCalls[0]!.args).toEqual(["--max-old-space-size=256", entryPath]);
     // 保留是裁决：目录兼作每次 run 实际执行体的存档。
     const text = await readFile(entryPath, "utf8");
-    expect(text).toContain("// zcode dynamic workflow run dwfrun-1234");
+    expect(text).toContain("// zxcode dynamic workflow run dwfrun-1234");
     expect(text).toContain('export const payload = {"lowered":"return __host.args.x;","args":{"x":7},"maxOldSpaceSizeMb":256}');
     expect(text).toContain("export const start = ");
     // 只由 harness 写一份 `*`，绝不碰项目自己的 .gitignore。
-    await expect(readFile(join(cwd, ".zcode", "workflow-runs", ".gitignore"), "utf8")).resolves.toBe("*\n");
+    await expect(readFile(join(cwd, ".zxcode", "workflow-runs", ".gitignore"), "utf8")).resolves.toBe("*\n");
   });
 
   it("keeps the command line short no matter how large the script is (Windows ENAMETOOLONG guard)", async () => {
@@ -116,7 +116,7 @@ describe("child entry file", () => {
   it("falls back to os.tmpdir() and warns when the project .zcode cannot be created", async () => {
     const cwd = await tempRoot("dwf-entry-fallback-");
     // `.zcode` 是个普通文件：mkdir 必然 ENOTDIR/EEXIST，正是「项目里写不进」的一种。
-    await writeFile(join(cwd, ".zcode"), "not a directory", "utf8");
+    await writeFile(join(cwd, ".zxcode"), "not a directory", "utf8");
     const warnings: HarnessWarning[] = [];
 
     const { settlement } = await runLowered("return 1;", {
@@ -132,7 +132,7 @@ describe("child entry file", () => {
     expect(warnings).toEqual([
       {
         kind: "entry_file_fallback",
-        projectDir: join(cwd, ".zcode", "workflow-runs"),
+        projectDir: join(cwd, ".zxcode", "workflow-runs"),
         fallbackDir: fallbackWorkflowRunsDir(),
         error: expect.stringMatching(/ENOTDIR|EEXIST|ENOENT/),
       },

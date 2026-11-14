@@ -1101,4 +1101,74 @@ export const SQLITE_MIGRATIONS: readonly SqliteMigration[] = [
         .join("\n")}
     `,
   },
+  {
+    // fork 适配：写入方（adapters/storage/index.ts）产出的附件 URI 为 zxcode-artifact://，
+    // 上游 0025 的 session_purge_reference_* 触发器只匹配 zcode-artifact://，对 fork 数据
+    // 永不命中——永久删除准入（beginSessionDeletion）后，迟到写入仍可重新引用正被物理
+    // 删除的附件，引用保护屏障形同虚设。这里按 0025 同一 [table, column] 清单补建匹配
+    // zxcode-artifact:// 的同语义触发器，触发器名以 _zxcode 结尾与上游触发器并存。
+    // 不删除/改名旧触发器：schema 基线契约（scripts/check-sqlite-schema.ts）要求触发器
+    // 只增不改，且旧触发器对 fork 写入路径无害（fork 不再写 zcode- URI），保留它可继续
+    // 保护历史遗留数据。SQL 内联在本文件与 0025 同式，不另立新文件（避免
+    // architecture unmanaged-new-file 违规）。
+    id: "0026_session_purge_reference_zxcode_scheme",
+    appVersion: "0.17.1",
+    touchedTables: [
+      "session",
+      "message",
+      "part",
+      "session_entry",
+      "session_input",
+      "input_history",
+      "dwf_run",
+      "dwf_node",
+      "dwf_event",
+      "dwf_actor",
+      "workflow_run",
+      "workflow_activity",
+      "workflow_event",
+    ],
+    apply(db) {
+      // 结构已存在但迁移未记账时，只补缺失触发器，保证补账可重放。
+      // 原 SQL 参与 checksum，守卫仅用于执行，避免已升级数据库校验失败。
+      db.exec(this.sql.replaceAll(/create trigger /g, "create trigger if not exists "));
+    },
+    sql: `
+      ${[
+        ["dwf_run", "args_json"],
+        ["dwf_run", "result_json"],
+        ["dwf_run", "failure_json"],
+        ["workflow_run", "args_json"],
+        ["workflow_run", "stats_json"],
+        ["workflow_run", "failure_json"],
+        ["dwf_node", "input_json"],
+        ["dwf_node", "result_json"],
+        ["dwf_node", "error_json"],
+        ["dwf_event", "payload_json"],
+        ["dwf_actor", "persona_json"],
+        ["workflow_activity", "prompt"],
+        ["workflow_activity", "opts_json"],
+        ["workflow_activity", "result_json"],
+        ["workflow_activity", "error_json"],
+        ["workflow_event", "payload_json"],
+        ["part", "data"],
+        ["message", "data"],
+        ["session_entry", "data"],
+        ["session_input", "payload"],
+        ["session", "revert"],
+        ["input_history", "attachments"],
+      ]
+        .flatMap(([table, column]) =>
+          ["insert", "update"].map(
+            (action) => `
+        create trigger session_purge_reference_${table}_${column}_${action}_zxcode before ${action}${action === "update" ? ` of ${column}` : ""} on ${table}
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.${column}, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+      `,
+          ),
+        )
+        .join("\n")}
+    `,
+  },
 ];

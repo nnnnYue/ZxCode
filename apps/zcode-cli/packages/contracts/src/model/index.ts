@@ -1,4 +1,5 @@
 import type { ModelToolReferenceContentBlock } from "../tools/tool-search.js";
+import { zcodeProviderRuntimeHeadersErrorCode } from "@zcode/shared";
 // ============================================================
 // Model Protocol - provider-neutral model contracts
 // ============================================================
@@ -108,6 +109,7 @@ export const ModelErrorCode = {
   InvalidModelResponse: "invalid_model_response",
   ModelRequestFailed: "model_request_failed",
   ModelRequestAuthMissing: "model_request_auth_missing",
+  ModelRequestVerificationConfigNetwork: zcodeProviderRuntimeHeadersErrorCode.configNetwork,
   ModelRequestCancelled: "model_request_cancelled",
   ModelRequestTimeout: "model_request_timeout",
   ModelRateLimited: "model_rate_limited",
@@ -135,6 +137,8 @@ export const ModelRetryReason = {
   AuthRefresh: "auth_refresh",
   /** Anthropic 明确拒绝历史 thinking signature 后，对请求副本清理并立即重试一次。 */
   ReasoningSignatureRepair: "reasoning_signature_repair",
+  /** off-peak 闲时排队（429/3105+Retry-After）：豁免重试预算、无限探测（仅 idle plan provider）。 */
+  OffpeakQueued: "offpeak_queued",
 } as const;
 
 export type ModelRetryReason = (typeof ModelRetryReason)[keyof typeof ModelRetryReason];

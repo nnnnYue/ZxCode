@@ -17,6 +17,8 @@ import {
   type ZCodeMcpTelemetryEvent,
 } from "@zcode/shared";
 import type { SqliteSessionStore } from "@zcode/adapters/storage";
+// 恢复上游 permanent-deletion 域：Node 版会话/记忆数据文件端口。
+import { createNodeSessionDataFiles } from "@zcode/adapters/storage";
 import { traceContextToLogContext, createRootTraceContext } from "@zcode/contracts";
 import type { McpPort, ModelSelection } from "@zcode/contracts";
 import type { PresentationSurface } from "@zcode/core";
@@ -32,7 +34,7 @@ import {
 } from "./zcode-protocol/storage-startup.js";
 import { closeSessionStore, getSessionDbPath } from "./app/session-store.js";
 import { startProcessProviderRegistryRuntime } from "./app/process-provider-registry-runtime.js";
-import { getCliStorageRoot, getPluginStorageRoot } from "./app/paths.js";
+import { getCliStorageRoot, getPluginStorageRoot, getProjectMemoryRoot } from "./app/paths.js";
 import { scheduleStartupLogRetentionCleanup } from "./log-retention.js";
 import { StartupTimer, startupNow } from "./startup-logging.js";
 import { installZCodeProtocolAiSdkWarningLogger } from "./zcode-protocol/ai-sdk-warning-logger.js";
@@ -251,6 +253,8 @@ export async function runZCodeProtocolAgent(
           });
     mcpPort = mcpConnectionPool?.acquireLease({ leaseId: "protocol-settings" });
     const activeProviderRegistryRuntime = providerRegistryRuntime;
+    // 恢复上游 permanent-deletion 域：CLI 存储根与会话/记忆文件端口的装配点。
+    const protocolCliStorageRoot = getCliStorageRoot(resolvePath(configResult.config.storage.dir));
     const modelSelectionFacade = createNodeModelSelectionFacade(
       activeProviderRegistryRuntime.runtime.registryService,
     );
@@ -291,6 +295,14 @@ export async function runZCodeProtocolAgent(
       mcpPort,
       mcpTelemetry: mcpTelemetryTracker,
       sessionStore,
+      // 恢复上游 permanent-deletion 域：给 v4/storage/sessionData/* 执行面注入
+      // CLI 存储根下的会话/记忆文件端口；memoryRoot 与会话运行时记忆解析同一函数，
+      // 删除的正是 CLI 读写的那个目录。
+      sessionDataFiles: createNodeSessionDataFiles({
+        cliStorageRoot: protocolCliStorageRoot,
+        memoryRoot: ({ workspacePath, workspaceIdentity }) =>
+          getProjectMemoryRoot(protocolCliStorageRoot, workspacePath, workspaceIdentity),
+      }),
       pluginPreparation,
       pluginDiscovery,
       refreshProviderRegistry: async (reason) => {

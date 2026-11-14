@@ -22,7 +22,7 @@ interface TurnAbortScope {
   signal: AbortSignal;
 }
 
-const EXTERNAL_TURN_FAULT_MARKER = "zxcode.externalTurnFault";
+const EXTERNAL_TURN_FAULT_MARKER = "zcode.externalTurnFault";
 
 interface ExternalTurnFaultError extends Error {
   code: string;
@@ -35,6 +35,11 @@ export function createExternalTurnFaultError(code: string, message = code): Erro
     code,
     zcodeTurnFault: EXTERNAL_TURN_FAULT_MARKER as typeof EXTERNAL_TURN_FAULT_MARKER,
   }) satisfies ExternalTurnFaultError;
+}
+
+/** 中止原因是否为宿主外部故障（例如投影超限）。 */
+export function isExternalTurnFault(reason: unknown): boolean {
+  return findExternalTurnFault(reason) !== null;
 }
 
 function findExternalTurnFault(error: unknown): ExternalTurnFaultError | null {

@@ -10,8 +10,10 @@ import {
   parseCustomModelRequestHeadersEnv,
   resolveRuntimeZCodeEndpointOrigin,
   ZXCODE_APP_VERSION_ENV,
+  ZXCODE_MODEL_CUSTOM_HEADERS_ENV,
   ZCODE_CLIENT_LANGUAGE_ENV,
 } from "@zcode/shared";
+import { normalizePrintableHeaderValue } from "./runtime-platform-headers.js";
 
 export type ModelProviderSourceTitle = "cli" | "electron";
 

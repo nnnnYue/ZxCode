@@ -60,7 +60,8 @@ export function createTuiSubmitPrompt(
 ): TuiPromptHandler {
   let app: Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>> | undefined;
   let activeUiLocale = uiLocale;
-  // 进程级句柄（Provider Registry / endpoint 路由）跨 App 替换复用，见 runtime 文件。
+  // 进程级句柄（Provider Registry）跨 App 替换复用，见 runtime 文件。
+  // endpoint 路由句柄已随 endpoint-routing-edition 域剔除删除（fork 剔除轮 d88237c7）。
   const processRuntime = createTuiProcessRuntimeState();
   let closeHandlerPromise: Promise<void> | undefined;
   const closePromises = new WeakMap<object, Promise<void>>();
@@ -142,7 +143,8 @@ export function createTuiSubmitPrompt(
       sessionId,
       workingDirectory,
     } = await prepareTuiAppRuntime(deps, version, request, processRuntime);
-    const providerEndpointRoutingPort = processRuntime.providerEndpointRoutingPort;
+    // endpoint 路由端口接线已随 endpoint-routing-edition 域剔除删除（fork 剔除轮
+    // d88237c7）；宿主仍可经 ZCodeAppOptions.providerEndpointRoutingPort 注入。
     const browserRuntime = createCliHeadlessBrowserRuntime({ browserExecutable, browserUse }, deps);
     let createdApp: Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>>;
     try {
@@ -152,7 +154,6 @@ export function createTuiSubmitPrompt(
         browserControlPort: browserRuntime?.browserControlPort,
         env: appEnv,
         projectConfigPath: deps.projectConfigPath,
-        ...(providerEndpointRoutingPort ? { providerEndpointRoutingPort } : {}),
         providerRegistry: providerRegistryRuntime.runtime.registryService,
         configuredDefaultModelSelection,
         resume: sessionId !== undefined,

@@ -11,6 +11,24 @@ import type { McpToolDescriptor, PluginReferenceCatalog } from "@zcode/contracts
 
 const MCP_SESSION_OAUTH_AUTHORIZATION_TIMEOUT_MS = 15_000;
 
+// 上游 v3.18.0 新增：把 MCP workspace trust 准入发布给 Host。合并时本文件取了 fork rebrand 版
+// （ZXCODE_* 环境键不可被上游整文件覆盖），此处按原样补入该函数，供 steering/turn 调用。
+export async function refreshWorkspaceTrustAdmission(
+  runtime: AgentRuntimeInternal,
+  traceContext: TraceContext,
+): Promise<void> {
+  try {
+    await runtime.mcpPort?.refreshWorkspaceTrustAdmission?.();
+  } catch (error) {
+    // 提示发布失败不能阻断普通聊天；执行权限仍由 MCP gate 独立检查。
+    runtime.logger?.warn("MCP trust admission publication failed", {
+      ...traceContextToLogContext(traceContext),
+      event: "mcp.trust.admission.failed",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 /**
  * 只有同时携带 resolver 注入的官方 plugin id 和本进程私有 authority 的 server 才能共享
  * Computer Use 项目授权。server 名、tool 名和 manifest env 都可被第三方仿造，不能单独作为信任依据。

@@ -11,15 +11,28 @@ import type {
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
 import { createModelRequestAttributionHeaders, type ModelStatusContext } from "./runner-status.js";
-import { withoutModelQuerySourceHeader } from "./model-request-headers.js";
+import { withoutContextOwnedModelHeaders } from "./model-request-headers.js";
+
+type ExperimentalIncludeWithResponseBody = {
+  requestBody?: boolean;
+  responseBody?: boolean;
+};
+
+/** zcode-plan 业务码常只出现在 finish chunk 的 response.body，流式路径需显式开启。 */
+export function shouldIncludeStreamResponseBody(resolved: ResolvedAiSdkModel): boolean {
+  return (
+    resolved.providerKind === "openai-compatible" && resolved.accountAccess?.mode === "start-plan"
+  );
+}
 
 function mergeRequestHeaders(
   providerHeaders: Record<string, string> | undefined,
   attributionHeaders: Record<string, string>,
 ): Record<string, string> {
-  // 通用大小写去重会改变旧归因头的 SDK 合并结果；本次只剔除 query-source 静态值。
+  // 通用大小写去重会改变旧归因头的 SDK 合并结果；只剔除调用上下文独占的 query-source 与
+  // session-features 静态值。
   return {
-    ...withoutModelQuerySourceHeader(providerHeaders),
+    ...withoutContextOwnedModelHeaders(providerHeaders),
     ...attributionHeaders,
   };
 }
@@ -79,7 +92,7 @@ export function createGenerateTextOptions(input: {
       toolSearchHeaders(input.resolved.headers, input.request.toolSearchEnabled),
       createModelRequestAttributionHeaders(input.statusContext),
     ),
-    // ZxCode owns system-message construction in core/context. Keep AI SDK from
+    // ZCode owns system-message construction in core/context. Keep AI SDK from
     // printing its generic system-message warning to process stderr.
     allowSystemInMessages: true,
     maxRetries: 0,
@@ -139,20 +152,29 @@ export function createStreamTextOptions(input: {
       toolSearchHeaders(input.resolved.headers, input.request.toolSearchEnabled),
       createModelRequestAttributionHeaders(input.statusContext),
     ),
-    // ZxCode owns system-message construction in core/context. Keep AI SDK from
+    // ZCode owns system-message construction in core/context. Keep AI SDK from
     // printing its generic system-message warning to process stderr.
     allowSystemInMessages: true,
     maxRetries: 0,
     // AI SDK 会吞掉 Anthropic message_start 等 metadata 事件；compact 需要
     // 在 adapter 内观察 raw event 才能精确结束 SSE retry，raw chunk 不会上送 Core/UI。
     includeRawChunks: input.request.preserveProviderStreamBoundaries ? true : undefined,
-    experimental_include: input.includeModelIO
-      ? {
-          requestBody: true,
-          responseBody: true,
-        }
-      : undefined,
+    // zcode-plan 的业务码可能只在流式响应尾部 body 里，需保留 responseBody 供错误分类读取。
+    experimental_include: createStreamExperimentalInclude(input),
   }) as AiSdkStreamTextOptions;
+}
+
+function createStreamExperimentalInclude(input: {
+  includeModelIO: boolean;
+  resolved: ResolvedAiSdkModel;
+}): ExperimentalIncludeWithResponseBody | undefined {
+  if (input.includeModelIO) {
+    return {
+      requestBody: true,
+      responseBody: true,
+    };
+  }
+  return shouldIncludeStreamResponseBody(input.resolved) ? { responseBody: true } : undefined;
 }
 
 function toAiSdkToolChoice(

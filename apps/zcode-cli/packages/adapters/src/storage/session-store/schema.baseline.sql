@@ -635,9 +635,19 @@ CREATE TRIGGER session_purge_reference_dwf_actor_persona_json_insert before inse
           and instr(new.persona_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_actor_persona_json_insert_zxcode before insert on dwf_actor
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.persona_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_actor_persona_json_update before update of persona_json on dwf_actor
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.persona_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_actor_persona_json_update_zxcode before update of persona_json on dwf_actor
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.persona_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_event_payload_json_insert before insert on dwf_event
@@ -645,9 +655,19 @@ CREATE TRIGGER session_purge_reference_dwf_event_payload_json_insert before inse
           and instr(new.payload_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_event_payload_json_insert_zxcode before insert on dwf_event
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_event_payload_json_update before update of payload_json on dwf_event
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.payload_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_event_payload_json_update_zxcode before update of payload_json on dwf_event
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_node_error_json_insert before insert on dwf_node
@@ -655,9 +675,19 @@ CREATE TRIGGER session_purge_reference_dwf_node_error_json_insert before insert 
           and instr(new.error_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_node_error_json_insert_zxcode before insert on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.error_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_node_error_json_update before update of error_json on dwf_node
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.error_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_node_error_json_update_zxcode before update of error_json on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.error_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_node_input_json_insert before insert on dwf_node
@@ -665,9 +695,19 @@ CREATE TRIGGER session_purge_reference_dwf_node_input_json_insert before insert 
           and instr(new.input_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_node_input_json_insert_zxcode before insert on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.input_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_node_input_json_update before update of input_json on dwf_node
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.input_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_node_input_json_update_zxcode before update of input_json on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.input_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_node_result_json_insert before insert on dwf_node
@@ -675,9 +715,19 @@ CREATE TRIGGER session_purge_reference_dwf_node_result_json_insert before insert
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_node_result_json_insert_zxcode before insert on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_node_result_json_update before update of result_json on dwf_node
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_node_result_json_update_zxcode before update of result_json on dwf_node
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_run_args_json_insert before insert on dwf_run
@@ -685,9 +735,19 @@ CREATE TRIGGER session_purge_reference_dwf_run_args_json_insert before insert on
           and instr(new.args_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_run_args_json_insert_zxcode before insert on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.args_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_run_args_json_update before update of args_json on dwf_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.args_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_run_args_json_update_zxcode before update of args_json on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.args_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_run_failure_json_insert before insert on dwf_run
@@ -695,9 +755,19 @@ CREATE TRIGGER session_purge_reference_dwf_run_failure_json_insert before insert
           and instr(new.failure_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_run_failure_json_insert_zxcode before insert on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.failure_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_run_failure_json_update before update of failure_json on dwf_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.failure_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_run_failure_json_update_zxcode before update of failure_json on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.failure_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_dwf_run_result_json_insert before insert on dwf_run
@@ -705,9 +775,19 @@ CREATE TRIGGER session_purge_reference_dwf_run_result_json_insert before insert 
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_dwf_run_result_json_insert_zxcode before insert on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_dwf_run_result_json_update before update of result_json on dwf_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_dwf_run_result_json_update_zxcode before update of result_json on dwf_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_input_history_attachments_insert before insert on input_history
@@ -715,9 +795,19 @@ CREATE TRIGGER session_purge_reference_input_history_attachments_insert before i
           and instr(new.attachments, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_input_history_attachments_insert_zxcode before insert on input_history
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.attachments, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_input_history_attachments_update before update of attachments on input_history
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.attachments, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_input_history_attachments_update_zxcode before update of attachments on input_history
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.attachments, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_message_data_insert before insert on message
@@ -725,9 +815,19 @@ CREATE TRIGGER session_purge_reference_message_data_insert before insert on mess
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_message_data_insert_zxcode before insert on message
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_message_data_update before update of data on message
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_message_data_update_zxcode before update of data on message
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_part_data_insert before insert on part
@@ -735,9 +835,19 @@ CREATE TRIGGER session_purge_reference_part_data_insert before insert on part
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_part_data_insert_zxcode before insert on part
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_part_data_update before update of data on part
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_part_data_update_zxcode before update of data on part
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_session_entry_data_insert before insert on session_entry
@@ -745,9 +855,19 @@ CREATE TRIGGER session_purge_reference_session_entry_data_insert before insert o
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_session_entry_data_insert_zxcode before insert on session_entry
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_session_entry_data_update before update of data on session_entry
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.data, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_session_entry_data_update_zxcode before update of data on session_entry
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.data, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_session_input_payload_insert before insert on session_input
@@ -755,9 +875,19 @@ CREATE TRIGGER session_purge_reference_session_input_payload_insert before inser
           and instr(new.payload, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_session_input_payload_insert_zxcode before insert on session_input
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_session_input_payload_update before update of payload on session_input
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.payload, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_session_input_payload_update_zxcode before update of payload on session_input
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_session_revert_insert before insert on session
@@ -765,9 +895,19 @@ CREATE TRIGGER session_purge_reference_session_revert_insert before insert on se
           and instr(new.revert, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_session_revert_insert_zxcode before insert on session
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.revert, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_session_revert_update before update of revert on session
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.revert, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_session_revert_update_zxcode before update of revert on session
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.revert, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_activity_error_json_insert before insert on workflow_activity
@@ -775,9 +915,19 @@ CREATE TRIGGER session_purge_reference_workflow_activity_error_json_insert befor
           and instr(new.error_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_activity_error_json_insert_zxcode before insert on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.error_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_activity_error_json_update before update of error_json on workflow_activity
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.error_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_activity_error_json_update_zxcode before update of error_json on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.error_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_activity_opts_json_insert before insert on workflow_activity
@@ -785,9 +935,19 @@ CREATE TRIGGER session_purge_reference_workflow_activity_opts_json_insert before
           and instr(new.opts_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_activity_opts_json_insert_zxcode before insert on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.opts_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_activity_opts_json_update before update of opts_json on workflow_activity
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.opts_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_activity_opts_json_update_zxcode before update of opts_json on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.opts_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_activity_prompt_insert before insert on workflow_activity
@@ -795,9 +955,19 @@ CREATE TRIGGER session_purge_reference_workflow_activity_prompt_insert before in
           and instr(new.prompt, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_activity_prompt_insert_zxcode before insert on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.prompt, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_activity_prompt_update before update of prompt on workflow_activity
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.prompt, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_activity_prompt_update_zxcode before update of prompt on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.prompt, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_activity_result_json_insert before insert on workflow_activity
@@ -805,9 +975,19 @@ CREATE TRIGGER session_purge_reference_workflow_activity_result_json_insert befo
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_activity_result_json_insert_zxcode before insert on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_activity_result_json_update before update of result_json on workflow_activity
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.result_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_activity_result_json_update_zxcode before update of result_json on workflow_activity
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.result_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_event_payload_json_insert before insert on workflow_event
@@ -815,9 +995,19 @@ CREATE TRIGGER session_purge_reference_workflow_event_payload_json_insert before
           and instr(new.payload_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_event_payload_json_insert_zxcode before insert on workflow_event
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_event_payload_json_update before update of payload_json on workflow_event
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.payload_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_event_payload_json_update_zxcode before update of payload_json on workflow_event
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.payload_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_run_args_json_insert before insert on workflow_run
@@ -825,9 +1015,19 @@ CREATE TRIGGER session_purge_reference_workflow_run_args_json_insert before inse
           and instr(new.args_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_run_args_json_insert_zxcode before insert on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.args_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_run_args_json_update before update of args_json on workflow_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.args_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_run_args_json_update_zxcode before update of args_json on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.args_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_run_failure_json_insert before insert on workflow_run
@@ -835,9 +1035,19 @@ CREATE TRIGGER session_purge_reference_workflow_run_failure_json_insert before i
           and instr(new.failure_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_run_failure_json_insert_zxcode before insert on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.failure_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_run_failure_json_update before update of failure_json on workflow_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.failure_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_run_failure_json_update_zxcode before update of failure_json on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.failure_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_reference_workflow_run_stats_json_insert before insert on workflow_run
@@ -845,9 +1055,19 @@ CREATE TRIGGER session_purge_reference_workflow_run_stats_json_insert before ins
           and instr(new.stats_json, 'zcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
+CREATE TRIGGER session_purge_reference_workflow_run_stats_json_insert_zxcode before insert on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.stats_json, 'zxcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
 CREATE TRIGGER session_purge_reference_workflow_run_stats_json_update before update of stats_json on workflow_run
         when exists(select 1 from session_purge where state='deleting'
           and instr(new.stats_json, 'zcode-artifact://' || session_id || '/')>0)
+        begin select raise(abort, 'session-data.deleting'); end;
+
+CREATE TRIGGER session_purge_reference_workflow_run_stats_json_update_zxcode before update of stats_json on workflow_run
+        when exists(select 1 from session_purge where state='deleting'
+          and instr(new.stats_json, 'zxcode-artifact://' || session_id || '/')>0)
         begin select raise(abort, 'session-data.deleting'); end;
 
 CREATE TRIGGER session_purge_runtime_guard before insert on session_runtime_presence

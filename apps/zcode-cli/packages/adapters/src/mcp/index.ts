@@ -37,20 +37,23 @@ import type {
   McpToolCallResult,
   McpToolDescriptor,
   OfficialMcpAuthFailureReason,
+  OfficialMcpAuthHeadersPort,
   OfficialMcpTrustedOriginRegistry,
 } from "@zcode/contracts";
 import {
   McpResourceSubscribeUnsupportedError,
+  ZXCODE_MCP_SERVER_REQUEST_ID_META_KEY,
 } from "@zcode/contracts";
 import {
   OFFICIAL_MCP_AUTH_META_KEY,
+  ZXCODE_OFFICIAL_MCP_AUTH_TYPE,
   type McpServerFailureKind,
   type OfficialMcpAuthFailureKind,
 } from "@zcode/shared";
 import { buildMcpAppsClientCapabilities } from "@zcode/shared/mcp-apps";
 import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
-import { isDeepStrictEqual } from "node:util";
+import { isDeepStrictEqual, stripVTControlCharacters } from "node:util";
 import {
   createSharedZCodeCredentialStore,
   type SharedZCodeCredentialStore,
@@ -61,6 +64,11 @@ import {
   createMcpTransportFetch,
   type NetworkEgressEnvPolicy,
 } from "./network.js";
+import {
+  applyMcpNodeFallbackEnv,
+  type McpNodeFallback,
+  type McpNodeFallbackProvider,
+} from "./node-fallback.js";
 import { loadCredentialPair } from "./oauth-credentials.js";
 import {
   classifyInteractiveAuthorizationTrigger,
@@ -105,6 +113,7 @@ const DEFAULT_MCP_TIMEOUT_MS = 30_000;
 const MCP_PING_TIMEOUT_MS = 5_000;
 const MAX_MCP_VERSION_PROBE_TIMEOUT_MS = 5_000;
 const MCP_STDIO_STDERR_LOG_MAX_CHARS = 4_000;
+const MCP_STDIO_ERROR_MESSAGE_MAX_CHARS = 512;
 /**
  * span → request id 的暂存条数上限。正常情况下每条都会在同一次 tool call 结束时被取走，
  * 留下的只有无人认领的（如连接期请求），几十条足够，纯为防止长会话下无界增长。
@@ -121,17 +130,16 @@ export interface CreateMcpAdapterOptions {
   mcpOAuth?: McpOAuthRuntimeOptions;
   network?: NetworkEgressEnvPolicy;
   /**
+   * 桌面 Electron Node 回退：宿主注入时，stdio MCP 的 node/npm/npx 在用户 PATH 缺失时
+   * 回退到 Electron 与随包 npm（docs/design/v2/mcp-node-fallback.md）。缺省时 env 不变。
+   */
+  nodeFallback?: McpNodeFallbackProvider;
+  /**
    * 官方 Server MCP 鉴权依赖。trustedOrigins 缺失时仍 fail closed；authHeadersPort
    * 可缺省，此时各请求匿名降级并交给服务端做权威判定。
    */
   officialMcpAuth?: {
-    authHeadersPort?: {
-    authHeaders?: Record<string, string>;
-    resolveHeaders: (input: unknown) =>
-      | { ok: true; headers: Record<string, string> }
-      | { ok: false; reason: "official_auth_unavailable" | "official_auth_plan_required" | "official_mcp_origin_untrusted" };
-    [key: string]: unknown;
-  };
+    authHeadersPort?: OfficialMcpAuthHeadersPort;
     trustedOrigins: OfficialMcpTrustedOriginRegistry;
     /**
      * 当前 ZCode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出
@@ -236,6 +244,12 @@ export {
   type McpConnectionPoolOptions,
 } from "./pool.js";
 export {
+  createMcpNodeFallbackProvider,
+  type CreateMcpNodeFallbackProviderOptions,
+  type McpNodeFallback,
+  type McpNodeFallbackProvider,
+} from "./node-fallback.js";
+export {
   createMcpTelemetryTracker,
   resolvePluginName,
   type McpTelemetryTracker,
@@ -257,6 +271,7 @@ class NodeMcpAdapter implements McpPort {
   private readonly logger?: Logger;
   private readonly mcpOAuth?: McpOAuthRuntimeOptions;
   private readonly network?: NetworkEgressEnvPolicy;
+  private readonly nodeFallback?: McpNodeFallbackProvider;
   private readonly officialMcpAuth?: CreateMcpAdapterOptions["officialMcpAuth"];
   private readonly telemetry?: McpTelemetryTracker;
   private readonly connectionGenerations = new Map<string, number>();
@@ -305,6 +320,7 @@ class NodeMcpAdapter implements McpPort {
     });
     this.mcpOAuth = options.mcpOAuth;
     this.network = options.network;
+    this.nodeFallback = options.nodeFallback;
     this.officialMcpAuth = options.officialMcpAuth;
     this.telemetry = options.telemetry;
     this.workingDirectory = options.workingDirectory;
@@ -523,7 +539,7 @@ class NodeMcpAdapter implements McpPort {
             tool,
             record.config.timeoutMs,
             record.config.type === "http" &&
-              record.config.auth?.type === "zcode_official",
+              record.config.auth?.type === ZXCODE_OFFICIAL_MCP_AUTH_TYPE,
           ),
         );
         record.status = { ...record.status, toolCount: record.tools.length };
@@ -1235,7 +1251,7 @@ class NodeMcpAdapter implements McpPort {
         // 只在失败时附加：成功路径上它是纯噪声。服务端已给的键一律不覆盖。
         _meta:
           isError && serverRequestId
-            ? { ...meta, ["zcode-mcp-server-request-id"]: serverRequestId }
+            ? { ...meta, [ZXCODE_MCP_SERVER_REQUEST_ID_META_KEY]: serverRequestId }
             : meta,
       };
     } catch (error) {
@@ -1530,6 +1546,17 @@ class NodeMcpAdapter implements McpPort {
       config.type === "stdio" ? "process_start_failed" : "network_unreachable";
 
     try {
+      // 根因（MR !3089 评审 CR-02）：首次 stdio 连接要先准备 node fallback（文件 IO），原先在
+      // createTransport 里裸等，不受连接超时与取消约束；IO 卡住时连接会一直停在 connecting。
+      const nodeFallback =
+        config.type === "stdio" && this.nodeFallback
+          ? await withTimeout(
+              this.nodeFallback.resolve(),
+              timeoutMs,
+              `MCP server ${name} node fallback preparation timed out after ${timeoutMs}ms`,
+              signal,
+            )
+          : undefined;
       const transportBundle = await this.createTransport(
         config,
         name,
@@ -1537,6 +1564,7 @@ class NodeMcpAdapter implements McpPort {
         oauthAuthorizationTimeoutMs,
         workingDirectory,
         signal,
+        nodeFallback,
       );
       transport = transportBundle.transport;
       getRecentStderr = this.attachStdioLogging(name, transport);
@@ -1594,7 +1622,7 @@ class NodeMcpAdapter implements McpPort {
           //     从而在用户输入框上方弹出"额度用完 / 请开通 Coding Plan"的误导提示。
           // 原判据是 `type !== "sse"`，把 stdio 一起放了进来，等于这道门槛在 stdio 上为零。
           // 注意这不是在挡凭证外泄（那由 origin 校验负责），而是在挡**结果伪造**。
-          config.type === "http" && config.auth?.type === "zcode_official",
+          config.type === "http" && config.auth?.type === ZXCODE_OFFICIAL_MCP_AUTH_TYPE,
           config.alwaysLoad,
         ),
       );
@@ -1887,14 +1915,25 @@ class NodeMcpAdapter implements McpPort {
     const displayMessage = responseDiagnostic?.serverRequestId
       ? `${message} - ${responseDiagnostic.serverRequestId}`
       : message;
+    const recentStderr = getRecentStderr?.();
+    // 子进程缺依赖等错误只写 stderr，SDK 通常只返回 Connection closed。
+    // 把同一次连接的脱敏诊断带给设置页；只展示证据，不按错误文本改变失败分类或重试。
+    const statusMessage =
+      config.type === "stdio"
+        ? [
+            sanitizeMcpStdioStderr(displayMessage).slice(0, MCP_STDIO_ERROR_MESSAGE_MAX_CHARS),
+            recentStderr,
+          ]
+            .filter(Boolean)
+            .join("\n\n")
+        : displayMessage;
     const status = this.createStatus(config, "failed", {
-      error: displayMessage,
+      error: statusMessage,
       failureKind,
       ...(responseDiagnostic?.serverRequestId
         ? { serverRequestId: responseDiagnostic.serverRequestId }
         : {}),
     });
-    const recentStderr = getRecentStderr?.();
     const mcpTransportPid = getStdioTransportPid(transport);
     await this.closeClientAndTransport(name, client, transport);
     if (!this.isCurrentConnection(name, generation)) {
@@ -1925,6 +1964,7 @@ class NodeMcpAdapter implements McpPort {
     _oauthAuthorizationTimeoutMs?: number,
     workingDirectory?: string,
     signal?: AbortSignal,
+    nodeFallback?: McpNodeFallback,
   ): Promise<{ transport: McpTransport }> {
     if (config.type === "stdio") {
       return {
@@ -1934,10 +1974,14 @@ class NodeMcpAdapter implements McpPort {
           cwd: config.cwd
             ? resolve(workingDirectory ?? this.workingDirectory ?? process.cwd(), config.cwd)
             : (workingDirectory ?? this.workingDirectory),
-          env: {
-            ...buildMcpStdioEnv({ env: this.env, network: this.network }),
-            ...config.env,
-          },
+          // fallback 在 server env 之后合并：插件自带 PATH 时 shim 目录仍追加在末尾。
+          env: applyMcpNodeFallbackEnv(
+            {
+              ...buildMcpStdioEnv({ env: this.env, network: this.network }),
+              ...config.env,
+            },
+            nodeFallback,
+          ),
           stderr: "pipe",
           ...(isOfficialAuthConfig(config) && config.official
             ? {
@@ -2322,6 +2366,9 @@ function mcpRequestMeta(request: McpCallToolRequest): Record<string, unknown> {
     ...(request.trace?.spanId ? { span_id: request.trace.spanId } : {}),
     ...(request.trace?.parentSpanId ? { parent_span_id: request.trace.parentSpanId } : {}),
     ...(request.trace?.sessionId ? { session_id: request.trace.sessionId } : {}),
+    // subagent / 工作流子代理的调用带上派生它的顶层 session，工作区共享的 server 据此
+    // 让子代理与父 session 共用状态（文档插件查看面板 spec §8.2）。
+    ...(request.trace?.rootSessionId ? { root_session_id: request.trace.rootSessionId } : {}),
     ...(request.trace?.turnId ? { turn_id: request.trace.turnId } : {}),
     ...(request.runtimeScope ? { runtime_scope: request.runtimeScope } : {}),
     ...(request.workspacePath ? { workspace_path: request.workspacePath } : {}),
@@ -2480,7 +2527,9 @@ function createBoundedTextBuffer(maxChars: number): {
 }
 
 function sanitizeMcpStdioStderr(text: string): string {
-  const sensitiveKey = String.raw`(?:api[_-]?key|access[_-]?key|secret(?:[_-]?key)?|private[_-]?key|token|password|passwd|pass|mysql_pass|mysql_password)`;
+  text = stripVTControlCharacters(text);
+  // 插件常给敏感环境变量加前缀，例如 API_TOKEN、VE_SPEECH_MCP_TOKEN，不能只匹配裸 token。
+  const sensitiveKey = String.raw`(?:[a-z0-9_.-]*[_-])?(?:api[_-]?key|access[_-]?key|secret(?:[_-]?key)?|private[_-]?key|token|password|passwd|pass|mysql_pass|mysql_password)`;
   let result = text.replace(/(bearer\s+)[^\s"']+/gi, "$1[Redacted]");
   result = result.replace(
     /(\bauthorization\b\s*[:=]\s*)(bearer\s+)?[^\r\n]+/gi,
@@ -2488,8 +2537,14 @@ function sanitizeMcpStdioStderr(text: string): string {
       `${prefix}${bearer ? "Bearer " : ""}[Redacted]`,
   );
   result = result.replace(new RegExp(`([?&]${sensitiveKey}=)[^&\\s]+`, "gi"), "$1[Redacted]");
+  // 引号中的凭证可能包含空格或转义引号，必须整体替换，不能只遮住第一个词。
+  const quotedValue = String.raw`(["'])(?:\\.|(?!\2)[^\\\r\n])*\2`;
   result = result.replace(
-    new RegExp(`(["']${sensitiveKey}["']\\s*:\\s*)(["'])(?:(?!\\2).)*\\2`, "gi"),
+    new RegExp(String.raw`(["']${sensitiveKey}["']\s*:\s*)${quotedValue}`, "gi"),
+    "$1$2[Redacted]$2",
+  );
+  result = result.replace(
+    new RegExp(String.raw`(\b${sensitiveKey}\b\s*[:=]\s*)${quotedValue}`, "gi"),
     "$1$2[Redacted]$2",
   );
   result = result.replace(

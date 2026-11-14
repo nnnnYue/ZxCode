@@ -51,6 +51,7 @@ import type {
   PendingModelChangeTimeline,
   MainTurnCacheHitAggregate,
   RuntimeTurnFileChangeMap,
+  ProviderRuntimeHeadersPort,
 } from "./types.js";
 import type { RuntimeCommandQueue } from "./command-queue.js";
 import type { RuntimeTaskRegistry } from "../runtime-task/registry.js";
@@ -90,7 +91,7 @@ export interface AgentRuntimeInternal
   modelFactory: AgentRuntimeDeps["modelFactory"];
   modelIoDir?: string;
   /** fork：provider runtime headers 已随域剔除；属性保留以兼容类型引用。 */
-  providerRuntimeHeadersPort?: MessagePort;
+  providerRuntimeHeadersPort?: ProviderRuntimeHeadersPort;
   browserControlPort?: AgentRuntimeDeps["browserControlPort"];
   modelRequestAdmission?: AgentRuntimeDeps["modelRequestAdmission"];
   sessionModelSelection: ModelSelection | undefined;

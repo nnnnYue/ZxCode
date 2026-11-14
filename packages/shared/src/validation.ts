@@ -91,6 +91,11 @@ import {
   taskStreamMirrorTargetSchema,
 } from "./task-realtime-core.js";
 import { wslUserSchema } from "./wslUserValidation.js";
+import {
+  extensionWindowLogsRequestMessageSchema,
+  extensionWindowReadyMessageSchema,
+  extensionWindowReloadMessageSchema,
+} from "./extension-host/control.js";
 import { legacyZCodeProviderSchema } from "./zcode-agent-policy.js";
 import { errorAttributionSchema } from "./zcode-protocol-v4/snapshot.js";
 import {
@@ -1678,6 +1683,37 @@ export const hostOffPeakSchedulerWakeRequestResponseSchema = z.object({
   offPeakTaskId: z.string().optional(),
 });
 
+// fork：app-control 导航域的 host → main 请求。Host 内 AppControlService 经 parentPort 请求
+// main 在指定窗口打开会话，由 desktopHostProcess 的 bindAppControlNavigationHost 专用监听消费。
+// Bug 原因：这两种类型此前未进 hostResponseMessageSchema union——BroadcastHub 与 taskRealtimeBus
+// 对同一 host 子进程的 message 流复用该 union 做校验，启动期每条 app-navigation 消息都会各打一条
+// 「invalid host response message: type Invalid discriminator value」告警（两 hub 均默认忽略，
+// 功能不受损，但告警是纯噪音）。形状与 desktop/src/app-control-navigation/contract.ts 的
+// appNavigationHostMessageSchema 保持一致（含 identifier 的 min/max 边界），避免双校验面漂移。
+const hostAppNavigationIdentifierSchema = z.string().min(1).max(4096);
+
+export const hostAppNavigationOpenRequestResponseSchema = z
+  .object({
+    type: z.literal("app-navigation-open"),
+    requestId: hostAppNavigationIdentifierSchema,
+    uiTarget: hostAppNavigationIdentifierSchema.optional(),
+    target: z
+      .object({
+        workspacePath: hostAppNavigationIdentifierSchema,
+        workspaceIdentity: hostAppNavigationIdentifierSchema.optional(),
+        taskId: hostAppNavigationIdentifierSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
+export const hostAppNavigationCancelRequestResponseSchema = z
+  .object({
+    type: z.literal("app-navigation-cancel"),
+    requestId: hostAppNavigationIdentifierSchema,
+  })
+  .strict();
+
 // host → main：执行一条 browser-use 命令（main 用 WebContentsView+CDP 执行）。
 export const hostBrowserExecuteRequestResponseSchema = z.object({
   controlScopeId: nonEmptyStringSchema.optional(),
@@ -1926,6 +1962,19 @@ export const hostResponseMessageSchema = z.discriminatedUnion("type", [
   hostOffPeakRunResultResponseSchema,
   hostCronSchedulerWakeRequestResponseSchema,
   hostOffPeakSchedulerWakeRequestResponseSchema,
+  hostAppNavigationOpenRequestResponseSchema,
+  hostAppNavigationCancelRequestResponseSchema,
+  // fork：extension-host L0 控制面（Window Host → Main）。windowHostExtensions 经 host
+  // parentPort 发 extension-host/window-ready|reload|logs-request，由
+  // extensionHostSupervisor.trackWindowHost 用 extensionWindowToMainMessageSchema 专用校验消费。
+  // Bug 原因：这三条此前不在本 union——BroadcastHub 与 taskRealtimeBus 对同一 parentPort
+  // 消息流复用本 union 做校验，local services ready 时每条 window-ready（reload/logs-request
+  // 在对应操作时）都会各打一条「invalid host response message: type Invalid discriminator
+  // value」告警（两 hub 均静默忽略，功能不受损，告警是纯噪音）。成员直接复用
+  // extension-host/control.ts 的具名 schema 作为唯一权威形状，避免双校验面漂移。
+  extensionWindowReadyMessageSchema,
+  extensionWindowReloadMessageSchema,
+  extensionWindowLogsRequestMessageSchema,
 ]);
 
 export const zcodeTaskPersistStatusSchema = z.enum(["running", "completed", "error"]);

@@ -42,7 +42,6 @@ holdout	帮我自动化操作桌面应用	computer-use	weak
 holdout	开发并校验一个插件	plugin-creator
 holdout	写一个可复用的技能	skill-creator
 holdout	诊断 MCP 服务器配置	zcode-guide
-holdout	想把这个 Web 项目部署成网站	zcode-site
 holdout	矢量绘图工具	vectorcraft
 holdout	音频编辑器	soundcraft
 holdout	图像编辑 PhotoCraft	photocraft

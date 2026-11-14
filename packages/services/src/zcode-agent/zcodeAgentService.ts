@@ -967,6 +967,18 @@ interface CreateZCodeAgentServiceOptions extends Omit<
     workspacePath: string;
     workspaceIdentity?: string;
   }) => Promise<SubagentRuntimeConfig>;
+  // 读时补 prepare（主修）+ entry 屏障（纵深）共用的工作区准备钩子。根因：共享 task runtime
+  // （processManager 对无 identity 的 workspace 复用同一 CLI 进程，spawn 参数固定为 dataRoot，
+  // 见 startClient 的 SHARED_TASK_RUNTIME_KEY 分支）下，spawn 时的 prepareRuntimeState 只覆盖
+  // 首个 spawn 参数的 workspace key，其余逻辑工作区的 subagent 配置缓存可能未 prepare；且 CLI
+  // 在自身 create-app 启动期（create-app.ts:253）就发出 subagentsReadRuntimeConfig，早于屏障。
+  // 两个消费点：① subagentsReadRuntimeConfig handler 读快照前按请求 workspace 补 prepare；
+  // ② entry 启动屏障放行 session 工作前追平该 key。接线的是 per-key 去重的幂等变体
+  // （ensureRuntimeStatePrepared），重复触发不会重复重建 watcher；失败 fail-closed 上抛。
+  prepareRuntimeWorkspace?: (workspace: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }) => Promise<void>;
   sessionRuntimePreferencesAuthority?: "local" | "external";
   prepareProjectExecution?: (
     projectId: string,
@@ -2311,6 +2323,12 @@ export function createZCodeAgentService(
             try {
               if (!options?.readSubagentRuntimeConfig)
                 throw new Error("Subagent runtime config is unavailable on this Host");
+              // 读时补 prepare（主修）：共享 runtime 的 CLI 在自身 create-app 启动期（create-app.ts:253）
+              // 就发出本读请求，可能早于 entry 启动屏障；且屏障只为 entry 的 params key 兜底，
+              // 这里的 workspace 由 routed/initialWorkspace 解析，可能是另一个 key。必须用与下方
+              // read() 完全相同的 workspace 对象先补 prepare，读路径才能自洽覆盖任何到达时序；
+              // per-key 去重由 ensureRuntimeStatePrepared 单点负责，prepare 失败 fail-closed 上抛。
+              await options.prepareRuntimeWorkspace?.(workspace);
               configuration = subagentRuntimeConfigSchema.parse(
                 await options.readSubagentRuntimeConfig(workspace),
               );
@@ -2990,6 +3008,11 @@ export function createZCodeAgentService(
       }
     })();
     entry.interactionPreferencesReady = Promise.all([
+      // 共享 CLI 的进程 cwd 不代表任务目录；放行任何 session 工作前按 entry 的 key 追平配置快照。
+      // 纵深防线：读路径的主修在 subagentsReadRuntimeConfig handler（读前按请求 workspace 补
+      // prepare，覆盖 CLI create-app 启动期早于本屏障的读）；这里对接同一 per-key 去重钩子，
+      // 已 prepare 的 key 直接短路，不会重复重建 watcher。
+      options?.prepareRuntimeWorkspace?.(params),
       interactionPreferencesReady,
       directorySourceReady,
       dynamicWorkflowPolicyReady,
@@ -5761,6 +5784,20 @@ export function createZCodeAgentService(
       // prepareForkCreation（fork ACK 后归属交接）不引入——fork 由 prepareSessionCreation
       // 在发送前完成 tasks-index 预留，无重复交接路径。
       const ack: CommandAck = await client.request(V4_METHODS.command, envelope, commandAckSchema);
+      // 观测缺口修复：CLI v4-gateway 把执行错误归一成 failed ack 后，UI 侧只剩归一化
+      // reasonCode（fault.command.executionFailed），原始错误 message 在 Host 进程不落任何
+      // 日志，故障排查时丢失关键根因（如 "Subagent runtime configuration is not prepared"）。
+      // 这里按 failed 终态把原始 message 以 warn 级别落服务日志；ack 结构与归一化协议不变。
+      if (ack.status === "failed") {
+        logger.warn(undefined, "ZxCode v4 命令执行失败", {
+          commandType: envelope.type,
+          commandId: envelope.commandId,
+          sessionId: envelope.sessionId,
+          workspaceKey: resolveWorkspaceKey(params),
+          reasonCode: ack.reasonCode,
+          message: ack.message,
+        });
+      }
       // Prompt command 在 committed TurnStarted 或 committed WorkspaceHookReviewRequested
       // 任一 authority 到达后即返回；人工审核不能占用 Host RPC，因此继续使用统一默认
       // timeout/watchdog。放宽到审核领域 deadline 只会掩盖串行协议队列死锁。
