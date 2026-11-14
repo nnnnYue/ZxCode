@@ -10,11 +10,6 @@ import { logger } from "@/logger.js";
 import { ensureTaskNavigationWorkspace } from "@/app-shell/taskNavigationWorkspace.js";
 import { notifyTaskNavigationCommitted } from "@/store/zcodeSessionStoreNavigation.js";
 import { useComposerClientNamespace } from "@/hooks/useServices.js";
-import {
-  bindPendingTaskDraft,
-  readComposerWorkspaceScope,
-  rememberComposerWorkspaceScope,
-} from "@/v4/composer/composerDraftStore.js";
 import { openFolderFromWorkspaceEntry } from "@/root/openWorkspaceFolderEntry.js";
 import { useConversationWorkspaceActions } from "@/root/useConversationWorkspaceActions.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
@@ -414,6 +409,9 @@ export function useRootWorkspaceActions({
           // insert request 被首个 composer 消费后会清空；如果随后因 pane/config
           // 切换 remount，新 composer 会从空的 __draft__ 恢复并覆盖预填。先写草稿事实源，
           // 再发即时插入请求：当前 composer 立即可见，后续 remount 也恢复同一文本。
+          // 原因：v3.18.0 合并后写侧漏传 scope，root 草稿落到 per-workspace key + 裸 __draft__，
+          // 而读侧（useDraftConfigControl/SessionPane）按 resolveComposerScope(null, identity)
+          // 读 project key，预填永远读不到。写读必须构造同一个 scope（specs/composer-initial-prompt-prefill.md）。
           persistV4ComposerDraft(
             target.workspacePath,
             target.workspaceIdentity ?? undefined,
@@ -422,6 +420,7 @@ export function useRootWorkspaceActions({
               text: initialPrompt,
               ...(initialPromptMention ? { mention: initialPromptMention } : {}),
             },
+            resolveComposerScope(null, target.workspaceIdentity ?? undefined),
           );
           useZCodeSessionStore
             .getState()

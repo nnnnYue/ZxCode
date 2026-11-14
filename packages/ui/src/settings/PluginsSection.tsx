@@ -961,7 +961,10 @@ function PluginList({
                   data-testid={TID_PLUGIN_STORE_BROWSE}
                   onClick={onAdd}
                 >
-                  {intl.formatMessage({ id: "settings.plugin.plugins.browse" })}
+                  {/* 修复原因：v3.18.0 合并带入上游改名后的占位 id，5 个 locale 均无
+                      settings.plugin.plugins.browse 定义，按钮直接显示 key 原文；
+                      改回上游已有定义的 chat.plugins.browseMarketplace。 */}
+                  {intl.formatMessage({ id: "chat.plugins.browseMarketplace" })}
                 </Button>
                 <PluginAddMenu
                   testId="plugin-settings-add"
@@ -1014,7 +1017,7 @@ function PluginList({
                 <Button type="button" variant="default" size="lg" onClick={onAdd}>
                   <Plus aria-hidden="true" data-icon="inline-start" />
                   {intl.formatMessage({
-                    id: "settings.plugin.plugins.browse",
+                    id: "chat.plugins.browseMarketplace",
                   })}
                 </Button>
               ) : undefined

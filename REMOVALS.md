@@ -133,6 +133,7 @@ v3.18.0 合并（`b95ebaff` sync）沿用「引擎/新功能采纳、智谱联�
 - 桌面 `desktopNetworkPolicy` 采纳上游 X.509 完整链验证（pkijs），剥离 `electron-updater` import 与 auto-updater 出口规则（fork 无该依赖）。
 - `config/provider/zxcode-builtin.json` 采纳 revision 44（新增 `gpt-6.1-terra` API key 模板；无 `account:zai-*` 规则）。
 - `session-lifecycle`/`input-prediction`/`session-features`/`conversation-quote-context` 等 CLI 本地引擎域本轮采纳（此前 v3.17.2 保基线未合）。
+- **node-repl-host 0.7.0 补全采纳**【2026-11-14】：v3.18.0 合并把该插件留在坏中间态——definition 已是 0.7.0，但包内 manifest/package.json 停在 0.6.1（v3.17.2 CLI 域 keep-ours 遗留），call-ledger 只合入半套（result.ts 反伪造强化在、server.ts 账本接线缺），node-repl-host vitest 3 个账本断言挂、运行时截图下标/CUA App 身份/会话能力标签三类可信 `_meta` 键永不写回、商店对已启用用户常驻 update-available 误报。本轮按「引擎/新功能采纳」补全整套：server.ts 账本接线、browser-bridge 主线程代理、cua-broker 按条目 token 鉴权、no-progress-guard（上游 0.6.2 特性随 0.7.0 一并进入）与账本行为回归测试全量采纳；rebrand 项按第十一节回写（`com.zxcode/request-context`、`ZXCODE_PLUGIN_ROOT`/`ZXCODE_CUA_*` env、`ZXCODE_MCP_*` 双名导入、`ZXCODE_CUA_HELPER_BUILD_ID` define）。plugin.json/package.json/`NODE_REPL_SERVER_VERSION` 三处对齐 0.7.0 并重建 dist；`bootstrap/test/official-plugin-defaults.test.ts` 新增「定义 version 与包内 plugin.json 一致」守护，`test/request-context-key.test.ts` 守护保留。
 
 ## 保留说明
 

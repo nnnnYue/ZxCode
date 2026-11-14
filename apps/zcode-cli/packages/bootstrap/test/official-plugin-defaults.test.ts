@@ -6,6 +6,7 @@ import test from "node:test";
 import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS as SETTINGS_DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "@zcode/shared";
 import {
   DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS,
+  OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME,
   OFFICIAL_PLUGIN_DEFINITIONS,
 } from "../src/app/official-plugin-definitions.js";
 
@@ -30,6 +31,40 @@ test("defaultEnabled 插件的随包内容必须真实存在，不允许指向�
       `${definition.name}@${definition.version} 的内容包缺失（rootCandidates[0]=${definition.rootCandidates[0]}）`,
     );
   }
+});
+
+test("官方插件定义 version 必须与包内 .zcode-plugin/plugin.json 一致", () => {
+  // 历史教训（node-repl-host 0.7.0，2026-11）：definition 先行升到 0.7.0，而包内
+  // plugin.json/package.json 因 v3.17.2 CLI 域 keep-ours 遗留停在 0.6.1，且 call-ledger
+  // 源码只合入半套——版本对比把 0.6.1 当作「已装版本」，商店对已启用用户常驻
+  // update-available 误报，宿主 dist 也随之落后。这里逐个定义对照包内 manifest，
+  // 让「定义版本」与「内容包版本」的劈叉在测试期就变红，不再依赖商店运行时暴露。
+  // 离线快照条目（rootCandidates 均不在仓库内）没有本地内容包，跳过。
+  let checked = 0;
+  for (const definition of OFFICIAL_PLUGIN_DEFINITIONS) {
+    const manifestPath = definition.rootCandidates
+      .map((candidate) => join(cliWorkspaceRoot, candidate, ".zcode-plugin", "plugin.json"))
+      .find((path) => existsSync(path));
+    if (!manifestPath) continue;
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { version?: string };
+    assert.ok(
+      manifest.version === definition.version,
+      `${definition.name} 定义 version=${definition.version} 与包内 plugin.json version=${manifest.version} 不一致（${manifestPath}）`,
+    );
+    checked += 1;
+  }
+  // 兜底：本次事故的主角不允许因为路径调整而被静默跳过。
+  assert.ok(
+    OFFICIAL_PLUGIN_DEFINITIONS.some(
+      (definition) =>
+        definition.name === OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME &&
+        definition.rootCandidates.some((candidate) =>
+          existsSync(join(cliWorkspaceRoot, candidate, ".zcode-plugin", "plugin.json")),
+        ),
+    ),
+    "node-repl-host 的内容包未被版本一致性检查覆盖，请检查 rootCandidates",
+  );
+  assert.ok(checked >= 14, `版本一致性检查只覆盖 ${checked} 个插件，数量异常`);
 });
 
 test("桌面与 SEA 打包清单必须覆盖全部内置层插件定义", () => {

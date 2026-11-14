@@ -222,6 +222,25 @@ async function expectCreatorDraft(checkFocus = true) {
   const text = await getV4ComposerText();
   expect(text).toContain("/SKILL.md)");
   expect(text?.endsWith(" ")).toBe(true);
+  // 把「写读同 key」钉进验收（specs/composer-initial-prompt-prefill.md）：创建插件的
+  // initialPrompt 预填必须写进 project 草稿 key 的 __draft__ scope，而不是 per-workspace
+  // 旧 key。本地 E2E 无远程 identity，scope 与 resolveComposerScope(null, undefined)
+  // 一致（hostId="local"、projectId=null、namespace="desktop"），key 拼装同 helper
+  // conversation-session-store.ts 的 getV4ComposerDraftScopeSnapshot。
+  const persistedDraftText = await browser.execute(
+    (key) => {
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem(key) ?? "{}") as {
+          scopes?: Record<string, { text?: string }>;
+        };
+        return parsed.scopes?.["__draft__"]?.text ?? null;
+      } catch {
+        return null;
+      }
+    },
+    `zcode-v4-composer-project-drafts:v1:${JSON.stringify(["desktop", "local", null])}`,
+  );
+  expect(persistedDraftText).toContain("$plugin-creator");
   if (checkFocus)
     await browser.waitUntil(isV4ComposerFocused, {
       timeout: 15000,

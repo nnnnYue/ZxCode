@@ -213,6 +213,7 @@
     "dist-release",
     "packages/ui/src/components/ui",
     "packages/ui/src/components/ai-elements",
+    "packages/desktop/resources/official-marketplace",
     ".claude/skills",
     ".agents/skills",
     "packages/formal-proof",

@@ -3,6 +3,7 @@
   "ignorePatterns": [
     ".gitlab/**/*.yml",
     "apps/zcode-cli/tests/gb2312.js",
+    "packages/desktop/resources/official-marketplace/**",
     "docs/electron/docs/fiddles/**/*.html",
     "packages/zcode-cua/**",
     "packages/desktop/src/renderer/src/plugin-sandbox/genUiTweakRuntime.js",

@@ -1,3 +1,4 @@
+import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
 import { readTaskStoreSnapshotInBrowser } from "./conversation-session-store-snapshot-script.js";
 
 export interface TaskStoreSnapshot {
@@ -71,23 +72,36 @@ export function getV4ComposerDraftScopeSnapshot(
   taskId: string | null,
   workspaceIdentity?: string,
 ): Promise<V4ComposerDraftScopeSnapshot> {
+  const scopeId = taskId ?? "__draft__";
+  // 修复原因：root 草稿（draft 态，taskId=null）已迁移到 project key 持久化——写读两侧
+  // 都构造 resolveComposerScope(null, workspaceIdentity)（fork 恒 null projectId，不做上游
+  // workspace-scope 记忆读）。helper 之前仍读 per-workspace 旧 key，draft 态快照与实现断裂。
+  // hostId 解析复用共享工具（Workspace Identity 约束：不在业务/测试代码手写拆解规则）。
+  const composerHostId = workspaceIdentity
+    ? (remoteHostIdFromWorkspaceIdentity(workspaceIdentity) ?? workspaceIdentity)
+    : "local";
+  const storageKey =
+    taskId === null
+      ? // 与 composerDraftStore.composerScopeKey(resolveComposerScope(null, identity)) 一致；
+        // clientNamespace 取 resolveComposerScope 默认值 "desktop"。
+        `zcode-v4-composer-project-drafts:v1:${JSON.stringify(["desktop", composerHostId, null])}`
+      : `zcode-v4-composer-drafts:v1:${encodeURIComponent(
+          workspaceIdentity?.trim() || workspacePath,
+        )}`;
   return browser.execute(
-    (workspacePathArg, taskIdArg, workspaceIdentityArg) => {
-      const scopeId = taskIdArg ?? "__draft__";
-      const workspaceKey = workspaceIdentityArg?.trim() || workspacePathArg;
-      const storageKey = `zcode-v4-composer-drafts:v1:${encodeURIComponent(workspaceKey)}`;
-      let draft: Record<string, unknown> | null = null;
-      try {
-        const raw = window.localStorage.getItem(storageKey);
-        if (raw) {
+    (storageKeyArg, scopeIdArg) => {
+      const draft: Record<string, unknown> | null = (() => {
+        try {
+          const raw = window.localStorage.getItem(storageKeyArg);
+          if (!raw) return null;
           const parsed = JSON.parse(raw) as {
             scopes?: Record<string, Record<string, unknown>>;
           };
-          draft = parsed.scopes?.[scopeId] ?? null;
+          return parsed.scopes?.[scopeIdArg] ?? null;
+        } catch {
+          return null;
         }
-      } catch {
-        draft = null;
-      }
+      })();
       const selection =
         draft?.modelSelection &&
         typeof draft.modelSelection === "object" &&
@@ -115,13 +129,12 @@ export function getV4ComposerDraftScopeSnapshot(
                   typeof options?.reasoningLevel === "string" ? options.reasoningLevel : null,
               }
             : null,
-        scopeId,
+        scopeId: scopeIdArg,
         text: typeof draft?.text === "string" ? draft.text : "",
       };
     },
-    workspacePath,
-    taskId,
-    workspaceIdentity,
+    storageKey,
+    scopeId,
   );
 }
 

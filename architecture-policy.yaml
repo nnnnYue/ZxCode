@@ -2348,7 +2348,8 @@ exceptions:
       - packages/ui/src/v4/RemoteConversationAvailability.tsx
       - packages/ui/src/v4/RemoteConversationDisconnected.tsx
       - packages/ui/src/v4/composer/composerSubmissionSettlement.ts
-    reason: v3.17.2 可视功能补齐（Phase 2f+2g）按上游原样落盘的三个 v4 域单文件——远程断连门禁容器、断连 fallback（fork 类型适配版）与 composer 发送结算账本；ui 既有 v4/ 根目录本就是未受管 legacy 根，单文件迁入新 managed 模块会切断与同目录既有组件的演进同步，跟随该目录既有形态。
+      - packages/ui/src/v4/composer/newTaskDraft.ts
+    reason: v3.17.2 可视功能补齐（Phase 2f+2g）按上游原样落盘的四个 v4 域单文件——远程断连门禁容器、断连 fallback（fork 类型适配版）、composer 发送结算账本与新建任务草稿种子（seedImportedSessionDraft）；ui 既有 v4/ 根目录本就是未受管 legacy 根，单文件迁入新 managed 模块会切断与同目录既有组件的演进同步，跟随该目录既有形态。newTaskDraft.ts 为 ea28c1d1 当年漏登的同期文件，2026-11-14 补录。
   - id: project-sidebar-swap-scattered-unmanaged-files
     rule: unmanaged-new-file
     paths:
@@ -2422,6 +2423,11 @@ exceptions:
     paths:
       - apps/zcode-cli/packages/design-plugin/skills/design/design-resources/**
     reason: 内置 design 插件随包的第三方设计资源（骨架里的 deck-stage.js、schema.ts 等示例资产），按上游字节保留并登记在 third-party/copied-components.json；它们只作为技能读取或复制给用户的模板，不被任何产品代码 import，不构成产品模块。
+  - id: official-marketplace-snapshot-resources
+    rule: unmanaged-new-file
+    paths:
+      - packages/desktop/resources/official-marketplace/**
+    reason: 官方插件市场随包离线快照（specs/official-marketplace-curation.md）由 scripts/fetch-official-marketplace.mjs 按 CDN zip 的 sha256 字节级解包生成，是第三方插件内容而非产品源码；产品代码不 import 它们（bundled seed 仅按 rootCandidates 读取文件），不构成产品模块，内容不得手工改写。
   - id: agent-runtime-exit-banner
     rule: unmanaged-new-file
     paths: [packages/ui/src/v4/AgentRuntimeExitBanner.tsx]

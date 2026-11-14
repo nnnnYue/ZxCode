@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-21T22:03:02.920Z",
+  "generatedAt": "2026-11-14T03:40:28.908Z",
   "marketplace": "zcode-plugins-official",
-  "marketplacePayloadSha256": "cef34da1768e5eb798c70d6358512105fd700ea37e3b130aa96ac848b51c4a9d",
+  "marketplacePayloadSha256": "13679508042410da597cc5d0a311c96696edbc7cbdd85fc8e2c0689d543c7610",
   "source": "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
   "entries": [
     {
@@ -17,7 +17,11 @@
         "packages/desktop/resources/official-marketplace/plugins/cloudbase-skills/0.1.0",
         "../../../resources/official-marketplace/plugins/cloudbase-skills/0.1.0"
       ],
-      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "UPSTREAM.md"],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md",
+        "UPSTREAM.md"
+      ],
       "listing": {
         "description_i18n": {
           "en": "CloudBase development skills and MCP integration for building, deploying, and troubleshooting Web, WeChat Mini Program, database, cloud function, CloudRun, storage, and AI projects.",
@@ -31,18 +35,22 @@
     },
     {
       "name": "mimosa",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "zip": {
-        "sha256": "63fa21a04a30511a8b9aa72d45cd4e964ed832bb677ca81d211efd337ee4684c",
-        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/mimosa/1.0.3/plugin.zip"
+        "sha256": "50d4da2cc1a24c63db06b51758699d5ffbf22aa4c79ae001a823e8177f0a1fe7",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/mimosa/1.0.4/plugin.zip"
       },
       "rootCandidates": [
-        "official-marketplace/plugins/mimosa/1.0.3",
-        "../official-marketplace/plugins/mimosa/1.0.3",
-        "packages/desktop/resources/official-marketplace/plugins/mimosa/1.0.3",
-        "../../../resources/official-marketplace/plugins/mimosa/1.0.3"
+        "official-marketplace/plugins/mimosa/1.0.4",
+        "../official-marketplace/plugins/mimosa/1.0.4",
+        "packages/desktop/resources/official-marketplace/plugins/mimosa/1.0.4",
+        "../../../resources/official-marketplace/plugins/mimosa/1.0.4"
       ],
-      "runtimeTopLevelPaths": ["LICENSE", "payload", "README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "payload",
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "Code Security Protection",
         "displayName_i18n": {
@@ -50,8 +58,8 @@
           "zh-CN": "代码安全防护"
         },
         "description_i18n": {
-          "en": "Local-first security guardrails for ZxCode with pre-write hooks, end-of-turn review, Git gates, commands, a security-scan skill, and an optional MCP server for sealed deep scans.",
-          "zh-CN": "面向 ZxCode 的本地优先代码安全防线，提供写入前 Hook、任务收尾复查、Git 门禁、命令、安全扫描 Skill，以及用于密封深扫的可选 MCP 服务。"
+          "en": "Local-first security guardrails for ZCode with pre-write hooks, end-of-turn review, Git gates, commands, a security-scan skill, and an optional MCP server for sealed deep scans.",
+          "zh-CN": "面向 ZCode 的本地优先代码安全防线，提供写入前 Hook、任务收尾复查、Git 门禁、命令、安全扫描 Skill，以及用于密封深扫的可选 MCP 服务。"
         },
         "category": "developer-tools",
         "author": {
@@ -61,18 +69,22 @@
     },
     {
       "name": "github",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "zip": {
-        "sha256": "7320f15886d83625ed8eec944a7a2ab09fe99d64a42131ccec427eeecfd769b6",
-        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/github/0.1.2/plugin.zip"
+        "sha256": "cf6b899331709398421b670e61f6cb2cb2aaefc31fae95330da66a9cfecdc8fe",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/github/0.1.4/plugin.zip"
       },
       "rootCandidates": [
-        "official-marketplace/plugins/github/0.1.2",
-        "../official-marketplace/plugins/github/0.1.2",
-        "packages/desktop/resources/official-marketplace/plugins/github/0.1.2",
-        "../../../resources/official-marketplace/plugins/github/0.1.2"
+        "official-marketplace/plugins/github/0.1.4",
+        "../official-marketplace/plugins/github/0.1.4",
+        "packages/desktop/resources/official-marketplace/plugins/github/0.1.4",
+        "../../../resources/official-marketplace/plugins/github/0.1.4"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md", "references", "UPSTREAM.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md",
+        "references",
+        "UPSTREAM.md"
+      ],
       "listing": {
         "description_i18n": {
           "en": "GitHub CLI workflows for commits, pull requests, issues, releases, Actions, repositories, Codespaces, and other GitHub resources.",
@@ -87,27 +99,74 @@
     },
     {
       "name": "video2code",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "zip": {
-        "sha256": "9cbb927f5f039b28f93be35cbec3166792246fddf5ec58e16dfad6a38a07a5b7",
-        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/video2code/0.6.0/plugin.zip"
+        "sha256": "60d7711d7572e17bbb74aeb0d36a1cf1c86622aa18e657c8c8969203cef05969",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/video2code/0.6.1/plugin.zip"
       },
       "rootCandidates": [
-        "official-marketplace/plugins/video2code/0.6.0",
-        "../official-marketplace/plugins/video2code/0.6.0",
-        "packages/desktop/resources/official-marketplace/plugins/video2code/0.6.0",
-        "../../../resources/official-marketplace/plugins/video2code/0.6.0"
+        "official-marketplace/plugins/video2code/0.6.1",
+        "../official-marketplace/plugins/video2code/0.6.1",
+        "packages/desktop/resources/official-marketplace/plugins/video2code/0.6.1",
+        "../../../resources/official-marketplace/plugins/video2code/0.6.1"
       ],
-      "runtimeTopLevelPaths": ["LICENSE", "mcp", "README_CN.md", "requirements.txt", "tests"],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "mcp",
+        "README_CN.md",
+        "requirements.txt",
+        "tests"
+      ],
       "listing": {
         "description_i18n": {
-          "en": "Records WebM through ZxCode's built-in Browser Use WebView and converts it to MP4 with ffmpeg for video/URL replication; no Playwright or external Chromium required.",
-          "zh-CN": "基于 ZxCode 内置 Browser Use WebView 录制 WebM 并用 ffmpeg 转成 MP4/URL 复刻；无需 Playwright 或外部 Chromium"
+          "en": "Records WebM through ZCode's built-in Browser Use WebView and converts it to MP4 with ffmpeg for video/URL replication; no Playwright or external Chromium required.",
+          "zh-CN": "基于 ZCode 内置 Browser Use WebView 录制 WebM 并用 ffmpeg 转成 MP4/URL 复刻；无需 Playwright 或外部 Chromium"
         },
         "category": "productivity",
         "author": {
           "name": "Z.ai",
           "url": "https://z.ai"
+        }
+      }
+    },
+    {
+      "name": "autoresearch",
+      "version": "0.1.0",
+      "zip": {
+        "sha256": "c2592e43a94fb8ee4d797fa560430739c54c82dafe82ce49fdb3f3930caf75d7",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/autoresearch/0.1.0/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/autoresearch/0.1.0",
+        "../official-marketplace/plugins/autoresearch/0.1.0",
+        "packages/desktop/resources/official-marketplace/plugins/autoresearch/0.1.0",
+        "../../../resources/official-marketplace/plugins/autoresearch/0.1.0"
+      ],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "mcp",
+        "README_CN.md",
+        "tests"
+      ],
+      "listing": {
+        "description_i18n": {
+          "en": "Autonomous experiment loop for ZCode: set a goal, pick a mechanical metric, and let the agent iterate. It measures, keeps what works, reverts what doesn't, and repeats.",
+          "zh-CN": "ZCode 自主实验循环：设定目标与机械度量，让 agent 迭代。每一轮测量、保留有效改动、回滚无效改动，如此往复。"
+        },
+        "category": "developer-tools",
+        "author": {
+          "name": "luochang212",
+          "url": "https://github.com/luochang212"
+        },
+        "examplePrompts": [
+          "Run an experiment loop to make this benchmark faster without breaking the checks",
+          "Which approaches were tried so far, and why were the discarded ones rejected?"
+        ],
+        "examplePrompts_i18n": {
+          "zh-CN": [
+            "跑一个实验循环，在不破坏正确性检查的前提下把这个基准跑得更快",
+            "到目前为止试过哪些方向？被丢弃的那些为什么被丢弃？"
+          ]
         }
       }
     },
@@ -124,7 +183,10 @@
         "packages/desktop/resources/official-marketplace/plugins/accounting-and-reporting/0.1.1",
         "../../../resources/official-marketplace/plugins/accounting-and-reporting/0.1.1"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md", "UPSTREAM.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md",
+        "UPSTREAM.md"
+      ],
       "listing": {
         "displayName": "核算与报告",
         "displayName_i18n": {
@@ -155,7 +217,12 @@
         "packages/desktop/resources/official-marketplace/plugins/gitlab/0.1.3",
         "../../../resources/official-marketplace/plugins/gitlab/0.1.3"
       ],
-      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "references", "UPSTREAM.md"],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md",
+        "references",
+        "UPSTREAM.md"
+      ],
       "listing": {
         "description_i18n": {
           "en": "GitLab CLI workflows based on GitLab's official Agent Skills for merge requests, issues, CI/CD, repositories, releases, and API operations.",
@@ -181,7 +248,9 @@
         "packages/desktop/resources/official-marketplace/plugins/alibaba-cloud-cli/0.1.2",
         "../../../resources/official-marketplace/plugins/alibaba-cloud-cli/0.1.2"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "Alibaba Cloud CLI",
         "displayName_i18n": {
@@ -212,7 +281,9 @@
         "packages/desktop/resources/official-marketplace/plugins/lark-cli/0.1.2",
         "../../../resources/official-marketplace/plugins/lark-cli/0.1.2"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "Lark CLI",
         "displayName_i18n": {
@@ -243,7 +314,9 @@
         "packages/desktop/resources/official-marketplace/plugins/tencent-meeting-cli/0.1.3",
         "../../../resources/official-marketplace/plugins/tencent-meeting-cli/0.1.3"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "Tencent Meeting CLI",
         "displayName_i18n": {
@@ -274,7 +347,9 @@
         "packages/desktop/resources/official-marketplace/plugins/dingtalk-cli/0.1.1",
         "../../../resources/official-marketplace/plugins/dingtalk-cli/0.1.1"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "DingTalk CLI",
         "displayName_i18n": {
@@ -306,7 +381,9 @@
         "packages/desktop/resources/official-marketplace/plugins/wecom-cli/0.1.1",
         "../../../resources/official-marketplace/plugins/wecom-cli/0.1.1"
       ],
-      "runtimeTopLevelPaths": ["README_CN.md"],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
       "listing": {
         "displayName": "WeCom CLI",
         "displayName_i18n": {
@@ -338,7 +415,11 @@
         "packages/desktop/resources/official-marketplace/plugins/obsidian/0.1.2",
         "../../../resources/official-marketplace/plugins/obsidian/0.1.2"
       ],
-      "runtimeTopLevelPaths": ["LICENSE", "README_CN.md", "UPSTREAM.md"],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md",
+        "UPSTREAM.md"
+      ],
       "listing": {
         "displayName": "Obsidian",
         "displayName_i18n": {
@@ -355,103 +436,473 @@
           "url": "https://z.ai"
         }
       }
+    },
+    {
+      "name": "zcode-mcp-app-dev",
+      "version": "0.1.1",
+      "zip": {
+        "sha256": "b721811b450b98f3551cd678b2f81685a810855e918e0b2b1c66fd776083777f",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/zcode-mcp-app-dev/0.1.1/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/zcode-mcp-app-dev/0.1.1",
+        "../official-marketplace/plugins/zcode-mcp-app-dev/0.1.1",
+        "packages/desktop/resources/official-marketplace/plugins/zcode-mcp-app-dev/0.1.1",
+        "../../../resources/official-marketplace/plugins/zcode-mcp-app-dev/0.1.1"
+      ],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
+      "listing": {
+        "description_i18n": {
+          "en": "Develop MCP Apps for ZCode with official SDKs and a small host-extension reference.",
+          "zh-CN": "使用官方 SDK 开发 ZCode MCP App，附宿主扩展约定与独立构建指引。"
+        },
+        "category": "developer-tools",
+        "author": {
+          "name": "ZCode"
+        }
+      }
+    },
+    {
+      "name": "excalidraw",
+      "version": "0.3.4",
+      "zip": {
+        "sha256": "3ff2bbe7bfbf906bc19ee79cbbd3797daa5b6fb2f8b60513ca7793b7914ed7f3",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/excalidraw/0.3.4/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/excalidraw/0.3.4",
+        "../official-marketplace/plugins/excalidraw/0.3.4",
+        "packages/desktop/resources/official-marketplace/plugins/excalidraw/0.3.4",
+        "../../../resources/official-marketplace/plugins/excalidraw/0.3.4"
+      ],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "licenses"
+      ],
+      "listing": {
+        "displayName": "Excalidraw",
+        "displayName_i18n": {
+          "en": "Excalidraw",
+          "zh-CN": "Excalidraw"
+        },
+        "description_i18n": {
+          "en": "Create and edit diagrams with Excalidraw and MCP tools.",
+          "zh-CN": "让 Agent 生成图形，在对话侧栏用 Excalidraw 编辑、引用选区、继续修改并导出。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "zcoder"
+        }
+      }
+    },
+    {
+      "name": "pdfcraft",
+      "version": "0.2.4",
+      "zip": {
+        "sha256": "5e21ce2dac7bf214f35dede866aa91fbc8f0669454f63ec478311a993f9f827e",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/pdfcraft/0.2.4/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/pdfcraft/0.2.4",
+        "../official-marketplace/plugins/pdfcraft/0.2.4",
+        "packages/desktop/resources/official-marketplace/plugins/pdfcraft/0.2.4",
+        "../../../resources/official-marketplace/plugins/pdfcraft/0.2.4"
+      ],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "PdfCraft",
+        "displayName_i18n": {
+          "en": "PdfCraft",
+          "zh-CN": "PdfCraft"
+        },
+        "description_i18n": {
+          "en": "PdfCraft PDF editing in a ZCode panel, with workspace file opening and host-mediated exports.",
+          "zh-CN": "在 ZCode 面板中使用 PdfCraft 进行PDF 编辑，支持打开工作区文件和通过宿主保存导出。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "zcoder"
+        }
+      }
+    },
+    {
+      "name": "wordcraft",
+      "version": "0.2.4",
+      "zip": {
+        "sha256": "dabfc1214336a72faa4d304a09b0ad58fc19e276f401a7176a79f6467a73061e",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/wordcraft/0.2.4/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/wordcraft/0.2.4",
+        "../official-marketplace/plugins/wordcraft/0.2.4",
+        "packages/desktop/resources/official-marketplace/plugins/wordcraft/0.2.4",
+        "../../../resources/official-marketplace/plugins/wordcraft/0.2.4"
+      ],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "WordCraft",
+        "displayName_i18n": {
+          "en": "WordCraft",
+          "zh-CN": "WordCraft"
+        },
+        "description_i18n": {
+          "en": "WordCraft word processing in a ZCode panel, with workspace file opening and host-mediated exports.",
+          "zh-CN": "在 ZCode 面板中使用 WordCraft 进行文字处理，支持打开工作区文件和通过宿主保存导出。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "zcoder"
+        }
+      }
+    },
+    {
+      "name": "gridcraft",
+      "version": "0.2.4",
+      "zip": {
+        "sha256": "19ab6cc7ea58f4f74a6cfb252be7b1827fe367e9fa7b5782dd39b4656af90e1d",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/gridcraft/0.2.4/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/gridcraft/0.2.4",
+        "../official-marketplace/plugins/gridcraft/0.2.4",
+        "packages/desktop/resources/official-marketplace/plugins/gridcraft/0.2.4",
+        "../../../resources/official-marketplace/plugins/gridcraft/0.2.4"
+      ],
+      "runtimeTopLevelPaths": [
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "GridCraft",
+        "displayName_i18n": {
+          "en": "GridCraft",
+          "zh-CN": "GridCraft"
+        },
+        "description_i18n": {
+          "en": "GridCraft spreadsheets in a ZCode panel, with workspace file opening and host-mediated exports.",
+          "zh-CN": "在 ZCode 面板中使用 GridCraft 进行电子表格，支持打开工作区文件和通过宿主保存导出。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "zcoder"
+        }
+      }
+    },
+    {
+      "name": "jupyter-notebook",
+      "version": "0.2.1",
+      "zip": {
+        "sha256": "5f22e7f498d6d3556deb2fea6b6cfe335aaae8ce6aba80e427cebe853dc8ca59",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/jupyter-notebook/0.2.1/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/jupyter-notebook/0.2.1",
+        "../official-marketplace/plugins/jupyter-notebook/0.2.1",
+        "packages/desktop/resources/official-marketplace/plugins/jupyter-notebook/0.2.1",
+        "../../../resources/official-marketplace/plugins/jupyter-notebook/0.2.1"
+      ],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "Jupyter Notebook",
+        "displayName_i18n": {
+          "en": "Jupyter Notebook",
+          "zh-CN": "Jupyter Notebook"
+        },
+        "description_i18n": {
+          "en": "Work on Jupyter notebooks in a side panel: connect to a running Jupyter Server or start one for the workspace, and edit and run cells together with the agent.",
+          "zh-CN": "在对话侧栏打开 Jupyter Notebook：连接已有的 Jupyter Server 或为工作区启动一个，Agent 与用户一起编辑和运行 cell。"
+        },
+        "category": "developer-tools",
+        "author": {
+          "name": "ZCode"
+        }
+      }
+    },
+    {
+      "name": "typst-workbench",
+      "version": "0.2.0",
+      "zip": {
+        "sha256": "bd1e0899205a82162617ba63f1c4e6981446da562f28d83c8a0884d2a48f4d60",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/typst-workbench/0.2.0/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/typst-workbench/0.2.0",
+        "../official-marketplace/plugins/typst-workbench/0.2.0",
+        "packages/desktop/resources/official-marketplace/plugins/typst-workbench/0.2.0",
+        "../../../resources/official-marketplace/plugins/typst-workbench/0.2.0"
+      ],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "Typst Workbench",
+        "displayName_i18n": {
+          "en": "Typst Workbench",
+          "zh-CN": "Typst 工作台"
+        },
+        "description_i18n": {
+          "en": "Live-preview Typst documents in a side panel with the Typst installed on your computer: the preview updates the moment the agent saves a file, the agent checks errors, looks at rendered pages, points at places in the preview and exports PDFs, and you can send selected text to the agent together with its source location.",
+          "zh-CN": "用你本机的 Typst 在对话侧栏实时预览文档：Agent 改完文件预览即刻更新，查看错误与渲染页面、在预览中标出位置、导出 PDF；你可以选中预览中的文字，连同对应的源码位置发给 Agent。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "ZCode"
+        }
+      }
+    },
+    {
+      "name": "zotero",
+      "version": "0.2.1",
+      "zip": {
+        "sha256": "95ed9985413aa938522643270094d64810fb959c842428d05e022281da53abc5",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/zotero/0.2.1/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/zotero/0.2.1",
+        "../official-marketplace/plugins/zotero/0.2.1",
+        "packages/desktop/resources/official-marketplace/plugins/zotero/0.2.1",
+        "../../../resources/official-marketplace/plugins/zotero/0.2.1"
+      ],
+      "runtimeTopLevelPaths": [
+        "LICENSE",
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "Zotero",
+        "displayName_i18n": {
+          "en": "Zotero",
+          "zh-CN": "Zotero"
+        },
+        "description_i18n": {
+          "en": "Work with your Zotero library in a side panel: search and read papers and your highlights, let the agent highlight evidence in PDFs, cite and keep a .bib file, and import papers, write notes and organise collections.",
+          "zh-CN": "在对话侧栏使用你的 Zotero 文库：搜索与阅读论文和你的高亮，Agent 在 PDF 中标出依据、生成引用与 .bib 文件，并可导入论文、写笔记、整理分类。"
+        },
+        "category": "productivity",
+        "author": {
+          "name": "ZCode"
+        }
+      }
+    },
+    {
+      "name": "anet",
+      "version": "0.1.3",
+      "zip": {
+        "sha256": "15e63b853e49b313afd2d0af1d655e16dddb397ade3b16aae1f71cb46978ce35",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/anet/0.1.3/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/anet/0.1.3",
+        "../official-marketplace/plugins/anet/0.1.3",
+        "packages/desktop/resources/official-marketplace/plugins/anet/0.1.3",
+        "../../../resources/official-marketplace/plugins/anet/0.1.3"
+      ],
+      "runtimeTopLevelPaths": [
+        "bin",
+        "LICENSE",
+        "README_CN.md"
+      ],
+      "listing": {
+        "displayName": "AgentNetwork (anet)",
+        "displayName_i18n": {
+          "en": "AgentNetwork (anet)",
+          "zh-CN": "AgentNetwork（anet）"
+        },
+        "description_i18n": {
+          "en": "Delegate tasks to other AI agents over A2A through a local AgentNetwork (anet) node: find agents, send and track end-to-end encrypted tasks, settle priced skills within operator limits, and answer tasks sent to this node.",
+          "zh-CN": "通过本机 AgentNetwork（anet）节点经 A2A 协议把任务交给其他 AI 智能体：发现智能体，发送并跟踪端到端加密的任务，在运营者设定的额度内支付付费技能，并答复其他智能体发给本节点的任务。"
+        },
+        "category": "developer-tools",
+        "author": {
+          "name": "Agent Network Research",
+          "url": "https://agentnetwork.org.cn"
+        }
+      }
+    },
+    {
+      "name": "ruic-card",
+      "version": "1.1.1",
+      "zip": {
+        "sha256": "6e1fdfb24802457d66a937134d22e5fefc83d4a9aac4537644aa4a3fef0c4876",
+        "url": "https://cdn-zcode.z.ai/zcode/official-plugin/plugins/ruic-card/1.1.1/plugin.zip"
+      },
+      "rootCandidates": [
+        "official-marketplace/plugins/ruic-card/1.1.1",
+        "../official-marketplace/plugins/ruic-card/1.1.1",
+        "packages/desktop/resources/official-marketplace/plugins/ruic-card/1.1.1",
+        "../../../resources/official-marketplace/plugins/ruic-card/1.1.1"
+      ],
+      "runtimeTopLevelPaths": [
+        "assets",
+        "LICENSE",
+        "README_CN.md"
+      ],
+      "listing": {
+        "description_i18n": {
+          "en": "Holographic collectible-card generator: layered artwork + Blender + Three.js, in two routes - paint the four layers from a description or reference image, or derive them from a photo you already have (rembg cutout, optional watermark removal, animation render and MP4 / WeChat-sized GIF deliverables). Outputs an interactive parallax card website plus an editable card.blend project.",
+          "zh-CN": "全息闪卡生成器：分层画稿 + Blender + Three.js，两条路线——用描述或参考图绘制四层图，或直接把已有照片切成四层（rembg 抠图、可选去水印，附动画渲染与 MP4 / 微信动图交付）。产出可交互的 3D 视差闪卡网页与可编辑的 card.blend 工程。"
+        },
+        "category": "游戏/3D",
+        "author": {
+          "name": "liuzhiqiang23",
+          "url": "https://github.com/liuzhiqiang23"
+        }
+      }
     }
   ],
   "icons": [
     {
       "pluginId": "cloudbase-skills@zcode-plugins-official",
       "fileName": "cloudbase-skills.png",
-      "sha256": "873d688c49b620a432147c45e94ce9bee919ba8893c2e757ccf1034f88f4e46b"
+      "sha256": "9dcb885a5ea1ab8ce8f502f42da50c659a95aa190392be65afb7128e09b9f95c"
     },
     {
       "pluginId": "mimosa@zcode-plugins-official",
       "fileName": "mimosa.png",
-      "sha256": "05466a98ac49aa40fd96cd1f371ee3ff8574d76668f5649b24c62dd1dfd6361e"
+      "sha256": "8a7f77558c84833c23b523c0adfd7c46c8d71f564e9166b5fd18e122a0bd57a5"
     },
     {
       "pluginId": "github@zcode-plugins-official",
       "fileName": "github.png",
-      "sha256": "916da4b4e72d9e80df2b2162ae47d01db372caadaaaad2e3a26339284965a548"
+      "sha256": "01c0884f25a62ab93aed09a2eb997daec08012d1c037372db994dd754e264c10"
     },
     {
       "pluginId": "video2code@zcode-plugins-official",
       "fileName": "video2code.png",
-      "sha256": "d90515535bf9615f848c80f56d234d606be7cc8e513f31b8564d1895298769e1"
+      "sha256": "696c2fbc2c504c6e92fb383c0067e6f5ad0a6f2eb7c6c6fe38fd7f9bb519e08b"
+    },
+    {
+      "pluginId": "autoresearch@zcode-plugins-official",
+      "fileName": "autoresearch.png",
+      "sha256": "1375e75102719077b460f4b6add3b0c49b7d2c506c6700eb102cfdc50a6e7118"
     },
     {
       "pluginId": "accounting-and-reporting@zcode-plugins-official",
       "fileName": "accounting-and-reporting.png",
-      "sha256": "e9e3215b0f0710b51b3c847a1c5b1ba74ab1ef1e0bd696c1fb571fc7c7e73f00"
+      "sha256": "69cc0bfcddbbe89f145c380a154df115746c756ac3249e63404d994b9dbfbe2c"
     },
     {
       "pluginId": "gitlab@zcode-plugins-official",
       "fileName": "gitlab.png",
-      "sha256": "b67e1ff07805a95f62f01a8ce1797ae3e25be22d79252f074a73056d249c62d5"
+      "sha256": "c610cf33af9ab26590305597697c9edf6a81a710b9c6c6ac852bd0f043614333"
     },
     {
       "pluginId": "alibaba-cloud-cli@zcode-plugins-official",
       "fileName": "alibaba-cloud-cli.png",
-      "sha256": "37c636a4890e30a7ae7c3654144757b89c7d1a31d61c1b87ef40962d39e2b33c"
+      "sha256": "97670ce6169cbf68bbc50aa9bd988b4d7096effbec80bbad1dcdc011d7495848"
     },
     {
       "pluginId": "lark-cli@zcode-plugins-official",
       "fileName": "lark-cli.png",
-      "sha256": "ed459fb792bdd0abef88ee91f1ec82925d9c04fdbfcb3b72cf8d67b02f6f2748"
+      "sha256": "4a78fb960d46534b42f9a4fa4539d9302d04bbf1ea4519c1e75cbd205e94bf99"
     },
     {
       "pluginId": "tencent-meeting-cli@zcode-plugins-official",
       "fileName": "tencent-meeting-cli.png",
-      "sha256": "40f08c632268086cff8bbbbe6c292b95ccf5effbb1f7dfa9966592ed40df48c9"
+      "sha256": "36078632bc05bdf37cddee51dc184cdd6ab8c278ffbe4e5b184afb351685699d"
     },
     {
       "pluginId": "dingtalk-cli@zcode-plugins-official",
       "fileName": "dingtalk-cli.png",
-      "sha256": "b3fb0715857df5d23213b5265166fabcb7f7b4b290890d7b5682a027cf39c85d"
+      "sha256": "b39c4e2755570ad6b4bf3c822e676977d2d8cab8e03b283acdd005477e883277"
     },
     {
       "pluginId": "wecom-cli@zcode-plugins-official",
       "fileName": "wecom-cli.png",
-      "sha256": "f89d5976ca6382cb1cab856bfd572daa543bd855e39431825cff0b14c1fbd1be"
+      "sha256": "2b6b8b2aaeb09f4965b28584e9c9805bb8b8df45b169f385e3a907c603fe075d"
     },
     {
       "pluginId": "obsidian@zcode-plugins-official",
       "fileName": "obsidian.png",
-      "sha256": "6e4b6881c3e3c304cbcaa53ffb202aa68fece3a0082a451f1638ff2c730a1285"
+      "sha256": "ea95d8015693a29d7950448b3e93eb4bc02bb19bf79fcb80729dd1c5fe33fabb"
+    },
+    {
+      "pluginId": "zcode-mcp-app-dev@zcode-plugins-official",
+      "fileName": "zcode-mcp-app-dev.png",
+      "sha256": "ae7d4b0ad4b20a4568854002816acca1d2e03169a3d580eb9872d640ded14942"
+    },
+    {
+      "pluginId": "excalidraw@zcode-plugins-official",
+      "fileName": "excalidraw.png",
+      "sha256": "d83da3fd7ef0f94f73cbcede7da924391544cb6cf522d14b97cae64ba60c35b6"
+    },
+    {
+      "pluginId": "pdfcraft@zcode-plugins-official",
+      "fileName": "pdfcraft.png",
+      "sha256": "19ea09fc4afa6f5011d15e6ff4102814fbcd50a8fa6681384b280e1f873b72d9"
+    },
+    {
+      "pluginId": "wordcraft@zcode-plugins-official",
+      "fileName": "wordcraft.png",
+      "sha256": "f445b821783eb9f52685845f586afc8decc30a5590a9dfc42d36a5c39a2c4405"
+    },
+    {
+      "pluginId": "gridcraft@zcode-plugins-official",
+      "fileName": "gridcraft.png",
+      "sha256": "ed2b93a238a06bf7e399776578fc27ede37d47d44f8b9e1058ab75aa547feda2"
+    },
+    {
+      "pluginId": "jupyter-notebook@zcode-plugins-official",
+      "fileName": "jupyter-notebook.png",
+      "sha256": "167539ba9f405bb96023cd83c2d219d126f816b5f99a2b4db445a23c1deb9f94"
+    },
+    {
+      "pluginId": "typst-workbench@zcode-plugins-official",
+      "fileName": "typst-workbench.png",
+      "sha256": "28a15347a420230e464fe19ddc634a7ecd72565b8aa8739a0107fd3e12d5a2bc"
+    },
+    {
+      "pluginId": "zotero@zcode-plugins-official",
+      "fileName": "zotero.png",
+      "sha256": "f3f4002481f4b84175634de34730af02bde2cf125fab10add753425fc8dc0727"
+    },
+    {
+      "pluginId": "anet@zcode-plugins-official",
+      "fileName": "anet.png",
+      "sha256": "2ff11555dd0be1f5efeac9005014770d2898f220d20367da32ba4434566d2a68"
     },
     {
       "pluginId": "android-emulator@zcode-plugins-official",
       "fileName": "android-emulator.png",
-      "sha256": "ead629480a3a5c6d50a2133690e7917e70bb64d51ee48cd905ae498afdc75d6b"
+      "sha256": "cc41354277f925c7510ce1c3b0b545287919a83c5283d8b45f1f2baf150976f6"
     },
     {
       "pluginId": "browser-use@zcode-plugins-official",
       "fileName": "browser-use.png",
-      "sha256": "995cb91204c5b0bab250909b6478d176c80f3abfff0fb3117c65c094ee78bf99"
+      "sha256": "e44d33d59b17a79312a77f388dc69720b6ebe8d533439be794b2a572b07e502c"
     },
     {
       "pluginId": "computer-use@zcode-plugins-official",
       "fileName": "computer-use.png",
-      "sha256": "dd6624d39a0e36f579c794542dc7506ec22f3ccd352e7c36187d173522f54d4b"
+      "sha256": "5aa641b353e9a199685baf93682af345a43edd73199608ea51f88f055ab47ecc"
     },
     {
       "pluginId": "ios-simulator@zcode-plugins-official",
       "fileName": "ios-simulator.png",
-      "sha256": "455d34704f7a0a6759b68270419498f09bd98af2a1ec8e4cddfb93c97cc55b04"
+      "sha256": "99a1ee03ab1000b521d9b69ceb11b95f7e9c094b6faa8aa85f2fdfa1c63291b2"
     },
     {
       "pluginId": "restore-legacy-sessions@zcode-plugins-official",
       "fileName": "restore-legacy-sessions.png",
-      "sha256": "f25a869f54f5c2369f8848f022af9a0adcaff1319f0fcdd0608496df62fa23b7"
+      "sha256": "38a017710307cc70fbee1d0fe38d581b62959e928c63034418571354da19699e"
     },
     {
       "pluginId": "skill-creator@zcode-plugins-official",
       "fileName": "skill-creator.png",
-      "sha256": "7501368309eeaa25e95b2249170367a22af0e95a8afb4f438f94ba2637700d86"
+      "sha256": "cf2825818b76010aa32e56ff42ea58315c99f9d41f13dabae29167ff51801d22"
     },
     {
       "pluginId": "zcode-guide@zcode-plugins-official",
       "fileName": "zcode-guide.png",
-      "sha256": "5dcd237200ded7360ed97eef45d4362886c9ba1177597d2e4e8ea1cc8c31f47d"
+      "sha256": "bcfdc509989ba216bd0aa5fa63694a6b5e20fe5a9cb90792c4d7d3bceed1f0a1"
     }
   ]
 }

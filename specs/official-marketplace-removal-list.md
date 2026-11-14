@@ -7,13 +7,14 @@
   - `pick-funds`（基金研究）、`find-clients`（对公获客）、`watch-positions`（持仓跟踪）
   - `model-deals`（交易测算）、`read-macro`（宏观阅读）、`write-research`（研报写作）
   - `finance-search`（金融搜索）、`hexin`（同花顺）、`tianyancha`（天眼查）、`wind`（万得）、`video-agent-kit`（视频代理套件）
-- 下架原因：这些插件的数据能力挂载在 `${ZXCODE_BASE_URL}/api/v1/mcp/server/*`（默认解析为 `https://zcode.z.ai`）官方 MCP 端点上（前 9 个为全部能力挂载；`video-agent-kit` 仅官方语音通道挂载、缺 env 时可降级），随产品移除对 `zcode.z.ai` 的运行时依赖一并下架（见 [REMOVALS.md](../REMOVALS.md)）。
+  - `image-generation`（图片生成）、`video-generation`（视频生成）
+- 下架原因：这些插件的数据能力挂载在 `${ZXCODE_BASE_URL}`（默认解析为 `https://zcode.z.ai`）官方端点上，随产品移除对 `zcode.z.ai` 的运行时依赖一并下架（见 [REMOVALS.md](../REMOVALS.md)）。前 9 个的全部能力挂 `/api/v1/mcp/server/*` 官方 MCP 端点；`video-agent-kit` 仅官方语音通道挂载、缺 env 时可降级；`image-generation` 与 `video-generation` 挂 `/api/v1/toolhub/*`，`plugin.json` 声明 `auth.type=zcode_official`（`provider=jwt_token`，官方 JWT 注入登录身份），`mcp/server.mjs` 缺 `ZCODE_BASE_URL` 时直接报「未注入：请在 ZCode 中使用本插件」——随包均不可用。
 - 引用下架插件的**产品推荐语料**同步下架：`packages/ui/src/v4/featureSuggestedPrompts.ts` 中引用名单内插件的推荐提示词条目（含 `plugin.stableId` 指向或 prompt 正文引用）不得保留，避免 UI 推荐不可用的插件。
 - 名单是**永久下架**而非版本回退：CDN 目录后续即使继续提供这些插件，重新生成快照也不得恢复。
 
 ## 状态所有者与接口
 
-- 唯一所有者：`scripts/fetch-official-marketplace.mjs` 的 `REMOVED_PLUGIN_NAMES`。脚本在下载 CDN 目录后、计算 payload 哈希与 staging 之前过滤名单条目，因此 manifest、bundled seed 条目、UI 图标映射三份产物天然不含名单内插件。
+- 唯一所有者：`scripts/fetch-official-marketplace.mjs`。过滤由 `CURATED_PLUGIN_NAMES` 策展白名单的正向封闭集执行（收录依据见 [official-marketplace-curation.md](./official-marketplace-curation.md)）：白名单外的条目（含本名单成员与线上新增插件）一律不入快照。`REMOVED_PLUGIN_NAMES` 保留为本下架事实清单，脚本每次运行断言两份名单交集为空，回归测试为 `scripts/test/official-marketplace-curation.test.mjs`。脚本在下载 CDN 目录后、计算 payload 哈希与 staging 之前完成过滤，因此 manifest、bundled seed 条目、UI 图标映射三份产物天然不含名单内插件。
 - 快照产物（均由脚本生成或落盘，手工编辑仅限本次一次性清理）：
   - `packages/desktop/resources/official-marketplace/plugins/<name>/<version>/`（解压目录）与 `.staged-*.json`（staging 标记）
   - `packages/desktop/resources/official-marketplace/manifest.json`（构建期清单，运行时不读取）
@@ -30,7 +31,7 @@
 
 ## 验收场景
 
-1. 打开设置 → 插件商店页：搜索上述 14 个插件名，均无结果；商店其余插件展示与安装不受影响。
-2. 全仓库检索 14 个插件名：除本 spec、`REMOVED_PLUGIN_NAMES` 名单与其他插件自身文档提及外，无任何残留。
+1. 打开设置 → 插件商店页：搜索上述 16 个插件名，均无结果；商店其余插件展示与安装不受影响。
+2. 全仓库检索 16 个插件名：除本 spec、`REMOVED_PLUGIN_NAMES` 名单与其他插件自身文档提及外，无任何残留。
 3. 新开工作台查看推荐提示词（office / coding 两模式）：不出现引用名单内插件的条目。
 4. 重新运行 fetch 脚本（可访问 CDN 时）：脚本跳过名单内条目，manifest 与生成文件中不出现它们，已删除的目录与图标不被重建。

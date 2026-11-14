@@ -2,6 +2,8 @@
 /* eslint-disable max-lines -- 下载、校验、解压与代码生成集中一处，保持部署/回滚的原子性。 */
 // 编译期官方插件市场离线化：下载 CDN 目录 + 全部插件 zip + 图标，落盘为随包资源，
 // 并生成两份数据文件（bundled seed 条目、UI 本地图标映射）。
+// 目录先过 CURATED_PLUGIN_NAMES 策展白名单（specs/official-marketplace-curation.md），
+// 白名单外插件（含 REMOVED_PLUGIN_NAMES 下架名单）不进入快照与生成物。
 //
 // 背景：插件商店去平台化后不再有任何运行时 CDN fetch 路径。官方市场的完整目录在
 // 编译期物化为仓库快照：
@@ -67,11 +69,13 @@ const requestTimeoutMs = 30_000;
 const downloadAttempts = 3;
 const OFFICIAL_MARKETPLACE_ID = "zcode-plugins-official";
 
-// 产品下架名单：以下插件不再随包分发。这些插件的数据能力全部挂载在
-// ${ZXCODE_BASE_URL}/api/v1/mcp/server/* 官方 MCP 端点上，随产品移除对
-// zcode.z.ai 的运行时依赖一并下架（specs/official-marketplace-removal-list.md）。
-// 在计算 payload 哈希与 staging 之前过滤，保证重新生成快照不会使其复活。
-const REMOVED_PLUGIN_NAMES = new Set([
+// 产品下架名单：以下插件不再随包分发。这些插件的数据能力挂载在
+// ${ZXCODE_BASE_URL} 官方 MCP 端点上（前 9 个为全部能力挂载；video-agent-kit 仅官方
+// 语音通道、image-generation/video-generation 挂 /api/v1/toolhub/* 官方 JWT 通道），
+// 随产品移除对 zcode.z.ai 的运行时依赖一并下架（specs/official-marketplace-removal-list.md）。
+// 过滤由下方策展白名单的正向封闭集执行；本名单保留为下架事实清单，与白名单的交集
+// 必须为空（filterOfficialMarketplaceCuration 每次运行断言）。
+export const REMOVED_PLUGIN_NAMES = new Set([
   "run-fpa",
   "vet-companies",
   "assess-credit",
@@ -86,6 +90,39 @@ const REMOVED_PLUGIN_NAMES = new Set([
   "tianyancha",
   "wind",
   "video-agent-kit",
+  "image-generation",
+  "video-generation",
+]);
+
+// 策展收录白名单（specs/official-marketplace-curation.md）：线上目录过滤到该正向封闭集，
+// 线上新增插件默认不收。白名单成员从线上目录消失时刷新直接报错退出，防止官方悄悄
+// 下架后随包快照悬空（条目仍指向不存在的 zip/解压目录）。2026-11-14 策展审查：
+// jev-decisions 因 11 个判断工具全部走 TypeSafe Jev 商业云 API（无本地替代）剔除，
+// 证据见 spec 收录清单段。
+export const CURATED_PLUGIN_NAMES = new Set([
+  "accounting-and-reporting",
+  "alibaba-cloud-cli",
+  "anet",
+  "autoresearch",
+  "cloudbase-skills",
+  "dingtalk-cli",
+  "excalidraw",
+  "github",
+  "gitlab",
+  "gridcraft",
+  "jupyter-notebook",
+  "lark-cli",
+  "mimosa",
+  "obsidian",
+  "pdfcraft",
+  "ruic-card",
+  "tencent-meeting-cli",
+  "typst-workbench",
+  "video2code",
+  "wecom-cli",
+  "wordcraft",
+  "zcode-mcp-app-dev",
+  "zotero",
 ]);
 
 const require = createRequire(import.meta.url);
@@ -103,6 +140,38 @@ const builtinIconAssetDirs = {
   "skill-creator": "skill-creator",
   "zcode-guide": "zcode-guide",
 };
+
+/**
+ * 按策展白名单过滤线上目录条目（specs/official-marketplace-curation.md）。
+ *
+ * 语义：
+ * - 白名单是正向封闭集：不在白名单内的条目（含下架名单成员与线上新增插件）一律过滤。
+ * - 白名单成员从线上目录消失时报错退出，防止官方悄悄下架后随包快照悬空。
+ * - 白名单与下架名单存在交集时报错（配置错误，快照不得生成）。
+ * - name 非字符串的非法条目原样透传，交给下游逐条校验抛错，不在这里静默吞掉
+ *   （与原下架过滤的口径一致）。
+ */
+export function filterOfficialMarketplaceCuration(
+  plugins,
+  { curatedPluginNames = CURATED_PLUGIN_NAMES, removedPluginNames = REMOVED_PLUGIN_NAMES } = {},
+) {
+  const overlap = [...curatedPluginNames].filter((name) => removedPluginNames.has(name));
+  if (overlap.length > 0) {
+    throw new Error(
+      `CURATED_PLUGIN_NAMES 与 REMOVED_PLUGIN_NAMES 存在交集（策展配置错误）: ${overlap.join(", ")}`,
+    );
+  }
+  const onlineNames = new Set(
+    plugins.filter((raw) => typeof raw?.name === "string").map((raw) => raw.name),
+  );
+  const missing = [...curatedPluginNames].filter((name) => !onlineNames.has(name));
+  if (missing.length > 0) {
+    throw new Error(
+      `策展白名单中的插件从线上目录消失（防止悄悄下架，请核对 specs/official-marketplace-curation.md）: ${missing.join(", ")}`,
+    );
+  }
+  return plugins.filter((raw) => typeof raw?.name !== "string" || curatedPluginNames.has(raw.name));
+}
 
 function printHelp() {
   console.log(`Usage: node scripts/fetch-official-marketplace.mjs [--help]
@@ -425,12 +494,14 @@ async function main() {
     throw new Error(`目录 manifest 不合法（name 必须为 ${OFFICIAL_MARKETPLACE_ID}）`);
   }
   const beforeFilterCount = marketplace.plugins.length;
-  // 只按下架名单过滤；name 缺失等非法条目仍交给下游逐条校验抛错，不在这里静默吞掉。
-  marketplace.plugins = marketplace.plugins.filter((raw) => !REMOVED_PLUGIN_NAMES.has(raw.name));
-  const removedCount = beforeFilterCount - marketplace.plugins.length;
-  if (removedCount > 0) {
+  // 策展白名单过滤（specs/official-marketplace-curation.md）：白名单外一律跳过，
+  // 白名单成员线上缺失时 filterOfficialMarketplaceCuration 直接报错；
+  // name 缺失等非法条目仍交给下游逐条校验抛错，不在这里静默吞掉。
+  marketplace.plugins = filterOfficialMarketplaceCuration(marketplace.plugins);
+  const filteredCount = beforeFilterCount - marketplace.plugins.length;
+  if (filteredCount > 0) {
     console.log(
-      `[fetch-official-marketplace] 按下架名单跳过 ${removedCount} 个插件: ${[...REMOVED_PLUGIN_NAMES].join(", ")}`,
+      `[fetch-official-marketplace] 按策展白名单跳过 ${filteredCount} 个线上插件（含下架名单 ${[...REMOVED_PLUGIN_NAMES].join(", ")}）`,
     );
   }
 
