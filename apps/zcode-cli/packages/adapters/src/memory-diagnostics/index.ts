@@ -92,8 +92,10 @@ export function startCliMemoryDiagnostics(
       heapLimit: getHeapStatistics().heap_size_limit,
     }),
     write: (record) =>
+      // 品牌约定：fork 数据目录是 ~/.zxcode（specs/zxcode-path-consistency.md），
+      // 上游默认的 ~/.zcode 会在每次运行时新建游离目录，合并收尾改为 fork 拼写。
       writeMemoryDiagnostic(
-        options.directory ?? join(homedir(), ".zcode", "cli", CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
+        options.directory ?? join(homedir(), ".zxcode", "cli", CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
         record,
       ),
   });
