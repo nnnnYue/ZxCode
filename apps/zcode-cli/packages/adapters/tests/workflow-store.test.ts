@@ -12,9 +12,10 @@ import {
 
 describe("Node workflow store", () => {
   it("defaults to the CLI workflows directory", () => {
-    expect(getDefaultWorkflowRoot()).toContain(join(".zcode", "cli", "workflows"));
+    // fork 品牌目录是 .zxcode（rebrand 收口）；期望与 adapters/src/workflow/index.ts 对齐。
+    expect(getDefaultWorkflowRoot()).toContain(join(".zxcode", "cli", "workflows"));
     expect(getDefaultWorkflowDefinitionsRoot()).toContain(
-      join(".zcode", "cli", "workflows", "definitions"),
+      join(".zxcode", "cli", "workflows", "definitions"),
     );
   });
 

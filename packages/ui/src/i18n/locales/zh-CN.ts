@@ -1934,6 +1934,11 @@ const zhCN: Record<string, string> = {
   "gitGraph.refreshFailed": "刷新 Git 图谱失败：{error}",
   "gitGraph.loadMore": "加载更多提交",
   "gitGraph.loadMore.loading": "正在加载...",
+  "fileManager.resizeNavigation": "调整文件目录宽度",
+  "fileManager.title": "文件",
+  "fileManager.showNavigation": "显示文件导航",
+  "fileManager.hideNavigation": "收起文件导航",
+  "fileManager.empty": "从目录中选择一个文件",
   "codeViewer.title": "代码查看",
   "codeViewer.close": "关闭代码面板",
   "codeViewer.edit": "编辑文件",
@@ -2548,7 +2553,7 @@ const zhCN: Record<string, string> = {
   "remote.connectingConfirmTitle": "要中止当前连接吗？",
   "remote.sourceServerInstallTitle": "需要安装 ZCode Server",
   "remote.sourceServerInstallDescription":
-    "ZCode 将上传匹配的发行包，安装到 ~/.zcode/server 并启动远端服务；现有旧远程文件会保留。",
+    "ZCode 将上传匹配的发行包，安装到 ~/.zxcode/server 并启动远端服务；现有旧远程文件会保留。",
   "remote.sourceServerInstallConfirm": "安装并继续",
   "remote.installTarget": "目标账号",
   "remote.installVersion": "安装版本",
@@ -6777,7 +6782,7 @@ const zhCN: Record<string, string> = {
   "remoteSync.device.status.online": "已连接",
   "remoteSync.empty.title": "暂无已连接设备",
   "remoteSync.empty.description":
-    "连接 SSH、WSL 或 Docker 设备后，可以把本机配置推送到该设备的 ~/.zcode 目录。",
+    "连接 SSH、WSL 或 Docker 设备后，可以把本机配置推送到该设备的 ~/.zxcode 目录。",
   "remoteSync.empty.connect": "连接远端设备",
   "remoteSync.device.neverSynced": "尚未同步",
   "remoteSync.device.lastSynced.today": "今天 {time} 已同步",
@@ -6840,7 +6845,7 @@ const zhCN: Record<string, string> = {
   "remoteSync.blocked.targetSymlink": "远端同名项是软链，不能覆盖",
   "remoteSync.blocked.compatDirectory": "远端同名项位于 ~/.agents 兼容目录，不能覆盖",
   "remoteSync.blocked.externalDirectory":
-    "远端同名插件位于 ~/.zcode/plugins 以外的目录（例如开发中的 checkout），不能更新",
+    "远端同名插件位于 ~/.zxcode/plugins 以外的目录（例如开发中的 checkout），不能更新",
   "remoteSync.blocked.targetCompatConfig": "远端使用 ~/.agents 兼容配置，推送会使其失效",
   "remoteSync.blocked.sourceRemoved": "来源已删除，不能同步",
   "remoteSync.blocked.remoteLatestMismatch": "远端来源的最新版本与本机不一致",

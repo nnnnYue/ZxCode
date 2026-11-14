@@ -52,14 +52,14 @@ interface ResolvedUserSkill {
 }
 
 function getCliConfigPath(): string {
-  return join(resolveUserHomeDir(), ".zcode", "cli", "config.json");
+  return join(resolveUserHomeDir(), ".zxcode", "cli", "config.json");
 }
 
 function normalizeSkillConfigPath(path: string): string {
   return path.replaceAll("\\", "/");
 }
 
-/** 按归一化 name 对齐的用户级技能；同名时保留候选排序中的第一项（`.zcode` 优先）。 */
+/** 按归一化 name 对齐的用户级技能；同名时保留候选排序中的第一项（`.zxcode` 优先）。 */
 async function resolveUserSkills(): Promise<Map<string, ResolvedUserSkill>> {
   const zcodeRoot = getUserZcodeSkillRoot();
   const result = new Map<string, ResolvedUserSkill>();

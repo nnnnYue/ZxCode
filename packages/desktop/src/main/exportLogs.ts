@@ -1256,9 +1256,11 @@ export async function createLogArchiveArtifacts(
   );
 
   const zcodeCliDir = getZCodeCliDir();
+  // Bugfix：rebrand 劈叉残留。源目录是 ~/.zxcode/cli（getZCodeCliDir），归档内标签兄弟行
+  // 都用 .zxcode，仅这行漏改——归档内路径与实际来源对不上会误导排查。
   await collectLogArchiveFilesByName(
     join(zcodeCliDir, CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
-    posix.join(".zcode", "cli", CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
+    posix.join(".zxcode", "cli", CLI_MEMORY_DIAGNOSTIC_DIRECTORY),
     (name) => CLI_MEMORY_FILE_PATTERN.test(name),
     files,
   );

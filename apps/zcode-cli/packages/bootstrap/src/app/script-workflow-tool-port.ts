@@ -348,9 +348,13 @@ async function resolveNamedWorkflowPath(
   signal?: AbortSignal,
 ): Promise<string> {
   const fileName = workflowFileName(name);
+  // Bugfix：rebrand 回归。30ce8b07 合并收口时把这里打回上游 .zcode，而 fork 全部写侧
+  // （dwf 保存、scope 判定 script-workflow-utils、工具 schema 描述）都是 .zxcode——按名
+  // 运行已保存 workflow 恒抛 Workflow not found。对齐读侧到 .zxcode（fork 从未写 .zcode，
+  // 不做双名兜底；上游存量手工文件走显式 scriptPath）。
   const candidates = [
-    join(deps.workingDirectory, ".zcode", "workflows", fileName),
-    join(homedir(), ".zcode", "workflows", fileName),
+    join(deps.workingDirectory, ".zxcode", "workflows", fileName),
+    join(homedir(), ".zxcode", "workflows", fileName),
   ];
   const builtIn = BUILTIN_WORKFLOW_ALLOWLIST.get(name);
   if (builtIn) candidates.push(builtIn);

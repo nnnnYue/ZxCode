@@ -342,6 +342,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   onCreateConversationTask,
   onCreateConversationTaskOnSource,
   handleOpenFileManager,
+  handleNavigateFileManager,
   onResolveConversationWorkspace,
   onOpenWorkspace,
   onOpenFolderFromWorkspaceMenu,
@@ -2033,6 +2034,9 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
       fileChangeFindQuery={fileChangeFindQuery}
       onFileChangeFindMatchCountChange={onFileChangeFindMatchCountChange}
       onCloseCodeViewer={handleCloseCodeViewer}
+      // Bugfix：App 已传入 handleNavigateFileManager 但这里未解构未转发，file-manager 面板的
+      // 文件树导航（点文件换预览）断链；恢复转发（对照上游 v3.18.0 接线）。
+      onNavigateFileManager={handleNavigateFileManager}
       onCloseGit={handleCloseGit}
       onActivateTab={handleActivateSidePaneTab}
       onReorderTab={handleReorderSidePaneTab}

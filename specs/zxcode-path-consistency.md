@@ -5,6 +5,11 @@
 ## 产品规则
 
 - 数据根：fork 全部可写数据在 `{dataBaseDir}/.zxcode` 下（`packages/services/src/paths.ts` 收口）。host 侧镜像 CLI 路径时必须对齐 fork CLI 实际目录 `~/.zxcode/cli`（config / db / log 的唯一权威定义在 `apps/zcode-cli/packages/adapters/src/config/file-config.adapter.ts`、`apps/zcode-cli/packages/contracts/src/config/index.ts`、`apps/zcode-cli/packages/adapters/src/logging/index.ts`），不得手写 `.zcode` 字面量。
+- host 侧技能/命令/设置同步/数据同步的用户级与 workspace 级品牌目录同样锁定 `.zxcode`（2026-11-14 收口：`skillsService`、`commandsService`、`settingsSyncService`、`hookDataSync`、`skillDataSync`、`commandDataSync`；对齐 `subagentsService` 先例与 CLI 侧 `adapters/src/commands/roots.ts`、`adapters/src/skills/roots.ts` 的 `ZXCODE_DIR = ".zxcode"`）。劈叉症状（已修复案例）：插件市场「创建插件」报"插件创建器暂不可用"——skillsService 扫 `~/.zcode/cli/plugins/cache` 静默返回空，而 CLI 读 `~/.zxcode` 显示插件已启用，两个进程读两个数据根。
+- 工程探针：`packages/services/test/zxcodePathConsistency.test.ts` 扫 services 源码禁止 `".zcode"` / `"~/.zcode"` 字面量（注释行豁免）；`.zcode-plugin`（插件 manifest 约定名，CLI 同款）不受本约束。未来确需读旧上游数据时写双名兼容（先例：`bootstrap/plugins.ts` `isWorkspacePluginConfigPath`），并在本 spec 登记。
+- 已知残留处置（2026-11-15 拍板"修复两处残留"后全量收口）：①named workflow 读侧（`script-workflow-tool-port.ts` resolveNamedWorkflowPath）已对齐 `.zxcode`（30ce8b07 合并曾把它打回上游 `.zcode`，fork 全部写侧都是 `.zxcode`，不做双名兜底）；②UI 文案 zh-CN/en-US 六处（remoteSync.empty.description、remoteSync.blocked.externalDirectory、`~/.zcode/server` 安装文案）已对齐 `.zxcode`（远控推送实现两端本来就写 `.zxcode`，文案是漏改）；③同簇行为层三处一并修复：`desktopHostProcess.ts` 凭据密钥登记路径（copyDataDirectory 目标布局是 `.zxcode/v2`，登记 `.zcode` 会重现"重启掉登录"）、`exportLogs.ts` 归档内 CLI 日志路径标签、`migrate-projects.ts` 远端 owner 建项目的会话目录排除（补 `.zxcode/workspace` 双拼写，对齐 project-repository listRestoreCandidates 先例）。
+- 刻意不动（勿"修复"）：`default-workspace/migration.ts` 的 `*/.zcode/workspace/default` GLOB 属 0005 存量迁移（已应用迁移 SQL 不可改，见 project-repository 先例注释）；`plugins.ts` 的 `.zcode`/`.zxcode` 双名判定与 `.zcode-plugin` manifest 目录名是兼容约定。
+- 测试基建待办（不阻塞运行时）：E2E 隔离 HOME 样本放置仍钉 `.zcode` 布局（`export-logs-jsonl-redaction.test.ts:234-235`、`e2e-runtime-paths.ts`、`ssh-remote-p0.ts` 等与 app 实际 `.zxcode` 布局不一致，需与 E2E 负责人统一）；core/tests 的 saved-workflows / workflow-draft 等测试期望仍是上游 `.zcode` 字面量（存量红，品牌收尾时逐文件对齐，workflow-store.test.ts 已翻绿）。
 - 例外（写死且合法）：`setting.json` 刻意锚定 homedir（`~/.zxcode/v2/setting.json`），不跟随 `dataBaseDir`（见 `paths.ts` `copyDataDirectory` 注释）；desktop main 与 services 两端路径必须一致。
 - 读旧数据兼容不算残留：`project-storage` 的 `.zcode/workspace` 迁移 GLOB、legacy 配置读取兼容、`.agents` 双目录合并保持不动。
 - agent bundle 产物名固定 `zxcode.cjs`：CLI 构建产物（`apps/zcode-cli/packages/cli/dist/zxcode.cjs`）、desktop 暂存（`packages/desktop/scripts/stage-agent-bundle.mjs`、`prepare-agent-node-bundle.mjs`）、远端 wiring（`packages/zcode-server-cli`）、运行时入口（`packages/shared/src/zcode-agent-runtime.ts` `nodeBundleEntryFile`）四方一致。上游 `build.mjs` 的 `dist/zcode.cjs` 命名在合并时属**品牌项，keep-ours**。
@@ -18,7 +23,7 @@
 
 ## 上游 sync 后的 rebrand 检查项（合并完成判定的一部分）
 
-1. `git grep -n '\.zcode' -- packages apps`（排除本 spec 列出的读旧兼容清单与注释）无新增命中。
+1. `pnpm test:engineering packages/services/test/zxcodePathConsistency.test.ts` 通过（services 域探针）；CLI 域与 UI 文案用 `git grep -n '\.zcode' -- packages apps`（排除本 spec 列出的读旧兼容清单与注释）复核无新增命中。
 2. `git grep -n 'dist/zcode\.cjs'` 无命中（产物名 split-brain 探针）。
 3. `git grep -n '"ZCODE_'` 无新增无 X 前缀 env 名。
 4. 重打包前验证 `apps/zcode-cli/packages/cli/dist/zxcode.cjs` 含当次协议改动（本次事故探针：`grep -c toolSearchMode` > 0）。

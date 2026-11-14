@@ -16,6 +16,7 @@ import {
 import { horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import type { BrowserViewScreenshotSurfacePreparePayload, GitChangeSourceId } from "@zcode/shared";
 import { PreviewPane } from "@/PreviewPane.js";
+import { FileManagerPane } from "@/workspace-file-tree/FileManagerPane.js";
 import { SidePaneTerminalPane } from "@/SidePaneTerminalPane.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { WorkspaceSidePaneToggleButton } from "@/WorkspaceSidePaneToggleButton.js";
@@ -322,6 +323,7 @@ export function AnimatedSidePanePanel({
   fileChangeFindQuery,
   onFileChangeFindMatchCountChange,
   onCloseCodeViewer,
+  onNavigateFileManager,
   onCloseGit,
   onActivateTab,
   onReorderTab,
@@ -407,6 +409,8 @@ export function AnimatedSidePanePanel({
   fileChangeFindQuery: string;
   onFileChangeFindMatchCountChange: (count: number) => void;
   onCloseCodeViewer: () => void;
+  /** file-manager 面板内的文件树导航（点文件换预览、xlsx 等走 office 查看器分流）。 */
+  onNavigateFileManager: (tabId: string, source: CodeViewerSource) => void;
   onCloseGit: () => void;
   onActivateTab: (tabId: string) => void;
   /** "插件"分组打开面板 tab；缺省不渲染分组（web / 无宿主）。 */
@@ -1423,9 +1427,39 @@ export function AnimatedSidePanePanel({
                             origin={tab.origin}
                             isVisible={isVisible && tab.id === contentActiveTabId}
                           />
-                        ) : tab.type === "file-manager" ||
-                          tab.type === "plugin-market" ||
-                          tab.type === "new-tab" ? (
+                        ) : tab.type === "file-manager" ? (
+                          // Bugfix：v3.18.0 合并把 fork 收口期的空占位分支保留下来，file-manager
+                          // tab 打开后只渲染空 div，「查看文件」面板全白。恢复上游的 FileManagerPane
+                          // 渲染（对照 b95ebaff）；plugin-market/new-tab 仍保持占位。
+                          <FileManagerPane
+                            markdownSelectionTarget={{ sessionId: activeTaskId, workspaceKey }}
+                            source={tab.source}
+                            target={tab.target}
+                            mobileOverlay={mobileOverlay}
+                            canOpenLocalFileManager={Boolean(isDesktop)}
+                            onNavigate={(source) => onNavigateFileManager(tab.id, source)}
+                            onClose={() => onCloseTab(tab.id)}
+                            workspacePath={taskCwd ?? workspaceAbsPath}
+                            sidePaneTabId={tab.id}
+                            onOpenBrowserUrl={onOpenBrowserUrl}
+                            onOpenCodeViewer={onOpenCodeViewer}
+                            // inactive/窄条/resize 中的 code preview 不应继续让
+                            // @pierre/diffs 的千行 Shadow DOM 参与布局；这里只裁剪 body，保留 tab/source/file state。
+                            renderHeavyContent={shouldRenderPreviewPaneHeavyContent({
+                              isActiveTab: tab.id === contentActiveTabId,
+                              // video/audio 原生全屏会触发 resize，resize settling
+                              // 期间必须保持当前媒体节点挂载，否则浏览器会立即退出全屏。
+                              isMediaPreview:
+                                tab.source?.type === "media" ||
+                                (tab.source?.type === "file" &&
+                                  inferMediaPreview(tab.source.path) !== null),
+                              isMobileOverlay: mobileOverlay,
+                              isResizeSettling: isWindowResizeSettling,
+                              isSidePaneVisible: isVisible,
+                              visibleInlineSizePx: sidePaneVisibleInlineSizePx,
+                            })}
+                          />
+                        ) : tab.type === "plugin-market" || tab.type === "new-tab" ? (
                           <div data-side-pane-placeholder={tab.type} className="h-full" />
                         ) : (
                           <HumanBrowserView

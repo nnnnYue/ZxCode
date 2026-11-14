@@ -145,8 +145,13 @@ export function migrateProjects(db: DatabaseSync, context: ProjectMigrationConte
     );
     for (const row of db
       .prepare(
+        // 会话目录双拼写排除：fork 系统会话目录是 {dataBaseDir}/.zxcode/workspace/default
+        // （paths.ts getConversationWorkspaceDir），只排上游 .zcode 会把 fork 的系统会话目录
+        // 误建成项目。对齐 project-repository listRestoreCandidates 的双拼写先例（存量
+        // migration 的 GLOB 不可改，运行时查询两个都排）。
         `SELECT root_path FROM tasks WHERE host_id=? AND project_id IS NULL AND deleted=0
           AND replace(root_path, char(92), '/') NOT GLOB '*/.zcode/workspace/*'
+          AND replace(root_path, char(92), '/') NOT GLOB '*/.zxcode/workspace/*'
           GROUP BY root_path ORDER BY max(updated_at) DESC, root_path`,
       )
       .all(context.hostId!) as { root_path: string }[]) {

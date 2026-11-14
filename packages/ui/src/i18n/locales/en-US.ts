@@ -2077,6 +2077,11 @@ const enUS: Record<string, string> = {
   "gitGraph.refreshFailed": "Git Graph refresh failed: {error}",
   "gitGraph.loadMore": "Load more commits",
   "gitGraph.loadMore.loading": "Loading more...",
+  "fileManager.resizeNavigation": "Resize file navigation",
+  "fileManager.title": "Files",
+  "fileManager.showNavigation": "Show file navigation",
+  "fileManager.hideNavigation": "Hide file navigation",
+  "fileManager.empty": "Select a file from the navigation",
   "codeViewer.title": "Code viewer",
   "codeViewer.close": "Close code viewer",
   "codeViewer.edit": "Edit file",
@@ -2719,7 +2724,7 @@ const enUS: Record<string, string> = {
   "remote.connectingConfirmTitle": "Stop the current connection?",
   "remote.sourceServerInstallTitle": "ZCode Server installation required",
   "remote.sourceServerInstallDescription":
-    "ZCode will upload the matching release, install it under ~/.zcode/server, and start the remote service. Existing legacy remote files will be preserved.",
+    "ZCode will upload the matching release, install it under ~/.zxcode/server, and start the remote service. Existing legacy remote files will be preserved.",
   "remote.sourceServerInstallConfirm": "Install and continue",
   "remote.installTarget": "Target account",
   "remote.installVersion": "Install version",
@@ -7227,7 +7232,7 @@ const enUS: Record<string, string> = {
   "remoteSync.device.status.online": "Connected",
   "remoteSync.empty.title": "No connected devices",
   "remoteSync.empty.description":
-    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.zcode directory.",
+    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.zxcode directory.",
   "remoteSync.empty.connect": "Connect remote device",
   "remoteSync.device.neverSynced": "Not synced yet",
   "remoteSync.device.lastSynced.today": "Synced today at {time}",
@@ -7294,7 +7299,7 @@ const enUS: Record<string, string> = {
   "remoteSync.blocked.compatDirectory":
     "The remote item is in the ~/.agents compatibility directory and cannot be overwritten",
   "remoteSync.blocked.externalDirectory":
-    "The remote plugin with the same name is outside ~/.zcode/plugins (for example a development checkout) and cannot be updated",
+    "The remote plugin with the same name is outside ~/.zxcode/plugins (for example a development checkout) and cannot be updated",
   "remoteSync.blocked.targetCompatConfig":
     "The remote device uses the ~/.agents compatibility config; pushing would disable it",
   "remoteSync.blocked.sourceRemoved": "The source was removed and cannot be synced",

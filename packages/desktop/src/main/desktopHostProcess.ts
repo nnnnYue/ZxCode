@@ -327,9 +327,11 @@ export function spawnHostProcess(
       // 修复原因（ZCT-2120723935487688704）：切换数据存储路径只复制凭据文件，新根缺少系统条目，
       // 重启后掉登录且无法重新登录。Host 只提供数据根；凭据路径由 Main 按 copyDataDirectory 的
       // 目标布局推导，密钥不离开 Main，也不开放对目标目录的加解密。
+      // Bugfix：rebrand 劈叉残留。copyDataDirectory 复制的是 {base}/.zxcode/v2（paths.ts），
+      // 密钥登记却写 .zcode——登记到不存在的路径，重现上面注释要修的"重启掉登录"。
       const share = isAbsolute(targetBaseDir)
         ? credentialCipher.shareKeyWithCopiedCredentials(
-            join(targetBaseDir, ".zcode", "v2", "credentials.json"),
+            join(targetBaseDir, ".zxcode", "v2", "credentials.json"),
           )
         : Promise.reject(new Error("Data root must be absolute"));
       void share

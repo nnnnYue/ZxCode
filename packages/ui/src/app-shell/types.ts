@@ -174,10 +174,6 @@ export interface AppProps {
   platform?: import("@zcode/shared").IPlatformService;
   handleOpenPluginMarket?: () => void;
   handleOpenNewSidePaneTab?: () => void;
-  handleNavigateFileManager?: (
-    tabId: string,
-    source: import("@/lib/codeViewer.js").CodeViewerSource,
-  ) => void;
   handleOpenFileManager?: (
     target: import("@/project-sidebar/contract.js").SidebarFileTreeOpenRequest["target"],
   ) => void;
@@ -212,6 +208,12 @@ export interface GitChangeSummary {
 export type WorkspaceMainView = "chat" | "automations" | "plugin-store";
 
 export interface WorkspaceShellLayoutProps extends AppProps {
+  // useAppPanels 恒返回该回调（App 解构后传入）；file-manager 面板的目录导航依赖它，
+  // AnimatedSidePanePanel 按上游同样必填。
+  handleNavigateFileManager: (
+    tabId: string,
+    source: import("@/lib/codeViewer.js").CodeViewerSource,
+  ) => void;
   workspaceReadOnlyReason?: string;
   workspaceMainView: WorkspaceMainView;
   pluginStoreOpenVersion: number;
