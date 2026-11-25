@@ -1,3 +1,7 @@
+// 合并说明（v4.0.0）：采上游 wdio e2e 治理与 manual-review/pending 转正目录；拒 voice-input
+// （prepareVoiceInputFixture，云端 ASR 剔除域）、official-mcp auth routing fixture（凭据剔除域）
+// 与会话分享 / coding-plan upgrade mock 接线（剔除域）；web-remote auth-gate fixture 为
+// fork 自建 relay 域保留（REMOVALS §十二/§十三）。
 import {
   bindPrelaunchedElectronSession,
   PrelaunchedElectronOwner,
@@ -5334,6 +5338,8 @@ export const config: WebdriverIO.Config = {
           settingsFile: E2E_APP_SETTINGS_FILE,
           workspacePath: resolve(E2E_HOME_DIR, "ZCodeProject"),
         });
+        // 合并说明（v4.0.0）：拒 prepareVoiceInputFixture（voice-input 剔除域）与
+        // prepareOfficialMcpAuthRoutingFixture（official-mcp 凭据剔除域）；采 mcp 失败引导 fixture。
         stopMcpFailureGuidanceFixture = await prepareMcpFailureGuidanceFixture({
           specs,
           credentialsFile: E2E_APP_CREDENTIALS_FILE,
@@ -5440,6 +5446,8 @@ export const config: WebdriverIO.Config = {
           stopWebRemoteControlAuthGateFixture = null;
           await stopAccessToken401Fixture?.();
           stopAccessToken401Fixture = null;
+          // 合并说明（v4.0.0）：voice-input / official-mcp auth routing fixture 已按剔除域拒入，
+          // 此处仅保留 mcp 失败引导 fixture 的清理。
           await stopMcpFailureGuidanceFixture?.();
           stopMcpFailureGuidanceFixture = null;
           currentE2EBeforeSessionError = null;

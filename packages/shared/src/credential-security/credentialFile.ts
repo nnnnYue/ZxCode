@@ -29,7 +29,7 @@ export function readAssignedCredentialsFile(
 }
 
 interface ServerCredentialFileOptions {
-  /** 与本机 Desktop 共用的 `<dataBaseDir>/.zcode/v2/credentials.json`。 */
+  /** 与本机 Desktop 共用的 `<dataBaseDir>/.zxcode/v2/credentials.json`。 */
   sharedFilePath: string;
   /** Server 自有凭据文件；其所在目录存在即表示已改用自有库，且其中的密钥已就绪。 */
   serverFilePath: string;

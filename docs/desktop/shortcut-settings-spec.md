@@ -103,7 +103,6 @@ key       := [a-z] | [0-9] | "[" | "]" | "=" | "-" | "," | "." | "/" | "\\"
 | zoomIn               | menu   | `CmdOrCtrl+=`（菜单保留 Plus 可见项 + `=` 隐藏项的双条目模式） |
 | zoomOut              | menu   | `CmdOrCtrl+-`                                                  |
 | resetZoom            | menu   | `CmdOrCtrl+0`                                                  |
-| toggleVoiceInput     | window | `CmdOrCtrl+Shift+D`（仅桌面，见 §12.7）                        |
 
 - `window` 通道：renderer 内 `useAppKeyboard` 分发，三端一致生效。
 - `menu` 通道：桌面应用菜单 accelerator（main 进程）；menu 通道命令在 Web/手机端设置页置灰并标注「仅桌面端生效」，window 通道命令三端全部可配置。
@@ -380,13 +379,3 @@ preventDefault，工具条监听 defaultPrevented 守卫放弃，菜单静默死
   newline 显式 insertLineBreak；命中 send 复用发送链但不受手机视口 enterSubmits 门禁
   （软键盘误发只针对 Enter 物理键），且与反转投递（仅响应 Ctrl/Meta+Enter）无交集、
   无需让位。纯函数 resolveComposerKeyAction 为两条分发路径共用。
-
-### 12.7 语音输入快捷键（toggleVoiceInput）
-
-| 命令               | 默认绑定            | 说明                         |
-| ------------------ | ------------------- | ---------------------------- |
-| `toggleVoiceInput` | `CmdOrCtrl+Shift+d` | 开始或结束 Composer 语音输入 |
-
-- 行为见 `docs/chat/composer-voice-input.md`「快捷键」。分发在 voice-input 模块自己的 window capture 监听，匹配读生效表；`useAppKeyboard` 不注册处理器，不会抢先 `preventDefault`。
-- 只在桌面端注册。Web 和手机远控没有语音输入，设置页不展示这一行（与 `toggleSidePaneFullView` 同样处理）。
-- 这是快捷键自定义发版后新增的命令，默认键遵守 §5「默认键让位显式覆盖」。
