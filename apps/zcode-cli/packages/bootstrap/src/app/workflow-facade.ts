@@ -31,7 +31,6 @@ import {
   type ImageProcessorPort,
   type PdfDocumentPort,
   type Logger,
-  type McpPort,
   type SessionEventSink,
   type SessionId,
   type SessionStorePort,
@@ -44,8 +43,7 @@ import type { PrepareUserExecutionBoundary, ZCodeAppOptions } from "./types.js";
 import { createWorkflowMethods, type WorkflowFacade } from "./workflow-methods.js";
 
 interface CreateWorkflowFacadeDeps {
-  /** OTLP 遥测下线后默认缺省；core 侧回退 NOOP facade。 */
-  agentTelemetry?: AgentExecutionTelemetryPort;
+  agentTelemetry: AgentExecutionTelemetryPort;
   appOptions: ZCodeAppOptions;
   appVersion: string;
   artifactStore?: ToolArtifactStorePort;
@@ -59,7 +57,6 @@ interface CreateWorkflowFacadeDeps {
   imageProcessorPort: ImageProcessorPort;
   pdfDocumentPort?: PdfDocumentPort;
   logger: Logger;
-  mcpPort?: McpPort;
   /** 父会话的 model factory（与 script-workflow-child-runtime.ts 同一约定）。 */
   modelFactory: NonNullable<AgentRuntimeDeps["modelFactory"]>;
   permissionService: PermissionService;
@@ -87,7 +84,8 @@ export function createWorkflowFacade(deps: CreateWorkflowFacadeDeps): WorkflowFa
       await deps.prepareUserExecutionBoundary({ traceContext: request.traceContext });
       const workflowKind = request.workflowKind ?? builtInExpertWorkflowDefinition.kind;
       const childSessionId = createSessionId(`workflow_${request.activityId}`);
-      const childTraceContext = createChildTraceContext(request.traceContext ?? deps.traceContext, {
+      const parentTraceContext = request.traceContext ?? deps.traceContext;
+      const childTraceContext = createChildTraceContext(parentTraceContext, {
         attributes: {
           parentSessionId: deps.sessionId,
           workflowActivityId: request.activityId,
@@ -96,6 +94,7 @@ export function createWorkflowFacade(deps: CreateWorkflowFacadeDeps): WorkflowFa
           workflowRunId: request.runId,
         },
         sessionId: childSessionId,
+        rootSessionId: parentTraceContext.rootSessionId ?? deps.sessionId,
       });
       const parentSelection = deps.runtime.getSessionModelSelection();
       await request.onChildSessionStarted?.({
@@ -105,7 +104,7 @@ export function createWorkflowFacade(deps: CreateWorkflowFacadeDeps): WorkflowFa
         sessionId: childSessionId,
         traceId: childTraceContext.traceId,
       });
-      const childRuntime = createWorkflowChildRuntime(deps, {
+      const childRuntime = await createWorkflowChildRuntime(deps, {
         childSessionId,
         childTraceContext,
         workflowKind,
@@ -274,19 +273,21 @@ export function createWorkflowFacade(deps: CreateWorkflowFacadeDeps): WorkflowFa
   });
 }
 
-function createWorkflowChildRuntime(
+async function createWorkflowChildRuntime(
   deps: CreateWorkflowFacadeDeps,
   options: {
     childSessionId: SessionId;
     childTraceContext: TraceContext;
     workflowKind: string;
   },
-): AgentRuntime {
+): Promise<AgentRuntime> {
+  const childMcp = await deps.runtime.createChildMcpAccess();
   return new AgentRuntime(
     options.childSessionId,
     {
       ...deps.runtimeConfig,
-      agentName: options.workflowKind === "expert" ? "zxcode-expert" : "zxcode-workflow",
+      mcp: childMcp.config,
+      agentName: options.workflowKind === "expert" ? "zcode-expert" : "zcode-workflow",
       // workflow child 不在 Guarded 合同内；只隔离父任务模式，不继承审批。
       mode: "yolo",
       modelSelection: deps.runtime.getSessionModelSelection(),
@@ -297,12 +298,8 @@ function createWorkflowChildRuntime(
       workingDirectory: deps.workingDirectory,
     },
     {
-      ...(deps.agentTelemetry
-        ? {
-            agentTelemetry: deps.agentTelemetry,
-            agentTelemetryCausation: deps.agentTelemetry.captureCausation(),
-          }
-        : {}),
+      agentTelemetry: deps.agentTelemetry,
+      agentTelemetryCausation: deps.agentTelemetry.captureCausation(),
       // Workflow 在父工具返回后独立调度，不能伪装成父 Span 的同步 Child。
       agentTelemetryCausationMode: "linked_root",
       eventStore: createInMemorySessionEventStore(),
@@ -346,16 +343,16 @@ function createWorkflowChildRuntime(
               disabledPaths: collectDisabledPaths(deps.configResult.config.skillOverrides),
             }))
           : undefined,
-      mcpPort: deps.mcpPort,
+      ...childMcp.deps,
       eventSink: deps.eventSink,
       modelFactory: deps.modelFactory,
       resolveEffectiveModelSelection: deps.appOptions.resolveEffectiveModelSelection,
-      // 对外交互端口由父 runtime 派生（permissionBroker）：
+      // 对外交互端口由父 runtime 派生（permissionBroker + providerRuntimeHeadersPort）：
       // 子会话不是协议客户端认识的身份，直接透传 appOptions 的端口会让反向请求发到一个
       // 客户端找不到的 session 上、response 永不回来。
       ...deps.runtime.createChildClientPorts({
         agentId: options.childSessionId,
-        agentType: options.workflowKind === "expert" ? "zxcode-expert" : "zxcode-workflow",
+        agentType: options.workflowKind === "expert" ? "zcode-expert" : "zcode-workflow",
         childSessionId: options.childSessionId,
         description: `${options.workflowKind} workflow agent`,
         ...(options.childTraceContext.turnId === undefined

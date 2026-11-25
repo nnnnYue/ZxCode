@@ -36,6 +36,9 @@ import {
   PluginStoreInstallButton,
   PluginStoreItemMenu,
   PluginStorePaidPlanBadge,
+  PluginStoreTrustButton,
+  PluginStoreTrustPendingBadge,
+  PluginStoreUpdateButton,
   type PluginStoreActions,
 } from "@/settings/PluginStoreCard.js";
 import {
@@ -149,8 +152,11 @@ export function PluginStoreDetailView({
               {displayName}
             </h1>
             <PluginStorePaidPlanBadge item={item} />
+            <PluginStoreTrustPendingBadge item={item} />
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <PluginStoreTrustButton item={item} actions={actions} size="lg" />
+            <PluginStoreUpdateButton item={item} actions={actions} size="lg" />
             {item.installed ? (
               <>
                 <PluginStoreItemMenu

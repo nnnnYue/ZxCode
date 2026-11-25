@@ -1,5 +1,6 @@
 import type {
   McpPort,
+  McpConfigurationSnapshot,
   McpServerConfig,
   McpServerStatus,
   McpStdioServerConfig,
@@ -28,9 +29,7 @@ function resolveZCodeCuaBrokerSocket(): string | undefined {
 }
 
 function resolveZCodeCuaBrokerToken(): string | undefined {
-  return (
-    undefined
-  );
+  return undefined;
 }
 
 const NODE_REPL_SERVER_NAME = "node_repl";
@@ -78,8 +77,6 @@ export async function listMcpServerStatuses(
       transport: config.type,
       toolCount: 0,
       updatedAt,
-      error: getConfiguredServerError(name, config, untrustedServerNames),
-      ...(configuredStatus === "untrusted" ? { failureKind: "status_unavailable" as const } : {}),
     };
   }
 
@@ -97,9 +94,7 @@ export function omitMcpServers(
 ): Record<string, McpServerConfig> {
   const kept = Object.fromEntries(
     Object.entries(servers).filter(
-      ([name, config]) =>
-        !omittedNames.has(name) &&
-        !isRetiredCuaMcpServer(name, config),
+      ([name, config]) => !omittedNames.has(name) && !isRetiredCuaMcpServer(name, config),
     ),
   );
 
@@ -178,7 +173,7 @@ function isZCodeCuaStdioServer(
   if (config.type !== "stdio") return false;
   if (name === "computer-use") return true;
   // 内置 official zcode-cua plugin 的 MCP server 走 __zxcode-plugin-host，command 是 Helper
-  // (非 zcode-cua)、args 是 [zxcode.cjs, __zxcode-plugin-host, server.js]（非 zcode-cua package arg），
+  // (非 zcode-cua)、args 是 [zxcode.cjs, __zcode-plugin-host, server.js]（非 zcode-cua package arg），
   // 上面的 name/command/args 三条都匹配不到。_plugin id 由 adapters resolver 权威写入 env
   // （manifest/user env 不可覆盖），用它识别 official plugin server。
   if (
@@ -194,7 +189,9 @@ function isZCodeCuaStdioServer(
 function isRetiredCuaMcpServer(name: string, config: McpServerConfig | undefined): boolean {
   // node_repl is the single supported CUA host and may share the CUA plugin's
   // authority marker; all other CUA-shaped MCP entries are retired.
-  return name !== NODE_REPL_SERVER_NAME && config !== undefined && isZCodeCuaStdioServer(name, config);
+  return (
+    name !== NODE_REPL_SERVER_NAME && config !== undefined && isZCodeCuaStdioServer(name, config)
+  );
 }
 
 function getConfiguredServerStatus(
@@ -213,4 +210,31 @@ function getConfiguredServerError(
 ): string | undefined {
   if (config.enabled === false || !untrustedServerNames.has(name)) return undefined;
   return "Project MCP server requires explicit connection before use.";
+}
+
+/** 用户覆盖插件，宿主身份最后合并；首次加载和热更新共用。 */
+export function resolveEffectiveMcpConfiguration(input: {
+  enabled: boolean;
+  servers: Record<string, McpServerConfig>;
+  pluginServers?: Record<string, McpServerConfig>;
+  explicit?: Partial<McpConfigurationSnapshot>;
+  builtInServers?: Record<string, McpServerConfig>;
+  computerUse?: boolean;
+}): { configuredServers: Record<string, McpServerConfig>; mcp: McpConfigurationSnapshot } {
+  const configured = {
+    ...input.pluginServers,
+    ...(input.explicit?.servers ?? input.servers),
+    ...input.builtInServers,
+  };
+  const trusted = resolveTrustedOfficialCuaServerNames(configured, input.pluginServers ?? {});
+  const bridgeNames = new Set(trusted);
+  if (input.computerUse && configured.node_repl) bridgeNames.add("node_repl");
+  return {
+    configuredServers: configured,
+    mcp: {
+      enabled: input.explicit?.enabled ?? input.enabled,
+      servers: omitMcpServers(configured, new Set(), bridgeNames),
+      trustedOfficialCuaServerNames: [...trusted],
+    },
+  };
 }

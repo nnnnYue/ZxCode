@@ -27,6 +27,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
+import { invalidateDeferredDraftSessionForRuntimeChange } from "@/lib/zcodeDraftSkillInvalidation.js";
+import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
 import { useConfirmExtensionEnable } from "@/extension-slots/index.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.js";
 import { Switch } from "@/components/ui/switch.js";
@@ -207,10 +209,16 @@ function PluginList({
   const currentWorkspaceIdentity = usePluginManagementStore((state) => state.workspaceIdentity);
   const initialize = usePluginManagementStore((state) => state.initialize);
   const setEnabled = usePluginManagementStore((state) => state.setEnabled);
+  const trustWorkspacePlugin = usePluginManagementStore((state) => state.trustWorkspacePlugin);
   const updatePlugin = usePluginManagementStore((state) => state.updatePlugin);
   const configurePlugin = usePluginManagementStore((state) => state.configurePlugin);
   const currentConfigScope = usePluginManagementStore((state) => state.configScope);
   const resetPluginConfig = usePluginManagementStore((state) => state.resetPluginConfig);
+  const zcodeSessionService = useZCodeSessionService(
+    target?.workspacePath,
+    target?.remoteSessionId,
+    target?.workspaceIdentity,
+  );
   const togglingPluginId = usePluginManagementStore((state) => state.togglingPluginId);
   const operationId = usePluginManagementStore((state) => state.operationId);
   const [selectedPluginId, setSelectedPluginId] = useState<string | null>(null);
@@ -385,6 +393,40 @@ function PluginList({
       setEnabled,
       storeItemById,
     ],
+  );
+  const handleTrustWorkspacePlugin = useCallback(
+    async (pluginId: string) => {
+      const plugin = plugins.find((candidate) => candidate.id === pluginId);
+      const pluginLabel = plugin
+        ? resolveManagedPluginDisplay(plugin, storeItemById.get(plugin.id), locale).name
+        : pluginId;
+      const outcome = await trustWorkspacePlugin(pluginId, pluginManagementService);
+      if (outcome === "accepted") {
+        // 预热草稿在信任前就已加载插件集；作废后下一个新会话按新信任重新发现插件。
+        await invalidateDeferredDraftSessionForRuntimeChange({
+          logScope: "plugins",
+          reason: "workspace-plugin-trusted",
+          workspacePath: target?.workspacePath,
+          workspaceIdentity: target?.workspaceIdentity,
+          zcodeSessionService,
+        });
+      }
+      toast(
+        intl.formatMessage(
+          {
+            id:
+              outcome === "accepted"
+                ? "settings.plugins.workspaceTrust.trusted"
+                : outcome === "declaration_changed"
+                  ? "settings.plugins.workspaceTrust.changed"
+                  : "settings.plugins.workspaceTrust.failed",
+          },
+          { plugin: pluginLabel },
+        ),
+        outcome === "accepted" ? undefined : { variant: "warning" },
+      );
+    },
+    [intl, locale, pluginManagementService, plugins, storeItemById, target, trustWorkspacePlugin],
   );
   const handleResetPluginConfig = useCallback(
     async (pluginId: string) => {
@@ -591,11 +633,17 @@ function PluginList({
           : undefined,
       onUpdate: (pluginId) => void handleUpdatePlugin(pluginId),
       operationId,
+      // 项目目录插件只在「项目」视图里出现，信任也只在这里提供。
+      onTrustWorkspacePlugin:
+        configScope === "workspace"
+          ? (pluginId) => void handleTrustWorkspacePlugin(pluginId)
+          : undefined,
       togglingPluginId,
     }),
     [
       configScope,
       handleResetPluginConfig,
+      handleTrustWorkspacePlugin,
       handleSetEnabled,
       handleUpdatePlugin,
       onDetailOpenChange,

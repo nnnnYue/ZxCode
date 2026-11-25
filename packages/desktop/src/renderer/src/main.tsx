@@ -19,6 +19,7 @@ import "@zcode/ui/styles.css";
 import { connectViaMessagePort, createMessagePortServiceConnection } from "@zcode/client";
 import {
   InternalChannels,
+  DesktopCommandIds,
   databaseStartupStateSchema,
   type DatabaseStartupControl,
   parseLaunchMarks,
@@ -140,6 +141,10 @@ const pendingRemoteWorkspaceServicePorts: RemoteWorkspaceServicePortRegistration
 const remoteSessionAttachmentIds = new WeakMap<object, string>();
 
 const desktopPlatform = createDesktopPlatform({ isLocalDevelopmentRuntime });
+// 上游 v4.0.0：崩溃恢复重启入口（AppErrorBoundary onRestart 用）。
+// initializeDesktopLocalTtft / initializeDesktopUserActionTrace（TTFT 与用户行为轨迹）fork 保持移除。
+const restartAfterCrash = () =>
+  desktopPlatform.executeDesktopCommand(DesktopCommandIds.RestartAfterCrash);
 
 /**
  * 等待 preload 通过 window.postMessage 转发 MessagePort。
@@ -160,7 +165,12 @@ const sendStartupControl = (control: DatabaseStartupControl) =>
   window.postMessage({ type: InternalChannels.DatabaseStartupControl, control }, "*");
 function renderDatabaseStartup(): void {
   appRoot?.render(
-    <AppErrorBoundary isDesktop isMacDesktop={isMacDesktop} isWindowsDesktop={isWindowsDesktop}>
+    <AppErrorBoundary
+      isDesktop
+      isMacDesktop={isMacDesktop}
+      isWindowsDesktop={isWindowsDesktop}
+      onRestart={restartAfterCrash}
+    >
       <ZCodeIntlProvider
         initialLocale={initialLocaleFlag ? initialLocale : undefined}
         resolveSystemLocale={desktopPlatform.getSystemLocale}
@@ -327,8 +337,13 @@ function initializeBusinessRoot(port: MessagePort): void {
   // 初始化稳定的设备 ID，确保所有 hook 在首次渲染前就使用正确的值
   setStreamClientId(desktopPlatform.getDeviceId());
 
-  appRoot.render(
-    <AppErrorBoundary isDesktop isMacDesktop={isMacDesktop} isWindowsDesktop={isWindowsDesktop}>
+  appRoot?.render(
+    <AppErrorBoundary
+      isDesktop
+      isMacDesktop={isMacDesktop}
+      isWindowsDesktop={isWindowsDesktop}
+      onRestart={restartAfterCrash}
+    >
       <ZCodeIntlProvider
         settingService={settingService}
         broadcastService={services.broadcastService}
@@ -356,5 +371,7 @@ function initializeBusinessRoot(port: MessagePort): void {
 }
 
 window.addEventListener("message", handleServicePortMessage);
+// 上游 v4.0.0 的 update-status 独立窗口（UpdateStatusWindowRoot，自动更新域）fork 保持移除，
+// 沿用单一启动渲染路径。
 renderDatabaseStartup();
 sendStartupControl({ action: "snapshot" });

@@ -250,7 +250,7 @@ it("answers a background session approval from the real TUI keyboard (SCT08)", a
           LOCALAPPDATA: directory,
           ZCODE_ENV: "test",
           ZXCODE_DATA_BASE_DIR: directory,
-          ZCODE_STORAGE_DIR: join(directory, "storage"),
+          ZXCODE_STORAGE_DIR: join(directory, "storage"),
           ZCODE_SESSION_DB_PATH: database,
           ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: join(directory, "builtin.json"),
           ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: join(directory, "personal.json"),
@@ -440,7 +440,7 @@ it("denies a background session approval immediately in headless mode (SCT08)", 
           LOCALAPPDATA: directory,
           ZCODE_ENV: "test",
           ZXCODE_DATA_BASE_DIR: directory,
-          ZCODE_STORAGE_DIR: join(directory, "storage"),
+          ZXCODE_STORAGE_DIR: join(directory, "storage"),
           ZCODE_SESSION_DB_PATH: database,
           ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: join(directory, "builtin.json"),
           ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: join(directory, "personal.json"),
@@ -463,7 +463,10 @@ it("denies a background session approval immediately in headless mode (SCT08)", 
     if (providerError) throw providerError;
     assert.deepEqual({ code, signal }, { code: 0, signal: null }, stderr);
     assert.match(stdout, /E2E_SCT08_HEADLESS_ACTOR_DONE/);
-    assert.match(await backgroundResult.promise, /No permission client configured for Write/);
+    assert.match(
+      await backgroundResult.promise,
+      /ZCode requested permissions to write to .+, but you haven't granted it yet\./,
+    );
     await assert.rejects(access(file), { code: "ENOENT" });
     passed = true;
   } finally {

@@ -1,5 +1,8 @@
 // fork：normalizeRemoteConnectionError / sanitizeRemoteConnectionLog 未在 fork shared 导出，不引入；
 // credential-security 桥与 join（extensions dataDir）采纳。
+import { resolvePreinstalledToolsRelease } from "@zcode/shared/preinstalled-tools";
+import { resolvePreinstalledToolsBinDir } from "@zcode/shared/preinstalled-tools/node";
+import { ZXCODE_PRODUCT_FLAVOR, resolveZCodeRuntimeEnv } from "@zcode/shared";
 import { createCredentialCipherBridge } from "@zcode/shared/credential-security";
 import { join } from "node:path";
 /* eslint-disable max-lines -- Host 入口集中编排 local/remote service wiring，本次退出保护需要在同一处桥接 host 上报。 */
@@ -85,6 +88,9 @@ import {
   type AppControlServiceHandle,
   type WindowHostExtensions,
   getAppConfigDir,
+  // 上游 v4.0.0 preinstalled-tools bin 目录解析需要数据根；off-peak 错误类与
+  // BotProjectConnection 属 fork 剔除域，不引入。
+  getZCodeDataRootDir,
   type HostApiNetworkTransport,
 } from "@zcode/services/node";
 import { createHostResourceUsageResponder } from "./hostResourceUsage.js";
@@ -807,16 +813,16 @@ const runtimeProcessLifecycleReporter = {
   },
 } satisfies NonNullable<Parameters<typeof createLocalServices>[0]>["processLifecycleReporter"];
 
+let activeV4SessionCount = 0;
+let legacyRuntimeTaskCount = 0;
 const runtimeTaskReporter = {
+  onActiveSessionCountChanged(event: { runningTaskCount: number }) {
+    activeV4SessionCount = event.runningTaskCount;
+    reportHostRunningTaskCount();
+  },
   onRunningTaskCountChanged(event) {
-    if (!parentPort) {
-      return;
-    }
-
-    parentPort.postMessage({
-      type: HostResponseTypes.AgentRunningTaskCountChanged,
-      runningTaskCount: event.runningTaskCount,
-    });
+    legacyRuntimeTaskCount = event.runningTaskCount;
+    reportHostRunningTaskCount();
   },
 } satisfies NonNullable<Parameters<typeof createLocalServices>[0]>["taskRuntimeReporter"];
 
@@ -840,8 +846,14 @@ const cuaOperationStateReporter = {
 
 let untrackedPromptRpcCount = 0;
 function reportHostRunningTaskCount(): void {
-  runtimeTaskReporter.onRunningTaskCountChanged({
-    runningTaskCount: workspaceTaskTracker.getTotalRunningTaskCount() + untrackedPromptRpcCount,
+  // v4 会话与旧代理分别报告，统一出口避免旧 ready 归零覆盖仍在执行的后台工作。
+  parentPort?.postMessage({
+    type: HostResponseTypes.AgentRunningTaskCountChanged,
+    runningTaskCount:
+      activeV4SessionCount +
+      legacyRuntimeTaskCount +
+      workspaceTaskTracker.getTotalRunningTaskCount() +
+      untrackedPromptRpcCount,
   });
 }
 
@@ -1319,7 +1331,11 @@ let persistedApplicationLocale: Locale | undefined;
 function resolveHostClientLanguage(): Locale | undefined {
   return applicationLocale ?? persistedApplicationLocale;
 }
-
+/**
+ * Agent 回复语言（null 为未设置），应答 CLI 的 session/readReplyLanguage。
+ * 值由 Main 持有；这里只认 InitLocal 初值与 reply-language-changed，不读 setting.json。
+ */
+let replyLanguage: string | null = null;
 let activeHostApiNetworkTransport: HostApiNetworkTransport | null = null;
 /** 本地 host services 的资源遥测订阅；远端连接的订阅由各自的 connection handle 持有。 */
 let activeLocalResourceTelemetry: IDisposable | null = null;
@@ -1865,6 +1881,8 @@ function exposeServicesOnMessagePort(
       })
     : undefined;
   services.register(IWindowControllerService, windowHostControllerRuntime.service);
+  // 上游 v4.0.0 的未读自动写入/侧栏顺序叠加依赖 fork Controller 尚未提供的
+  // readTaskRows/subscribeTaskRows（webRemoteProjectTreeActivity），此处不引入。
   const controllerAttachment = windowHostControllerRuntime.createAttachmentService();
   const overrides = new Map<string, unknown>([
     [IWindowControllerService.channelName, controllerAttachment],
@@ -2220,6 +2238,13 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
   // 初值不会覆盖较新的变更。供 X-Client-Language（resolveHostClientLanguage）消费。
   if (msg.type === HostMessageTypes.InitLocal && msg.locale) {
     applicationLocale = msg.locale;
+  }
+  if (msg.type === HostMessageTypes.InitLocal) {
+    replyLanguage = msg.replyLanguage ?? null;
+  }
+  if (msg.type === HostMessageTypes.ReplyLanguageChanged) {
+    replyLanguage = msg.replyLanguage;
+    return;
   }
   if (msg.type === HostMessageTypes.ApplicationLocaleChanged) {
     applicationLocale = msg.locale;
@@ -2762,10 +2787,14 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
           log: (message, details) => logger.warn(message, details),
           establishOwner: () => {
             const initializedServices = createLocalServices({
-              // fork：采纳扩展门面回调、插件遥测上报（pluginTelemetry 保留面）与 app-control 发现源；
-              // resolveBotProjectConnection / resolveBotRemoteWorkspace / setWorkspaceProjection /
-              // remoteProjectConnection / resolveProjectHostService / feedback 随 source-server、
-              // bot 上游链路与反馈工单域剔除（fork bot 桥接在 services 内自理）。
+              // 固定目录与发布目标无关；准备完成后，既有会话下一条命令即可找到入口。
+              preinstalledToolsBinDir: resolvePreinstalledToolsBinDir({
+                dataRoot: getZCodeDataRootDir(),
+                release: resolvePreinstalledToolsRelease({
+                  runtimeEnv: resolveZCodeRuntimeEnv(process.env),
+                  productFlavor: ZXCODE_PRODUCT_FLAVOR,
+                }),
+              }),
               onAppControlServiceCreated: (handle) => {
                 appControlForExtensions = handle;
               },
@@ -2797,6 +2826,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
               settingService,
               hostApiNetworkTransport,
               resolveClientLanguage: resolveHostClientLanguage,
+              resolveReplyLanguage: () => replyLanguage,
               authorizeLocalMediaPreviewPath,
               // launch.md「The user's choice」：本机用户选择变化后，推给本窗口所有在线的远程 Host。
               forwardDynamicWorkflowUserMode: (mode) => {

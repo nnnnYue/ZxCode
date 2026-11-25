@@ -97,6 +97,14 @@ export interface PluginManagementState {
     pluginService: IPluginManagementService,
     scope?: ZCodePluginScope,
   ) => Promise<boolean>;
+  /**
+   * 信任项目 `plugins.dirs` 声明的目录插件（docs/plugins/workspace-plugin-dir-trust.md）。
+   * 写入目标 Host 的用户域记录后重新拉取列表；声明在审核后又变了时返回 declaration_changed。
+   */
+  trustWorkspacePlugin: (
+    pluginId: string,
+    pluginService: IPluginManagementService,
+  ) => Promise<"accepted" | "declaration_changed" | "failed">;
   // 按需拉取插件组件清单（名称+描述）；force 跳过缓存重试。
   describePlugin: (
     pluginId: string,
@@ -350,6 +358,105 @@ export const usePluginManagementStore = create<PluginManagementState>((set, get)
     );
   },
 
+    async trustWorkspacePlugin(pluginId, pluginService) {
+      const { workspacePath, workspaceIdentity, configScope } = get();
+      const trust = get().plugins.find((plugin) => plugin.id === pluginId)?.workspaceTrust;
+      if (!workspacePath || !trust) return "failed";
+      set({ togglingPluginId: pluginId, error: null, lastFailedPluginId: null });
+      try {
+        const result = await pluginService.setWorkspacePluginTrust({
+          workspacePath,
+          ...(workspaceIdentity ? { workspaceIdentity } : {}),
+          pluginRoot: trust.pluginRoot,
+          declarationDigest: trust.declarationDigest,
+          trusted: true,
+        });
+        logger.info("[plugins] workspace plugin trust", {
+          pluginId,
+          accepted: result.accepted,
+          reasonCode: result.reasonCode,
+        });
+        // 无论成败都重新拉取：声明变了时要展示新的待信任摘要，成功时展示已信任状态。
+        await loadInto(set, get, {
+          workspacePath,
+          workspaceIdentity,
+          configScope,
+          pluginService,
+        });
+        if (!result.accepted) {
+          return result.reasonCode === "workspace_plugin_declaration_changed"
+            ? "declaration_changed"
+            : "failed";
+        }
+        return "accepted";
+      } catch (error) {
+        logger.error("[plugins] workspace plugin trust failed", {
+          pluginId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        set({ lastFailedPluginId: pluginId });
+        return "failed";
+      } finally {
+        if (get().togglingPluginId === pluginId) set({ togglingPluginId: null });
+      }
+    },
+
+    async describePlugin(pluginId, pluginName, marketplace, pluginService, force = false) {
+      const { workspacePath, workspaceIdentity, describeCache } = get();
+      if (!workspacePath) return;
+      const cached = describeCache[pluginId];
+      // 已加载或正在加载时命中缓存，不重复请求；force 时强制重试。
+      if (!force && cached && cached.status !== "error") return;
+      const request: PluginDescribeEntry = { status: "loading" };
+      set({ describeCache: { ...get().describeCache, [pluginId]: request } });
+      try {
+        const data = await pluginService.describePlugin({
+          workspacePath,
+          ...(workspaceIdentity ? { workspaceIdentity } : {}),
+          marketplace,
+          pluginName,
+        });
+        // 旧项目或已被重试替代的 describe 响应不能回填当前详情缓存。
+        if (get().describeCache[pluginId] !== request) return;
+        const blockingDiagnostic = data.diagnostics?.find(
+          (diagnostic) => diagnostic.severity === "error",
+        );
+        if (data.components.length === 0 && blockingDiagnostic) {
+          // CLI 的 describe 对不可解析来源采用 diagnostics 回包而非 RPC reject。
+          // 旧 UI 把该回包缓存为 loaded，详情只显示空白且永远没有重试入口；这里将无组件的
+          // error diagnostic 映射成可恢复错误态，同时保留正常的部分成功回包。
+          set({
+            describeCache: {
+              ...get().describeCache,
+              [pluginId]: { status: "error", error: blockingDiagnostic.message },
+            },
+          });
+          return;
+        }
+        set({
+          describeCache: {
+            ...get().describeCache,
+            [pluginId]: { status: "loaded", data },
+          },
+        });
+      } catch (error) {
+        if (get().describeCache[pluginId] !== request) return;
+        logger.error("[plugins] describe failed", {
+          pluginId,
+          marketplace,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        if (get().describeCache[pluginId] === request) {
+          set({
+            describeCache: {
+              ...get().describeCache,
+              [pluginId]: { status: "error", error: error instanceof Error ? error.message : String(error) },
+            },
+          });
+        }
+      }
+    },
+
   async validateSource(source, pluginService) {
     const { workspacePath, workspaceIdentity } = get();
     if (!workspacePath) return;
@@ -371,57 +478,5 @@ export const usePluginManagementStore = create<PluginManagementState>((set, get)
 
   async setEnabled(pluginId, enabled, pluginService, scope = "user") {
     return setPluginEnabledOptimistically(set, get, pluginId, enabled, pluginService, scope);
-  },
-
-  async describePlugin(pluginId, pluginName, marketplace, pluginService, force = false) {
-    const { workspacePath, workspaceIdentity, describeCache } = get();
-    if (!workspacePath) return;
-    const cached = describeCache[pluginId];
-    // 已加载或正在加载时命中缓存，不重复请求；force 时强制重试。
-    if (!force && cached && cached.status !== "error") return;
-    set({
-      describeCache: { ...get().describeCache, [pluginId]: { status: "loading" } },
-    });
-    try {
-      const data = await pluginService.describePlugin({
-        workspacePath,
-        ...(workspaceIdentity ? { workspaceIdentity } : {}),
-        marketplace,
-        pluginName,
-      });
-      const blockingDiagnostic = data.diagnostics?.find(
-        (diagnostic) => diagnostic.severity === "error",
-      );
-      if (data.components.length === 0 && blockingDiagnostic) {
-        // CLI 的 describe 对不可解析来源采用 diagnostics 回包而非 RPC reject。
-        // 旧 UI 把该回包缓存为 loaded，详情只显示空白且永远没有重试入口；这里将无组件的
-        // error diagnostic 映射成可恢复错误态，同时保留正常的部分成功回包。
-        set({
-          describeCache: {
-            ...get().describeCache,
-            [pluginId]: { status: "error", error: blockingDiagnostic.message },
-          },
-        });
-        return;
-      }
-      set({
-        describeCache: {
-          ...get().describeCache,
-          [pluginId]: { status: "loaded", data },
-        },
-      });
-    } catch (error) {
-      logger.error("[plugins] describe failed", {
-        pluginId,
-        marketplace,
-        error: toMessage(error),
-      });
-      set({
-        describeCache: {
-          ...get().describeCache,
-          [pluginId]: { status: "error", error: toMessage(error) },
-        },
-      });
-    }
   },
 }));

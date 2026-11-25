@@ -30,7 +30,11 @@ import type {
   SessionPhase,
   SessionUsageState,
 } from "@zcode/shared/zcode-protocol-v4";
-import { ModelConfigSelect, type ModelSelectGroup } from "@/ModelConfigSelect.js";
+import {
+  ModelConfigSelect,
+  type ModelConfigSelectGuide,
+  type ModelSelectGroup,
+} from "@/ModelConfigSelect.js";
 import type { ComposerModelOptions } from "@/chat-input-toolbar/ComposerModelMenu.js";
 import { Button } from "@/components/ui/button.js";
 import { HighspeedModelIndicator } from "@/highspeed/HighspeedModelIndicator.js";
@@ -50,6 +54,7 @@ import {
 import { resolveV4ModelTriggerDisplay } from "@/v4/composer/modelTriggerDisplay.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
+import { isSettingsTab } from "@/store/tabStore.js";
 import type { ModelSelectionView } from "@zcode/services";
 import type { ModelSelectionState } from "@/hooks/useModelSelectionView.js";
 import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
@@ -187,6 +192,8 @@ export interface V4ComposerToolbarProps {
     sourceModel: ModelSelectionSource | null,
   ) => Promise<void> | void;
   onSendCompressionCommand?: (command: string) => void;
+  /** 模型按钮上的一次性引导气泡；设置页覆盖工作区时不显示。 */
+  modelGuide?: ModelConfigSelectGuide | null;
 }
 
 /** 模型 / 思考深度 / context usage 簇（渲染在发送键左侧，与旧 UI 同位）。 */
@@ -220,6 +227,7 @@ function V4ComposerModelControlsImpl({
   onSelectThought,
   onSendCompressionCommand,
   onRecoverCustomModelSelection,
+  modelGuide = null,
 }: V4ComposerToolbarProps) {
   const { intl, locale } = useZCodeIntl();
   const displayProvider = provider ?? ZXCODE_AGENT_PROVIDER;
@@ -236,6 +244,10 @@ function V4ComposerModelControlsImpl({
   // fork 的 useSettings 读全局 context services；provider/连接二级菜单从这里拿连接方式选中键。
   const { settings: sharedSettings } = useSettings();
   const openSettingsTab = useTabStore((state) => state.openSettingsTab);
+  // 气泡 Portal 位于 body，工作区的 opacity/inert 隐藏不了它；必须跟随设置标签的可见性。
+  const isWorkspaceVisible = useTabStore(
+    (state) => !state.tabs.some((tab) => tab.id === state.activeTabId && isSettingsTab(tab)),
+  );
   const modelTriggerRef = useRef<HTMLSpanElement | null>(null);
   const thoughtTriggerRef = useRef<HTMLSpanElement | null>(null);
   // Ctrl+M 热键：递增 openRequestKey 请求 ModelConfigSelect 打开菜单（旧 handleOpenModelMenuShortcut 语义）。
@@ -764,6 +776,7 @@ function V4ComposerModelControlsImpl({
               !(modelSelectionState.status === "loading" && modelSelectionState.catalog))
           }
           tooltipTitle={modelTriggerDisplay.fullLabel}
+          guide={isWorkspaceVisible ? modelGuide : null}
           shortcutLabel={modelShortcutLabel}
           triggerRef={modelTriggerRef}
           open={!modelLocked && activeConfigPicker === "model"}

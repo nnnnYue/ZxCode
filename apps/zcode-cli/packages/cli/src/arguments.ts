@@ -24,6 +24,12 @@ export const parseGlobalArgs = (argv: string[]) =>
       "browser-executable": {
         type: "string",
       },
+      "browser-state": {
+        type: "string",
+      },
+      "no-browser-state": {
+        type: "boolean",
+      },
       prompt: {
         short: "p",
         type: "string",
@@ -59,6 +65,8 @@ export const parseGlobalArgs = (argv: string[]) =>
         type: "boolean",
       },
       "toolsearch-mode": { type: "string" },
+      "total-tokens-reminder": { type: "string" },
+      "agent-always-background": { type: "string" },
       "force-mcs": {
         type: "boolean",
       },

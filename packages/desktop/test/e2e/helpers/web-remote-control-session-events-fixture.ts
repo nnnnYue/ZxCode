@@ -29,6 +29,8 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
   regionalDesktop?: boolean;
 }): Promise<() => Promise<void>> {
   let linkedProfileEnabled = false;
+  // 用例经 /__e2e/client-configs 追加的公开配置（如草稿模型迁移规则），只合并进 client/configs。
+  let extraClientConfigs: Record<string, unknown> = {};
   const relay = await createFakeRelayV2({
     users: {
       "mock-token": "zcode-e2e-user",
@@ -36,6 +38,13 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
       ...options.additionalRelayUsers,
     },
     onHttp: (call) => {
+      if (call.path === "/__e2e/client-configs" && call.method === "POST") {
+        const configs = (call.body as { configs?: unknown } | undefined)?.configs;
+        if (!configs || typeof configs !== "object" || Array.isArray(configs))
+          return { status: 400, body: { code: 400, msg: "configs must be an object" } };
+        extraClientConfigs = configs as Record<string, unknown>;
+        return { status: 200, body: { ok: true } };
+      }
       if (call.path === "/__e2e/linked-profile") {
         linkedProfileEnabled = true;
         return { status: 200, body: { ok: true } };
@@ -57,11 +66,7 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
           status: 200,
           body: {
             code: 0,
-            data: {
-              protocol_version: 1,
-              event_transport: "http",
-              status: "available",
-            },
+            data: { protocol_version: 1, event_transport: "http", status: "available" },
           },
         };
       // 回执 event_id 必须回显请求里的事件，Main 才会把上报判为 accepted。
@@ -96,17 +101,14 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
       if (options.webUrl && !call.path.includes("config"))
         return {
           status: 503,
-          body: {
-            code: 503,
-            msg: "not configured in mobile file-navigation fixture",
-          },
+          body: { code: 503, msg: "not configured in mobile file-navigation fixture" },
         };
       return {
         status: 200,
         body: {
           code: 0,
           data: {
-            configs: {},
+            configs: call.path === "/api/v1/client/configs" ? { ...extraClientConfigs } : {},
             builtinModels: [],
             config_version: "session-events",
           },

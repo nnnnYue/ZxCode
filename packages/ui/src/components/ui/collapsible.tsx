@@ -28,11 +28,13 @@ function CollapsibleContent({
     >
       <div
         className={cn(
-          "transition-none duration-300 ease-in-out",
+          "transition-none duration-300 ease-in-out [--radix-collapsible-content-height:initial] [--radix-collapsible-content-width:initial]",
           "group-data-[state=open]/collapsible-content:animate-in group-data-[state=open]/collapsible-content:fade-in-0",
           "group-data-[state=closed]/collapsible-content:animate-out group-data-[state=closed]/collapsible-content:fade-out-0 group-data-[state=closed]/collapsible-content:[animation-fill-mode:forwards]",
         )}
       >
+        {/* 折叠尺寸只供外层高度动画消费；继承到大型详情子树会在测量更新时
+            使无关后代重算样式。内部截断继承，嵌套折叠仍使用自身的测量值。 */}
         {/* 大会话 resize trace 显示 collapsible 动画层只设置 duration/ease 时，
             浏览器会用默认 transition-property: all 动画 scrollbar-color，拖拽窗口时触发非合成动画。
             这里显式禁用 CSS transition，只保留 animate-in/out 的关键帧动画。 */}

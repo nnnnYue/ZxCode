@@ -17,6 +17,7 @@ import {
   type WebRemoteControlIpcManager,
 } from "./desktopWebRemoteControlIpc.js";
 import { openFileUrlInDefaultApp, openPathInDefaultApp } from "./desktopMainIpcHelpers.js";
+import type { ConfirmExecutableFileOpen } from "@desktop/main/file-open-apps/index.js";
 
 export function isAllowedExternalOpenUrl(value: string): boolean {
   try {
@@ -51,6 +52,8 @@ export function registerRemoteIpcHandlers(options: {
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
   };
+  /** 系统默认打开可执行类文件前的用户确认（见 file-open-apps/executableOpenGuard）。 */
+  confirmExecutableFileOpen: ConfirmExecutableFileOpen;
   webRemoteControlManager: WebRemoteControlIpcManager;
   createRemoteWorkspaceSession: (
     win: BrowserWindow,
@@ -110,7 +113,7 @@ export function registerRemoteIpcHandlers(options: {
       return;
     }
     if (new URL(url).protocol === "file:") {
-      void openFileUrlInDefaultApp(url, options.logger);
+      void openFileUrlInDefaultApp(url, options.logger, options.confirmExecutableFileOpen);
       return;
     }
     void Promise.resolve(shell.openExternal(url)).catch((error: unknown) => {
@@ -122,7 +125,7 @@ export function registerRemoteIpcHandlers(options: {
   });
 
   ipcMain.handle(PlatformChannels.OpenExternalFile, async (_event, rawPath: string) =>
-    openPathInDefaultApp(rawPath, options.logger),
+    openPathInDefaultApp(rawPath, options.logger, options.confirmExecutableFileOpen),
   );
 
   ipcMain.on(PlatformChannels.RendererReady, (event) => {

@@ -31,6 +31,9 @@ const OAUTH_CLIENT_SECRET = "zcode-secret";
 const DYNAMIC_CLIENT_ID = "dynamic-zcode-client";
 const DYNAMIC_CLIENT_SECRET = "dynamic-zcode-secret";
 const MCP_SCOPE = "mcp:tools";
+/** 后台授权完成后等待连接恢复的轮询上限。 */
+const RECOVERY_POLL_ATTEMPTS = 100;
+const RECOVERY_POLL_INTERVAL_MS = 20;
 
 const servers: Server[] = [];
 
@@ -160,7 +163,7 @@ describe("MCP OAuth client credentials e2e", () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-"));
     const credentialStore = createSharedZCodeCredentialStore({
       env: {
-        ZCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
+        ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
       },
       filePath: join(credentialsDir, "credentials.json"),
     });
@@ -287,7 +290,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-race-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-race-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-race-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const authorizationUrls: string[] = [];
@@ -394,7 +397,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-stale-client-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-stale-client-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-stale-client-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const oauthConfig = {
@@ -504,7 +507,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-passive-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-passive-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-passive-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const oauthConfig = { type: "authorization_code" as const, scope: MCP_SCOPE };
@@ -605,7 +608,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-runtime-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-runtime-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-runtime-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const oauthConfig = { type: "authorization_code" as const, scope: MCP_SCOPE };
@@ -642,6 +645,17 @@ describe("MCP OAuth client credentials e2e", () => {
 
       // Bugfix 回归：建连后 token 被撤销时,过去 callTool 的 401/403 原样冒泡,用户看到裸错误且
       // 永不自愈——OAuth 自愈只存在于 startup connect 路径。现在运行期共用 Phase 2 → Phase 1 编排。
+      // 授权链接一发布,触发授权的这次调用就结束（由 core 改写为 needs-auth）;授权在后台完成后连接恢复。
+      await expect(
+        adapter.callTool({ serverName: "runtime", toolName: "oauth_ping" }),
+      ).rejects.toThrow();
+      for (
+        let attempt = 0;
+        attempt < RECOVERY_POLL_ATTEMPTS &&
+        adapter.getToolSnapshot().runtime?.status.status !== "connected";
+        attempt += 1
+      )
+        await new Promise((resolve) => setTimeout(resolve, RECOVERY_POLL_INTERVAL_MS));
       await expect(
         adapter.callTool({ serverName: "runtime", toolName: "oauth_ping" }),
       ).resolves.toMatchObject({ isError: false });
@@ -693,7 +707,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-stepup-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-stepup-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-stepup-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const oauthConfig = { type: "authorization_code" as const, scope: MCP_SCOPE };
@@ -747,7 +761,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("binds dynamically registered client information to each OAuth transaction", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-client-transaction-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-client-transaction-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-client-transaction-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -773,7 +787,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("restores dynamically registered client information after provider reconstruction", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-client-recovery-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-client-recovery-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-client-recovery-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -798,7 +812,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("retries credential snapshots after a transient load failure", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-load-retry-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-load-retry-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-load-retry-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -837,7 +851,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("does not fail session close when verifier cleanup fails", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-close-cleanup-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-close-cleanup-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-close-cleanup-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const cleanupError = new Error("injected verifier cleanup failure");
@@ -878,7 +892,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("publishes client information and tokens as one credential snapshot", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-client-token-pair-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-client-token-pair-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-client-token-pair-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -910,7 +924,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("preserves v1 canonical credentials across legacy migration states", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-v1-migration-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-v1-migration-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-v1-migration-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -995,7 +1009,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("keeps legacy readers and writers coherent during the canonical migration window", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-mixed-version-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-mixed-version-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-mixed-version-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1084,7 +1098,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("does not combine a pending legacy client with another legacy refresh", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-legacy-race-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-legacy-race-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-legacy-race-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1126,7 +1140,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("does not invalidate a credential snapshot replaced by another transaction", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-compare-delete-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-compare-delete-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-compare-delete-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1187,7 +1201,7 @@ describe("MCP OAuth client credentials e2e", () => {
 
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-refresh-pair-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-refresh-pair-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-refresh-pair-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1256,7 +1270,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("preserves a canonical credential snapshot written by a newer version", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-future-credentials-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-future-credentials-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-future-credentials-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1297,7 +1311,7 @@ describe("MCP OAuth client credentials e2e", () => {
   it("removes both legacy credential halves when the legacy client is invalid", async () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-legacy-invalidation-"));
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-legacy-invalidation-secret" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-legacy-invalidation-secret" },
       filePath: join(credentialsDir, "credentials.json"),
     });
     const sessions: McpOAuthSession[] = [];
@@ -1370,7 +1384,7 @@ describe("MCP OAuth client credentials e2e", () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-auto-"));
     const credentialStore = createSharedZCodeCredentialStore({
       env: {
-        ZCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
+        ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
       },
       filePath: join(credentialsDir, "credentials.json"),
     });
@@ -1443,7 +1457,7 @@ describe("MCP OAuth client credentials e2e", () => {
     const credentialsDir = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-"));
     const credentialStore = createSharedZCodeCredentialStore({
       env: {
-        ZCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
+        ZXCODE_CREDENTIAL_SECRET: "mcp-oauth-e2e-secret",
       },
       filePath: join(credentialsDir, "credentials.json"),
     });

@@ -72,8 +72,10 @@ describe("process provider registry runtime", () => {
       await wait;
       return new Response(JSON.stringify(builtin));
     });
+    // 此用例验证 Registry 更新。使用测试密钥可在未解锁系统凭据库的机器上写入夹具令牌。
     const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_DATA_BASE_DIR: root },
+      baseDir: root,
+      env: { ZXCODE_CREDENTIAL_SECRET: "process-registry-test" },
     });
     await credentialStore.save("zcodejwttoken", "fixture-cli-config");
     const env = {
@@ -444,7 +446,7 @@ describe("process provider registry runtime", () => {
     const personalFilePath = join(root, "personal.json");
     const credentialStore = createSharedZCodeCredentialStore({
       baseDir: join(root, "home"),
-      env: { ZCODE_CREDENTIAL_SECRET: "process-registry-test" },
+      env: { ZXCODE_CREDENTIAL_SECRET: "process-registry-test" },
     });
     const providerId = "configured-standalone-provider";
     const accountIdentity = "account-1";

@@ -1,7 +1,6 @@
 // Descriptors & collection (browser-safe)
 export { type ServiceDescriptor, createServiceDescriptor } from "./descriptors.js";
-export type { ServiceExposurePolicy } from "./collection.js";
-export { ServiceCollection } from "./collection.js";
+export { ServiceCollection, type ServiceExposurePolicy } from "./collection.js";
 export {
   IModelSelectionService,
   IProviderSettingsService,
@@ -19,7 +18,6 @@ export {
 
 // Accessor
 export type { IServiceAccessor } from "./accessor.js";
-
 // File service — IFileService is both a type (interface) and value (descriptor)
 export { IFileService } from "./file/file.js";
 export { IMediaPreviewService } from "./media-preview/mediaPreview.js";
@@ -40,6 +38,11 @@ export { ISettingService } from "./setting/setting.js";
 
 // Credential service — ICredentialService is both a type (interface) and value (descriptor)
 export { ICredentialService } from "./credential/credential.js";
+export { ISourceServerWorkspaceService } from "./source-server-workspace/sourceServerWorkspace.js";
+export {
+  ISourceServerManagementService,
+  type UpdateConnectionProfileInput,
+} from "./source-server-management/sourceServerManagement.js";
 
 // Broadcast service — IBroadcastService is both a type (interface) and value (descriptor)
 export { IBroadcastService } from "./broadcast/broadcast.js";
@@ -60,7 +63,7 @@ export type {
   BroadcastMessage,
 } from "./broadcast/broadcast.js";
 
-// ZxCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
+// ZCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
 export { IZCodeTaskService } from "./session/zcodeTaskService.js";
 export type {
   ZCodeArchivedTaskDeletionResult,
@@ -71,40 +74,41 @@ export type {
   ZCodeModelTrajectoryMessage,
   ZCodeModelTrajectoryRecord,
   ZCodeModelTrajectoryUsage,
-  ZCodeTaskReadyOutcome,
-} from "./session/zcodeTaskService.js";
-// fork：分组任务视图类型仍由 session/zcodeTaskListTypes 承载（上游 3.16 已删，fork UI 继续使用）。
-export type {
-  ZCodeTaskGroup,
-  ZCodeTaskGroupColor,
-  ZCodeGroupedTaskRef,
-  ZCodeGroupedTaskViewNode,
-  ZCodeGroupedTaskView,
-  ZCodeGroupedTaskViewQuery,
-  ZCodeGroupedTaskViewStructureMember,
-  ZCodeGroupedTaskViewStructureTopOrder,
-  ZCodeGroupedTaskViewStructure,
-  ZCodeGroupedTaskViewOrderInput,
-  ZCodeGroupedTaskViewTopLevelNodeRef,
   ZCodeTaskListKind,
+  ZCodeTaskListQuery,
+  ZCodeTaskListResult,
   ZCodeTaskListSortBy,
   ZCodeTaskListWorkspaceScope,
-  ZCodeTaskListQuery,
-  ZCodeTaskListItem,
-  ZCodeTaskListResult,
-} from "./session/zcodeTaskListTypes.js";
+  ZCodeTaskReadyOutcome,
+} from "./session/zcodeTaskService.js";
+export type { ZCodeTaskListItem } from "./session/zcodeTaskListTypes.js";
 
-export { IWindowControllerService } from "./window-controller/windowController.js";
-export type { WindowHostTaskUnreadSignal } from "#src/window-controller/windowController.js";
+export {
+  IWindowControllerService,
+  isArchivedTaskDeletionBatchUnsupported,
+} from "./window-controller/windowController.js";
+export {
+  IWindowProjectService,
+  IWindowRemoteProjectService,
+  IWindowProjectChangesService,
+  type WindowProjectDirectoryServices,
+} from "#src/window-project-directory/contract.js";
+export {
+  createWebRemoteProjectTreeActivityBridge,
+  createWindowProjectChangesService,
+  type WebRemoteProjectTask,
+} from "#src/window-project-directory/index.js";
 export type {
+  ProjectDisplayOrderKey,
   WindowHostControllerFrame,
   WindowHostControllerMutation,
   WindowHostControllerTaskListItem,
   WindowHostControllerTaskListResult,
+  WindowHostTaskUnreadSignal,
   WindowHostTasksRemovedSignal,
 } from "./window-controller/windowController.js";
 
-// ZxCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
+// ZCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
 export {
   IZCodeAgentService,
   type ZCodeAgentLocalRuntimeChildProcesses,
@@ -151,7 +155,7 @@ export type {
   ZCodeAgentWorkspaceTarget,
 } from "./zcode-agent/zcodeAgent.js";
 
-// ZxCode session service — app-facing session facade without ZxCode Agent naming.
+// ZCode session service — app-facing session facade without ZCode Agent naming.
 export { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
 export type {
   ZCodeSessionCreateParams,
@@ -173,6 +177,8 @@ export type {
 // Bots service — IBotsService is both a type (interface) and value (descriptor).
 export { IBotsService } from "./bots/bots.js";
 export type {
+  BotRemoteWorkspaceResolver,
+  BotRemoteWorkspaceResolution,
   BotBindCodeResult,
   BotCreateBindCodeParams,
   BotListWorkspaceRefsParams,
@@ -198,10 +204,17 @@ export type { SessionRealtimePort } from "./session/sessionRealtimePort.js";
 // FileWatcher service — IFileWatcherService is both a type (interface) and value (descriptor)
 export { IFileWatcherService } from "./fileWatcher/fileWatcher.js";
 
-// Storage（资源管理器「存储」tab）：数据类型在 @zcode/shared；这里只导出服务接口与卷分组纯函数
-export type { IStorageService } from "./storage/contract.js";
+// OAuth service — IOAuthService is both a type (interface) and value (descriptor)
 
+// UsageStats service — IUsageStatsService is both a type (interface) and value (descriptor)
+
+// Storage（资源管理器「存储」tab）：数据类型在 @zcode/shared；这里只导出服务接口与卷分组纯函数
+// StorageRootSpec 随契约再导出：desktop 的 Worker 协议按 contract.ts 的口径只从 services 入口取类型。
+export type { IStorageService, StorageRootSpec } from "./storage/contract.js";
+
+// CodingPlanSubscription service — ICodingPlanSubscriptionService is both a type (interface) and value (descriptor)
 export { isValidCronExpr } from "./session/automationCronValidation.js";
+// 闲时任务管理服务（与 automation 服务面独立）；接口/描述符 browser-safe。
 
 // Skills service — ISkillsService is both a type (interface) and value (descriptor)
 export { ISkillsService } from "./skills/skills.js";
@@ -215,7 +228,6 @@ export {
   IExtensionViewsService,
   type ExtensionsContributionsMessage,
 } from "./extensions/index.js";
-// fork：IVoiceInputService / VoiceInput* 类型导出不引入（voice-input 云 ASR 域剔除）。
 export { IMcpSyncService } from "./mcp-sync/mcpSync.js";
 export { IPluginSyncService } from "./plugin-sync/pluginSync.js";
 export {
@@ -236,7 +248,7 @@ export {
 // Plugins service — IPluginsService is both a type (interface) and value (descriptor)
 export { IPluginsService } from "./plugins/plugins.js";
 // 设置页插件管理薄服务（UI 平台能力面不再直触 zcodeAgentService）
-export { IPluginManagementService } from "./plugins/pluginManagement.js";
+export { IPluginManagementService, withPluginTelemetry } from "./plugins/pluginManagement.js";
 
 // Subagents service — ISubagentsService is both a type (interface) and value (descriptor)
 export { ISubagentsService } from "./subagents/subagents.js";
@@ -253,16 +265,49 @@ export type {
   PromptAttachmentTransferPhase,
   PromptAttachmentTransferProgress,
 } from "./prompt-attachment-transfer/promptAttachmentTransfer.js";
-// fork：反馈工单（Feedback*）类型随剔除域拒绝，不导出。
-// IProjectService / Project* 类型沿用 fork 既有导出位置；此处只补 fork 缺失的
-// managed-worktree、RemoteProjectCache 与 project-catalog 导出。
+export type {
+  CreateFeedbackTicketInput,
+  FeedbackAttachment,
+  FeedbackAttachmentKind,
+  FeedbackComment,
+  FeedbackDeviceInfo,
+  FeedbackListQuery,
+  FeedbackListResult,
+  FeedbackReporter,
+  FeedbackTicketDetail,
+  FeedbackTicketFramework,
+  FeedbackTicketModule,
+  FeedbackTicketSeverity,
+  FeedbackTicketStatus,
+  FeedbackTicketSummary,
+  FeedbackTicketType,
+} from "@zcode/shared";
+
+export { IProjectService, LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project/contract.js";
 export {
   IManagedWorktreeService,
   type ManagedWorktreeGroup,
   type ManagedWorktreeWorkspace,
   type StartManagedWorktreeCreationResult,
 } from "#src/managed-worktree-tasks/contract.js";
-export type { RemoteProjectCache } from "#src/remote-projects/contract.js";
+export type {
+  ProjectTree,
+  ProjectTask,
+  ProjectTaskRef,
+  VirtualProject,
+  ProjectRoot,
+  SaveProjectInput,
+  ProjectDirectories,
+} from "#src/project/contract.js";
+
+export { IRemoteProjectService } from "#src/remote-projects/contract.js";
+export type {
+  RemoteProjectHost,
+  RemoteProjectEntry,
+  RemoteProjectCache,
+  RemoteProjectDirectory,
+} from "#src/remote-projects/contract.js";
+
 export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/index.js";
 export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
 
@@ -310,8 +355,6 @@ export { createHighspeedMockTransport } from "./highspeed/highspeedMockTransport
 export { IGenUiService } from "./gen-ui/contract.js";
 export type { GenUiPrepareParams } from "./gen-ui/contract.js";
 
-export { ISourceServerWorkspaceService } from "./source-server-workspace/sourceServerWorkspace.js";
-export type { BotRemoteWorkspaceResolver, BotRemoteWorkspaceResolution } from "./bots/bots.js";
 export { ITaskGroupService } from "#src/task-groups/contract.js";
 export type {
   TaskGroup,
@@ -321,31 +364,3 @@ export type {
   GroupNode,
   MoveGroupNode,
 } from "#src/task-groups/contract.js";
-export { IRemoteProjectService } from "#src/remote-projects/contract.js";
-export type {
-  RemoteProjectDirectory,
-  RemoteProjectEntry,
-  RemoteProjectHost,
-} from "#src/remote-projects/contract.js";
-export {
-  ISourceServerManagementService,
-  type UpdateConnectionProfileInput,
-} from "./source-server-management/sourceServerManagement.js";
-export {
-  IWindowProjectService,
-  IWindowRemoteProjectService,
-  IWindowProjectChangesService,
-  type WindowProjectDirectoryServices,
-} from "#src/window-project-directory/contract.js";
-export { createWindowProjectChangesService } from "#src/window-project-directory/index.js";
-export type { StorageRootSpec } from "./storage/contract.js";
-export { IProjectService, LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project/contract.js";
-export type {
-  ProjectTree,
-  ProjectTask,
-  ProjectTaskRef,
-  VirtualProject,
-  ProjectRoot,
-  SaveProjectInput,
-  ProjectDirectories,
-} from "#src/project/contract.js";

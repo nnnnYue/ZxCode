@@ -2,15 +2,12 @@ import { getUpstreamRequestEvidence } from "#e2e/helpers/conversation-session-ne
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  TID_WORKSPACE_FILE_TREE_BUTTON,
-  TID_WORKSPACE_ITEM,
   TID_WORKSPACE_FILE_TREE_ROW,
   TID_V4_COMPOSER_INPUT,
   TID_V4_SESSION_PANE,
   testId,
 } from "@zcode/shared/test-ids";
-// 合并说明：保 fork 修复（主体以 clickTestIdByDom 直点文件树按钮）；导入路径采上游 #e2e 风格。
-import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   prepareV4ConversationE2E,
@@ -40,48 +37,10 @@ describe("Markdown preview selection", () => {
     await prepareV4ConversationE2E();
     await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, `# Preview\n\n${marker}\n`, "utf8");
-    // 工作区行的操作按真实 hover 挂载；外层容器不保证可 focus，不能用 DOM focus 代替手势。
-    const workspaceRow = await $(
-      `[data-testid="${testId(TID_WORKSPACE_ITEM, DEFAULT_WORKSPACE)}"]`,
-    );
-    await workspaceRow.waitForDisplayed({ timeout: 15000 });
-    await workspaceRow.moveTo();
-    await browser
-      .waitUntil(
-        async () =>
-          browser.execute(
-            (actionId) => {
-              return Boolean(document.querySelector(`[data-testid="${actionId}"]`));
-            },
-            testId(TID_WORKSPACE_FILE_TREE_BUTTON, DEFAULT_WORKSPACE),
-          ),
-        {
-          timeout: 5000,
-          timeoutMsg: "Workspace file tree action did not mount after hover",
-        },
-      )
-      .catch(async (error) => {
-        if (process.env.ZXCODE_E2E_ARTIFACT_DIR) {
-          await browser.saveScreenshot(
-            join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-file-tree-unavailable.png"),
-          );
-        }
-        console.log(
-          "[MPS workspace entry]",
-          await browser.execute(() =>
-            Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
-              .filter((element) =>
-                /workspace|file-tree|sidebar|project/.test(element.dataset.testid ?? ""),
-              )
-              .map((element) => ({
-                id: element.dataset.testid,
-                text: element.innerText.slice(0, 100),
-              })),
-          ),
-        );
-        throw error;
-      });
-    await clickTestIdByDom(testId(TID_WORKSPACE_FILE_TREE_BUTTON, DEFAULT_WORKSPACE));
+    // 项目行的操作按真实 hover 挂载；helper 内部先 hover 项目行再点击文件树按钮。
+    await openProjectFileTree(DEFAULT_WORKSPACE, {
+      timeoutMsg: "Workspace file tree action did not mount after hover",
+    });
     // 文件树会将单子目录链压缩为一行，入口使用压缩后的最深目录。
     for (const path of [dirname(filePath), filePath]) {
       const row = await $(fileTreeRowSelector(path));
@@ -95,9 +54,7 @@ describe("Markdown preview selection", () => {
       (paneTestId, inputTestId) => {
         const input = document.querySelector(
           `[data-testid="${paneTestId}"] [data-testid="${inputTestId}"]`,
-        ) as HTMLElement & {
-          __zcodeLexicalInputE2E?: { setText: (text: string) => void };
-        };
+        ) as HTMLElement & { __zcodeLexicalInputE2E?: { setText: (text: string) => void } };
         if (!input?.__zcodeLexicalInputE2E) throw new Error("Composer bridge missing");
         input.__zcodeLexicalInputE2E.setText("E2E_MARKDOWN_DRAFT_KEEP");
       },
@@ -136,14 +93,10 @@ describe("Markdown preview selection", () => {
           inside: rect.left >= 11 && rect.right <= innerWidth - 11,
         };
       });
-      expect(layout).toEqual({
-        horizontal: true,
-        adaptive: true,
-        inside: true,
-      });
-      if (i === 0 && process.env.ZXCODE_E2E_ARTIFACT_DIR) {
+      expect(layout).toEqual({ horizontal: true, adaptive: true, inside: true });
+      if (i === 0 && process.env.ZCODE_E2E_ARTIFACT_DIR) {
         await browser.saveScreenshot(
-          join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-selection-tooltip.png"),
+          join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-selection-tooltip.png"),
         );
       }
       await action.click();
@@ -153,9 +106,9 @@ describe("Markdown preview selection", () => {
     );
     await chip.waitForDisplayed();
     expect(await chip.getText()).toContain("selection.md");
-    if (process.env.ZXCODE_E2E_ARTIFACT_DIR) {
+    if (process.env.ZCODE_E2E_ARTIFACT_DIR) {
       await browser.saveScreenshot(
-        join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-selection-composer.png"),
+        join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-selection-composer.png"),
       );
     }
     const state = await browser.execute(
@@ -172,12 +125,10 @@ describe("Markdown preview selection", () => {
       paneId,
       TID_V4_COMPOSER_INPUT,
     );
-    expect(state).toEqual({
-      session: "draft",
-      text: "E2E_MARKDOWN_DRAFT_KEEP",
-    });
+    expect(state).toEqual({ session: "draft", text: "E2E_MARKDOWN_DRAFT_KEEP" });
+    // f6e0c28998：选区 chip 的移除按钮文案统一为 chat.selections.removeAll「移除全部注释」。
     const remove = await $(
-      `[data-testid="${paneId}"] button[aria-label="移除对话引用"], [data-testid="${paneId}"] button[aria-label="Remove conversation selection"]`,
+      `[data-testid="${paneId}"] button[aria-label="移除全部注释"], [data-testid="${paneId}"] button[aria-label="Remove all annotations"]`,
     );
     await remove.click();
     await chip.waitForExist({ reverse: true });
@@ -197,17 +148,14 @@ describe("Markdown preview selection", () => {
     await sendV4Prompt("E2E_MARKDOWN_SIDE_PARENT Reply with a short acknowledgment.");
     await waitForV4TimelineContaining("E2E_MARKDOWN_SIDE_READY", 30000);
     const evidence = await getUpstreamRequestEvidence({
-      lastUserMessageIncludes: ["E2E_MARKDOWN_SIDE_PARENT", "# userselect:"],
+      lastUserMessageIncludes: ["E2E_MARKDOWN_SIDE_PARENT", "<conversation_quote>"],
       excludes: ["Generate a concise title", "CRITICAL: Respond with TEXT ONLY"],
     });
-    // 仅搜索文件名会被其他上下文误满足；精确检查实际 userselect 发送合同。
+    // 选区已改为结构化引用；检查模型边界的引用正文，避免旧 userselect 包装导致误报。
     expect(evidence.length).toBeGreaterThan(0);
     for (const record of evidence) {
       const { messages } = record.requestJson as {
-        messages: Array<{
-          role: string;
-          content: string | Array<{ type: string; text?: string }>;
-        }>;
+        messages: Array<{ role: string; content: string | Array<{ type: string; text?: string }> }>;
       };
       const selections = messages
         .filter((message) => message.role === "user")
@@ -221,7 +169,7 @@ describe("Markdown preview selection", () => {
         .filter((text) => text.includes("E2E_MARKDOWN_SIDE_PARENT"))
         .flatMap((text) =>
           Array.from(
-            text.matchAll(/# userselect:\n```userselect\n([^]*?)\n```/g),
+            text.matchAll(/<conversation_quote>\n([^]*?)\n<\/conversation_quote>/g),
             (match) => JSON.parse(match[1]!) as unknown,
           ),
         );
@@ -247,9 +195,7 @@ describe("Markdown preview selection", () => {
       (paneTestId, inputTestId) => {
         const input = document.querySelector(
           `[data-testid="${paneTestId}"] [data-testid="${inputTestId}"]`,
-        ) as HTMLElement & {
-          __zcodeLexicalInputE2E: { setText: (text: string) => void };
-        };
+        ) as HTMLElement & { __zcodeLexicalInputE2E: { setText: (text: string) => void } };
         input.__zcodeLexicalInputE2E.setText("E2E_MARKDOWN_MAIN_KEEP");
       },
       paneId,
@@ -289,14 +235,10 @@ describe("Markdown preview selection", () => {
         distinct: pane.getAttribute("data-session-id") !== main.getAttribute("data-session-id"),
       };
     }, TID_V4_COMPOSER_INPUT);
-    expect(sideState).toEqual({
-      sideText: "",
-      mainText: "E2E_MARKDOWN_MAIN_KEEP",
-      distinct: true,
-    });
-    if (process.env.ZXCODE_E2E_ARTIFACT_DIR)
+    expect(sideState).toEqual({ sideText: "", mainText: "E2E_MARKDOWN_MAIN_KEEP", distinct: true });
+    if (process.env.ZCODE_E2E_ARTIFACT_DIR)
       await browser.saveScreenshot(
-        join(process.env.ZXCODE_E2E_ARTIFACT_DIR, "markdown-side-conversation.png"),
+        join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-side-conversation.png"),
       );
   });
 });

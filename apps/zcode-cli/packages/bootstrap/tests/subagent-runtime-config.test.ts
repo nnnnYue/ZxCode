@@ -241,7 +241,7 @@ describe("subagent initialization source", () => {
     let app: Awaited<ReturnType<typeof createRegistryBackedTestApp>> | undefined;
     try {
       app = await createRegistryBackedTestApp({
-        env: { ZCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
+        env: { ZXCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
         skipUserConfig: true,
         runtimeConfig: {
           workingDirectory: root,
@@ -294,7 +294,7 @@ describe("subagent initialization source", () => {
     try {
       await expect(
         createRegistryBackedTestApp({
-          env: { ZCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
+          env: { ZXCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
           skipUserConfig: true,
           runtimeConfig: { workingDirectory: root, mcp: { enabled: false, servers: {} } },
           readSubagentRuntimeConfig: async () => {

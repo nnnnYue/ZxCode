@@ -72,7 +72,7 @@ async function fixture(t: TestContext, providerId: "zai" | "bigmodel" = "bigmode
   personal.dispose();
   const env = {
     ZCODE_DATA_BASE_DIR: dir,
-    ZCODE_CREDENTIAL_SECRET: "test-encryption-key",
+    ZXCODE_CREDENTIAL_SECRET: "test-encryption-key",
     ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: resolve(
       import.meta.dirname,
       "../../../../../config/provider/zxcode-builtin.json",

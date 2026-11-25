@@ -303,6 +303,10 @@ export interface AppSettings {
   httpProxyNoProxy?: string;
   /** 自定义 PEM 根证书路径；下次启动 app/agent 时用于 renderer 校验与 agent NODE_EXTRA_CA_CERTS。 */
   httpProxyCaCertPath?: string;
+  /** 本机预装工具的自动准备偏好；由预装工具进程写入。 */
+  preinstalledToolsAutoInstall?: boolean;
+  /** Agent 禁用预装版本的工具；缺省全部开启，仅由本机预装进程写入。 */
+  preinstalledToolsAgentDisabled?: string[];
   /**
    * 模型 API 请求自定义头开关；关闭（缺省）时模型请求只携带默认来源头，编辑器在设置页隐藏。
    * 行为见 specs/custom-request-headers.md。
@@ -394,8 +398,14 @@ export interface AppSettings {
   nativeSearchEnhancementsEnabled?: boolean;
   /** 新建或冷恢复时读取；已有 Runtime 保持原策略。 */
   toolSearchMode?: AppToolSearchMode;
+  /** token 预算提醒；新建或冷恢复时读取，已有 Runtime 保持原值。默认关闭。 */
+  totalTokensReminderEnabled?: boolean;
+  /** Agent 是否总在后台运行；新建或冷恢复时读取，已有 Runtime 保持原值。默认开启。 */
+  agentAlwaysBackgroundEnabled?: boolean;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */
   memoryEnabled?: boolean;
+  /** Agent 回复语言（自由文本，未设置时跟随对话语言）；只由 Main 写入，见 docs/i18n/agent-reply-language.md。 */
+  replyLanguage?: string;
   onboardingOccupation?:
     | "office"
     | "developer"

@@ -1,7 +1,10 @@
+import type { McpConfigSourceRegistry } from "@zcode/adapters/mcp";
+import type { SkillCatalogSourceRegistry } from "@zcode/adapters/skills/catalog";
 import type { OfficialPluginPreparation } from "./bundled-plugins.js";
 import type { AiSdkModelAdapter } from "@zcode/adapters/model";
 import type { SessionControlBinding } from "@zcode/core/session-control";
 import type {
+  AgentTelemetryRuntimeOwner,
   AutomationPort,
   PluginDiscoveryPort,
   BackgroundTaskCancelResult,
@@ -34,10 +37,12 @@ import type {
   McpReadResourceResult,
   McpServerStatus,
   McpToolCallResult,
+  McpToolCatalogPort,
   MessageWithParts,
   ModelSelection,
   ModelToolCall,
   ModelUsage,
+  OffPeakPort,
   TopicResourcePort,
   PdfDocumentPort,
   PermissionBrokerPort,
@@ -83,8 +88,11 @@ import type {
   LockPendingInputEditResult,
   McpAppProvidedToolDefinition,
   McpAppProvidedToolExecutor,
+  McpStartupPolicy,
   ModelExecutionContext,
   PresentationSurface,
+  AgentRuntimeDeps,
+  ProviderRuntimeHeadersPort,
   ResumeSessionResult,
   StartSavedWorkflowRunResult,
   TurnAttachment,
@@ -140,11 +148,6 @@ export type RevokeWorkspaceHookTrustInput =
 export type ZCodeAppRuntimeConfigInput = AgentRuntimeConfig;
 
 export interface ZCodeAppOptions {
-  /** fork：provider runtime headers 已随域剔除；类型占位兼容上游 workspace-model-runtime。 */
-  providerRuntimeHeadersPort?: unknown;
-  // v3.18.0 合并补齐：上游 create-app 装配 provider endpoint routing 端口（fork 侧沿用），
-  // ZCodeAppOptions 此前缺该成员导致装配点 TS2353/TS2339。
-  providerEndpointRoutingPort?: ProviderEndpointRoutingPort;
   /** 独立 CLI 的配置菜单编辑输入默认值；其他装配保留显式 Session 配置语义。 */
   modelSelectionMode?: "cli-default";
   /** 仅独立 TUI/headless 入口开启；不得由模型或项目配置指定。 */
@@ -183,6 +186,16 @@ export interface ZCodeAppOptions {
   /** 新 Session 使用的 Environment 默认选择；仅在没有显式 runtime modelSelection 时参与初始化。 */
   configuredDefaultModelSelection?: ModelSelection;
   modelIoFullRetentionEnabled?: boolean;
+  /** 同进程嵌入宿主可注入完整的 borrowed 进程级 Owner；Endpoint 配置不得覆盖它。 */
+  telemetryOwner?: AgentTelemetryRuntimeOwner;
+  providerEndpointRoutingPort?: ProviderEndpointRoutingPort;
+  /**
+   * provider runtime headers 端口：主 runtime 每次调用报自己的会话；child runtime 一律向父
+   * runtime 取派生实例。
+   */
+  providerRuntimeHeadersPort?: ProviderRuntimeHeadersPort;
+  /** 回复语言来源：向 Host 读回复语言设置。只给主 runtime；没有 Host（TUI/headless）时缺省。 */
+  readReplyLanguage?: AgentRuntimeDeps["readReplyLanguage"];
   loggerFactory?: LoggerFactory;
   officialPluginRoots?: string[];
   pluginStorageRoot?: string;
@@ -206,6 +219,14 @@ export interface ZCodeAppOptions {
   includeVisualize?: boolean;
   skillPort?: SkillPort;
   mcpPort?: McpPort;
+  /** protocol host 注入的进程级 catalog；不持有 live MCP client。 */
+  mcpToolCatalogPort?: McpToolCatalogPort;
+  /** protocol host 注入的进程级 MCP 配置源 registry；缺省时每个 app 各建一份私有配置源。 */
+  mcpConfigSourceRegistry?: McpConfigSourceRegistry;
+  /** protocol host 注入的进程级 Skill 实时目录 registry；缺省时每个 app 各建一份私有目录。 */
+  skillCatalogSourceRegistry?: SkillCatalogSourceRegistry;
+  /** MCP 启动策略，入口显式传入；缺省 blocking。交互入口传 background。 */
+  mcpStartupPolicy?: McpStartupPolicy;
   /** 由宿主提供 per-app lease；产出的端口归 app 所有。 */
   mcpPortFactory?: (input: { workingDirectory?: string }) => McpPort;
   permissionBroker?: PermissionBrokerPort;
@@ -222,6 +243,7 @@ export interface ZCodeAppOptions {
   /** 可信启动装配，不能从项目配置或模型输入填充。 */
   sessionControl?: SessionControlBinding;
   automationPort?: AutomationPort;
+  offPeakPort?: OffPeakPort;
   topicResourcePort?: TopicResourcePort;
   pluginDiscoveryPort?: PluginDiscoveryPort;
   /** 首次真实用户执行或 cold-resume fallback 时解析一次，之后由 app 生命周期缓存。 */
@@ -454,6 +476,8 @@ export interface ZCodeApp {
   waitForMcpAppConnection(
     serverName: string,
   ): Promise<{ identity: string; generation: number } | null>;
+  /** 打开 MCP App 前连接不可用（如 stdio 进程崩溃）时重连一次，在预算内等待；结果由调用方读快照。 */
+  reconnectMcpAppConnection(serverName: string): Promise<void>;
   callMcpToolForUi(
     serverName: string,
     toolName: string,
@@ -565,6 +589,7 @@ export interface ZCodeApp {
    * {@link listDynamicWorkflowRunEvents}；journal 无枚举窄查询时回空列表（诚实答案——
    * 内存 journal 的 run 本就不会活过进程）。`resumable` 按 resume 门的同一个谓词算好。
    */
+  getWorkflowActivityHistory?(): Promise<import("@zcode/contracts").DynamicWorkflowActivityHistory>;
   listDynamicWorkflowRuns?(input: { limit?: number }): Promise<DynamicWorkflowRunSessionSummary[]>;
   /**
    * workflow run 的冷回放：本会话名下、`excludeRunIds`

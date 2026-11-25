@@ -204,6 +204,9 @@ export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceCh
 
 /** Electron IPC 频道名。仅在 preload ↔ main 之间使用。 */
 export const PlatformChannels = {
+  ExecutePreinstalledToolsCommand: "zxcode:preinstalled-tools:command",
+  GetPreinstalledToolsState: "zxcode:preinstalled-tools:get-state",
+  PreinstalledToolsState: "zxcode:preinstalled-tools:state",
   /** renderer → main：释放插件 UI 沙箱（关闭 ports、撤 protocol handler、清 partition） */
   PluginSandboxDispose: "zcode:plugin-sandbox-dispose",
   PluginSandboxCopyImage: "zcode:plugin-sandbox-copy-image",
@@ -483,6 +486,8 @@ export const PlatformChannels = {
   ExecuteDesktopCommand: "zxcode:execute-desktop-command",
   /** Renderer → Main：同步应用菜单语言，用于重建原生菜单 */
   SetApplicationLocale: "zxcode:set-application-locale",
+  /** Renderer → Main：保存 Agent 回复语言（空串清除）；Main 写盘后推送给各窗口 Host */
+  SetReplyLanguage: "zxcode:set-reply-language",
   /** Renderer → Main：同步标题栏亮暗色，用于原生窗口控制按钮配色 */
   SetTitleBarTheme: "zxcode:set-title-bar-theme",
   /** Renderer → Main：迁移旧版 Common MCP 配置 */
@@ -643,6 +648,8 @@ export const HostMessageTypes = {
   BotRemoteWorkspaceConnectionStatusResult: "bot-remote-workspace-connection-status-result",
   /** main → host：Bot 远端 workspace runtime RPC 端口 */
   BotRemoteWorkspaceRuntimePort: "bot-remote-workspace-runtime-port",
+  /** main → host：Agent 回复语言变化（Host 内存持有，应答 CLI 的 session/readReplyLanguage） */
+  ReplyLanguageChanged: "reply-language-changed",
 } as const;
 
 /** host process → main process 的反馈消息类型 */
@@ -1288,6 +1295,10 @@ export interface PlatformChannelMap {
   };
   [PlatformChannels.SetApplicationLocale]: {
     request: Locale;
+    response: void;
+  };
+  [PlatformChannels.SetReplyLanguage]: {
+    request: string;
     response: void;
   };
   [PlatformChannels.SetTitleBarTheme]: {

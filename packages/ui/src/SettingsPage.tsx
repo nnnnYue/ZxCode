@@ -384,6 +384,8 @@ export function SettingsPage({
   const memoryEnabled = sharedSettings?.memoryEnabled === true;
   const toolSearchMode = sharedSettings?.toolSearchMode ?? DEFAULT_APP_TOOL_SEARCH_MODE;
   const nativeSearchEnhancementsEnabled = sharedSettings?.nativeSearchEnhancementsEnabled !== false;
+  const totalTokensReminderEnabled = sharedSettings?.totalTokensReminderEnabled === true;
+  const agentAlwaysBackgroundEnabled = sharedSettings?.agentAlwaysBackgroundEnabled !== false;
   const askUserQuestionAutoResolutionEnabled =
     sharedSettings?.askUserQuestionAutoResolutionEnabled !== false;
   const modelIoFullRetentionEnabled = sharedSettings?.modelIoFullRetentionEnabled === true;
@@ -581,6 +583,36 @@ export function SettingsPage({
         action: "toggle_native_search",
         trigger: "switch",
         operation: () => updateSharedSettings({ nativeSearchEnhancementsEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+    },
+    [updateSharedSettings],
+  );
+  const handleTotalTokensReminderEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.conversation",
+        action: "toggle_total_tokens_reminder",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ totalTokensReminderEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+    },
+    [updateSharedSettings],
+  );
+  const handleAgentAlwaysBackgroundEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.conversation",
+        action: "toggle_agent_always_background",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ agentAlwaysBackgroundEnabled: enabled }),
         completed: {
           resultSource: "shared_settings",
           stateAfter: enabled ? "enabled" : "disabled",
@@ -1435,6 +1467,14 @@ export function SettingsPage({
                             onNativeSearchEnhancementsEnabledChange={
                               handleNativeSearchEnhancementsEnabledChange
                             }
+                            totalTokensReminderEnabled={totalTokensReminderEnabled}
+                            onTotalTokensReminderEnabledChange={
+                              handleTotalTokensReminderEnabledChange
+                            }
+                            agentAlwaysBackgroundEnabled={agentAlwaysBackgroundEnabled}
+                            onAgentAlwaysBackgroundEnabledChange={
+                              handleAgentAlwaysBackgroundEnabledChange
+                            }
                             messageStreamShowReasoning={messageStreamShowReasoning}
                             messageStreamShowTodos={messageStreamShowTodos}
                             zcodeInteractionBehavior={zcodeInteractionBehavior}
@@ -1465,6 +1505,7 @@ export function SettingsPage({
                             onToolGroupingChangesEnabledChange={
                               handleToolGroupingChangesEnabledChange
                             }
+                            replyLanguage={sharedSettings?.replyLanguage}
                           />
                         ) : activeSection === "appearance" ? (
                           <AppearanceSectionContent

@@ -135,6 +135,39 @@ v3.18.0 合并（`b95ebaff` sync）沿用「引擎/新功能采纳、智谱联�
 - `session-lifecycle`/`input-prediction`/`session-features`/`conversation-quote-context` 等 CLI 本地引擎域本轮采纳（此前 v3.17.2 保基线未合）。
 - **node-repl-host 0.7.0 补全采纳**【2026-11-14】：v3.18.0 合并把该插件留在坏中间态——definition 已是 0.7.0，但包内 manifest/package.json 停在 0.6.1（v3.17.2 CLI 域 keep-ours 遗留），call-ledger 只合入半套（result.ts 反伪造强化在、server.ts 账本接线缺），node-repl-host vitest 3 个账本断言挂、运行时截图下标/CUA App 身份/会话能力标签三类可信 `_meta` 键永不写回、商店对已启用用户常驻 update-available 误报。本轮按「引擎/新功能采纳」补全整套：server.ts 账本接线、browser-bridge 主线程代理、cua-broker 按条目 token 鉴权、no-progress-guard（上游 0.6.2 特性随 0.7.0 一并进入）与账本行为回归测试全量采纳；rebrand 项按第十一节回写（`com.zxcode/request-context`、`ZXCODE_PLUGIN_ROOT`/`ZXCODE_CUA_*` env、`ZXCODE_MCP_*` 双名导入、`ZXCODE_CUA_HELPER_BUILD_ID` define）。plugin.json/package.json/`NODE_REPL_SERVER_VERSION` 三处对齐 0.7.0 并重建 dist；`bootstrap/test/official-plugin-defaults.test.ts` 新增「定义 version 与包内 plugin.json 一致」守护，`test/request-context-key.test.ts` 守护保留。
 
+## 十三、v4.0.0 同步剔除与拍板（2026-11-26）
+
+v4.0.0 合并（上游 squash 提交 `a4b44451`，2209 文件）沿用「引擎/新功能采纳、智谱联网域拒入」策略。本轮采纳预装文档工具链（preinstalled-tools，CDN 默认基址置空）、MCP 异步连接与动态目录缓存、Skill 实时目录、Workspace 插件信任门、子代理常驻后台、回复语言、Token 预算提醒、崩溃恢复、CLI 浏览器登录态注入、Windows CMD 只读判定、会话归档批量预检删除、会话遥测休眠契约演进（本地指标）、文档四插件 0.2.10/design 0.8.0/cua 0.6.6/browser-use 0.5.2/android-emulator 0.1.3、node-repl-host 0.7.1。zod 3→4 major 迁移随上游。
+
+### 新增剔除域（上游 v4.0.0 中的智谱联网面）
+
+- **voice-input 复活面**：`useVoiceInputShortcut` 快捷键与 composer 接线、`docs/chat/composer-voice-input.md`、e2e（asr-mock-server 接线）随 §十二继续拒入。
+- **Web 区域化登录演进**（`webRegionalOAuth`、`chat.z.ai/oauth/authorize`）与登录区域（plugin store regions、`usePluginLoginRegion`）：随登录域拒入，contracts/protocol 的 regions 域整体剔除。
+- **会话分享 v1 演进**：services conversation-share（rate-limit 等待、artifact 校验问题码）、UI `conversation-share-interaction/`（preflight 指纹搬家）、`conversationShare.issue.*` i18n key，随 §二/§八拒入。
+- **PayPal 支付中继**：`desktopWindowChrome`/`desktopMainIpcRemote` 的 `CODING_PLAN_ZAI_PAYPAL_RELAY_HOSTS`（`api.z.ai`）hunk 拒入。
+- **遥测抓取面复活**：merge 在 8 个 e2e spec 与 `V4InteractionDialogs` 复活的 `conversation-telemetry-parity-capture` 断言/上报全部摘除（helper fork 已删）。
+- **插件图标/目录 CDN 回流**：marketplace 图标子系统与官方 no-refetch 守卫、`cdn-zcode.z.ai` 图标/目录 URL 按 fork「图标不写 seed、运行时无 CDN fetch」不变量摘除；`OFFICIAL_MARKETPLACE_OFFLINE_ENTRIES` seed 展开恢复。
+- **providerProvisioningSource 账号 token 列表**：上游 LEGACY+OAuth 会话组 key（`zcodejwttoken`、`oauth:zai*`）不合入，allowlist 维持 fork 空列表。
+- **automations live-bigmodel-team / live-zapi**：真实账号域 e2e 拒入。
+
+### 品牌回写（本轮回归面）
+
+- HOME 数据目录 `.zcode`：merge 新增 src 2 处（browser storage-state、skills catalog）回写 `.zxcode`；workspace 级 `.zcode/config.json` 与 `.zcode-plugin` 继续保护不动。
+- `ZCODE_*` env 键族：8 个键（STORAGE_DIR、CREDENTIAL_SECRET、PLUGIN_ROOT、CUA_*、PLUGIN_DATA、PROJECT_DIR、PREINSTALLED_TOOLS_*、AVAILABLE）约 60 处回归 `ZXCODE_`；例外 `ZCODE_CLIENT_LANGUAGE*` 按上游名；desktop e2e agent 侧 env（wdio ensure-e2e 注入）保上游名。
+- `com.zxcode/request-context`：adapters mcp/index.ts 与 node-repl-host server.ts 取上游后回写键；守护测试通过。
+
+### 本轮拍板（fork 主动决策）
+
+- **no-progress-guard 跟随上游撤销**：上游 0.7.1 主动回退该特性，fork 随上游删除（§十二 0.7.0 补全工程中的 guard 部分退役，call-ledger 与鉴权保留），守护测试同步。
+- **draftModelMigration 弃用**：上游草稿模型迁移依赖 clientConfig 在线下发域（fork 已删），整链不引入。
+- **ConversationQuotaBanner 保 fork 休眠版**；SessionPane/ConversationRowView/TurnNavigator 保 fork 数组版渲染（上游 ItemView 分区管线不引入，同 §十二）。
+- **session-data purge 演进采纳**：本地永久删除能力（`deletionPreviewBatch`），无联网面。
+- **prepareAgentNodeBundle.test.ts 随上游删除**（脚本保留）。
+- **offpeak-retry 激活测试继续拒入**（§九现状）。
+- **SSH remote-release e2e 构建锁摘除**：`withE2EDesktopBuildLock` 属上游新增（fork ensure-e2e 无此导出），维持 fork 无锁基线；并行 runner 重建 mock-cdn 的竞争窗口为已知开发场景限制。
+- **auth-config pending 车位**：`system-credential-auto-reset`（凭据安全，已采纳域）保留 pending；`logout-relaunch-login-gate`、`cn-login-stale-provider-family-domain`（登录域）删除。
+- **上游 promoted pending specs（约 40 个 fork 曾裁剪用例）**：本地功能用例随上游目录整改复活，由 e2e-remote-target-specs 门禁排除出默认全量；引用已删 helper 的 19 个用例已删。
+
 ## 保留说明
 
 - 模型推理仍可通过 API key 形式的 Provider 接入 Z.ai / BigModel（coding-plan 与标准 key），以及其他 OpenAI / Anthropic 兼容提供商。

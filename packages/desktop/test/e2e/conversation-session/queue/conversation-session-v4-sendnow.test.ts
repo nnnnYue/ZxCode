@@ -43,5 +43,6 @@ describe("v4 M4 门禁：sendQueuedNow", () => {
     await waitForV4QueueCount(0, 30000);
     await waitForV4TimelineContaining("V4_SENDNOW_ITEM_REPLY", 60000);
     expect(await getV4QueueItems()).toHaveLength(0);
+    await waitForV4Pane((state) => !state.canStop, "排队消息未结束", 45000);
   });
 });

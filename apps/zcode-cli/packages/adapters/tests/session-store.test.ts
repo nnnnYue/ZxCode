@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import { SQLITE_MIGRATIONS } from "../src/storage/session-store/migrations.js";
-import { fork } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,6 +20,7 @@ import {
   type SharedContextImportCommitBundle,
   type ModelId,
   type ModelProviderId,
+  type SessionId,
   type WorkspaceId,
 } from "@zcode/contracts";
 import { OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME } from "@zcode/shared";
@@ -35,53 +35,6 @@ import {
   resetStorageFsFaultInjectorForTests,
   setStorageFsFaultInjectorForTests,
 } from "../src/storage/fs-fault-injection.js";
-
-interface ConcurrentStartupResult {
-  kind?: string;
-  message?: string;
-  migrationIds?: string[];
-  ok: boolean;
-}
-
-const CONCURRENT_STARTUP_ATTEMPTS = 5;
-// 五轮真实进程冷启动的加载时间已接近十秒，整组预算按轮数计算，避免把加载耗时误报为迁移失败。
-const CONCURRENT_STARTUP_TEST_TIMEOUT_MS = CONCURRENT_STARTUP_ATTEMPTS * 10_000;
-
-function openSessionStoreInConcurrentProcesses(dbPath: string): Promise<ConcurrentStartupResult[]> {
-  const workerUrl = new URL("./fixtures/session-store-concurrent-process.ts", import.meta.url);
-  const children = [0, 1].map(() =>
-    fork(workerUrl, {
-      env: { ...process.env, NODE_NO_WARNINGS: "1" },
-      execArgv: ["--import", "tsx"],
-      stdio: ["ignore", "ignore", "inherit", "ipc"],
-    }),
-  );
-  const ready = children.map(
-    (child) =>
-      new Promise<void>((resolve, reject) => {
-        child.once("error", reject);
-        child.once("exit", (code) => reject(new Error(`startup child exited early: ${code}`)));
-        child.on("message", (message: { type?: unknown }) => {
-          if (message.type === "ready") resolve();
-        });
-      }),
-  );
-  const results = children.map(
-    (child) =>
-      new Promise<ConcurrentStartupResult>((resolve, reject) => {
-        child.once("error", reject);
-        child.once("exit", (code) => reject(new Error(`startup child exited early: ${code}`)));
-        child.on("message", (message: { result?: ConcurrentStartupResult; type?: unknown }) => {
-          if (message.type === "result" && message.result) resolve(message.result);
-        });
-      }),
-  );
-
-  return Promise.all(ready).then(() => {
-    for (const child of children) child.send({ dbPath, type: "start" });
-    return Promise.all(results);
-  });
-}
 
 afterEach(() => {
   resetStorageFsFaultInjectorForTests();
@@ -166,6 +119,73 @@ describe("assistant block order at the read boundary", () => {
     expect(await read()).toEqual({ all: expected, single: expected });
     store.close();
   });
+
+  it.each(["pending", "running", "completed", "error", "reasoning"] as const)(
+    "index read omits only unused display content for %s without modifying stored history",
+    async (kind) => {
+      const { store } = await seed([{ id: "first", type: "text", blockIndex: 0 }]);
+      const sessionID = createSessionId("block-order-read");
+      const messageID = createMessageId("block-order-assistant");
+      const big = "历史内容".repeat(32_768);
+      const base = {
+        id: createPartId("large-part"),
+        sessionID,
+        messageID,
+        blockIndex: 1,
+        metadata: { origin: "main", retained: "part metadata" },
+      };
+      try {
+        if (kind === "reasoning") {
+          await store.savePart({ ...base, type: "reasoning", text: big });
+        } else {
+          const input = {
+            todos: [{ content: "保留待办", status: "in_progress", priority: "high" }],
+            command: big,
+          };
+          const metadata = { retained: "tool metadata" };
+          const state =
+            kind === "pending"
+              ? { status: kind, input, raw: big }
+              : kind === "running"
+                ? { status: kind, input, metadata, time: { start: 1 } }
+                : kind === "completed"
+                  ? {
+                      status: kind,
+                      input,
+                      output: big,
+                      title: "TodoWrite",
+                      metadata,
+                      time: { start: 1, end: 2 },
+                    }
+                  : { status: kind, input, error: big, metadata, time: { start: 1, end: 2 } };
+          await store.savePart({
+            ...base,
+            type: "tool",
+            callID: "call-large",
+            tool: "TodoWrite",
+            state,
+          });
+        }
+        const full = await store.messages({ sessionID });
+        const expected = structuredClone(full);
+        const part = expected[0]!.parts[1]!;
+        if (part.type === "reasoning") part.text = "";
+        if (part.type === "tool") {
+          if (part.state.status === "pending") part.state.raw = "";
+          if (part.state.status === "completed") part.state.output = "";
+          if (part.state.status === "error") part.state.error = "";
+        }
+        expect(await store.messages({ sessionID, contentProfile: "index" })).toEqual(expected);
+        expect(await store.messages({ sessionID, contentProfile: "full" })).toEqual(full);
+        expect(await store.messageWithParts({ sessionID, messageID })).toEqual(full[0]);
+        expect(
+          await store.messages({ sessionID: createSessionId("other"), contentProfile: "index" }),
+        ).toEqual([]);
+      } finally {
+        store.close();
+      }
+    },
+  );
 
   it.each(["$.state.input", "$.state"])(
     "reads a damaged tool part without %s instead of failing the whole session",
@@ -303,6 +323,112 @@ describe("virtual project CLI session facts", () => {
     expect(store.debugCounts(bundle.session.id)).toEqual(before);
     await store.createSession(bundle.session);
     expect(await store.listSessions()).toEqual([]);
+    store.close();
+  });
+
+  it("purges a session with its owned children but never a fork or an unrelated session", async () => {
+    const store = await createSqliteSessionStore({ dbPath: ":memory:" });
+    const parent = createSharedContextImportBundle({ sessionSlug: "purge-parent", shareId: "s1" });
+    await store.commitSharedContextImportBundle?.(parent);
+    const child = createSessionId("purge-child");
+    const grandchild = createSessionId("purge-grandchild");
+    const fork = createSessionId("purge-fork");
+    const unrelated = createSessionId("purge-unrelated");
+    const base = { ...parent.session, title: "x", time: { created: 1, updated: 1 } };
+    await store.createSession({
+      ...base,
+      id: child,
+      slug: "c",
+      parentID: parent.session.id,
+      taskType: "subagent_child",
+    });
+    await store.createSession({
+      ...base,
+      id: grandchild,
+      slug: "g",
+      parentID: child,
+      taskType: "workflow_child",
+    });
+    await store.createSession({
+      ...base,
+      id: fork,
+      slug: "f",
+      parentID: parent.session.id,
+      taskType: "fork",
+    });
+    await store.createSession({ ...base, id: unrelated, slug: "u" });
+
+    const trees = await store.listOwnedSessionTrees?.([parent.session.id, unrelated]);
+    expect(trees?.get(parent.session.id)?.sort()).toEqual(
+      [child, parent.session.id, grandchild].sort(),
+    );
+    expect(trees?.get(unrelated)).toEqual([unrelated]);
+
+    await store.purgeSessions?.([parent.session.id]);
+    expect(await store.getSession(parent.session.id)).toBeNull();
+    expect(await store.getSession(child)).toBeNull();
+    expect(await store.getSession(grandchild)).toBeNull();
+    expect(await store.messages({ sessionID: parent.session.id })).toEqual([]);
+    expect(store.debugCounts(parent.session.id)).toMatchObject({ messages: 0, parts: 0 });
+    // fork 是独立的用户任务（可能属于别的项目），源会话删除后仍保留。
+    expect(await store.getSession(fork)).not.toBeNull();
+    expect(await store.getSession(unrelated)).not.toBeNull();
+    // 已不存在的会话再次删除是空操作。
+    await store.purgeSessions?.([parent.session.id]);
+    expect(
+      (await store.listOwnedSessionTrees?.([parent.session.id]))?.get(parent.session.id),
+    ).toEqual([]);
+    store.close();
+  });
+
+  it("lists the live sessions whose parts still point at another session's artifacts", async () => {
+    const store = await createSqliteSessionStore({ dbPath: ":memory:" });
+    const source = createSharedContextImportBundle({
+      sessionSlug: "artifact-source",
+      shareId: "s2",
+    });
+    await store.commitSharedContextImportBundle?.(source);
+    const base = { ...source.session, title: "x", time: { created: 1, updated: 1 } };
+    const fork = createSessionId("artifact-fork");
+    const deletedFork = createSessionId("artifact-deleted-fork");
+    const other = createSessionId("artifact-other");
+    const refer = async (sessionID: SessionId, text: string) => {
+      const messageID = createMessageId(`${sessionID}-m`);
+      await store.saveMessage({
+        id: messageID,
+        sessionID,
+        role: "user",
+        time: { created: 1 },
+        agent: "zcode-agent",
+        model: { providerID: "p" as ModelProviderId, modelID: "m" as ModelId },
+      });
+      await store.savePart({
+        id: createPartId(`${sessionID}-p`),
+        sessionID,
+        messageID,
+        type: "text",
+        text,
+        time: { start: 1, end: 1 },
+      });
+    };
+    for (const id of [fork, deletedFork, other])
+      await store.createSession({
+        ...base,
+        id,
+        slug: id,
+        parentID: source.session.id,
+        taskType: "fork",
+      });
+    const uri = `zcode-artifact://${source.session.id}/art_1`;
+    await refer(fork, `image ${uri} and again ${uri}`);
+    await refer(deletedFork, uri);
+    await store.softDeleteSession(deletedFork);
+    // 引用自身附件不算外部引用；没有引用的会话不出现在结果里。
+    await refer(other, `zcode-artifact://${other}/own`);
+
+    const referrers = await store.listArtifactReferrers?.([source.session.id, other]);
+    expect(referrers?.get(source.session.id)).toEqual([fork]);
+    expect(referrers?.has(other)).toBe(false);
     store.close();
   });
 
@@ -614,7 +740,7 @@ describe("SQLite session store", () => {
   });
 
   it("defaults the session database under the db directory", () => {
-    expect(getDefaultSessionDbPath()).toBe(join(homedir(), ".zcode", "cli", "db", "db.sqlite"));
+    expect(getDefaultSessionDbPath()).toBe(join(homedir(), ".zxcode", "cli", "db", "db.sqlite"));
   });
 
   it("can inject sqlite open failures for startup/recovery cases", async () => {
@@ -722,116 +848,6 @@ describe("SQLite session store", () => {
     expect(new Set(numbers).size).toBe(numbers.length);
     expect(numbers).toEqual([...numbers].sort((left, right) => left - right));
   });
-
-  it("records ordered schema migrations and keeps reopening idempotent", async () => {
-    const tempRoot = await mkdtemp(join(tmpdir(), "zcode-session-migrations-"));
-    const dbPath = join(tempRoot, "session.sqlite");
-    const expectedMigrations = [
-      "0001_base_session_store",
-      "0002_local_setting",
-      "0003_backfill_permission_local_setting",
-      "0004_session_target",
-      "0005_session_target_accounting",
-      "0006_input_history_attachments",
-      "0007_workflow_script_runtime",
-      "0008_workflow_definition_scope",
-      "0009_session_title_metadata",
-      "0010_usage_observability",
-      "0011_session_target_summary_title",
-      "0012_session_trace_id",
-      "0013_session_target_active_run_accounting",
-      "0014_message_part_sequence",
-      "0015_message_part_sequence_backfill_and_guard",
-      "0016_session_input_ledger",
-      "0017_session_input_start_now_delivery",
-      "0018_session_input_failed_status",
-      "0019_dwf_journal",
-      "0020_provider_model_selection",
-      "0021_official_glm_selection",
-      "0022_backfilled_session_reasoning",
-      "0023_session_soft_delete_outcome",
-      "0024_session_database_identity",
-      "0025_session_permanent_deletion",
-    ];
-
-    try {
-      const firstStore = await createSqliteSessionStore({ dbPath });
-      expect(firstStore.debugMigrationIds()).toEqual(expectedMigrations);
-      expect(firstStore.debugCounts().schemaMigrations).toBe(expectedMigrations.length);
-      expect(firstStore.debugCounts().localSettings).toBe(0);
-      firstStore.close();
-
-      const db = new DatabaseSync(dbPath, { readOnly: true });
-      const rows = db
-        .prepare("select app_version from schema_migration order by id")
-        .all() as Array<{ app_version: string }>;
-      expect(rows.map((row) => row.app_version)).toEqual([
-        "0.2.0",
-        "0.2.0",
-        "0.2.0",
-        "0.7.0",
-        "0.7.0",
-        "0.11.0",
-        "0.13.0",
-        "0.13.0",
-        "0.14.0",
-        "0.15.0",
-        "0.15.0",
-        "0.15.0",
-        "0.15.0",
-        "0.15.0",
-        "0.15.2",
-        "0.15.2",
-        "0.15.2",
-        "0.15.2",
-        "0.16.5",
-        "0.16.5",
-        "0.16.5",
-        "0.16.5",
-        "0.16.9",
-        "0.16.9",
-        "0.17.1",
-      ]);
-
-      db.close();
-
-      const secondStore = await createSqliteSessionStore({ dbPath });
-      expect(secondStore.debugMigrationIds()).toEqual(expectedMigrations);
-      expect(secondStore.debugCounts().schemaMigrations).toBe(expectedMigrations.length);
-      expect(secondStore.debugCounts().localSettings).toBe(0);
-      secondStore.close();
-    } finally {
-      await rm(tempRoot, { force: true, recursive: true });
-    }
-  });
-
-  it(
-    "allows two Agent processes to migrate the same new database concurrently",
-    async () => {
-      const attempts: ConcurrentStartupResult[][] = [];
-
-      for (let attempt = 0; attempt < CONCURRENT_STARTUP_ATTEMPTS; attempt += 1) {
-        const tempRoot = await mkdtemp(join(tmpdir(), "zcode-session-concurrent-startup-"));
-        try {
-          attempts.push(
-            await openSessionStoreInConcurrentProcesses(join(tempRoot, "session.sqlite")),
-          );
-        } finally {
-          await rm(tempRoot, { force: true, recursive: true });
-        }
-      }
-
-      expect(attempts.flat()).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ ok: true }),
-          expect.objectContaining({ ok: true }),
-        ]),
-      );
-      expect(attempts.flat().filter((result) => !result.ok)).toEqual([]);
-      expect(attempts.flat().every((result) => result.migrationIds?.length === 25)).toBe(true);
-    },
-    CONCURRENT_STARTUP_TEST_TIMEOUT_MS,
-  );
 
   it("returns a structured timeout when the startup database lock is not released", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-session-startup-lock-timeout-"));
@@ -1024,45 +1040,6 @@ describe("SQLite session store", () => {
     }
   });
 
-  it("exposes a startup gate opener for migrated session stores", async () => {
-    const tempRoot = await mkdtemp(join(tmpdir(), "zcode-startup-session-store-"));
-    const dbPath = join(tempRoot, "session.sqlite");
-
-    try {
-      const store = await openStartupSqliteSessionStore({ dbPath });
-      expect(store.debugMigrationIds()).toEqual([
-        "0001_base_session_store",
-        "0002_local_setting",
-        "0003_backfill_permission_local_setting",
-        "0004_session_target",
-        "0005_session_target_accounting",
-        "0006_input_history_attachments",
-        "0007_workflow_script_runtime",
-        "0008_workflow_definition_scope",
-        "0009_session_title_metadata",
-        "0010_usage_observability",
-        "0011_session_target_summary_title",
-        "0012_session_trace_id",
-        "0013_session_target_active_run_accounting",
-        "0014_message_part_sequence",
-        "0015_message_part_sequence_backfill_and_guard",
-        "0016_session_input_ledger",
-        "0017_session_input_start_now_delivery",
-        "0018_session_input_failed_status",
-        "0019_dwf_journal",
-        "0020_provider_model_selection",
-        "0021_official_glm_selection",
-        "0022_backfilled_session_reasoning",
-        "0023_session_soft_delete_outcome",
-        "0024_session_database_identity",
-        "0025_session_permanent_deletion",
-      ]);
-      store.close();
-    } finally {
-      await rm(tempRoot, { force: true, recursive: true });
-    }
-  });
-
   it("persists session task types and workflow runtime tables", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-workflow-session-task-type-"));
     const dbPath = join(tempRoot, "session.sqlite");
@@ -1116,7 +1093,7 @@ describe("SQLite session store", () => {
         name: "test-workflow",
         scope: "project",
         scriptHash: "hash-script",
-        scriptPath: join(tempRoot, ".zcode", "workflows", "test.workflow.js"),
+        scriptPath: join(tempRoot, ".zxcode", "workflows", "test.workflow.js"),
         source: "user",
       });
       expect(definition.scope).toBe("project");

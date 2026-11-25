@@ -34,7 +34,7 @@ describe("visualize protocol-only skill discovery", () => {
     root = await mkdtemp(join(tmpdir(), "zcode-visualize-gate-"));
     vi.stubEnv("HOME", root);
     vi.stubEnv("USERPROFILE", root);
-    env = { ZCODE_STORAGE_DIR: join(root, "storage") };
+    env = { ZXCODE_STORAGE_DIR: join(root, "storage") };
   });
 
   afterEach(async () => {

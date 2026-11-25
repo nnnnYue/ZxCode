@@ -26,7 +26,6 @@ export type {
   RemoteTargetSnapshot,
   RemoteWorkspaceSessionEntry,
   PersistedWorkspaceSessionEntry,
-  MobileRelaySettings,
 } from "./protocol.js";
 export type { WorkspacePurpose } from "./workspacePurpose.js";
 export { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./protocol.js";
@@ -47,9 +46,9 @@ export type {
   LegacyPersistedLocalePreference,
   PersistedSettingsLocaleFields,
 } from "./locale.js";
-// fork 品牌：version 常量保持 ZXCODE_ 前缀导出。
 export { ZXCODE_VERSION, ZXCODE_COMMIT, ZXCODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
+// fork：ArmsRumEnv 不导出（ARMS 遥测域剔除）。
 export type { ZCodeEnv, ZCodeProductFlavor } from "./env.js";
 export type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 export type {
@@ -101,7 +100,6 @@ export * from "./rendererActionTrace.js";
 export * from "./validation.js";
 export * from "./api.js";
 export * from "./zcode-protocol/index.js";
-export * from "./zcode-relay-protocol/index.js";
 export * from "./account-provider-state.js";
 // re-home：旧协议承重面的幸存文件（消费者继续走 barrel，零感知）
 export * from "./zcode-protocol-legacy-types.js";
@@ -156,24 +154,52 @@ export {
   LOCAL_MEDIA_PREVIEW_SCHEME,
   BROWSER_VIEW_DRAFT_SESSION_ID,
   BROWSER_LOCAL_PREVIEW_SCHEME,
-  CUSTOM_EDITOR_ID_PREFIX,
-  DesktopCommandIds,
   browserPreviewSourceUrl,
+  DesktopCommandIds,
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
-  isCustomEditorInfo,
   unwrapRemoteWorkspaceBindResult,
+  CUSTOM_EDITOR_ID_PREFIX,
+  isCustomEditorInfo,
 } from "./platform.js";
+export type {
+  BotRemoteWorkspaceReconnectedEvent,
+  MobileRelayStatus,
+} from "./platform.js";
+export type { MobileRelaySettings } from "./protocol.js";
+export {
+  RELAY_CONTROL_HEARTBEAT_INTERVAL_MS,
+  ZXCODE_RELAY_PROTOCOL_VERSION,
+  relayControlServerMessageSchema,
+} from "./zcode-relay-protocol/index.js";
+export type {
+  RelayAttachTarget,
+  RelayPresenceWindow,
+} from "./zcode-relay-protocol/index.js";
+export type {
+  RedactTelemetryTextOptions,
+  TelemetryProviderIdentity,
+  TelemetryProviderScope,
+} from "./telemetryRedaction.js";
+export {
+  TELEMETRY_SAFE_BUILTIN_MODEL_IDS,
+  TELEMETRY_TEXT_MAX_LENGTH,
+  redactTelemetryText,
+  redactTelemetryUrl,
+  resolveTelemetryModelId,
+  resolveTelemetryProviderScope,
+  sanitizeTelemetryModelValue,
+} from "./telemetryRedaction.js";
 export * from "./remoteUsageTelemetry.js";
 export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
 export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
 export type {
+  BrowserViewSurfaceScaleMode,
   CancelPendingRemoteConnectionRequest,
   BindRemoteWorkspaceSessionContextRequest,
   BindRemoteWorkspaceSessionContextIpcResult,
   BindRemoteWorkspaceSessionContextResult,
-  BrowserViewSurfaceScaleMode,
   BrowserTabResidencyState,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
@@ -200,8 +226,6 @@ export type {
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
-  // fork：MicrophoneAccessResult / MicrophoneSettingsTarget 不再导出（microphone-access 域剔除）。
-  // 上游 v3.18.x 新增 MicrophoneAccessResetResult，随该域一并不导出。
   CaptureBrowserGuestPageClip,
   CaptureBrowserGuestPageRequest,
   CaptureBrowserGuestPageResult,
@@ -238,18 +262,12 @@ export type {
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteSessionReconnectedEvent,
-  BotRemoteWorkspaceReconnectedEvent,
   RemoteServiceSession,
   SSHConfigAliasOption,
   TaskNotificationPayload,
-  WindowControlsOverlayReadyPayload,
   WSLDistro,
+  WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
-} from "./platform.js";
-export type {
-  MobileRelayStatus,
-  MobileRelayGrantRequest,
-  MobileRelayGrantResult,
 } from "./platform.js";
 export type {
   CuaAccessibilitySettingsResult,
@@ -305,6 +323,7 @@ export * from "./tool-plan-adapter.js";
 export * from "./permission-request-preview.js";
 export * from "./web-remote-control.js";
 export * from "#src/web-remote-relay/index.js";
+
 export * from "./web-remote-control-rpc-transport.js";
 export * from "./settings-sync.js";
 export * from "./uuid.js";
@@ -336,11 +355,13 @@ export * from "./subagent-runtime-config.js";
 export * from "./subagent-profile.js";
 export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
 
+export * from "./local-ttft/contract.js";
 export * from "./pluginStoreOrdering.js";
 export * from "./session-debug.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
 export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
 export {
+  isProjectTokenTransportFailureCode,
   projectAccessTokenFingerprint,
   projectAccessTokenRetryAfterMs,
   ProjectAccessTokenError,
@@ -359,8 +380,6 @@ export * from "./attachment-source.js";
 
 export * from "./channel-mention.js";
 export * from "./pluginTelemetry.js";
-// fork 命名别名（zcode-cli 用 ZXCODE_ 前缀引用上游 ZCODE_ 常量）
-export { DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY } from "./zcode-protocol/index.js";
 export * from "./plugin-store-visibility.js";
 
 // fork：request-security 域已剔除；保留类型别名兼容 zcode-cli 引用。
@@ -379,3 +398,4 @@ export function withoutRequestVerificationHeaders(
 ): Record<string, string> {
   return { ...headers };
 }
+

@@ -26,7 +26,7 @@ Put the bootstrap and the actions in the **same** cell, bootstrap first:
 ```js
 const root =
   process.env.ZCODE_CUA_PLUGIN_ROOT ??
-  process.env.ZCODE_PLUGIN_ROOT ??
+  process.env.ZXCODE_PLUGIN_ROOT ??
   process.env.CLAUDE_PLUGIN_ROOT;
 const { join } = await import("node:path");
 const { pathToFileURL } = await import("node:url");
@@ -135,10 +135,9 @@ no separate launch tool. Its argument is a display name or a bundle identifier �
 the same strings `listApps()` returns — or an `AppRef`.
 
 When the user names an application, copy it character-for-character into the app
-identifier. Do not translate, localize, normalize, shorten, or remove a suffix:
-`{"name":"网易云音乐app"}` is not `{"name":"网易云音乐"}`; `{"name":"日历"}` is not
-`{"name":"Calendar"}`. A rewritten name resolves to a different app or to nothing,
-and the failure reads "app not found". If the exact string does not resolve, call
+identifier. Do not translate, localize, normalize, shorten, or remove a suffix.
+A rewritten name resolves to a different app or to nothing, and the failure reads
+"app not found". If the exact string does not resolve, call
 `agent.computerUse.listApps()` once and pick the matching identifier.
 
 Batch related actions and a single closing observation into one cell:

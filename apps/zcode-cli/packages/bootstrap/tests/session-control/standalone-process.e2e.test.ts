@@ -424,7 +424,7 @@ it("runs all eight session tools in a standalone CLI process and reopens its SQL
           LOCALAPPDATA: directory,
           ZCODE_ENV: "test",
           ZXCODE_DATA_BASE_DIR: directory,
-          ZCODE_STORAGE_DIR: join(directory, "storage"),
+          ZXCODE_STORAGE_DIR: join(directory, "storage"),
           ZCODE_SESSION_DB_PATH: database,
           ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: join(directory, "builtin.json"),
           ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: join(directory, "personal.json"),

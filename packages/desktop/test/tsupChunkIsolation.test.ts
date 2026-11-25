@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import tsupConfig, {
   resolveBuildPackagedAgentTelemetryEnv,
+  resolvePreinstalledToolsTestBuild,
   resolveBuildRemoteCdnReleaseRoots,
   resolveDesktopTsupBundleSecurityOptions,
 } from "../tsup.config";
@@ -44,6 +45,22 @@ function getDefines(configName: string): Record<string, string> {
 }
 
 describe("desktop tsup chunk isolation", () => {
+  // 上游 v4.0.0：预装清单覆盖只能由显式 E2E 构建（store bridge）开启，env 键用 fork 注入的 VITE_ZXCODE_E2E_STORE_BRIDGE。
+  it("预装清单覆盖只能由显式 E2E 构建开启，运行时变量和 test 后端不构成权限", () => {
+    expect(
+      resolvePreinstalledToolsTestBuild({
+        ZCODE_ENV: "test",
+        ZCODE_E2E_PREINSTALLED_TOOLS_CATALOG: "/tmp/fixture.json",
+      }),
+    ).toBe(false);
+    expect(resolvePreinstalledToolsTestBuild({ NODE_ENV: "production" })).toBe(false);
+    expect(
+      resolvePreinstalledToolsTestBuild({
+        NODE_ENV: "production",
+        VITE_ZXCODE_E2E_STORE_BRIDGE: "1",
+      }),
+    ).toBe(true);
+  });
   it("ZIP 解包器应外置，避免 Electron ESM 启动时动态 require fs 崩溃", () => {
     for (const name of ["main", "host", "scheduler"]) expect(getExternal(name)).toContain("yauzl");
   });

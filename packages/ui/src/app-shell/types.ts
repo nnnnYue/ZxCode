@@ -34,7 +34,6 @@ import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.j
 import type { Theme } from "@/useTheme.js";
 import type {
   ChatSearchResultHighlightRequest,
-  ChatViewSummaryPanelVariant,
   ConversationFindMatchState,
 } from "@/v4/legacyChatViewTypes.js";
 import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
@@ -214,6 +213,8 @@ export interface WorkspaceShellLayoutProps extends AppProps {
     tabId: string,
     source: import("@/lib/codeViewer.js").CodeViewerSource,
   ) => void;
+  /** 文件链接定位成功后回报请求 id，由侧边面板状态记到 tab 上（上游 focus 特性）。 */
+  handleCodeViewerFocusRequestApplied?: (tabId: string, requestId: string) => void;
   workspaceReadOnlyReason?: string;
   workspaceMainView: WorkspaceMainView;
   pluginStoreOpenVersion: number;
@@ -258,8 +259,6 @@ export interface WorkspaceShellLayoutProps extends AppProps {
   isSidePaneOpen: boolean;
   /** Side Pane 完整视图控制器（仅桌面；spec：docs/ui/side-pane-full-view.md）。 */
   sidePaneFullView?: SidePaneFullViewController;
-  summaryPanelVariantOverride: ChatViewSummaryPanelVariant | null;
-  onSummaryPanelVariantOverrideChange: (variant: ChatViewSummaryPanelVariant | null) => void;
   sidePaneState: WorkspaceSidePaneState | null;
   recentClosedSidePaneTabs: RecentClosedSidePaneTab[];
   shellPanelIds: string[];

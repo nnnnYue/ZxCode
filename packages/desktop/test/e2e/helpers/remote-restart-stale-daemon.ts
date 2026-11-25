@@ -50,12 +50,14 @@ export async function installAndStartRemoteDaemon(
             `"$HOME/.zxcode/server/bin/zcode" stop --wait --server-root "$HOME/.zxcode/server" --json >/dev/null`,
           ]
         : []),
-      `${options.nodeOptions ? `NODE_OPTIONS='${options.nodeOptions}' ` : ""}ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "$HOME/.zxcode/server/bin/zcode" serve --daemon --server-root "$HOME/.zxcode/server" --json >/dev/null`,
+      // 直接预装绕过了 Desktop 的 ensureDaemon；未准备密钥会让 Core 在进入待测场景前退出。
+      // 复用生产启动入口创建私有凭据密钥，不能写入任意测试密钥或绕过安全校验。
+      `${options.nodeOptions ? `NODE_OPTIONS='${options.nodeOptions}' ` : ""}ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "$HOME/.zxcode/server/bin/zcode" serve --daemon --prepare-credentials --server-root "$HOME/.zxcode/server" --json >/dev/null`,
     ].join("; "),
   );
 }
 
-/** 用 Desktop 将要安装的同一份 archive 安装到远端 `~/.zcode/server`，不启动 daemon。 */
+/** 用 Desktop 将要安装的同一份 archive 安装到远端 `~/.zxcode/server`，不启动 daemon。 */
 export async function installRemoteServerArchive(
   container: string,
   account: RemoteAccount,
@@ -86,7 +88,8 @@ export async function installRemoteServerArchive(
       'mkdir -p "$b"',
       `tar -xzf ${remoteArchive} -C "$b" --strip-components=1`,
       // WSL/Docker 的 daemon 不注册 OS service，与 Desktop 的 Docker transport 一致。
-      `ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "$b/bin/zcode" update --from-archive ${remoteArchive} --server-root "$HOME/.zxcode/server" --json >/dev/null`,
+      // 仅安装的调用方也会直接启动 user service；与生产 update 一样先准备凭据存储。
+      `ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "$b/bin/zcode" update --from-archive ${remoteArchive} --prepare-credentials --server-root "$HOME/.zxcode/server" --json >/dev/null`,
       `rm -rf "$b" ${remoteArchive}`,
     ].join("; "),
   );

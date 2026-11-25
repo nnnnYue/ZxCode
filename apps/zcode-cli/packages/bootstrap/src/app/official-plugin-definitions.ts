@@ -20,8 +20,6 @@ export interface OfficialPluginListingSeed {
   heroImage?: string;
   examplePrompts?: string[];
   examplePrompts_i18n?: Record<string, string[]>;
-  /** 与 CDN 目录 schema 对齐：显式 true 才会展示付费套餐提示。 */
-  requiresPaidPlan?: boolean;
 }
 
 export const OFFICIAL_BROWSER_USE_PLUGIN_NAME = "browser-use";
@@ -48,7 +46,7 @@ export interface OfficialPluginDefinition {
    */
   componentTypes?: readonly string[];
   // 内容型 plugin (无 MCP server / 无系统依赖) 可以设为 true,
-  // 这样用户首次 `/skill <name>` 就能用,不必先 `zxcode plugins enable`。
+  // 这样用户首次 `/skill <name>` 就能用,不必先 `zcode plugins enable`。
   // 默认 false 保持 ios-simulator / android-emulator 这类重负载 plugin 原来行为。
   defaultEnabled?: boolean;
   listing?: OfficialPluginListingSeed;
@@ -77,6 +75,16 @@ export const OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS = ["dist/mcp/server.js"
 const NODE_REPL_HOST_BUILD_IDENTITY_PATH = "dist/build-identity.json";
 
 /** 文档插件（documents / pdf / presentations / spreadsheets）查看面板的构建产物。 */
+export const OFFICIAL_OFFICE_INVOCATION_PATHS = [
+  "scripts/zcode_libreoffice.py",
+  "scripts/libreoffice-profile/user/registrymodifications.xcu",
+  "scripts/libreoffice-profile/user/basic/script.xlc",
+  "scripts/libreoffice-profile/user/basic/dialog.xlc",
+  "scripts/libreoffice-profile/user/basic/Standard/script.xlb",
+  "scripts/libreoffice-profile/user/basic/Standard/dialog.xlb",
+  "scripts/libreoffice-profile/user/basic/Standard/ZCode.xba",
+] as const;
+
 export const OFFICIAL_OFFICE_VIEWER_RUNTIME_PATHS = [
   "dist/server.mjs",
   "dist/ui/assets.json",
@@ -101,31 +109,37 @@ export const OFFICIAL_CUA_REQUIRED_SEED_PATHS = [
   "skills/computer-use/SKILL.md",
 ] as const;
 
-// zcode-guide 原本没有 requiredSeedPaths，seed 丢文件时会静默装出一个
-// 没有 /workflow 命令的插件——症状是命令不存在，没有任何诊断。commands/ 与技能正文都钉住。
-const OFFICIAL_ZXCODE_GUIDE_REQUIRED_SEED_PATHS = [
-  "commands/workflow.md",
-  "skills/dynamic-workflows/SKILL.md",
-  "skills/dynamic-workflows/examples.md",
-  "skills/dynamic-workflows/patterns.md",
+// 修复原因（2026-08-24）：zcode-guide 原本没有 requiredSeedPaths，seed 丢文件时会静默装出一个
+// 残缺插件而没有任何诊断。0.3.0 起 `/workflow` 与 dynamic-workflows 技能不再随本插件发布
+// （命令编进 CLI，技能进 packages/bundled-skills，见 docs/dynamic-workflow/authoring.md），
+// 这里钉住的是配置指南技能正文。
+export const OFFICIAL_ZXCODE_GUIDE_REQUIRED_SEED_PATHS = [
+  "skills/zcode-configuration-guide/SKILL.md",
 ] as const;
 
 // design 是纯内容型插件（技能 + 设计资源 + SessionStart hook，无 MCP），技能正文按需读取 references/
 // 与 scripts/；hook 只注入一句指针，正文缺失时 hook 静默退出，会话里就再也触发不到技能。
-// 所以这里钉住入口、7 份规则文件、三个随包脚本和 hook，seed 缺任一项都拒绝生成残缺缓存。
+// 所以这里钉住入口、11 份规则文件、7 个随包脚本和 hook，seed 缺任一项都拒绝生成残缺缓存。
 export const OFFICIAL_DESIGN_REQUIRED_SEED_PATHS = [
   "skills/design/SKILL.md",
+  "skills/design/references/app.md",
   "skills/design/references/catalog.md",
   "skills/design/references/check.md",
   "skills/design/references/create.md",
+  "skills/design/references/deck.md",
   "skills/design/references/design-system.md",
+  "skills/design/references/image.md",
   "skills/design/references/interact.md",
-  "skills/design/references/output.md",
+  "skills/design/references/motion.md",
+  "skills/design/references/page.md",
   "skills/design/references/redesign.md",
   "skills/design/scripts/adapt-canvas.mjs",
+  "skills/design/scripts/audit-page.js",
+  "skills/design/scripts/audit.mjs",
   "skills/design/scripts/design-lint.mjs",
   "skills/design/scripts/design-tokens.mjs",
   "skills/design/scripts/import-design-system.mjs",
+  "skills/design/scripts/probe.js",
   "hooks/hooks.json",
   "hooks/run-hook.cmd",
   "hooks/design-rules",
@@ -195,7 +209,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../node-repl-host",
       "../../../node-repl-host",
     ],
-    version: "0.7.0",
+    version: "0.7.1",
   },
   {
     listing: {
@@ -214,7 +228,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../android-emulator-plugin",
       "../../../android-emulator-plugin",
     ],
-    version: "0.1.1",
+    version: "0.1.3",
   },
   {
     // manifest 只声明 browser-use skill；宿主 node_repl MCP 独立注入，package 另外携带其 server/client
@@ -227,7 +241,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       displayName: "Browser Use",
       displayName_i18n: { "zh-CN": "浏览器操作" },
       description_i18n: {
-        "zh-CN": "操作 ZxCode 内置浏览器，检查网页并验证交互。",
+        "zh-CN": "操作 ZCode 内置浏览器，检查网页并验证交互。",
       },
     },
     name: OFFICIAL_BROWSER_USE_PLUGIN_NAME,
@@ -240,16 +254,17 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     ],
     // 插件 package/manifest 升版时遗漏官方 seed 版本，会继续加载旧缓存目录。
     // package、manifest、definition 三处版本应保持一致，避免发布内容和安装版本再次分叉。
-    version: "0.5.1",
+    version: "0.5.2",
   },
   ...(
     [
       // 版本按插件各自升，换新缓存目录：pdf 0.2.1 起面板带中日韩字体回退；0.2.1（pdf 0.2.2）起
       // server 由工作区内各 session 共享，旧缓存的 server 不区分 session，不能沿用。
-      ["documents", "docx", "Documents", "Word文档", "0.2.2"],
-      ["pdf", "pdf", "PDF", "PDF", "0.2.3"],
-      ["presentations", "pptx", "Presentations", "演示文档", "0.2.2"],
-      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格", "0.2.2"],
+      // 0.2.10（pdf 0.2.11）起不再提供 visual-judge 子代理，换新缓存目录让老用户也不再加载旧 agents/。
+      ["documents", "docx", "Documents", "Word文档", "0.2.10"],
+      ["pdf", "pdf", "PDF", "PDF", "0.2.11"],
+      ["presentations", "pptx", "Presentations", "演示文档", "0.2.10"],
+      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格", "0.2.10"],
     ] as const
   ).map(
     ([name, skill, displayName, chineseName, version]): OfficialPluginDefinition => ({
@@ -260,16 +275,17 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
         category: "productivity",
         displayName,
         displayName_i18n: { "zh-CN": chineseName },
+        // 复用已发布的文档图标，拆分插件无需依赖新 CDN 资源。
         description_i18n: { "zh-CN": `创建、编辑与审阅${chineseName}（${skill.toUpperCase()}）。` },
       },
       name,
       // 0.2.0 起文档插件同时提供查看面板：MCP server 与面板资源由 office-runtime 构建进 dist/，
       // 缺任一项都会 seed 出能看到面板入口却无法启动的残缺插件。
       requiredSeedPaths: [
-        "agents/visual-judge.md",
         `skills/${skill}/SKILL.md`,
         `skills/${skill}-viewer/SKILL.md`,
         ...OFFICIAL_OFFICE_VIEWER_RUNTIME_PATHS,
+        ...OFFICIAL_OFFICE_INVOCATION_PATHS,
       ],
       rootCandidates: [
         `packages/${name}-plugin`,
@@ -326,7 +342,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       displayName: "Restore Legacy Sessions",
       displayName_i18n: { "zh-CN": "恢复旧版会话" },
       description_i18n: {
-        "zh-CN": "将旧版会话恢复为 ZxCode 任务与会话记录。",
+        "zh-CN": "将旧版会话恢复为 ZCode 任务与会话记录。",
       },
     },
     name: "restore-legacy-sessions",
@@ -349,7 +365,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       // 创建器使用客户端自带图标，不再借用 skill-creator 的远端图片。
       displayName_i18n: { "zh-CN": "插件创建器" },
       description_i18n: {
-        "zh-CN": "开发、校验 ZxCode 插件，完成本地 dev 市场安装、试用与更新。",
+        "zh-CN": "开发、校验 ZCode 插件，完成本地 dev 市场安装、试用与更新。",
       },
     },
     rootCandidates: [
@@ -376,7 +392,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       category: "utilities",
       displayName: "Skill Creator",
       displayName_i18n: { "zh-CN": "技能创建器" },
-      description_i18n: { "zh-CN": "创建、编辑和验证可复用的 ZxCode 技能。" },
+      description_i18n: { "zh-CN": "创建、编辑和验证可复用的 ZCode 技能。" },
     },
     name: "skill-creator",
     rootCandidates: [
@@ -389,22 +405,22 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
   },
   {
     // 纯内容型插件（只有 commands + skills，无 MCP / 无系统依赖），默认启用，
-    // 让用户/agent 开箱即用地拿到 ZxCode 配置指南、自诊断技能与 dynamic workflow 编写指南。
+    // 让用户/agent 开箱即用地拿到 ZCode 配置指南、自诊断技能与 dynamic workflow 编写指南。
     defaultEnabled: true,
     listing: {
       author: ZAI_AUTHOR,
       category: "utilities",
-      displayName: "ZxCode Guide",
-      displayName_i18n: { "zh-CN": "ZxCode 使用指南" },
+      displayName: "ZCode Guide",
+      displayName_i18n: { "zh-CN": "ZCode 使用指南" },
       description_i18n: {
-        "zh-CN": "提供 ZxCode 配置指南与插件、技能、MCP、命令和钩子诊断。",
+        "zh-CN": "提供 ZCode 配置指南与插件、技能、MCP、命令和钩子诊断。",
       },
       examplePrompts: [
-        "How do I configure MCP servers in ZxCode?",
-        "Diagnose my current ZxCode setup",
+        "How do I configure MCP servers in ZCode?",
+        "Diagnose my current ZCode setup",
       ],
       examplePrompts_i18n: {
-        "zh-CN": ["ZxCode 里怎么配置 MCP 服务器？", "帮我诊断当前的 ZxCode 配置"],
+        "zh-CN": ["ZCode 里怎么配置 MCP 服务器？", "帮我诊断当前的 ZCode 配置"],
       },
     },
     name: "zcode-guide",
@@ -442,7 +458,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../design-plugin",
       "../../../design-plugin",
     ],
-    version: "0.7.2",
+    version: "0.8.0",
   },
   {
     // 产品决策：电脑控制回退为默认关闭，需用户在设置页显式开启。
@@ -480,7 +496,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     runtimeTopLevelPaths: ["node_modules"],
     // 这里的 version 追踪上游 zcode-cua runtime 版本，使插件 UI 展示、缓存路径、
     // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
-    version: "0.6.5",
+    version: "0.6.6",
   },
   // CDN 目录条目的离线快照：与内置插件同走 filesystem seed（解压目录在
   // packages/desktop/resources/official-marketplace，打包时随 resources 分发），

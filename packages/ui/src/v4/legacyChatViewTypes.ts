@@ -14,4 +14,5 @@ export interface ConversationFindMatchState {
   activeIndex?: number;
 }
 
+// fork 保留：App/SessionPane 的摘要面板形态覆盖（panel/mini）仍依赖该类型。
 export type ChatViewSummaryPanelVariant = "panel" | "mini";

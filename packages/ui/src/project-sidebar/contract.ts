@@ -8,7 +8,10 @@ import type {
 // 合并修复：fork project-sidebar 骨架的文件树预览入口（index.tsx onOpenCodeViewer 用），勿随上游删。
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { Theme } from "@/useTheme.js";
-export { LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "@zcode/services";
+export {
+  LEGACY_SINGLE_ROOT_PROJECT_PREFIX,
+  isArchivedTaskDeletionBatchUnsupported,
+} from "@zcode/services";
 export type { WebRemoteControlMobileTaskView, WebRemoteControlStatus } from "@zcode/shared";
 export interface ProjectDevice {
   id: string;

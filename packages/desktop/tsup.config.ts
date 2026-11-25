@@ -185,8 +185,18 @@ export function applyDesktopTsupEsbuildSecurityOptions(options: DesktopTsupEsbui
 
 const desktopTsupBundleSecurityOptions = resolveDesktopTsupBundleSecurityOptions();
 
+// 上游 v4.0.0 新增 preinstalled-tools 构建开关：E2E store bridge 构建时启用测试目录。
+// env 键沿用 fork 构建链注入的 VITE_ZXCODE_E2E_STORE_BRIDGE；define 名与消费方
+// src/preinstalled-tools/{process,catalog}.ts 的 declare 保持一致（上游名）。
+export function resolvePreinstalledToolsTestBuild(
+  env: Record<string, string | undefined>,
+): boolean {
+  return env.VITE_ZXCODE_E2E_STORE_BRIDGE === "1";
+}
+
 function createSharedDefines() {
   return {
+    __ZCODE_PREINSTALL_TEST_BUILD__: JSON.stringify(resolvePreinstalledToolsTestBuild(process.env)),
     __ZXCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
     __ZXCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
     __ZXCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
@@ -245,6 +255,8 @@ export default defineConfig([
       "main/zcodeDataSizeWorker": "src/main/zcodeDataSizeWorker.ts",
       // 资源管理器「存储」tab 的扫描 Worker：main 持有 StorageService，遍历放独立线程，供 new Worker(new URL()) 解析。
       "main/storageScanWorker": "src/main/storageScanWorker.ts",
+      // 上游 v4.0.0 preinstalled-tools mainBridge 接线：内置工具目录协调进程入口。
+      "preinstalled-tools/process": "src/preinstalled-tools/process.ts",
     },
     outDir: "out",
     format: "esm",
@@ -310,7 +322,7 @@ export default defineConfig([
     ...desktopTsupBundleSecurityOptions,
   },
   {
-    // 插件 iframe 内的 window.zcode / window.openai 别名脚本（官方 ext-apps `App` 上的薄封装）：IIFE、浏览器平台，
+    // 插件 iframe 内的 window.zxcode / window.openai 别名脚本（官方 ext-apps `App` 上的薄封装）：IIFE、浏览器平台，
     // 由 zcode-sandbox:// protocol handler 同源服务。
     name: "plugin-sandbox-alias",
     loader: { ".css": "text" },

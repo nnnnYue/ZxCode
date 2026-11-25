@@ -4,6 +4,10 @@ import {
   type IPlatformService,
 } from "@zcode/shared";
 import type { FileApplicationInfo, FileApplicationTarget } from "@zcode/shared";
+import type {
+  PreinstalledToolsCommand,
+  PreinstalledToolsState,
+} from "@zcode/shared/preinstalled-tools";
 // fork 修复：window.zxcode 全局声明此前不在任何 tsc 程序里（renderer 的 window.zxcode 访问
 // 全部 TS2339 记账）。renderer tsconfig rootDir 限死 src/renderer，跨树 include 声明文件会破坏
 // 输出布局，故经 @zcode/client 的 "./globals" exports 子路径把声明拉进程序；type-only import
@@ -29,6 +33,18 @@ const fileApplicationsBridge = (
     };
   }
 ).zxcode;
+
+// 上游 v4.0.0 preinstalled-tools mainBridge：preload 已并入 window.zxcode 桥，
+// @zcode/client/globals 声明尚未包含这组可选成员，按 fork 既有局部 cast 模式收口。
+const preinstalledToolsBridge = (
+  window as Window & {
+    zxcode?: {
+      executePreinstalledToolsCommand?: (command: PreinstalledToolsCommand) => Promise<void>;
+      getPreinstalledToolsState?: () => Promise<PreinstalledToolsState>;
+      onPreinstalledToolsState?: (callback: (state: PreinstalledToolsState) => void) => () => void;
+    };
+  }
+).zxcode!;
 
 export function createDesktopPlatform(options: {
   isLocalDevelopmentRuntime: boolean;
@@ -203,12 +219,12 @@ export function createDesktopPlatform(options: {
       Promise.resolve({ runningAgentSessionCount: 0 }),
     getZCodeStdioTapDevState: () =>
       window.zxcode.getZCodeStdioTapDevState?.() ??
-      Promise.resolve({
-        enabled: false,
-        visible: false,
-        logDir: "",
-        statePath: "",
-      }),
+      Promise.resolve({ enabled: false, visible: false, logDir: "", statePath: "" }),
+    executePreinstalledToolsCommand: (command) =>
+      preinstalledToolsBridge.executePreinstalledToolsCommand!(command),
+    getPreinstalledToolsState: () => preinstalledToolsBridge.getPreinstalledToolsState!(),
+    onPreinstalledToolsState: (callback) =>
+      preinstalledToolsBridge.onPreinstalledToolsState?.(callback) ?? (() => {}),
     onSettingsChanged: (callback) => window.zxcode.onSettingsChanged?.(callback) ?? (() => {}),
     onApplicationLocaleChanged: (callback) =>
       window.zxcode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
@@ -230,6 +246,7 @@ export function createDesktopPlatform(options: {
       window.zxcode.removeCustomEditor?.(editorId) ?? Promise.resolve({ success: false }),
     executeDesktopCommand: (command) => window.zxcode.executeDesktopCommand(command),
     setApplicationLocale: (locale) => window.zxcode.setApplicationLocale(locale),
+    setReplyLanguage: (language) => window.zxcode.setReplyLanguage(language),
     getSystemLocale: () =>
       window.zxcode.getSystemLocale?.() ??
       Promise.resolve(resolveLocaleFromLanguageTag(navigator.language)),

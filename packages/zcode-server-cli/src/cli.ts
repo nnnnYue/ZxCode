@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { isPublicZCodeErrorCode, ZXCODE_VERSION } from "@zcode/shared";
-import { prepareServerCredentialStorage } from "@zcode/shared/credential-security";
+import { prepareServerCredentialFile } from "@zcode/shared/credential-security";
 import { SourceServerWorkspaceAliasRepo } from "@zcode/services/node";
 import {
   CORE_KILL_TIMEOUT_MS,
@@ -125,7 +125,7 @@ export async function runServerCli(
     const command = parsed.argv[0];
     if (command === "version" || command === "--version") {
       // Bug 原因：Server --version 过去落入 legacy delegate，实际输出取决于旁边的 Agent
-      // zcode.cjs，Desktop probe 无法稳定判断 Server compatibility。
+      // zxcode.cjs，Desktop probe 无法稳定判断 Server compatibility。
       stdout(io, json ? { product: "zcode-server", version: ZXCODE_VERSION } : ZXCODE_VERSION);
       return 0;
     }
@@ -145,8 +145,11 @@ export async function runServerCli(
         : parsed.layout;
     if (["serve", "update"].includes(command) && parsed.argv.includes("--prepare-credentials")) {
       // Desktop 的在线更新先于 ensureDaemon；候选 Core 启动前也必须准备同一持久密钥。
-      await prepareServerCredentialStorage({
-        filePath: join(layout.dataBaseDir, ".zxcode", "v2", "credentials.json"),
+      // 共享库已被同机 Desktop 固定为系统库时改用 Server 自有库（ZCT-2120452663971209216），
+      // Core 启动时按同一事实选择凭据文件。
+      await prepareServerCredentialFile({
+        sharedFilePath: layout.sharedCredentialsFile,
+        serverFilePath: layout.serverCredentialsFile,
       });
     }
     if (proxyStdioRequested) {
@@ -829,7 +832,6 @@ async function recordSupervisorStartupFailure(
     await mkdir(layout.runDir, { recursive: true, mode: 0o700 });
     await writeFile(
       temporary,
-      // fork rebrand：@zcode/shared 只导出 ZXCODE_VERSION，合并上游时此处漏改回旧名
       `${JSON.stringify({ pid: process.pid, version: ZXCODE_VERSION, at: Date.now(), message })}\n`,
       { encoding: "utf8", mode: 0o600 },
     );
@@ -906,8 +908,8 @@ async function readControlStatus(
 
 async function delegateLegacyCli(argv: readonly string[], io: CliIO): Promise<number> {
   const candidate =
-    process.env.ZCODE_LEGACY_CLI_ENTRY?.trim() ||
-    join(dirname(fileURLToPath(import.meta.url)), "zcode.cjs");
+    process.env.ZXCODE_LEGACY_CLI_ENTRY?.trim() ||
+    join(dirname(fileURLToPath(import.meta.url)), "zxcode.cjs");
   try {
     await access(candidate);
   } catch {

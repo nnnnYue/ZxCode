@@ -21,13 +21,11 @@ import {
   waitForV4PermissionDialog,
   waitForV4TimelineContaining,
 } from "#e2e/helpers/v4-conversation";
-
 const CASE_ROOT = join(DEFAULT_WORKSPACE, "v4-rewind-files-e2e");
 const SAFE_RELATIVE_PATH = "v4-rewind-files-e2e/safe.txt";
 const CONFLICT_RELATIVE_PATH = "v4-rewind-files-e2e/conflict.txt";
 const SAFE_PATH = join(DEFAULT_WORKSPACE, SAFE_RELATIVE_PATH);
 const CONFLICT_PATH = join(DEFAULT_WORKSPACE, CONFLICT_RELATIVE_PATH);
-
 describe("PV4-21/PV4-22 conversation + file rewind", () => {
   afterEach(async () => {
     await rm(CASE_ROOT, { force: true, recursive: true });

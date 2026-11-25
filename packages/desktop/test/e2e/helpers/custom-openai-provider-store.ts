@@ -62,10 +62,7 @@ export async function seedCustomOpenAIChatCompletionsProvider({
     // 新格式要求个人 Provider 明确分组，否则只有配置记录而无可执行模型。
     group: "standard-personal",
     access: new ApiKeyAccessConfig({ apiKey: getUpstreamApiKey() }),
-    api: new ProviderApiConfig({
-      type: "openai-chat-completions",
-      baseUrl: baseURL,
-    }),
+    api: new ProviderApiConfig({ type: "openai-chat-completions", baseUrl: baseURL }),
     personalModelIds: [modelId],
   });
   const repository = new NodePersonalProviderConfigRepository({
@@ -75,11 +72,7 @@ export async function seedCustomOpenAIChatCompletionsProvider({
   try {
     await repository.update((current) => ({
       ...current,
-      providers: current.providers.setRule({
-        providerId,
-        providerName,
-        config: providerConfig,
-      }),
+      providers: current.providers.setRule({ providerId, providerName, config: providerConfig }),
       models: current.models.setExact(
         providerId,
         modelId,
@@ -105,11 +98,14 @@ export async function seedCustomAnthropicMessagesProvider({
   modelId,
   providerId,
   providerName,
+  supportsMidConversationSystem = false,
 }: {
   baseURL: string;
   modelId: string;
   providerId: string;
   providerName: string;
+  /** 让 CLI 按 MCS 投影提醒（role: system 消息）；默认与其他夹具一样不支持。 */
+  supportsMidConversationSystem?: boolean;
 }): Promise<E2EModelProviderSnapshot> {
   const providerConfig = new ProviderConfig({
     group: "standard-personal",
@@ -127,12 +123,12 @@ export async function seedCustomAnthropicMessagesProvider({
   try {
     await repository.update((current) => ({
       ...current,
-      providers: current.providers.setRule({
+      providers: current.providers.setRule({ providerId, providerName, config: providerConfig }),
+      models: current.models.setExact(
         providerId,
-        providerName,
-        config: providerConfig,
-      }),
-      models: current.models.setExact(providerId, modelId, createE2EModelConfig(["text"])),
+        modelId,
+        createE2EModelConfig(["text"], undefined, supportsMidConversationSystem),
+      ),
     }));
   } finally {
     repository.dispose();
@@ -185,6 +181,7 @@ export async function resolveSeededReplayBaseUrl() {
 function createE2EModelConfig(
   inputModalities: readonly E2EProviderModality[] | null | undefined,
   reasoningLevel?: SeedCustomOpenAIProviderOptions["reasoningLevel"],
+  supportsMidConversationSystem = false,
 ): ModelConfig {
   const inputs = new Set(inputModalities ?? ["text"]);
   return new ModelConfig({
@@ -207,7 +204,7 @@ function createE2EModelConfig(
       supportsToolCall: true,
       supportsJsonSchemaOutput: false,
       supportsNativeWebSearch: false,
-      supportsMidConversationSystem: false,
+      supportsMidConversationSystem,
     }),
     optionSpecs: new ModelOptionSpecsConfig({
       // 专项需要完整声明待验证档位与 wire；默认夹具仍保持无思考参数。
@@ -226,9 +223,7 @@ function createSeededOpenAIProvider({
   modelId,
   providerId,
   providerName,
-}: SeedCustomOpenAIProviderOptions & {
-  baseURL: string;
-}): E2EModelProviderSnapshot {
+}: SeedCustomOpenAIProviderOptions & { baseURL: string }): E2EModelProviderSnapshot {
   const now = Date.now();
   const model = createE2EProviderModelSnapshot({
     id: modelId,

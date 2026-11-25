@@ -47,6 +47,7 @@ export async function executeToolBatch(
           subagentModelOverride: options?.subagentModelOverride,
           model: options?.model,
           toolSearch: options?.toolSearch,
+          responseId: options?.responseId,
         }),
       ),
     );
@@ -87,6 +88,7 @@ export async function* executeToolSchedule(
       subagentModelOverride: options?.subagentModelOverride,
       model: options?.model,
       toolSearch: options?.toolSearch,
+      responseId: options?.responseId,
       maxConcurrency,
     });
     allResults.push(...groupResults);

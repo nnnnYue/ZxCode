@@ -16,6 +16,7 @@ const telemetryMocks = vi.hoisted(() => ({
   closeMcp: vi.fn(async () => {}),
   emitMcpOnStart: false,
   emitToolOnAppCreate: false,
+  appOptions: [] as Array<{ mcpStartupPolicy?: string }>,
   disposeProcessProviderRegistryRuntime: vi.fn(),
   disposeProviderRegistryRuntime: vi.fn(),
   prepareModelTelemetryEnv: vi.fn(async (env: Record<string, string | undefined>) => env),
@@ -151,6 +152,7 @@ vi.mock("../src/app/create-app.js", async (importOriginal) => {
     ...original,
     async createZCodeApp(options: Parameters<typeof original.createZCodeApp>[0]) {
       telemetryMocks.createdApp(options);
+      telemetryMocks.appOptions.push(options ?? {});
       if (telemetryMocks.emitToolOnAppCreate)
         options.onToolExecResource?.({
           platform: "linux",
@@ -186,6 +188,7 @@ describe("ZCode Protocol telemetry lifecycle", () => {
     telemetryMocks.preparationOwners = [];
     telemetryMocks.discoveryOwners = [];
     telemetryMocks.preparationOptions = [];
+    telemetryMocks.appOptions = [];
   });
 
   it("does not enable the plugin startup budget or emit a degraded notification", async () => {
@@ -300,6 +303,15 @@ describe("ZCode Protocol telemetry lifecycle", () => {
     ]);
   });
 
+  it("桌面协议入口按交互会话请求 background MCP 启动", async () => {
+    // 复用回调测试的短路：App 装配处抛错，避免真实装配，只看入口传入的选项。
+    telemetryMocks.emitToolOnAppCreate = true;
+    await runProtocolAgent(undefined, [], true);
+    expect(telemetryMocks.appOptions.map((options) => options.mcpStartupPolicy)).toEqual([
+      "background",
+    ]);
+  });
+
   it("Protocol 关闭时释放完整 Process Provider Registry Runtime owner", async () => {
     await runProtocolAgent(undefined);
 
@@ -330,7 +342,7 @@ async function runProtocolAgent(
       env: {
         ZCODE_LOG_DIR: join(root, "log"),
         ZCODE_SESSION_DB_PATH: join(root, "session.sqlite"),
-        ZCODE_STORAGE_DIR: root,
+        ZXCODE_STORAGE_DIR: root,
         ...providerEnv,
         ...(runtimeSurface ? { ZCODE_TELEMETRY_RUNTIME_SURFACE: runtimeSurface } : {}),
       },

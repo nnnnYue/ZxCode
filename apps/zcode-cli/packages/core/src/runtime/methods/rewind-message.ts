@@ -392,6 +392,7 @@ type ConversationRewindPlan =
       kind: "available";
       persistedMessages: MessageWithParts[];
       removedTurnIds: string[];
+      removedMessageIds: string[];
       rewindId: string;
     }
   | {
@@ -530,6 +531,7 @@ async function buildConversationRewindPlan(
     keptMessages: activeMessages.slice(0, targetIndex),
     kind: "available",
     persistedMessages,
+    removedMessageIds: activeMessages.slice(targetIndex).map((message) => String(message.info.id)),
     removedTurnIds: activeMessages
       .slice(targetIndex)
       .flatMap((message) =>
@@ -557,6 +559,7 @@ async function applyConversationRewindPlan(
     keptMessages,
     persistedMessages,
     removedTurnIds,
+    removedMessageIds,
     rewindId,
   } = options.plan;
   await cancelRemovedBranchBackgroundTasks.call(this, {
@@ -598,6 +601,8 @@ async function applyConversationRewindPlan(
       compactBoundaryId: evaluation.compactBoundaryId,
       branchCutAfterMessageId,
       branchGeneration,
+      // 完整 child 身份可能没有投影行；用已提交分支的实际后缀证明哪些来源被撤销。
+      removedMessageIds,
       reason: evaluation.reason,
     },
     options.traceContext,

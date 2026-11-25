@@ -3,6 +3,7 @@ import { ServiceProvider } from "@/hooks/useServices.js";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import type { IServiceAccessor } from "@zcode/services";
+import type { CreateTaskRequest } from "@/app-shell/types.js";
 import {
   closestCenter,
   DndContext,
@@ -335,6 +336,7 @@ export function AnimatedSidePanePanel({
   onOpenBrowserPermissionSettings,
   onOpenWhiteboard: _onOpenWhiteboard,
   onOpenDeveloperTools,
+  onCodeViewerFocusRequestApplied,
   onOpenTerminalTab,
   onOpenReviewTab,
   onOpenSelectionSideConversation,
@@ -423,6 +425,9 @@ export function AnimatedSidePanePanel({
   onOpenBrowserPermissionSettings?: (origin: string) => void;
   onOpenWhiteboard: () => void;
   onOpenDeveloperTools: () => void;
+  onCodeViewerFocusRequestApplied?: (tabId: string, requestId: string) => void;
+  onOpenPluginMarket?: () => void;
+  onCreateTask?: (request?: CreateTaskRequest) => void;
   onOpenTerminalTab: () => void;
   onOpenReviewTab: () => void;
   onOpenSelectionSideConversation: () => void;
@@ -1346,6 +1351,11 @@ export function AnimatedSidePanePanel({
                             source={tab.source}
                             onClose={onCloseCodeViewer}
                             workspacePath={workspaceAbsPath}
+                            // 文件链接定位只执行一次：已执行的请求记在 code-viewer tab 上，预览据此不再滚动。
+                            appliedFocusRequestId={tab.appliedFocusRequestId}
+                            onFocusRequestApplied={(requestId: string) =>
+                              onCodeViewerFocusRequestApplied?.(tab.id, requestId)
+                            }
                             onOpenBrowserUrl={onOpenBrowserUrl}
                             onOpenCodeViewer={onOpenCodeViewer}
                             sidePaneTabId={tab.id}

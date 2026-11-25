@@ -162,7 +162,7 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.computerUse.title",
     groupId: "basics",
   },
-  // 键盘快捷键紧跟「电脑控制」：同属本机操控/效率配置，收纳在基础设置尾部。
+  // 键盘快捷键收纳在基础设置尾部。
   {
     id: "shortcuts",
     icon: Keyboard,

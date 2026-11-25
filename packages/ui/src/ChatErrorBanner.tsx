@@ -8,11 +8,13 @@ import {
   MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE_ERROR_CODE,
+} from "@zcode/shared";
+import {
   TID_CHAT_ERROR_DETAILS_BUTTON,
   TID_CHAT_ERROR_BANNER,
   TID_CHAT_ERROR_HOOK_ICON,
-} from "@zcode/shared";
-import { AnchorIcon, CopyIcon, InfoIcon, SettingsIcon, X } from "lucide-react";
+} from "@zcode/shared/test-ids";
+import { AnchorIcon, InfoIcon, SettingsIcon, X } from "lucide-react";
 import { useZCodeIntl } from "./i18n/IntlProvider.js";
 import type { IntlInstance } from "./i18n/IntlProvider.js";
 import { Button } from "./components/ui/button.js";
@@ -211,7 +213,7 @@ export function ChatErrorBanner({
         data-testid={TID_CHAT_ERROR_BANNER}
         data-error-code={error.code}
         className={cn(
-          "w-full flex flex-wrap items-center gap-2 rounded-xl bg-surface backdrop-blur-md border border-border px-3 py-2",
+          "w-full flex flex-wrap items-center gap-2 rounded-xl bg-surface backdrop-blur-md border-[0.5px] border-border py-2 pl-3 pr-2",
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 text-ui-base text-foreground">
@@ -245,7 +247,7 @@ export function ChatErrorBanner({
           <>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               className={actionButtonClassName}
               data-testid={TID_CHAT_ERROR_DETAILS_BUTTON}
@@ -276,15 +278,14 @@ export function ChatErrorBanner({
         {!modelConfigMissing ? (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => {
               void handleCopyError();
             }}
-            className={cn(actionButtonClassName, "gap-1.5")}
+            className={actionButtonClassName}
             aria-label={intl.formatMessage({ id: "chat.error.copyFull" })}
           >
-            <CopyIcon className="size-3.5" />
             {intl.formatMessage({ id: "chat.error.copyFull" })}
           </Button>
         ) : null}
@@ -298,7 +299,7 @@ export function ChatErrorBanner({
         {onDismiss ? (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
             onClick={onDismiss}
             className={cn(iconButtonClassName)}

@@ -11,7 +11,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog.js";
-import { TID_CONFIRM_DIALOG_CONFIRM } from "@zcode/shared";
+import { TID_CONFIRM_DIALOG_CONFIRM } from "@zcode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
 import {
   Dialog,
@@ -223,7 +223,7 @@ export function ConfirmDialogHost() {
           displayedRequest?.compact && "top-[44%] min-h-[161px] gap-4 sm:max-w-[400px]",
         )}
       >
-        <DialogHeader className="gap-2">
+        <DialogHeader className="min-w-0 gap-2">
           <DialogTitle className="text-ui-lg font-semibold text-foreground">
             {displayedRequest?.title}
           </DialogTitle>

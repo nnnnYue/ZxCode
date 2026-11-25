@@ -1171,4 +1171,15 @@ export const SQLITE_MIGRATIONS: readonly SqliteMigration[] = [
         .join("\n")}
     `,
   },
+  {
+    // fork：上游 4.0.0 的该迁移在本仓库编号为 0027——fork 已发布 0026 给
+    // session_purge_reference_zxcode_scheme（见下），迁移 id 一经记账即不可复用，
+    // 复用会导致老库 checksum 失配（migration-runner 按 id 记账且不可变）。
+    id: "0027_dwf_run_parent_session_index",
+    appVersion: "0.17.3",
+    touchedTables: ["dwf_run"],
+    // 完整活动历史按父会话查询；缺少索引会同步扫描其他会话的 run 和 actor。
+    // 追加迁移而不修改已发布 SQL，保留现有数据及 checksum。
+    sql: `create index if not exists dwf_run_parent_session_idx on dwf_run(parent_session_id);`,
+  },
 ];

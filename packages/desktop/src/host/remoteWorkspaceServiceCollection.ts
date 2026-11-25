@@ -45,7 +45,7 @@ import {
 } from "@zcode/services/node";
 import {
   DEFAULT_APP_TOOL_SEARCH_MODE,
-  DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
   type ZCodeSessionRuntimePreferencesResult,
 } from "@zcode/shared";
 import { assertLegacyRemoteWorkspaceRpcContract } from "./legacyRemoteWorkspaceRpcContract.js";
@@ -140,7 +140,7 @@ export function createRemoteWorkspaceServiceCollection(params: {
         try {
           // 与本地 Host 同源：固定预算不依赖配置网关，远程/手机偏好响应不再串行等待网络。
           const settings = await trackStage("settings", localSettingService.get());
-          const modelContextBudgetStrategy = DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
+          const modelContextBudgetStrategy = DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
           resolution = {
             status: "resolved",
             preferences: {
@@ -150,6 +150,8 @@ export function createRemoteWorkspaceServiceCollection(params: {
               // 与本地 Host（services/node.ts resolveSessionRuntimePreferences）同源：
               // 上游 v3.18.0 把 toolSearchMode 纳入 runtime preferences 必填合同，缺失会拒绝整个响应。
               toolSearchMode: settings.toolSearchMode ?? DEFAULT_APP_TOOL_SEARCH_MODE,
+              totalTokensReminderEnabled: settings.totalTokensReminderEnabled === true,
+              agentAlwaysBackgroundEnabled: settings.agentAlwaysBackgroundEnabled !== false,
               memoryEnabled: settings.memoryEnabled === true,
               modelContextBudgetStrategy,
               // remote workspace 与本地 Host 保持同一 scope 边界，首次执行不得再次等待 client config。

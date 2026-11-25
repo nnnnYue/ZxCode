@@ -1,5 +1,22 @@
 /** Russian translations（缺失 key 由 IntlProvider 回退到 en-US） */
 const ruRU: Record<string, string> = {
+  "chat.capsule.todo.running": "Выполняется",
+  "chat.capsule.todo.completed": "Завершено",
+  "chat.capsule.todo.pending": "Ожидание",
+  "chat.capsule.files": "Изменено файлов: {count}",
+  "chat.capsule.activity.completed": "Завершено",
+  "chat.capsule.activity.stopped": "Остановлено",
+  "chat.capsule.activity.failed": "Ошибка",
+  "chat.capsule.activity.running": "Активно",
+  "chat.capsule.activityLabel": "Действия:",
+  "chat.capsule.staged": "В индексе",
+  "chat.capsule.unstaged": "Вне индекса",
+  "chat.capsule.fileChanged": "Изменён",
+  "chat.capsule.goal.failed": "Ошибка",
+  "chat.capsule.goal.verified": "Завершено",
+  "chat.capsule.goal.verifying": "Проверка",
+  "chat.capsule.goal.paused": "Приостановлено",
+  "chat.capsule.goal.notSatisfied": "Не достигнуто",
   "plugin.discovery.installAndEnable": "Установить и включить в этой рабочей области",
   "plugin.discovery.enableInWorkspace": "Включить в этой рабочей области",
   "plugin.discovery.workspaceInstall":
@@ -484,16 +501,6 @@ const ruRU: Record<string, string> = {
   "remote.phase.channel.ssh": "Подключение к хосту SSH",
   "remote.phase.channel.wsl": "Запуск дистрибутива и подключение",
   "remote.phase.channel.docker": "Подключение к контейнеру",
-  "startPlan.recommendation.subagentDescription":
-    "В вашем Start Plan есть квота для {model}. Переключить модель этого субагента на Start Plan?",
-  "startPlan.recommendation.preferenceSaveFailed":
-    "Не удалось сохранить «Больше не спрашивать». Для этой операции будет использован ваш выбор.",
-  "startPlan.recommendation.title": "Доступна квота Start Plan",
-  "startPlan.recommendation.description":
-    "В вашем Start Plan ещё есть квота для {model}. Использовать её?",
-  "startPlan.recommendation.switch": "Сменить план",
-  "startPlan.recommendation.decline": "Не сейчас",
-  "startPlan.recommendation.dismiss": "Больше не показывать",
   "occupationOnboarding.stepMode": "Режим интерфейса",
   "occupationOnboarding.modeTitle": "Выберите режим интерфейса",
   "occupationOnboarding.modeDescription": "Как ZCode показывать свою работу?",
@@ -603,7 +610,6 @@ const ruRU: Record<string, string> = {
     "Процесс подготовки завершился или отключился. Закройте и снова откройте ZCode, чтобы заново проверить записи миграций.",
   "startup.global.error.unsupported_runtime":
     "Настроенный агент не поддерживает подготовку хранилища. Восстановите встроенный агент и снова откройте ZCode.",
-
   "startup.database.checking": "Проверка истории",
   "startup.database.waiting_for_lock": "Ожидание подготовки данных другим окном",
   "startup.database.migrating": "Обновление истории",
@@ -625,7 +631,6 @@ const ruRU: Record<string, string> = {
   "bashOutput.error.unsupported": "Эта среда выполнения не поддерживает фоновый вывод",
   "bashOutput.error.read_failed": "Не удалось прочитать файл вывода",
   "bashOutput.error.query_failed": "Не удалось подключиться к среде выполнения задачи",
-
   "bots.runtime.deliveryFailed": "Не удалось доставить ответ бота",
   "bots.runtime.deliveryFailedDescription":
     "Сообщение не доставлено. Передайте подробности ниже для диагностики. Уведомление исчезнет после следующей успешной отправки.",
@@ -693,7 +698,6 @@ const ruRU: Record<string, string> = {
   "bots.group.confirmReceived": "Проверено: получено",
   "bots.group.confirmNotReceived": "Проверено: не получено",
   "bots.group.resend": "Отправить результат повторно",
-
   "bots.group.provider.feishu": "Feishu",
   "common.listSeparator": ", ",
   "common.generating": "Генерация...",
@@ -708,6 +712,7 @@ const ruRU: Record<string, string> = {
   "common.save": "Сохранить",
   "common.delete": "Удалить",
   "conversation.row.unreadable": "Для просмотра этого сообщения нужна более новая версия ZCode",
+  "settings.resourceGroup.item.one": "Элементов: {count}",
   "settings.resourceGroup.item.other": "Элементов: {count}",
   "pluginCreator.add": "Добавить",
   "pluginCreator.create": "Создать плагин",
@@ -1129,8 +1134,6 @@ const ruRU: Record<string, string> = {
   "bots.unbindSuccess": "Бот отвязан",
   "bots.unbindFailed": "Не удалось отвязать бота: {error}",
   "bots.deleteFailed": "Не удалось удалить бота: {error}",
-
-  // Welcome / Login
   "welcome.title": "Добро пожаловать в ZCode",
   "welcome.username": "Имя пользователя",
   "welcome.password": "Пароль",
@@ -1142,8 +1145,6 @@ const ruRU: Record<string, string> = {
   "login.oauth.loadingProviders": "Загрузка провайдеров аккаунтов...",
   "login.oauth.noProviders": "Сейчас нет доступных провайдеров аккаунтов. Повторите попытку позже.",
   "login.oauth.button": "Продолжить с {provider}",
-  "login.oauth.button.zai": "Подключиться к Z.ai",
-  "login.oauth.button.bigmodel": "Подключиться к BigModel",
   "login.oauth.regionTag.zai": "Global",
   "login.oauth.regionTag.bigmodel": "CN",
   "login.oauth.waiting": "Ожидание аутентификации {provider}...",
@@ -1154,31 +1155,12 @@ const ruRU: Record<string, string> = {
   "login.oauth.loginFailure": "Не удалось войти, повторите попытку",
   "login.oauth.cancel": "Отмена",
   "login.oauth.retry": "Повторить вход",
-  "login.expired.title": "Сеанс истёк",
-  "login.expired.description": "Для безопасности аккаунта войдите снова.",
-  "login.expired.action": "Войти снова",
-  "login.expired.restart": "Подтвердить и перезапустить",
   "login.useApiKey": "Использовать API Key",
-  "login.apiKey.title": "API Key",
-  "login.apiKey.placeholder": "Введите API Key",
-  "login.apiKey.providerLabel": "Провайдер API Key",
-  "login.apiKey.provider.zai": "Z.ai",
-  "login.apiKey.provider.bigmodel": "BigModel",
-  "login.apiKey.getApiKey": "Получить API Key",
-  "login.apiKey.cancel": "Отмена",
-  "login.apiKey.continue": "Продолжить",
-  "login.apiKey.emptyError": "Введите API Key.",
-  "login.apiKey.providerMissingError":
-    "Встроенная конфигурация провайдера {provider} не найдена. Повторите попытку позже.",
-  "login.apiKey.saveError": "Не удалось сохранить API Key: {error}",
-  "login.apiKey.skipError": "Не удалось пропустить настройку API Key: {error}",
   "login.skip": "Пропустить",
   "settings.onboarding": "Знакомство",
   "settings.onboardingDescription":
     "Заново выбрать роль, режим интерфейса и предпочтения. Для импорта данных используйте настройки миграции.",
   "settings.onboardingOpen": "Открыть мастер",
-
-  // App header
   "app.currentTheme": "Текущая: {theme}",
   "sidebar.profile.notLoggedIn": "Подключиться",
   "app.selectFile": "Выберите файл, чтобы начать",
@@ -1398,9 +1380,6 @@ const ruRU: Record<string, string> = {
   "subagentDirectory.status.failed": "Ошибка",
   "subagentDirectory.status.cancelled": "Отменён",
   "subagentDirectory.status.lost": "Потерян",
-  "chat.statusPanel.endedAgents": "Завершённые",
-  "chat.statusPanel.endedWorkflows": "Завершённые рабочие процессы",
-  "chat.statusPanel.workflowsLive": "Выполняется: {count}",
   "workflowDirectory.title": "Запуски рабочих процессов",
   "workflowDirectory.running": "Выполняются",
   "workflowDirectory.runningEmpty": "Нет выполняющихся рабочих процессов",
@@ -1425,6 +1404,7 @@ const ruRU: Record<string, string> = {
   "chat.selections.commentAdd": "Добавить комментарий",
   "chat.selections.commentDeleted": "Аннотация удалена",
   "chat.selections.commentUndo": "Отменить",
+  "chat.selections.sentTitle": "Отправлено с сообщением",
   "chat.selections.listHeader": "Аннотаций в следующем сообщении: {count}",
   "chat.selections.listHint": "Номера соответствуют ответу",
   "chat.selections.removeAll": "Удалить все аннотации",
@@ -2020,8 +2000,6 @@ const ruRU: Record<string, string> = {
   "titleBar.menu.help.resourceManager": "Диспетчер ресурсов",
   "titleBar.menu.help.toggleZCodeStdioTap": "Перехват stdio агента",
   "titleBar.menu.help.clearAllData": "Очистить все данные",
-
-  // Directory browser
   "directoryBrowser.pathPlaceholder": "Введите путь",
   "directoryBrowser.go": "Перейти",
   "directoryBrowser.showHidden": "Показать скрытые папки",
@@ -2029,10 +2007,7 @@ const ruRU: Record<string, string> = {
   "directoryBrowser.noSubdirs": "Нет вложенных папок",
   "directoryBrowser.selectDir": "Открыть рабочее пространство здесь",
   "directoryBrowser.errorReadDir": "Не удалось прочитать папку: {error}",
-
-  // Update ready button
   "postUpdateReleaseNotes.acknowledge": "Понятно",
-
   "projectSelector.heroTitle": "Быстрый старт. Полная концентрация.",
   "projectSelector.heroDescription":
     "Выберите рабочее пространство и продолжайте работу без лишнего.",
@@ -2041,6 +2016,9 @@ const ruRU: Record<string, string> = {
     "Ошибка страницы перехвачена, поэтому приложение не показывает пустой экран. Сначала попробуйте ещё раз, а если проблема повторяется, перезагрузите приложение.",
   "appError.retry": "Повторить",
   "appError.reload": "Перезагрузить приложение",
+  "appError.restart": "Перезапустить приложение",
+  "appError.restartHint":
+    "При перезапуске все окна приложения закроются. Несохранённые изменения могут быть потеряны.",
   "appError.hint": "Диагностические сведения записаны для расследования.",
   "appError.details": "Показать стек компонентов",
   "appError.unknown": "Неизвестная ошибка",
@@ -2049,8 +2027,6 @@ const ruRU: Record<string, string> = {
     "Ошибка ограничена этим разделом, остальное приложение продолжает работать. Сначала попробуйте открыть раздел снова, а если проблема повторяется, перезагрузите приложение.",
   "appError.sectionRetry": "Повторить для раздела",
   "appError.sectionHint": "Диагностические сведения записаны для расследования.",
-
-  // Workspace
   "workspace.openWorkspace": "Открыть рабочее пространство",
   "workspace.openFolder": "Открыть папку",
   "workspace.openPluginsSettings": "Маркетплейс плагинов",
@@ -2152,8 +2128,6 @@ const ruRU: Record<string, string> = {
   "workspaceFileTree.openFailed": "Не удалось открыть этот элемент",
   "workspaceFileTree.addToChat": "Добавить в чат",
   "workspaceFileTree.gitStatus.ignored": "Игнорируется",
-
-  // SSH dialog
   "ssh.trigger": "Подключение SSH",
   "ssh.title": "Удалённое подключение SSH",
   "ssh.host": "Хост",
@@ -2193,7 +2167,6 @@ const ruRU: Record<string, string> = {
   "common.next": "Далее",
   "remote.trigger": "Удалённое подключение",
   "remote.wizard": "Удалённое подключение",
-  "remoteConnection.feedback": "Обратная связь",
   "remote.step.directory": "Папка",
   "remote.history.empty": "Подходящих сохранённых подключений нет",
   "remote.connectingStepTitle": "Установка связи",
@@ -2677,15 +2650,9 @@ const ruRU: Record<string, string> = {
   "docker.unavailable": "Docker недоступен",
   "docker.noContainers": "Нет запущенных контейнеров",
   "docker.validation.required": "Имя или ID контейнера обязательно",
-
-  // Locale switch
   "locale.switchLanguage": "Сменить язык",
-
-  // File tree
   "fileTree.loading": "Загрузка...",
   "fileTree.error": "Не удалось загрузить",
-
-  // Terminal
   "terminal.exited": "[Процесс завершён]",
   "terminal.title": "Терминал",
   "terminal.show": "Показать/скрыть терминал",
@@ -2707,7 +2674,6 @@ const ruRU: Record<string, string> = {
   "chat.runtimeExit.generic":
     "Фоновая среда выполнения неожиданно завершилась. Выполнявшиеся задачи и субагенты прерваны.",
   "chat.runtimeExit.dismiss": "Закрыть",
-  // 软门禁（D4）：工作区 Hook 待审核时 composer 图标与浮层
   "chat.workspaceHookPending.label": "Хуки рабочего пространства ожидают проверки",
   "chat.workspaceHookPending.message":
     "Хуков рабочего пространства на проверке: {count}; в этом сеансе они отключены",
@@ -2718,8 +2684,6 @@ const ruRU: Record<string, string> = {
     "MCP-серверов рабочего пространства ожидают доверия: {count}. Изменения доверия применяются к новым или перезапущенным чатам; можно продолжать общение.",
   "chat.workspaceMcpPending.review": "Проверить",
   "chat.workspaceMcpPending.dismiss": "Скрыть",
-
-  // Task list
   "taskList.title": "Список задач",
   "taskList.newThread": "Новая задача",
   "taskList.forkedUntitled": "Новая задача",
@@ -2746,7 +2710,6 @@ const ruRU: Record<string, string> = {
   "taskList.restart": "Перезапустить задачу",
   "taskList.restarting": "Перезапуск задачи…",
   "taskList.restartFailed": "Не удалось перезапустить. Проверьте статус задачи и повторите.",
-  // 命令说明沿用 CLI 英文目录；任务菜单名称仍按界面语言展示。
   "chat.slash.app.reload.description":
     "Reload the task runtime, preserving history and stopping current execution.",
   "taskList.markAsUnread": "Отметить как непрочитанную",
@@ -2874,8 +2837,6 @@ const ruRU: Record<string, string> = {
   "sidebar.exportLogs.pending": "Экспорт логов...",
   "sidebar.exportLogs.error": "Не удалось экспортировать логи: {error}",
   "sidebar.newTask": "Новая задача",
-
-  // Settings
   "settings.title": "Настройки",
   "settings.breadcrumbLabel": "Путь настроек",
   "settings.subtitle": "Выбирайте разделы слева и изменяйте параметры на панели справа.",
@@ -2996,6 +2957,19 @@ const ruRU: Record<string, string> = {
   "settings.integratedTerminalShell.auto": "Авто",
   "settings.nativeSearchEnhancementsDescription":
     "Использовать улучшенные Find и Grep в новых сеансах и сеансах, восстановленных после перезапуска. Активные сеансы сохраняют текущую настройку; в Windows Find не меняется.",
+  "settings.totalTokensReminder": "Напоминание о бюджете токенов",
+  "settings.totalTokensReminderDescription":
+    "В новых сеансах и сеансах, восстановленных после перезапуска, сообщать модели фиксированный бюджет токенов и остаток на каждом ходе. Это только напоминание, расход не ограничивается. Активные сеансы сохраняют текущую настройку.",
+  "settings.agentAlwaysBackground": "Всегда запускать субагентов в фоне",
+  "settings.agentAlwaysBackgroundDescription":
+    "Субагенты всегда запускаются в фоне, а их результаты приходят на следующих ходах, поэтому во время их работы можно продолжать. Если выключить, выбирает модель: субагенты работают на переднем плане, пока модель не запросит фон. Действует в новых сеансах и сеансах, восстановленных после перезапуска; активные сеансы сохраняют текущую настройку.",
+  "settings.replyLanguage": "Язык ответов",
+  "settings.replyLanguageDescription":
+    "Агент отвечает на этом языке. Оставьте пустым, чтобы следовать языку беседы.",
+  "settings.replyLanguagePlaceholder": "Например: Русский, English, 日本語",
+  "settings.replyLanguageSaveError": "Не удалось сохранить язык ответов",
+  "settings.replyLanguageLocalOnly":
+    "Язык ответов можно задать только в локальном приложении. Откройте «Настройки → Поведение и инструменты» в настольном приложении.",
   "settings.memory": "Память",
   "settings.personalization.title": "Персонализация",
   "settings.personalization.description":
@@ -3117,6 +3091,9 @@ const ruRU: Record<string, string> = {
     "Пока ZCode работает, добавлять последующие действия в очередь или направлять их на выполнение после следующего вызова инструмента.",
   "settings.zcodeInteractionBehavior.option.queue": "Очередь",
   "settings.zcodeInteractionBehavior.option.guide": "Направлять",
+  "settings.askUserQuestionAutoResolution": "Автоматически продолжать вопросы",
+  "settings.askUserQuestionAutoResolutionDescription":
+    "Если включено, вопросы агента автоматически продолжаются через 5 минут без ответа. Если выключено, текущие и будущие вопросы ждут вашего ответа.",
   "settings.dynamicWorkflow": "Динамические рабочие процессы",
   "settings.dynamicWorkflowDescription":
     "Модель может управлять множеством параллельно работающих субагентов, чтобы браться за сложные задачи и выдавать качественный результат.",
@@ -3150,7 +3127,7 @@ const ruRU: Record<string, string> = {
   "settings.taskAutoArchiveDays.option.30": "Архивировать через 30 дней",
   "settings.dataBaseDir": "Путь хранения данных",
   "settings.dataBaseDirDescription":
-    "Корневая папка данных приложения (по умолчанию домашняя папка пользователя). Существующие данные будут скопированы в новое место. Суффикс .zcode/v2 изменить нельзя.",
+    "Корневая папка данных приложения (по умолчанию домашняя папка пользователя). Существующие данные будут скопированы в новое место. Суффикс .zxcode/v2 изменить нельзя.",
   "settings.dataBaseDirPlaceholder": "По умолчанию: домашняя папка пользователя",
   "settings.dataBaseDirBrowse": "Выбрать папку",
   "settings.dataBaseDirSave": "Сохранить",
@@ -3678,7 +3655,6 @@ const ruRU: Record<string, string> = {
   "settings.modelProvider.or": "или",
   "settings.modelProvider.connectionMode": "Режим подключения",
   "settings.modelProvider.planCard.codingPlan": "Coding Plan",
-  "settings.modelProvider.planCard.startPlan": "Start Plan",
   "settings.modelProvider.planCard.usage.fiveHour": "Использование за 5 ч",
   "settings.modelProvider.planCard.usage.week": "Использование за 1 нед.",
   "settings.modelProvider.planCard.usage.totalTokens": "Всего токенов",
@@ -4137,6 +4113,8 @@ const ruRU: Record<string, string> = {
     "Откройте этот плагин в доступном сеансе текущего проекта.",
   "settings.plugins.store.ui.unavailable":
     "В этом проекте нет интерфейса плагина. Проверьте, включён ли плагин.",
+  "settings.plugins.store.ui.disabledInWorkspace":
+    "Этот плагин отключён в текущем проекте. Включите его для проекта в управлении плагинами, затем откройте.",
   "settings.plugins.store.ui.chooseSurface": "Выберите интерфейс плагина",
   "settings.plugins.store.ui.preview": "Увеличить превью",
   "settings.plugins.store.ui.capability":
@@ -4251,6 +4229,15 @@ const ruRU: Record<string, string> = {
   "settings.plugins.updateAll.aborted":
     "Массовое обновление остановлено, так как изменилась область плагинов; обновлено плагинов: {count}",
   "settings.plugins.list.updateAvailable": "Обновить",
+  "settings.plugins.workspaceTrust.pending": "Ожидает доверия",
+  "settings.plugins.workspaceTrust.pendingHint":
+    "Этот плагин задан в конфигурации проекта и не загружается, пока вы ему не доверитесь. После этого новые сеансы запускают его хуки, MCP-серверы, навыки, команды и агентов.",
+  "settings.plugins.workspaceTrust.trust": "Доверять",
+  "settings.plugins.workspaceTrust.trusted":
+    "Плагину {plugin} выдано доверие. Он загрузится в новых сеансах.",
+  "settings.plugins.workspaceTrust.changed":
+    "Объявления плагина {plugin} изменились. Проверьте их и доверьтесь снова.",
+  "settings.plugins.workspaceTrust.failed": "Не удалось доверить плагину {plugin}",
   "settings.plugins.list.versionChanged": "Изменён",
   "settings.plugins.restore": "Восстановить",
   "settings.plugins.restorableBuiltins.title": "Восстановить встроенные плагины",
@@ -4439,7 +4426,10 @@ const ruRU: Record<string, string> = {
   "settings.hooks.review.trust": "Доверять",
   "settings.hooks.review.notice":
     "Хуки могут выполняться вне песочницы, поэтому просим проверить недавно установленные или изменённые хуки",
+  "settings.hooks.review.worktreeNotice":
+    "Доверие применяется к исходному репозиторию {path} и его worktree",
   "settings.hooks.review.unavailable": "Это подключение не может доверять этому хуку.",
+  "settings.hooks.review.scriptUnavailable": "Скрипт отсутствует или не читается",
   "settings.hooks.review.reason.review_superseded": "Проверка обновлена — подтвердите ещё раз",
   "settings.hooks.review.reason.snapshot_mismatch":
     "Конфигурация хука изменилась — требуется проверка",
@@ -4660,7 +4650,6 @@ const ruRU: Record<string, string> = {
   "onboarding.finish.summary.agentsFile": "AGENTS.md",
   "onboarding.finish.summary.settings.detail":
     "Импортировано: {imported}, пропущено: {skipped}, ошибок: {failed}.",
-  // Chat
   "chat.empty.title": "Начните диалог",
   "chat.empty.description": "Новая задача в {workspace}",
   "chat.empty.description.beforeWorkspace": "Новая задача в",
@@ -4741,7 +4730,7 @@ const ruRU: Record<string, string> = {
   "chat.message.forking": "Ответвление...",
   "chat.message.fork.unavailable": "Ответвить можно после завершения задачи",
   "chat.message.fork.unsupported": "Текущий агент пока не поддерживает ответвление",
-  "chat.message.fork.failed": "Не удалось ответвить сеанс: {error}",
+  "chat.message.fork.failed": "Не удалось ответвить сеанс. Повторите попытку позже.",
   "chat.message.fork.derivedFrom": "Ответвлено от диалога",
   "chat.message.fork.derivedFromMissing":
     "Ответвлено от старого диалога (данные отслеживания утеряны)",
@@ -4945,59 +4934,19 @@ const ruRU: Record<string, string> = {
   "chat.target.status.paused": "Приостановлена",
   "chat.target.status.budget_limited": "Ограничена бюджетом",
   "chat.target.status.complete": "Выполнена",
-  "chat.target.pause": "Приостановить цель",
-  "chat.target.resume": "Возобновить цель",
+  "chat.target.elapsed": "Прошло {duration}",
+  "chat.target.pause": "Приостановить",
+  "chat.target.resume": "Возобновить",
   "chat.target.clear": "Сбросить цель",
-  "chat.summaryPanel.title": "Статус",
   "chat.summaryPanel.duration.hours": "ч",
   "chat.summaryPanel.duration.minutes": "мин",
   "chat.summaryPanel.duration.seconds": "с",
-  "chat.summaryPanel.showMini": "Свернуть в капсулу",
-  "chat.summaryPanel.showPanel": "Развернуть статус",
-  "chat.summaryPanel.displayMode": "Режим отображения панели статуса",
-  "chat.summaryPanel.displayModeAuto": "Разворачивать автоматически",
-  "chat.summaryPanel.displayModeExpanded": "Всегда развёрнута",
-  "chat.summaryPanel.displayModeCollapsed": "Всегда свёрнута",
-  "chat.summaryPanel.runningBackgroundTasks": "Фоновые задачи в работе",
-  "chat.summaryPanel.runningBackgroundTasksMiniValue": "В фоне: {count}",
-  "chat.summaryPanel.runningBackgroundTasksMiniValuePlural": "В фоне: {count}",
   "chat.summaryPanel.stopRunningBackgroundTask": "Остановить фоновую задачу",
   "chat.summaryPanel.stopRunningSubagent": "Остановить работающего субагента",
   "chat.summaryPanel.stopSubagentFailed": "Не удалось остановить субагента. Повторите попытку.",
   "chat.summaryPanel.openRunningSubagentSession": "Открыть сеанс субагента",
-  "chat.composer.backgroundWorks.tooltipTerminal": "Открыть запущенные терминалы",
-  "chat.composer.backgroundWorks.tooltipAgent": "Открыть запущенных агентов",
-  "chat.composer.backgroundWorks.tooltipWorkflow": "Открыть запущенные рабочие процессы",
-  "chat.composer.backgroundWorks.tooltipWorkflowDetails": "Открыть сведения о рабочем процессе",
-  "chat.composer.backgroundWorks.tooltipMixed": "Открыть запущенные терминалы и агентов",
-  "chat.composer.backgroundWorks.ariaLabel":
-    "Открыть фоновые задачи: Bash — {bashCount}, рабочие процессы — {workflowCount}, субагенты — {subagentCount}, всего — {count}",
   "chat.summaryPanel.goalIterationValue": "Итерация {count}",
-  "chat.summaryPanel.todoGoalIterationGroup": "Итерация {count}",
-  "chat.summaryPanel.todoSessionGroup": "Сеанс",
-  "chat.statusPanel.environment": "Инструменты Git",
-  "chat.statusPanel.changes": "Изменения",
-  "chat.statusPanel.branch": "Ветка",
-  "chat.statusPanel.commitPush": "Коммит / Push",
-  "chat.statusPanel.clean": "Чисто",
-  "chat.statusPanel.goal": "Цель",
-  "chat.statusPanel.sessionPlans": "Планы",
-  "chat.statusPanel.planFallback": "План",
-  "chat.statusPanel.openPlan": "Открыть план: {title}",
-  "chat.statusPanel.todo": "Прогресс",
-  "chat.statusPanel.todoCompletedExpanded": "Скрыть выполненные ({count})",
-  "chat.statusPanel.todoCompletedFold": "Выполнено: {count}",
-  "chat.statusPanel.todoEarlierFold": "Ранее: {count}",
-  "chat.statusPanel.todoLaterFold": "Далее: {count}",
-  "chat.statusPanel.todoWaitingExpanded": "Скрыть ожидающие ({count})",
-  "chat.statusPanel.todoWaitingFold": "Ожидают: {count}",
-  "chat.statusPanel.terminals": "Терминалы",
-  "chat.statusPanel.agents": "Агенты",
-  "chat.statusPanel.workflows": "Рабочие процессы",
-  "chat.statusPanel.runningStatusValue": "В фоне: {count}",
-  "chat.statusPanel.runningStatusValuePlural": "В фоне: {count}",
-  "chat.statusPanel.runningAgentsValue": "Выполняется: {count}",
-  "chat.statusPanel.runningAgentsValuePlural": "Выполняется: {count}",
+  "chat.statusPanel.viewAllChanges": "Просмотреть все изменения",
   "chat.statusPanel.runningStop": "Остановить",
   "chat.toolbar.combined.provider": "Провайдер",
   "chat.toolbar.combined.models": "Модели",
@@ -5028,6 +4977,7 @@ const ruRU: Record<string, string> = {
   "chat.goal.runningBlocked": "Задайте цель после завершения текущей задачи.",
   "chat.goal.planModeBlocked":
     "Цель недоступна в режиме планирования. Смените режим, чтобы продолжить.",
+  "chat.slash.app.plan.label": "Режим планирования",
   "chat.slash.app.plan.description": "Включить режим планирования",
   "chat.compact.runningBlocked": "Сожмите контекст после завершения текущей задачи.",
   "chat.compact.queued": "Сжатие поставлено в очередь и будет выполнено по порядку.",
@@ -5041,7 +4991,6 @@ const ruRU: Record<string, string> = {
   "chat.modelSwitch.contextWindowGuard.stillTooLarge":
     "После сжатия контекст этого диалога всё ещё больше доступного контекста целевой модели с учётом резерва на максимальный вывод. Переключение модели отменено.",
   "chat.toolbar.mode.label": "Сменить режим",
-  // CUA composer entry button
   "chat.toolbar.computerUse.label": "Computer Use",
   "chat.toolbar.computerUse.tooltip.idle":
     "Computer Use неактивен — запустится автоматически при первом использовании",
@@ -5255,7 +5204,6 @@ const ruRU: Record<string, string> = {
     "Ещё субагентов: {count} · показать всех на панели запуска",
   "chat.toolCall.workflow.timeline.roster.door.list": "Ещё субагентов: {count} · показать здесь",
   "chat.toolCall.workflow.timeline.roster.door.fold": "Ещё субагентов: {count} · свернуть",
-  // 门后名单末尾的那一行：被淘汰的子代理没有行，差额在这里说明（本仓的轻量 intl 无 ICU 复数）。
   "chat.toolCall.workflow.timeline.roster.unlisted.one": "Ещё 1 агент не показан",
   "chat.toolCall.workflow.timeline.roster.unlisted.many": "Ещё агентов не показано: {count}",
   "chat.toolCall.workflow.timeline.ledge.earlier": "Более ранних этапов вне видимости: {count}",
@@ -5282,7 +5230,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.card.artifacts": "Артефактов: {count}",
   "chat.toolCall.workflow.digest.question": "Вопросов: {count}",
   "chat.toolCall.workflow.digest.questions": "Вопросов: {count}",
-  // ── Holes (docs/dynamic-workflow/presentation.md "Holes on the timeline", transcript-and-notifications.md "The hole row's live state") ──
   "chat.toolCall.workflow.digest.hole": "Пустых заполнителей: {count}",
   "chat.toolCall.workflow.digest.holes": "Пустых заполнителей: {count}",
   "chat.toolCall.workflow.card.hole": "Заполнителей: {count}",
@@ -5291,7 +5238,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.hole.head.title": "Заполнитель «{name}» · код написал агент · {time}",
   "chat.toolCall.workflow.hole.head.title.untimed": "Заполнитель «{name}» · код написал агент",
   "chat.toolCall.workflow.hole.open": "Открыть код заполнителя «{name}»",
-  // Kind words of the FillWorkflowHole row (same table as CreateWorkflow / AmendWorkflow).
   "chat.toolCall.workflow.hole.writing": "Написание кода для заполнителя",
   "chat.toolCall.workflow.hole.revising": "Доработка кода для заполнителя",
   "chat.toolCall.workflow.hole.draft": "Черновик кода для заполнителя",
@@ -5299,7 +5245,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.hole.ran": "Код для заполнителя",
   "chat.toolCall.workflow.hole.filled": "Код для заполнителя готов",
   "chat.toolCall.workflow.hole.phasesAdded": "Этапов: {count}",
-  // The notification row's expanded body.
   "chat.toolCall.workflow.hole.stands.between":
     "Заполнитель находится после «{before}» и перед «{after}»;",
   "chat.toolCall.workflow.hole.stands.after": "Заполнитель находится после «{before}»;",
@@ -5309,15 +5254,12 @@ const ruRU: Record<string, string> = {
   "chat.backgroundResult.workflow.hole.waiting": "Рабочий процесс ожидает код",
   "chat.backgroundResult.workflow.hole.filled": "Код для заполнителя готов",
   "chat.backgroundResult.workflow.hole.left": "Рабочий процесс оставил заполнитель",
-  // The run pane.
   "chat.toolCall.workflow.run.hole.waitingFor": "Ожидание заполнения агентом",
   "chat.toolCall.workflow.run.hole.filledAt": "Заполнено · {time}",
-  // The confirmation window.
   "chat.permission.workflow.hole.title": "Вставить код в этот заполнитель?",
   "chat.permission.workflow.holes.label": "Заполнители",
   "chat.permission.workflow.holes.note":
     "Запуск приостанавливается на заполнителе, пока агент не напишет для него код.",
-  // The sidebar run line.
   "taskList.workflowRun.holeWaiting": "{name} · ожидание",
   "chat.toolCall.workflow.digest.showAgents": "Показать субагентов",
   "chat.toolCall.workflow.digest.hideAgents": "Скрыть субагентов",
@@ -5338,9 +5280,6 @@ const ruRU: Record<string, string> = {
   "chat.workflowLaunch.settings.sessionModel": "модель сеанса",
   "chat.workflowLaunch.settings.defaultLimit": "по умолчанию",
   "chat.workflowLaunch.settings.defaultLimitValue": "по умолчанию {n}",
-  // ── 可复用工作流（docs/dynamic-workflow/launch.md）：SaveWorkflow / ListSavedWorkflows
-  // 的聊天卡。overwrite 这个词由保存确认窗共用——同一次保存在两个面上必须同名，
-  // 照 run 卡复用 chat.toolCall.workflow.run.status.* 词汇表的同一条先例。
   "chat.toolCall.workflow.save.saving": "Сохранение рабочего процесса",
   "chat.toolCall.workflow.save.saved": "Рабочий процесс сохранён",
   "chat.toolCall.workflow.save.overwrite": "перезапись",
@@ -5491,7 +5430,6 @@ const ruRU: Record<string, string> = {
   "workflows.hub.reason.read_error": "Не удалось прочитать файл",
   "workflows.hub.time.duration.seconds": "{seconds} с",
   "workflows.hub.time.duration.minutes": "{minutes} мин {seconds} с",
-  // ── Observation tool cards  ──
   "chat.toolCall.workflow.getRun.fetching": "Проверка статуса рабочего процесса",
   "chat.toolCall.workflow.getRun.runningNodes": "Выполняется узлов: {count}",
   "chat.toolCall.workflow.getRun.fetched": "Статус рабочего процесса",
@@ -5578,21 +5516,17 @@ const ruRU: Record<string, string> = {
   "chat.backgroundResult.workflow.completed": "Рабочий процесс завершён",
   "chat.backgroundResult.workflow.errored": "Ошибка рабочего процесса",
   "chat.backgroundResult.workflow.stopped": "Рабочий процесс остановлен",
-  // run 级停滞通知：run 还在跑，只是没有进展。
   "chat.backgroundResult.workflow.stall": "Рабочий процесс ожидает модель",
   "chat.backgroundResult.workflow.stall.body":
     "Ни один запрос к модели в этом запуске не был успешным уже {minutes} мин. Запуск продолжается и повторяет попытки с паузами; остановите его на карточке запуска, если он больше не нужен.",
   "chat.backgroundResult.workflow.stall.reason": "Причина повтора",
   "chat.backgroundResult.workflow.stall.cap": "Макс. параллельность",
-  // 主代理闲着、run 还欠着决定时的提醒：计数词复用 digest.question(s) / card.hole(s)。
   "chat.backgroundResult.workflow.blocked": "Рабочий процесс ожидает агента",
   "chat.backgroundResult.workflow.blocked.openFor": "открыт {minutes} мин",
   "chat.backgroundResult.workflow.waiting": "Субагент ждёт ответа",
   "chat.backgroundResult.workflow.answered": "Вопрос субагента отвечен",
   "chat.backgroundResult.workflow.asked": "Субагент задал вопрос",
   "chat.backgroundResult.workflow.artifacts.more": "+{count}",
-  // ── Escalation tool cards ──
-  // escalate：子代理把阻塞问题升级给主代理，停驻等答案。asking 相可能持续很久，措辞要平静。
   "chat.toolCall.workflow.escalate.asking": "Вопрос основному агенту",
   "chat.toolCall.workflow.escalate.asked": "Вопрос задан основному агенту",
   "chat.toolCall.workflow.escalate.question": "Вопрос",
@@ -5611,7 +5545,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.status.completed": "Завершён",
   "chat.toolCall.workflow.run.status.errored": "Ошибка",
   "chat.toolCall.workflow.run.status.stopped": "Остановлен",
-  // stopped 的原因词，跟在状态词后。
   "chat.toolCall.workflow.run.stopReason.user": "вами",
   "chat.toolCall.workflow.run.stopReason.model": "агентом",
   "chat.toolCall.workflow.run.stopReason.provider": "ошибка модели",
@@ -5626,8 +5559,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.usage.label": "Использование",
   "chat.toolCall.workflow.run.usage.tokens": "Токенов: {tokens}",
   "chat.toolCall.workflow.run.usage.value": "Токенов: {tokens} · шагов: {steps}",
-  // 实例表撞界后卡与详情页各有的那一句：停的是每一步的**详情**，不是 run，
-  // 它上面那些计数已经把表外的实例算进来了（docs/dynamic-workflow/presentation.md）。
   "chat.toolCall.workflow.run.truncated": "Показаны подробности шагов: {shown} из {total}",
   "chat.toolCall.workflow.run.cancel": "Остановить запуск",
   "chat.toolCall.workflow.run.cancelling": "Остановка…",
@@ -5662,10 +5593,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.resume": "Возобновить запуск",
   "chat.toolCall.workflow.run.resumeHint":
     "Продолжить с места остановки: завершённые шаги переиспользуются, прерванные выполняются заново.",
-  // 「配置」弹层（docs/dynamic-workflow/presentation.md「The settings popover」）：改子代理模型与最大并发数，
-  // 应用即一次 GUI 修订（新 run 接着跑，旧 run 停下，已完成的步骤作缓存带过去）。
-  // 完成卡与 run 侧板上的「保存 / 再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
-  // 「Saving the run, and running it again」）。两条路：交给 ZCode 提炼，或按原样直接写下去。
   "chat.toolCall.workflow.saveRun.action": "Сохранить",
   "chat.toolCall.workflow.saveRun.runAgain": "Запустить снова",
   "chat.toolCall.workflow.saveRun.starting": "Запуск…",
@@ -5729,7 +5656,6 @@ const ruRU: Record<string, string> = {
     "Продолжается как новый запуск с этими настройками; завершённые шаги сохраняются.",
   "chat.toolCall.workflow.run.settings.consequence.errored":
     "Повторяется как новый запуск с этими настройками; завершённые шаги сохраняются.",
-  // 只改并发上限、而且运行正在跑：就地生效（docs/dynamic-workflow/concurrency.md）。
   "chat.toolCall.workflow.run.settings.consequence.concurrencyLive":
     "Применяется к этому запуску сразу; новый запуск не начинается.",
   "chat.toolCall.workflow.run.settings.apply": "Применить",
@@ -5779,8 +5705,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.previousVersion": "Предыдущая версия",
   "chat.toolCall.workflow.run.artifacts.nextVersion": "Следующая версия",
   "chat.toolCall.workflow.run.artifacts.open": "Открыть артефакт",
-  // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
-  // 落的是宿主 ~/.zxcode/tmp 下的副本，不是用户挑的位置。
   "chat.toolCall.workflow.run.artifacts.reveal": "Показать в рабочем пространстве",
   "chat.toolCall.workflow.run.artifacts.copy": "Копировать",
   "chat.toolCall.workflow.run.artifacts.copied": "Скопировано",
@@ -5804,8 +5728,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.preset.otherColumn": "Прочее",
   "chat.toolCall.workflow.run.artifacts.preset.empty": "Данных пока нет",
   "chat.toolCall.workflow.run.artifacts.preset.items": "Элементов: {count}",
-  // 待答问题区（升级问答）：actor 停驻在自己那次 ask 里等
-  // 主代理回话。只读——应答者是主代理，不是用户，所以文案不能读起来像在请用户作答。
   "chat.toolCall.workflow.run.questions.title": "Ожидание ответа",
   "chat.toolCall.workflow.run.graph.unavailable":
     "Граф рабочего процесса отсутствует в видимой истории этого диалога.",
@@ -5860,7 +5782,6 @@ const ruRU: Record<string, string> = {
   "chat.toolCall.workflow.run.event.nodeSettledCached": "Завершено · {outcome} (из кэша)",
   "chat.toolCall.workflow.run.event.usageUpdated": "Использование обновлено",
   "chat.toolCall.workflow.run.event.log": "Лог",
-  // amend-resume: the first workspace write closed the predecessor cache; later steps run live.
   "chat.toolCall.workflow.run.event.importCacheClosed":
     "Кэш закрыт из-за записи в рабочее пространство",
   "chat.toolCall.workflow.run.event.report": "Отчёт отправлен",
@@ -5874,13 +5795,11 @@ const ruRU: Record<string, string> = {
     "Ожидание провайдера ({reason}) · повтор через {seconds} с",
   "chat.toolCall.workflow.run.event.nodeExecuting": "Запрос отправлен",
   "chat.toolCall.workflow.run.event.concurrencyChanged": "Параллельность {previous} → {next}",
-  // 上一条是治理器在压共享桶；这一条是用户改了这次 run 自己的上限（就地生效，不另起一次运行）。
   "chat.toolCall.workflow.run.event.runCapsChanged": "Лимит параллельности {previous} → {next}",
   "chat.toolCall.workflow.run.throttle.reason.rateLimited": "превышен лимит запросов",
   "chat.toolCall.workflow.run.throttle.reason.overloaded": "перегрузка",
   "chat.toolCall.workflow.run.throttle.reason.offpeak": "очередь вне пиковых часов",
   "chat.toolCall.workflow.run.throttle.reason.transient": "временная ошибка",
-  // 芯片上的数是一条界（min(共享 cap, 本 run 的 limit)），不是此刻在跑的个数。
   "chat.toolCall.workflow.run.concurrency.label": "Макс. параллельность {cap}",
   "chat.toolCall.workflow.run.concurrency.cooldown": "пауза до {time}",
   "chat.toolCall.workflow.run.subagentModel.label": "Субагенты: {model}",
@@ -6050,7 +5969,6 @@ const ruRU: Record<string, string> = {
   "chat.slash.subagents.empty": "Нет подходящих агентов",
   "chat.slash.emptyUnavailable": "Текущий сеанс ZCode Agent не передал слеш-команд",
   "chat.slash.emptyResults": "Нет подходящих слеш-команд",
-  // Errors
   "chat.error.connectionLost": "Соединение с агентом потеряно",
   "chat.error.processExited": "Процесс агента неожиданно завершился",
   "chat.error.dismiss": "Скрыть ошибку",
@@ -6071,7 +5989,6 @@ const ruRU: Record<string, string> = {
   "chat.error.sendFailed": "Не удалось отправить. Повторите попытку позже.",
   "chat.error.modelSettings": "Настройки моделей",
   "chat.error.setModels": "Настроить",
-  // Start Plan per-bucket quota reminders
   "chat.quota.startPlan.bucketDailyLow":
     "У {model} осталось {percent} дневной квоты ({remaining} токенов).",
   "chat.quota.startPlan.bucketActivityLow":
@@ -6135,11 +6052,7 @@ const ruRU: Record<string, string> = {
   "chat.permission.workflow.amends.scriptUnchanged": "скрипт не изменён",
   "chat.permission.workflow.maxConcurrency": "Субагентов одновременно: не более {count}",
   "chat.permission.workflow.subagentModel": "Субагенты работают на {model}",
-  // 脚本给某些子代理点名了模型时（docs/dynamic-workflow/launch.md「Models the script names」）：那些
-  // 名字不列（作者模型的选择），这一句只改口「默认」——它不再替每一个子代理说话。
   "chat.permission.workflow.subagentModelDefault": "По умолчанию субагенты работают на {model}",
-  // 确认窗里可调的两句（docs/dynamic-workflow/presentation.md「The confirmation window」）：句中的值
-  // 就是控件，所以句子被拆成控件前后的两截；改过的那一行句尾多一截「· 原为 X ↺」。
   "chat.permission.workflow.settings.model.lead": "Субагенты работают на",
   "chat.permission.workflow.settings.model.noCatalog": "Субагенты остаются на модели сеанса",
   "chat.permission.workflow.settings.model.noCatalogReason": "у этого агента нет каталога моделей",
@@ -6151,14 +6064,9 @@ const ruRU: Record<string, string> = {
   "chat.permission.workflow.settings.limit.none": "без собственного лимита",
   "chat.permission.workflow.settings.was": "было {value}",
   "chat.permission.workflow.settings.reset": "Вернуть предложенное значение",
-  // 改过设置后前两个选项换描述（docs/dynamic-workflow/launch.md「The options」）：会话免确认只管
-  // 「以后不再问」，调整只随这一次应答走。
   "chat.permission.workflow.allowOnce.adjusted": "Запустить один раз с изменёнными настройками",
   "chat.permission.workflow.allowForSession.adjusted":
     "Этот запуск — с изменёнными настройками; последующие запуски не запрашиваются и используют свои",
-  // ── 可复用工作流（docs/dynamic-workflow/launch.md）──
-  // saved 来源徽标（运行确认窗）：只说明脚本来自哪个文件、带了什么实参。
-  // 它不表达任何信任——保存不产生信任，已保存的工作流照样过完整的运行确认。
   "chat.permission.workflow.saved.badge": "Сохранённый рабочий процесс",
   "chat.permission.workflow.saved.scope.project": "проект",
   "chat.permission.workflow.saved.args": "Аргументы",
@@ -6185,7 +6093,6 @@ const ruRU: Record<string, string> = {
   "chat.cuaPermission.openScreenRecording": "Открыть «Запись экрана»",
   "chat.cuaPermission.opening": "Открытие...",
   "chat.cuaPermission.openFailed": "Не удалось открыть разрешения CUA: {error}",
-  // Elicitation
   "chat.elicitation.title": "Требуется ввод",
   "chat.elicitation.keyboardHint": "Tab / стрелки — выбор, Enter или пробел — отметить",
   "chat.elicitation.customAnswer": "Свой ответ",
@@ -6226,7 +6133,6 @@ const ruRU: Record<string, string> = {
   "chat.permission.fileChange.addMany": "Будет создано файлов: {count}",
   "chat.permission.fileChange.updateMany": "Будет изменено файлов: {count}",
   "chat.permission.fileChange.mixedMany": "Изменить файлов: {count}",
-  // Modes
   "mode.default": "По умолчанию",
   "mode.plan": "Планирование",
   "mode.acceptEdits": "Принимать правки",
@@ -6279,7 +6185,6 @@ const ruRU: Record<string, string> = {
   "planTool.panel.syncing": "Синхронизация плана…",
   "planTool.guidance.enterMode": "Включён режим планирования",
   "chat.permission.switchMode.placeholder": "План реализации",
-  // ZCode Agent
   "zcode.unavailable": "ИИ-агент недоступен",
   "zcode.initFailed": "Не удалось запустить ИИ-агента",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "Эта задача уже выполняется в другом подключённом окне.",
@@ -6322,13 +6227,11 @@ const ruRU: Record<string, string> = {
     "Вышестоящий сервис временно недоступен. Повторите попытку позже.",
   "zcode.error.providerBusiness.429":
     "Вы отправляете запросы слишком часто. Повторите попытку позже.",
-  // Debug info bar
   "debugInfo.taskId": "ID задачи",
   "debugInfo.traceId": "Trace ID",
   "debugInfo.sessionId": "ID сеанса",
   "debugInfo.provider": "Провайдер",
   "debugInfo.copied": "Скопировано",
-  // Resource manager
   "resourceManager.title": "Диспетчер ресурсов",
   "resourceManager.loading": "Чтение использования ресурсов...",
   "resourceManager.unavailable": "Мост диспетчера ресурсов недоступен",
@@ -6360,7 +6263,6 @@ const ruRU: Record<string, string> = {
   "resourceManager.sampling": "Сбор метрик",
   "resourceManager.column.process": "Процесс",
   "resourceManager.column.pid": "PID",
-  // Feedback
   "feedback.submit.template.section.errorSummary": "Сводка ошибки",
   "feedback.submit.template.section.errorTraceId": "TraceID: {traceId}",
   "feedback.submit.template.section.copyErrorHeading": "Сведения об ошибке ZCode",
@@ -6380,7 +6282,6 @@ const ruRU: Record<string, string> = {
   "forms.validation.agentDescriptionHint": "Кратко опишите назначение субагента",
   "forms.validation.agentSystemPromptHint": "Определите поведение и возможности субагента",
   "forms.validation.fileExists": "Файл {fileName} уже существует",
-  // ---- Scheduled tasks / Automations ----
   "taskList.cronTaskLabel": "Запланированная задача",
   "taskList.offPeakTaskLabel": "Задача на время простоя",
   "taskList.workflowRun.ariaLabel": "Запуск рабочего процесса {name}: {status}",
@@ -6424,6 +6325,8 @@ const ruRU: Record<string, string> = {
   "automations.runNowQueued": "Запущено — скоро начнётся",
   "automations.runNowAlreadyRunning": "Запуск уже выполняется",
   "automations.runNowFailed": "Не удалось запустить",
+  "automations.runNowHostMismatch":
+    "Задача принадлежит другому устройству и не может быть запущена здесь",
   "automations.error.create": "Не удалось создать задачу. Повторите попытку.",
   "automations.error.createLimit":
     "Можно хранить не более {limit} запланированных задач, включая приостановленные, завершённые и с ошибкой. Удалите одну, прежде чем создавать новую.",
@@ -6581,7 +6484,6 @@ const ruRU: Record<string, string> = {
   "automations.runs.delete": "Удалить запуск",
   "automations.runs.prevPage": "Назад",
   "automations.runs.nextPage": "Далее",
-  // CUA (Computer Use)
   "chat.cuaReadiness.toolsNotLoaded":
     "ZCode Computer Use ещё готовится — его инструменты пока не загружены (загружено: {count}). Выдайте разрешения ниже; инструменты появятся, когда помощник будет готов.",
   "chat.cuaReadiness.toolsPreparing":
@@ -6905,10 +6807,712 @@ const ruRU: Record<string, string> = {
   "remoteSync.providers.error.hostExecutionFailed":
     "Синхронизацию не удалось выполнить на этом устройстве",
   "remoteSync.providers.error.unknown": "Неизвестная ошибка",
-  "settings.resourceGroup.item.one": "Элементов: {count}",
-  "settings.askUserQuestionAutoResolution": "Автоматически продолжать вопросы",
-  "settings.askUserQuestionAutoResolutionDescription":
-    "Если включено, вопросы агента автоматически продолжаются через 5 минут без ответа. Если выключено, текущие и будущие вопросы ждут вашего ответа.",
+  "chat.statusPanel.endedAgents": "Завершённые",
+  "chat.statusPanel.endedWorkflows": "Завершённые рабочие процессы",
+  "chat.statusPanel.workflowsLive": "Выполняется: {count}",
+  "chat.summaryPanel.title": "Статус",
+  "chat.summaryPanel.showMini": "Свернуть в капсулу",
+  "chat.summaryPanel.showPanel": "Развернуть статус",
+  "chat.summaryPanel.displayMode": "Режим отображения панели статуса",
+  "chat.summaryPanel.displayModeAuto": "Разворачивать автоматически",
+  "chat.summaryPanel.displayModeExpanded": "Всегда развёрнута",
+  "chat.summaryPanel.displayModeCollapsed": "Всегда свёрнута",
+  "chat.summaryPanel.runningBackgroundTasks": "Фоновые задачи в работе",
+  "chat.summaryPanel.runningBackgroundTasksMiniValue": "В фоне: {count}",
+  "chat.summaryPanel.runningBackgroundTasksMiniValuePlural": "В фоне: {count}",
+  "chat.composer.backgroundWorks.tooltipTerminal": "Открыть запущенные терминалы",
+  "chat.composer.backgroundWorks.tooltipAgent": "Открыть запущенных агентов",
+  "chat.composer.backgroundWorks.tooltipWorkflow": "Открыть запущенные рабочие процессы",
+  "chat.composer.backgroundWorks.tooltipWorkflowDetails": "Открыть сведения о рабочем процессе",
+  "chat.composer.backgroundWorks.tooltipMixed": "Открыть запущенные терминалы и агентов",
+  "chat.composer.backgroundWorks.ariaLabel":
+    "Открыть фоновые задачи: Bash — {bashCount}, рабочие процессы — {workflowCount}, субагенты — {subagentCount}, всего — {count}",
+  "chat.summaryPanel.todoGoalIterationGroup": "Итерация {count}",
+  "chat.summaryPanel.todoSessionGroup": "Сеанс",
+  "chat.statusPanel.environment": "Инструменты Git",
+  "chat.statusPanel.changes": "Изменения",
+  "chat.statusPanel.branch": "Ветка",
+  "chat.statusPanel.commitPush": "Коммит / Push",
+  "chat.statusPanel.clean": "Чисто",
+  "chat.statusPanel.goal": "Цель",
+  "chat.statusPanel.sessionPlans": "Планы",
+  "chat.statusPanel.planFallback": "План",
+  "chat.statusPanel.openPlan": "Открыть план: {title}",
+  "chat.statusPanel.todo": "Прогресс",
+  "chat.statusPanel.todoCompletedExpanded": "Скрыть выполненные ({count})",
+  "chat.statusPanel.todoCompletedFold": "Выполнено: {count}",
+  "chat.statusPanel.todoEarlierFold": "Ранее: {count}",
+  "chat.statusPanel.todoLaterFold": "Далее: {count}",
+  "chat.statusPanel.todoWaitingExpanded": "Скрыть ожидающие ({count})",
+  "chat.statusPanel.todoWaitingFold": "Ожидают: {count}",
+  "chat.statusPanel.terminals": "Терминалы",
+  "chat.statusPanel.agents": "Агенты",
+  "chat.statusPanel.workflows": "Рабочие процессы",
+  "chat.statusPanel.runningStatusValue": "В фоне: {count}",
+  "chat.statusPanel.runningStatusValuePlural": "В фоне: {count}",
+  "chat.statusPanel.runningAgentsValue": "Выполняется: {count}",
+  "chat.statusPanel.runningAgentsValuePlural": "Выполняется: {count}",
+  "preinstalledTools.purpose.python":
+    "Runs document plugin scripts and provides spreadsheet, Word, and PDF libraries",
+  "preinstalledTools.purpose.qpdf": "Splits, merges, encrypts, and repairs PDF files",
+  "preinstalledTools.purpose.pandoc": "Reads the contents of Word documents",
+  "preinstalledTools.purpose.poppler": "Converts PDF pages to images and extracts text",
+  "preinstalledTools.phase.queued": "Waiting for other tools to finish preparing…",
+  "preinstalledTools.update": "Update",
+  "preinstalledTools.status.update-available": "Update available",
+  "preinstalledTools.currentInfo": "Currently using version {current}.",
+  "preinstalledTools.updateInfo":
+    "Currently using version {current}. Version {version} requires about {download} MB to download and {installed} GB to install.",
+  "preinstalledTools.delete": "Delete",
+  "preinstalledTools.deleteTitle": "Delete {name}?",
+  "preinstalledTools.deleteDescription": "This will free about {size} GB of disk space.",
+  "preinstalledTools.deleteNotice.python":
+    "Python packages added by the Agent will also be deleted.",
+  "preinstalledTools.deleteAutoNotice":
+    "With automatic preinstall enabled, ZCode will download it again the next time it starts.",
+  "preinstalledTools.deleteCancel": "Cancel",
+  "preinstalledTools.deletionBlocked": "{name} is being used by the Agent. Please try again later.",
+  "resourceManager.storage.category.preinstalledTools": "Preinstalled tools",
+  "resourceManager.storage.categoryDescription.preinstalledTools":
+    "Managed document tools. Delete them from Help → Preinstalled tools.",
+  "preinstalledTools.autoInstall": "Automatic preinstall",
+  "preinstalledTools.entryOutOfSync":
+    "Your setting is saved but has not taken effect. Please retry.",
+  "preinstalledTools.agentEnabled": "Agent uses preinstalled version",
+  "preinstalledTools.agentEnabledDescription":
+    "Turn this off to let the Agent use {name} already installed on this computer.",
+  "preinstalledTools.autoInstallDescription":
+    "Prepare tools in the background when ZCode starts. Turning this off stops future automatic downloads. Installed tools remain available.",
+  "preinstalledTools.remoteNotice":
+    "A remote workspace is open. This dialog manages this computer and does not install tools on the remote device.",
+  "preinstalledTools.download": "Download",
+  "preinstalledTools.cancel": "Cancel download",
+  "preinstalledTools.retry": "Retry",
+  "preinstalledTools.commandFailed": "The operation could not be completed. Please retry.",
+  "preinstalledTools.title": "Preinstalled tools",
+  "preinstalledTools.description": "These tools are installed on this computer for document tasks.",
+  "preinstalledTools.purpose.libreoffice":
+    "For document to PDF conversion, presentation conversion, and spreadsheet formula recalculation",
+  "preinstalledTools.loading": "Loading…",
+  "preinstalledTools.loadFailed":
+    "Preinstalled tools could not start. Restart ZCode and try again. If the problem continues, report it via Help → Export logs.",
+  "preinstalledTools.unavailable": "This version does not provide this tool yet.",
+  "preinstalledTools.readyInfo": "Version {version} · {size} GB used",
+  "preinstalledTools.downloadInfo": "Downloading {loaded} / {total} MB",
+  "preinstalledTools.sizeInfo":
+    "About {download} MB to download; {installed} GB after installation",
+  "preinstalledTools.status.not-installed": "Not installed",
+  "preinstalledTools.status.preparing": "Preparing",
+  "preinstalledTools.status.ready": "Ready",
+  "preinstalledTools.status.failed": "Preparation failed",
+  "preinstalledTools.phase.verifying": "Verifying files…",
+  "preinstalledTools.phase.extracting": "Extracting…",
+  "preinstalledTools.phase.checking": "Checking whether the tool can run…",
+  "preinstalledTools.error.network":
+    "Cannot connect to the download server. Check your network or proxy settings.",
+  "preinstalledTools.error.interrupted": "Download interrupted. Please retry.",
+  "preinstalledTools.error.disk-space":
+    "Not enough disk space. About {size} GB of free space is required.",
+  "preinstalledTools.error.checksum": "The downloaded file is corrupted. Please retry.",
+  "preinstalledTools.error.extract": "Extraction failed. Please retry.",
+  "preinstalledTools.error.runtime":
+    "The tool cannot run on this computer. Report the issue via Help → Export logs.",
+  "preinstalledTools.error.unsupported": "This system is not supported yet.",
+  "imageEditor.addedToChat": "Added. You can remove it before sending.",
+  "imageEditor.unsavedTitle": "Your drawing has not been added",
+  "imageEditor.unsavedDescription": "Add the edited image to chat?",
+  "imageEditor.keepEditing": "Keep editing",
+  "imageEditor.discard": "Discard changes",
+  "preview.image.saveAndOpen": "Save and open",
+  "preview.image.saveAndChooseApp": "Save a copy and choose an app",
+  "preview.image.annotate": "Draw",
+  "preview.image.resetZoom": "Reset zoom",
+  "preview.image.actionFailed": "Could not complete the image action. Please try again.",
+  "archives.checking": "Checking…",
+  "archives.checkingProgress": "Checking sessions: {completed}/{total}…",
+  "archives.checkingDescription":
+    "Nothing is deleted during this check. Cancel at any time to stop further checks.",
+  "archives.deleteCount": "Permanently delete {count} sessions",
+  "archives.willDelete": "Will be deleted",
+  "archives.willKeep": "Will be kept",
+  "archives.cannotDelete": "Cannot be deleted now",
+  "archives.none": "None",
+  "archives.deleteItem":
+    "“{title}”: conversation, {children} owned child sessions, input history and indexes, {files} private attachment or execution record files",
+  "archives.keepFork": "Independent fork: “{title}” (may contain original conversation content)",
+  "archives.keepAttachment": "Attachment {name}: referenced by {referrers}; file will be kept",
+  "archives.previousReference": "previously confirmed conversations",
+  "archives.keepShares": "Published share links and shared copies remain unchanged and accessible.",
+  "archives.keepExternal":
+    "Workspace files, Git/worktrees, directory-level memory and checkpoints, exports, backups and application logs are outside this deletion.",
+  "archives.resumeDeletion": "“{title}”: finish the previous permanent deletion",
+  "archives.incomplete":
+    "Deletion has not been confirmed complete. Retry; removed content cannot be restored.",
+  "archives.reason.running":
+    "Work or queued input is pending. Stop the task and resolve its queue first.",
+  "archives.reason.in-use": "Another process is using this session. Close it there and retry.",
+  "archives.reason.not-found": "Original session data was not found. Nothing was deleted.",
+  "archives.reason.not-archived": "The session is no longer archived. Nothing was deleted.",
+  "archives.reason.changed": "The deletion scope changed. Review and confirm again.",
+  "archives.reason.unavailable":
+    "Cannot safely inspect or delete: the host is unavailable, its version is unsupported, or reading failed. Resolve the issue and retry.",
+  "archives.deleteFiltered": "Permanently delete filtered results",
+  "archives.deletedResult": "“{title}” permanently deleted; {count} referenced attachments kept.",
+  "archives.localDevice": "This device",
+  "project.worktrees": "Worktrees",
+  "git.managedWorktree.name": "{repo} · {bucket}",
+  "git.managedWorktree.error.not-repository": "The project folder isn't a Git repository",
+  "git.managedWorktree.error.invalid-start-ref": "The selected starting point doesn't exist",
+  "git.managedWorktree.error.start-ref-missing-subdir":
+    "The selected starting point doesn't contain the project folder",
+  "git.managedWorktree.error.bucket-exhausted": "Couldn't allocate a worktree folder",
+  "git.managedWorktree.error.worktree-dirty": "The worktree has uncommitted changes",
+  "git.managedWorktree.error.worktree-in-use": "A task is using this worktree",
+  "git.managedWorktree.error.not-managed": "This folder isn't a worktree managed by ZCode",
+  "git.managedWorktree.error.local-only": "Worktrees are available only for local projects",
+  "git.managedWorktree.error.git-failed": "The Git operation failed",
+  "git.managedWorktree.error.task-immovable": "Worktree tasks can't be moved to another project",
+  "git.managedWorktree.error.generic": "The worktree operation failed",
+  "git.managedWorktree.toggle.label": "worktree",
+  "git.managedWorktree.toggle.tooltip":
+    "Run in a new worktree: an isolated copy that works in parallel with your local checkout",
+  "git.managedWorktree.ref.title": "Create the new worktree from",
+  "git.managedWorktree.ref.currentHead": "Current HEAD ({ref})",
+  "git.managedWorktree.ref.detached": "detached · {sha}",
+  "git.managedWorktree.ref.localBranches": "Local branches",
+  "git.managedWorktree.ref.remoteBranches": "Remote branches",
+  "git.managedWorktree.ref.note":
+    "The new worktree is created from the selected branch. Your local branch does not change. Uncommitted changes are not included.",
+  "git.managedWorktree.creation.creating": "Creating worktree",
+  "git.managedWorktree.creation.startingSession": "Starting task",
+  "git.managedWorktree.creation.failed": "Worktree setup failed",
+  "git.managedWorktree.creation.forkTitle": "Fork in a new worktree",
+  "git.managedWorktree.creation.retry": "Retry",
+  "git.managedWorktree.creation.continueLocal": "Don't use worktree",
+  "git.managedWorktree.creation.dismiss": "Dismiss",
+  "git.managedWorktree.creation.showOutput": "Show output",
+  "git.managedWorktree.creation.hideOutput": "Hide output",
+  "git.managedWorktree.creation.sidebarRow": "Creating worktree…",
+  "git.managedWorktree.created.title": "Worktree created",
+  "git.managedWorktree.error.slash-unsupported":
+    "The first message of a worktree task can't be a command",
+  "git.managedWorktree.error.copy-failed": "Couldn't copy files listed in .worktreeinclude",
+  "git.managedWorktree.error.session-failed":
+    "The worktree was created, but the task failed to start",
+  "git.managedWorktree.error.unsupported-agent": "This Agent version doesn't support worktrees",
+  "git.managedWorktree.error.carry-failed":
+    "Couldn't carry uncommitted changes into the new worktree",
+  "git.managedWorktree.error.session-close-failed":
+    "Couldn't unload the tasks using this worktree. The worktree was kept.",
+  "git.managedWorktree.error.command-unconfirmed":
+    "Couldn't confirm whether the task started. Nothing was deleted. Try again later.",
+  "git.managedWorktree.error.removing": "This worktree is being deleted. Try again later.",
+  "git.managedWorktree.dialog.title": "Worktrees",
+  "git.managedWorktree.dialog.description": "Worktrees that ZCode manages for {project}",
+  "git.managedWorktree.dialog.loadFailed": "Couldn't load worktrees",
+  "git.managedWorktree.dialog.empty": "No worktrees yet",
+  "git.managedWorktree.dialog.detached": "detached · {sha}",
+  "git.managedWorktree.dialog.dirty": "Modified",
+  "git.managedWorktree.dialog.missing": "Directory missing",
+  "git.managedWorktree.dialog.noTasks": "No tasks",
+  "git.managedWorktree.dialog.openTask": "Open task",
+  "git.managedWorktree.dialog.untitledTask": "Untitled task",
+  "git.managedWorktree.dialog.archived": "Archived",
+  "git.managedWorktree.dialog.delete": "Delete worktree",
+  "git.managedWorktree.dialog.prune": "Remove record",
+  "git.managedWorktree.dialog.pruneFailed": "Couldn't remove the record",
+  "git.managedWorktree.dialog.openInEditorFailed": "Couldn't open in {editor}",
+  "git.managedWorktree.dialog.confirm.title": "Delete worktree {name}?",
+  "git.managedWorktree.dialog.confirm.directory": "The worktree directory will be deleted.",
+  "git.managedWorktree.dialog.confirm.ignored":
+    "Ignored files, such as dependencies and build output, are also deleted.",
+  "git.managedWorktree.dialog.confirm.tasks":
+    "Tasks that use it are kept, but they become read-only.",
+  "git.managedWorktree.dialog.error.dirty": "The worktree has uncommitted changes",
+  "git.managedWorktree.dialog.error.running": "A task is running",
+  "git.managedWorktree.dialog.error.terminal":
+    "Close the terminals running in this directory first",
+  "git.managedWorktree.dialog.confirm.discardChanges":
+    "This worktree has uncommitted changes. They will be discarded.",
+  "git.managedWorktree.dialog.error.creating": "This worktree is still being created",
+  "git.managedWorktree.dialog.error.generic": "Couldn't delete the worktree",
+  "git.managedWorktree.dialog.error.tasks": "A task is using this worktree",
+  "git.managedWorktree.dialog.error.removing": "This worktree is being deleted",
+  "git.managedWorktree.dialog.error.sessionClose":
+    "Couldn't unload the tasks using this worktree. The worktree was kept.",
+  "chat.message.fork.here": "Fork in the current folder",
+  "chat.message.fork.hereWorktree": "Fork in the current worktree",
+  "chat.message.fork.toWorktree": "Fork into a new worktree",
+  "chat.message.fork.toWorktreeHint": "Includes uncommitted changes",
+  "chat.message.fork.worktreeUnsupported": "Not supported by this Agent version",
+  "taskList.managedWorktreeLabel": "Worktree task",
+  "remote.error.sourceServerUpdateInProgress.reason":
+    "This connection was not started. Retry after the update finishes.",
+  "plugin.discovery.confirmTitle": "Official plugin recommendation",
+  "plugin.discovery.official": "ZCode official marketplace",
+  "plugin.discovery.workspaceEnable": "Enable this plugin in the current workspace.",
+  "plugin.discovery.userInstall":
+    "Installed plugins are saved for this user. Configuration or authorization may still be required.",
+  "plugin.discovery.responseFailed": "Could not submit your choice. Please try again.",
+  "plugin.discovery.skip": "Skip",
+  "plugin.discovery.install": "Install",
+  "plugin.discovery.enable": "Enable",
+  "bashOutput.open": "View output for {title}",
+  "chat.composer.contextSearchHint": "Type to search plugins, files, and chats",
+  "workspace.context.lastActivity": "Last active {time}",
+  "common.loading": "Loading...",
+  "chat.plan.removeMarker": "Remove Plan from the next submission",
+  "common.saving": "Saving...",
+  "quickPick.command.productDocs": "Product docs",
+  "quickPick.command.reloadExtensions": "Reload extensions",
+  "quickPick.command.openExtensionLogs": "Open extension logs",
+  "extensions.logs.title": "Extension logs",
+  "extensions.logs.launcherDescription": "View live logs from extensions and the extension host.",
+  "extensions.logs.sourceFilter": "Filter by source",
+  "extensions.logs.levelFilter": "Filter by level",
+  "extensions.logs.source.all": "All sources",
+  "extensions.logs.source.host": "Extension host",
+  "extensions.logs.level.all": "All levels",
+  "extensions.logs.level.warn": "Warnings and errors",
+  "extensions.logs.level.error": "Errors only",
+  "extensions.logs.autoScroll": "Auto-scroll to the end",
+  "extensions.logs.copy": "Copy logs",
+  "extensions.logs.copied": "Copied {count, plural, one {# log line} other {# log lines}}",
+  "extensions.logs.copyFailed": "Copy failed: {error}",
+  "extensions.logs.clear": "Clear view",
+  "extensions.logs.loading": "Loading logs…",
+  "extensions.logs.empty": "No logs yet",
+  "extensions.logs.noMatch": "No logs match the filters",
+  "extensions.launcher.title": "Extensions",
+  "extensions.launcher.stopped": "Extensions stopped",
+  "extensions.launcher.stoppedDescription": "Stopped restarting after repeated crashes or hangs.",
+  "extensions.launcher.reload": "Reload",
+  "extensions.nav.stopped": "Stopped",
+  "extensions.nav.badge.count": "{count} unread",
+  "extensions.nav.badge.dot": "New activity",
+  "extensions.notifications.title": "{plugin}: {title}",
+  "extensions.state.failed": "Activation failed",
+  "extensions.state.invalid": "Invalid manifest",
+  "extensions.state.incompatible": "Incompatible version",
+  "extensions.state.reasonWithPath": "{path}: {reason}",
+  "extensions.mention.denied": "The plugin tool call was denied",
+  "extensions.mention.failed": "Couldn't load suggestions",
+  "extensions.view.title": "Extension view",
+  "extensions.view.loading": "Loading the extension view…",
+  "extensions.view.hostNotRunning":
+    "Extensions are not running. The view reopens when they recover.",
+  "extensions.view.unavailable": "This extension view is not available right now.",
+  "extensions.view.unsupported": "Extension views are not supported here.",
+  "extensions.view.failed": "The extension view failed to load: {reason}",
+  "extensions.grants.needsConsent": "Needs permission",
+  "extensions.grants.grant": "Grant",
+  "extensions.grants.tier.sessions.read": "Read sessions",
+  "extensions.grants.tier.sessions.write": "Read and change sessions",
+  "extensions.grants.tier.sessions.fullAccess": "Read and change sessions, with full access",
+  "extensions.grants.tier.notifications": "Send system notifications",
+  "extensions.grants.dialog.titleRead": "Allow “{plugin}” to read sessions?",
+  "extensions.grants.dialog.titleWrite": "Allow “{plugin}” to read and change sessions?",
+  "extensions.grants.dialog.titleNotifications": "Allow “{plugin}” to send system notifications?",
+  "extensions.grants.dialog.notificationsBody":
+    "System notifications: the plugin can show system notifications while the window is in the background, with the plugin name before the title. At most 1 per minute and 20 per day. You can turn them off on the plugin details page; nothing is shown while system notifications are off in Settings.",
+  "extensions.grants.dialog.body":
+    "Extension code runs in the same process as other extensions, with no isolation between them. Any enabled extension can technically use the permissions granted here. Only enable plugins you trust.\n\nRead: the titles, status and full conversations of all sessions, including tool output. Write: create, fork, send messages to, interrupt, rename, open, archive and pin any session on this computer. If the target session runs in full access mode, a message from the plugin makes the Agent run tools directly.\n\nSessions in the plugin's project: the plugin can also approve or deny tool calls for you, answer the Agent's questions and switch the permission mode.\n\nActions started by a plugin show their source and are written to the audit log.",
+  "extensions.grants.dialog.fullAccessBody":
+    "Full access: the plugin can switch sessions in its project to full access, so the Agent reads and writes files, runs commands and uses the network without asking. Only grant this to plugins you trust.",
+  "extensions.grants.grantedToast": "Granted “{plugin}”",
+  "extensions.grants.revokedToast": "Revoked the permissions of “{plugin}”",
+  "extensions.grants.failedToast": "Couldn't update the extension permission",
+  "extensions.grants.holder": "“{plugin}” ({tiers})",
+  "extensions.grants.enable.title": "Enable “{plugin}”?",
+  "extensions.grants.enable.body":
+    "Extensions already hold session permissions: {holders}.\n\nExtension code runs in the same process as other extensions, with no isolation between them. Once “{plugin}” is enabled, its code can use these permissions too. Only enable plugins you trust.",
+  "extensions.grants.enable.bodyUnknown":
+    "The granted session permissions could not be checked.\n\nExtension code runs in the same process as other extensions, with no isolation between them. Once “{plugin}” is enabled, its code can use any permission granted to any extension. Only enable plugins you trust.",
+  "extensions.grants.enable.confirm": "Enable",
+  "extensions.activation.needsConfirmation": "Needs confirmation",
+  "extensions.activation.description": "Newly installed extension code, not running yet",
+  "extensions.activation.review": "Review",
+  "extensions.activation.dialog.title": "Activate the extension code of “{plugin}”?",
+  "extensions.activation.dialog.body":
+    "Extensions already hold session permissions: {holders}.\n\n“{plugin}” was just installed from the plugin store. It contains extension code, which is not running yet. Extension code runs in the same process as other extensions, with no isolation between them. Once activated, its code can use these permissions too. Only activate plugins you trust.\n\nIf you keep it inactive, the plugin's skills and MCP still work.",
+  "extensions.activation.dialog.bodyUnknown":
+    "The granted session permissions could not be checked.\n\n“{plugin}” was just installed from the plugin store. It contains extension code, which is not running yet. Extension code runs in the same process as other extensions, with no isolation between them. Once activated, its code can use any permission granted to any extension. Only activate plugins you trust.\n\nIf you keep it inactive, the plugin's skills and MCP still work.",
+  "extensions.activation.allow": "Activate",
+  "extensions.activation.decline": "Keep inactive",
+  "extensions.activation.allowedToast": "Activated “{plugin}”",
+  "extensions.activation.declinedToast":
+    "The extension code of “{plugin}” will not run. To activate it, disable and then enable the plugin in Settings.",
+  "extensions.activation.failedToast": "Could not update the extension",
+  "extensions.permissions.title": "Permissions",
+  "extensions.permissions.status.granted": "Granted",
+  "extensions.permissions.status.inactive": "Granted (plugin disabled)",
+  "extensions.permissions.revoke": "Revoke",
+  "extensions.permissions.note": "Any enabled extension can technically use these permissions.",
+  "extensions.permissions.recent": "Recent actions",
+  "extensions.permissions.recentEmpty": "No actions yet",
+  "extensions.permissions.recentLoading": "Loading actions…",
+  "extensions.permissions.action.grant": "Granted: {tiers}",
+  "extensions.permissions.action.revoke": "Revoked: {tiers}",
+  "extensions.permissions.action.notificationsOn": "Turned system notifications on",
+  "extensions.permissions.action.notificationsOff": "Turned system notifications off",
+  "extensions.permissions.notifications": "System notifications",
+  "extensions.permissions.notificationsNote":
+    "When system notifications are off in Settings, nothing is shown even if this is on.",
+  "extensions.permissions.action.other": "{capability}",
+  "extensions.permissions.action.createSession": "Created a session",
+  "extensions.permissions.action.forkSession": "Forked a session",
+  "extensions.permissions.action.sendToSession": "Sent a message",
+  "extensions.permissions.action.interruptSession": "Interrupted a session",
+  "extensions.permissions.action.renameSession": "Renamed a session",
+  "extensions.permissions.action.openSession": "Opened a session",
+  "extensions.permissions.action.setSessionArchived": "Changed session archiving",
+  "extensions.permissions.action.setSessionPinned": "Changed session pinning",
+  "extensions.permissions.action.resolveInteraction": "Answered an approval or a question",
+  "extensions.permissions.action.setPermissionMode": "Changed the permission mode",
+  "extensions.permissions.action.failed": "{action} (failed)",
+  "browser.recentVisits.title": "Recently visited",
+  "browser.recentVisits.remove": "Remove from recent visits",
+  "sidePane.openTab": "New tab",
+  "conversation.fromSession": "From session {name}",
+  "conversation.fromSession.open": "Open this session",
+  "codeViewer.title": "Code viewer",
+  "titleBar.menu.help.exportLogs": "Export logs",
+  "directoryBrowser.title": "Choose directory",
+  "directoryBrowser.errorSystem": "Failed to get system info",
+  "postUpdateReleaseNotes.title": "Release notes",
+  "workspaceSidebar.openRemoteProject": "Open remote project",
+  "workspaceSidebar.notConnected": "Not connected",
+  "remote.error.sourceServerUpdateInProgress": "The remote device is updating its remote service",
+  "ssh.assetInstallMode.local-download-upload": "Download locally, then upload",
+  "remote.settingsStepTitle": "New connection",
+  "webRemoteControl.title": "Mobile remote control",
+  "remote.kind.ssh": "SSH",
+  "remote.connect": "Connect",
+  "taskList.showMore": "Show more",
+  "settings.shortcuts.title": "Keyboard Shortcuts",
+  "settings.nativeSearchEnhancements": "Enhanced Find and Grep",
+  "settings.modelProvider.accountProviderConfigMissing":
+    "The account provider configuration is unavailable. Refresh and try again.",
+  "chat.planUsage.title": "Plan usage",
+  "settings.usage.range.7d": "Last 7 days",
+  "settings.usage.refresh": "Refresh",
+  "settings.usage.unknownModel": "Unknown model",
+  "settings.usage.modelChartTitle": "Model usage",
+  "settings.usage.modelChart.other": "Other models",
+  "settings.usage.duration.day": "d",
+  "settings.plugins.store.extension.requiresUpdate": "Requires newer ZCode",
+  "settings.plugins.store.extension.incompatibleHint":
+    "This plugin needs a newer version of ZCode. Update ZCode, then install it.",
+  "settings.plugins.store.extension.title": "Includes resident code",
+  "settings.plugins.store.extension.description":
+    "When enabled, the plugin's extension code keeps running inside ZCode.",
+  "settings.plugins.store.extension.grantsTitle": "Requested permissions",
+  "settings.plugins.store.extension.noGrants": "No permissions requested",
+  "settings.plugins.store.extension.consentNote":
+    "For information only. After you install, the plugin can use these permissions only after you grant them in the permission dialog.",
+  "settings.plugins.marketplace.claudeCodePlugins": "Claude Code Plugins",
+  "settingsSync.agent.claudeCode": "Claude Code",
+  "chat.empty.workspaceMenu": "Choose workspace",
+  "chat.summaryGroup.explore.one": "Explore {count} item",
+  "chat.summaryGroup.explore.other": "Explore {count} items",
+  "chat.summaryGroup.run.one": "Run {count} command",
+  "chat.summaryGroup.run.other": "Run {count} commands",
+  "chat.summaryGroup.change.label": "Change",
+  "chat.summaryGroup.change.one": "Change {count} file",
+  "chat.summaryGroup.change.other": "Change {count} files",
+  "chat.summaryGroup.unresolved.one": "Change {count} time (path unknown)",
+  "chat.summaryGroup.unresolved.other": "Change {count} times (path unknown)",
+  "chat.summaryGroup.separator": ", ",
+  "chat.summaryGroup.reasoning": "Reasoning",
+  "chat.summaryGroup.explore.completed.one": "Explored {count} item",
+  "chat.summaryGroup.explore.completed.other": "Explored {count} items",
+  "chat.summaryGroup.run.completed.one": "Ran {count} command",
+  "chat.summaryGroup.run.completed.other": "Ran {count} commands",
+  "chat.summaryGroup.change.completed.label": "Changed",
+  "chat.summaryGroup.change.completed.one": "Changed {count} file",
+  "chat.summaryGroup.change.completed.other": "Changed {count} files",
+  "chat.summaryGroup.unresolved.completed.one": "Changed {count} time (path unknown)",
+  "chat.summaryGroup.unresolved.completed.other": "Changed {count} times (path unknown)",
+  "chat.toolbar.model.clearSearch": "Clear search",
+  "chat.toolCall.session.ListSessions": "Find sessions",
+  "chat.toolCall.session.ReadSession": "Read session",
+  "chat.toolCall.session.SendToSession": "Send message",
+  "chat.toolCall.session.WaitSessions": "Wait for sessions",
+  "chat.toolCall.session.ListSessions.running": "Searching",
+  "chat.toolCall.session.ReadSession.running": "Reading",
+  "chat.toolCall.session.SendToSession.running": "Sending",
+  "chat.toolCall.session.WaitSessions.running": "Waiting",
+  "chat.toolCall.session.found": "Found {count, plural, one {# session} other {# sessions}}",
+  "chat.toolCall.session.count": "{count, plural, one {# session} other {# sessions}}",
+  "chat.toolCall.session.unknown": "Outcome unknown",
+  "chat.toolCall.session.idle": "Idle",
+  "chat.toolCall.session.running": "Running",
+  "chat.toolCall.session.attention": "Needs attention",
+  "chat.toolCall.session.accepted": "Accepted",
+  "chat.toolCall.session.queued": "Queued",
+  "chat.toolCall.session.completed": "Completed",
+  "chat.toolCall.session.stopped": "Stopped",
+  "chat.toolCall.session.failed": "Failed",
+  "chat.toolCall.session.rejected": "Rejected",
+  "chat.toolCall.session.pending": "Pending",
+  "chat.toolCall.session.waitEnded": "Wait ended",
+  "chat.toolCall.session.timedOut": "Wait timed out",
+  "chat.toolCall.session.cancelled": "Wait cancelled",
+  "chat.toolCall.session.message": "Message",
+  "chat.toolCall.session.messages": "Messages",
+  "chat.toolCall.session.target": "Target session",
+  "chat.toolCall.session.sessions": "Sessions",
+  "chat.toolCall.session.result": "Result",
+  "chat.toolCall.session.unknownSession": "Unknown session",
+  "chat.toolCall.session.empty": "No sessions found in the searched scope",
+  "chat.toolCall.session.scope": "Search scope",
+  "chat.toolCall.session.partial": "Search coverage is incomplete; some sources were not searched",
+  "chat.toolCall.session.more": "More results available",
+  "chat.toolCall.session.noMessages": "No messages",
+  "chat.toolCall.session.waitingResult": "Waiting for result",
+  "chat.toolCall.session.textResult": "Text result",
+  "chat.toolCall.session.noResult": "No result available",
+  "chat.toolCall.session.role.user": "User",
+  "chat.toolCall.session.role.assistant": "Assistant",
+  "chat.toolCall.session.role.system": "System",
+  "chat.toolCall.session.role.tool": "Tool",
+  "chat.toolCall.fallback.noParameters": "No parameters",
+  "chat.toolCall.fallback.waiting": "Waiting for result",
+  "chat.toolCall.fallback.noResult": "No result available",
+  "chat.toolCall.fallback.error": "Error",
+  "chat.toolCall.fallback.copyFailed": "Copy failed. Please try again.",
+  "chat.toolCall.explore.emptySummary": "0 files",
+  "chat.permission.title": "Permission required",
+  "feedback.submit.template.section.errorDetail": "Error Details",
+  "forms.labels.name": "Name",
+  "chat.toolCall.cua.listApps": "List running apps",
+  "projectRestore.banner.title": "Restore projects",
+  "projectRestore.banner.description":
+    "Found {count} tasks that are not grouped into projects yet. Restore the project list in one click; task content and folders are untouched.",
+  "projectRestore.banner.action": "Restore all",
+  "projectRestore.banner.restoring": "Restoring…",
+  "projectRestore.banner.dismiss": "Don't show again",
+  "projectRestore.banner.error": "Restore failed: {message}",
+  "projectRestore.restoreSkipped": "Skipped {count} missing or inaccessible directories",
+  "confirmDialog.taskArchiveTitle": "Archive this task?",
+  "confirmDialog.taskArchiveDescription":
+    "Task “{taskTitle}” will move to the archive list and can still be restored later.",
+  "confirmDialog.projectRemoveTitle": "Remove this project?",
+  "confirmDialog.projectRemoveDescription":
+    "Project “{projectName}” will be removed from the sidebar, but files on disk will remain untouched.",
+  "sidePane.openTabDescription": "Choose a tab to open in the side pane.",
+  "codeViewer.edit": "Edit file",
+  "codeViewer.editorLoading": "Loading editor…",
+  "codeViewer.save": "Save",
+  "codeViewer.saving": "Saving…",
+  "codeViewer.discardChanges": "Discard changes",
+  "codeViewer.saved": "File saved",
+  "codeViewer.saveFailed": "Save failed: {error}",
+  "codeViewer.unsavedTitle": "Unsaved changes",
+  "codeViewer.unsavedDescription": '"{file}" has unsaved changes that will be lost.',
+  "codeViewer.unsavedSaveAndClose": "Save and close",
+  "codeViewer.unsavedDiscard": "Leave without saving",
+  "appHeader.chooseApplication": "Choose Application…",
+  "appHeader.removeCustomApp": "Remove {app}",
+  "workspace.addNewWorkspace": "Add new workspace",
+  "workspace.startFromScratch": "Start from scratch",
+  "workspace.noActiveForNewTask": "There is no available workspace yet. Open a workspace first.",
+  "workspaceSidebar.noConversations": "No tasks yet",
+  "workspaceSidebar.noProjects": "No open projects",
+  "workspaceSidebar.viewByWorkspace": "By project",
+  "workspaceSidebar.organizeChronologicalList": "Timeline",
+  "workspaceSidebar.expandAllGroups": "Expand all",
+  "workspaceSidebar.collapseAllGroups": "Collapse all",
+  "workspaceSidebar.searchTasks": "Search tasks",
+  "workspaceSidebar.searchTasksPlaceholder": "Search tasks...",
+  "workspaceSidebar.searchArchivedTasksPlaceholder": "Search archived tasks...",
+  "workspaceSidebar.closeTaskSearch": "Close task search",
+  "workspaceSidebar.remove": "Remove",
+  "workspaceSidebar.removeRunningWorkspace.title": "Remove a running project?",
+  "workspaceSidebar.removeRunningWorkspace.description":
+    "This project still has a running chat or Agent. Removing it will stop and release the related runtime state, but task history will not be deleted.",
+  "workspaceSidebar.removeRunningWorkspace.confirm": "Remove and stop",
+  "workspaceSidebar.windowsReservedNameRisk":
+    "Project removed, but {count} Windows reserved-name file(s) were detected and may affect later folder deletion or renaming: {path}",
+  "workspaceSidebar.empty": "No workspaces yet. Open a workspace to get started.",
+  "workspaceSidebar.showSidebar": "Toggle sidebar",
+  "workspaceSidebar.hideSidebar": "Toggle sidebar",
+  "workspaceSidebar.toggleArchivedTasks": "Archived",
+  "workspaceSidebar.sshConnectionTitle": "SSH connection",
+  "workspaceSidebar.sshConnectionAlias": "Alias",
+  "workspaceSidebar.sshConnectionHost": "Host",
+  "workspaceSidebar.sshConnectionPath": "Path",
+  "ssh.validation.required": "Host and username are required",
+  "remote.step.kind": "Choose method",
+  "remote.step.settings": "Fill settings",
+  "remote.step.connecting": "Connecting",
+  "remote.kindStepTitle": "Choose method",
+  "remote.kindStepDescription":
+    "Choose how you want to access this workspace, then continue with the matching connection settings.",
+  "remote.settingsStepDescription":
+    "Enter the details needed for your {method} connection so we can prepare the remote session.",
+  "webRemoteControl.triggerStatus.relayConnected": "Relay connected",
+  "webRemoteControl.triggerStatus.relayConnecting": "Relay connecting",
+  "webRemoteControl.triggerStatus.relayError": "Relay connection failed: {error}",
+  "webRemoteControl.relay.status.connected": "Relay connected",
+  "webRemoteControl.relay.status.connecting": "Relay connecting",
+  "webRemoteControl.relay.status.error": "Relay connection failed: {error}",
+  "webRemoteControl.relay.regenerate": "Regenerate",
+  "webRemoteControl.relay.expired": "Link expired. Regenerate to continue.",
+  "webRemoteControl.relay.expiresIn": "Link expires in {minutes} min if not opened",
+  "webRemoteControl.relay.expiresHint":
+    "Link expires 10 min after issue if unopened; after opening it stays valid through 24h idle windows, shared across refreshes and devices.",
+  "webRemoteControl.relay.generateFailed": "Failed to generate access link",
+  "webRemoteControl.relay.generateFailedWith": "Failed to generate access link: {error}",
+  "webRemoteControl.mobileHome.title": "ZxCode remote control",
+  "webRemoteControl.mobileHome.connected": "Connected to this desktop window",
+  "webRemoteControl.mobileHome.notice":
+    "This connection can view the projects, tasks, and sessions currently open on this device. If the QR code expires, return to desktop and connect again.",
+  "webRemoteControl.mobileHome.sectionTitle": "Workspaces and tasks on this device",
+  "webRemoteControl.mobileHome.summary": "{workspaceCount} workspaces · {taskCount} tasks",
+  "webRemoteControl.mobileHome.collapseAll": "Collapse all workspaces",
+  "webRemoteControl.mobileHome.organize": "Organize tasks",
+  "webRemoteControl.mobileHome.organizeByWorkspace": "By workspace",
+  "webRemoteControl.mobileHome.organizeByTimeline": "Timeline",
+  "webRemoteControl.mobileHome.sortBy": "Sort by",
+  "webRemoteControl.mobileHome.sortByCreated": "Created time",
+  "webRemoteControl.mobileHome.sortByUpdated": "Updated time",
+  "webRemoteControl.mobileHome.refresh": "Refresh workspaces and tasks",
+  "webRemoteControl.mobileHome.workspaceKind.local": "Local",
+  "webRemoteControl.mobileHome.workspaceKind.conversation": "Conversation",
+  "webRemoteControl.mobileHome.workspaceKind.remote": "Remote",
+  "webRemoteControl.mobileHome.disconnected": "Disconnected",
+  "webRemoteControl.mobileHome.reconnect": "Reconnect",
+  "webRemoteControl.mobileHome.reconnecting": "Reconnecting",
+  "webRemoteControl.mobileHome.updatedAt": "Updated {time}",
+  "webRemoteControl.mobileHome.taskCount": "{count} tasks",
+  "webRemoteControl.mobileHome.workspaceEmpty": "No tasks in this workspace",
+  "remote.title": "Connect remote environment",
+  "remote.description":
+    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
+  "remote.step.connect": "Connect",
+  "remote.step.selectDirectory": "Choose directory",
+  "remote.kind.ssh.wizardDescription": "Remote host",
+  "remote.kind.server.wizardDescription": "Running ZxCode service",
+  "remote.kind.wsl.wizardDescription": "Windows Subsystem for Linux",
+  "remote.kind.docker.wizardDescription": "Local container",
+  "remote.success": "Connected. Choose a directory to continue.",
+  "wsl.description":
+    "Connect to the default distro, or choose a specific distro installed on this device.",
+  "docker.description": "Connect to a local container using docker exec and docker cp.",
+  "taskList.newTask": "New task",
+  "taskList.newTask.claude": "Claude CLI",
+  "taskList.newTask.opencode": "OpenCode CLI",
+  "taskList.newTask.gemini": "Gemini CLI",
+  "taskList.newTask.codex": "Codex CLI",
+  "taskList.selectProvider": "Select agent",
+  "taskList.syncingRemoteWorkspaces": "Loading remote tasks...",
+  "taskList.recentSection": "Recent",
+  "taskList.delete": "Delete task",
+  "taskList.archiveLocal": "Archive local task",
+  "taskList.archiveRemote": "Archive remote task",
+  "taskList.openInSplitPane": "Open in split view",
+  "v4Pane.splitRight": "Split right",
+  "v4Pane.splitRightTitle": "Split a new pane to the right (new session)",
+  "v4Pane.splitDown": "Split down",
+  "v4Pane.splitDownTitle": "Split a new pane below (new session)",
+  "taskList.resume": "Resume",
+  "taskList.status.streaming": "Running",
+  "taskList.status.restoring": "Restoring",
+  "taskList.status.ready": "Ready",
+  "taskList.status.completed": "Done",
+  "taskList.status.failed": "Failed",
+  "taskList.status.notReady": "Not ready",
+  "settings.custom.title": "Custom",
+  "settings.custom.description":
+    "Manage user-level customizations. Changes stay on this machine and never sync to remote workspaces.",
+  "settings.custom.headers.title": "User-managed request headers",
+  "settings.custom.headers.description":
+    "When enabled, custom HTTP headers are appended to requests sent to model providers; headers with the same name override the defaults. Only model requests are affected. Reload the session (or restart the app) to take effect.",
+  "settings.custom.headers.defaultsHint":
+    "These are the default headers currently sent with model requests — edit them to override. Removing a row keeps the default value.",
+  "settings.custom.headers.nameLabel": "Header name",
+  "settings.custom.headers.namePlaceholder": "Header name, e.g. User-Agent",
+  "settings.custom.headers.valueLabel": "Header value",
+  "settings.custom.headers.valuePlaceholder": "Header value, e.g. MyApp/1.0",
+  "settings.custom.headers.addRow": "Add header",
+  "settings.custom.headers.removeRow": "Remove this row",
+  "settings.custom.headers.save": "Save",
+  "settings.custom.headers.saved":
+    "Headers saved. Reload the session (or restart the app) to take effect.",
+  "settings.custom.headers.saveFailed": "Save failed. Please try again.",
+  "settings.custom.headers.restartHint":
+    "Takes effect after reloading the session (or switching models / restarting the app).",
+  "settings.custom.headers.invalidName": "Name is not a valid HTTP header name",
+  "settings.custom.headers.invalidValue": "Value must contain printable ASCII characters only",
+  "settings.custom.headers.duplicateName": "This name already exists (case-insensitive)",
+  "settings.custom.headers.incompleteRow": "Complete the name and value, or remove this row",
+  "settings.custom.headers.maxEntriesReached": "Up to {count} headers are supported",
+  "settings.dynamicWorkflowSavedHint": "Workflow setting saved. Restart the app to take effect.",
+  "settings.mcp.host.active": "Host built-in",
+  "settings.mcp.host.activeDescription":
+    "ZxCode provides this MCP server for the {pluginName} plugin. Its runtime identity is managed by the host.",
+  "settings.plugins.store.subtitle":
+    "Extend ZxCode with skills, commands, and MCP servers from plugins",
+  "settingsSync.agent.zxcode": "ZxCode Agent",
+  "onboarding.dialog.title": "Welcome to ZxCode",
+  "onboarding.dialog.description": "Choose how to start your first session.",
+  "onboarding.welcome.eyebrow": "First run setup",
+  "onboarding.welcome.title": "Welcome to ZxCode",
+  "onboarding.welcome.start": "Start ZxCode",
+  "onboarding.welcome.migrate": "Migration Guide",
+  "onboarding.welcome.helper":
+    "Import existing tool settings now, or skip and continue later from Settings.",
+  "chat.plan.attachmentsBlocked":
+    "The /plan shortcut supports text only for now. Remove attachments or context and try again.",
+  "zcode.error.modelSuspiciousEmpty": "The model returned no content.",
+  "zcode.error.providerBusiness.3007":
+    "The request was rejected by the gateway security check. Please try again later or contact support.",
+  "zcode.error.ZXCODE_RUNTIME_MODEL_UNAVAILABLE":
+    "The current model is no longer available. Select an available model from the current model list to continue.",
+  "zcode.error.ZXCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
+    "The current model is unavailable. Check whether the current account has been added to the project member list.",
+  "settings.mobileRelay.title": "Mobile Remote",
+  "settings.mobileRelay.enable": "Enable mobile remote",
+  "settings.mobileRelay.enableDescription":
+    "Connect to your self-deployed relay server to control this workspace from a phone browser.",
+  "settings.mobileRelay.statusUnsupported":
+    "Mobile remote is not supported on this platform (desktop required).",
+  "settings.mobileRelay.statusDisabled": "Disabled",
+  "settings.mobileRelay.statusConnected": "Connected",
+  "settings.mobileRelay.statusConnecting": "Connecting…",
+  "settings.mobileRelay.statusError": "Connection failed: {error}",
+  "settings.mobileRelay.serverUrl": "Relay server",
+  "settings.mobileRelay.serverUrlDescription":
+    "Address of your self-deployed relay, e.g. https://relay.example.com; deploy packages/relay first.",
+  "settings.mobileRelay.tokenPlaceholder": "Deployment token (optional)",
+  "settings.mobileRelay.save": "Save",
+  "settings.mobileRelay.saveFailed": "Failed to save mobile relay settings",
+  "settings.mobileRelay.grant": "Generate phone authorization link",
+  "settings.mobileRelay.grantDescription":
+    "Generate a one-time authorization link for the current workspace (valid for 10 minutes, single use); scan or open it on your phone to connect.",
+  "settings.mobileRelay.generate": "Generate link",
+  "settings.mobileRelay.regenerate": "Regenerate",
+  "settings.mobileRelay.grantCountdown": "Expires in {seconds}s",
+  "settings.mobileRelay.grantExpired": "Link expired; regenerate to continue",
+  "settings.mobileRelay.grantFailed": "Failed to generate authorization link",
+  "settings.mobileRelay.grantNoWorkspace": "No active workspace found for authorization",
+  "chat.toolCall.explore.bucket.file.other": "files",
+  "chat.toolCall.explore.bucket.items": "items",
+  "chat.toolCall.explore.bucket.list.other": "lists",
+  "chat.toolCall.explore.bucket.file.one": "file",
+  "chat.toolCall.explore.bucket.search.other": "searches",
+  "chat.toolCall.explore.bucket.list.one": "list",
+  "settings.toolGroupingExplore": "Group exploration tools",
+  "settings.toolGroupingExploreDescription":
+    "Group consecutive reads and searches into an Explore section.",
+  "settings.toolGroupingTerminal": "Group terminal commands",
+  "settings.toolGroupingTerminalDescription":
+    "Group consecutive non-read-only shell commands into a Terminal section.",
+  "settings.toolGroupingChanges": "Group file changes",
+  "settings.toolGroupingChangesDescription":
+    "Group consecutive Write, Edit, and ApplyPatch calls into a Changes section.",
+  "settings.plugins.toggle.pending": "Updating {plugin}...",
 };
 
 export default ruRU;

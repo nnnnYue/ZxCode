@@ -24,7 +24,12 @@ interface HooksStoreState {
    */
   refresh: (
     hooksService: IHooksService,
-    target: { workspacePath?: string | null; workspaceIdentity?: string | null },
+    target: {
+      workspacePath?: string | null;
+      workspaceIdentity?: string | null;
+      /** D23 worktree 投影的 scope 缓存 key；store 兼容接收，当前按发现路径键控。 */
+      authorityKey?: string | null;
+    },
   ) => Promise<void>;
   addHook: (config: HookConfig, hooksService: IHooksService) => Promise<void>;
   updateHook: (id: string, config: HookConfig, hooksService: IHooksService) => Promise<void>;
@@ -38,7 +43,20 @@ type StoreGet = () => HooksStoreState;
 
 const inflightLoads = new Map<string, Promise<void>>();
 
-// store 是单例，切换 workspace 后先发起的加载可能后到。任何异步结果写回 store 之前
+export function getHooksCacheKey(
+  workspacePath: string,
+  workspaceIdentity?: string | null,
+  authorityKey?: string | null,
+): string {
+  const workspaceKey = getWorkspaceKey(workspacePath, workspaceIdentity);
+  // 受管 worktree 审核时 identity 是项目 key、发现路径是 worktree（D23）。只用 key 会让
+  // 项目与 worktree 两份投影共用缓存和 in-flight 去重，切换后读到另一份；路径不同就并入 key。
+  const targetKey =
+    workspaceKey === workspacePath ? workspaceKey : `${workspaceKey}\0${workspacePath}`;
+  return authorityKey?.trim() ? `${authorityKey.trim()}\0${targetKey}` : targetKey;
+}
+
+// Bugfix：store 是单例，切换 workspace 后先发起的加载可能后到。任何异步结果写回 store 之前
 // 都要比对发起时的 target key，否则旧 workspace 的 hooks 会覆盖当前投影，并被后续写操作落盘
 // 到当前 workspace。
 function currentWorkspaceKey(get: StoreGet): string | null {

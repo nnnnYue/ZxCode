@@ -141,8 +141,8 @@ describe("plugins/referenceCatalog protocol", () => {
 
   it("serves the live workspace catalog when no sessionId is provided (draft picker)", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-reference-workspace-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "cli");
+    const previousStorageDir = process.env.ZXCODE_STORAGE_DIR;
+    process.env.ZXCODE_STORAGE_DIR = join(root, "cli");
     try {
       const result = await getPluginReferenceCatalog({} as ZCodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
@@ -182,8 +182,8 @@ describe("plugins/referenceCatalog protocol", () => {
         enriched.plugins.find((x) => x.pluginId === zcodeGuide?.pluginId)?.descriptionI18n,
       ).toEqual(zcodeGuide?.descriptionI18n);
     } finally {
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.ZXCODE_STORAGE_DIR;
+      else process.env.ZXCODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });

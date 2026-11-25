@@ -24,7 +24,7 @@ describe("Todo104 CLI 同文件默认选择", () => {
     directories.push(directory);
     const personalPath = join(directory, "injected-personal.json");
     const env = {
-      ZCODE_CREDENTIAL_SECRET: "todo104-fixture-only",
+      ZXCODE_CREDENTIAL_SECRET: "todo104-fixture-only",
       ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
       ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
         new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),

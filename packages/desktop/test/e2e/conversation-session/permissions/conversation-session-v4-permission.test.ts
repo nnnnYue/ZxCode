@@ -5,16 +5,18 @@
 import { access, mkdir, rm } from "node:fs/promises";
 import { clearAppData } from "#e2e/helpers/desktop-app";
 import { resolveE2ERuntimePath, resolveE2EToolPath } from "#e2e/helpers/e2e-runtime-paths";
+import { selectTaskById } from "#e2e/helpers/conversation-session";
 import {
   approveV4Permission,
   denyV4PermissionWithFeedback,
+  getV4PaneSnapshot,
   prepareV4ConversationE2E,
+  startNewV4Draft,
   sendV4Prompt,
   waitForV4PermissionDialogInComposerDock,
   waitForV4TimelineContaining,
 } from "#e2e/helpers/v4-conversation";
 import { getLatestUpstreamToolResultByToolCallId } from "#e2e/helpers/conversation-session-network";
-import { withoutTotalTokensReminderText } from "#e2e/helpers/total-tokens-evidence";
 
 const V4_PERMISSION_CASE = "conversation-session-v4-permission";
 const V4_PERMISSION_DIR = resolveE2ERuntimePath(V4_PERMISSION_CASE);
@@ -35,16 +37,6 @@ const V4_PERMISSION_DENY_FEEDBACK =
   "x".repeat(600);
 const V4_PERMISSION_DENY_BASE_CONTENT =
   "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.";
-
-/**
- * 读取模型面的拒绝结果。
- * 修复原因：工具批次后的 token 预算提醒以 `\n\n` 段并进 tool_result 文本，按原样比较
- * 拒绝文案会多出提醒段；这里只断言拒绝文案本身，按完整形态去掉提醒段。
- */
-async function getDeniedToolResult(toolCallId: string) {
-  const result = await getLatestUpstreamToolResultByToolCallId(toolCallId);
-  return result && { ...result, content: withoutTotalTokensReminderText(result.content) };
-}
 
 describe("v4 M4 门禁：resolveInteraction 收口权限请求", () => {
   before(async () => {
@@ -85,6 +77,7 @@ describe("v4 M4 门禁：resolveInteraction 收口权限请求", () => {
 
     // 批准后工具执行 → tool_result 回灌 → 终态文本
     await waitForV4TimelineContaining("V4_PERMISSION_DONE", 60000);
+
   });
 
   it("批准时填写的反馈被忽略，工具仍按 Allow once 执行", async () => {
@@ -147,8 +140,9 @@ describe("v4 M4 门禁：resolveInteraction 收口权限请求", () => {
         true,
       );
       await waitForV4TimelineContaining("V4_PERMISSION_DENY_DONE", 60000);
-
-      const deniedResult = await getDeniedToolResult("toolu_v4_permission_deny_feedback");
+      const deniedResult = await getLatestUpstreamToolResultByToolCallId(
+        "toolu_v4_permission_deny_feedback",
+      );
       expect(deniedResult?.isError).toBe(true);
       expect(deniedResult?.content).toBe(
         V4_PERMISSION_DENY_BASE_CONTENT +
@@ -167,10 +161,19 @@ describe("v4 M4 门禁：resolveInteraction 收口权限请求", () => {
     );
     await waitForV4PermissionDialogInComposerDock();
 
+    // 弹窗挂起时切到别的任务再回来：wait_ms 从首次出现算，不因会话切换、面板重挂载重置。
+    const sessionId = (await getV4PaneSnapshot()).sessionId!;
+    await startNewV4Draft();
+    await browser.pause(PERMISSION_AWAY_MS);
+    await selectTaskById(sessionId);
+    await waitForV4PermissionDialogInComposerDock();
+
     expect(await denyV4PermissionWithFeedback("   ")).toBe(true);
     await waitForV4TimelineContaining("V4_PERMISSION_DENY_BLANK_DONE", 60000);
 
-    const deniedResult = await getDeniedToolResult("toolu_v4_permission_deny_blank");
+    const deniedResult = await getLatestUpstreamToolResultByToolCallId(
+      "toolu_v4_permission_deny_blank",
+    );
     expect(deniedResult?.isError).toBe(true);
     expect(deniedResult?.content).toBe(V4_PERMISSION_DENY_BASE_CONTENT);
     expect(deniedResult?.content).not.toContain("To tell you how to proceed");
@@ -230,3 +233,5 @@ async function readPermissionFeedbackTextareaSemantics() {
     };
   });
 }
+
+const PERMISSION_AWAY_MS = 3000;

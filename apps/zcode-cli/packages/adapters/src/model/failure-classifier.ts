@@ -24,6 +24,7 @@ import { readMappedAiSdkProviderBusinessError } from "./failure-ai-sdk-provider-
 import { isTlsFailure } from "./failure-tls.js";
 import {
   isProviderBusinessError,
+  isProviderCodeShaped,
   readProviderBusinessFailureFromBody,
   ProviderBusinessError,
 } from "./model-execution.js";
@@ -498,7 +499,8 @@ function normalizeProviderCode(value: ProviderBusinessError["providerCode"]): st
   }
 
   const normalized = value.trim();
-  if (normalized.length === 0) return undefined;
+  // 不像码值的字符串（如整段脚本）不能当 providerCode，原因见 model-execution.ts 的 isProviderCodeShaped。
+  if (!isProviderCodeShaped(normalized)) return undefined;
   return normalized.toUpperCase() === PROVIDER_BUSINESS_ERROR_WRAPPER_CODE ? undefined : normalized;
 }
 

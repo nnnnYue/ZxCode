@@ -10,6 +10,7 @@ import { useProjectSidebarPreferences } from "@/project-sidebar/useProjectSideba
 import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
 import { useTaskGroups } from "@/project-sidebar/useTaskGroups.js";
 import { selectSortedProjects } from "@/project-sidebar/view.js";
+import { useProjectDisplayOrderSync } from "@/project-sidebar/useProjectDisplayOrderSync.js";
 
 // fork 适配：deviceNames 原来自 source-server 显示名注册表（useSourceServerDisplayNames，
 // 剔除域）。remoteProjectService 是空目录桩、无远端设备，恒给空注册表保持消费方形状。
@@ -40,6 +41,8 @@ function useDirectoryState(isDesktop: boolean) {
     const sorted = preferences.sort(sortedProjects);
     return [...sorted.filter((p) => p.pinned), ...sorted.filter((p) => !p.pinned)];
   }, [sortedProjects, preferences.order]);
+  // 首次读取完成前 projects 只是空目录，上报会让手机短暂退回 position 顺序。
+  useProjectDisplayOrderSync(projects, isDesktop && !result.loading);
   // Context 不受消费方 memo 保护；父级更新 children 时，等价目录不能再次广播。
   return useMemo(
     () => ({ ...result, preferences, projects, groups, deviceNames }),

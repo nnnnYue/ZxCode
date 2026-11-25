@@ -1,7 +1,6 @@
 import { createSystemCredentialCipher } from "@zcode/shared/credential-security";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import {
   providerProvisioningEnvelopeSchema,
   type ProviderProvisioningCredentialEntry,
@@ -15,7 +14,6 @@ import { decodeProviderConfigFile, encodeProviderConfigFile } from "@zcode/provi
 import { type CredentialCipherProvider } from "../credential/providers/credentialCipherProvider.js";
 import type { ISettingService } from "../setting/setting.js";
 
-const CREDENTIAL_FILE_NAME = "credentials.json";
 /**
  * 去平台化：OAuth 登录删除后不再存在可同步的 oauth-session 凭据；
  * 保留空列表维持 Provisioning credential allowlist 的结构（仅剩 account-provider key 分类），
@@ -150,10 +148,6 @@ function isFileNotFound(error: unknown): boolean {
     "code" in error &&
     (error as { code?: unknown }).code === "ENOENT"
   );
-}
-
-export function resolveCredentialFilePath(appConfigDir: string): string {
-  return join(appConfigDir, CREDENTIAL_FILE_NAME);
 }
 
 /** 只枚举 Provisioning allowlist 的物理 key，供目标端实现 replace-allowlist 删除语义。 */

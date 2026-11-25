@@ -12,14 +12,14 @@ import {
   getLatestUpstreamToolResultByToolCallId,
   waitForUpstreamRequest,
 } from "#e2e/helpers/conversation-session-network";
-
 // 用户从 GUI 停止一次在跑的 run（docs/dynamic-workflow/presentation.md「The run card」「The run pane」
 // 「The sidebar run line」、docs/dynamic-workflow/transcript-and-notifications.md「The notification row」
 // 「What the model reads」）：卡、侧板、侧栏运行行一起落到「已停止 · 你停止的」，主代理收到
 // stop-reason=user 的通知，对话还能接着走。
 //
 // case-local 回放只决定主模型的选择；真实 Skill、工作流编译、审批、run 引擎、停止与通知走产品链路。
-// 脚本零 agent，靠 `world.run("sleep", …)` 停在 running（沙箱里没有 setTimeout），sleep 远长于本用例。
+// 脚本零 agent，靠 `world.run("node", ["-e", "setTimeout(…)"])` 停在 running（沙箱里没有 setTimeout，
+// 子进程里有），等待远长于本用例。不用 `sleep` 命令：Windows 没有它，run 会以 spawn ENOENT 直接出错。
 const RUN_DIGEST = `[data-testid^="${TID_CHAT_WORKFLOW_RUN_DIGEST}"]`;
 const RUN_NAME = "E2E 停止工作流";
 

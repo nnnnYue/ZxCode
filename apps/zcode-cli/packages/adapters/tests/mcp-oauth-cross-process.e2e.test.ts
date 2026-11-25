@@ -347,7 +347,7 @@ async function createCredentials(secret: string): Promise<{
   const credentialsPath = join(directory, "credentials.json");
   return {
     credentialStore: createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: secret },
+      env: { ZXCODE_CREDENTIAL_SECRET: secret },
       filePath: credentialsPath,
     }),
     credentialsPath,

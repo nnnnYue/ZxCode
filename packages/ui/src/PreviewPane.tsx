@@ -29,7 +29,7 @@ import { toast } from "@/components/ui/toast.js";
 import { PreviewPaneFileEditContent } from "@/previewPaneFileEditContent.js";
 import { cn } from "@/components/lib/utils.js";
 import type { FileBinaryPreview, FileMediaPreview, FileTextSlice } from "@zcode/shared";
-import { TID_PREVIEW_PANE } from "@zcode/shared";
+import { TID_PREVIEW_PANE } from "@zcode/shared/test-ids";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { usePptxFileWatch } from "@/hooks/usePptxFileWatch.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -496,6 +496,8 @@ export function PreviewPane({
   renderHeavyContent = true,
   markdownSelectionTarget,
   sidePaneTabId,
+  appliedFocusRequestId,
+  onFocusRequestApplied,
 }: {
   source: CodeViewerSource | null;
   onClose: () => void;
@@ -506,6 +508,10 @@ export function PreviewPane({
   markdownSelectionTarget?: MarkdownSelectionTarget;
   /** 所属 side pane tab id；编辑态用它登记未保存守卫，关闭/刷新 tab 前由 useAppPanels 拦截。 */
   sidePaneTabId?: string;
+  /** 该预览 tab 已执行过的文件链接定位请求；与 source.focusRequestId 相同时不再滚动，只保留高亮。 */
+  appliedFocusRequestId?: string;
+  /** 文件链接定位成功后回报请求 id，由侧边面板状态记到 tab 上。 */
+  onFocusRequestApplied?: (requestId: string) => void;
 }) {
   const platform = usePlatform();
   const { intl } = useZCodeIntl();
@@ -1971,6 +1977,8 @@ export function PreviewPane({
               // 折叠侧边面板卸载重内容前必须保存该容器的位置。
               onScroll={handlePreviewContentScroll}
               scrollContainerRef={scrollContainerRef}
+              appliedFocusRequestId={appliedFocusRequestId}
+              onFocusRequestApplied={onFocusRequestApplied}
             />
           )
         ) : (

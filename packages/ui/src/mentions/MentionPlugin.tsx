@@ -741,6 +741,7 @@ export function MentionPlugin({
       sections={panelSections}
       emptyText={panelEmptyText}
       selectedIndex={selectedIndex}
+      selectionScope={activeSignature}
       hasActiveQuery={hasActiveQuery}
       onSelect={selectOption}
     />,

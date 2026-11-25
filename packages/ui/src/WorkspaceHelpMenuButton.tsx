@@ -3,7 +3,8 @@ import {
   TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER,
   TID_WORKSPACE_HELP_MENU_TRIGGER,
 } from "@zcode/shared";
-import { ActivityIcon, CircleHelpIcon, InfoIcon } from "lucide-react";
+import { useState } from "react";
+import { ActivityIcon, CircleHelpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { Button } from "@/components/ui/button.js";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import { cn } from "@/components/lib/utils.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { PreinstalledToolsDialog } from "@/preinstalled-tools/index.js";
 
 export function WorkspaceHelpMenuButton({
   className,
@@ -29,6 +31,7 @@ export function WorkspaceHelpMenuButton({
 }) {
   const { intl } = useZCodeIntl();
   const platform = usePlatform();
+  const [preinstalledToolsOpen, setPreinstalledToolsOpen] = useState(false);
   const helpMenuLabel = intl.formatMessage({ id: "workspaceHeader.help.menu" });
   const handleOpenResourceManager = () => {
     void platform.executeDesktopCommand(DesktopCommandIds.OpenResourceManager);
@@ -39,7 +42,7 @@ export function WorkspaceHelpMenuButton({
   };
 
   return (
-    // fork 移除了漏洞上报入口后无需受控 open 状态，改回非受控下拉。
+    // fork 移除了漏洞上报/反馈/帮助外链入口后无需受控 open 状态，保持非受控下拉。
     <DropdownMenu>
       <ControlHintTooltip title={helpMenuLabel} side="bottom">
         <DropdownMenuTrigger asChild>
@@ -76,6 +79,13 @@ export function WorkspaceHelpMenuButton({
               <ActivityIcon className="size-4" />
               {intl.formatMessage({ id: "titleBar.menu.help.resourceManager" })}
             </DropdownMenuItem>
+            <DropdownMenuItem
+              data-testid="workspace-help-menu-preinstalled-tools"
+              onSelect={() => setPreinstalledToolsOpen(true)}
+            >
+              <DownloadIcon className="size-4" />
+              {intl.formatMessage({ id: "preinstalledTools.title" })}
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={handleShowAbout}>
               <InfoIcon className="size-4" />
               {intl.formatMessage({ id: "titleBar.menu.help.about" })}
@@ -83,6 +93,12 @@ export function WorkspaceHelpMenuButton({
           </>
         ) : null}
       </DropdownMenuContent>
+      {isDesktop ? (
+        <PreinstalledToolsDialog
+          open={preinstalledToolsOpen}
+          onOpenChange={setPreinstalledToolsOpen}
+        />
+      ) : null}
     </DropdownMenu>
   );
 }

@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import {
+  isApiKeyAccess,
   type ModelConfig,
   type ProviderConfig,
   type ProviderConfigLayerSnapshot,
@@ -12,13 +13,19 @@ import {
   NodePersonalProviderConfigRepository,
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
 } from "@zcode/provider-node";
+import { ZAI_PROVIDER_ID } from "@zcode/shared";
 import {
   TID_COMPOSER_WORKSPACE_TRIGGER,
+  TID_SETTINGS_BACK_BUTTON,
+  TID_SETTINGS_PAGE,
+  TID_SETTINGS_REPLY_LANGUAGE_INPUT,
+  TID_SETTINGS_SECTION_NAV,
+  TID_TASK_SETTINGS_BUTTON,
   TID_V4_SESSION_PANE,
   TID_WORKSPACE_ITEM,
   TID_WORKSPACE_PATH,
-  testId,
-} from "@zcode/shared";
+  testId as composeTestId,
+} from "@zcode/shared/test-ids";
 import type { AppSettings } from "@zcode/shared";
 import { collectWindowsE2EProcessTreePids } from "./e2e-process-cleanup.js";
 import {
@@ -27,6 +34,7 @@ import {
 } from "./e2e-window-target.js";
 import { dismissOccupationOnboarding } from "./occupation-onboarding.js";
 import { sel } from "./selectors.js";
+import { projectSectionSelector } from "./project-sidebar.js";
 
 const DEFAULT_E2E_HOME_DIR = resolve(process.cwd(), ".e2e-home");
 const E2E_HOME_DIR =
@@ -49,6 +57,12 @@ const CLI_CONFIG_FILE = join(E2E_STORAGE_ROOT, "cli", "config.json");
 const AGENTS_STATE_FILE = join(E2E_APP_DATA_DIR, "agents-state.json");
 const REMOVE_APP_DATA_RETRY_DELAYS_MS = [200, 500, 1000, 2000, 3000];
 const REMOVE_APP_DATA_MAX_ATTEMPTS = REMOVE_APP_DATA_RETRY_DELAYS_MS.length;
+const E2E_USER_PROFILE = {
+  displayName: "ZCode E2E",
+  id: "zcode-e2e-user",
+  username: "zcode-e2e-user",
+};
+
 interface WindowInfo {
   id: number;
   title: string;
@@ -270,34 +284,6 @@ export async function clickTestIdByDom(
   }
 }
 
-export async function ensureWorkspaceItemExpanded(
-  workspacePath: string,
-  timeout = 30_000,
-): Promise<void> {
-  const workspaceItemTestId = testId(TID_WORKSPACE_ITEM, workspacePath);
-  await waitForTestIdByDom(workspaceItemTestId, {
-    timeout,
-    timeoutMsg: `侧栏没有显示 workspace: ${workspacePath}`,
-  });
-
-  const isExpanded = async () =>
-    (await browser.execute(readExactTestIdAttribute, workspaceItemTestId, "aria-expanded")) ===
-    "true";
-  if (!(await isExpanded())) {
-    await clickTestIdByDom(workspaceItemTestId, {
-      timeout: 15_000,
-      timeoutMsg: `侧栏 workspace 不可展开: ${workspacePath}`,
-    });
-  }
-
-  // Bug 根因：慢渲染环境下 DOM click 成功只代表事件已经派发，项目树的 React
-  // 展开提交仍可能在后续帧；统一等待 aria 终态，避免各 case 提前查找 task。
-  await browser.waitUntil(isExpanded, {
-    timeout: 15_000,
-    timeoutMsg: `侧栏 workspace 没有完成展开: ${workspacePath}`,
-  });
-}
-
 export async function clickTestIdByWebDriver(
   testId: string,
   { timeout = 10000, timeoutMsg = `页面没有可点击的 test id: ${testId}` }: DomTestIdOptions = {},
@@ -308,6 +294,37 @@ export async function clickTestIdByWebDriver(
   const element = $(sel(testId));
   await element.waitForClickable({ timeout, timeoutMsg });
   await element.click();
+}
+
+/**
+ * 从任务页打开设置 → 行为与工具 → 写入回复语言（失焦保存）→ 等落盘 → 返回。
+ * 空串表示清除：setting.json 里不再有 replyLanguage。
+ */
+export async function setReplyLanguageInSettings(value: string) {
+  await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON, {
+    timeout: 15000,
+    timeoutMsg: "没有找到设置入口按钮",
+  });
+  await $(sel(TID_SETTINGS_PAGE)).waitForDisplayed({ timeout: 15000 });
+  await clickTestIdByDom(composeTestId(TID_SETTINGS_SECTION_NAV, "agentBehavior"), {
+    timeout: 15000,
+    timeoutMsg: "设置页没有出现行为与工具分区入口",
+  });
+  // 原生 setter 写值（不触发失焦），再真实 blur：走输入框的失焦保存路径。
+  await setInputValueByTestIdDom(TID_SETTINGS_REPLY_LANGUAGE_INPUT, value, {
+    timeout: 15000,
+    timeoutMsg: "回复语言输入框没有出现",
+  });
+  await browser.execute(() => (document.activeElement as HTMLElement | null)?.blur());
+  const expected = value.trim() || undefined;
+  await browser.waitUntil(async () => (await readSettings()).replyLanguage === expected, {
+    timeout: 15000,
+    timeoutMsg: `回复语言没有写入 setting.json: ${JSON.stringify(value)}`,
+  });
+  await clickTestIdByDom(TID_SETTINGS_BACK_BUTTON, {
+    timeout: 15000,
+    timeoutMsg: "设置页没有返回按钮",
+  });
 }
 
 export async function hoverTestIdByWebDriver(
@@ -356,11 +373,7 @@ export async function setInputValueByTestIdDom(
           // 原因：冷恢复时 bridge 已挂载但编辑器仍禁用，越权 setText 会与草稿恢复竞争。
           // 只在真实 DOM 开放输入后写入，不能靠延时或再次写入补偿被覆盖的文字。
           if (!element.isContentEditable) {
-            return {
-              ok: false,
-              reason: "not-editable",
-              tagName: element.tagName,
-            };
+            return { ok: false, reason: "not-editable", tagName: element.tagName };
           }
           const bridge = (
             element as HTMLElement & {
@@ -464,10 +477,7 @@ export async function setInputValueByTestIdDom(
       reason?: string;
       text?: string;
     };
-    let caretResult: LexicalCaretResult = {
-      ok: false,
-      reason: "not-attempted",
-    };
+    let caretResult: LexicalCaretResult = { ok: false, reason: "not-attempted" };
     try {
       await browser.waitUntil(
         async () => {
@@ -786,7 +796,8 @@ function convertPersonalProviderConfig(
       },
       apiFormat: provider.api?.type ?? "openai-chat-completions",
       apiKeyRequired: true,
-      apiKey: provider.access?.type === "api-key" ? provider.access.apiKey?.trim() || "" : "",
+      // 套餐手动 Key 同样是 API Key；仅识别普通类型会把已保存凭据误报为空。
+      apiKey: isApiKeyAccess(provider.access) ? provider.access.apiKey?.trim() || "" : "",
       defaultKind: kind,
       models: (provider.personalModelIds ?? []).map((modelId) =>
         convertPersonalModelConfig(
@@ -942,6 +953,37 @@ export async function restoreCliConfig(snapshot: CliConfigSnapshot): Promise<voi
   await writeFile(CLI_CONFIG_FILE, snapshot.content, "utf-8");
 }
 
+/** 仅用于旧 Electron 已退出后的 fixture 注入；删除指定测试凭据，保留登录与其他键。 */
+export async function removeSeededCredentials(keys: string[]): Promise<void> {
+  const credentials = JSON.parse(await readFile(CREDENTIALS_FILE, "utf-8")) as Record<
+    string,
+    string
+  >;
+  for (const key of keys) delete credentials[key];
+  await writeFile(CREDENTIALS_FILE, JSON.stringify(credentials), "utf-8");
+}
+
+export async function seedCredentials(authToken = "mock-token") {
+  await ensureAppDataDir();
+  // Bugfix: 登录恢复已经迁移到 OAuth 命名空间；只写旧 auth_token
+  // 会让 e2e 在欢迎页等待 workspace，录制 provider 流之前就失败。
+  await writeFile(
+    CREDENTIALS_FILE,
+    JSON.stringify(
+      {
+        auth_token: authToken,
+        "oauth:active_provider": ZAI_PROVIDER_ID,
+        [`oauth:${ZAI_PROVIDER_ID}:access_token`]: authToken,
+        [`oauth:${ZAI_PROVIDER_ID}:user_info`]: JSON.stringify(E2E_USER_PROFILE),
+        zcodejwttoken: authToken,
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+}
+
 export interface WorkspaceAppProbeParams {
   workspacePathTestId: string;
   workspaceItemTestId: string;
@@ -964,7 +1006,7 @@ export function probeWorkspaceAppState(
   const pathBadge = document.querySelector<HTMLElement>(
     `[data-testid="${params.workspacePathTestId}"]`,
   );
-  if (pathBadge?.getAttribute("title") === params.expectedPath) {
+  if (pathBadge?.dataset.workspaceAbsPath === params.expectedPath) {
     return "ready";
   }
 
@@ -973,9 +1015,12 @@ export function probeWorkspaceAppState(
   // 同时存在，才代表用户已经进入可操作的目标工作区。
   // 修复原因：Windows workspacePath 会进入 data-testid，反斜杠直接拼到
   // CSS attribute selector 会被当作转义字符，导致 DOM 里有元素也查不到。
-  const workspaceItem = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).find(
-    (element) => element.dataset.testid === params.workspaceItemTestId,
-  );
+  const workspaceItem =
+    (
+      window as Window & {
+        __zcodeTabStoreE2E?: { getState(): { activeWorkspacePath?: string | null } };
+      }
+    ).__zcodeTabStoreE2E?.getState().activeWorkspacePath === params.expectedPath;
   const conversationWorkspaceReady =
     params.expectedPath.replace(/\\/g, "/").endsWith("/.zcode/workspace/default") &&
     Boolean(document.querySelector(`[data-testid="${params.composerWorkspaceTriggerTestId}"]`));
@@ -987,14 +1032,14 @@ export function probeWorkspaceAppState(
 }
 
 // Bugfix: WorkspaceHeader 里的 TID_WORKSPACE_TITLE 现在展示的是 activeTaskTitle，
-// 不再稳定代表当前工作区名。e2e 改为读取 TID_WORKSPACE_PATH 的 title 属性，
-// 新建任务草稿下 header 路径胶囊不会渲染，因此同时接受侧边栏 workspace item。
-// 这样才能准确覆盖“默认工作区自动打开 / 多标签切换”这条真实产品链路。
+// 不再稳定代表当前工作区名。路径徽标的上下文改由 tooltip 承载，改读 data-workspace-abs-path。
+// 虚拟项目侧栏不再渲染真实目录节点，新建任务草稿下以 tab store 的导航 owner + 可见
+// session pane 判定，覆盖默认工作区自动打开及多标签切换。
 export async function waitForWorkspaceApp(workspacePath: string, timeout = 10000) {
   const timeoutMsg = `主界面没有切到工作区: ${workspacePath}`;
   const probeParams: WorkspaceAppProbeParams = {
     workspacePathTestId: TID_WORKSPACE_PATH,
-    workspaceItemTestId: testId(TID_WORKSPACE_ITEM, workspacePath),
+    workspaceItemTestId: "virtual-project-row",
     sessionPanePrefix: TID_V4_SESSION_PANE,
     composerWorkspaceTriggerTestId: TID_COMPOSER_WORKSPACE_TRIGGER,
     expectedPath: workspacePath,
@@ -1027,31 +1072,24 @@ export async function waitForWorkspaceApp(workspacePath: string, timeout = 10000
 }
 
 async function isWorkspaceAppVisible(workspacePath: string) {
-  const workspaceItemTestId = testId(TID_WORKSPACE_ITEM, workspacePath);
   try {
     return await browser.execute(
-      (workspacePathTestId, workspaceItemTestId, sessionPanePrefix, expectedPath) => {
+      (workspacePathTestId, sessionPanePrefix, expectedPath) => {
+        if (
+          (
+            window as Window & {
+              __zcodeTabStoreE2E?: { getState(): { activeWorkspacePath: string | null } };
+            }
+          ).__zcodeTabStoreE2E?.getState().activeWorkspacePath === expectedPath &&
+          document.querySelector(`[data-testid^="${sessionPanePrefix}-"]`)
+        )
+          return true;
         const pathBadge = document.querySelector<HTMLElement>(
           `[data-testid="${workspacePathTestId}"]`,
         );
-        if (pathBadge?.getAttribute("title") === expectedPath) {
-          return true;
-        }
-
-        // 修复原因：API Key 登录后进入空任务态时，主区域只展示新任务草稿，
-        // 不一定渲染 WorkspaceHeader 的路径徽标。此时侧栏工作区项和 v4 session pane
-        // 同时存在，才代表用户已经进入可操作的目标工作区。
-        // 修复原因：Windows workspacePath 会进入 data-testid，反斜杠直接拼到
-        // CSS attribute selector 会被当作转义字符，导致 DOM 里有元素也查不到。
-        const workspaceItem = Array.from(
-          document.querySelectorAll<HTMLElement>("[data-testid]"),
-        ).find((element) => element.dataset.testid === workspaceItemTestId);
-        return Boolean(
-          workspaceItem && document.querySelector(`[data-testid^="${sessionPanePrefix}-"]`),
-        );
+        return pathBadge?.dataset.workspaceAbsPath === expectedPath;
       },
       TID_WORKSPACE_PATH,
-      workspaceItemTestId,
       TID_V4_SESSION_PANE,
       workspacePath,
     );
@@ -1065,12 +1103,12 @@ async function isWorkspaceAppVisible(workspacePath: string) {
 export async function getActiveWorkspacePath() {
   return browser.execute((workspacePathTestId) => {
     const pathBadge = document.querySelector<HTMLElement>(`[data-testid="${workspacePathTestId}"]`);
-    return pathBadge?.getAttribute("title") ?? null;
+    return pathBadge?.dataset.workspaceAbsPath ?? null;
   }, TID_WORKSPACE_PATH);
 }
 
 async function collectWorkspaceDiagnostics(expectedPath: string) {
-  const workspaceItemTestId = testId(TID_WORKSPACE_ITEM, expectedPath);
+  const projectSelector = projectSectionSelector(expectedPath);
   const windows = await getAllWindowInfo().catch((error: unknown) => ({
     error: error instanceof Error ? error.message : String(error),
   }));
@@ -1079,13 +1117,11 @@ async function collectWorkspaceDiagnostics(expectedPath: string) {
   }));
   const dom = await browser
     .execute(
-      (workspacePathTestId, workspaceItemId) => {
+      (workspacePathTestId, projectSectionSelectorValue) => {
         const pathBadge = document.querySelector<HTMLElement>(
           `[data-testid="${workspacePathTestId}"]`,
         );
-        const workspaceItem = Array.from(
-          document.querySelectorAll<HTMLElement>("[data-testid]"),
-        ).find((element) => element.dataset.testid === workspaceItemId);
+        const projectSection = document.querySelector(projectSectionSelectorValue);
         let localStorageKeys: string[] | { error: string };
         try {
           localStorageKeys = Object.keys(window.localStorage).sort();
@@ -1102,13 +1138,13 @@ async function collectWorkspaceDiagnostics(expectedPath: string) {
             .map((element) => element.dataset.testid ?? ""),
           title: document.title,
           url: window.location.href,
-          workspaceItemExists: Boolean(workspaceItem),
-          workspacePathTitle: pathBadge?.getAttribute("title") ?? null,
+          projectRowExists: Boolean(projectSection),
+          workspaceAbsPath: pathBadge?.dataset.workspaceAbsPath ?? null,
           localStorageKeys,
         };
       },
       TID_WORKSPACE_PATH,
-      workspaceItemTestId,
+      projectSelector,
     )
     .catch((error: unknown) => ({
       error: error instanceof Error ? error.message : String(error),
@@ -1214,6 +1250,7 @@ export async function setCurrentElectronRendererContentSize(
         ok: true as const,
         appliedHeight,
         appliedWidth,
+        scaleFactor: electron.screen.getDisplayMatching(target.getBounds()).scaleFactor,
         zoomFactor: target.webContents.getZoomFactor(),
         snapshot: {
           height: originalHeight,
@@ -1232,9 +1269,12 @@ export async function setCurrentElectronRendererContentSize(
       `当前 WebDriver URL 没有精确匹配 Electron renderer 窗口: ${currentUrl}; candidates=${JSON.stringify(result.candidateUrls)}`,
     );
   }
+  // 根因：Windows 125% 等小数缩放下，窗口尺寸取整后内容区可差 2 像素（实测请求 760x641 得到 642）；
+  // 这不是窗口尺寸没有应用，整数缩放仍按 1 像素核对。
+  const sizeTolerance = Number.isInteger(result.scaleFactor) ? 1 : 2;
   if (
-    Math.abs(result.appliedWidth - width) > 1 ||
-    (height !== undefined && Math.abs(result.appliedHeight - height) > 1)
+    Math.abs(result.appliedWidth - width) > sizeTolerance ||
+    (height !== undefined && Math.abs(result.appliedHeight - height) > sizeTolerance)
   ) {
     await restoreElectronRendererContentSize(result.snapshot);
     throw new Error(
@@ -1562,20 +1602,46 @@ export async function isPrimaryWindowMinimized(): Promise<boolean> {
 
 export async function getTabLabels(): Promise<string[]> {
   return browser.execute(() => {
-    const workspaceItems = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-testid^='workspace-item-']"),
+    // 虚拟项目侧栏：项目行的 data-project-name 就是旧 workspace 标签名（目录 basename）。
+    const projectSections = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-project-id][data-project-name]"),
     );
-    if (workspaceItems.length > 0) {
-      return workspaceItems
-        .map((node) => {
-          const label = node.querySelector("div > div")?.textContent?.trim();
-          return label ?? "";
-        })
+    if (projectSections.length > 0) {
+      return projectSections
+        .map((node) => node.getAttribute("data-project-name")?.trim() ?? "")
         .filter(Boolean);
     }
 
     return Array.from(document.querySelectorAll<HTMLElement>("[data-testid^='tab-item-'] span"))
       .map((node) => node.textContent?.trim() ?? "")
       .filter(Boolean);
+  });
+}
+
+export async function ensureWorkspaceItemExpanded(
+  workspacePath: string,
+  timeout = 30_000,
+): Promise<void> {
+  const workspaceItemTestId = composeTestId(TID_WORKSPACE_ITEM, workspacePath);
+  await waitForTestIdByDom(workspaceItemTestId, {
+    timeout,
+    timeoutMsg: `侧栏没有显示 workspace: ${workspacePath}`,
+  });
+
+  const isExpanded = async () =>
+    (await browser.execute(readExactTestIdAttribute, workspaceItemTestId, "aria-expanded")) ===
+    "true";
+  if (!(await isExpanded())) {
+    await clickTestIdByDom(workspaceItemTestId, {
+      timeout: 15_000,
+      timeoutMsg: `侧栏 workspace 不可展开: ${workspacePath}`,
+    });
+  }
+
+  // Bug 根因：慢渲染环境下 DOM click 成功只代表事件已经派发，项目树的 React
+  // 展开提交仍可能在后续帧；统一等待 aria 终态，避免各 case 提前查找 task。
+  await browser.waitUntil(isExpanded, {
+    timeout: 15_000,
+    timeoutMsg: `侧栏 workspace 没有完成展开: ${workspacePath}`,
   });
 }

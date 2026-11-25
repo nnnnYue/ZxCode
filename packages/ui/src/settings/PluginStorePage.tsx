@@ -139,14 +139,7 @@ export function PluginStorePage({
         plugins,
         restorableBuiltins,
       }),
-    [
-      availablePlugins,
-      installedPlugins,
-      marketplaceAvailabilityKnown,
-      marketplaces,
-      plugins,
-      restorableBuiltins,
-    ],
+    [availablePlugins, installedPlugins, marketplaceAvailabilityKnown, marketplaces, plugins, restorableBuiltins],
   );
   const itemById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
   const detailItem = detailPluginId ? (itemById.get(detailPluginId) ?? null) : null;
@@ -587,3 +580,4 @@ export function PluginStorePage({
     </div>
   );
 }
+

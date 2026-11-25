@@ -11,6 +11,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { chromium } from "playwright-core";
+import { MobileRpcFrameGate, mobileRpcFrameIdentity } from "#e2e/helpers/mobile-rpc-frame-gate";
 import { openMobilePairingPage, seedMobileFixtureLogin } from "#e2e/helpers/mobile-pairing";
 import { obtainUnreadPairingUrl, showMobileTaskHome } from "#e2e/helpers/web-remote-unread";
 import {
@@ -31,10 +32,11 @@ import {
   TID_CHAT_MODE_SELECT_TRIGGER,
   TID_CHAT_MODEL_SELECT_TRIGGER,
   TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
-  TID_SETTINGS_BACK_BUTTON,
-  TID_SETTINGS_PAGE,
   TID_V4_COMPOSER_INPUT,
-} from "@zcode/shared";
+  TID_V4_MODEL_CONFIG,
+  TID_SETTINGS_PAGE,
+  TID_SETTINGS_BACK_BUTTON,
+} from "@zcode/shared/test-ids";
 import {
   clickV4SlashOption,
   getV4ComposerText,
@@ -74,7 +76,6 @@ const CUSTOM_SLASH_COMMAND_PATH = join(CUSTOM_SLASH_COMMAND_DIR, `${CUSTOM_SLASH
 const COMPOSER_PICKER_TRIGGER_IDS = {
   mode: TID_CHAT_MODE_SELECT_TRIGGER,
   model: TID_CHAT_MODEL_SELECT_TRIGGER,
-  thought: TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
 } as const;
 
 type ComposerPicker = keyof typeof COMPOSER_PICKER_TRIGGER_IDS;
@@ -101,7 +102,8 @@ async function waitForOnlyComposerPickerOpen(picker: ComposerPicker, transition:
         return {
           expanded,
           listboxes: document.querySelectorAll('[role="listbox"]').length,
-          menus: document.querySelectorAll('[role="menu"]').length,
+          menus: document.querySelectorAll('[role="menu"], [data-testid="composer-model-panel"]')
+            .length,
         };
       }, COMPOSER_PICKER_TRIGGER_IDS);
       const state = latest as {
@@ -109,8 +111,8 @@ async function waitForOnlyComposerPickerOpen(picker: ComposerPicker, transition:
         listboxes: number;
         menus: number;
       };
-      const expectedListboxes = picker === "model" ? 0 : 1;
-      const expectedMenus = picker === "model" ? 1 : 0;
+      const expectedListboxes = picker === "model" ? 1 : 0;
+      const expectedMenus = 1;
       return (
         state.expanded[picker] === "true" &&
         Object.entries(state.expanded).every(
@@ -142,7 +144,8 @@ async function waitForNoComposerPickerOpen(transition: string) {
             ]),
           ),
           listboxes: document.querySelectorAll('[role="listbox"]').length,
-          menus: document.querySelectorAll('[role="menu"]').length,
+          menus: document.querySelectorAll('[role="menu"], [data-testid="composer-model-panel"]')
+            .length,
         }),
         COMPOSER_PICKER_TRIGGER_IDS,
       );
@@ -165,6 +168,15 @@ async function waitForNoComposerPickerOpen(transition: string) {
 }
 
 async function closeComposerPicker() {
+  // 退出动画会在两次 WebDriver 调用之间卸载面板；同一次读取状态，避免 stale element。
+  const providerState = await browser.execute(
+    () =>
+      document
+        .querySelector('[data-testid="composer-provider-panel"]')
+        ?.getAttribute("data-state") ?? null,
+  );
+  if (providerState === "open") await browser.keys("Escape");
+  await $('[data-testid="composer-provider-panel"]').waitForExist({ reverse: true });
   await browser.keys("Escape");
   await waitForNoComposerPickerOpen("Escape");
 }
@@ -257,6 +269,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
   }
 
   before(async () => {
+    await skipOccupationOnboardingIfPresent();
     await mkdir(CUSTOM_SLASH_COMMAND_DIR, { recursive: true });
     await writeFile(
       CUSTOM_SLASH_COMMAND_PATH,
@@ -270,6 +283,14 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       ].join("\n"),
       "utf-8",
     );
+  });
+
+  afterEach(async () => {
+    // 某条交互断言失败时仍关闭其菜单，避免下一条点击被当成关闭旧弹层。
+    const open = await browser.execute(() =>
+      Boolean(document.querySelector('[role="menu"], [data-testid="composer-model-panel"]')),
+    );
+    if (open) await closeComposerPicker();
   });
 
   after(async () => {
@@ -288,25 +309,35 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     });
     await waitForV4SlashOption("slash:compact");
     await waitForV4SlashOption("slash:init");
-    await waitForV4SlashOption("slash:plan");
+    await waitForV4SlashOption("app-slash:plan");
     const optionIds = await getV4SlashOptionIds();
     expect(optionIds).toContain("slash:compact");
     expect(optionIds).toContain("slash:goal");
     expect(optionIds).toContain("slash:init");
-    expect(optionIds).toContain("slash:plan");
+    expect(optionIds).toContain("app-slash:plan");
+    expect(optionIds).not.toContain("slash:plan");
     expect(optionIds).not.toContain("slash:resume-goal");
 
-    // App-only `/plan` 仍按普通 slash catalog mention 插入，允许用户继续填写任务参数。
+    // /plan 已是本地模式操作；旧断言等待 CLI pill，无法覆盖实际的模式切换。
     await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "/plan", {
       timeout: 15000,
       timeoutMsg: "v4 composer 输入框没有出现或不可输入",
     });
-    await waitForV4SlashOption("slash:plan");
-    expect(await clickV4SlashOption("slash:plan")).toBe(true);
-    await browser.waitUntil(async () => ((await getV4ComposerText()) ?? "").startsWith("/plan"), {
-      timeout: 15000,
-      timeoutMsg: "选中 /plan 后命令没有插入 composer",
-    });
+    await waitForV4SlashOption("app-slash:plan");
+    expect(await clickV4SlashOption("app-slash:plan")).toBe(true);
+    await browser.waitUntil(
+      async () =>
+        (await $(`[data-testid="${TID_V4_MODEL_CONFIG}"]`).getAttribute("data-plan-enabled")) ===
+        "true",
+      {
+        timeout: 15000,
+        timeoutMsg: "选中 /plan 后草稿没有进入计划模式",
+      },
+    );
+    expect((await getV4ComposerText()) ?? "").toBe("");
+    expect((await getV4PaneSnapshot()).sessionId).toBe("draft");
+    // Plan 菜单项是复选框；再次点击同一项关闭，而不是选择不存在的 plan-off 项。
+    await switchV4Mode("plan");
     await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "", {
       timeout: 15000,
       timeoutMsg: "选中 /plan 后没有清空 composer",
@@ -339,6 +370,25 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
 
   it("模型选择器/思考深度/模式切换 → config 投影更新；usage 投影非零", async () => {
     await ensureCompletedTask();
+    await browser.execute(() => {
+      const probe = { empty: 0, disabled: 0, samples: 0, stop: () => {} };
+      const observer = new MutationObserver(() => {
+        const list = document.querySelector("[data-composer-model-list]");
+        if (!list) return;
+        probe.samples++;
+        if (!list.textContent?.trim()) probe.empty++;
+        if (document.querySelector<HTMLButtonElement>("[data-composer-combined-model]")?.disabled)
+          probe.disabled++;
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["disabled"],
+      });
+      probe.stop = () => observer.disconnect();
+      (window as Window & { __composerCatalogProbe?: typeof probe }).__composerCatalogProbe = probe;
+    });
 
     // 带最新投影值的分段等待（超时报文里带上 config 现值，便于定位卡在哪一段）。
     const waitForModelConfig = async (
@@ -483,47 +533,236 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       probe.stop = () => observer.disconnect();
       (window as Window & { __modeRollProbe?: typeof probe }).__modeRollProbe = probe;
     }, TID_CHAT_MODE_SELECT_TRIGGER);
-    // 声明取自 fork 基线（HEAD 版本同用例）：v3.18.0 合并保留 fork 断言主体时
-    // 丢失了该局部变量声明，导致 TS2304。
-    let latestMode: string | null = null;
     try {
+      // Edit 只保留历史兼容，不再是菜单候选；用现有 Guarded 模式验证同一翻滚交互。
+      await switchV4Mode("guarded");
       await browser.waitUntil(
         async () => {
-          latestMode = (await getV4ModelConfig()).mode;
-          return latestMode === "plan";
+          const label = await modeTrigger.$("span[title]");
+          return (await label.getText()) === (await label.getAttribute("title"));
         },
-        { timeout: 30000, timeoutMsg: "模式切换后 config.mode 投影没有更新为 plan" },
+        { timeout: 5000, timeoutMsg: "mode rolling label did not settle" },
       );
-    } catch (error) {
-      throw new Error(`模式切换后 config.mode 投影没有更新为 plan; latest=${latestMode}`, {
-        cause: error,
+      expect((await $(`[data-testid="${TID_CHAT_MODE_SELECT_TRIGGER}"]`)).elementId).toBe(
+        modeTrigger.elementId,
+      );
+      const motion = await browser.execute(() => {
+        const probe = (
+          window as Window & { __modeRollProbe?: { animated: boolean; reduced: boolean } }
+        ).__modeRollProbe!;
+        return { animated: probe.animated, reduced: probe.reduced };
       });
+      expect(motion.animated).toBe(!motion.reduced);
+    } finally {
+      await browser.execute(() => {
+        const target = window as Window & { __modeRollProbe?: { stop: () => void } };
+        target.__modeRollProbe?.stop();
+        delete target.__modeRollProbe;
+      });
+      await switchV4Mode("build");
     }
+    await switchV4Mode("plan");
+    await browser.waitUntil(
+      () =>
+        browser.execute(
+          (testId) =>
+            document.querySelector<HTMLElement>(`[data-testid="${testId}"]`)?.dataset
+              .planEnabled === "true",
+          TID_V4_MODEL_CONFIG,
+        ),
+      { timeout: 15000, timeoutMsg: "Plan 开关没有写回 Composer" },
+    );
+    expect((await getV4ModelConfig()).mode).toBe("build");
+    expect(await $('[data-testid="v4-composer-plan-marker"]').isDisplayed()).toBe(true);
 
     // context usage：首轮 ModelComplete 后 usage.contextWindow 投影非零
     const projection = await getV4ConfigProjection();
     expect(projection.usageUsed).toBeGreaterThan(0);
   });
 
-  it("模式/模型/思考深度 picker 互斥，后打开者保持唯一可见", async () => {
+  it("合并模型/思考弹层与模式 picker 互斥", async () => {
     await ensureCompletedTask();
-
+    expect(await $(`[data-testid="${TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER}"]`).isExisting()).toBe(
+      false,
+    );
     await openComposerPicker("mode");
     await waitForOnlyComposerPickerOpen("mode", "打开模式 picker");
+    const originalWidth = (await $(`[data-testid="${TID_CHAT_MODEL_SELECT_TRIGGER}"]`).getSize())
+      .width;
     await openComposerPicker("model");
-    await waitForOnlyComposerPickerOpen("model", "Select→Dropdown");
-    await closeComposerPicker();
+    await waitForOnlyComposerPickerOpen("model", "模式→合并菜单");
+    expect(
+      await $('[data-testid="composer-provider-trigger"] [data-provider-access-badge]').getText(),
+    ).toBe("API");
+    const triggerAppearance = await browser.execute(() => {
+      const trigger = document.querySelector<HTMLElement>("[data-composer-combined-model]")!;
+      const style = getComputedStyle(trigger);
+      return { background: style.backgroundColor, radius: Number.parseFloat(style.borderRadius) };
+    });
+    expect(triggerAppearance.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(triggerAppearance.radius).toBeGreaterThan(0);
+    expect(triggerAppearance.radius).toBeLessThan(14);
+    expect(await $('[data-testid="composer-model-panel"]').getAttribute("data-align")).toBe(
+      "center",
+    );
+    const expandedTrigger = $(`[data-testid="${TID_CHAT_MODEL_SELECT_TRIGGER}"]`);
+    expect(await expandedTrigger.getText()).toMatch(/Select model|选择模型/);
+    const minimumWidth = await browser.execute(
+      () => 8 * Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+    );
+    expect((await expandedTrigger.getSize()).width).toBe(Math.max(originalWidth, minimumWidth));
+    const labelFits = await browser.execute(() => {
+      const label = document.querySelector<HTMLElement>("[data-composer-open-label]")!;
+      return label.scrollWidth <= label.clientWidth;
+    });
+    expect(labelFits).toBe(true);
+    const search = $('[data-testid="composer-model-search"]');
+    await search.setValue("__no_matching_model__");
+    expect(await $$("[data-composer-model-list] [role=option]").length).toBe(0);
+    expect(await $("[data-composer-model-list] [role=status]").isDisplayed()).toBe(true);
+    await search.setValue(" ");
+    expect(await $$("[data-composer-model-list] [role=option]").length).toBeGreaterThan(0);
+    const modelFonts = await browser.execute(() => {
+      const row = document.querySelector<HTMLElement>(
+        '[data-composer-model-list] [role="option"]',
+      )!;
+      const name = row.querySelector<HTMLElement>("[title]")!;
+      return {
+        name: getComputedStyle(name).fontSize,
+        row: getComputedStyle(row).fontSize,
+      };
+    });
+    expect(modelFonts.name).toBe(modelFonts.row);
+    expect(await $('[data-testid="composer-thought-endpoints"]').isExisting()).toBe(false);
+    expect(await $("[data-composer-model-heading]").getText()).toMatch(/Models|模型/);
+    expect(await $('[data-testid="composer-thought-slider"]').isDisplayed()).toBe(true);
+    const declaredLevels = JSON.parse(
+      (await $('[data-testid="composer-thought-slider"]').getAttribute("data-levels")) ?? "[]",
+    ) as string[];
+    expect(await $$("[data-composer-thought-stop]").length).toBe(declaredLevels.length);
+    expect(await $('[data-testid="composer-thought-track"]').isDisplayed()).toBe(true);
+    const trackGeometry = await browser.execute(() => {
+      const track = document.querySelector<HTMLElement>('[data-testid="composer-thought-track"]')!;
+      const fill = track.querySelector<HTMLElement>(".composer-thought-slider-fill")!;
+      return {
+        trackHeight: track.getBoundingClientRect().height,
+        fillHeight: fill.getBoundingClientRect().height,
+        topOffset: fill.getBoundingClientRect().top - track.getBoundingClientRect().top,
+        border: getComputedStyle(track).borderTopWidth,
+      };
+    });
+    expect(trackGeometry.border).toBe("0px");
+    expect(trackGeometry.topOffset).toBe(0);
+    expect(trackGeometry.fillHeight).toBe(trackGeometry.trackHeight);
+    const motion = await browser.execute(() => {
+      const thumb = document.querySelector(".composer-thought-slider-thumb")!;
+      const fill = document.querySelector(".composer-thought-slider-fill")!;
+      return {
+        reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        thumb: getComputedStyle(thumb).transitionDuration,
+        fill: getComputedStyle(fill).transitionDuration,
+        gradient: getComputedStyle(fill, "::before").transitionDuration,
+        gradientProperty: getComputedStyle(fill, "::before").transitionProperty,
+      };
+    });
+    expect(motion.thumb).toBe(motion.reduced ? "0s" : "0.12s");
+    expect(motion.fill).toBe(motion.thumb);
+    const menuLayout = await browser.execute(() => {
+      const list = document.querySelector<HTMLElement>("[data-composer-model-list]")!;
+      const menu = list.closest('[data-testid="composer-model-panel"]')!;
+      return {
+        outerOverflow: getComputedStyle(menu).overflowY,
+        listOverflow: getComputedStyle(list).overflowY,
+        appRegion: getComputedStyle(menu).getPropertyValue("app-region"),
+      };
+    });
+    expect(menuLayout.outerOverflow).toBe("hidden");
+    expect(menuLayout.listOverflow).toBe("auto");
+    expect(menuLayout.appRegion).toBe("no-drag");
+    const modelList = $("[data-composer-model-list]");
+    try {
+      await browser.execute(() => {
+        const list = document.querySelector<HTMLElement>("[data-composer-model-list]")!;
+        list.style.maxHeight = "30px";
+        list.scrollTop = 0;
+      });
+      await browser.waitUntil(
+        async () => (await modelList.getAttribute("data-scroll-mask")) === "bottom",
+      );
+      for (const [position, mask] of [
+        [0.5, "both"],
+        [1, "top"],
+      ] as const) {
+        await browser.execute((ratio) => {
+          const list = document.querySelector<HTMLElement>("[data-composer-model-list]")!;
+          list.scrollTop = (list.scrollHeight - list.clientHeight) * ratio;
+        }, position);
+        await browser.waitUntil(
+          async () => (await modelList.getAttribute("data-scroll-mask")) === mask,
+        );
+      }
+    } finally {
+      await browser.execute(() => {
+        const list = document.querySelector<HTMLElement>("[data-composer-model-list]")!;
+        list.style.removeProperty("max-height");
+        list.scrollTop = 0;
+      });
+    }
+    await browser.waitUntil(
+      async () => (await modelList.getAttribute("data-scroll-mask")) === "none",
+    );
 
+    const combinedTrigger = await $("[data-composer-combined-model]");
+    expect(await combinedTrigger.$('[data-composer-trigger-frame="open"]').isExisting()).toBe(true);
+    expect(await combinedTrigger.$("[data-composer-open-chevron]").isExisting()).toBe(false);
+
+    const shortcut = await $('[data-testid="composer-effort-shortcut"]');
+    expect(await shortcut.getText()).toMatch(/T/i);
+    const shortcutLayout = await browser.execute(() => {
+      const shortcut = document.querySelector<HTMLElement>(
+        '[data-testid="composer-effort-shortcut"]',
+      )!;
+      const value = document.querySelector<HTMLElement>('[data-testid="composer-thought-value"]')!;
+      const a = shortcut.getBoundingClientRect();
+      const b = value.getBoundingClientRect();
+      const row = shortcut.parentElement!.getBoundingClientRect();
+      return {
+        afterValue: a.left > b.right,
+        rightGap: row.right - a.right,
+        sameRow: Math.abs(a.top + a.height / 2 - (b.top + b.height / 2)) < 2,
+      };
+    });
+    expect(shortcutLayout.afterValue).toBe(true);
+    expect(shortcutLayout.rightGap).toBeLessThan(2);
+    expect(shortcutLayout.sameRow).toBe(true);
+    const shortcutStyle = await browser.execute(() => {
+      const element = document.querySelector('[data-testid="composer-effort-shortcut"]')!;
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        radius: style.borderRadius,
+        height: style.height,
+      };
+    });
+    expect(shortcutStyle.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(shortcutStyle.radius).toBe("6px");
+    expect(shortcutStyle.height).toBe("16px");
+
+    expect(motion.gradient).toBe(motion.reduced ? "0s" : "0.2s");
+    if (!motion.reduced) expect(motion.gradientProperty).toBe("opacity");
+    await closeComposerPicker();
     await openComposerPicker("model");
-    await waitForOnlyComposerPickerOpen("model", "打开模型 picker");
-    await openComposerPicker("thought");
-    await waitForOnlyComposerPickerOpen("thought", "Dropdown→Select");
-    await closeComposerPicker();
-
     await openComposerPicker("mode");
-    await waitForOnlyComposerPickerOpen("mode", "重新打开模式 picker");
-    await openComposerPicker("thought");
-    await waitForOnlyComposerPickerOpen("thought", "Select→Select");
+    await waitForOnlyComposerPickerOpen("mode", "合并菜单→模式");
+    await browser.waitUntil(
+      async () => !(await combinedTrigger.$('[data-composer-trigger-frame="open"]').isExisting()),
+      { timeout: 3000 },
+    );
+    expect(await combinedTrigger.$('[data-composer-trigger-frame="closed"]').isExisting()).toBe(
+      true,
+    );
+    expect((await $("[data-composer-combined-model]")).elementId).toBe(combinedTrigger.elementId);
+
     await closeComposerPicker();
   });
 
@@ -684,18 +923,22 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     const provider = $('[data-testid="composer-provider-trigger"]');
     expect(await provider.$('img, svg[aria-hidden="true"]').isExisting()).toBe(true);
     await provider.click();
-    const providerMenu = await $('[data-slot="dropdown-menu-sub-content"]');
+    const providerMenu = await $('[data-testid="composer-provider-panel"]');
     await providerMenu.waitForDisplayed();
     // 入场缩放期间外框坐标尚未稳定，等待菜单自身动画结束后再验证对齐。
     await browser.waitUntil(() =>
       browser.execute(() =>
-        Array.from(document.querySelectorAll('[role="menu"]')).every((menu) =>
+        Array.from(
+          document.querySelectorAll(
+            '[data-testid="composer-model-panel"], [data-testid="composer-provider-panel"]',
+          ),
+        ).every((menu) =>
           menu.getAnimations().every((animation) => animation.playState === "finished"),
         ),
       ),
     );
     const providerBounds = await browser.execute(() => {
-      const menu = document.querySelector<HTMLElement>('[data-slot="dropdown-menu-sub-content"]')!;
+      const menu = document.querySelector<HTMLElement>('[data-testid="composer-provider-panel"]')!;
       const rect = menu.getBoundingClientRect();
       return {
         inside: rect.left >= 0 && rect.right <= document.documentElement.clientWidth,
@@ -704,8 +947,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         aligned:
           Math.abs(
             rect.top -
-              document.querySelector('[data-slot="dropdown-menu-content"]')!.getBoundingClientRect()
-                .top,
+              document
+                .querySelector('[data-testid="composer-model-panel"]')!
+                .getBoundingClientRect().top,
           ) <= 1,
         listOverflow: getComputedStyle(menu.querySelector("[data-composer-provider-list]")!)
           .overflowY,
@@ -719,7 +963,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     expect(
       await browser.execute(() =>
         getComputedStyle(
-          document.querySelector('[data-slot="dropdown-menu-sub-content"]')!,
+          document.querySelector('[data-testid="composer-provider-panel"]')!,
         ).getPropertyValue("app-region"),
       ),
     ).toBe("no-drag");
@@ -728,9 +972,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     await manage.waitForDisplayed();
     const badgeGaps = await browser.execute(() =>
       Array.from(
-        document.querySelectorAll<HTMLElement>(
-          '[role="menuitemradio"] [data-provider-access-badge]',
-        ),
+        document.querySelectorAll<HTMLElement>('[role="option"] [data-provider-access-badge]'),
       ).map((badge) => {
         const name = badge.previousElementSibling!;
         const range = document.createRange();
@@ -918,10 +1160,10 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     await openComposerPicker("model");
     const trigger = await $('[data-testid="chat-model-select-trigger"]');
     const slider = await $('[data-testid="composer-thought-slider"]');
-    const menu = await $('[role="menu"]');
+    const menu = await $('[data-testid="composer-model-panel"]');
     const levels = JSON.parse((await slider.getAttribute("data-levels")) ?? "[]") as string[];
     expect(levels.length).toBeGreaterThan(1);
-    // 鼠标留在菜单内会随浮层移动触发 Radix pointerleave 焦点规则；以键盘场景隔离 resize。
+    // 鼠标移出面板，以键盘 Tab 场景验证 resize 前后的原生控件焦点。
     await browser.performActions([
       {
         type: "pointer",
@@ -931,7 +1173,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       },
     ]);
     await browser.releaseActions();
-    await browser.keys("End");
+    for (let index = 0; index < 5 && !(await slider.isFocused()); index++) {
+      await browser.keys("Tab");
+    }
     await browser.waitUntil(() => slider.isFocused(), {
       timeout: 5000,
       timeoutMsg: "keyboard did not focus effort slider",
@@ -994,7 +1238,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         expect((await $('[data-testid="composer-thought-slider"]')).elementId).toBe(
           slider.elementId,
         );
-        expect((await $('[role="menu"]')).elementId).toBe(menu.elementId);
+        expect((await $('[data-testid="composer-model-panel"]')).elementId).toBe(menu.elementId);
         expect(await slider.isFocused()).toBe(true);
         expect(await getV4ModelConfig()).toEqual(expectedConfig);
         if (width) {
@@ -1109,9 +1353,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         expect(
           await $('[data-testid="composer-thought-slider"]').getAttribute("aria-disabled"),
         ).toBe("true");
-        expect(
-          await $('[data-testid="composer-provider-trigger"]').getAttribute("aria-disabled"),
-        ).toBe("true");
+        expect(await $('[data-testid="composer-provider-trigger"]').isEnabled()).toBe(false);
         expect(
           await $('[data-testid^="chat-model-select-item-"]').getAttribute("aria-disabled"),
         ).toBe("true");
@@ -1158,7 +1400,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await send.waitForClickable({ timeout: 10000 });
       await send.click();
       const capture = await waitForUpstreamNetworkCapture(marker);
-      const artifactDir = process.env.ZXCODE_E2E_ARTIFACT_DIR;
+      const artifactDir = process.env.ZCODE_E2E_ARTIFACT_DIR;
       if (artifactDir)
         await writeFile(
           join(artifactDir, "cross-session-ack-request.json"),
@@ -1207,7 +1449,11 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       ...(executablePath ? { executablePath } : { channel: "chrome" }),
       headless: true,
     });
-    const held: Array<() => void> = [];
+    const gates = new Set<MobileRpcFrameGate>();
+    const outboundMessages = new Set<string>();
+    const heldCount = () => [...gates].reduce((count, gate) => count + gate.heldCount, 0);
+    const replayCount = () =>
+      [...gates].reduce((count, gate) => count + gate.replayedHeldFrames, 0);
     let holding = false;
     let holdConfig = false;
     let holdConfigReply = false;
@@ -1219,7 +1465,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       holdConfig = false;
       holdConfigReply = false;
       replyBridge = null;
-      held.splice(0).forEach((send) => send());
+      gates.forEach((gate) => gate.release());
     };
     try {
       const context = await chrome.newContext({
@@ -1231,36 +1477,55 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       const page = await context.newPage();
       await page.routeWebSocket(/\/api\/v1\/remote\/ws2(?:\?|$)/u, (route) => {
         const server = route.connectToServer();
-        route.onMessage((message) => {
-          const payload = JSON.parse(String(message)).payload;
-          const wire =
-            typeof payload?.dataBase64 === "string"
-              ? Buffer.from(payload.dataBase64, "base64").toString("utf8")
-              : "";
-          if (wire.includes("sendConversationCommandV4") && wire.includes('"type":"sendText"'))
-            sends++;
-          const isConfig =
-            wire.includes("sendConversationCommandV4") &&
-            wire.includes('"type":"switchModelConfig"');
-          if (isConfig) configs++;
-          if (isConfig && holdConfigReply && wire.includes(completedTaskId!))
-            replyBridge = payload.bridgeSessionId;
-          if (
-            (holdConfig && isConfig && wire.includes(completedTaskId!)) ||
-            (holding && wire.includes("model-selection") && wire.includes("getView"))
-          ) {
-            held.push(() => server.send(message));
-          } else server.send(message);
+        const outbound = new MobileRpcFrameGate(
+          (message) => server.send(message),
+          outboundMessages,
+        );
+        const inbound = new MobileRpcFrameGate((message) => route.send(message));
+        gates.add(outbound);
+        gates.add(inbound);
+        // 连接关闭后旧扣帧不可再发送；重连重放沿用用例级命令去重记录。
+        const dispose = () => {
+          for (const gate of [outbound, inbound]) {
+            gate.dispose();
+            gates.delete(gate);
+          }
+        };
+        route.onClose((code, reason) => {
+          dispose();
+          return server.close({ code, reason });
         });
-        server.onMessage((message) => {
-          const payload = JSON.parse(String(message)).payload;
-          if (replyBridge && payload?.bridgeSessionId === replyBridge && payload.dataBase64)
-            held.push(() => route.send(message));
-          else route.send(message);
+        server.onClose((code, reason) => {
+          dispose();
+          return route.close({ code, reason });
         });
+        route.onMessage((message) =>
+          outbound.receive(message, (payload, wire) => {
+            const isSend =
+              wire.includes("sendConversationCommandV4") && wire.includes('"type":"sendText"');
+            const isConfig =
+              wire.includes("sendConversationCommandV4") &&
+              wire.includes('"type":"switchModelConfig"');
+            if ((isSend || isConfig) && outbound.firstMessage(payload)) {
+              if (isSend) sends++;
+              if (isConfig) configs++;
+            }
+            if (isConfig && holdConfigReply && wire.includes(completedTaskId!))
+              replyBridge = mobileRpcFrameIdentity(payload);
+            return (
+              (holdConfig && isConfig && wire.includes(completedTaskId!)) ||
+              (holding && wire.includes("model-selection") && wire.includes("getView"))
+            );
+          }),
+        );
+        server.onMessage((message) =>
+          inbound.receive(message, (payload) =>
+            Boolean(replyBridge && mobileRpcFrameIdentity(payload) === replyBridge),
+          ),
+        );
       });
       await openMobilePairingPage(page, pairingUrl, {
-        artifactDir: process.env.ZXCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/provider-gate",
+        artifactDir: process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/provider-gate",
         caseMarker: "CPG01",
         phase: "pairing",
         readySelector: '[data-testid="sidebar"], [data-mobile-page="chat"]',
@@ -1293,7 +1558,10 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await page
         .locator(`[data-model-provider-key="registry-provider:${UPSTREAM_ALTERNATE_PROVIDER_ID}"]`)
         .click();
-      await browser.waitUntil(() => held.length > 0, { timeout: 10000 });
+      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
+      // focus 会读取项目目录；后继 RPC 必须随目标帧一起挂起，不能制造缺号。
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await browser.waitUntil(() => heldCount() > 1, { timeout: 10000 });
       await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
       const send = page.getByTestId("v4-composer-send");
@@ -1318,10 +1586,16 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await modelTrigger.click();
       holdConfig = true;
       const configsBefore = configs;
+      const replaysBefore = replayCount();
       await thoughtSlider.focus();
       await thoughtSlider.press("End");
-      await browser.waitUntil(() => held.length === 1, { timeout: 10000 });
+      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
       await browser.waitUntil(() => modelTrigger.isDisabled(), { timeout: 5000 });
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await browser.waitUntil(() => heldCount() > 1 && replayCount() > replaysBefore, {
+        timeout: 15000,
+        timeoutMsg: "配置挂起期间未观察到后继 RPC 与原帧重放",
+      });
       expect(await modelTrigger.getAttribute("aria-expanded")).toBe("true");
       expect(await thoughtSlider.getAttribute("aria-disabled")).toBe("true");
       await page.keyboard.press("Control+t");
@@ -1392,7 +1666,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await thoughtSlider.focus();
       await thoughtSlider.press("Home");
       await expectPersistedThought(completedTaskId!, "high");
-      await browser.waitUntil(() => held.length > 0, { timeout: 10000 });
+      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
       expect(await modelTrigger.getAttribute("aria-expanded")).toBe("true");
       await page.keyboard.press("Escape");
       const openTask = async (id: string) => {
@@ -1406,11 +1680,11 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         try {
           await input.waitFor({ timeout: 15000 });
         } catch (error) {
-          const dir = process.env.ZXCODE_E2E_ARTIFACT_DIR;
+          const dir = process.env.ZCODE_E2E_ARTIFACT_DIR;
           if (dir)
             await writeFile(
               join(dir, "cross-session-mobile-navigation.txt"),
-              `${id} held=${held.length}\n${await page.locator("body").innerText()}`,
+              `${id} held=${heldCount()}\n${await page.locator("body").innerText()}`,
             );
           throw error;
         }
@@ -1425,7 +1699,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       });
       await send.click();
       const capture = await waitForUpstreamNetworkCapture(marker);
-      const artifactDir = process.env.ZXCODE_E2E_ARTIFACT_DIR;
+      const artifactDir = process.env.ZCODE_E2E_ARTIFACT_DIR;
       if (artifactDir)
         await writeFile(
           join(artifactDir, "cross-session-ack-mobile-request.json"),
@@ -1542,9 +1816,20 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
           timeoutMsg: "Provider 刷新中仍允许发送",
         });
         await $(`[data-testid="${TID_V4_COMPOSER_INPUT}"]`).click();
+        // 窄窗口点击会把光标放到正文中部；明确移到末尾，避免正常换行截断 marker。
+        await browser.execute((testId) => {
+          const input = document.querySelector(`[data-testid="${testId}"]`)!;
+          const range = document.createRange();
+          range.selectNodeContents(input);
+          range.collapse(false);
+          const selection = window.getSelection()!;
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }, TID_V4_COMPOSER_INPUT);
         await browser.keys("Enter");
         expect((await readProbe()).sends).toBe(0);
-        expect(await getV4ComposerText()).toContain("E2E_PROVIDER_PENDING_SEND");
+        // 禁发期间允许继续编辑及尾部换行，但原文必须完整保留。
+        expect((await getV4ComposerText())?.trimEnd()).toBe(`E2E_PROVIDER_PENDING_SEND_${width}`);
         if (nextTaskId) {
           await browser.execute(() =>
             (
