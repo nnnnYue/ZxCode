@@ -4,15 +4,9 @@ import { join } from "node:path";
 import {
   NodeZCodeBuiltinProviderConfigSource,
   ZCodeBuiltinRemoteSynchronizer,
-  ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
   downloadZCodeBuiltinRelease,
-  type ZCodeBuiltinRefreshEvent,
 } from "@zcode/provider-node";
-import { createSharedZCodeCredentialStore } from "@zcode/adapters/auth";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { startProcessProviderRegistryRuntime } from "../src/app/process-provider-registry-runtime.js";
 
 const CLIENT_CONFIG_PATH = "/api/v1/client/configs?";
 const ENDPOINT = "https://zcode-control.example.com";
@@ -38,7 +32,7 @@ async function createRemote() {
   temporaryDirectories.push(root);
   const builtin = JSON.parse(
     await readFile(
-      new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+      new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
       "utf8",
     ),
   ) as { revision: number };
@@ -110,7 +104,10 @@ async function readControl(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
 }
 
-describe("Built-in 远端刷新节奏", () => {
+// fork（REMOVALS §十三 2026-11-26 二次拍板）：Built-in 配置刷新只在编译打包期执行，
+// 运行时 zcodeBuiltinRemote 接线已拆除。本文件仅保留 ZCodeBuiltinRemoteSynchronizer
+// 引擎自身的节奏/租约行为测试（引擎随上游保留为休眠，无运行时激活路径）。
+describe("Built-in 远端刷新节奏（引擎）", () => {
   async function createSynchronizer(remote: Awaited<ReturnType<typeof createRemote>>) {
     const clock = { now: 1_800_000_000_000 };
     const source = new NodeZCodeBuiltinProviderConfigSource({
@@ -307,52 +304,4 @@ describe("Built-in 远端刷新节奏", () => {
     }
   }, CASE_TIMEOUT_MS);
 
-  it("独立 CLI 运行时按服务端间隔排期，到期复查时 URL 不变不下载 CDN", async () => {
-    const remote = await createRemote();
-    const events: ZCodeBuiltinRefreshEvent[] = [];
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_DATA_BASE_DIR: remote.root },
-    });
-    const env = {
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: remote.active,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(remote.root, "personal.json"),
-      [ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV]: remote.bundled,
-    };
-    const start = () =>
-      startProcessProviderRegistryRuntime(env, {
-        standalone: {
-          credentialStore,
-          request: remote.request,
-          legacyCliUserConfigFilePath: join(remote.root, "absent.json"),
-          onBuiltinRefreshResult: (event) => events.push(event),
-        },
-      });
-
-    const before = Date.now();
-    const first = await start();
-    try {
-      await vi.waitFor(() => expect(events.map((event) => event.result)).toEqual(["updated"]));
-      const control = await readControl(remote.controlFile);
-      expect(control.nextEligibleAt as number).toBeGreaterThanOrEqual(before + MINUTE_MS);
-      expect(control.nextEligibleAt as number).toBeLessThanOrEqual(Date.now() + MINUTE_MS);
-      expect(control.releaseUrl).toBe(remote.remote.url);
-    } finally {
-      first.dispose();
-    }
-
-    // 模拟下一次定时检查：只把到期时间提前，保留上次下载的 URL 记录。
-    await writeFile(
-      remote.controlFile,
-      JSON.stringify({ ...(await readControl(remote.controlFile)), nextEligibleAt: 0 }),
-    );
-    const second = await start();
-    try {
-      await vi.waitFor(() => expect(events).toHaveLength(2));
-      expect(events[1]?.result).toBe("unchanged");
-      expect(remote.configRequests).toHaveLength(2);
-      expect(remote.cdnRequests).toHaveLength(1);
-    } finally {
-      second.dispose();
-    }
-  }, CASE_TIMEOUT_MS);
 });

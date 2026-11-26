@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import type { RunContext } from "@zcode/shared-types";
 import {
@@ -120,7 +120,9 @@ async function createFixture(): Promise<Fixture> {
   return {
     home,
     launchCwd,
-    defaultStatePath: join(home, ".zcode", "cli", "browser-state.json"),
+    // fork 品牌规则：默认配置目录是 ~/.zxcode/cli（上游为 ~/.zcode），
+    // 生产 resolveDefaultBrowserStatePath 用 .zxcode，测试 fixture 保持一致。
+    defaultStatePath: join(home, ".zxcode", "cli", "browser-state.json"),
     runtimeStatePaths,
     appCount: () => apps,
     deps,
@@ -129,7 +131,7 @@ async function createFixture(): Promise<Fixture> {
 }
 
 async function writeDefaultState(fixture: Fixture, content: unknown): Promise<void> {
-  await mkdir(join(fixture.home, ".zcode", "cli"), { recursive: true });
+  await mkdir(dirname(fixture.defaultStatePath), { recursive: true });
   await writeFile(
     fixture.defaultStatePath,
     typeof content === "string" ? content : JSON.stringify(content),

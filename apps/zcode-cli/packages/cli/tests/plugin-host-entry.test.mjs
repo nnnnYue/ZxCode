@@ -80,7 +80,7 @@ export async function main() {
 
       const { stdout, stderr } = await execFileAsync(
         process.execPath,
-        [outfile, "__zcode-plugin-host", serverPath, "--prompt", "plugin argument"],
+        [outfile, "__zxcode-plugin-host", serverPath, "--prompt", "plugin argument"],
         {
           env: { ...process.env, NODE_ENV: "untrusted", ZXCODE_PLUGIN_ID: "" },
           timeout: processTimeoutMs,
@@ -104,7 +104,7 @@ export async function main() {
       ]) {
         const named = await execFileAsync(
           process.execPath,
-          [outfile, "__zcode-plugin-host", serverPath],
+          [outfile, "__zxcode-plugin-host", serverPath],
           {
             env: { ...process.env, ZXCODE_PLUGIN_ID: pluginId },
             timeout: processTimeoutMs,
@@ -130,7 +130,7 @@ export async function main() {
       };
       const authorized = await execFileAsync(
         process.execPath,
-        [outfile, "__zcode-plugin-host", serverPath, "--permission-broker-socket", brokerSocket],
+        [outfile, "__zxcode-plugin-host", serverPath, "--permission-broker-socket", brokerSocket],
         { env: authorizedEnv, timeout: processTimeoutMs },
       );
       assert.equal(authorized.stderr, "");
@@ -154,12 +154,12 @@ export async function main() {
       await assert.rejects(
         execFileAsync(
           process.execPath,
-          [outfile, "__zcode-plugin-host", serverPath, "--permission-broker-socket", brokerSocket],
+          [outfile, "__zxcode-plugin-host", serverPath, "--permission-broker-socket", brokerSocket],
           { env: unauthorizedEnv, timeout: processTimeoutMs },
         ),
         (error) =>
           error.stdout === "" &&
-          error.stderr.includes("Captured ZCode CUA broker credentials may only launch") &&
+          error.stderr.includes("Captured ZxCode CUA broker credentials may only launch") &&
           !error.stderr.includes("UNAUTHORIZED_PLUGIN_IMPORTED"),
       );
 

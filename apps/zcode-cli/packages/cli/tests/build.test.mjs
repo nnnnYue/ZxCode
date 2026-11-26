@@ -259,23 +259,25 @@ test("built CLI embeds the compact registry without a runtime Fig dependency", a
   assert.doesNotMatch(bundle, /@withfig\/autocomplete\/build/);
 });
 
-test("request security subpath bundles through its edition entry", async () => {
-  const result = await build({
-    stdin: {
-      contents: 'import * as security from "@zcode/shared/request-security"; export { security };',
-      resolveDir: resolve(import.meta.dirname, ".."),
-    },
-    alias: resolveBuildAliases(),
-    bundle: true,
-    platform: "node",
-    format: "esm",
-    write: false,
-    metafile: true,
-  });
-  assert.ok(
-    Object.keys(result.metafile.inputs).some((path) =>
-      path.endsWith("shared/src/request-security-edition/index.ts"),
-    ),
+test("removed account request-security domain never resolves in CLI bundles", async () => {
+  // fork 剔除域（REMOVALS.md「账号请求安全子系统」）删除了 shared 的
+  // request-security-edition 源码目录，package.json 的 ./request-security
+  // 导出随之悬空；构建别名仍按 exports 派生该键，任何把子路径拉进
+  // CLI bundle 的回潜都必须在解析期失败（fail-closed），不允许静默打包。
+  await assert.rejects(
+    build({
+      stdin: {
+        contents: 'import * as security from "@zcode/shared/request-security"; export { security };',
+        resolveDir: resolve(import.meta.dirname, ".."),
+      },
+      alias: resolveBuildAliases(),
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+    }),
+    /Could not resolve/u,
   );
 });
 

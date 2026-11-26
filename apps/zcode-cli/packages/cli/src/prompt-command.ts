@@ -1,5 +1,4 @@
 import type { ToolSearchMode } from "@zcode/contracts";
-import { createCliProviderRefreshReporter } from "./provider-runtime-env.js";
 import { extname } from "node:path";
 import { formatJson, type PresentationSurface } from "@zcode/core";
 import type { RunContext, GlobalOptions } from "@zcode/shared-types";
@@ -198,10 +197,10 @@ export const runPrompt = async (
       deps.skipUserConfig
         ? {}
         : {
-            standalone: {
-              ...createCliProviderRefreshReporter(ctx.stderr),
-              ...(deps.userConfigPath ? { legacyCliUserConfigFilePath: deps.userConfigPath } : {}),
-            },
+            standalone:
+              deps.userConfigPath
+                ? { legacyCliUserConfigFilePath: deps.userConfigPath }
+                : {},
           },
     );
     // endpoint 路由端口构造已随 endpoint-routing-edition 域剔除删除（fork 剔除轮

@@ -158,7 +158,7 @@ test("hooks trust status 在受管 worktree 中提示命令回填当前路径，
   assert.equal(code, 0);
   const output = ctx.stdout.output();
   assert.match(output, /workspace: \/projects\/repo/);
-  assert.match(output, /grant --workspace "?\/data\/\.zcode\/worktrees\/3f2a\/repo"?/);
+  assert.match(output, /grant --workspace "?\/data\/\.zxcode\/worktrees\/3f2a\/repo"?/);
   assert.doesNotMatch(output, /grant --workspace "?\/projects\/repo/);
 });
 

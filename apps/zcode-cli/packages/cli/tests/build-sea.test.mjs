@@ -93,7 +93,7 @@ test("includes the production ZCode Built-in Provider Config as a SEA asset", as
     JSON.parse(await readFile(zcodeBuiltinFilePath, "utf8")),
     JSON.parse(
       await readFile(
-        new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../../../config/provider/zxcode-builtin.json", import.meta.url),
         "utf8",
       ),
     ),
@@ -260,10 +260,10 @@ test("rejects empty SEA target selectors", () => {
 });
 
 test("maps SEA targets to output binary names", () => {
-  assert.equal(outputBinaryName("darwin-arm64"), "zcode-darwin-arm64");
-  assert.equal(outputBinaryName("linux-x64"), "zcode-linux-x64");
-  assert.equal(outputBinaryName("win-arm64"), "zcode-windows-arm64.exe");
-  assert.equal(outputBinaryName("win-x64"), "zcode-windows-x64.exe");
+  assert.equal(outputBinaryName("darwin-arm64"), "zxcode-darwin-arm64");
+  assert.equal(outputBinaryName("linux-x64"), "zxcode-linux-x64");
+  assert.equal(outputBinaryName("win-arm64"), "zxcode-windows-arm64.exe");
+  assert.equal(outputBinaryName("win-x64"), "zxcode-windows-x64.exe");
 });
 
 test("prepares every SEA target in the desktop bundled-tools layout", () => {
@@ -459,13 +459,13 @@ for (const fixture of [
         const expectedBytes = Buffer.from(`${fixture.target}:${tool.id}`);
         assert.equal(tool.size, expectedBytes.byteLength);
         assert.equal(tool.sha256, createHash("sha256").update(expectedBytes).digest("hex"));
-        const assetKey = `zcode-runtime-tools/${tool.id}/${tool.sha256}/${tool.binaryName}`;
+        const assetKey = `zxcode-runtime-tools/${tool.id}/${tool.sha256}/${tool.binaryName}`;
         assert.equal(assets[assetKey].endsWith(tool.binaryName), true);
       }
-      const notices = await readFile(assets["zcode-runtime-tools/THIRD-PARTY-NOTICES.txt"], "utf8");
+      const notices = await readFile(assets["zxcode-runtime-tools/THIRD-PARTY-NOTICES.txt"], "utf8");
       assert.ok(notices.startsWith("NATIVE SEARCH THIRD-PARTY NOTICES"));
       assert.deepEqual(
-        await readFile(assets["zcode-runtime-tools/SOURCES.json"]),
+        await readFile(assets["zxcode-runtime-tools/SOURCES.json"]),
         await readFile(join(root, "third-party/native-search/sources.json")),
       );
     } finally {
@@ -1204,7 +1204,7 @@ test("can be dynamically imported when argv[1] is missing", () => {
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), "zcode-windows-x64.exe");
+  assert.equal(result.stdout.trim(), "zxcode-windows-x64.exe");
 });
 
 async function writeDocumentPluginFixtures(root) {

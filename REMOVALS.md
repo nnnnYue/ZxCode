@@ -153,7 +153,7 @@ v4.0.0 合并（上游 squash 提交 `a4b44451`，2209 文件）沿用「引擎/
 ### 品牌回写（本轮回归面）
 
 - HOME 数据目录 `.zcode`：merge 新增 src 2 处（browser storage-state、skills catalog）回写 `.zxcode`；workspace 级 `.zcode/config.json` 与 `.zcode-plugin` 继续保护不动。
-- `ZCODE_*` env 键族：8 个键（STORAGE_DIR、CREDENTIAL_SECRET、PLUGIN_ROOT、CUA_*、PLUGIN_DATA、PROJECT_DIR、PREINSTALLED_TOOLS_*、AVAILABLE）约 60 处回归 `ZXCODE_`；例外 `ZCODE_CLIENT_LANGUAGE*` 按上游名；desktop e2e agent 侧 env（wdio ensure-e2e 注入）保上游名。
+- `ZCODE_*` env 键族：8 个键（STORAGE*DIR、CREDENTIAL_SECRET、PLUGIN_ROOT、CUA*_、PLUGIN*DATA、PROJECT_DIR、PREINSTALLED_TOOLS*_、AVAILABLE）约 60 处回归 `ZXCODE_`；例外 `ZCODE_CLIENT_LANGUAGE*` 按上游名；desktop e2e agent 侧 env（wdio ensure-e2e 注入）保上游名。
 - `com.zxcode/request-context`：adapters mcp/index.ts 与 node-repl-host server.ts 取上游后回写键；守护测试通过。
 
 ### 本轮拍板（fork 主动决策）
@@ -167,6 +167,14 @@ v4.0.0 合并（上游 squash 提交 `a4b44451`，2209 文件）沿用「引擎/
 - **SSH remote-release e2e 构建锁摘除**：`withE2EDesktopBuildLock` 属上游新增（fork ensure-e2e 无此导出），维持 fork 无锁基线；并行 runner 重建 mock-cdn 的竞争窗口为已知开发场景限制。
 - **auth-config pending 车位**：`system-credential-auto-reset`（凭据安全，已采纳域）保留 pending；`logout-relaunch-login-gate`、`cn-login-stale-provider-family-domain`（登录域）删除。
 - **上游 promoted pending specs（约 40 个 fork 曾裁剪用例）**：本地功能用例随上游目录整改复活，由 e2e-remote-target-specs 门禁排除出默认全量；引用已删 helper 的 19 个用例已删。
+
+### 审计后拍板补登（2026-11-26，v4.0.0-ce.1 合并复核）
+
+- **provider builtin 配置只在编译打包期联网刷新（二次拍板，废止同日首版「运行时保留、默认开启」拍板）**：客户端运行时不发起 `/api/v1/client/configs` 与 CDN 请求——bootstrap standalone 的 `zcodeBuiltinRemote` 接线拆除（`ProcessProviderRegistryRuntimeOptions.standalone` 仅保留凭据与旧配置导入），CLI 侧 `createCliProviderRefreshReporter` 删除，services 休眠消费方 `model-provider/zcodeBuiltinRemoteConfig.ts` 删除；provider-node 的 synchronizer/download 引擎随上游保留为休眠（无运行时激活路径，off-peak 同款）。刷新唯一路径：打包入口 `scripts/build-zcode.mjs` 自动执行 `scripts/update-builtin-provider-config.mjs`（拉索引→下载→去平台化清洗〔删 zcode.z.ai 网关模板、账号型 access、已下线平台管理外链，第三方外链保留，级联清模型规则〕→decode 校验→原子写回 `config/provider/zxcode-builtin.json`；远端 revision 不升号保留本地，网络失败保留快照并以 0 退出，不阻断离线构建）。运行时读取的始终是清洗后的仓库快照。
+- **office-runtime 补采纳上游会话化 viewer**：撤销 v3.17.2「CLI 域整包回退」对本包的静默遗留（纯本地引擎、无联网面，判据「引擎/新功能采纳」）；文档四插件 0.2.10/0.2.11 版本号与引擎实现恢复一致，`.zcode/document-imports` 按品牌回写 `.zxcode`。
+- **插件 MCP isolation 透传恢复**：官方插件 `isolation: "workspace"` 共享语义的生产端映射（`adapters/src/plugins/mcp.ts`）随合并恢复；消费端（`adapters/src/mcp/pool.ts`）已随上游在位，文档四插件 plugin.json 的声明不再是死配置。
+- **slash 命令输入历史记录守卫恢复**：合并把 `command-center/history.ts` 的 `shouldRecordSlashCommand` 弱化成只记录 unknown（自定义）命令，已接受的内建 slash 命令（`/help`、`/model` 等）不再写入输入历史，TUI 输入召回丢记忆；按上游（与 v3.18.2 相同语义）恢复「接受的命令一律记录」，fork 已剔除 `/login`，上游对其 API-key 登录命令的排除分支无对应命令名。配套把 `packages/cli` 存量单测（cli.unit/provider-runtime-env 等）的旧品牌断言（`zcode`→`zxcode`、`.zcode`→`.zxcode`、`ZCODE_*`→`ZXCODE_*`）与随剔除域失效的期望（login/logout 不再运行 Core、遥测关闭回调、standalone providerRuntimeHeadersPort 转发已于 0c4bd7a8 拆除）清理回绿，cli.unit.test.ts 192/192。
+- **CLI 用户可见文案品牌回写**：`hooks-trust-command.ts` 的 USAGE 与 trust grant 提示、`plugins-command-shared.ts` 的 scope 报错仍让用户照抄不存在的 `zcode` 命令，回写 `zxcode`；`process-name.ts` 的 `zcode-cli`/`zcode-mcp` 内部进程标题与上游逐字一致，保持不动。同轮把 `packages/cli` 兄弟套件的合并陈旧断言清理回绿：登录域整测 `tui-login-polling.test.ts` 删除（`tui-login-state.ts` 已随 3c58a218 剔除）、`tui-model-selection` 弃用该死 import 并内联 fork 生产同款判定、`tui-startup`/`browser-state-option`/`plugin-host-entry`/SEA 三件套（build-sea、sea-runtime-tools、build、upload-sea-smb）的旧品牌期望与 `__zxcode-plugin-host` 标记对齐，cli 包 46 个测试文件全绿。`packages/shared/package.json` 仍悬空导出 `"./request-security"`（目录已删、全仓无引用），留待下次剔除轮独立 commit 清除。
 
 ## 保留说明
 

@@ -12,7 +12,6 @@ import {
 import { modelSelectionSchema, type ModelSelection, type ZCodeModelOption } from "@zcode/shared";
 import { createCommandCenter, type CommandCenterApp } from "../src/command-center.js";
 import { handleModelCommand } from "../src/command-center/handlers/model.js";
-import { createTuiModelAvailabilityChecker } from "../src/tui-login-state.js";
 import { readTuiSessionMetadata } from "../src/tui-prompt-handler-queries.js";
 import { filterModelOptions, toPromptInput } from "../../tui/src/app-input.js";
 import { completeModelCommand } from "../../tui/src/app-keyboard-helpers.js";
@@ -47,6 +46,16 @@ function model(providerId = "personal", modelId = "vendor/model$literal:free"): 
     },
   };
 }
+
+// src/tui-login-state.ts 已随登录域剔除（3c58a218）删除；fork 生产侧在
+// tui-prompt-handler-queries.readTuiSessionMetadata 内联了同一可用性判定，
+// 这里按相同逻辑就地提供，避免测试依赖已删除模块。
+const createTuiModelAvailabilityChecker =
+  (getApp: () => Promise<CommandCenterApp>): (() => Promise<boolean>) =>
+  async () => {
+    const app = await getApp();
+    return ((await app.listModels?.()) ?? []).some((model) => !model.disabledReason);
+  };
 
 function fixture(initial?: ModelSelection) {
   let current = initial;

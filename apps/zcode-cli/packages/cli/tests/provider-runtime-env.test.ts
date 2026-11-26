@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import test from "node:test";
 import {
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "@zcode/provider-node";
 import {
-  SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
+  SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY,
   prepareCliProviderRuntimeEnv,
 } from "../src/provider-runtime-env.js";
 
@@ -26,14 +26,14 @@ test("preserves explicitly injected provider runtime paths", async () => {
   const prepared = await prepareCliProviderRuntimeEnv({
     argv: ["--prompt", "hello"],
     env: {
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/injected/zxcode-builtin.json",
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/injected/personal.json",
+      [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/injected/zxcode-builtin.json",
+      [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/injected/personal.json",
     },
   });
 
   assert.deepEqual(prepared, {
-    [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/injected/zxcode-builtin.json",
-    [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/injected/personal.json",
+    [ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/injected/zxcode-builtin.json",
+    [ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/injected/personal.json",
   });
 });
 
@@ -56,34 +56,39 @@ test("resolves the development ZCode Built-in Config and shared Personal Config"
     platform: "test-platform",
   });
 
-  assertActiveConfigPath(prepared[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV], join(root, "home"));
+  assertActiveConfigPath(prepared[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV], join(root, "home"));
   assert.equal(
-    prepared[ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV],
-    join(root, "home/.zcode/v2/provider_config.json"),
+    prepared[ZXCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV],
+    join(root, "home/.zxcode/v2/provider_config.json"),
   );
-  const activeFilePath = prepared[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV];
+  const activeFilePath = prepared[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV];
 
-  const loginPrepared = await prepareCliProviderRuntimeEnv({
-    argv: ["login"],
-    dataBaseDir: join(root, "home"),
-    entrypoint,
-    env: {},
-    appVersion: "test-version",
-    platform: "test-platform",
-  });
-  assert.equal(loginPrepared[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV], activeFilePath);
-  const logoutPrepared = await prepareCliProviderRuntimeEnv({
-    argv: ["logout"],
-    dataBaseDir: join(root, "home"),
-    entrypoint,
-    env: {},
-    appVersion: "test-version",
-    platform: "test-platform",
-  });
-  assert.equal(logoutPrepared[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV], activeFilePath);
+  // fork 拒入登录域：login/logout 不再运行 Core，不解析 Provider 资产。
+  assert.deepEqual(
+    await prepareCliProviderRuntimeEnv({
+      argv: ["login"],
+      dataBaseDir: join(root, "home"),
+      entrypoint,
+      env: {},
+      appVersion: "test-version",
+      platform: "test-platform",
+    }),
+    {},
+  );
+  assert.deepEqual(
+    await prepareCliProviderRuntimeEnv({
+      argv: ["logout"],
+      dataBaseDir: join(root, "home"),
+      entrypoint,
+      env: {},
+      appVersion: "test-version",
+      platform: "test-platform",
+    }),
+    {},
+  );
   // 临时目录本身可能经过软链接（macOS 的 /tmp、/var），随包配置报告的是真实路径。
   assert.equal(
-    prepared.ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE,
+    prepared.ZXCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE,
     await realpath(zcodeBuiltinFilePath),
   );
   await assert.rejects(access(join(dirname(activeFilePath!), "zcode-builtin-refresh.json")));
@@ -99,7 +104,7 @@ test("materializes the SEA config in the fixed environment resource path, separa
     env: {},
     sea: {
       getAsset(key, encoding) {
-        assert.equal(key, SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY);
+        assert.equal(key, SEA_ZXCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY);
         assert.equal(encoding, "utf8");
         reads += 1;
         return zcodeBuiltinContent;
@@ -110,7 +115,7 @@ test("materializes the SEA config in the fixed environment resource path, separa
     platform: "test-platform",
   });
 
-  const zcodeBuiltinFilePath = prepared[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV];
+  const zcodeBuiltinFilePath = prepared[ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV];
   assert.ok(zcodeBuiltinFilePath);
   assertActiveConfigPath(zcodeBuiltinFilePath, root);
   assert.deepEqual(
@@ -120,7 +125,7 @@ test("materializes the SEA config in the fixed environment resource path, separa
   assert.equal(reads, 1);
   const resource = join(
     root,
-    ".zcode",
+    ".zxcode",
     "v2",
     "runtime",
     "provider",
@@ -129,7 +134,7 @@ test("materializes the SEA config in the fixed environment resource path, separa
   );
   assert.notEqual(resource, zcodeBuiltinFilePath);
   assert.deepEqual(JSON.parse(await readFile(resource, "utf8")), JSON.parse(zcodeBuiltinContent));
-  assert.equal(prepared.ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE, resource);
+  assert.equal(prepared.ZXCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE, resource);
   await assert.rejects(access(join(dirname(zcodeBuiltinFilePath), "zcode-builtin-refresh.json")));
 });
 
@@ -163,10 +168,10 @@ function assertActiveConfigPath(filePath: string | undefined, dataBaseDir: strin
   // 不能用斜杠正则误拒绝 Windows；逐层校验仍包含环境、平台、版本和 Endpoint。
   assert.equal(
     dirname(dirname(filePath)),
-    join(dataBaseDir, ".zcode", "v2", "runtime", "provider", "test-platform", "test-version"),
+    join(dataBaseDir, ".zxcode", "v2", "runtime", "provider", "test-platform", "test-version"),
   );
   assert.match(basename(dirname(filePath)), /^endpoint-[a-f0-9]{32}$/u);
-  assert.equal(basename(filePath), "zxcode-builtin.json");
+  assert.equal(basename(filePath), "zcode-builtin.json");
 }
 
 const EMPTY_RELEASE =

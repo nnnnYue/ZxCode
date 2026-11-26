@@ -11,11 +11,11 @@ import type { RunContext } from "@zcode/shared-types";
 import type { RunDependencies } from "./cli-types.js";
 
 const USAGE = `Usage:
-  zcode hooks trust status [--workspace <path-or-identity>] [--json]
-  zcode hooks trust review [--workspace <path-or-identity>] [--json]
-  zcode hooks trust grant --workspace <path-or-identity> --hook-digest <sha256> [--hook-digest <sha256> ...]
-  zcode hooks trust grant --workspace <path-or-identity> --all-current --bundle-digest <sha256>
-  zcode hooks trust revoke --workspace <path-or-identity> [--hook-digest <sha256> ... | --all]
+  zxcode hooks trust status [--workspace <path-or-identity>] [--json]
+  zxcode hooks trust review [--workspace <path-or-identity>] [--json]
+  zxcode hooks trust grant --workspace <path-or-identity> --hook-digest <sha256> [--hook-digest <sha256> ...]
+  zxcode hooks trust grant --workspace <path-or-identity> --all-current --bundle-digest <sha256>
+  zxcode hooks trust revoke --workspace <path-or-identity> [--hook-digest <sha256> ... | --all]
 `;
 
 type Inspect = typeof inspectWorkspaceHookTrust;
@@ -179,7 +179,7 @@ function formatHuman(status: WorkspaceHookTrustCliStatus, action: string): strin
   if (status.reasonCode === "workspace_hooks_pending_trust" && status.bundleDigest) {
     lines.push(
       "Pretrust exact declarations with:",
-      `  zcode hooks trust grant --workspace ${quote(workspaceTrustCommandArgument(status))} --hook-digest <sha256>`,
+      `  zxcode hooks trust grant --workspace ${quote(workspaceTrustCommandArgument(status))} --hook-digest <sha256>`,
     );
     // 含入口不可用的启用条目时 --all-current 必然被拒，不再推荐。
     if (
@@ -187,7 +187,7 @@ function formatHuman(status: WorkspaceHookTrustCliStatus, action: string): strin
     ) {
       lines.push(
         "Or trust every currently enabled declaration in this exact bundle with:",
-        `  zcode hooks trust grant --workspace ${quote(workspaceTrustCommandArgument(status))} --all-current --bundle-digest ${status.bundleDigest}`,
+        `  zxcode hooks trust grant --workspace ${quote(workspaceTrustCommandArgument(status))} --all-current --bundle-digest ${status.bundleDigest}`,
       );
     }
   }

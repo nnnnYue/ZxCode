@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loadEndpointEnv } from "./load-endpoint-env.mjs";
+import { runCommand } from "./spawn-command.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -244,6 +245,13 @@ async function main() {
   if (!version || typeof version !== "string") {
     throw new Error("Unable to resolve ZxCode version.");
   }
+
+  // fork（REMOVALS §十三 2026-11-26 二次拍板）：Built-in Provider 配置只在编译打包期联网
+  // 刷新，运行时不拉取。打包前自动执行一次更新（拉索引→下载→去平台化清洗→decode 校验→
+  // 原子写回仓库快照）；网络失败时该脚本保留现有快照并以 0 退出，不阻断离线构建。
+  runCommand(process.execPath, [resolve(root, "scripts/update-builtin-provider-config.mjs")], {
+    cwd: root,
+  });
 
   await buildOutputs(options.skipBuild);
 
