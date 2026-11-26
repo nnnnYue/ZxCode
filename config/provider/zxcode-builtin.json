@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 44,
+  "revision": 48,
   "config": {
     "providerConfigRules": {
       "templateRules": [
@@ -18,7 +18,7 @@
               "type": "anthropic-messages",
               "baseUrl": "https://api.z.ai/api/anthropic"
             },
-            "builtinModelIds": ["GLM-5.3", "GLM-5.3-Flash"],
+            "builtinModelIds": ["GLM-5.4", "GLM-5.3", "GLM-5.3-Flash"],
             "logo": {
               "type": "builtin",
               "key": "zai"
@@ -86,7 +86,7 @@
               "type": "anthropic-messages",
               "baseUrl": "https://open.bigmodel.cn/api/anthropic"
             },
-            "builtinModelIds": ["GLM-5.3", "GLM-5.3-Flash"],
+            "builtinModelIds": ["GLM-5.4", "GLM-5.3", "GLM-5.3-Flash"],
             "logo": {
               "type": "builtin",
               "key": "bigmodel"
@@ -1083,13 +1083,35 @@
           }
         },
         {
-          "modelMatch": ".*glm-5.*",
+          "modelMatch": "(?:.*/)?glm[^/]*",
+          "config": {
+            "properties": {
+              "contextWindow": 1000000,
+              "inputFormat": {
+                "supportsImage": true,
+                "supportsVideo": true,
+                "supportsPdf": true
+              }
+            },
+            "optionSpecs": {
+              "reasoningLevel": {
+                "values": ["low", "high", "max"]
+              },
+              "maxOutputTokens": {
+                "max": 128000
+              }
+            }
+          }
+        },
+        {
+          "modelMatch": "(?:.*/)?glm-5(?:-[0-9]{6,8})?",
           "config": {
             "properties": {
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1109,7 +1131,8 @@
               "contextWindow": 1000000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1129,7 +1152,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1149,7 +1173,8 @@
               "contextWindow": 1000000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1181,7 +1206,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1201,7 +1227,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1221,7 +1248,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": true
+                "supportsVideo": true,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1241,7 +1269,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1261,7 +1290,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1281,7 +1311,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1301,7 +1332,8 @@
               "contextWindow": 200000,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1321,7 +1353,8 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1341,7 +1374,8 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1361,7 +1395,8 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1378,7 +1413,8 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1395,7 +1431,8 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1412,12 +1449,16 @@
               "contextWindow": 65536,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
               "maxOutputTokens": {
                 "max": 32768
+              },
+              "reasoningLevel": {
+                "values": ["disabled", "enabled"]
               }
             }
           }
@@ -1429,7 +1470,8 @@
               "contextWindow": 65536,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
@@ -1446,12 +1488,16 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
               "maxOutputTokens": {
                 "max": 16384
+              },
+              "reasoningLevel": {
+                "values": ["disabled", "enabled"]
               }
             }
           }
@@ -1463,12 +1509,16 @@
               "contextWindow": 131072,
               "inputFormat": {
                 "supportsImage": false,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
               "maxOutputTokens": {
                 "max": 16384
+              },
+              "reasoningLevel": {
+                "values": ["disabled", "enabled"]
               }
             }
           }
@@ -1480,12 +1530,16 @@
               "contextWindow": 16384,
               "inputFormat": {
                 "supportsImage": true,
-                "supportsVideo": false
+                "supportsVideo": false,
+                "supportsPdf": false
               }
             },
             "optionSpecs": {
               "maxOutputTokens": {
                 "max": 1024
+              },
+              "reasoningLevel": {
+                "values": ["disabled", "enabled"]
               }
             }
           }
@@ -2687,6 +2741,17 @@
         },
         {
           "modelMatch": ".*glm-5.*",
+          "apiTypeMatch": "anthropic-messages",
+          "config": {
+            "optionSpecs": {
+              "reasoningLevel": {
+                "map": "{\n  \"thinking\": {\n    \"type\": \"enabled\"\n  },\n  \"output_config\": {\n    \"effort\": reasoningLevel\n  }\n}"
+              }
+            }
+          }
+        },
+        {
+          "modelMatch": "(?:.*/)?glm-5(?:-[0-9]{6,8})?",
           "apiTypeMatch": "anthropic-messages",
           "config": {
             "optionSpecs": {
@@ -4629,10 +4694,24 @@
           }
         },
         {
+          "templateId": "zai-api",
+          "modelId": "GLM-5.4",
+          "config": {
+            "enabled": true
+          }
+        },
+        {
           "modelId": "GLM-5-Turbo",
           "templateId": "zai-api",
           "config": {
             "enabled": false
+          }
+        },
+        {
+          "templateId": "bigmodel-api",
+          "modelId": "GLM-5.4",
+          "config": {
+            "enabled": true
           }
         },
         {

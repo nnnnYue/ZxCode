@@ -1,4 +1,4 @@
-export declare const BROKER_SOCKET_ENV = "ZCODE_CUA_PERMISSION_BROKER_SOCKET";
+export declare const BROKER_SOCKET_ENV = "ZXCODE_CUA_PERMISSION_BROKER_SOCKET";
 export declare const IN_PROCESS_BROKER_SOCKET = "in-process";
 export declare function mintBrokerSocketPath(options?: {
   dir?: string;

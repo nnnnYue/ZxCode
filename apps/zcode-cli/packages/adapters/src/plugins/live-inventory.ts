@@ -4,8 +4,8 @@ import type { Logger, PluginMetadata, RuntimeConfigPatch } from "@zcode/contract
 import {
   ConfigScope,
   DefaultRuntimeConfig,
-  ZCODE_INLINE_PLUGIN_MARKETPLACE,
-  ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+  ZXCODE_INLINE_PLUGIN_MARKETPLACE,
+  ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
 } from "@zcode/contracts";
 import { createPrioritizedConfig, mergeConfigs } from "../config/config-merger.js";
 import {
@@ -254,13 +254,13 @@ export async function readEnabledPlugins(
       root.source === "official" &&
       (bundled === undefined ||
         !relative(join(input.pluginStorageRoot, "cache"), root.rootPath).startsWith(
-          `${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}${sep}`,
+          `${ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE}${sep}`,
         )),
   );
   for (const rootPath of bundled ?? [])
     candidates.push({
       rootPath,
-      marketplace: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+      marketplace: ZXCODE_OFFICIAL_PLUGIN_MARKETPLACE,
       source: "official",
     });
   for (const item of normalizeInstalledPluginsState(installed).plugins)
@@ -273,7 +273,7 @@ export async function readEnabledPlugins(
   candidates.unshift(
     ...input.plugins.dirs.map((rootPath) => ({
       rootPath: resolve(rootPath),
-      marketplace: ZCODE_INLINE_PLUGIN_MARKETPLACE,
+      marketplace: ZXCODE_INLINE_PLUGIN_MARKETPLACE,
       source: "inline" as const,
     })),
     // 项目目录插件只沿用会话启动时已准入的那批（新信任不热加载）；摘要在下面每次重验。

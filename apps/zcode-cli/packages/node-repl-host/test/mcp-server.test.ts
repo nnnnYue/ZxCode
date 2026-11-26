@@ -553,7 +553,7 @@ describe("node_repl MCP server", () => {
       ledgerFacts({ browserScreenshots: [{ base64: "BROWSER", mimeType: "image/png" }] }),
     );
     expect(result.content.map((block) => block.type)).toEqual(["image", "image", "text", "text"]);
-    expect(result._meta?.[ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY]).toEqual([1]);
+    expect(result._meta?.[ZXCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY]).toEqual([1]);
   });
 
   it("projects the CUA app identity recorded in the ledger and drops the sandbox-forgeable key", () => {

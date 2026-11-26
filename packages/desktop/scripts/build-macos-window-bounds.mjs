@@ -44,15 +44,18 @@ mkdirSync(outputDir, { recursive: true });
 
 try {
   // 同时产出 arm64 与 x86_64 的 universal 二进制，避免发布包在另一架构上无法执行。
+  // timeout：损坏/半升级的 CLT 会让 swift-driver 永久挂起（0 CPU）而非报错，超时走 catch
+  // 与缺 swiftc 同路 fail-open，避免打包流水线整体卡死。
+  const swiftCompileTimeoutMs = 3 * 60_000;
   execFileSync(
     "xcrun",
     ["swiftc", "-O", "-target", "arm64-apple-macos11", sourcePath, "-o", `${outputPath}-arm64`],
-    { stdio: "inherit" },
+    { stdio: "inherit", timeout: swiftCompileTimeoutMs },
   );
   execFileSync(
     "xcrun",
     ["swiftc", "-O", "-target", "x86_64-apple-macos11", sourcePath, "-o", `${outputPath}-x86_64`],
-    { stdio: "inherit" },
+    { stdio: "inherit", timeout: swiftCompileTimeoutMs },
   );
   execFileSync(
     "lipo",

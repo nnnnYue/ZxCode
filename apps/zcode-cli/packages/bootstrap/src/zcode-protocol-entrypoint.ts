@@ -327,7 +327,6 @@ export async function runZCodeProtocolAgent(
         memoryRoot: ({ workspacePath, workspaceIdentity }) =>
           getProjectMemoryRoot(protocolCliStorageRoot, workspacePath, workspaceIdentity),
       }),
-      syncAccountProviderConfig: activeProviderRegistryRuntime.syncAccountProviderConfig,
       refreshProviderRegistry: async (reason) => {
         await activeProviderRegistryRuntime.runtime.registryService.refresh(reason);
       },

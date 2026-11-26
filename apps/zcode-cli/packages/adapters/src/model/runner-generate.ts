@@ -53,7 +53,7 @@ import type {
   AiSdkModelTextRequest,
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { resolveModelForAttempt, RuntimeHeadersRefreshError } from "./runner-runtime-headers.js";
+import { resolveModelForAttempt } from "./runner-runtime-headers.js";
 import {
   nextUnrecognizedCodeStreak,
   retryAllowedByFailurePolicy,
@@ -368,10 +368,6 @@ export async function runGenerateText(input: {
         throw error;
       const completedAt = Date.now();
       const classified = classifyModelFailure(error, input.request.abortSignal);
-      if (error instanceof RuntimeHeadersRefreshError) {
-        classified.message = error.message;
-        classified.retryable = error.retryable;
-      }
       const failure: ClassifiedModelFailure = classified;
       const providerCode = inspectProviderFailure(error).providerErrorCode;
       unrecognizedCodeStreak = nextUnrecognizedCodeStreak(
@@ -456,19 +452,6 @@ export async function runGenerateText(input: {
           errorPhase: requestInvocationCompleted ? "response" : "prepare",
           unrecognizedCodeStreak,
         });
-      }
-
-      if (retryWithAuth) {
-        await publishRetryScheduledStatus(
-          input,
-          statusContext,
-          attempt,
-          0,
-          { ...failure, retryReason: ModelRetryReason.AuthRefresh },
-          requestHeaders,
-          responseHeaders,
-        );
-        continue;
       }
 
       if (retryWithRepairedHistory) {

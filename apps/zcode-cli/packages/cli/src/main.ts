@@ -1,5 +1,5 @@
 import { STORAGE_MIGRATION_COMMAND } from "@zcode/shared/sqlite-migrations";
-import { ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared/mcp";
+import { ZXCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared/mcp";
 import { interceptTuiStderr, isTuiInvocation } from "./tui-stderr.js";
 import { interceptKnownRuntimeWarnings } from "./runtime-warnings.js";
 import { installStderrConsoleBoundary } from "./protocol-console.js";
@@ -21,7 +21,7 @@ async function main(): Promise<void> {
   if (argv[0] !== STORAGE_MIGRATION_COMMAND && !argv.includes("--prepare-storage")) {
     // 插件宿主复用 CLI 入口；统一改名会把 MCP 进程误标成 Agent，须在加载插件前按角色命名。
     if (isPluginHostInvocation(argv)) {
-      setPluginHostProcessTitle(process.env[ZCODE_PLUGIN_ID_ENV_KEY]);
+      setPluginHostProcessTitle(process.env[ZXCODE_PLUGIN_ID_ENV_KEY]);
     } else {
       setCliProcessTitle();
     }

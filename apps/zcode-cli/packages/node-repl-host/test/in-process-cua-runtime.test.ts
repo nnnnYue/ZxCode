@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { InProcessComputerUseBroker } from "@zcode/zcode-cua/broker/in-process";
 import { BROKER_SOCKET_ENV, IN_PROCESS_BROKER_SOCKET } from "@zcode/zcode-cua/broker/socketPath";
 import {
-  ZCODE_CUA_BROKER_SOCKET_ENV_KEY,
-  ZCODE_CUA_IN_PROCESS_BROKER_SOCKET,
+  ZXCODE_CUA_BROKER_SOCKET_ENV_KEY,
+  ZXCODE_CUA_IN_PROCESS_BROKER_SOCKET,
 } from "@zcode/shared/runtime-env";
 import {
   captureComputerUseRuntimeFromEnvironment,
@@ -21,8 +21,8 @@ function abortedSignal(): AbortSignal {
 
 describe("in-process Computer Use runtime", () => {
   it("agrees with the CLI on the sentinel the CLI mints", () => {
-    expect(IN_PROCESS_BROKER_SOCKET).toBe(ZCODE_CUA_IN_PROCESS_BROKER_SOCKET);
-    expect(BROKER_SOCKET_ENV).toBe(ZCODE_CUA_BROKER_SOCKET_ENV_KEY);
+    expect(IN_PROCESS_BROKER_SOCKET).toBe(ZXCODE_CUA_IN_PROCESS_BROKER_SOCKET);
+    expect(BROKER_SOCKET_ENV).toBe(ZXCODE_CUA_BROKER_SOCKET_ENV_KEY);
   });
 
   it("uses the in-process path only for the sentinel socket", () => {

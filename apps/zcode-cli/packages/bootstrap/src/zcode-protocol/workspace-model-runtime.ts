@@ -2,7 +2,7 @@
 import { createInMemorySessionEventStore } from "@zcode/adapters/storage";
 import type { ModelSelection } from "@zcode/contracts";
 import {
-  ZXCODE_REPLY_LANGUAGE_REQUEST_TIMEOUT_MS,
+  ZCODE_REPLY_LANGUAGE_REQUEST_TIMEOUT_MS,
   zcodeProtocolMethods,
   zcodeProviderTestModelConnectivityParamsSchema,
   zcodeSessionReadReplyLanguageResultSchema,
@@ -154,7 +154,7 @@ function createReplyLanguageReader(
       {
         signal,
         trace: protocolTraceFromTraceContext(traceContext),
-        timeoutMs: ZXCODE_REPLY_LANGUAGE_REQUEST_TIMEOUT_MS,
+        timeoutMs: ZCODE_REPLY_LANGUAGE_REQUEST_TIMEOUT_MS,
       },
     );
     return result.language;

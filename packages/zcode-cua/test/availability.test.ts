@@ -33,7 +33,7 @@ describe("Computer Use placeholder", () => {
     await expect(startInProcessComputerUseBroker()).rejects.toMatchObject({
       code: "helper_unavailable",
     });
-    expect(BROKER_SOCKET_ENV).toBe("ZCODE_CUA_PERMISSION_BROKER_SOCKET");
+    expect(BROKER_SOCKET_ENV).toBe("ZXCODE_CUA_PERMISSION_BROKER_SOCKET");
     expect(IN_PROCESS_BROKER_SOCKET).toBe("in-process");
     expect(mintBrokerSocketPath()).toMatch(/\.sock$/u);
   });

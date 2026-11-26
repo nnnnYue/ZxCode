@@ -7,7 +7,7 @@ import type {
   PluginWorkspaceTrust,
   WorkspacePluginDiscovery,
 } from "@zcode/contracts";
-import { ZCODE_INLINE_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { ZXCODE_INLINE_PLUGIN_MARKETPLACE } from "@zcode/contracts";
 import { parsePluginManifest } from "../discovery/index.js";
 import { resolveInside } from "../helpers.js";
 import { STANDARD_HOOKS_PATH } from "../hook-sources.js";
@@ -121,7 +121,7 @@ export function candidatesOf(
     .filter((rootPath) => !userRoots.has(rootPath))
     .map((rootPath) => ({
       defaultEnabled: true,
-      marketplace: ZCODE_INLINE_PLUGIN_MARKETPLACE,
+      marketplace: ZXCODE_INLINE_PLUGIN_MARKETPLACE,
       rootPath,
       source: "inline" as const,
       workspace: true,

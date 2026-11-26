@@ -80,6 +80,7 @@ import type {
   AiSdkModelTextRequest,
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
+import { resolveModelForAttempt } from "./runner-runtime-headers.js";
 
 import {
   nextUnrecognizedCodeStreak,
@@ -328,6 +329,7 @@ export async function* runStreamText(input: {
     try {
       resolved = await resolveModelForAttempt({
         attempt,
+        request: attemptRequest,
         resolveModel: input.resolveModel,
       });
       const anthropicMetadataUserId = await resolveAnthropicRequestMetadataUserId({

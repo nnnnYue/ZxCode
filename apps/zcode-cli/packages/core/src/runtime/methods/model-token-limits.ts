@@ -1,4 +1,4 @@
-import { DEFAULT_ZXCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_BUDGET_STRATEGY } from "@zcode/shared";
+import { DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY as DEFAULT_BUDGET_STRATEGY } from "@zcode/shared";
 import { traceContextToLogContext } from "../deps.js";
 import type { AutoCompactPolicyConfig, Model, TraceContext } from "../deps.js";
 import type { AgentRuntimeInternal } from "../internal.js";

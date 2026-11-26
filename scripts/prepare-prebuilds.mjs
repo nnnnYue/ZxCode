@@ -288,14 +288,13 @@ const remoteOfficialPluginRequiredPaths = [
   "packages/plugin-creator-plugin/.zcode-plugin/plugin.json",
   "packages/plugin-creator-plugin/skills/plugin-creator/SKILL.md",
   "packages/zcode-guide-plugin/.zcode-plugin/plugin.json",
-  // 修复原因：文档技能正文与 visual-judge 都是必需 seed 资产，不能只校验 manifest。
-  "packages/documents-plugin/agents/visual-judge.md",
+  // 修复原因：文档技能正文是必需 seed 资产，不能只校验 manifest。
+  // 上游 v4.0.0 起四个文档插件（0.2.10，pdf 0.2.11）不再提供 visual-judge 子代理，
+  // manifest 不再声明 agents 目录；此处不再把 agents/visual-judge.md 列为必需资产，
+  // 与 official-plugin-definitions 的 seed 版本（bootstrap/tests/plugins.test.ts 钉住）保持一致。
   "packages/documents-plugin/skills/docx/SKILL.md",
-  "packages/pdf-plugin/agents/visual-judge.md",
   "packages/pdf-plugin/skills/pdf/SKILL.md",
-  "packages/presentations-plugin/agents/visual-judge.md",
   "packages/presentations-plugin/skills/pptx/SKILL.md",
-  "packages/spreadsheets-plugin/agents/visual-judge.md",
   "packages/spreadsheets-plugin/skills/xlsx/SKILL.md",
   "packages/visualize-plugin/.zcode-plugin/plugin.json",
   "packages/visualize-plugin/skills/visualize/SKILL.md",

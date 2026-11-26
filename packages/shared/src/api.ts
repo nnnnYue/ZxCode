@@ -31,6 +31,27 @@ export async function resolveOptionalZCodeAuthorization(
   }
 }
 
+// 运营可把刷新调到分钟级；上限保持原有的一小时，缺省或非法值不能让客户端比原来更频繁或更慢。
+const REFRESH_INTERVAL_DEFAULT_SECONDS = 3600;
+const REFRESH_INTERVAL_MIN_SECONDS = 60;
+const REFRESH_INTERVAL_MAX_SECONDS = 3600;
+
+/** ClientConfigService 与 Built-in 刷新共用；入参为响应的 data.configs。 */
+export function resolveClientConfigRefreshIntervalMs(configs: unknown): number {
+  const value =
+    configs && typeof configs === "object" && !Array.isArray(configs)
+      ? (configs as Record<string, unknown>).clientConfigRefreshIntervalSeconds
+      : undefined;
+  const seconds =
+    typeof value === "number" && Number.isFinite(value) && value > 0
+      ? Math.min(
+          Math.max(Math.floor(value), REFRESH_INTERVAL_MIN_SECONDS),
+          REFRESH_INTERVAL_MAX_SECONDS,
+        )
+      : REFRESH_INTERVAL_DEFAULT_SECONDS;
+  return seconds * 1000;
+}
+
 export interface ApiErrorOptions {
   message: string;
   url: string;
