@@ -152,11 +152,11 @@ describe(`${marker}: 同机 Desktop 已固定系统库时远端使用 Server 自
     const agent = await ssh.runSSHCommand(
       activeConfig,
       [
-        `echo "expected=ZCODE_CREDENTIALS_FILE=$(cd ${SERVER_CREDENTIALS_DIR} && pwd -P)/credentials.json"`,
+        `echo "expected=ZXCODE_CREDENTIALS_FILE=$(cd ${SERVER_CREDENTIALS_DIR} && pwd -P)/credentials.json"`,
         "for d in /proc/[0-9]*; do",
         `  cmd=$(tr '\\0' ' ' < "$d/cmdline" 2>/dev/null) || continue`,
         '  case "$cmd" in zcode-cli*) kind=agent;; */runtime/zcode.cjs\\ *) kind=plugin;; *) continue;; esac',
-        `  value=$(tr '\\0' '\\n' < "$d/environ" 2>/dev/null | grep '^ZCODE_CREDENTIALS_FILE=' || echo '<missing>')`,
+        `  value=$(tr '\\0' '\\n' < "$d/environ" 2>/dev/null | grep '^ZXCODE_CREDENTIALS_FILE=' || echo '<missing>')`,
         '  echo "agent=${d#/proc/}|$kind|$value"',
         "done",
       ].join("\n"),

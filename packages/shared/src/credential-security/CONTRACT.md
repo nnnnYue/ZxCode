@@ -35,7 +35,7 @@ prepareServerCredentialFile 是 Server 准备命令的入口，返回 Server 应
 prepareServerCredentialStorage 的共享库规则。判定在共享库的凭据锁 → 密钥锁内完成。
 自有目录与其中的 credential-secret 经临时目录 rename 原子发布，目录存在即密钥就绪。
 resolveServerCredentialFile 只读同一事实（自有目录是否存在），供 Core 启动使用，
-不创建目录或密钥；只有 ENOENT 视为不存在，其他错误与非目录向上抛出。readAssignedCredentialsFile 读取进程装配的 ZCODE_CREDENTIALS_FILE：
+不创建目录或密钥；只有 ENOENT 视为不存在，其他错误与非目录向上抛出。readAssignedCredentialsFile 读取进程装配的 ZXCODE_CREDENTIALS_FILE：
 空值视为未设置，非绝对路径直接失败。只有 Source Server Core 写入该变量；Desktop Main
 启动时删除继承的该变量，Desktop 的 Main、Host 与 Agent 不采用它。
 

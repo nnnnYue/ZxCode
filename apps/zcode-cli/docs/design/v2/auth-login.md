@@ -71,11 +71,11 @@ The file path resolves in this order:
 
 1. Explicit file path passed by the caller.
 2. Explicit data base dir passed by the caller, as `<dir>/.zcode/v2/credentials.json`.
-3. `ZCODE_CREDENTIALS_FILE`, an absolute file path.
+3. `ZXCODE_CREDENTIALS_FILE`, an absolute file path.
 4. `ZCODE_DATA_BASE_DIR`, as `<dir>/.zcode/v2/credentials.json`.
 5. `os.homedir()`, as `~/.zcode/v2/credentials.json`.
 
-`ZCODE_CREDENTIALS_FILE` is process wiring, not a user setting. Only a Source Server
+`ZXCODE_CREDENTIALS_FILE` is process wiring, not a user setting. Only a Source Server
 Core sets it, when the Server uses its own credential store because the host's
 shared store is pinned to an OS key by a local Desktop (see
 [the shared storage contract](../../../../../docs/plans/2026-10-29-system-credential-storage.md#同机共用数据根server-自有凭据库2026-11-11)).

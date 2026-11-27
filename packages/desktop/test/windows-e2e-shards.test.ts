@@ -67,7 +67,7 @@ describe("Windows E2E shard runner", () => {
       expect(firstPlan.runId).not.toBe(secondPlan.runId);
       for (const key of [
         "ZCODE_E2E_HOME_DIR",
-        "ZCODE_E2E_ARTIFACT_DIR",
+        "ZXCODE_E2E_ARTIFACT_DIR",
         "ZCODE_E2E_NETWORK_CAPTURE_DIR",
       ] as const) {
         const firstPaths = new Set(firstPlan.children.map((child) => child.env[key]));
@@ -184,8 +184,14 @@ describe("Windows E2E shard runner", () => {
 
   it("passes weighted spec groups explicitly instead of native contiguous shards", () => {
     const weightedSpecBuckets = [
-      { estimatedWeightMs: 100, specs: ["./test/e2e/infrastructure/smoke/smoke.test.ts"] },
-      { estimatedWeightMs: 90, specs: ["./test/e2e/infrastructure/smoke/container-boot.test.ts"] },
+      {
+        estimatedWeightMs: 100,
+        specs: ["./test/e2e/infrastructure/smoke/smoke.test.ts"],
+      },
+      {
+        estimatedWeightMs: 90,
+        specs: ["./test/e2e/infrastructure/smoke/container-boot.test.ts"],
+      },
     ];
     const plan = createPlan({ weightedSpecBuckets });
 
@@ -209,8 +215,8 @@ describe("Windows E2E shard runner", () => {
 
     for (const key of [
       "ZCODE_E2E_HOME_DIR",
-      "ZCODE_E2E_RUN_ID",
-      "ZCODE_E2E_ARTIFACT_DIR",
+      "ZXCODE_E2E_RUN_ID",
+      "ZXCODE_E2E_ARTIFACT_DIR",
       "ZCODE_E2E_NETWORK_CAPTURE_DIR",
     ] as const) {
       expect(new Set(plan.children.map((child) => child.env[key])).size).toBe(2);
@@ -329,7 +335,10 @@ describe("Windows E2E shard runner", () => {
   it("prepares the shim before a single Windows child but leaves other platforms alone", () => {
     const windows = createPlan({ env: { ZCODE_E2E_RUN_ID: "single" } });
     expect(windows.buildSteps.map((step) => step.id)).toEqual(["prepare-windows-entry-shim"]);
-    const mac = createPlan({ platform: "darwin", env: { ZCODE_E2E_RUN_ID: "single" } });
+    const mac = createPlan({
+      platform: "darwin",
+      env: { ZCODE_E2E_RUN_ID: "single" },
+    });
     expect(mac.buildSteps).toEqual([]);
   });
 
@@ -381,7 +390,11 @@ describe("Windows E2E shard runner", () => {
       "--shard=3/3",
     ]);
     expect(() =>
-      resolveWindowsE2EShardTotal({ args: ["--shards=0"], env: {}, platform: "win32" }),
+      resolveWindowsE2EShardTotal({
+        args: ["--shards=0"],
+        env: {},
+        platform: "win32",
+      }),
     ).toThrow("positive integer");
     expect(() =>
       resolveWindowsE2EShardTotal({
@@ -474,7 +487,10 @@ describe("Windows E2E shard runner", () => {
       message: expect.stringContaining("missing shard summary"),
       manifest: {
         children: expect.arrayContaining([
-          expect.objectContaining({ exitCode: 1, error: expect.stringContaining("summary.json") }),
+          expect.objectContaining({
+            exitCode: 1,
+            error: expect.stringContaining("summary.json"),
+          }),
         ]),
       },
     });
@@ -573,7 +589,10 @@ describe("Windows E2E shard runner", () => {
       spawnStep: (step) => {
         if (step.kind === "build") return Promise.resolve({ exitCode: 0 });
         const terminate = vi.fn(() => {
-          childResolvers.get(step.shardIndex)?.({ exitCode: 1, signal: "SIGTERM" });
+          childResolvers.get(step.shardIndex)?.({
+            exitCode: 1,
+            signal: "SIGTERM",
+          });
         });
         terminates.push(terminate);
         return {

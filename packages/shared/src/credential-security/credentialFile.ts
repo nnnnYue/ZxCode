@@ -11,7 +11,7 @@ import {
  * 进程装配：Source Server Core 使用自有凭据库时写入凭据文件的绝对路径，Core 拉起的 Agent 继承。
  * 不是用户配置；Desktop 不设置。
  */
-export const ZCODE_CREDENTIALS_FILE_ENV = "ZCODE_CREDENTIALS_FILE";
+export const ZXCODE_CREDENTIALS_FILE_ENV = "ZXCODE_CREDENTIALS_FILE";
 
 const OS_SYSTEM_PREFIX = "enc:v2:os:";
 const ENV_SYSTEM_PREFIX = "enc:v2:env:";
@@ -20,10 +20,10 @@ const ENV_SYSTEM_PREFIX = "enc:v2:env:";
 export function readAssignedCredentialsFile(
   env: Readonly<Record<string, string | undefined>>,
 ): string | undefined {
-  const value = env[ZCODE_CREDENTIALS_FILE_ENV]?.trim();
+  const value = env[ZXCODE_CREDENTIALS_FILE_ENV]?.trim();
   if (!value) return undefined;
   if (!isAbsolute(value)) {
-    throw new Error(`${ZCODE_CREDENTIALS_FILE_ENV} must be an absolute file path`);
+    throw new Error(`${ZXCODE_CREDENTIALS_FILE_ENV} must be an absolute file path`);
   }
   return value;
 }
@@ -98,7 +98,7 @@ async function publishServerCredentialDir(serverDir: string): Promise<void> {
  * Desktop 发起的准备命令：判定 Server 使用的凭据文件并准备其密钥，返回该文件。
  *
  * Bug 原因（ZCT-2120452663971209216）：Source Server 与同机 Desktop 共用
- * `~/.zcode/v2/credentials.json`。Desktop 先把它固定为 OS 来源后，Server 进程拿不到 Desktop 的
+ * `~/.zxcode/v2/credentials.json`。Desktop 先把它固定为 OS 来源后，Server 进程拿不到 Desktop 的
  * 系统密钥：旧 Supervisor 下的候选 Core 按兼容规则拒绝已有 v2，在线更新必然失败并回滚；新
  * Supervisor 下的 Core 只能从 SSH/后台进程访问 Desktop 创建的系统库条目，同样不可用。
  * 修复：共享库已固定为 OS 来源时，Server 改用自有目录中的凭据文件与 credential-secret，
@@ -115,7 +115,9 @@ export async function prepareServerCredentialFile(
   const serverFilePath = resolve(options.serverFilePath);
   const serverDir = dirname(serverFilePath);
   if (!(await isDirectory(serverDir))) {
-    const managedSecret = Boolean(env.ZXCODE_CREDENTIAL_SECRET || env.ZXCODE_CREDENTIAL_SECRET_FILE);
+    const managedSecret = Boolean(
+      env.ZXCODE_CREDENTIAL_SECRET || env.ZXCODE_CREDENTIAL_SECRET_FILE,
+    );
     // 锁序与 prepareServerCredentialStorage 一致：凭据文件锁 → 密钥锁。
     const useServerFile = await withFileLock(sharedFilePath, () =>
       withFileLock(`${sharedFilePath}.keyring`, async () => {

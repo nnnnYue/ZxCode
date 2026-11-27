@@ -272,6 +272,11 @@ export function createWindowHostControllerRuntime(options: {
     const service = current.taskService;
     const base = mutationParams(address);
     switch (mutation.kind) {
+      case "rename":
+        // fork：rename 缺席本 switch 曾让侧栏改名在 Controller 路由上必抛
+        // 「未知 Controller mutation」（exhaustive default），表现为对话框不关、标题不变、
+        // 无任何反馈；对齐直连 service.renameTask 的返回合同，结果回传 ZCodeTaskMeta。
+        return await service.renameTask({ ...base, title: mutation.title });
       case "pin":
         await service.setTaskPinned({ ...base, pinned: mutation.pinned });
         break;
@@ -887,7 +892,7 @@ export function createWindowHostControllerRuntime(options: {
           return { deletedTaskIds: [], skippedTaskIds: [], failedTaskIds: [] };
         }
         const result = await projection.mutate(address, { kind: "delete-archived-batch", taskIds });
-        if (!result || typeof result === "boolean") {
+        if (!result || typeof result === "boolean" || !("deletedTaskIds" in result)) {
           throw new Error("归档删除批次未返回逐项目标结果");
         }
         const resolved = options.resolveSource({

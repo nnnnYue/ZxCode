@@ -17,7 +17,6 @@ import {
   type ZCodeProtocolAgentServerContext,
   type ZCodeProtocolSessionRecord,
 } from "./server-types.js";
-import { createProviderRuntimeHeadersPort } from "./provider-runtime-headers.js";
 import { offPeakLifecycleNotificationSchema } from "@zcode/shared";
 import { V4_NOTIFICATIONS } from "@zcode/shared/zcode-protocol-v4";
 
@@ -80,8 +79,13 @@ export async function createWorkspaceZCodeApp(
   workspace: ZCodeWorkspaceRef,
   options: Omit<ZCodeAppOptions, "providerRegistry">,
 ): Promise<ZCodeApp> {
-  const providerRuntimeHeadersPort =
-    options.providerRuntimeHeadersPort ?? createProviderRuntimeHeadersPort(context, workspace);
+  // Bug 根因：provider runtime headers 已随 request-security 域在社区版剔除，剩余实现是
+  // "必抛错 stub"。这里过去无条件回落到 stub 工厂，于是每一次 createWorkspaceZCodeApp
+  // （所有 createSession/命令执行路径）都抛 "provider-runtime-headers: removed in
+  // community edition"，被 v4-gateway 归一成 fault.command.executionFailed，表现为
+  // "发送消息失败"。上游 v4.0.0 合并曾冲掉本修复（813b5ed0），账目见仓库根 REMOVES.md。
+  // core 侧该 port 可选（undefined 分支已实现且派生 child ports 时不消费它），社区版直接透传。
+  const providerRuntimeHeadersPort = options.providerRuntimeHeadersPort;
   const readReplyLanguage = options.readReplyLanguage ?? createReplyLanguageReader(context);
   return context.deps.createZCodeApp({
     ...options,

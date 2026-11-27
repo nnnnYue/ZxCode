@@ -257,8 +257,9 @@ const E2E_HOME_DIR = resolve(
 const E2E_PACKAGED_APP_BINARY_PATH = process.env.ZCODE_E2E_PACKAGED_APP_PATH?.trim()
   ? resolve(process.env.ZCODE_E2E_PACKAGED_APP_PATH)
   : null;
-// 目录隔离已回滚：所有 Desktop E2E 继续使用历史 ~/.zcode 布局。
-const E2E_STORAGE_ROOT = resolve(E2E_HOME_DIR, ".zcode");
+// fork：Desktop/CLI 的 HOME 级数据目录是 ~/.zxcode（b8ea19cf rebrand），E2E 隔离 HOME 的
+// 播种与断言必须与应用读取路径一致；v3.15.1 的「历史 ~/.zcode 布局」注释已失效。
+const E2E_STORAGE_ROOT = resolve(E2E_HOME_DIR, ".zxcode");
 const E2E_APP_CONFIG_DIR = resolve(E2E_STORAGE_ROOT, "v2");
 const E2E_APP_SETTINGS_FILE = resolve(E2E_APP_CONFIG_DIR, "setting.json");
 const E2E_APP_CREDENTIALS_FILE = resolve(E2E_APP_CONFIG_DIR, "credentials.json");
@@ -266,9 +267,13 @@ const E2E_APP_PROVIDER_CONFIG_FILE = resolve(E2E_APP_CONFIG_DIR, "provider_confi
 // staged Electron app 只有 main/host/renderer 产物，不携带仓库级 config/provider。
 // 若让 Host 依据 app.getAppPath() 推导 bundled config，重启后会把不存在的路径当作
 // bundled release，模型配置初始化直接失败。E2E 明确注入同一份只读基线。
+// 根因：上游 v3.15.1 同步把基线文件名带回旧品牌拼写 zcode-builtin.json，仓库里该文件
+// 不存在（唯一基线是 zxcode-builtin.json，与 desktopProviderConfig.ts 同拼写）。路径不存在
+// 时 Host 的 Built-in Release read 抛 AggregateError，model-selection getView 只能 reject，
+// 模型触发器永远 disabled。
 const E2E_DEFAULT_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE = resolve(
   REPO_ROOT,
-  "config/provider/zcode-builtin.json",
+  "config/provider/zxcode-builtin.json",
 );
 const INITIAL_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE =
   process.env.ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE?.trim();
@@ -1143,38 +1148,38 @@ async function prepareSshRemoteReleaseForRun(
   // 与桌面构建同一把锁：mock-cdn/releases/<version> 是工作区共享目录，并行 runner 不能同时重建。
   await measureE2ELifecyclePhase("prepare:remote-release", { specs: requiredSpecs }, async () => {
     // Bug 根因：CI 只有 build:remote:assets job 产出 mock-cdn/releases/<version>，且跑在通用
-      // macos runner 槽位；conversation e2e 在专用 runner 上，mock-cdn 工作区持久化目录互不
-      // 相通，版本 bump 后专用 runner 必然缺新版本 release，直接 fatal 会把每次升级变成
-      // CI-only 失败。改为缺目录时自动跑 prepare:remote-assets（幂等），产出后仍缺失才
-      // fail-closed。
-      // Bug 根因：packages/desktop 的 prepare:remote-assets 已随 legacy asset pipeline 一并删除，
-      // `pnpm --filter @zcode/desktop prepare:remote-assets` 会以 ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT
-      // 失败并让所有 SSH E2E 在 onPrepare 阶段 fatal；必须调用根 package.json 的
-      // prepare:remote-assets（→ @zcode/server-cli stage:remote-assets）。runPnpmWorkspaceCommand
-      // 的 cwd 固定为 REPO_ROOT，直接传脚本名即可命中根脚本。
-      // 本机 Docker runner 声明「只需 Linux」时，helper 改读 descriptor 判断两个 Linux 目标，
-      // 并只调用 `ZCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
-      await ensureSshRemoteReleaseAssets({
-        releaseDir: E2E_REMOTE_RELEASE_SOURCE_DIR,
-        buildRevision: process.env.CI_COMMIT_SHA,
-        scope: resolveSshRemoteReleaseScope(process.env),
-        // Bug 根因：stage:remote-assets 第一个 target 会再跑一次 build-desktop-agent-cli.mjs，
-        // 与 prepareZCodeAgentServer 的构建脚本、环境完全相同，一次运行构建两轮 agent。
-        // 只有本轮 onPrepare 真实构建过 agent 才让打包器复用（评审 CR-01 第二轮）：
-        // ZCODE_E2E_SKIP_AGENT_BUILD=1 只检查入口存在，bundle 可能来自旧构建，必须由打包器重建。
-        agentBundleBuiltThisRun,
-        prepareReleaseAssets: (request) =>
-          runPnpmWorkspaceCommand([request.script, ...request.args], {
-            // 防挂死上限：冷缓存全量 prepare 约 10 分钟，给到 30 分钟只兑现在「彻底卡死」时
-            // 让 onPrepare 失败退出，正常慢路径不受影响。
-            timeoutMs: 30 * 60 * 1000,
-            env: request.env,
-          }),
-      });
-      // Bug 根因：dual-SSH case 只配置 A/B target；若这里只识别 common host，就不会把
-      // 当前源码构建的 remote release 放进 runId 隔离目录，远端会继续复用同版本的旧
-      // server bundle，并用旧协议 schema 拒绝 enabledSource 等新字段。
-      await stageE2EAppOutput(E2E_REMOTE_RELEASE_SOURCE_DIR, E2E_REMOTE_RELEASE_OUTPUT_DIR);
+    // macos runner 槽位；conversation e2e 在专用 runner 上，mock-cdn 工作区持久化目录互不
+    // 相通，版本 bump 后专用 runner 必然缺新版本 release，直接 fatal 会把每次升级变成
+    // CI-only 失败。改为缺目录时自动跑 prepare:remote-assets（幂等），产出后仍缺失才
+    // fail-closed。
+    // Bug 根因：packages/desktop 的 prepare:remote-assets 已随 legacy asset pipeline 一并删除，
+    // `pnpm --filter @zcode/desktop prepare:remote-assets` 会以 ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT
+    // 失败并让所有 SSH E2E 在 onPrepare 阶段 fatal；必须调用根 package.json 的
+    // prepare:remote-assets（→ @zcode/server-cli stage:remote-assets）。runPnpmWorkspaceCommand
+    // 的 cwd 固定为 REPO_ROOT，直接传脚本名即可命中根脚本。
+    // 本机 Docker runner 声明「只需 Linux」时，helper 改读 descriptor 判断两个 Linux 目标，
+    // 并只调用 `ZCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
+    await ensureSshRemoteReleaseAssets({
+      releaseDir: E2E_REMOTE_RELEASE_SOURCE_DIR,
+      buildRevision: process.env.CI_COMMIT_SHA,
+      scope: resolveSshRemoteReleaseScope(process.env),
+      // Bug 根因：stage:remote-assets 第一个 target 会再跑一次 build-desktop-agent-cli.mjs，
+      // 与 prepareZCodeAgentServer 的构建脚本、环境完全相同，一次运行构建两轮 agent。
+      // 只有本轮 onPrepare 真实构建过 agent 才让打包器复用（评审 CR-01 第二轮）：
+      // ZCODE_E2E_SKIP_AGENT_BUILD=1 只检查入口存在，bundle 可能来自旧构建，必须由打包器重建。
+      agentBundleBuiltThisRun,
+      prepareReleaseAssets: (request) =>
+        runPnpmWorkspaceCommand([request.script, ...request.args], {
+          // 防挂死上限：冷缓存全量 prepare 约 10 分钟，给到 30 分钟只兑现在「彻底卡死」时
+          // 让 onPrepare 失败退出，正常慢路径不受影响。
+          timeoutMs: 30 * 60 * 1000,
+          env: request.env,
+        }),
+    });
+    // Bug 根因：dual-SSH case 只配置 A/B target；若这里只识别 common host，就不会把
+    // 当前源码构建的 remote release 放进 runId 隔离目录，远端会继续复用同版本的旧
+    // server bundle，并用旧协议 schema 拒绝 enabledSource 等新字段。
+    await stageE2EAppOutput(E2E_REMOTE_RELEASE_SOURCE_DIR, E2E_REMOTE_RELEASE_OUTPUT_DIR);
   });
   // worker 的兜底检查只认 onPrepare 下发的目录：runnerEnv 是传给 worker 的唯一可靠通道。
   if (!config.runnerEnv) {
@@ -4866,7 +4871,11 @@ export const config: WebdriverIO.Config = {
     ZCODE_AGENT_SERVER_ARGS_JSON: "",
     ZCODE_AGENT_SERVER_COMMAND: "",
     ZCODE_DATA_BASE_DIR: E2E_HOME_DIR,
-    ZCODE_BUILTIN_PROVIDER_CONFIG_FILE:
+    // 修复原因：注入键是 v3.15.1 上游同步带回的 ZCODE_ 拼写，而应用读侧
+    // desktopProviderConfig.ts 只认 fork 品牌 ZXCODE_（v3.17.2 已把读取侧回写），
+    // 注入一直落空，Host 只能回退 staged app 派生路径（必然不存在），模型目录
+    // 初始化失败导致模型选择触发器永远 disabled。
+    ZXCODE_BUILTIN_PROVIDER_CONFIG_FILE:
       INITIAL_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE ?? E2E_DEFAULT_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE,
     ZCODE_DESKTOP_APPLICATION_NAME: "ZCode E2E",
     ZCODE_DESKTOP_HOME_DIR: E2E_HOME_DIR,

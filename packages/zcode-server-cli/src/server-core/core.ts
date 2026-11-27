@@ -2,7 +2,7 @@ import { hostname } from "node:os";
 import {
   createLegacyServerCredentialCipher,
   resolveServerCredentialFile,
-  ZCODE_CREDENTIALS_FILE_ENV,
+  ZXCODE_CREDENTIALS_FILE_ENV,
 } from "@zcode/shared/credential-security";
 import {
   createServerHostServices,
@@ -51,9 +51,9 @@ export async function runServerCore(generation: number): Promise<void> {
     serverFilePath: layout.serverCredentialsFile,
   });
   if (credentialsFile === layout.serverCredentialsFile) {
-    process.env[ZCODE_CREDENTIALS_FILE_ENV] = credentialsFile;
+    process.env[ZXCODE_CREDENTIALS_FILE_ENV] = credentialsFile;
   } else {
-    delete process.env[ZCODE_CREDENTIALS_FILE_ENV];
+    delete process.env[ZXCODE_CREDENTIALS_FILE_ENV];
   }
   const topicResourcePeers = createTopicResourcePeers();
   const explicitZCodeBuiltinProviderConfigFilePath =

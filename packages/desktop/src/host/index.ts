@@ -2726,8 +2726,15 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
     port.once("close", () => {
       basePortClosed = true;
     });
+    // fork：settingService 提前到 DB 启动协调器之前创建——tasks-index worker 的首次迁移
+    // （0005 项目集合）只消费这次传入的 settings；不喂 settings 会让「上次打开的项目」
+    // 永远迁不进项目树（E2E 六场景全挂 waitForProjectRow 的根因）。
+    const initLocalSettingService = createSettingServiceWithMigrations({
+      shareCredentialKeyWithDataRoot,
+    });
     databaseStartup = createHostDatabaseStartup({
       startupId: msg.databaseStartupId,
+      settings: async () => await initLocalSettingService.service.get(),
       cwd: msg.agentSpawnFallbackCwd ?? process.cwd(),
       workingDirectories:
         msg.agentWarmupTargets?.map((target) => target.workspacePath) ??
@@ -2762,9 +2769,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
         // 其消费方属 source-server 数据同步剔除面），注入上游 v3.18.2 的
         // shareCredentialKeyWithDataRoot（数据目录切换后把系统密钥登记到目标数据根），
         // 并读取持久化语言作 X-Client-Language 兜底。
-        const { service: settingService } = createSettingServiceWithMigrations({
-          shareCredentialKeyWithDataRoot,
-        });
+        const { service: settingService } = initLocalSettingService;
         void settingService.get().then(
           (settings) => {
             persistedApplicationLocale = settings.locale;

@@ -53,7 +53,6 @@ export const UPSTREAM_SECONDARY_THOUGHT_LEVEL =
   process.env.E2E_PROVIDER_SECONDARY_THOUGHT_LEVEL?.trim() || "max";
 const E2E_PROVIDER_REPLAY_API_KEY = "e2e-fixture-key";
 const MODEL_SELECTION_RECENT_KEY_PREFIX = "zcode-model-selection-recent-v1";
-const UPSTREAM_THOUGHT_LEVEL_MAX_ATTEMPTS = 8;
 const UPSTREAM_THOUGHT_LEVEL_LABELS_BY_VALUE: Record<string, string[]> = {
   high: ["High", "高"],
   disabled: ["Disabled", "关闭"],
@@ -806,51 +805,59 @@ export async function selectUpstreamThoughtLevelValue(thoughtLevel: string) {
     return;
   }
 
-  await waitForTestIdByDom(TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER, {
-    timeout: 45000,
-    timeoutMsg: "聊天工具栏没有出现 上游 思考深度选择器",
-  });
   if (await isUpstreamThoughtLevelSelected(thoughtLevel)) {
     await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 已选中但持久化没有完成`);
     return;
   }
 
-  const itemTestId = testId(TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM, thoughtLevel);
-
-  for (let attempt = 0; attempt < UPSTREAM_THOUGHT_LEVEL_MAX_ATTEMPTS; attempt += 1) {
-    await clickTestIdByDom(TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER, {
+  // 根因：上游 v3.17 起 v4 Composer 把思考档位收进模型菜单（ComposerModelMenu 的 effort
+  // 滑杆），独立档位触发器只在 modelLocked/highspeed 形态渲染（V4ComposerToolbar）。
+  // v3.15.1 时代的独立 Select 交互已不存在；E2E 按当前 UI 打开模型菜单驱动滑杆选档。
+  const menuAlreadyOpen = await browser.execute(() =>
+    Boolean(document.querySelector('[data-testid="composer-model-panel"]')),
+  );
+  if (!menuAlreadyOpen) {
+    await clickTestIdByDom(TID_CHAT_MODEL_SELECT_TRIGGER, {
       timeout: 15000,
-      timeoutMsg: "聊天工具栏思考深度选择器不可点击",
+      timeoutMsg: "聊天工具栏模型选择器不可点击，无法进入思考深度选择",
     });
-    await browser.pause(150);
-
-    if (await hasUpstreamThoughtLevelItem(itemTestId)) {
-      await clickTestIdByDom(itemTestId, {
-        timeout: 15000,
-        timeoutMsg: `聊天工具栏 ${thoughtLevel} 思考深度选项不可点击`,
-      });
-      await waitForUpstreamThoughtLevelSelected(
-        thoughtLevel,
-        `上游 思考深度没有切换到 ${thoughtLevel}`,
-      );
-      await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 切换持久化没有完成`);
-      return;
-    }
-
-    // 修复原因：小宽度/特定 toolbar 形态下思考深度是循环按钮，不会挂载
-    // Radix SelectItem。此时一次 click 就是一次真实的用户切换动作。
-    if (await isUpstreamThoughtLevelSelected(thoughtLevel)) {
-      await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 切换持久化没有完成`);
-      return;
-    }
+  }
+  try {
+    await browser.waitUntil(async () => selectThoughtLevelBySlider(thoughtLevel), {
+      timeout: 15000,
+      timeoutMsg: `模型菜单没有出现可用的思考深度滑杆（目标 ${thoughtLevel}）`,
+    });
+  } finally {
+    // 滑杆选择不关闭菜单（产品保留用户继续调整的交互）；E2E 显式退出菜单再等持久化。
+    await browser.keys(["Escape"]);
   }
 
-  throw new Error(
-    `聊天工具栏无法切换到 ${thoughtLevel} 思考深度\n${JSON.stringify(
-      await collectThoughtLevelDiagnostics(itemTestId),
-      null,
-      2,
-    )}`,
+  await waitForUpstreamThoughtLevelSelected(
+    thoughtLevel,
+    `上游 思考深度没有切换到 ${thoughtLevel}`,
+  );
+  await waitForModelSwitchIdle(`上游 思考深度 ${thoughtLevel} 切换持久化没有完成`);
+}
+
+/** v4 模型菜单内的档位控件是原生 range input；按 data-levels 目录定位目标档位并提交。 */
+async function selectThoughtLevelBySlider(thoughtLevel: string): Promise<boolean> {
+  return browser.execute(
+    (sliderTestId, expectedLevel) => {
+      const slider = document.querySelector<HTMLInputElement>(`[data-testid="${sliderTestId}"]`);
+      if (!slider || slider.getAttribute("aria-disabled") === "true") return false;
+      const levels = JSON.parse(slider.dataset.levels ?? "[]") as string[];
+      const index = levels.indexOf(expectedLevel);
+      if (index < 0) return false;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      if (!setter) return false;
+      setter.call(slider, String(index));
+      // React 的 onChange 由 input 事件驱动；change 事件保持与非受控消费方一致。
+      slider.dispatchEvent(new Event("input", { bubbles: true }));
+      slider.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    },
+    "composer-thought-slider",
+    thoughtLevel,
   );
 }
 
@@ -1074,12 +1081,6 @@ export function getUpstreamProviderModelValues(
 
 export function getUpstreamThoughtLevelLabels(thoughtLevel: string) {
   return UPSTREAM_THOUGHT_LEVEL_LABELS_BY_VALUE[thoughtLevel] ?? [];
-}
-
-async function hasUpstreamThoughtLevelItem(itemTestId: string) {
-  return browser.execute((currentTestId) => {
-    return Boolean(document.querySelector(`[data-testid="${currentTestId}"]`));
-  }, itemTestId);
 }
 
 async function waitForUpstreamProviderSaved(

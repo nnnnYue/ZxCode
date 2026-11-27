@@ -50,6 +50,7 @@ export interface WindowHostControllerSessionOverlay {
 }
 
 export type WindowHostControllerMutation =
+  | { kind: "rename"; title: string }
   | { kind: "pin"; pinned: boolean }
   | { kind: "archive"; archived: boolean }
   | { kind: "delete" }
@@ -60,7 +61,13 @@ export type WindowHostControllerMutation =
   | { kind: "open" }
   | { kind: "resume" };
 
-export type WindowHostControllerMutationResult = void | boolean | ZCodeArchivedTaskDeletionResult;
+// fork：rename 的结果需要回传 ZCodeTaskMeta——TaskList 用它判定成功并在空 meta 时提示失败，
+// 与直连 service.renameTask 的返回合同一致。
+export type WindowHostControllerMutationResult =
+  | void
+  | boolean
+  | ZCodeArchivedTaskDeletionResult
+  | ZCodeTaskMeta;
 
 interface ControllerSource {
   scope: WindowHostControllerSourceScope;

@@ -2177,7 +2177,7 @@ export async function readMessages(context: ZCodeProtocolAgentServerContext, raw
     params.direction === "forward"
       ? messages.slice(0, params.limit)
       : limitMessages(messages, params.limit);
-  // 冷读没有 runtime 可回填历史图片的 data URL，保留 zcode-artifact:// 引用（hydrate 失败即保留原值）。
+  // 冷读没有 runtime 可回填历史图片的 data URL，保留 zxcode-artifact:// 引用（hydrate 失败即保留原值）。
   // ReadSession 两侧都只取 text part，回填只会放大结果（见规格 0.4 的 32 KiB 现场）。
   return {
     // 原先直接返回 Core 的 id/sessionID/messageID，真实客户端严格 wire schema 因此拒绝整页历史。
@@ -2939,9 +2939,7 @@ interface LegacyGoalContinuation {
   canContinue: boolean;
 }
 
-function resolveLegacyGoalContinuation(
-  record: ZCodeProtocolSessionRecord,
-): LegacyGoalContinuation {
+function resolveLegacyGoalContinuation(record: ZCodeProtocolSessionRecord): LegacyGoalContinuation {
   const isPlanMode = record.app.runtime.getPlanEnabled?.() ?? record.app.getMode?.() === "plan";
   return { isPlanMode, canContinue: !isPlanMode && !record.activeAbortController };
 }

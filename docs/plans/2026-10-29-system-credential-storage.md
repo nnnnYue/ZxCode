@@ -498,12 +498,12 @@ Desktop 创建的系统库条目，同样不可用。只放开候选 Core 也不
   由服务（`serve --daemon`，不带准备参数）拉起的 Core 会选中无密钥的自有库，在系统库可用时
   创建 OS 密钥并固定来源，之后的准备不再生成文件密钥。
 - 判定结果以该目录是否存在为唯一事实，创建后不回退。Core 每次启动只读取该事实，不创建
-  目录或密钥：目录存在时把文件路径写入进程环境 `ZCODE_CREDENTIALS_FILE`，否则清除该变量。
+  目录或密钥：目录存在时把文件路径写入进程环境 `ZXCODE_CREDENTIALS_FILE`，否则清除该变量。
   只有 `ENOENT` 表示不存在；权限、I/O 错误或该路径不是目录时启动失败，不改选共享库。
   Core 内的凭据服务、Provisioning、兼容 cipher，以及 Core 拉起的 Agent，都按该变量解析
   凭据文件。该变量是进程装配，不是用户配置，Desktop 不设置。
 - Desktop 不采用该变量：Desktop Main 在启动最早阶段删除从启动环境继承的
-  `ZCODE_CREDENTIALS_FILE`。Main 的系统 cipher、Host 的凭据服务与 Provisioning、
+  `ZXCODE_CREDENTIALS_FILE`。Main 的系统 cipher、Host 的凭据服务与 Provisioning、
   Desktop 拉起的 Agent 因此都只使用 Desktop 数据根下的 `credentials.json`。否则从设置了
   该变量的 shell 或 `launchctl` 环境启动的 Desktop 会整体改用外部指定的凭据库。
 - 兼容 cipher 与回滚保护语义不变。旧 owner 下的候选 Core 运行在 Server 自有库上，该库
@@ -522,7 +522,7 @@ Desktop 准备命令（持共享凭据文件锁 → 密钥锁）
   │    ─▶ 临时目录内发布 credential-secret ─▶ rename 为 <server-root>/credentials/
   └─ 未固定 ───▶ 原逻辑：准备 ~/.zcode/v2/credential-secret
 Core 启动（只读判定；非 ENOENT 错误或非目录直接失败）
-  ├─ <server-root>/credentials/ 存在 ─▶ ZCODE_CREDENTIALS_FILE=<server-root>/credentials/credentials.json
+  ├─ <server-root>/credentials/ 存在 ─▶ ZXCODE_CREDENTIALS_FILE=<server-root>/credentials/credentials.json
   └─ 不存在 ─────────────────────────▶ 清除变量，使用 ~/.zcode/v2/credentials.json
        └─ Agent 子进程继承同一变量，与 Core 读写同一文件
 ```
@@ -538,7 +538,7 @@ Core 启动（只读判定；非 ENOENT 错误或非目录直接失败）
   `conversation-session-ssh-remote-shared-desktop-credentials` 通过
   （`local-docker-20261111153313-7c08ce`）：共享库字节不变，自有目录 700、密钥 600，
   Provisioning 以 `enc:v2:env:` 写入自有库；回复延迟窗口内 Agent（进程标题 `zcode-cli`）
-  及其插件子进程的 `ZCODE_CREDENTIALS_FILE` 均指向自有文件。远端 Agent 在回合结束后退出，
+  及其插件子进程的 `ZXCODE_CREDENTIALS_FILE` 均指向自有文件。远端 Agent 在回合结束后退出，
   只能在运行窗口内观测。回归 `ssh-remote-provisioning-ready`（`local-docker-20261111153529-641953`）、
   `ssh-remote-server-fault`（`local-docker-20261111153738-5688d6`）、
   `remote-install-progress`（`local-docker-20261111154154-6f5298`）通过；
@@ -549,7 +549,7 @@ Core 启动（只读判定；非 ENOENT 错误或非目录直接失败）
   （`desktop-e2e-20261111154435847-p44762-3719331611725e70`）；pending `system-credential-storage`、
   `system-credential-owner` 2/2（`desktop-e2e-20261111154746936-p57806-da1856580749aa39`）。
 - Desktop 忽略继承变量（2026-11-16）：按 Main 入口顺序执行早期 bootstrap 后读取解析结果。设置
-  `ZCODE_CREDENTIALS_FILE=/tmp/server/credentials.json` 时，修复前解析为该路径，修复后变量已删除，
+  `ZXCODE_CREDENTIALS_FILE=/tmp/server/credentials.json` 时，修复前解析为该路径，修复后变量已删除，
   解析为 `{HOME}/.zcode/v2/credentials.json`；未设置时结果不变。未启动完整 Desktop 检查 Host 进程环境。
 - 未验证：真实 macOS 经 SSH 连接装有 Desktop 的 Mac、Windows 远端、systemd/launchd 服务模式。
 

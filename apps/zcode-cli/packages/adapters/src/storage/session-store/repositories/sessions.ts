@@ -193,11 +193,14 @@ export function listOwnedSessionTrees(
   return trees;
 }
 
-const ARTIFACT_URI_SCHEME = "zcode-artifact://";
-const ARTIFACT_URI_SESSION = /zcode-artifact:\/\/([^/"\\\s]+)\//g;
+// fork 数据链路写读均为 zxcode-artifact://（写入方 adapters/storage/index.ts 返回的 uri），
+// 必须按同一种 scheme 扫描 part.data；上游 zcode-artifact:// 未做 fork 适配会导致
+// 真实引用永远扫不到，purgeSessions 硬删除漏掉全部引用方、存活 fork 读不到附件。
+const ARTIFACT_URI_SCHEME = "zxcode-artifact://";
+const ARTIFACT_URI_SESSION = /zxcode-artifact:\/\/([^/"\\\s]+)\//g;
 
 /**
- * 每个目标会话 → 仍引用其附件（`zcode-artifact://<目标>/…`）的其他未删除会话。
+ * 每个目标会话 → 仍引用其附件（`zxcode-artifact://<目标>/…`）的其他未删除会话。
  * fork、回退与工作流转录按值复制 part，URI 仍指向源会话的附件目录；按 part 内容判定，
  * 不依赖 fork 谱系，任何复制路径都能覆盖。只在彻底删除时调用，一次全表扫描可接受。
  */
@@ -466,7 +469,9 @@ function artifactReferenceQueries(): string[] {
   ] as const;
   const queries: string[] = sources.map(
     ([table, id, data]) =>
-      `select t.${id} as session_id,t.${data} as body,s.title from ${table} t join session s on s.id=t.${id} where s.time_deleted is null and instr(t.${data}, 'zcode-artifact://')>0`,
+      // fork 产物 URI scheme 为 zxcode-artifact://（写入方 adapters/storage/index.ts），
+      // 扫描串必须与写入方一致，与上方 ARTIFACT_URI_SCHEME 常量保持同一 scheme。
+      `select t.${id} as session_id,t.${data} as body,s.title from ${table} t join session s on s.id=t.${id} where s.time_deleted is null and instr(t.${data}, '${ARTIFACT_URI_SCHEME}')>0`,
   );
   // 工作流 journal 里的产物不一定进入消息 part，必须沿 run 的会话归属检查。
   for (const [table, owner, columns] of [
@@ -480,7 +485,8 @@ function artifactReferenceQueries(): string[] {
   ] as const) {
     const body = columns.map((column) => `coalesce(t.${column},'')`).join(" || ' ' || ");
     queries.push(
-      `select s.id as session_id,${body} as body,s.title from ${table} t ${owner ? `join ${owner} r on r.id=t.run_id` : ""} join session s on s.id=${owner ? "r" : "t"}.parent_session_id where s.time_deleted is null and instr(${body},'zcode-artifact://')>0`,
+      // 同上：扫描串与写入方（zxcode-artifact://）一致。
+      `select s.id as session_id,${body} as body,s.title from ${table} t ${owner ? `join ${owner} r on r.id=t.run_id` : ""} join session s on s.id=${owner ? "r" : "t"}.parent_session_id where s.time_deleted is null and instr(${body},'${ARTIFACT_URI_SCHEME}')>0`,
     );
   }
   return queries;
@@ -499,7 +505,7 @@ export function inspectSessionDeletion(
 /**
  * 一批根的删除预检，结果按入参顺序，与逐个调用 inspectSessionDeletion 对同一数据完全一致。
  *
- * 修复原因：原实现逐个根各跑一遍 13 条 `instr(body,'zcode-artifact://')` 全表扫描，
+ * 修复原因：原实现逐个根各跑一遍 13 条 `instr(body,'zxcode-artifact://')` 全表扫描，
  * 外加 fork 与 runtime presence 全表读取；259 个归档会话的预检要扫数千次全表，同步 SQLite
  * 阻塞 Agent 事件循环，弹窗停在“正在检查 0/N”，其他会话也变卡。
  * 修法：fork、presence 与引用 SQL 对整批只跑一遍，命中按被引用会话归属到各自根；
@@ -570,7 +576,10 @@ export function inspectSessionDeletions(
         title: string;
       }>;
       for (const row of rows) {
-        for (const match of row.body.matchAll(/zcode-artifact:\/\/([^/"\\\s]+)\/([^"\\\s/?#]+)/g)) {
+        // 按 zxcode-artifact:// 提取 <sessionId>/<artifactId>，与写入方一致。
+        for (const match of row.body.matchAll(
+          /zxcode-artifact:\/\/([^/"\\\s]+)\/([^"\\\s/?#]+)/g,
+        )) {
           const sessionId = decodeURIComponent(match[1]!) as SessionId;
           const artifactId = decodeURIComponent(match[2]!);
           for (const state of scanOwners.get(sessionId) ?? []) {

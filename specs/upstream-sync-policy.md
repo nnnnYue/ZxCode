@@ -18,7 +18,7 @@
 - 品牌保护文件清单的唯一所有者：`.gitattributes` 中 `merge=zcode-brand` 段。当前保护：`packages/ui/src/assets/zcode-logo.png`、`packages/desktop/src/renderer/startup-logo.png`、`packages/web/startup-logo.png`、`packages/desktop/src/main/aboutWindowLogoDataUri.ts`。
 - 合并驱动是 clone 级配置，每个新 clone 需执行一次：`git config merge.zcode-brand.driver true`。该驱动仅在合并双方都改动同一文件时生效；上游删除/改名保护文件仍需按上述判据手工裁定。
 - z.ai 相关端点常量唯一汇聚点：`packages/shared/src/zcodeEndpoint.ts`；远程资源 CDN 基址另见 `packages/desktop/src/main/remoteCdn.ts`（保留项）。
-- 回潜门禁：`scripts/check-no-zai-runtime-endpoints.mjs` 扫描运行时代码中的 z.ai 平台端点字面量，纳入 `pnpm verify:pre-push`；允许清单仅含产品保留项（内置模型 Provider 配置、CDN 保留项、文档、构建脚本）。
+- 回潜门禁：`scripts/check-no-zai-runtime-endpoints.mjs` 扫描运行时代码中的 z.ai 平台端点字面量，纳入 `pnpm verify:pre-push`；允许清单仅含产品保留项（内置模型 Provider 配置、CDN 保留项、文档、构建脚本、记录性注释与 E2E fixture），桌面 E2E 本地产物目录（`.e2e-cache`/`.e2e-home`/`.e2e-artifacts`/`.e2e-network-capture`）按构建产物不扫描。
 - `pnpm-lock.yaml` 冲突固定解法：先解决 `package.json`，锁文件整体取上游版本后运行 `pnpm install` 重新生成，禁止手工合并锁文件。
 
 ## 不变量

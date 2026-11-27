@@ -60,7 +60,7 @@ export function getAppConfigDir(): string {
 
 /**
  * 本进程读写的凭据文件，所有凭据读写方的唯一解析入口。
- * 进程装配的 ZCODE_CREDENTIALS_FILE 优先（只有使用自有凭据库的 Source Server Core 设置，
+ * 进程装配的 ZXCODE_CREDENTIALS_FILE 优先（只有使用自有凭据库的 Source Server Core 设置，
  * 其 Agent 继承）；否则为 {appConfigDir}/credentials.json。调用时读取，不在模块加载时缓存。
  */
 export function getCredentialsFilePath(): string {

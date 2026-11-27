@@ -1259,7 +1259,7 @@ export interface SessionStorePort {
   softDeleteSession?(sessionID: SessionId, timeDeleted?: number): Promise<void>;
   /** 每个根会话 → 根自身与附属后代（subagent / workflow / 侧边问答，不含 fork）；根不存在为空数组。 */
   listOwnedSessionTrees?(sessionIDs: SessionId[]): Promise<Map<SessionId, SessionId[]>>;
-  /** 每个目标会话 → part 中仍引用其附件（`zcode-artifact://<目标>/…`）的其他未删除会话；无引用的目标不出现。 */
+  /** 每个目标会话 → part 中仍引用其附件（`zxcode-artifact://<目标>/…`）的其他未删除会话；无引用的目标不出现。 */
   listArtifactReferrers?(sessionIDs: SessionId[]): Promise<Map<SessionId, SessionId[]>>;
   /** 彻底删除会话及附属后代的全部行；只用于用户确认的「删除数据」，已不存在的会话是空操作。 */
   purgeSessions?(sessionIDs: SessionId[]): Promise<void>;

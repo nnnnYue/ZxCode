@@ -12,7 +12,7 @@ import {
 } from "pkijs";
 import { readFileSync } from "node:fs";
 import type { ProxyConfig, Session } from "electron";
-// fork：无 electron-updater 依赖（自动更新域剔除），不引入 autoUpdater.netSession 出口。
+// fork：自动更新域已整体剔除，无对应依赖，不引入 autoUpdater.netSession 出口。
 import { EMBEDDED_BROWSER_PARTITION } from "./browserDataManager.js";
 
 interface DesktopNetworkPolicySettings {
@@ -75,7 +75,7 @@ export async function applyDesktopChromiumNetworkPolicies(
       // ZxCode 自身对后端与模型 API 的出口，收敛到设置页的显式配置，不被本机系统代理左右。
       fallbackProxyMode: "direct" as const,
     },
-    // fork：auto-updater 出口规则剥离——fork 无 electron-updater（自动更新域），
+    // fork：auto-updater 出口规则剥离——自动更新域在 fork 无对应依赖，
     // 其余出口（default-session / embedded-browser 等）不变。
     {
       name: "embedded-browser",

@@ -12,7 +12,7 @@
 // 远端（SSH/WSL/Docker）没有 Electron，由 Source Server archive 自带目标 Node，互不影响。
 
 // 修复原因：bootstrap 清理旧插件 dist 时使用 rmSync，漏导入会在构建前抛出 ReferenceError。
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -546,7 +546,23 @@ function stageKoffiForCuaPlugin() {
 // 让 Electron Node 运行 zxcode.cjs 时复用同一套 filesystem seed 逻辑。
 // browser-use runtime 的声明生成依赖 @zcode/core/dist。CI 干净检出没有该产物，
 // 必须先构建 CLI 依赖，再构建官方插件；开发机残留的 dist 曾掩盖这个顺序问题。
+// fork 护栏（恢复 9d2ff8de，v4.0.0 合并重写本脚本时丢失）：产物名 split-brain 曾让旧 agent
+// 静默进安装包——zxcode.cjs 的 mtime 早于本次构建开始即视为暂存了陈旧残留，当场失败，
+// 不把旧包发出去。
+const agentBundleBuildStartedAtMs = Date.now();
 buildCliBundle();
+{
+  const agentBundleMtimeMs = statSync(cliBundlePath).mtimeMs;
+  if (agentBundleMtimeMs < agentBundleBuildStartedAtMs) {
+    throw new Error(
+      `[prepare:agent-bundle] cli bundle is stale: ${cliBundlePath} mtime ${new Date(
+        agentBundleMtimeMs,
+      ).toISOString()} predates this build run (${new Date(
+        agentBundleBuildStartedAtMs,
+      ).toISOString()}); refusing to stage a stale agent bundle`,
+    );
+  }
+}
 buildOfficialPluginRuntimes();
 await stageBundle();
 stageOfficialPlugins();

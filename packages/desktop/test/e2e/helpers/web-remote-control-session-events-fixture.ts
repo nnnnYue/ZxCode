@@ -194,6 +194,11 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
     : WEB_REMOTE_CONTROL_FIXTURE_CREDENTIALS;
   await writeFile(options.credentialsFile, JSON.stringify(desktopCredentials), { mode: 0o600 });
   const settings = JSON.parse(await readFile(options.settingsFile, "utf8"));
+  // fork 已知缺口（见 REMOVALS.md「桌面 E2E relay 配对基建缺口」）：移动端入口只认
+  // settings.mobileRelay，而 fork 的配对链接指向 relay origin，本夹具（官方 relay 时代遗存）
+  // 既不播种该设置、fake relay 也只实现手机数据面 ws2，没有 host-control 控制面——播种
+  // 设置也只能推进到「复制链接」永不可用。夹具家族的配对类用例（PJM/VP12/archive 等）
+  // 在 relay E2E 专项补齐 fake relay 控制面前无法回绿，先维持原状不扩散影响面。
   await writeFile(
     options.settingsFile,
     JSON.stringify({

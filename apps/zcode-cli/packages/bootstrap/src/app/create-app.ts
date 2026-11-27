@@ -1237,7 +1237,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           // 热态预览会和冷恢复 artifact 不一致。同一 message/index 必须优先取不可变副本。
           artifactUri =
             persistedAttachment.metadata?.artifactUri ??
-            (persistedAttachment.url.startsWith("zcode-artifact://")
+            (persistedAttachment.url.startsWith("zxcode-artifact://")
               ? persistedAttachment.url
               : undefined);
           ref =
@@ -1364,7 +1364,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         const { ref, mediaType } = await resolvePromptAttachment(input);
         // 读取必须留在 session runtime 内：artifact 走 session store，路径走当前
         // FileSystemPort，SSH/WSL/Docker 才会命中正确的远端文件系统。
-        if (ref.startsWith("zcode-artifact://")) {
+        if (ref.startsWith("zxcode-artifact://")) {
           const artifact = await artifactStore.readToolResultArtifact({
             uri: ref,
             trace: traceContext,

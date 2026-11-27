@@ -270,8 +270,12 @@ export function createWindowsE2EShardPlan({
     const childEnv = {
       ...env,
       ZCODE_E2E_HOME_DIR: childHomeDir,
-      ZCODE_E2E_RUN_ID: childRunId,
-      ZCODE_E2E_ARTIFACT_DIR: artifactDir,
+      // 根因：fork 把 reporter 的运行身份键改回 ZXCODE_ 品牌拼写（e2e-reporting.ts 只认
+      // ZXCODE_E2E_RUN_ID / ZXCODE_E2E_ARTIFACT_DIR）；wrapper 注入旧拼写时 launcher 会
+      // 自造 runId 和 artifact 目录，summary 落在 wrapper 期望路径之外，绿色 run 被
+      // 误判为 missing shard summary。
+      ZXCODE_E2E_RUN_ID: childRunId,
+      ZXCODE_E2E_ARTIFACT_DIR: artifactDir,
       ZCODE_E2E_NETWORK_CAPTURE_DIR: sharded
         ? join(artifactDir, "network-capture")
         : resolve(
@@ -422,7 +426,9 @@ export async function executeWindowsE2EShardPlan(
     const childResults = await Promise.all(
       plan.children.map(async (child) => ({
         child,
-        result: await runTrackedStep(child, { terminatePeersOnStartFailure: true }),
+        result: await runTrackedStep(child, {
+          terminatePeersOnStartFailure: true,
+        }),
       })),
     );
     for (const childResult of childResults) {

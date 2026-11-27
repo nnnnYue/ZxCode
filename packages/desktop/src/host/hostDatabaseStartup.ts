@@ -3,7 +3,7 @@ import {
   markTasksStoragePrepared,
   resolveZCodeAgentSpawnCwd,
 } from "@zcode/services/storage-startup";
-import type { DatabaseStartupState } from "@zcode/shared";
+import type { AppSettings, DatabaseStartupState } from "@zcode/shared";
 import { DatabaseStartupCoordinator } from "./databaseStartupCoordinator.js";
 import { StartupDiskSampler } from "./startupDiskSampler.js";
 import { prepareHostStorage, prepareSessionStorage } from "./storagePreparationProcesses.js";
@@ -14,6 +14,8 @@ export function createHostDatabaseStartup(options: {
   cwd: string;
   workingDirectories?: string[];
   env?: Record<string, string>;
+  // fork：tasks-index worker 的首次迁移（0005 项目集合）唯一 settings 消费点。
+  settings?: () => Promise<Pick<AppSettings, "lastWorkspaceSession" | "recentProjects">>;
   publish: (state: DatabaseStartupState) => void;
   initializeServices: () => Promise<void>;
   onFailure: (error: unknown) => void;
@@ -52,6 +54,7 @@ export function createHostDatabaseStartup(options: {
           (phase, migration) =>
             report("preparing_host_storage", phase, { databaseId: "tasks-index", migration }),
           abort.signal,
+          options.settings ? await options.settings() : undefined,
         );
         markTasksStoragePrepared(tasksPath);
         report("preparing_session_storage", "checking");

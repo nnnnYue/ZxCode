@@ -49,7 +49,7 @@ export async function measureSessionDataWith(
 
 /**
  * 附件仍被本次不删除的会话引用的树整棵保留：fork、回退、工作流转录按值复制 part，
- * `zcode-artifact://<源会话>/…` 仍指向源会话的附件目录。保留一棵会让它也成为引用方，迭代到不动点。
+ * `zxcode-artifact://<源会话>/…` 仍指向源会话的附件目录。保留一棵会让它也成为引用方，迭代到不动点。
  */
 async function referencedRoots(
   host: SessionDataHost,

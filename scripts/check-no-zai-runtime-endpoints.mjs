@@ -24,6 +24,11 @@ const SKIP_DIR_NAMES = new Set([
   ".turbo",
   "coverage",
   "test-results",
+  // 桌面 E2E 的本地构建缓存与隔离 HOME/工件目录，属构建产物，不在源码扫描范围。
+  ".e2e-cache",
+  ".e2e-home",
+  ".e2e-artifacts",
+  ".e2e-network-capture",
 ]);
 
 // 测试文件断言 URL 字面量但不发起网络调用，统一排除（fork+上游 3.16 测试量大增）。
@@ -36,6 +41,8 @@ const ZCODE_ORIGIN_ALLOWED_FILES = new Set([
   "packages/shared/test/pluginMarketplaces.test.ts", // 插件市场 CDN（cdn-zcode.z.ai）保留项的来源 fixture
   "packages/web/src/communityUrl.ts", // 注释记录：原 /api/v1/client/configs 拉取链路已删
   "packages/desktop/src/main/remoteCdn.ts", // cdn-zcode.z.ai 子串，CDN 保留项
+  "packages/desktop/test/e2e/helpers/plugin-cdn-zip-marketplace.ts", // E2E fixture：插件市场 CDN（cdn-zcode.z.ai）zip 清单地址
+  "packages/desktop/scripts/ensure-e2e-desktop-build.mjs", // 注释记录：ZXCODE_BASE_URL 默认值会编译进 main/host 包
   "scripts/update-builtin-provider-config.mjs", // 构建脚本默认基址
   "scripts/fetch-official-marketplace.mjs", // 插件市场 CDN 保留项（cdn-zcode.z.ai）
   "packages/desktop/electron-builder.config.js", // 打包 homepage 元数据

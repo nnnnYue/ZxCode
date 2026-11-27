@@ -43,11 +43,16 @@ export function useProjectTaskActions(task: ProjectTask, refresh: () => Promise<
   );
   const rename = useCallback(
     async (_id: string, title: string) => {
-      const result = await mutate({ kind: "rename", title });
-      await refresh();
-      return result ?? null;
+      try {
+        const result = await mutate({ kind: "rename", title });
+        await refresh();
+        return result ?? null;
+      } catch (error) {
+        report("rename", error);
+        return null;
+      }
     },
-    [mutate, refresh],
+    [mutate, refresh, report],
   );
   const pin = useCallback(
     async (_id: string, pinned: boolean) => {

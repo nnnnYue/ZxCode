@@ -8,12 +8,15 @@ import {
 } from "@zcode/shared";
 
 const data = z
-  .object({ path: z.string().min(1) })
+  .object({ path: z.string().min(1), settings: z.unknown().optional() })
   .strict()
   .parse(workerData);
 try {
-  await prepareTasksIndexStorage(data.path, (phase, migration) =>
-    parentPort?.postMessage({ type: "progress", phase, migration }),
+  await prepareTasksIndexStorage(
+    data.path,
+    (phase, migration) => parentPort?.postMessage({ type: "progress", phase, migration }),
+    // fork：settings 由 Host 传入（源为 settingService.get()），0005 项目集合迁移唯一消费点。
+    data.settings as Parameters<typeof prepareTasksIndexStorage>[2] | undefined,
   );
   parentPort?.postMessage({ type: "done" });
 } catch (error) {

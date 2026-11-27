@@ -216,14 +216,14 @@ describe("永久删除存储", () => {
   });
 });
 
-/** 只统计引用扫描 SQL（含 zcode-artifact:// 的 13 条），其余 prepare 原样透传。 */
+/** 只统计引用扫描 SQL（含 zxcode-artifact:// 的 13 条），其余 prepare 原样透传。 */
 function countingReferenceScans(db: DatabaseSync) {
   const counter = { scans: 0 };
   const proxy = new Proxy(db, {
     get(target, property) {
       if (property === "prepare")
         return (sql: string) => {
-          if (sql.includes("zcode-artifact://")) counter.scans++;
+          if (sql.includes("zxcode-artifact://")) counter.scans++;
           return target.prepare(sql);
         };
       const value = Reflect.get(target, property, target) as unknown;
@@ -284,15 +284,15 @@ describe("批量删除预检", () => {
       await session("d");
       await session("kept");
       // a 的产物被同批 b 引用：以 a 的视角 b 在树外，必须算外部引用。
-      part("b", "zcode-artifact://a/shared");
+      part("b", "zxcode-artifact://a/shared");
       // 同一树内的引用随根删除，不算外部引用。
-      part("a-child", "zcode-artifact://a/private");
+      part("a-child", "zxcode-artifact://a/private");
       // b 的产物被 a 的附属会话引用；fork 也引用 a。
-      part("a-child", "zcode-artifact://b/report");
-      part("a-fork", "zcode-artifact://a/shared");
+      part("a-child", "zxcode-artifact://b/report");
+      part("a-fork", "zxcode-artifact://a/shared");
       // c 的产物只出现在保留会话的工作流 journal 里。
       db.exec(`INSERT INTO dwf_run(id,parent_session_id,caps_max_concurrency,status,time_created,time_updated) VALUES('run','kept',1,'completed',1,1);
-        INSERT INTO dwf_event(run_id,sequence,type,payload_json,time_created) VALUES('run',1,'artifact','{"uri":"zcode-artifact://c/chart"}',1);`);
+        INSERT INTO dwf_event(run_id,sequence,type,payload_json,time_created) VALUES('run',1,'artifact','{"uri":"zxcode-artifact://c/chart"}',1);`);
       // d 已进入删除中：回执里保留的附件即使没有引用方也要出现在 references。
       const fresh = await store.inspectSessionDeletion("d" as SessionId);
       await store.beginSessionDeletion("d" as SessionId, fresh.revision, "op", [
@@ -351,7 +351,7 @@ describe("批量删除预检", () => {
     try {
       await session("a");
       await session("b");
-      part("b", "zcode-artifact://a/lost");
+      part("b", "zxcode-artifact://a/lost");
       const counted = countingReferenceScans(db);
       const skipped = inspectSessionDeletions(
         counted.db,
@@ -391,7 +391,7 @@ describe("批量删除预检", () => {
       }
       // 每个会话引用下一个会话的产物，形成跨根引用链。
       for (let index = 0; index < 300; index++)
-        part(ids[index]!, `zcode-artifact://${ids[(index + 1) % 300]}/file-${index}`);
+        part(ids[index]!, `zxcode-artifact://${ids[(index + 1) % 300]}/file-${index}`);
       const counted = countingReferenceScans(db);
       let started = performance.now();
       const single = ids.map(

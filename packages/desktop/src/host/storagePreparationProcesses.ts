@@ -10,6 +10,7 @@ import {
   databaseStartupErrorDetailsSchema,
   zcodeStoragePreparationFrameSchema,
   type DatabaseStartupState,
+  type AppSettings,
 } from "@zcode/shared";
 import { resolveDefaultZCodeAgentCommand } from "@zcode/services/storage-startup";
 
@@ -62,10 +63,16 @@ export function prepareHostStorage(
   path: string,
   report: (phase: Phase, migration?: DatabaseMigrationFacts) => void,
   signal: AbortSignal,
+  // fork：0005 项目集合迁移只在首次建库时消费传入的 settings；worker 是 tasks-index
+  // 唯一的首次迁移入口，不传 settings 会让「上次打开的项目」永远迁不进项目树。
+  settings?: Pick<
+    AppSettings,
+    "lastWorkspaceSession" | "recentProjects" | "sourceServers" | "connectionProfiles"
+  >,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./tasksStorageWorker.js", import.meta.url), {
-      workerData: { path },
+      workerData: { path, settings },
     });
     let done = false;
     let failure: unknown;
