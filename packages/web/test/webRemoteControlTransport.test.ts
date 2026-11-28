@@ -12,7 +12,7 @@ import {
   createWebRemoteControlAppPayloadRequester,
   createWebRemoteControlRelayRequestRecovery,
   type WebRemoteControlTerminalTransportState,
-} from "#src/web-remote-control/index.js";
+} from "../src/webRemoteControlTransport.js";
 
 const servers: WebSocketServer[] = [];
 const serverSockets = new Map<WebSocketServer, Set<import("ws").WebSocket>>();
@@ -385,12 +385,13 @@ describe("WebRemoteControlTerminalTransport", () => {
     transport.start();
     await waitUntil(() => relay.messages.some((message) => message.type === "pair_status_query"));
 
-    expect(relay.getRequestUrl()).toBe("/ws?token=token-1&mid=mid-1");
+    // fork 保旧恢复链路（REMOVALS.md web 远控前端条目）：token 不进 query，鉴权身份由 auth_init.role 携带。
+    expect(relay.getRequestUrl()).toBe("/ws?mid=mid-1");
     expect(relay.messages[0]).toMatchObject({
       type: "auth_init",
       device_sid: "sid-1",
     });
-    expect(relay.messages[0]).not.toHaveProperty("role");
+    expect(relay.messages[0]).toHaveProperty("role", "terminal");
     expect(relay.messages[0]).not.toHaveProperty("proof");
     expect(states).toContain("paired");
     transport.dispose();
@@ -916,7 +917,8 @@ describe("WebRemoteControlTerminalTransport", () => {
     transport.start();
     await waitUntil(() => failures.length === 1);
 
-    expect(failures).toEqual(["desktop-disconnected"]);
+    // fork 保旧恢复链路（REMOVALS.md web 远控前端条目）：waiting 超时按无效连接收口，不走 desktop-disconnected。
+    expect(failures).toEqual(["invalid-mobile-connection"]);
     expect(reloadPage).not.toHaveBeenCalled();
     transport.dispose();
   });
@@ -1174,314 +1176,4 @@ describe("WebRemoteControlTerminalTransport", () => {
     await expect(promise).resolves.toMatchObject({ success: true });
     expect(sent).toHaveLength(1);
   });
-});
-
-class TaskViewLifecycleDocument extends EventTarget {
-  visibilityState: DocumentVisibilityState = "visible";
-}
-
-it.each([
-  ["visibilitychange", "lifecycle-first"],
-  ["visibilitychange", "reporter-first"],
-  ["pagehide", "lifecycle-first"],
-  ["pagehide", "reporter-first"],
-  ["freeze", "lifecycle-first"],
-  ["freeze", "reporter-first"],
-] as const)(
-  "MRO03：%s/%s 在真实 transport 挂起前撤销查看，同 socket 恢复不用新 epoch",
-  async (pause, order) => {
-    const relay = await createRelayServer(({ message, socket }) => {
-      if (message.type === "auth_init")
-        socket.send(
-          JSON.stringify({ type: "auth_ack", device_sid: "sid-1", pair_status: "matched" }),
-        );
-      if (message.type === "pair_status_query")
-        socket.send(JSON.stringify({ type: "pair_status_ack", pair_status: "matched" }));
-    });
-    const { createWebRemoteControlTaskViewPublisher, createWebRemoteControlLifecycleRecovery } =
-      await import("#src/web-remote-control/index.js");
-    const documentTarget = new TaskViewLifecycleDocument();
-    const windowTarget = new EventTarget();
-    let state: WebRemoteControlTerminalTransportState = "idle";
-    const publisher = createWebRemoteControlTaskViewPublisher((payload) =>
-      transport.sendPayload(payload),
-    );
-    const transport = new WebRemoteControlTerminalTransport({
-      relayWsUrl: relay.url,
-      deviceSid: "sid-1",
-      deviceMid: "mid-1",
-      WebSocketCtor: WebSocket as unknown as typeof globalThis.WebSocket,
-      heartbeatIntervalMs: 60_000,
-      getToken: async () => "token",
-      onPayload: () => {},
-      onFailure: () => {},
-      onError: () => {},
-      reloadPage: () => {},
-      onStateChange: (next) => {
-        publisher.transportStateChanged(next, state);
-        state = next;
-      },
-      onSendReady: () => publisher.flush(),
-    });
-    const bridge = {
-      kind: "local" as const,
-      bridgeSessionId: "bridge",
-      bridgeGeneration: 1,
-      workspaceKey: "/repo",
-      workspacePath: "/repo",
-    };
-    const view = { workspacePath: "/repo", taskId: "task" };
-    const reports = () =>
-      relay.messages
-        .filter(
-          (message) =>
-            message.type === "data" && message.payload?.zcode_type === "mobile-task-view-update",
-        )
-        .map((message) => message.payload);
-    const report = () =>
-      publisher.update(bridge, documentTarget.visibilityState === "visible" ? view : null);
-    const hide = () => publisher.update(bridge, null);
-    const addReporter = () => {
-      documentTarget.addEventListener("visibilitychange", report);
-      documentTarget.addEventListener("freeze", hide);
-      documentTarget.addEventListener("resume", report);
-      windowTarget.addEventListener("pagehide", hide);
-      windowTarget.addEventListener("pageshow", report);
-    };
-    if (order === "reporter-first") addReporter();
-    let recovery: Promise<void> | undefined;
-    const lifecycle = createWebRemoteControlLifecycleRecovery({
-      documentTarget,
-      windowTarget,
-      onSuspend: () => {
-        publisher.suspend();
-        transport.suspend();
-      },
-      onRecover: () => {
-        recovery = transport.recoverConnection();
-      },
-    });
-    if (order === "lifecycle-first") addReporter();
-    try {
-      transport.start();
-      await waitUntil(() => state === "paired", 2_000);
-      publisher.setBridge(bridge);
-      publisher.seed("initial-bootstrap-epoch");
-      report();
-      await waitUntil(() => reports().at(-1)?.view?.taskId === "task", 2_000);
-      const previousSeq = reports().at(-1).seq;
-      if (pause === "visibilitychange") documentTarget.visibilityState = "hidden";
-      (pause === "pagehide" ? windowTarget : documentTarget).dispatchEvent(new Event(pause));
-      await waitUntil(() => reports().at(-1)?.view === null, 500, "view revoked before suspension");
-      expect(state).toBe("suspended");
-      documentTarget.visibilityState = "visible";
-      const resume =
-        pause === "pagehide" ? "pageshow" : pause === "freeze" ? "resume" : "visibilitychange";
-      (resume === "pageshow" ? windowTarget : documentTarget).dispatchEvent(new Event(resume));
-      await recovery;
-      await waitUntil(
-        () => reports().at(-1)?.view?.taskId === "task",
-        500,
-        "same-socket visible reassertion",
-      );
-      expect(reports().at(-1).epoch).toBe("initial-bootstrap-epoch");
-      expect(reports().at(-1).seq).toBeGreaterThan(previousSeq);
-      expect(relay.getConnectionCount()).toBe(1);
-    } finally {
-      lifecycle.dispose();
-      transport.dispose();
-    }
-  },
-);
-
-it.each(["online", "resume"])(
-  "MRO03：%s 恢复连接但页面仍 hidden 时不能重报缓存任务",
-  async (reason) => {
-    const relay = await createRelayServer(({ message, socket }) => {
-      if (message.type === "auth_init")
-        socket.send(
-          JSON.stringify({ type: "auth_ack", device_sid: "sid-1", pair_status: "matched" }),
-        );
-      if (message.type === "pair_status_query")
-        socket.send(JSON.stringify({ type: "pair_status_ack", pair_status: "matched" }));
-    });
-    const { createWebRemoteControlTaskViewPublisher, createWebRemoteControlLifecycleRecovery } =
-      await import("#src/web-remote-control/index.js");
-    const documentTarget = new TaskViewLifecycleDocument();
-    const windowTarget = new EventTarget();
-    let state: WebRemoteControlTerminalTransportState = "idle";
-    const publisher = createWebRemoteControlTaskViewPublisher((payload) =>
-      transport.sendPayload(payload),
-    );
-    const transport = new WebRemoteControlTerminalTransport({
-      relayWsUrl: relay.url,
-      deviceSid: "sid-1",
-      deviceMid: "mid-1",
-      WebSocketCtor: WebSocket as unknown as typeof globalThis.WebSocket,
-      heartbeatIntervalMs: 60_000,
-      getToken: async () => "token",
-      onPayload: () => {},
-      onFailure: () => {},
-      onError: () => {},
-      reloadPage: () => {},
-      onStateChange: (next) => {
-        publisher.transportStateChanged(next, state);
-        state = next;
-      },
-      onSendReady: () => publisher.flush(),
-    });
-    let recovery: Promise<void> | undefined;
-    const lifecycle = createWebRemoteControlLifecycleRecovery({
-      documentTarget,
-      windowTarget,
-      onSuspend: () => {
-        publisher.suspend();
-        transport.suspend();
-      },
-      onRecover: () => {
-        recovery = transport.recoverConnection();
-      },
-    });
-    const reports = () =>
-      relay.messages
-        .filter((message) => message.payload?.zcode_type === "mobile-task-view-update")
-        .map((message) => message.payload);
-    try {
-      transport.start();
-      await waitUntil(() => state === "paired", 2_000);
-      const bridge = {
-        kind: "local" as const,
-        bridgeSessionId: "bridge",
-        workspaceKey: "/repo",
-        workspacePath: "/repo",
-      };
-      publisher.setBridge(bridge);
-      publisher.seed("initial");
-      publisher.update(bridge, { workspacePath: "/repo", taskId: "task" });
-      await waitUntil(() => reports().at(-1)?.view?.taskId === "task", 2_000);
-      documentTarget.visibilityState = "hidden";
-      documentTarget.dispatchEvent(new Event("visibilitychange"));
-      await waitUntil(() => reports().at(-1)?.view === null, 500, "background revoke");
-      const afterRevoke = reports().length;
-      (reason === "online" ? windowTarget : documentTarget).dispatchEvent(new Event(reason));
-      await recovery;
-      expect(state).toBe("paired");
-      // 有序 socket 上的额外请求/响应确认恢复后的发送已被观察，无需用等待猜没有任务报告。
-      transport.sendPayload({
-        zcode_type: "bootstrap-request",
-        requestId: "after-hidden-recovery",
-      });
-      await waitUntil(
-        () =>
-          relay.messages.some((message) => message.payload?.requestId === "after-hidden-recovery"),
-        2_000,
-      );
-      expect(
-        reports()
-          .slice(afterRevoke)
-          .every((report) => report.view === null),
-      ).toBe(true);
-      expect(reports().at(-1)?.view).toBeNull();
-      expect(relay.getConnectionCount()).toBe(1);
-    } finally {
-      lifecycle.dispose();
-      transport.dispose();
-    }
-  },
-);
-
-it("MRO03：真实 socket 换代清旧 epoch，漏掉重申请求时仍从 bootstrap 新 epoch 恢复", async () => {
-  let authCount = 0;
-  let breakHealthCheck = false;
-  const relay = await createRelayServer(({ message, socket }) => {
-    if (message.type === "auth_init") {
-      authCount++;
-      socket.send(
-        JSON.stringify({ type: "auth_ack", device_sid: "sid-1", pair_status: "matched" }),
-      );
-    }
-    if (message.type === "pair_status_query") {
-      if (breakHealthCheck) {
-        breakHealthCheck = false;
-        socket.terminate();
-      } else socket.send(JSON.stringify({ type: "pair_status_ack", pair_status: "matched" }));
-    }
-    if (message.payload?.zcode_type === "bootstrap-request")
-      socket.send(
-        JSON.stringify({
-          type: "data",
-          payload: {
-            zcode_type: "bootstrap-response",
-            requestId: message.payload.requestId,
-            success: true,
-            result: {
-              windowControlSessionId: "sid-1",
-              workspaces: [],
-              mobileTaskViewEpoch: `epoch-${authCount}`,
-            },
-          },
-        }),
-      );
-  });
-  const { createWebRemoteControlTaskViewPublisher } =
-    await import("#src/web-remote-control/index.js");
-  let state: WebRemoteControlTerminalTransportState = "idle";
-  const publisher = createWebRemoteControlTaskViewPublisher((payload) =>
-    transport.sendPayload(payload),
-  );
-  const transport = new WebRemoteControlTerminalTransport({
-    relayWsUrl: relay.url,
-    deviceSid: "sid-1",
-    deviceMid: "mid-1",
-    WebSocketCtor: WebSocket as unknown as typeof globalThis.WebSocket,
-    heartbeatIntervalMs: 60_000,
-    healthCheckTimeoutMs: 50,
-    getToken: async () => "token",
-    onPayload: (payload) => {
-      if (payload.zcode_type === "bootstrap-response")
-        publisher.seed(payload.result.mobileTaskViewEpoch);
-    },
-    onFailure: () => {},
-    onError: () => {},
-    reloadPage: () => {},
-    onStateChange: (next) => {
-      publisher.transportStateChanged(next, state);
-      state = next;
-    },
-    onSendReady: () => publisher.flush(),
-  });
-  const reports = () =>
-    relay.messages
-      .filter((message) => message.payload?.zcode_type === "mobile-task-view-update")
-      .map((message) => message.payload);
-  try {
-    transport.start();
-    await waitUntil(() => state === "paired", 2_000);
-    const bridge = {
-      kind: "local" as const,
-      bridgeSessionId: "bridge",
-      workspaceKey: "/repo",
-      workspacePath: "/repo",
-    };
-    publisher.setBridge(bridge);
-    publisher.update(bridge, { workspacePath: "/repo", taskId: "task" });
-    transport.sendPayload({ zcode_type: "bootstrap-request", requestId: "initial" });
-    await waitUntil(() => reports().at(-1)?.epoch === "epoch-1", 2_000);
-    publisher.suspend();
-    transport.suspend();
-    breakHealthCheck = true;
-    const recovery = transport.recoverConnection();
-    publisher.update(bridge, { workspacePath: "/repo", taskId: "task" });
-    await recovery;
-    expect(relay.getConnectionCount()).toBeGreaterThan(1);
-    transport.sendPayload({ zcode_type: "bootstrap-request", requestId: "new-epoch" });
-    await waitUntil(
-      () => reports().at(-1)?.epoch === `epoch-${authCount}`,
-      2_000,
-      "new bootstrap epoch",
-    );
-    expect(reports().at(-1)).toMatchObject({ seq: 1, view: { taskId: "task" } });
-  } finally {
-    transport.dispose();
-  }
 });
