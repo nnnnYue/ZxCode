@@ -207,6 +207,7 @@ export function StatusCapsule({
   children,
   tone,
   attention = false,
+  childModalOpen = false,
   dataAttributes,
 }: {
   id: string;
@@ -216,6 +217,8 @@ export function StatusCapsule({
   children: ReactNode;
   tone?: "warning" | "destructive";
   attention?: boolean;
+  /** 内部 Git 提交/推送等模态弹窗打开中；关闭浮层自身，但浮层内容保持挂载并隐藏。 */
+  childModalOpen?: boolean;
   dataAttributes?: Record<`data-${string}`, string | number | undefined>;
 }) {
   const shared = useContext(StatusCapsuleContext);
@@ -234,6 +237,14 @@ export function StatusCapsule({
   useEffect(() => {
     if (attention) trigger.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [attention]);
+  useEffect(() => {
+    if (!childModalOpen || !open) return;
+    // 模态弹窗从浮层内打开后必须关闭浮层：浮层 z-[60] 高于弹窗 z-50，不关闭会遮挡弹窗。
+    // 内容同时改用 forceMount 保持挂载并隐藏——弹窗虽然 Portal 到 body，但 React 树
+    // 挂在浮层内容里，条件卸载会连带卸载弹窗，导致提交/推送流程直接中断。
+    setSharedOpen?.(null);
+    setLocalOpen(false);
+  }, [childModalOpen, open, setSharedOpen]);
   return (
     <Popover
       open={open}
@@ -290,16 +301,18 @@ export function StatusCapsule({
           ) : null}
         </Button>
       </PopoverTrigger>
-      {open ? (
+      {open || childModalOpen ? (
         <PopoverContent
           side="top"
           align="center"
           collisionPadding={12}
+          forceMount={childModalOpen || undefined}
           data-status-capsule-content={id}
           className={cn(
             "composer-status-popover w-80 max-w-[calc(100vw-1.5rem)] max-h-[min(60dvh,var(--radix-popover-content-available-height))] overflow-y-auto rounded-xl p-2",
             // 操作区分隔线已提供间距，避免叠加共享浮层的 gap-4。
             (id === "git" || id === "activity") && "gap-0",
+            childModalOpen && "invisible",
           )}
         >
           {children}
@@ -1009,6 +1022,8 @@ function ConversationStatusPanelImpl(props: ConversationStatusPanelProps) {
   const presentation = useToolPresentationCapabilities();
   const capsuleContext = useContext(StatusCapsuleContext);
   const isOfficeMode = useIsOfficeMode();
+  // Git 提交/推送弹窗打开中；由 GitActionMenu 的 onModalOpenChange 上报。
+  const [gitModalOpen, setGitModalOpen] = useState(false);
   const repository = useContext(GitStatusRepositoryContext);
   const {
     workspacePath,
@@ -1457,6 +1472,7 @@ function ConversationStatusPanelImpl(props: ConversationStatusPanelProps) {
       {canGit ? (
         <StatusCapsule
           id="git"
+          childModalOpen={gitModalOpen}
           icon={<FileDiffIcon className="size-4" />}
           label={intl.formatMessage(
             { id: "chat.capsule.files" },
@@ -1558,6 +1574,7 @@ function ConversationStatusPanelImpl(props: ConversationStatusPanelProps) {
                   gitSummary={gitSummary}
                   activeTaskChangeSummary={props.activeTaskChangeSummary ?? null}
                   onRefreshGit={onRefreshGit}
+                  onModalOpenChange={setGitModalOpen}
                   triggerLayout="status-row"
                 />
               ) : null}

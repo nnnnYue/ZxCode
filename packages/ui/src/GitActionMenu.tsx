@@ -72,6 +72,8 @@ interface GitActionMenuProps {
   className?: string;
   triggerIconOnly?: boolean;
   triggerLayout?: "header" | "status-row";
+  /** 提交/推送弹窗开合回调；宿主浮层（状态胶囊 Popover）用它先关闭自身，避免浮层遮挡弹窗。 */
+  onModalOpenChange?: (open: boolean) => void;
 }
 
 type GitCommitPreviewFile = ReturnType<typeof buildGitBranchCommitPreviewFiles>[number];
@@ -829,6 +831,7 @@ export function GitActionMenu({
   className,
   triggerIconOnly = false,
   triggerLayout = "header",
+  onModalOpenChange,
 }: GitActionMenuProps) {
   const { gitService } = useServices();
   const { intl, locale } = useZCodeIntl();
@@ -868,6 +871,13 @@ export function GitActionMenu({
   );
   const primaryActionDisabled = !actionAvailable || triggerPending || primaryActionId === null;
   const isStatusRowTrigger = triggerLayout === "status-row";
+  const modalOpen = commitDialogOpen || pushDialogOpen;
+  useEffect(() => {
+    onModalOpenChange?.(modalOpen);
+    return () => onModalOpenChange?.(false);
+    // “仅推送”会在同一次提交里把 commit 弹窗换成 push 弹窗，监听合并后的布尔值
+    // 避免宿主浮层在这类切换中被瞬时关闭又打开。
+  }, [modalOpen, onModalOpenChange]);
 
   useEffect(() => {
     // 顶部 commit 入口改成“始终展示、异常时置灰”后，

@@ -50,6 +50,18 @@
 - `GCD-UI-01` 的稳定合同是 `providerRequestPolicy=none`，不点击生成、提交或推送。
 - 后续生成 / 提交 / 推送 case 需要拆成 case-local fixture，避免模型请求、Git 历史副作用和 remote push 互相污染。
 
+## 状态胶囊浮层遮挡回归（2026-11-28）
+
+v4 状态胶囊把 `GitActionMenu` 移入胶囊 Popover（内容层 `z-[60]`）后，从浮层内打开的提交/推送弹窗（`z-50`）会被未关闭的浮层遮挡。修复约定：弹窗打开时胶囊浮层关闭，浮层内容以 `forceMount` 保持挂载并隐藏，弹窗关闭后浮层不自动重开（规格见 [chat-summary-panel.md §7](../ui/chat-summary-panel.md)）。
+
+`GCD-UI-01` 新增回归断言：弹窗打开后 `[data-status-capsule-content="git"]` 必须处于 `data-state="closed"` 且计算样式 `visibility: hidden`，弹窗交互流程照常继续。
+
+### 验证状态
+
+- 代码检查：`pnpm typecheck`、`pnpm --filter @zcode/desktop typecheck:e2e`、`pnpm lint`（全量 506 告警 0 错误，与基线一致）、`pnpm architecture:check --changed` 通过。
+- macOS Electron GCD-UI-01：**1/1 通过**（运行 ID：`desktop-e2e-20261128-071423-788`），包含新回归断言：弹窗打开后胶囊浮层 `data-state="closed"` 且 `visibility: hidden`。
+- 前置阻塞（已修复）：本地合并 `9f5a0926` 把 v3.18.0 旧设计的时间线顶部 `ConversationStatusPanel` 渲染点保留了下来（props 被截断、无任何回调），与 v4.0.0 的 composer 胶囊行重复挂载，导致同 pane 出现两个 git 胶囊；E2E helper 按 DOM 顺序点到僵尸实例，其浮层内没有提交/推送入口。对照证据：修复前带遮挡修复 run `desktop-e2e-20261127-234807-865` 与 stash 基线 run `desktop-e2e-20261127-235146-001` 同症状失败；删除残留渲染点后通过。
+
 ## 弹窗圆角迁移（2026-09-04）
 
 依据 [DESIGN.md 的弹窗圆角规则](../../DESIGN.md#dialogs)，普通 Dialog 外壳统一 `2xl`，清理业务 `xl` / `3xl` 覆盖；聊天附件预览、反馈截图预览、CUA 截图预览显式保留 `xl`。本次不调整弹窗内部容器和控件。

@@ -17,14 +17,18 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  forceMount,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  // Radix 的 PopoverPortal 在 open=false 且自身未收到 forceMount 时会整体卸载 children，
+  // 仅把 forceMount 传给 Content 无法保持挂载；必须同时透传给 Portal。
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal forceMount={forceMount}>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
+        forceMount={forceMount}
         className={cn(
           // Popover 与 tooltip 同为 z-50 时，后挂载的辅助提示会覆盖正在操作的浮层。
           "z-[60] flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-4 rounded-xl bg-popover p-2.5 text-ui-base text-popover-foreground shadow-md border border-border overflow-hidden outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",

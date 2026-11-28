@@ -53,6 +53,7 @@ describe("Git 提交弹窗 UI manual-review E2E", () => {
     await waitForCommitDialogReady();
 
     await assertDialogOverlayVisible();
+    await assertGitCapsuleSuppressedWhileDialogOpen();
     // 圆角规范迁移：提交弹窗曾局部覆盖为 xl，读取计算样式防止覆盖共享 2xl 默认值。
     const radius = await browser.execute((id) => {
       const dialog = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
@@ -235,6 +236,30 @@ async function assertDialogOverlayVisible() {
     {
       timeout: 10000,
       timeoutMsg: "Git 提交弹窗没有显示 overlay",
+    },
+  );
+}
+
+// 回归断言：状态胶囊浮层 z-[60] 高于弹窗 z-50，弹窗打开后浮层必须已关闭并以
+// forceMount 保持挂载、隐藏展示——不能卸载，弹窗的 React 树挂在浮层内容里。
+async function assertGitCapsuleSuppressedWhileDialogOpen() {
+  await browser.waitUntil(
+    async () => {
+      const snapshot = (await browser.execute(() => {
+        const content = document.querySelector<HTMLElement>(
+          '[data-status-capsule-content="git"]',
+        );
+        return {
+          exists: Boolean(content),
+          state: content?.getAttribute("data-state") ?? null,
+          visibility: content ? getComputedStyle(content).visibility : null,
+        };
+      })) as { exists: boolean; state: string | null; visibility: string | null };
+      return snapshot.exists && snapshot.state === "closed" && snapshot.visibility === "hidden";
+    },
+    {
+      timeout: 10000,
+      timeoutMsg: "提交弹窗打开后 Git 状态胶囊浮层没有关闭并隐藏",
     },
   );
 }

@@ -5354,20 +5354,6 @@ export function SessionPane({
             compactForRemoteControl && "min-w-0",
           )}
         >
-          {!isDraft ? (
-            <ConversationStatusPanel
-              workspacePath={workspacePath}
-              gitCwd={sessionCwd}
-              workspaceIdentity={workspaceIdentity}
-              gitSummary={gitSummary}
-              gitDirtyFileCount={gitDirtyFileCount}
-              gitWorktreeReviewSourceId={gitWorktreeReviewSourceId}
-              gitWorktreeChangeSummary={gitWorktreeChangeSummary}
-              activeTaskChangeSummary={activeTaskChangeSummary}
-              goal={selectionSideChat ? null : (snapshot?.goal ?? null)}
-            />
-          ) : null}
-
           {readOnly && controlLastError ? (
             <div
               role="alert"
